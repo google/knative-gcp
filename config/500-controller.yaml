@@ -13,43 +13,43 @@
 # limitations under the License.
 
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: gcppubsub-controller-manager
+  name: gcp-controller
   namespace: knative-gcp
   labels:
-    control-plane: gcppubsub-controller-manager
+    control-plane: gcp-controller
 spec:
   selector:
     matchLabels: &labels
-      control-plane: gcppubsub-controller-manager
-  serviceName: gcppubsub-controller-manager
+      control-plane: gcp-controller
+  serviceName: gcp-controller
   template:
     metadata:
       labels: *labels
     spec:
-      serviceAccountName: gcppubsub-controller-manager
+      serviceAccountName: gcp-controller
       containers:
-      - name: manager
-        image: github.com/knative/eventing-gcp/contrib/gcppubsub/cmd/controller
+      - name: controller
+        image: github.com/GoogleCloudPlatform/knative-eventing-sources/cmd/controller
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json
         - name: GCPPUBSUB_RA_IMAGE
-          value: github.com/knative/eventing-gcp/contrib/gcppubsub/cmd/receive_adapter
+          value: github.com/GoogleCloudPlatform/knative-eventing-sources/cmd/pubsub_receive_adapter
         volumeMounts:
         - name: google-cloud-key
           mountPath: /var/secrets/google
         resources:
           limits:
-            cpu: 100m
-            memory: 30Mi
+            cpu: 1000m
+            memory: 1000Mi
           requests:
-            cpu: 20m
-            memory: 20Mi
+            cpu: 100m
+            memory: 100Mi
       volumes:
       - name: google-cloud-key
         secret:
-          secretName: gcppubsub-source-key
-      serviceAccount: gcppubsub-controller-manager
+          secretName: gcp-source-key
+      serviceAccount: gcp-controller
       terminationGracePeriodSeconds: 10
