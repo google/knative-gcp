@@ -20,7 +20,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/eventing/v1alpha1"
+	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
 	"github.com/knative/pkg/controller"
