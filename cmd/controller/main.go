@@ -18,17 +18,20 @@ package main
 
 //
 //import (
+//	"github.com/knative/pkg/logging/logkey"
+//	"github.com/kubernetes-sigs/controller-runtime/pkg/client/config"
+//	"github.com/kubernetes-sigs/controller-runtime/pkg/manager"
 //	"log"
 //
-//	"github.com/GoogleCloudPlatform/knative-eventing-sources/contrib/gcppubsub/pkg/apis"
-//	controller "github.com/GoogleCloudPlatform/knative-eventing-sources/contrib/gcppubsub/pkg/reconciler"
-//	"github.com/knative/pkg/logging/logkey"
+//	//"github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/apis"
+//	//controller "github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/reconciler"
+//	//"github.com/knative/pkg/logging/logkey"
 //	"go.uber.org/zap"
 //	"go.uber.org/zap/zapcore"
-//	_ "k8s.io/client-go/plugin/pkg/client/auth/eventing"
-//	"sigs.k8s.io/controller-runtime/pkg/client/config"
-//	"sigs.k8s.io/controller-runtime/pkg/manager"
-//	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+//	//_ "k8s.io/client-go/plugin/pkg/client/auth/eventing"
+//	//"sigs.k8s.io/controller-runtime/pkg/client/config"
+//	//"sigs.k8s.io/controller-runtime/pkg/manager"
+//	//"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 //)
 //
 //func main() {

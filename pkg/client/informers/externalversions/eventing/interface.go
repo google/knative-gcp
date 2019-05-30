@@ -19,8 +19,8 @@ limitations under the License.
 package events
 
 import (
-	v1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/informers/externalversions/eventing/v1alpha1"
-	internalinterfaces "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/eventing/v1alpha1"
+	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.

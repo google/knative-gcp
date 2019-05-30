@@ -23,9 +23,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/clientset/versioned"
-	eventing "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/informers/externalversions/eventing"
-	internalinterfaces "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	events "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events"
+	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -172,9 +172,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Events() eventing.Interface
+	Events() events.Interface
 }
 
-func (f *sharedInformerFactory) Events() eventing.Interface {
-	return eventing.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Events() events.Interface {
+	return events.New(f, f.namespace, f.tweakListOptions)
 }

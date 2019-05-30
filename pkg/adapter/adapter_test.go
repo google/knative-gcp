@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	sourcesv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis/eventing/v1alpha1"
-	"github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/kncloudevents"
+	sourcesv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
 	"go.uber.org/zap"
 )

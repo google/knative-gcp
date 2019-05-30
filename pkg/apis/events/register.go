@@ -1,7 +1,7 @@
 /*
 Copyright 2019 Google LLC
 
-Licensed under the Apache License, Veroute.on 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -14,23 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcppubsub
+// Package eventing contains eventing API versions
+package events
 
-//
-//import (
-//	"context"
-//	"github.com/GoogleCloudPlatform/knative-eventing-sources/pkg"
-//	"testing"
-//
-//	"cloud.google.com/go/pubsub"
-//)
-//
-//func TestPubSubWrapperFluff(t *testing.T) {
-//	c := &pkg.realGcpPubSubClient{}
-//
-//	c.SubscriptionInProject("foo", "bar")
-//
-//	c.Topic("foo")
-//
-//	c.CreateSubscription(context.TODO(), "foo", pubsub.SubscriptionConfig{})
-//}
+const (
+	GroupName = "events.cloud.run"
+)

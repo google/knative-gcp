@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/clientset/versioned"
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/clientset/versioned/typed/eventing/v1alpha1"
-	fakeeventsv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/clientset/versioned/typed/eventing/v1alpha1/fake"
+	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
+	fakeeventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

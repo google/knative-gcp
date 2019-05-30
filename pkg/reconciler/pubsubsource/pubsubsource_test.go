@@ -14,20 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcppubsub
+package pubsubsource
 
 //
 //import (
 //	"context"
 //	"errors"
 //	"fmt"
-//	"github.com/GoogleCloudPlatform/knative-eventing-sources/pkg"
+//	"github.com/GoogleCloudPlatform/cloud-run-events/pkg"
 //	"testing"
 //
 //	"cloud.google.com/go/pubsub"
-//	sourcesv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/contrib/gcppubsub/pkg/apis/sources/v1alpha1"
-//	controllertesting "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/controller/testing"
-//	"github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/reconciler/eventtype"
+//	sourcesv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/apis/sources/v1alpha1"
+//	controllertesting "github.com/GoogleCloudPlatform/cloud-run-events/pkg/controller/testing"
+//	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/eventtype"
 //	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
 //	eventingsourcesv1alpha1 "github.com/knative/eventing/pkg/apis/sources/v1alpha1"
 //	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"

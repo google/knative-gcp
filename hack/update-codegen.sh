@@ -27,8 +27,8 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis \
-  "eventing:v1alpha1" \
+  github.com/GoogleCloudPlatform/cloud-run-events/pkg/client github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis \
+  "events:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Because the kubernetes code generators force pacakges to lowercase, the update-deps script will be confused for

@@ -1,6 +1,6 @@
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/cloud.google.com/go
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/cloud.google.com/go
 
 
                                  Apache License
@@ -208,7 +208,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/cloud.goo
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/cloudevents/sdk-go
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/cloudevents/sdk-go
 
                                  Apache License
                            Version 2.0, January 2004
@@ -415,7 +415,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/davecgh/go-spew
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/davecgh/go-spew
 
 ISC License
 
@@ -436,7 +436,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/evanphx/json-patch
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/evanphx/json-patch
 
 Copyright (c) 2014, Evan Phoenix
 All rights reserved.
@@ -467,7 +467,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/ghodss/yaml
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/ghodss/yaml
 
 The MIT License (MIT)
 
@@ -523,7 +523,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/gogo/protobuf
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/gogo/protobuf
 
 Protocol Buffers for Go with Gadgets
 
@@ -565,7 +565,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/golang/glog
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/golang/glog
 
 Apache License
 Version 2.0, January 2004
@@ -762,7 +762,7 @@ third-party archives.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/golang/protobuf
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/golang/protobuf
 
 Copyright 2010 The Go Authors.  All rights reserved.
 
@@ -796,7 +796,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/google/go-cmp
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/google/go-cmp
 
 Copyright (c) 2017 The Go Authors. All rights reserved.
 
@@ -829,7 +829,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/google/gofuzz
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/google/gofuzz
 
 
                                  Apache License
@@ -1037,7 +1037,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/google/uuid
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/google/uuid
 
 Copyright (c) 2009,2014 Google Inc. All rights reserved.
 
@@ -1070,7 +1070,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/googleapis/gax-go
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/googleapis/gax-go
 
 Copyright 2016, Google Inc.
 All rights reserved.
@@ -1103,7 +1103,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/hashicorp/golang-lru
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/hashicorp/golang-lru
 
 Mozilla Public License, version 2.0
 
@@ -1471,7 +1471,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/json-iterator/go
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/json-iterator/go
 
 MIT License
 
@@ -1498,7 +1498,7 @@ SOFTWARE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/knative/pkg
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/knative/pkg
 
                                  Apache License
                            Version 2.0, January 2004
@@ -1705,7 +1705,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/mattbaird/jsonpatch
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/mattbaird/jsonpatch
 
                                  Apache License
                            Version 2.0, January 2004
@@ -1913,7 +1913,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/modern-go/concurrent
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/modern-go/concurrent
 
                                  Apache License
                            Version 2.0, January 2004
@@ -2120,7 +2120,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.com/modern-go/reflect2
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/github.com/modern-go/reflect2
 
                                  Apache License
                            Version 2.0, January 2004
@@ -2327,7 +2327,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/github.co
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/go.opencensus.io
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/go.opencensus.io
 
 
                                  Apache License
@@ -2534,7 +2534,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/go.opence
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/go.uber.org/atomic
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/go.uber.org/atomic
 
 Copyright (c) 2016 Uber Technologies, Inc.
 
@@ -2559,7 +2559,7 @@ THE SOFTWARE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/go.uber.org/multierr
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/go.uber.org/multierr
 
 Copyright (c) 2017 Uber Technologies, Inc.
 
@@ -2584,7 +2584,7 @@ THE SOFTWARE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/go.uber.org/zap
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/go.uber.org/zap
 
 Copyright (c) 2016-2017 Uber Technologies, Inc.
 
@@ -2609,7 +2609,7 @@ THE SOFTWARE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/crypto
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/crypto
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2642,7 +2642,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/net
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/net
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2675,7 +2675,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/oauth2
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/oauth2
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2708,7 +2708,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/sync
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/sync
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2741,7 +2741,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/sys
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/sys
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2774,7 +2774,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/text
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/text
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2807,7 +2807,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/golang.org/x/time
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/golang.org/x/time
 
 Copyright (c) 2009 The Go Authors. All rights reserved.
 
@@ -2840,7 +2840,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/google.golang.org/api
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/google.golang.org/api
 
 Copyright (c) 2011 Google Inc. All rights reserved.
 
@@ -2873,7 +2873,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/google.golang.org/genproto
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/google.golang.org/genproto
 
 
                                  Apache License
@@ -3081,7 +3081,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/google.go
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/google.golang.org/grpc
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/google.golang.org/grpc
 
 
                                  Apache License
@@ -3289,7 +3289,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/google.go
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/gopkg.in/inf.v0
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/gopkg.in/inf.v0
 
 Copyright (c) 2012 Péter Surányi. Portions Copyright (c) 2009 The Go
 Authors. All rights reserved.
@@ -3323,7 +3323,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/gopkg.in/yaml.v2
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/gopkg.in/yaml.v2
 
                                  Apache License
                            Version 2.0, January 2004
@@ -3530,7 +3530,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/gopkg.in/
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/k8s.io/api
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/k8s.io/api
 
 
                                  Apache License
@@ -3738,7 +3738,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/k8s.io/ap
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/k8s.io/apimachinery
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/k8s.io/apimachinery
 
 
                                  Apache License
@@ -3946,7 +3946,7 @@ Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/k8s.io/ap
 
 
 ===========================================================
-Import: github.com/GoogleCloudPlatform/knative-eventing-sources/vendor/k8s.io/client-go
+Import: github.com/GoogleCloudPlatform/cloud-run-events/vendor/k8s.io/client-go
 
 
                                  Apache License

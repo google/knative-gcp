@@ -21,7 +21,7 @@ import (
 	"log"
 	"os"
 
-	gcppubsub "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/adapter"
+	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

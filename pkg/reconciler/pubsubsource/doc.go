@@ -14,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains API Schema definitions for the eventing v1alpha1 API group
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis/eventing
-// +k8s:defaulter-gen=TypeMeta
-// +groupName=events.cloud.run
-package v1alpha1
+// Package gcppubsubsource implements the PubSub Source controller.
+// This is needed to be able to watch channels when delivering to a channel.
+// This is needed to be able to watch the sink when delivering messages directly.
+package pubsubsource

@@ -31,7 +31,7 @@ These steps assume that you have checked out the repo and have a shell in this
 1. Install the [PubSub Source from this directory](../config/) from source:
 
    ```shell
-   ko apply --filename https://github.com/GoogleCloudPlatform/knative-eventing-sources/tree/master/config/
+   ko apply --filename https://github.com/GoogleCloudPlatform/cloud-run-events/tree/master/config/
    ```
 
    Or install a release version (TODO: link to released component).

@@ -21,10 +21,10 @@ package v1alpha1
 import (
 	time "time"
 
-	eventingv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis/eventing/v1alpha1"
-	versioned "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client/listers/eventing/v1alpha1"
+	eventingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/eventing/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

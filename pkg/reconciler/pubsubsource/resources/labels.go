@@ -14,9 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package eventing contains eventing API versions
-package eventing
+package resources
 
-const (
-	GroupName = "events.cloud.run"
+import (
+	"k8s.io/apimachinery/pkg/labels"
 )
+
+func GetLabelSelector(controller, source string) labels.Selector {
+	return labels.SelectorFromSet(GetLabels(controller, source))
+}
+
+func GetLabels(controller, source string) map[string]string {
+	return map[string]string{
+		"cloud-run-events-source":      controller,
+		"cloud-run-events-source-name": source,
+	}
+}
