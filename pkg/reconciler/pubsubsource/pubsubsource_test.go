@@ -17,6 +17,7 @@ limitations under the License.
 package pubsubsource
 
 //
+//
 //import (
 //	"context"
 //	"errors"
@@ -25,7 +26,7 @@ package pubsubsource
 //	"testing"
 //
 //	"cloud.google.com/go/pubsub"
-//	sourcesv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/apis/sources/v1alpha1"
+//	sourcesv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/eventing/v1alpha1"
 //	controllertesting "github.com/GoogleCloudPlatform/cloud-run-events/pkg/controller/testing"
 //	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/eventtype"
 //	eventingv1alpha1 "github.com/knative/eventing/pkg/apis/eventing/v1alpha1"

@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"github.com/knative/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
@@ -47,9 +48,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	replicas := int32(1)
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    args.Source.Namespace,
-			GenerateName: fmt.Sprintf("pubsub-%s-", args.Source.Name),
-			Labels:       args.Labels,
+			Namespace:       args.Source.Namespace,
+			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
+			Labels:          args.Labels, // TODO: not sure we should use labels like this.
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{

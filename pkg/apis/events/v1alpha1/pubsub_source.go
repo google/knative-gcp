@@ -102,6 +102,11 @@ const (
 	PubSubSourceConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypesProvided"
 )
 
+var gcpPubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
+	PubSubSourceConditionSinkProvided,
+	PubSubSourceConditionDeployed,
+	PubSubSourceConditionSubscribed)
+
 // PubSubSourceStatus defines the observed state of PubSubSource.
 type PubSubSourceStatus struct {
 	// inherits duck/v1alpha1 Status, which currently provides:

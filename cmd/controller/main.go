@@ -16,59 +16,123 @@ limitations under the License.
 
 package main
 
-//
-//import (
-//	"github.com/knative/pkg/logging/logkey"
-//	"github.com/kubernetes-sigs/controller-runtime/pkg/client/config"
-//	"github.com/kubernetes-sigs/controller-runtime/pkg/manager"
-//	"log"
-//
-//	//"github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/apis"
-//	//controller "github.com/GoogleCloudPlatform/cloud-run-events/contrib/gcppubsub/pkg/reconciler"
-//	//"github.com/knative/pkg/logging/logkey"
-//	"go.uber.org/zap"
-//	"go.uber.org/zap/zapcore"
-//	//_ "k8s.io/client-go/plugin/pkg/client/auth/eventing"
-//	//"sigs.k8s.io/controller-runtime/pkg/client/config"
-//	//"sigs.k8s.io/controller-runtime/pkg/manager"
-//	//"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
-//)
-//
-//func main() {
-//	logCfg := zap.NewProductionConfig()
-//	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-//	logger, err := logCfg.Build()
-//	logger = logger.With(zap.String(logkey.ControllerType, "gcppubsub-controller"))
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	// Get a config to talk to the apiserver
-//	cfg, err := config.GetConfig()
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	// Create a new Cmd to provide shared dependencies and start components
-//	mgr, err := manager.New(cfg, manager.Options{})
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	log.Printf("Registering Components.")
-//
-//	// Setup Scheme for all resources
-//	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	// Setup pubsub Controller
-//	if err := controller.Add(mgr, logger.Sugar()); err != nil {
-//		log.Fatal(err)
-//	}
-//
-//	log.Printf("Starting GCP Pubsub controller.")
-//
-//	// Start the Cmd
-//	log.Fatal(mgr.Start(signals.SetupSignalHandler()))
-//}
+import (
+	"flag"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"log"
+	"os"
+
+	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+
+	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	informers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource"
+	"github.com/knative/pkg/configmap"
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/metrics"
+	pkgmetrics "github.com/knative/pkg/metrics"
+	"github.com/knative/pkg/signals"
+	"go.uber.org/zap"
+)
+
+const (
+	component = "controller"
+
+	// raImageEnvVar is the name of the environment variable that contains the receive adapter's
+	// image. It must be defined.
+	raPubSubImageEnvVar = "GCPPUBSUB_RA_IMAGE"
+)
+
+var (
+	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
+)
+
+func main() {
+	flag.Parse()
+
+	// Set up our logger.
+	loggingConfigMap, err := configmap.Load("/etc/config-logging")
+	if err != nil {
+		log.Fatal("Error loading logging configuration:", err)
+	}
+	loggingConfig, err := logging.NewConfigFromMap(loggingConfigMap)
+	if err != nil {
+		log.Fatal("Error parsing logging configuration:", err)
+	}
+	logger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
+	defer flush(logger)
+
+	// Set up signals so we handle the first shutdown signal gracefully.
+	stopCh := signals.SetupSignalHandler()
+
+	cfg, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
+	if err != nil {
+		logger.Fatalw("Error building kubeconfig", zap.Error(err))
+	}
+
+	const numControllers = 1
+	cfg.QPS = numControllers * rest.DefaultQPS
+	cfg.Burst = numControllers * rest.DefaultBurst
+	opt := reconciler.NewOptionsOrDie(cfg, logger, stopCh)
+
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactory(opt.KubeClientSet, opt.ResyncPeriod)
+	runInformerFactory := informers.NewSharedInformerFactory(opt.RunClientSet, opt.ResyncPeriod)
+
+	deploymentInformer := kubeInformerFactory.Apps().V1().Deployments()
+	pubsubSourceInformer := runInformerFactory.Events().V1alpha1().PubSubSources()
+
+	raPubSubSourceImage, defined := os.LookupEnv(raPubSubImageEnvVar)
+	if !defined {
+		logger.Fatalw("required environment variable '%s' not defined", raPubSubImageEnvVar)
+	}
+
+	// Build all of our controllers, with the clients constructed above.
+	// Add new controllers to this array.
+	controllers := [...]*controller.Impl{
+		pubsubsource.NewController(
+			opt,
+			deploymentInformer,
+			pubsubSourceInformer,
+			raPubSubSourceImage,
+		),
+	}
+	// This line asserts at compile time that the length of controllers is equal to numControllers.
+	// It is based on https://go101.org/article/tips.html#assert-at-compile-time, which notes that
+	// var _ [N-M]int
+	// asserts at compile time that N >= M, which we can use to establish equality of N and M:
+	// (N >= M) && (M >= N) => (N == M)
+	var _ [numControllers - len(controllers)][len(controllers) - numControllers]int
+
+	// Watch the logging config map and dynamically update logging levels.
+	opt.ConfigMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	// Watch the observability config map and dynamically update metrics exporter.
+	opt.ConfigMapWatcher.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+	if err := opt.ConfigMapWatcher.Start(stopCh); err != nil {
+		logger.Fatalw("failed to start configuration manager", zap.Error(err))
+	}
+
+	// Start all of the informers and wait for them to sync.
+	logger.Info("Starting informers.")
+	if err := controller.StartInformers(
+		stopCh,
+		deploymentInformer.Informer(),
+		pubsubSourceInformer.Informer(),
+	); err != nil {
+		logger.Fatalw("Failed to start informers", err)
+	}
+
+	// Start all of the controllers.
+	logger.Info("Starting controllers.")
+	controller.StartAll(stopCh, controllers[:]...)
+}
+
+func flush(logger *zap.SugaredLogger) {
+	logger.Sync()
+	pkgmetrics.FlushExporter()
+}

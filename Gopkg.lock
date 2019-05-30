@@ -274,6 +274,14 @@
   revision = "0a025b7e63adc15a622f29b0b2c4c3848243bbf6"
 
 [[projects]]
+  digest = "1:aaa38889f11896ee3644d77e17dc7764cc47f5f3d3b488268df2af2b52541c5f"
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "7c29201646fa3de8506f701213473dd407f19646"
+  version = "v0.3.7"
+
+[[projects]]
   digest = "1:1f2aebae7e7c856562355ec0198d8ca2fa222fb05e5b1b66632a1fce39631885"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -288,7 +296,7 @@
   revision = "f2b4162afba35581b6d4a50d3b8f34e33c144682"
 
 [[projects]]
-  digest = "1:49662f32e41749bc76236f80f18a6550d825bc25a1526c443339cdd8abbe2814"
+  digest = "1:b95c10b79027a1dc584d2b1c5e58f7a1ab43bdba45ef4b34053de0cfba1be671"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -304,7 +312,9 @@
     "logging/logkey",
     "metrics",
     "metrics/metricskey",
+    "signals",
     "system",
+    "tracker",
   ]
   pruneopts = "NUT"
   revision = "15b1aa79be0b927a9e62d1738b03ef3efb2745f3"
@@ -792,7 +802,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:fd0420f98a36194e41ccfb37e9443c68ab566e4e6ca0643f2df7b5c7f93b54e7"
+  digest = "1:3ca7df0bbf551a81b152726b5e939a757c193d92999e8cc68059f565b1759151"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -910,8 +920,12 @@
     "rest",
     "rest/watch",
     "testing",
+    "tools/auth",
     "tools/cache",
+    "tools/clientcmd",
     "tools/clientcmd/api",
+    "tools/clientcmd/api/latest",
+    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
     "tools/record",
@@ -921,6 +935,7 @@
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
+    "util/homedir",
     "util/integer",
     "util/retry",
     "util/workqueue",
@@ -1006,9 +1021,13 @@
     "github.com/knative/pkg/apis/duck/v1alpha1",
     "github.com/knative/pkg/configmap",
     "github.com/knative/pkg/controller",
+    "github.com/knative/pkg/kmeta",
     "github.com/knative/pkg/logging",
     "github.com/knative/pkg/logging/logkey",
+    "github.com/knative/pkg/metrics",
+    "github.com/knative/pkg/signals",
     "github.com/knative/pkg/system",
+    "github.com/knative/pkg/tracker",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.uber.org/zap",
@@ -1025,17 +1044,22 @@
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
+    "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/dynamic",
+    "k8s.io/client-go/informers",
+    "k8s.io/client-go/informers/apps/v1",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/core/v1",
+    "k8s.io/client-go/listers/apps/v1",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
+    "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/code-generator/cmd/client-gen",
