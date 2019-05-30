@@ -17,7 +17,8 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
-    knative.dev/crd-install: "true"
+    events.cloud.run/crd-install: "true"
+    events.cloud.run/release: devel
   name: pubsubsources.events.cloud.run
 spec:
   group: events.cloud.run

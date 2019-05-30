@@ -18,6 +18,7 @@ metadata:
   name: cloud-run-events-controller
   namespace: cloud-run-events
   labels:
+    events.cloud.run/release: devel
     control-plane: cloud-run-events-controller
 spec:
   selector:
