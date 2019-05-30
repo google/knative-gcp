@@ -57,7 +57,7 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	logCfg := zap.NewProductionConfig()
+	logCfg := zap.NewProductionConfig() // TODO: to replace with a dynamically updating logger.
 	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	logger, err := logCfg.Build()
 	if err != nil {

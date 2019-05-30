@@ -21,44 +21,44 @@ metadata:
 rules:
 
 - apiGroups:
-  - events.cloud.run
+    - events.cloud.run
   resources:
-  - gcppubsubsources
+    - gcppubsubsources
   verbs: &everything
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete
 
 - apiGroups:
-  - events.cloud.run
+    - events.cloud.run
   resources:
-  - gcppubsubsources/status
+    - gcppubsubsources/status
   verbs:
-  - get
-  - update
-  - patch
+    - get
+    - update
+    - patch
 
 - apiGroups:
-  - apps
+    - apps
   resources:
-  - deployments
+    - deployments
   verbs: *everything
 
 - apiGroups:
-  - ""
+    - ""
   resources:
-  - secrets
+    - secrets # TODO: Does it really need global secrets access?
   verbs: &readOnly
-  - get
-  - list
-  - watch
+    - get
+    - list
+    - watch
 
 - apiGroups:
-  - eventing.knative.dev
+    - eventing.knative.dev
   resources:
-  - eventtypes
+    - eventtypes
   verbs: *everything
