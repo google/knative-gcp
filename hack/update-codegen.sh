@@ -28,14 +28,15 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/client github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis \
-  "eventing:v1alpha1 sources:v1alpha1" \
+  "eventing:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
-# Only deepcopy the Duck types, as they are not real resources.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
-  github.com/knative/eventing/pkg/client github.com/knative/eventing/pkg/apis \
-  "duck:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+# Because the kubernetes code generators force pacakges to lowercase, the update-deps script will be confused for
+# imports of github.com/googlecloudplatform/... We will update that to use the correct casing in the generated code.
+# The following will find all files (not directories, specified by -type f) under ${REPO_ROOT_DIR}/pkg/client, and
+# perform a sed command to replace "googlecloudplatform" with "GoogleCloudPlatform" on each file it finds.
+
+find ${REPO_ROOT_DIR}/pkg/client -type f -exec sed -i '' -e 's/googlecloudplatform/GoogleCloudPlatform/g' {} \;
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh

@@ -27,12 +27,12 @@ import (
 
 	// Imports the Google Cloud Pub/Sub client package.
 	"cloud.google.com/go/pubsub"
-	gcpv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis/gcp/v1alpha1"
+	gcpv1alpha1 "github.com/GoogleCloudPlatform/knative-eventing-sources/pkg/apis/eventing/v1alpha1"
 	"golang.org/x/net/context"
 )
 
 const (
-	// If in the PubSubSubscription message attributes this header is set, use
+	// If in the PubSubSource message attributes this header is set, use
 	// it as the Cloud Event type so as to preserve types that flow
 	// through the Receive Adapter.
 	eventTypeOverrideKey = "ce-type"
@@ -41,11 +41,11 @@ const (
 // Adapter implements the GCP Pub/Sub adapter to deliver Pub/Sub messages from
 // a pre-existing topic/subscription to a Sink.
 type Adapter struct {
-	// ProjectID is the pre-existing gcp project id to use.
+	// ProjectID is the pre-existing eventing project id to use.
 	ProjectID string
-	// TopicID is the pre-existing gcp pub/sub topic id to use.
+	// TopicID is the pre-existing eventing pub/sub topic id to use.
 	TopicID string
-	// SubscriptionID is the pre-existing gcp pub/sub subscription id to use.
+	// SubscriptionID is the pre-existing eventing pub/sub subscription id to use.
 	SubscriptionID string
 	// SinkURI is the URI messages will be forwarded on to.
 	SinkURI string

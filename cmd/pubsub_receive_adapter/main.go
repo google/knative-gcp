@@ -38,7 +38,7 @@ const (
 
 	// envTopic is the name of the environment variable that contains the GCP PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project. E.g. 'laconia', not
-	// 'projects/my-gcp-project/topics/laconia'.
+	// 'projects/my-eventing-project/topics/laconia'.
 	envTopic = "GCPPUBSUB_TOPIC"
 
 	// Name of the subscription to use

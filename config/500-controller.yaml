@@ -15,20 +15,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gcp-controller
-  namespace: knative-gcp
+  name: cloud-run-events-controller
+  namespace: cloud-run-events
   labels:
-    control-plane: gcp-controller
+    control-plane: cloud-run-events-controller
 spec:
   selector:
     matchLabels: &labels
-      control-plane: gcp-controller
-  serviceName: gcp-controller
+      control-plane: cloud-run-events-controller
+  serviceName: cloud-run-events-controller
   template:
     metadata:
       labels: *labels
     spec:
-      serviceAccountName: gcp-controller
+      serviceAccountName: cloud-run-events-controller
       containers:
       - name: controller
         image: github.com/GoogleCloudPlatform/knative-eventing-sources/cmd/controller
@@ -50,6 +50,6 @@ spec:
       volumes:
       - name: google-cloud-key
         secret:
-          secretName: gcp-source-key
-      serviceAccount: gcp-controller
+          secretName: cloud-run-events-source-key
+      serviceAccount: cloud-run-events-controller
       terminationGracePeriodSeconds: 10

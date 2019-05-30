@@ -15,11 +15,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: eventing-gcp-controller
+  name: cloud-run-events-controller
 rules:
 
 - apiGroups:
-  - gcp.eventing.knative.dev
+  - events.cloud.run
   resources:
   - gcppubsubsources
   verbs: &everything
@@ -32,7 +32,7 @@ rules:
   - delete
 
 - apiGroups:
-  - gcp.eventing.knative.dev
+  - events.cloud.run
   resources:
   - gcppubsubsources/status
   verbs:

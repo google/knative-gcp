@@ -25,7 +25,7 @@ package main
 //	"github.com/knative/pkg/logging/logkey"
 //	"go.uber.org/zap"
 //	"go.uber.org/zap/zapcore"
-//	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+//	_ "k8s.io/client-go/plugin/pkg/client/auth/eventing"
 //	"sigs.k8s.io/controller-runtime/pkg/client/config"
 //	"sigs.k8s.io/controller-runtime/pkg/manager"
 //	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"

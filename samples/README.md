@@ -1,8 +1,13 @@
+
+TODO: This doc needs to be updated.
+======
+
+
 # GCP Cloud Pub/Sub - Source
 
 [See the Knative documentation for a full example of this source.](https://github.com/knative/docs/tree/master/docs/eventing/samples/gcp-pubsub-source)
 
-This sample shows how to configure the GCP PubSub event source. This event
+This sample shows how to configure the PubSub event source. This event
 source is most useful as a bridge from other GCP services, such as
 [Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications),
 [IoT Core](https://cloud.google.com/iot/docs/how-tos/devices) and
@@ -23,10 +28,10 @@ These steps assume that you have checked out the repo and have a shell in this
    gcloud services enable pubsub.googleapis.com
    ```
 
-1. Install the [GCP PubSub Source from this directory](../config/) from source:
+1. Install the [PubSub Source from this directory](../config/) from source:
 
    ```shell
-   ko apply --filename https://github.com/GoogleCloudPlatform/knative-eventing-sources/tree/master/contrib/gcppubsub/config/
+   ko apply --filename https://github.com/GoogleCloudPlatform/knative-eventing-sources/tree/master/config/
    ```
 
    Or install a release version (TODO: link to released component).

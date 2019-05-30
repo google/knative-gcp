@@ -19,14 +19,13 @@ source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/release.sh
 # Yaml files to generate, and the source config dir for them.
 declare -A COMPONENTS
 COMPONENTS=(
-  ["gcp-core.yaml"]="config"
-  ["gcp-pubsub.yaml"]="config/gcppubsub"
+  ["cloud-run-events-core.yaml"]="config"
 )
 readonly COMPONENTS
 
 declare -A RELEASES
 RELEASES=(
-  ["gcp.yaml"]="gcp-core.yaml gcp-pubsub.yaml"
+  ["cloud-run-events.yaml"]="cloud-run-events-core.yaml"
 )
 readonly RELEASES
 
@@ -35,13 +34,13 @@ function build_release() {
   local all_yamls=()
   for yaml in "${!COMPONENTS[@]}"; do
     local config="${COMPONENTS[${yaml}]}"
-    echo "Building GCP Knative Eventing Components - ${config}"
+    echo "Building Cloud Run Events Components - ${config}"
     ko resolve ${KO_FLAGS} -f ${config}/ > ${yaml}
     all_yamls+=(${yaml})
   done
   # Assemble the release
   for yaml in "${!RELEASES[@]}"; do
-    echo "Assembling GCP Knative Eventing - ${yaml}"
+    echo "Assembling Cloud Run Events - ${yaml}"
     echo "" > ${yaml}
     for component in ${RELEASES[${yaml}]}; do
       echo "---" >> ${yaml}

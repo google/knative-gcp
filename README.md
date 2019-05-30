@@ -8,25 +8,7 @@ Ref: https://cloud.google.com/run/docs/tutorials/pubsub
 
 API Group:
 
- - gcp.eventing.knative.dev/v1beta1
+ - events.cloud.run/v1alpha1
 
-
-### PubSubSubscription
- 
-inbound connection.
-
-- Topic name
-- Subscription Config
-
-### PubSubTopic
- 
-outbound connection.
-
-- Topic Name
-- PublishSettings
-
-
-
-# PubSubSubscription
 
 
