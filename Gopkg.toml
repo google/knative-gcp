@@ -47,6 +47,11 @@ required = [
   # Needed because this includes a fix to support Stackdriver built-in metrics
   revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
+[[override]]
+  name = "github.com/cloudevents/sdk-go"
+  source = "github.com/n3wscott/sdk-go"
+  revision = "c5d953c45c6904e8d93d41285c144d7d1484cfa2"
+
 [prune]
   go-tests = true
   unused-packages = true

@@ -89,7 +89,7 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:0b2ffe5c17b0a3d49cc0a0cc20a13f7e1223fca1cd26587248a6b65c801dd46e"
+  digest = "1:f2d89ab2ccf35c6bda2e5ab561f11b1f7a31e3e14504171c52a714275d489072"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -106,8 +106,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "56931988abe3adf6792b5c6e575ee5f573e9ccbc"
-  version = "0.7.0"
+  revision = "c5d953c45c6904e8d93d41285c144d7d1484cfa2"
+  source = "github.com/n3wscott/sdk-go"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1033,6 +1033,8 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/context",
+    "golang.org/x/oauth2/google",
+    "google.golang.org/api/option",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/api/equality",

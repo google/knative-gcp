@@ -17,10 +17,9 @@ limitations under the License.
 package pubsubsource
 
 import (
-	"cloud.google.com/go/pubsub"
-	"context"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	eventsinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/tracker"
@@ -41,14 +40,16 @@ func NewController(
 	deploymentInformer appsv1informers.DeploymentInformer,
 	sourceInformer eventsinformers.PubSubSourceInformer,
 	raPubSubSourceImage string,
+	googleCreds string,
 ) *controller.Impl {
 
 	c := &Reconciler{
 		Base:                reconciler.NewBase(opt, controllerAgentName),
 		deploymentLister:    deploymentInformer.Lister(),
 		sourceLister:        sourceInformer.Lister(),
-		pubSubClientCreator: gcpPubSubClientCreator,
+		pubSubClientCreator: pubsubutil.GcpPubSubClientCreator,
 		receiveAdapterImage: raPubSubSourceImage,
+		googleCreds:         googleCreds,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -63,18 +64,4 @@ func NewController(
 	c.tracker = tracker.New(impl.EnqueueKey, opt.GetTrackerLease()) // TODO: use tracker.
 
 	return impl
-}
-
-// gcpPubSubClientCreator creates a real GCP PubSub client. It should always be used, except during
-// unit tests.
-func gcpPubSubClientCreator(ctx context.Context, googleCloudProject string) (pubSubClient, error) { // TODO: move this.
-	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
-	// pointing at a credential file.
-	psc, err := pubsub.NewClient(ctx, googleCloudProject)
-	if err != nil {
-		return nil, err
-	}
-	return &realGcpPubSubClient{
-		client: psc,
-	}, nil
 }

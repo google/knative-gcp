@@ -46,6 +46,8 @@ const (
 	// raImageEnvVar is the name of the environment variable that contains the receive adapter's
 	// image. It must be defined.
 	raPubSubImageEnvVar = "GCPPUBSUB_RA_IMAGE"
+
+	googleCredsEnvVar = "GOOGLE_APPLICATION_CREDENTIALS"
 )
 
 var (
@@ -92,6 +94,11 @@ func main() {
 		logger.Fatalw("required environment variable '%s' not defined", raPubSubImageEnvVar)
 	}
 
+	googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
+	if !defined {
+		logger.Fatalw("required environment variable '%s' not defined", googleCredsEnvVar)
+	}
+
 	// Build all of our controllers, with the clients constructed above.
 	// Add new controllers to this array.
 	controllers := [...]*controller.Impl{
@@ -100,6 +107,7 @@ func main() {
 			deploymentInformer,
 			pubsubSourceInformer,
 			raPubSubSourceImage,
+			googleCreds,
 		),
 	}
 	// This line asserts at compile time that the length of controllers is equal to numControllers.

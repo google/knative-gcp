@@ -14,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pubsubsource
+package pubsubutil
 
 import (
 	"context"
 	"testing"
-
-	"cloud.google.com/go/pubsub"
 )
 
 func TestPubSubWrapperFluff(t *testing.T) {
@@ -28,7 +26,7 @@ func TestPubSubWrapperFluff(t *testing.T) {
 
 	c.SubscriptionInProject("foo", "bar")
 
-	c.Topic("foo")
+	topic := c.Topic("foo")
 
-	c.CreateSubscription(context.TODO(), "foo", pubsub.SubscriptionConfig{})
+	_, _ = c.CreateSubscription(context.TODO(), "foo", topic)
 }

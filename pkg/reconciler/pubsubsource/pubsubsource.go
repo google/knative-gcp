@@ -18,6 +18,7 @@ package pubsubsource
 
 import (
 	"context"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"reflect"
 	"time"
 
@@ -32,7 +33,6 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"cloud.google.com/go/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
@@ -62,9 +62,10 @@ type Reconciler struct {
 	tracker tracker.Interface // TODO: use tracker.
 
 	receiveAdapterImage string
+	googleCreds         string
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
-	pubSubClientCreator pubSubClientCreator
+	pubSubClientCreator pubsubutil.PubSubClientCreator
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -267,8 +268,14 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PubSub
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 }
 
-func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSubSource) (pubSubSubscription, error) {
-	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
+func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSubSource) (pubsubutil.PubSubSubscription, error) {
+
+	creds, err := pubsubutil.GetCredentials(ctx, r.googleCreds)
+	if err != nil {
+		return nil, err
+	}
+
+	psc, err := r.pubSubClientCreator(ctx, creds, src.Spec.GoogleCloudProject)
 	if err != nil {
 		return nil, err
 	}
@@ -279,9 +286,7 @@ func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSu
 		logging.FromContext(ctx).Info("Reusing existing subscription.")
 		return sub, nil
 	}
-	createdSub, err := psc.CreateSubscription(ctx, sub.ID(), pubsub.SubscriptionConfig{
-		Topic: psc.Topic(src.Spec.Topic),
-	})
+	createdSub, err := psc.CreateSubscription(ctx, sub.ID(), psc.Topic(src.Spec.Topic))
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Info("Error creating new subscription", zap.Error(err))
 	} else {
@@ -291,7 +296,12 @@ func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSu
 }
 
 func (r *Reconciler) deleteSubscription(ctx context.Context, src *v1alpha1.PubSubSource) error {
-	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
+	creds, err := pubsubutil.GetCredentials(ctx, r.googleCreds)
+	if err != nil {
+		return err
+	}
+
+	psc, err := r.pubSubClientCreator(ctx, creds, src.Spec.GoogleCloudProject)
 	if err != nil {
 		return err
 	}
