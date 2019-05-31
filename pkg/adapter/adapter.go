@@ -14,19 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcppubsub
+package adapter
 
 import (
 	"fmt"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"github.com/google/uuid"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
-
-	// Imports the Google Cloud Pub/Sub client package.
-	"cloud.google.com/go/pubsub"
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	"golang.org/x/net/context"
 )
 
@@ -45,35 +45,31 @@ type Adapter struct {
 	// before they are sent to SinkURI.
 	TransformerURI string
 
-	source       string
-	client       *pubsub.Client
-	subscription *pubsub.Subscription
-
 	inbound  cloudevents.Client
 	outbound cloudevents.Client
 
-	transformer       bool
+	hasTransformer    bool
 	transformerClient cloudevents.Client
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
-	a.source = v1alpha1.PubSubEventSource(a.ProjectID, a.TopicID)
-
 	var err error
-	// Make the client to pubsub
-	if a.client, err = pubsub.NewClient(ctx, a.ProjectID); err != nil {
-		return err
+
+	if a.outbound == nil {
+		if a.outbound, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
+			return fmt.Errorf("failed to create cloudevent client: %s", err.Error())
+		}
 	}
 
-	if a.ceClient == nil {
-		if a.ceClient, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
+	if a.inbound == nil {
+		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
 			return fmt.Errorf("failed to create cloudevent client: %s", err.Error())
 		}
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
 	if a.TransformerURI != "" {
-		a.transformer = true
+		a.hasTransformer = true
 		if a.transformerClient == nil {
 			if a.transformerClient, err = kncloudevents.NewDefaultClient(a.TransformerURI); err != nil {
 				return fmt.Errorf("failed to create transformer client: %s", err.Error())
@@ -81,56 +77,77 @@ func (a *Adapter) Start(ctx context.Context) error {
 		}
 	}
 
-	// Set the subscription from the client
-	a.subscription = a.client.Subscription(a.SubscriptionID)
-
-	// Using that subscription, start receiving messages.
-	// Note: subscription.Receive is a blocking call.
-	return a.subscription.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		a.receiveMessage(ctx, &PubSubMessageWrapper{M: m})
-	})
+	return a.inbound.StartReceiver(ctx, a.receive)
 }
 
-func (a *Adapter) receiveMessage(ctx context.Context, m PubSubMessage) {
-	logger := logging.FromContext(ctx).With(zap.Any("eventID", m.ID()), zap.Any("sink", a.SinkURI))
-
-	logger.Debugw("Received message", zap.Any("messageData", m.Data()))
-
-	err := a.postMessage(ctx, logger, m)
-	if err != nil {
-		logger.Infof("Failed to post message: %s", err)
-		m.Nack()
-	} else {
-		logger.Debug("Message sent successfully")
-		m.Ack()
-	}
-}
-
-func (a *Adapter) postMessage(ctx context.Context, logger *zap.SugaredLogger, m PubSubMessage) error {
-	// Create the CloudEvent.
-	event := cloudevents.NewEvent(cloudevents.VersionV02)
-	event.SetID(m.ID())
-	event.SetTime(m.PublishTime())
-	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	event.SetSource(a.source)
-	_ = event.SetData(m.Message())
-	event.SetType(v1alpha1.PubSubEventType)
+func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
+	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.SinkURI))
 
 	// If a transformer has been configured, then transform the message.
-	if a.transformer {
-		resp, err := a.transformerClient.Send(ctx, event)
+	if a.hasTransformer {
+		transformedEvent, err := a.transformerClient.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
 			return err
 		}
-		if resp == nil {
+		if transformedEvent == nil {
 			logger.Warnf("cloud event %q was not transformed", event.ID())
 			return nil
 		}
 		// Update the event with the transformed one.
-		event = *resp
+		event = *transformedEvent
 	}
 
-	_, err := a.ceClient.Send(ctx, event)
-	return err // err could be nil or an error
+	if r, err := a.outbound.Send(ctx, event); err != nil {
+		return err
+	} else if r != nil {
+		resp.RespondWith(200, r)
+	}
+
+	return nil
+}
+
+func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
+	if msg, ok := m.(*cepubsub.Message); ok {
+		tx := cepubsub.TransportContextFrom(ctx)
+		// Make a new event and convert the message payload.
+		event := cloudevents.NewEvent()
+		event.SetID(tx.ID)
+		event.SetTime(tx.PublishTime)
+		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
+		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
+		event.SetType(v1alpha1.PubSubEventType)
+		event.SetID(uuid.New().String())
+		event.Data = msg.Data
+		// TODO: this will drop the other metadata related to the the topic and subscription names.
+		return &event, nil
+	}
+	return nil, err
+}
+
+func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
+	tOpts := []cepubsub.Option{
+		cepubsub.WithBinaryEncoding(),
+		cepubsub.WithProjectID(a.ProjectID),
+		cepubsub.WithTopicID(a.TopicID),
+		cepubsub.WithSubscriptionID(a.SubscriptionID),
+	}
+
+	// Make a pubsub transport for the CloudEvents client.
+	t, err := cepubsub.New(ctx, tOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use the transport to make a new CloudEvents client.
+	c, err := cloudevents.NewClient(t,
+		cloudevents.WithUUIDs(),
+		cloudevents.WithTimeNow(),
+		cloudevents.WithConverterFn(a.convert),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

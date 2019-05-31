@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcppubsub
+package adapter
 
 import (
 	"context"
@@ -65,7 +65,6 @@ func TestPostMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				SinkURI: sinkServer.URL,
-				source:  "test",
 				ceClient: func() client.Client {
 					c, _ := kncloudevents.NewDefaultClient(sinkServer.URL)
 					return c

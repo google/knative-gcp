@@ -50,7 +50,7 @@ required = [
 [[override]]
   name = "github.com/cloudevents/sdk-go"
   source = "github.com/n3wscott/sdk-go"
-  revision = "c5d953c45c6904e8d93d41285c144d7d1484cfa2"
+  revision = "c020514fcb07184fc00a4573c1dff1adc361a167"
 
 [prune]
   go-tests = true
