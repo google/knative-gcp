@@ -42,15 +42,23 @@ required = [
   version = "kubernetes-1.12.6"
 
 [[override]]
+  name = "github.com/cloudevents/sdk-go"
+  source = "github.com/n3wscott/sdk-go"
+  revision = "c020514fcb07184fc00a4573c1dff1adc361a167"
+
+[[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
   # HEAD as of 2019-02-11
   # Needed because this includes a fix to support Stackdriver built-in metrics
   revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
 
 [[override]]
-  name = "github.com/cloudevents/sdk-go"
-  source = "github.com/n3wscott/sdk-go"
-  revision = "c020514fcb07184fc00a4573c1dff1adc361a167"
+  name = "google.golang.org/genproto"
+  revision = "e7d98fc518a78c9f8b5ee77be7b0b317475d89e1"
+
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  version = "0.1.0"
 
 [prune]
   go-tests = true

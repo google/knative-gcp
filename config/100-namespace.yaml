@@ -15,6 +15,6 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  namespace: cloud-run-events
+  name: cloud-run-events
   labels:
     events.cloud.run/release: devel
