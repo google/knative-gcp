@@ -305,7 +305,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:b95c10b79027a1dc584d2b1c5e58f7a1ab43bdba45ef4b34053de0cfba1be671"
+  digest = "1:58aa45ac71fdf068c9f88b15199cca093d1c73d5dcf7ef018072b3046f454bf6"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -326,7 +326,7 @@
     "tracker",
   ]
   pruneopts = "NUT"
-  revision = "15b1aa79be0b927a9e62d1738b03ef3efb2745f3"
+  revision = "17ec1ed50dad75d031eb87430874e1d1d534b77a"
 
 [[projects]]
   branch = "master"

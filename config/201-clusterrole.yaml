@@ -23,7 +23,7 @@ rules:
 - apiGroups:
     - events.cloud.run
   resources:
-    - gcppubsubsources
+    - pubsubsources
   verbs: &everything
     - get
     - list
@@ -36,7 +36,7 @@ rules:
 - apiGroups:
     - events.cloud.run
   resources:
-    - gcppubsubsources/status
+    - pubsubsources/status
   verbs:
     - get
     - update
@@ -52,10 +52,18 @@ rules:
     - ""
   resources:
     - secrets # TODO: Does it really need global secrets access?
+    - configmaps
   verbs: &readOnly
     - get
     - list
     - watch
+
+- apiGroups: [""]
+  resources:
+    - events
+  verbs:
+    - create
+    - patch
 
 - apiGroups:
     - eventing.knative.dev

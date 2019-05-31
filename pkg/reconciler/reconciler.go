@@ -20,6 +20,10 @@ import (
 	"time"
 
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
+	"github.com/knative/pkg/configmap"
+	"github.com/knative/pkg/logging/logkey"
+	"github.com/knative/pkg/system"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -29,11 +33,6 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-
-	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/logging/logkey"
-	"github.com/knative/pkg/system"
 )
 
 // Options defines the common reconciler options.
@@ -61,12 +60,16 @@ var resetPeriod = 30 * time.Second
 func NewOptionsOrDie(cfg *rest.Config, logger *zap.SugaredLogger, stopCh <-chan struct{}) Options {
 	kubeClient := kubernetes.NewForConfigOrDie(cfg)
 	dynamicClient := dynamic.NewForConfigOrDie(cfg)
+
+	runClient := clientset.NewForConfigOrDie(cfg)
+
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
 
 	return Options{
 		KubeClientSet:    kubeClient,
 		DynamicClientSet: dynamicClient,
 		ConfigMapWatcher: configMapWatcher,
+		RunClientSet:     runClient,
 		Logger:           logger,
 		ResyncPeriod:     10 * time.Hour, // Based on controller-runtime default.
 		StopChannel:      stopCh,
@@ -99,7 +102,7 @@ type Base struct {
 	Recorder record.EventRecorder
 
 	// StatsReporter reports reconciler's metrics.
-	StatsReporter StatsReporter
+	// StatsReporter StatsReporter
 
 	// Sugared logger is easier to use but is not as performant as the
 	// raw logger. In performance critical paths, call logger.Desugar()
@@ -148,6 +151,7 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 	base := &Base{
 		KubeClientSet:    opt.KubeClientSet,
 		DynamicClientSet: opt.DynamicClientSet,
+		RunClientSet:     opt.RunClientSet,
 		ConfigMapWatcher: opt.ConfigMapWatcher,
 		Recorder:         recorder,
 		// StatsReporter:    statsReporter,  TODO: stats.

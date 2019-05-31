@@ -18,10 +18,22 @@ package pubsubsource
 
 import (
 	"context"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
+	"errors"
 	"reflect"
 	"time"
 
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
+	"github.com/knative/pkg/apis"
+	"github.com/knative/pkg/apis/duck"
+	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/tracker"
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -32,15 +44,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
-	"go.uber.org/zap"
 )
 
 const (
@@ -148,9 +151,8 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 
 	source.Status.InitializeConditions()
 
-	//sinkURI, err := sinks.GetSinkURI(ctx, c.client, source.Spec.Sink, source.Namespace) <-- needs duck/dynamic client work
-	sinkURI := ":OMG-TODO:"
-	var err error
+	sinkURI, err := c.getSinkURI(source.Namespace, source.Spec.Sink)
+
 	if err != nil {
 		source.Status.MarkNoSink("NotFound", "")
 		return err
@@ -186,6 +188,27 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
+}
+
+func (c *Reconciler) getSinkURI(namespace string, ref *corev1.ObjectReference) (string, error) {
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return "", err
+	}
+	resource := apis.KindToResource(gv.WithKind(ref.Kind))
+
+	u, err := c.DynamicClientSet.Resource(resource).Namespace(namespace).Get(ref.Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	t := duckv1alpha1.AddressableType{}
+	err = duck.FromUnstructured(u, &t)
+
+	if url := t.Status.Address.GetURL(); url.Host != "" {
+		return url.String(), nil
+	}
+
+	return "", errors.New("failed to load addressable")
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {

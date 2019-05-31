@@ -19,14 +19,36 @@
 apiVersion: events.cloud.run/v1alpha1
 kind: PubSubSource
 metadata:
-  name: TOPIC_NAME-source
+  name: pubsub-demo-source
 spec:
   gcpCredsSecret:
     name: google-cloud-key
     key: key.json
-  googleCloudProject: MY_GCP_PROJECT
-  topic: TOPIC_NAME
+  googleCloudProject: plori-nicholss
+  topic: demo
   sink:
-    apiVersion: v1
+    apiVersion: serving.knative.dev/v1alpha1
     kind: Service
-    name: event-display
+    name: sockeye
+#    apiVersion: eventing.knative.dev/v1alpha1
+#    kind: Broker
+#    name: default
+
+---
+
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Trigger
+metadata:
+  name: sockeye-pubsub-foo
+spec:
+  broker: default
+  filter:
+    sourceAndType:
+      type: google.pubsub.topic.publish
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1alpha1
+      kind: Service
+      name: sockeye
+
+# gcloud pubsub topics publish demo --message '{"id":123,"message":"hi from the terminal"}'
