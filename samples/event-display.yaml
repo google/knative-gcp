@@ -1,4 +1,4 @@
-# Copyright 2019 The Knative Authors
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is a very simple Knative Service that writes the incoming CloudEvent to its log.
+# This is a very simple deployment that writes the incoming CloudEvent to its log.
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,7 +32,9 @@ spec:
         image: github.com/knative/eventing-eventing/cmd/event_display
         ports:
         - containerPort: 8080
+
 ---
+
 apiVersion: v1
 kind: Service
 metadata:

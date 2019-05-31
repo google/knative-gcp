@@ -83,7 +83,7 @@ These steps assume that you have checked out the repo and have a shell in this
       `gcppubsub-controller` StatefulSet which manages your Eventing sources.
 
       `google-cloud-key` and `key.json` are pre-configured values in
-      [`gcp-pubsub-source.yaml`](gcp-pubsub-source.yaml). If you choose to
+      [`gcp-pubsub-source.yaml`](pubsub-source.yaml). If you choose to
       create a second account, this account only needs
       `roles/pubsub.Subscriber`.
 

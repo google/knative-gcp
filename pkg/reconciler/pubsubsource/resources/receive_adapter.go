@@ -34,6 +34,7 @@ type ReceiveAdapterArgs struct {
 	Labels         map[string]string
 	SubscriptionID string
 	SinkURI        string
+	TransformerURI string
 }
 
 const (
@@ -74,20 +75,24 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 									Value: credsFile,
 								},
 								{
-									Name:  "GCPPUBSUB_PROJECT",
+									Name:  "PROJECT_ID",
 									Value: args.Source.Spec.GoogleCloudProject,
 								},
 								{
-									Name:  "GCPPUBSUB_TOPIC",
+									Name:  "PUBSUB_TOPIC_ID",
 									Value: args.Source.Spec.Topic,
 								},
 								{
-									Name:  "GCPPUBSUB_SUBSCRIPTION_ID",
+									Name:  "PUBSUB_SUBSCRIPTION_ID",
 									Value: args.SubscriptionID,
 								},
 								{
 									Name:  "SINK_URI",
 									Value: args.SinkURI,
+								},
+								{
+									Name:  "TRANSFORMER_URI",
+									Value: args.TransformerURI,
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{

@@ -18,18 +18,15 @@ package pubsubsource
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"time"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
@@ -151,13 +148,22 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 
 	source.Status.InitializeConditions()
 
-	sinkURI, err := c.getSinkURI(source.Namespace, source.Spec.Sink)
-
+	sinkURI, err := duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Sink, source.Namespace)
 	if err != nil {
 		source.Status.MarkNoSink("NotFound", "")
 		return err
 	}
 	source.Status.MarkSink(sinkURI)
+
+	var transformerURI string
+	if source.Spec.Transformer != nil {
+		transformerURI, err = duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Transformer, source.Namespace)
+		if err != nil {
+			source.Status.MarkNoSink("NotFound", "")
+			return err
+		}
+		source.Status.MarkSink(sinkURI)
+	}
 
 	sub, err := c.createSubscription(ctx, source)
 	if err != nil {
@@ -167,7 +173,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	c.addFinalizer(source)
 	source.Status.MarkSubscribed()
 
-	_, err = c.createReceiveAdapter(ctx, source, sub.ID(), sinkURI)
+	_, err = c.createReceiveAdapter(ctx, source, sub.ID(), sinkURI, transformerURI)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
@@ -188,27 +194,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
-}
-
-func (c *Reconciler) getSinkURI(namespace string, ref *corev1.ObjectReference) (string, error) {
-	gv, err := schema.ParseGroupVersion(ref.APIVersion)
-	if err != nil {
-		return "", err
-	}
-	resource := apis.KindToResource(gv.WithKind(ref.Kind))
-
-	u, err := c.DynamicClientSet.Resource(resource).Namespace(namespace).Get(ref.Name, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	t := duckv1alpha1.AddressableType{}
-	err = duck.FromUnstructured(u, &t)
-
-	if url := t.Status.Address.GetURL(); url.Host != "" {
-		return url.String(), nil
-	}
-
-	return "", errors.New("failed to load addressable")
 }
 
 func (c *Reconciler) updateStatus(desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {
@@ -247,7 +232,7 @@ func (r *Reconciler) removeFinalizer(s *v1alpha1.PubSubSource) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.PubSubSource, subscriptionID, sinkURI string) (*appsv1.Deployment, error) {
+func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.PubSubSource, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
 	ra, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
@@ -263,6 +248,7 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Pub
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
 		SubscriptionID: subscriptionID,
 		SinkURI:        sinkURI,
+		TransformerURI: transformerURI,
 	})
 	dp, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(dp)
 	logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", dp))

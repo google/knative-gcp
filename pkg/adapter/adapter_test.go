@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	sourcesv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
@@ -30,82 +31,6 @@ import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
 	"go.uber.org/zap"
 )
-
-func TestPostMessage_ServeHTTP(t *testing.T) {
-	testCases := map[string]struct {
-		sink              func(http.ResponseWriter, *http.Request)
-		reqBody           string
-		attributes        map[string]string
-		expectedEventType string
-		error             bool
-	}{
-		"happy": {
-			sink:    sinkAccepted,
-			reqBody: `{"ID":"ABC","Data":"eyJrZXkiOiJ2YWx1ZSJ9","Attributes":null,"PublishTime":"0001-01-01T00:00:00Z"}`,
-		},
-		"happyWithCustomEvent": {
-			sink:              sinkAccepted,
-			attributes:        map[string]string{"ce-type": "foobar"},
-			reqBody:           `{"ID":"ABC","Data":"eyJrZXkiOiJ2YWx1ZSJ9","Attributes":{"ce-type":"foobar"},"PublishTime":"0001-01-01T00:00:00Z"}`,
-			expectedEventType: "foobar",
-		},
-		"rejected": {
-			sink:    sinkRejected,
-			reqBody: `{"ID":"ABC","Data":"eyJrZXkiOiJ2YWx1ZSJ9","Attributes":null,"PublishTime":"0001-01-01T00:00:00Z"}`,
-			error:   true,
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-			h := &fakeHandler{
-				handler: tc.sink,
-			}
-			sinkServer := httptest.NewServer(h)
-			defer sinkServer.Close()
-
-			a := &Adapter{
-				SinkURI: sinkServer.URL,
-				ceClient: func() client.Client {
-					c, _ := kncloudevents.NewDefaultClient(sinkServer.URL)
-					return c
-				}(),
-			}
-
-			data, err := json.Marshal(map[string]string{"key": "value"})
-			if err != nil {
-				t.Errorf("unexpected error, %v", err)
-			}
-
-			m := &PubSubMockMessage{
-				MockID: "ABC",
-				M: &pubsub.Message{
-					ID:         "ABC",
-					Data:       data,
-					Attributes: tc.attributes,
-				},
-			}
-			err = a.postMessage(context.TODO(), zap.S(), m)
-
-			if tc.error && err == nil {
-				t.Errorf("expected error, but got %v", err)
-			}
-
-			et := h.header.Get("Ce-Type") // bad bad bad.
-
-			expectedEventType := sourcesv1alpha1.PubSubEventType
-			if tc.expectedEventType != "" {
-				expectedEventType = tc.expectedEventType
-			}
-
-			if et != expectedEventType {
-				t.Errorf("Expected eventtype %q, but got %q", tc.expectedEventType, et)
-			}
-			if tc.reqBody != string(h.body) {
-				t.Errorf("expected request body %q, but got %q", tc.reqBody, h.body)
-			}
-		})
-	}
-}
 
 func TestReceiveMessage_ServeHTTP(t *testing.T) {
 	testCases := map[string]struct {
@@ -131,8 +56,7 @@ func TestReceiveMessage_ServeHTTP(t *testing.T) {
 
 			a := &Adapter{
 				SinkURI: sinkServer.URL,
-				source:  "test",
-				ceClient: func() client.Client {
+				outbound: func() client.Client {
 					c, _ := kncloudevents.NewDefaultClient(sinkServer.URL)
 					return c
 				}(),

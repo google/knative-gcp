@@ -18,11 +18,9 @@ package main
 
 import (
 	"flag"
+	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
 	"github.com/kelseyhightower/envconfig"
 	"log"
-	"os"
-
-	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -32,29 +30,22 @@ import (
 
 type envConfig struct {
 	// Environment variable containing project id.
-	Project string `envconfig:"GCPPUBSUB_PROJECT" required:"true"`
+	Project string `envconfig:"PROJECT_ID" required:"true"`
 
 	// Environment variable containing the sink URI.
 	Sink string `envconfig:"SINK_URI" required:"true"`
 
 	// Environment variable containing the transformer URI.
-	Transformer string `envconfig:"TRANSFORMER_URI" default:""`
+	Transformer string `envconfig:"TRANSFORMER_URI"`
 
-	// Environment variable containing the GCP PubSub Topic being
-	// subscribed to's name. In the form that is unique within the project. E.g. 'laconia', not
-	// 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"GCPPUBSUB_TOPIC" default:""`
+	// Topic is the environment variable containing the PubSub Topic being
+	// subscribed to's name. In the form that is unique within the project.
+	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
 
-	// Environment variable containing the name of the subscription to use.
-	Subscription string `envconfig:"GCPPUBSUB_SUBSCRIPTION_ID" required:"true"`
-}
-
-func getRequiredEnv(envKey string) string {
-	val, defined := os.LookupEnv(envKey)
-	if !defined {
-		log.Fatalf("required environment variable not defined '%s'", envKey)
-	}
-	return val
+	// Subscription is the environment variable containing the name of the
+	// subscription to use.
+	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 }
 
 func main() {
@@ -81,7 +72,7 @@ func main() {
 		TransformerURI: env.Transformer,
 	}
 
-	logger.Info("Starting GCP Pub/Sub Receive Adapter. %v", zap.Reflect("adapter", adapter))
+	logger.Info("Starting Pub/Sub Receive Adapter. %v", zap.Reflect("adapter", adapter))
 	if err := adapter.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

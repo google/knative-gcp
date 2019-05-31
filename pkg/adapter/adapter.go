@@ -45,34 +45,38 @@ type Adapter struct {
 	// before they are sent to SinkURI.
 	TransformerURI string
 
-	inbound  cloudevents.Client
+	// inbound is the cloudevents client to use to receive events.
+	inbound cloudevents.Client
+
+	// outbound is the cloudevents client to use to send events.
 	outbound cloudevents.Client
 
-	hasTransformer    bool
-	transformerClient cloudevents.Client
+	// transformer is the cloudevents client to transform received events before sending.
+	transformer cloudevents.Client
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
 
-	if a.outbound == nil {
-		if a.outbound, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
-			return fmt.Errorf("failed to create cloudevent client: %s", err.Error())
+	// Receive Events on Pub/Sub.
+	if a.inbound == nil {
+		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
+			return fmt.Errorf("failed to create inbound cloudevent client: %s", err.Error())
 		}
 	}
 
-	if a.inbound == nil {
-		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
-			return fmt.Errorf("failed to create cloudevent client: %s", err.Error())
+	// Send events on HTTP.
+	if a.outbound == nil {
+		if a.outbound, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
+			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
 	if a.TransformerURI != "" {
-		a.hasTransformer = true
-		if a.transformerClient == nil {
-			if a.transformerClient, err = kncloudevents.NewDefaultClient(a.TransformerURI); err != nil {
-				return fmt.Errorf("failed to create transformer client: %s", err.Error())
+		if a.transformer == nil {
+			if a.transformer, err = kncloudevents.NewDefaultClient(a.TransformerURI); err != nil {
+				return fmt.Errorf("failed to create transformer cloudevent client: %s", err.Error())
 			}
 		}
 	}
@@ -84,8 +88,10 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.SinkURI))
 
 	// If a transformer has been configured, then transform the message.
-	if a.hasTransformer {
-		transformedEvent, err := a.transformerClient.Send(ctx, event)
+	if a.transformer != nil {
+		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
+		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
+		transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
 			return err

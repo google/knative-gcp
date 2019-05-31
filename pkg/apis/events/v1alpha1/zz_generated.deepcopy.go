@@ -95,6 +95,11 @@ func (in *PubSubSourceSpec) DeepCopyInto(out *PubSubSourceSpec) {
 		*out = new(v1.ObjectReference)
 		**out = **in
 	}
+	if in.Transformer != nil {
+		in, out := &in.Transformer, &out.Transformer
+		*out = new(v1.ObjectReference)
+		**out = **in
+	}
 	return
 }
 
