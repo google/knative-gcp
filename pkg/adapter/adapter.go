@@ -30,8 +30,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Adapter implements the GCP Pub/Sub adapter to deliver Pub/Sub messages from
-// a pre-existing topic/subscription to a Sink.
+// Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
+// pre-existing topic/subscription to a Sink.
 type Adapter struct {
 	// ProjectID is the pre-existing eventing project id to use.
 	ProjectID string
@@ -146,14 +146,9 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 	}
 
 	// Use the transport to make a new CloudEvents client.
-	c, err := cloudevents.NewClient(t,
+	return cloudevents.NewClient(t,
 		cloudevents.WithUUIDs(),
 		cloudevents.WithTimeNow(),
 		cloudevents.WithConverterFn(a.convert),
 	)
-
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
