@@ -28,59 +28,74 @@ func (s *PubSubSource) GetGroupVersionKind() schema.GroupVersionKind {
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *PubSubSourceStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return gcpPubSubSourceCondSet.Manage(s).GetCondition(t)
+	return pubSubSourceCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
 func (s *PubSubSourceStatus) IsReady() bool {
-	return gcpPubSubSourceCondSet.Manage(s).IsHappy()
+	return pubSubSourceCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (s *PubSubSourceStatus) InitializeConditions() {
-	gcpPubSubSourceCondSet.Manage(s).InitializeConditions()
+	pubSubSourceCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkSink sets the condition that the source has a sink configured.
 func (s *PubSubSourceStatus) MarkSink(uri string) {
 	s.SinkURI = uri
 	if len(uri) > 0 {
-		gcpPubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSinkProvided)
+		pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSinkProvided)
 	} else {
-		gcpPubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+		pubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
 	}
 }
 
 // MarkNoSink sets the condition that the source does not have a sink configured.
 func (s *PubSubSourceStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
-	gcpPubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionSinkProvided, reason, messageFormat, messageA...)
+	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionSinkProvided, reason, messageFormat, messageA...)
+}
+
+// MarkTransformer sets the condition that the source has a transformer configured.
+func (s *PubSubSourceStatus) MarkTransformer(uri string) {
+	s.TransformerURI = uri
+	if len(uri) > 0 {
+		pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionTransformerProvided)
+	} else {
+		pubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionTransformerProvided, "TransformerEmpty", "Transformer has resolved to empty.")
+	}
+}
+
+// MarkNoTransformer sets the condition that the source does not have a transformer configured.
+func (s *PubSubSourceStatus) MarkNoTransformer(reason, messageFormat string, messageA ...interface{}) {
+	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionTransformerProvided, reason, messageFormat, messageA...)
 }
 
 // MarkDeployed sets the condition that the source has been deployed.
 func (s *PubSubSourceStatus) MarkDeployed() {
-	gcpPubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionDeployed)
+	pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionDeployed)
 }
 
 // MarkDeploying sets the condition that the source is deploying.
 func (s *PubSubSourceStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	gcpPubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionDeployed, reason, messageFormat, messageA...)
+	pubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionDeployed, reason, messageFormat, messageA...)
 }
 
 // MarkNotDeployed sets the condition that the source has not been deployed.
 func (s *PubSubSourceStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
-	gcpPubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionDeployed, reason, messageFormat, messageA...)
+	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionDeployed, reason, messageFormat, messageA...)
 }
 
 func (s *PubSubSourceStatus) MarkSubscribed() {
-	gcpPubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSubscribed)
+	pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSubscribed)
 }
 
 // MarkEventTypes sets the condition that the source has created its event types.
 func (s *PubSubSourceStatus) MarkEventTypes() {
-	gcpPubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionEventTypesProvided)
+	pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionEventTypesProvided)
 }
 
 // MarkNoEventTypes sets the condition that the source does not its event types configured.
 func (s *PubSubSourceStatus) MarkNoEventTypes(reason, messageFormat string, messageA ...interface{}) {
-	gcpPubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionEventTypesProvided, reason, messageFormat, messageA...)
+	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionEventTypesProvided, reason, messageFormat, messageA...)
 }

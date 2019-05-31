@@ -18,24 +18,16 @@ package gcppubsub
 
 import (
 	"fmt"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
-
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/types"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 
 	// Imports the Google Cloud Pub/Sub client package.
 	"cloud.google.com/go/pubsub"
-	gcpv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	"golang.org/x/net/context"
-)
-
-const (
-	// If in the PubSubSource message attributes this header is set, use
-	// it as the Cloud Event type so as to preserve types that flow
-	// through the Receive Adapter.
-	eventTypeOverrideKey = "ce-type"
 )
 
 // Adapter implements the GCP Pub/Sub adapter to deliver Pub/Sub messages from
@@ -49,16 +41,23 @@ type Adapter struct {
 	SubscriptionID string
 	// SinkURI is the URI messages will be forwarded on to.
 	SinkURI string
+	// TransformerURI is the URI messages will be forwarded on to for any transformation
+	// before they are sent to SinkURI.
+	TransformerURI string
 
 	source       string
 	client       *pubsub.Client
 	subscription *pubsub.Subscription
 
-	ceClient cloudevents.Client
+	inbound  cloudevents.Client
+	outbound cloudevents.Client
+
+	transformer       bool
+	transformerClient cloudevents.Client
 }
 
 func (a *Adapter) Start(ctx context.Context) error {
-	a.source = gcpv1alpha1.GetPubSub(a.ProjectID, a.TopicID)
+	a.source = v1alpha1.PubSubEventSource(a.ProjectID, a.TopicID)
 
 	var err error
 	// Make the client to pubsub
@@ -69,6 +68,16 @@ func (a *Adapter) Start(ctx context.Context) error {
 	if a.ceClient == nil {
 		if a.ceClient, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
 			return fmt.Errorf("failed to create cloudevent client: %s", err.Error())
+		}
+	}
+
+	// Make the transformer client in case the TransformerURI has been set.
+	if a.TransformerURI != "" {
+		a.transformer = true
+		if a.transformerClient == nil {
+			if a.transformerClient, err = kncloudevents.NewDefaultClient(a.TransformerURI); err != nil {
+				return fmt.Errorf("failed to create transformer client: %s", err.Error())
+			}
 		}
 	}
 
@@ -96,24 +105,30 @@ func (a *Adapter) receiveMessage(ctx context.Context, m PubSubMessage) {
 		m.Ack()
 	}
 }
-func (a *Adapter) postMessage(ctx context.Context, logger *zap.SugaredLogger, m PubSubMessage) error {
-	// TODO: this will break when the upstream sender updates cloudevents versions.
-	// The correct thing to do would be to convert the message to a cloudevent if it is one.
-	et := gcpv1alpha1.PubSubEventType
-	if override, ok := m.Message().Attributes[eventTypeOverrideKey]; ok {
-		et = override
-		logger.Infof("overriding the cloud event type with %q", et)
-	}
 
-	event := cloudevents.Event{
-		Context: cloudevents.EventContextV02{
-			Type:        et,
-			ID:          m.ID(),
-			Time:        &types.Timestamp{Time: m.PublishTime()},
-			Source:      *types.ParseURLRef(a.source),
-			ContentType: cloudevents.StringOfApplicationJSON(),
-		}.AsV02(),
-		Data: m.Message(),
+func (a *Adapter) postMessage(ctx context.Context, logger *zap.SugaredLogger, m PubSubMessage) error {
+	// Create the CloudEvent.
+	event := cloudevents.NewEvent(cloudevents.VersionV02)
+	event.SetID(m.ID())
+	event.SetTime(m.PublishTime())
+	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
+	event.SetSource(a.source)
+	_ = event.SetData(m.Message())
+	event.SetType(v1alpha1.PubSubEventType)
+
+	// If a transformer has been configured, then transform the message.
+	if a.transformer {
+		resp, err := a.transformerClient.Send(ctx, event)
+		if err != nil {
+			logger.Errorf("error transforming cloud event %q", event.ID())
+			return err
+		}
+		if resp == nil {
+			logger.Warnf("cloud event %q was not transformed", event.ID())
+			return nil
+		}
+		// Update the event with the transformed one.
+		event = *resp
 	}
 
 	_, err := a.ceClient.Send(ctx, event)

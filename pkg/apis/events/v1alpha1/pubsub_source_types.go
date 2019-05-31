@@ -69,6 +69,10 @@ type PubSubSourceSpec struct {
 	// +optional
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
 
+	// Transformer is a reference to an object that will resolve to a domain name to use as the transformer.
+	// +optional
+	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
+
 	// ServiceAccoutName is the name of the ServiceAccount that will be used to run the Receive
 	// Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
@@ -80,8 +84,8 @@ const (
 	PubSubEventType = "google.pubsub.topic.publish"
 )
 
-// GetPubSub returns the GcpPubSub CloudEvent source value.
-func GetPubSub(googleCloudProject, topic string) string {
+// PubSubEventSource returns the GcpPubSub CloudEvent source value.
+func PubSubEventSource(googleCloudProject, topic string) string {
 	return fmt.Sprintf("//pubsub.googleapis.com/%s/topics/%s", googleCloudProject, topic)
 }
 
@@ -98,11 +102,14 @@ const (
 	// PubSubSourceConditionSubscribed has status True when a GCP PubSubSource Subscription has been created pointing at the created receive adapter deployment.
 	PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
 
+	// PubSubSourceConditionTransformerProvided has status True when the PubSubSource has been configured with a transformer target.
+	PubSubSourceConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
+
 	// PubSubSourceConditionEventTypesProvided has status True when the PubSubSource has been configured with event types.
 	PubSubSourceConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypesProvided"
 )
 
-var gcpPubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
+var pubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 	PubSubSourceConditionSinkProvided,
 	PubSubSourceConditionDeployed,
 	PubSubSourceConditionSubscribed)
@@ -117,6 +124,10 @@ type PubSubSourceStatus struct {
 	// SinkURI is the current active sink URI that has been configured for the PubSubSource.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
+
+	// TransformerURI is the current active transformer URI that has been configured for the GcpPubSubSource.
+	// +optional
+	TransformerURI string `json:"transformerUri,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
