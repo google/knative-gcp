@@ -106,7 +106,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(source); uErr != nil {
+	} else if _, uErr := c.updateStatus(ctx, source); uErr != nil {
 		logger.Warnw("Failed to update source status", zap.Error(uErr))
 		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for PubSubSource %q: %v", source.Name, uErr)
@@ -180,23 +180,23 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	}
 	source.Status.MarkDeployed()
 
-	// TODO: event types
-	//	// Only create EventTypes for Broker sinks.
-	//	if src.Spec.Sink.Kind == "Broker" {
-	//		err = r.reconcileEventTypes(ctx, src)
-	//		if err != nil {
-	//			logger.Error("Unable to reconcile the event types", zap.Error(err))
-	//			return err
-	//		}
-	//		src.Status.MarkEventTypes()
+	// TODO: Registry
+	//// Only create EventTypes for Broker sinks.
+	//if source.Spec.Sink.Kind == "Broker" {
+	//	err = r.reconcileEventTypes(ctx, src)
+	//	if err != nil {
+	//		logger.Error("Unable to reconcile the event types", zap.Error(err))
+	//		return err
 	//	}
+	//	src.Status.MarkEventTypes()
+	//}
 
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
 }
 
-func (c *Reconciler) updateStatus(desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {
 	source, err := c.sourceLister.PubSubSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
@@ -214,7 +214,10 @@ func (c *Reconciler) updateStatus(desired *v1alpha1.PubSubSource) (*v1alpha1.Pub
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		c.Logger.Infof("PubSubSource %q became ready after %v", source.Name, duration)
-		// c.StatsReporter.ReportServiceReady(service.Namespace, service.Name, duration) // TODO: Stats
+
+		if err := c.StatsReporter.ReportReady("PubSubSource", source.Namespace, source.Name, duration); err != nil {
+			logging.FromContext(ctx).Infof("failed to record ready for PubSubSource, %v", err)
+		}
 	}
 
 	return src, err

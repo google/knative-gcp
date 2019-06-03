@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    https://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,8 +44,8 @@ type Options struct {
 
 	RunClientSet clientset.Interface
 
-	Recorder record.EventRecorder
-	//StatsReporter StatsReporter
+	Recorder      record.EventRecorder
+	StatsReporter StatsReporter
 
 	ConfigMapWatcher configmap.Watcher
 	Logger           *zap.SugaredLogger
@@ -102,7 +102,7 @@ type Base struct {
 	Recorder record.EventRecorder
 
 	// StatsReporter reports reconciler's metrics.
-	// StatsReporter StatsReporter
+	StatsReporter StatsReporter
 
 	// Sugared logger is easier to use but is not as performant as the
 	// raw logger. In performance critical paths, call logger.Desugar()
@@ -138,15 +138,15 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 		}()
 	}
 
-	//statsReporter := opt.StatsReporter
-	//if statsReporter == nil {
-	//	logger.Debug("Creating stats reporter")
-	//	var err error
-	//	statsReporter, err = NewStatsReporter(controllerAgentName)
-	//	if err != nil {
-	//		logger.Fatal(err)
-	//	}
-	//}
+	statsReporter := opt.StatsReporter
+	if statsReporter == nil {
+		logger.Debug("Creating stats reporter")
+		var err error
+		statsReporter, err = NewStatsReporter(controllerAgentName)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
 
 	base := &Base{
 		KubeClientSet:    opt.KubeClientSet,
@@ -154,8 +154,8 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 		RunClientSet:     opt.RunClientSet,
 		ConfigMapWatcher: opt.ConfigMapWatcher,
 		Recorder:         recorder,
-		// StatsReporter:    statsReporter,  TODO: stats.
-		Logger: logger,
+		StatsReporter:    statsReporter,
+		Logger:           logger,
 	}
 
 	return base
