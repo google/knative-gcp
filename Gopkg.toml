@@ -43,8 +43,8 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  source = "github.com/n3wscott/sdk-go"
-  revision = "c020514fcb07184fc00a4573c1dff1adc361a167"
+  # HEAD as of 2019-06-04
+  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
 
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"

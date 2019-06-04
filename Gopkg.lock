@@ -107,8 +107,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "c020514fcb07184fc00a4573c1dff1adc361a167"
-  source = "github.com/n3wscott/sdk-go"
+  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
