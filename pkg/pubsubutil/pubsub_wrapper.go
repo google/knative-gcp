@@ -21,25 +21,33 @@ import (
 	"errors"
 
 	"cloud.google.com/go/pubsub"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
 // This file exists so that we can unit test failures with the PubSub client.
 
 // PubSubClientCreator creates a pubSubClient.
-type PubSubClientCreator func(ctx context.Context, creds *google.Credentials, googleCloudProject string) (PubSubClient, error)
+type PubSubClientCreator func(ctx context.Context, googleCloudProject string) (PubSubClient, error)
 
-// GcpPubSubClientCreator creates a real GCP PubSub client. It should always be used, except during
+// GcpPubSubClientCreatorWithCreds creates a callback to create real GCP PubSub
+// client with google creds embedded. It should always be used, except during
 // unit tests.
-func GcpPubSubClientCreator(ctx context.Context, creds *google.Credentials, googleCloudProject string) (PubSubClient, error) {
-	psc, err := pubsub.NewClient(ctx, googleCloudProject, option.WithCredentials(creds))
-	if err != nil {
-		return nil, err
+func GcpPubSubClientCreatorWithCreds(ctx context.Context, googleCreds string) PubSubClientCreator {
+	creds, err := GetCredentials(ctx, googleCreds)
+
+	return func(ctx context.Context, googleCloudProject string) (PubSubClient, error) {
+		if err != nil {
+			return nil, err
+		}
+		psc, err := pubsub.NewClient(ctx, googleCloudProject, option.WithCredentials(creds))
+		if err != nil {
+			return nil, err
+		}
+		return &realGcpPubSubClient{
+			client: psc,
+		}, nil
 	}
-	return &realGcpPubSubClient{
-		client: psc,
-	}, nil
+
 }
 
 // PubSubClient is the set of methods we use on pubsub.Client. See pubsub.Client for documentation

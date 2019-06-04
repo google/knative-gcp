@@ -18,6 +18,9 @@ package pubsubsource
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"time"
 
@@ -62,7 +65,6 @@ type Reconciler struct {
 	tracker tracker.Interface // TODO: use tracker.
 
 	receiveAdapterImage string
-	googleCreds         string
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
 	pubSubClientCreator pubsubutil.PubSubClientCreator
@@ -100,6 +102,19 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// updates regardless of whether the reconciliation errored out.
 	var reconcileErr = c.reconcile(ctx, source)
 
+	if equality.Semantic.DeepEqual(original.Finalizers, source.Finalizers) {
+		// If we didn't change finalizers then don't call updateFinalizers.
+
+	} else if _, updated, fErr := c.updateFinalizers(ctx, source); fErr != nil {
+		logger.Warnw("Failed to update source finalizers", zap.Error(fErr))
+		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update finalizers for PubSubSource %q: %v", source.Name, fErr)
+		return fErr
+	} else if updated {
+		// There was a difference and updateFinalizers said it updated and did not return an error.
+		c.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PubSubSource %q finalizers", source.GetName())
+	}
+
 	if equality.Semantic.DeepEqual(original.Status, source.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
@@ -128,13 +143,13 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	// 1. Determine the sink's URI.
 	//     - Nothing to delete.
 	// 2. Create a receive adapter in the form of a Deployment.
-	//     - Will be garbage collected by K8s when this PubSub is deleted.
-	// 3. Register that receive adapter as a Pull endpoint for the specified GCP PubSub Topic.
+	//     - Will be garbage collected by K8s when this PubSubSource is deleted.
+	// 3. Register that receive adapter as a Pull endpoint for the specified PubSub Topic.
 	//     - This needs to deregister during deletion.
 	// 4. Create the EventTypes that it can emit.
-	//     - Will be garbage collected by K8s when this PubSub is deleted.
+	//     - Will be garbage collected by K8s when this PubSubSource is deleted.
 	// Because there is something that must happen during deletion, we add this controller as a
-	// finalizer to every PubSub.
+	// finalizer to every PubSubSource.
 
 	if source.GetDeletionTimestamp() != nil {
 		err := c.deleteSubscription(ctx, source)
@@ -142,7 +157,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 			logger.Error("Unable to delete the Subscription", zap.Error(err))
 			return err
 		}
-		c.removeFinalizer(source)
+		removeFinalizer(source)
 		return nil
 	}
 
@@ -170,7 +185,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 		logger.Error("Unable to create the subscription", zap.Error(err))
 		return err
 	}
-	c.addFinalizer(source)
+	addFinalizer(source)
 	source.Status.MarkSubscribed()
 
 	_, err = c.createReceiveAdapter(ctx, source, sub.ID(), sinkURI, transformerURI)
@@ -223,13 +238,61 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSubS
 	return src, err
 }
 
-func (r *Reconciler) addFinalizer(s *v1alpha1.PubSubSource) {
+func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, bool, error) {
+	source, err := c.sourceLister.PubSubSources(desired.Namespace).Get(desired.Name)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Don't modify the informers copy.
+	existing := source.DeepCopy()
+
+	var finalizers []string
+
+	// If there's nothing to update, just return.
+	exisitingFinalizers := sets.NewString(existing.Finalizers...)
+	desiredFinalizers := sets.NewString(desired.Finalizers...)
+
+	if desiredFinalizers.Has(finalizerName) {
+		if exisitingFinalizers.Has(finalizerName) {
+			// Nothing to do.
+			return desired, false, nil
+		}
+		// Add the finalizer.
+		finalizers = append(existing.Finalizers, finalizerName)
+	} else {
+		if !exisitingFinalizers.Has(finalizerName) {
+			// Nothing to do.
+			return desired, false, nil
+		}
+		// Remove the finalizer.
+		exisitingFinalizers.Delete(finalizerName)
+		finalizers = exisitingFinalizers.List()
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      finalizers,
+			"resourceVersion": existing.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return desired, false, err
+	}
+
+	update, err := c.RunClientSet.EventsV1alpha1().PubSubSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	return update, true, err
+}
+
+func addFinalizer(s *v1alpha1.PubSubSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Insert(finalizerName)
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) removeFinalizer(s *v1alpha1.PubSubSource) {
+func removeFinalizer(s *v1alpha1.PubSubSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Delete(finalizerName)
 	s.Finalizers = finalizers.List()
@@ -281,13 +344,15 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PubSub
 }
 
 func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSubSource) (pubsubutil.PubSubSubscription, error) {
-
-	creds, err := pubsubutil.GetCredentials(ctx, r.googleCreds)
-	if err != nil {
-		return nil, err
+	// TODO: this should be moved to the validation for pubsub source.
+	if src.Spec.GoogleCloudProject == "" {
+		return nil, errors.New("project is required but not set")
+	}
+	if src.Spec.Topic == "" {
+		return nil, errors.New("topic is required but not set")
 	}
 
-	psc, err := r.pubSubClientCreator(ctx, creds, src.Spec.GoogleCloudProject)
+	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
 	if err != nil {
 		return nil, err
 	}
@@ -308,12 +373,12 @@ func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSu
 }
 
 func (r *Reconciler) deleteSubscription(ctx context.Context, src *v1alpha1.PubSubSource) error {
-	creds, err := pubsubutil.GetCredentials(ctx, r.googleCreds)
-	if err != nil {
-		return err
+	// TODO: this should be moved to the validation for pubsub source.
+	if src.Spec.GoogleCloudProject == "" {
+		return errors.New("project is required but not set")
 	}
 
-	psc, err := r.pubSubClientCreator(ctx, creds, src.Spec.GoogleCloudProject)
+	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
 	if err != nil {
 		return err
 	}

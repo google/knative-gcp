@@ -57,6 +57,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	})
 
 	one := int32(1)
+	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "source-namespace",
@@ -64,6 +65,15 @@ func TestMakeReceiveAdapter(t *testing.T) {
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         "events.cloud.run/v1alpha1",
+					Kind:               "PubSubSource",
+					Name:               "source-name",
+					Controller:         &yes,
+					BlockOwnerDeletion: &yes,
+				},
 			},
 		},
 		Spec: v1.DeploymentSpec{
@@ -76,9 +86,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 			Replicas: &one,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"sidecar.istio.io/inject": "true",
-					},
 					Labels: map[string]string{
 						"test-key1": "test-value1",
 						"test-key2": "test-value2",
@@ -96,20 +103,23 @@ func TestMakeReceiveAdapter(t *testing.T) {
 									Value: "/var/secrets/google/eventing-secret-key",
 								},
 								{
-									Name:  "GCPPUBSUB_PROJECT",
+									Name:  "PROJECT_ID",
 									Value: "eventing-name",
 								},
 								{
-									Name:  "GCPPUBSUB_TOPIC",
+									Name:  "PUBSUB_TOPIC_ID",
 									Value: "topic",
 								},
 								{
-									Name:  "GCPPUBSUB_SUBSCRIPTION_ID",
+									Name:  "PUBSUB_SUBSCRIPTION_ID",
 									Value: "sub-id",
 								},
 								{
 									Name:  "SINK_URI",
 									Value: "sink-uri",
+								},
+								{
+									Name: "TRANSFORMER_URI",
 								},
 							},
 							VolumeMounts: []corev1.VolumeMount{

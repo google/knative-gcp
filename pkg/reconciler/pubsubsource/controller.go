@@ -17,6 +17,7 @@ limitations under the License.
 package pubsubsource
 
 import (
+	"context"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	eventsinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
@@ -47,9 +48,8 @@ func NewController(
 		Base:                reconciler.NewBase(opt, controllerAgentName),
 		deploymentLister:    deploymentInformer.Lister(),
 		sourceLister:        sourceInformer.Lister(),
-		pubSubClientCreator: pubsubutil.GcpPubSubClientCreator,
+		pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
 		receiveAdapterImage: raPubSubSourceImage,
-		googleCreds:         googleCreds,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 

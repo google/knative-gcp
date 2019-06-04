@@ -21,7 +21,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
-	"golang.org/x/oauth2/google"
 )
 
 type CreatorData struct {
@@ -36,11 +35,11 @@ func Creator(value interface{}) pubsubutil.PubSubClientCreator {
 		data = CreatorData{}
 	}
 	if data.ClientCreateErr != nil {
-		return func(_ context.Context, _ *google.Credentials, _ string) (pubsubutil.PubSubClient, error) {
+		return func(_ context.Context, _ string) (pubsubutil.PubSubClient, error) {
 			return nil, data.ClientCreateErr
 		}
 	}
-	return func(_ context.Context, credentials *google.Credentials, _ string) (pubsubutil.PubSubClient, error) {
+	return func(_ context.Context, _ string) (pubsubutil.PubSubClient, error) {
 		return &Client{
 			Data: data.ClientData,
 		}, nil
