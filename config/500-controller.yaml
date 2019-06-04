@@ -1,0 +1,75 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO: Deploy webhook
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-run-events-controller
+  namespace: cloud-run-events
+  labels:
+    events.cloud.run/release: devel
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      control-plane: cloud-run-events-controller
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: cloud-run-events-controller
+      containers:
+      - name: controller
+        image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/controller
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        - name: GCPPUBSUB_RA_IMAGE
+          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub_receive_adapter
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: cloud.run/events
+        volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
+        - name: config-logging
+          mountPath: /etc/config-logging
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1000Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - name: metrics
+          containerPort: 9090
+      volumes:
+      - name: config-logging
+        configMap:
+          name: config-logging
+      - name: google-cloud-key
+        secret:
+          secretName: cloud-run-events-source-key
+      serviceAccount: cloud-run-events-controller
+      terminationGracePeriodSeconds: 10

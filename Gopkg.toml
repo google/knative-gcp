@@ -1,0 +1,76 @@
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+
+required = [
+  "k8s.io/apimachinery/pkg/util/sets/types",
+  "k8s.io/code-generator/cmd/deepcopy-gen",
+  "k8s.io/code-generator/cmd/defaulter-gen",
+  "k8s.io/code-generator/cmd/client-gen",
+  "k8s.io/code-generator/cmd/lister-gen",
+  "k8s.io/code-generator/cmd/informer-gen",
+  "github.com/knative/test-infra/scripts",
+  "github.com/knative/test-infra/tools/dep-collector",
+]
+
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  version = "v2.2.1"
+
+[[override]]
+  name = "github.com/knative/pkg"
+  # HEAD as of 2019-05-31
+  revision = "17ec1ed50dad75d031eb87430874e1d1d534b77a"
+
+[[override]]
+  name = "go.uber.org/zap"
+  revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/apimachinery"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/code-generator"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "k8s.io/client-go"
+  version = "kubernetes-1.12.6"
+
+[[override]]
+  name = "github.com/cloudevents/sdk-go"
+  # HEAD as of 2019-06-04
+  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
+
+[[override]]
+  name = "contrib.go.opencensus.io/exporter/stackdriver"
+  # HEAD as of 2019-02-11
+  # Needed because this includes a fix to support Stackdriver built-in metrics
+  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
+
+[[override]]
+  name = "google.golang.org/genproto"
+  revision = "e7d98fc518a78c9f8b5ee77be7b0b317475d89e1"
+
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  version = "0.1.0"
+
+[prune]
+  go-tests = true
+  unused-packages = true
+  non-go = true
+
+[[prune.project]]
+  name = "k8s.io/code-generator"
+  unused-packages = false
+  non-go = false
+
+[[prune.project]]
+  name = "github.com/knative/test-infra"
+  non-go = false
+
