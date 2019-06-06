@@ -17,7 +17,15 @@ limitations under the License.
 package reconciler
 
 import (
+	"context"
+	"github.com/knative/pkg/logging"
 	"time"
+
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/injection/clients/dynamicclient"
+	"github.com/knative/pkg/injection/clients/kubeclient"
+
+	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
 
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
 	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
@@ -112,13 +120,21 @@ type Base struct {
 	Logger *zap.SugaredLogger
 }
 
+const (
+	ControllerType = "events.cloud.run/controller"
+)
+
 // NewBase instantiates a new instance of Base implementing
 // the common & boilerplate code between our reconcilers.
-func NewBase(opt Options, controllerAgentName string) *Base {
+func NewBase(ctx context.Context, controllerAgentName string, cmw configmap.Watcher) *Base {
 	// Enrich the logs with controller name
-	logger := opt.Logger.Named(controllerAgentName).With(zap.String(logkey.ControllerType, controllerAgentName))
+	logger := logging.FromContext(ctx).
+		Named(controllerAgentName).
+		With(zap.String(ControllerType, controllerAgentName))
 
-	recorder := opt.Recorder
+	kubeClient := kubeclient.Get(ctx)
+
+	recorder := controller.GetEventRecorder(ctx)
 	if recorder == nil {
 		// Create event broadcaster
 		logger.Debug("Creating event broadcaster")
@@ -126,19 +142,19 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 		watches := []watch.Interface{
 			eventBroadcaster.StartLogging(logger.Named("event-broadcaster").Infof),
 			eventBroadcaster.StartRecordingToSink(
-				&typedcorev1.EventSinkImpl{Interface: opt.KubeClientSet.CoreV1().Events("")}),
+				&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")}),
 		}
 		recorder = eventBroadcaster.NewRecorder(
 			scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 		go func() {
-			<-opt.StopChannel
+			<-ctx.Done()
 			for _, w := range watches {
 				w.Stop()
 			}
 		}()
 	}
 
-	statsReporter := opt.StatsReporter
+	statsReporter := GetStatsReporter(ctx)
 	if statsReporter == nil {
 		logger.Debug("Creating stats reporter")
 		var err error
@@ -149,10 +165,10 @@ func NewBase(opt Options, controllerAgentName string) *Base {
 	}
 
 	base := &Base{
-		KubeClientSet:    opt.KubeClientSet,
-		DynamicClientSet: opt.DynamicClientSet,
-		RunClientSet:     opt.RunClientSet,
-		ConfigMapWatcher: opt.ConfigMapWatcher,
+		KubeClientSet:    kubeClient,
+		RunClientSet:     runclient.Get(ctx),
+		DynamicClientSet: dynamicclient.Get(ctx),
+		ConfigMapWatcher: cmw,
 		Recorder:         recorder,
 		StatsReporter:    statsReporter,
 		Logger:           logger,

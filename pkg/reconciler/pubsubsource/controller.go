@@ -22,6 +22,7 @@ import (
 	eventsinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/tracker"
 	appsv1informers "k8s.io/client-go/informers/apps/v1"
@@ -35,13 +36,10 @@ const (
 )
 
 // NewController initializes the controller and is called by the generated code
-// Registers eventhandlers to enqueue events
+// Registers event handlers to enqueue events
 func NewController(
-	opt reconciler.Options,
-	deploymentInformer appsv1informers.DeploymentInformer,
-	sourceInformer eventsinformers.PubSubSourceInformer,
-	raPubSubSourceImage string,
-	googleCreds string,
+	ctx context.Context,
+	cmw configmap.Watcher,
 ) *controller.Impl {
 
 	c := &Reconciler{

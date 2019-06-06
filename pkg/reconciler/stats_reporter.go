@@ -134,6 +134,25 @@ func NewStatsReporter(reconciler string) (StatsReporter, error) {
 	return &reporter{ctx: ctx}, nil
 }
 
+// srKey is used to associate StatsReporters with contexts.
+type srKey struct{}
+
+// WithStatsReporter attaches the given StatsReporter to the provided context
+// in the returned context.
+func WithStatsReporter(ctx context.Context, sr StatsReporter) context.Context {
+	return context.WithValue(ctx, srKey{}, sr)
+}
+
+// GetStatsReporter attempts to look up the StatsReporter on a given context.
+// It may return null if none is found.
+func GetStatsReporter(ctx context.Context) StatsReporter {
+	untyped := ctx.Value(srKey{})
+	if untyped == nil {
+		return nil
+	}
+	return untyped.(StatsReporter)
+}
+
 // ReportServiceReady reports the time it took a service to become Ready
 func (r *reporter) ReportReady(kind, namespace, service string, d time.Duration) error {
 	key := fmt.Sprintf("%s/%s", namespace, service)
