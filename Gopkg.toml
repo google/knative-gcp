@@ -8,6 +8,7 @@ required = [
   "k8s.io/code-generator/cmd/client-gen",
   "k8s.io/code-generator/cmd/lister-gen",
   "k8s.io/code-generator/cmd/informer-gen",
+  "github.com/knative/pkg/codegen/cmd/injection-gen",
   "github.com/knative/test-infra/scripts",
   "github.com/knative/test-infra/tools/dep-collector",
 ]
@@ -18,8 +19,8 @@ required = [
 
 [[override]]
   name = "github.com/knative/pkg"
-  # HEAD as of 2019-05-31
-  revision = "17ec1ed50dad75d031eb87430874e1d1d534b77a"
+  # HEAD as of 2919-06-06
+  revision = "c6f03fa600afb9d05c24dbf14ba8b3f41838f28c"
 
 [[override]]
   name = "go.uber.org/zap"
@@ -74,3 +75,7 @@ required = [
   name = "github.com/knative/test-infra"
   non-go = false
 
+[[prune.project]]
+  name = "github.com/knative/pkg"
+  unused-packages = false
+  non-go = false
