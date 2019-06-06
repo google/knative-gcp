@@ -31,6 +31,12 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   "events:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+# Knative Injection
+${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
+  github.com/GoogleCloudPlatform/cloud-run-events/pkg/client github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis \
+  "events:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
 # Because the kubernetes code generators force pacakges to lowercase, the update-deps script will be confused for
 # imports of github.com/googlecloudplatform/... We will update that to use the correct casing in the generated code.
 # The following will find all files (not directories, specified by -type f) under ${REPO_ROOT_DIR}/pkg/client, and

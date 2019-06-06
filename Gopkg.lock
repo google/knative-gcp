@@ -304,7 +304,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:8dd9272378a4111be95176ffe295d19914a0583238306d0da4006ffba7a26a65"
+  digest = "1:da523152c84c86f4868f189da82e34bcc7273683d0232ac33773cc4223c2a6a9"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -324,8 +324,12 @@
     "client/clientset/versioned/typed/authentication/v1alpha1/fake",
     "client/clientset/versioned/typed/istio/v1alpha3",
     "client/clientset/versioned/typed/istio/v1alpha3/fake",
+    "codegen/cmd/injection-gen",
+    "codegen/cmd/injection-gen/args",
+    "codegen/cmd/injection-gen/generators",
     "configmap",
     "controller",
+    "injection",
     "kmeta",
     "kmp",
     "logging",
@@ -339,8 +343,8 @@
     "system/testing",
     "tracker",
   ]
-  pruneopts = "NUT"
-  revision = "17ec1ed50dad75d031eb87430874e1d1d534b77a"
+  pruneopts = "T"
+  revision = "c6f03fa600afb9d05c24dbf14ba8b3f41838f28c"
 
 [[projects]]
   branch = "master"
@@ -1080,6 +1084,7 @@
     "github.com/knative/pkg/apis/duck",
     "github.com/knative/pkg/apis/duck/v1alpha1",
     "github.com/knative/pkg/client/clientset/versioned/fake",
+    "github.com/knative/pkg/codegen/cmd/injection-gen",
     "github.com/knative/pkg/configmap",
     "github.com/knative/pkg/controller",
     "github.com/knative/pkg/kmeta",
