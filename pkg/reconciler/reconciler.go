@@ -30,7 +30,6 @@ import (
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
 	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
 	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/logging/logkey"
 	"github.com/knative/pkg/system"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"

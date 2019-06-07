@@ -18,19 +18,21 @@ package testing
 
 import (
 	"context"
+	"github.com/knative/pkg/configmap"
+	"github.com/knative/pkg/logging"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
-	fakedynamicclientset "k8s.io/client-go/dynamic/fake"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	clientgotesting "k8s.io/client-go/testing"
+	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
-	fakeclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/knative/pkg/controller"
 	logtesting "github.com/knative/pkg/logging/testing"
+
+	fakerunclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client/fake"
+	fakedynamicclient "github.com/knative/pkg/injection/clients/dynamicclient/fake"
+	fakekubeclient "github.com/knative/pkg/injection/clients/kubeclient/fake"
 
 	. "github.com/knative/pkg/reconciler/testing"
 )
@@ -42,37 +44,44 @@ const (
 )
 
 // Ctor functions create a k8s controller with given params.
-type Ctor func(*Listers, reconciler.Options) controller.Reconciler
+type Ctor func(context.Context, *Listers, configmap.Watcher) controller.Reconciler
 
 // MakeFactory creates a reconciler factory with fake clients and controller created by `ctor`.
 func MakeFactory(ctor Ctor) Factory {
 	return func(t *testing.T, r *TableRow) (controller.Reconciler, ActionRecorderList, EventList, *FakeStatsReporter) {
 		ls := NewListers(r.Objects)
 
-		kubeClient := fakekubeclientset.NewSimpleClientset(ls.GetKubeObjects()...)
-		client := fakeclientset.NewSimpleClientset(ls.GetEventsObjects()...)
+		ctx := context.Background()
+		logger := logtesting.TestLogger(t)
+		ctx = logging.WithLogger(ctx, logger)
+
+		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
+		ctx, client := fakerunclient.With(ctx, ls.GetEventsObjects()...)
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
-			addTo(dynamicScheme)
+			_ = addTo(dynamicScheme)
 		}
+		ctx, dynamicClient := fakedynamicclient.With(ctx, dynamicScheme, ls.GetAllObjects()...)
 
-		dynamicClient := fakedynamicclientset.NewSimpleDynamicClient(dynamicScheme, ls.GetAllObjects()...)
+		// The dynamic client's support for patching is BS.  Implement it
+		// here via PrependReactor (this can be overridden below by the
+		// provided reactors).
+		dynamicClient.PrependReactor("patch", "*",
+			func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, nil, nil
+			})
+
 		eventRecorder := record.NewFakeRecorder(maxEventBufferSize)
+		ctx = controller.WithEventRecorder(ctx, eventRecorder)
 		statsReporter := &FakeStatsReporter{}
+		//ctx = reconciler.WithStatsReporter(ctx, statsReporter) // TODO: upstream stats interface from eventing to PKG
 
 		PrependGenerateNameReactor(&client.Fake)
 		PrependGenerateNameReactor(&dynamicClient.Fake)
 
 		// Set up our Controller from the fakes.
-		c := ctor(&ls, reconciler.Options{
-			KubeClientSet:    kubeClient,
-			DynamicClientSet: dynamicClient,
-			RunClientSet:     client,
-			Recorder:         eventRecorder,
-			//StatsReporter:    statsReporter,
-			Logger: logtesting.TestLogger(t),
-		})
+		c := ctor(ctx, &ls, configmap.NewFixedWatcher())
 
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)
@@ -80,11 +89,13 @@ func MakeFactory(ctor Ctor) Factory {
 			dynamicClient.PrependReactor("*", "*", reactor)
 		}
 
-		// Validate all Create operations through the eventing client.
-		client.PrependReactor("create", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		// Validate all Create operations through the serving client.
+		client.PrependReactor("create", "*", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			// TODO(n3wscott): context.Background is the best we can do at the moment, but it should be set-able.
 			return ValidateCreates(context.Background(), action)
 		})
-		client.PrependReactor("update", "*", func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		client.PrependReactor("update", "*", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+			// TODO(n3wscott): context.Background is the best we can do at the moment, but it should be set-able.
 			return ValidateUpdates(context.Background(), action)
 		})
 
@@ -92,5 +103,6 @@ func MakeFactory(ctor Ctor) Factory {
 		eventList := EventList{Recorder: eventRecorder}
 
 		return c, actionRecorderList, eventList, statsReporter
+
 	}
 }
