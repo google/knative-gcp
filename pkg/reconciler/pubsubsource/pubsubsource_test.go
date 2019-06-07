@@ -17,8 +17,10 @@ limitations under the License.
 package pubsubsource
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/knative/pkg/configmap"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,14 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	kubeinformers "k8s.io/client-go/informers"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
 	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	fakeclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
-	informers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil/fakepubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
@@ -143,9 +141,9 @@ func TestAllCases_pubsub_clientfail(t *testing.T) {
 	}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:                reconciler.NewBase(opt, "fake-cloud-run-events-pubsub-source-controller"),
+			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -206,9 +204,9 @@ func TestAllCases_pubsub_subgetfail(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:                reconciler.NewBase(opt, "fake-cloud-run-events-pubsub-source-controller"),
+			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -250,9 +248,9 @@ func TestAllCases_pubsub_sub_delete_fail(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:                reconciler.NewBase(opt, "fake-cloud-run-events-pubsub-source-controller"),
+			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -292,9 +290,9 @@ func TestAllCases_pubsub_sub_create_fail(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:                reconciler.NewBase(opt, "fake-cloud-run-events-pubsub-source-controller"),
+			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -466,9 +464,9 @@ func TestAllCases(t *testing.T) {
 	}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(listers *Listers, opt reconciler.Options) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:                reconciler.NewBase(opt, controllerAgentName),
+			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -495,29 +493,6 @@ func newReceiveAdapter() runtime.Object {
 		SinkURI:        sinkURI,
 	}
 	return resources.MakeReceiveAdapter(args)
-}
-
-func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
-	kubeClient := fakekubeclientset.NewSimpleClientset()
-	runClient := fakeclientset.NewSimpleClientset()
-	runInformer := informers.NewSharedInformerFactory(runClient, 0)
-
-	kubeInformer := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
-
-	deploymentInformer := kubeInformer.Apps().V1().Deployments()
-
-	sourceInformer := runInformer.Events().V1alpha1().PubSubSources()
-
-	c := NewController(reconciler.Options{
-		KubeClientSet: kubeClient,
-		RunClientSet:  runClient,
-		Logger:        logtesting.TestLogger(t),
-	}, deploymentInformer, sourceInformer, "image", "creds")
-
-	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
-	}
 }
 
 func TestFinalizers(t *testing.T) {

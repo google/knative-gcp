@@ -18,34 +18,57 @@ package pubsubsource
 
 import (
 	"context"
+	"os"
+
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	eventsinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
-	appsv1informers "k8s.io/client-go/informers/apps/v1"
-	"k8s.io/client-go/tools/cache"
+
+	pubsubsourceinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource"
+	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 )
 
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
+
+	// raImageEnvVar is the name of the environment variable that contains the receive adapter's
+	// image. It must be defined.
+	raPubSubImageEnvVar = "PUBSUB_RA_IMAGE"
+
+	googleCredsEnvVar = "GOOGLE_APPLICATION_CREDENTIALS"
 )
 
 // NewController initializes the controller and is called by the generated code
-// Registers eventhandlers to enqueue events
+// Registers event handlers to enqueue events
 func NewController(
-	opt reconciler.Options,
-	deploymentInformer appsv1informers.DeploymentInformer,
-	sourceInformer eventsinformers.PubSubSourceInformer,
-	raPubSubSourceImage string,
-	googleCreds string,
+	ctx context.Context,
+	cmw configmap.Watcher,
 ) *controller.Impl {
 
+	deploymentInformer := deploymentinformer.Get(ctx)
+	sourceInformer := pubsubsourceinformers.Get(ctx)
+
+	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	raPubSubSourceImage, defined := os.LookupEnv(raPubSubImageEnvVar)
+	if !defined {
+		logger.Fatalw("required environment variable '%s' not defined", raPubSubImageEnvVar)
+	}
+
+	googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
+	if !defined {
+		logger.Fatalw("required environment variable '%s' not defined", googleCredsEnvVar)
+	}
+
 	c := &Reconciler{
-		Base:                reconciler.NewBase(opt, controllerAgentName),
+		Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
 		deploymentLister:    deploymentInformer.Lister(),
 		sourceLister:        sourceInformer.Lister(),
 		pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
@@ -61,7 +84,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.tracker = tracker.New(impl.EnqueueKey, opt.GetTrackerLease()) // TODO: use tracker.
+	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx)) // TODO: use tracker.
 
 	return impl
 }
