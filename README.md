@@ -1,15 +1,15 @@
-WORK IN PROGRESS
-================
+# Cloud Run Events
 
-Ref: https://cloud.google.com/run/docs/tutorials/pubsub
+Cloud Run Events builds on Kubernetes to enable easy consumption of events from
+GCP services. It can be useful independently, or mixed with
+[Knative](https://knative.dev).
 
+To get started, [install Cloud Run Events](./install/README.md).
 
-# PubSub
+Then use one of the implemented resources,
 
+- [PubSubSource.events.cloud.run/v1alpha1](./pubsubsource/README.md)
 
-API Group:
-
- - events.cloud.run/v1alpha1
-
-
-
+The sources are implemented to bridge events from GCP and translate that into an
+HTTP POST to a `service` or `addressable` of your choosing; outbound Event is in
+[CloudEvents](https://cloudevents.io) format.
