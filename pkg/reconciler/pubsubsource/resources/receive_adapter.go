@@ -42,10 +42,27 @@ const (
 	credsMountPath = "/var/secrets/google"
 )
 
+// DefaultSecretSelector is the default secret selector used to load the creds
+// for the receive adapter to auth with GCP.
+func DefaultSecretSelector() *corev1.SecretKeySelector {
+	return &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "google-cloud-key",
+		},
+		Key: "key.json",
+	}
+}
+
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
 // GCP PubSub Sources.
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
-	credsFile := fmt.Sprintf("%s/%s", credsMountPath, args.Source.Spec.GcpCredsSecret.Key)
+
+	secret := args.Source.Spec.Secret
+	if secret == nil {
+		secret = DefaultSecretSelector()
+	}
+
+	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	replicas := int32(1)
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -76,7 +93,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 								},
 								{
 									Name:  "PROJECT_ID",
-									Value: args.Source.Spec.GoogleCloudProject,
+									Value: args.Source.Status.ProjectID,
 								},
 								{
 									Name:  "PUBSUB_TOPIC_ID",
@@ -108,7 +125,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 							Name: credsVolume,
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
-									SecretName: args.Source.Spec.GcpCredsSecret.Name,
+									SecretName: secret.Name,
 								},
 							},
 						},

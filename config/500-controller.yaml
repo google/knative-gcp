@@ -34,10 +34,11 @@ spec:
       containers:
       - name: controller
         image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/controller
+        imagePullPolicy: Always
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json
-        - name: GCPPUBSUB_RA_IMAGE
+        - name: PUBSUB_RA_IMAGE
           value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub_receive_adapter
         - name: SYSTEM_NAMESPACE
           valueFrom:

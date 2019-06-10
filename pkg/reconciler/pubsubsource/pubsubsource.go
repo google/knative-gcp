@@ -24,6 +24,7 @@ import (
 	"reflect"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
@@ -151,6 +152,12 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	// Because there is something that must happen during deletion, we add this controller as a
 	// finalizer to every PubSubSource.
 
+	source.Status.InitializeConditions()
+
+	if err := c.resolveProjectID(ctx, source); err != nil {
+		return err
+	}
+
 	if source.GetDeletionTimestamp() != nil {
 		err := c.deleteSubscription(ctx, source)
 		if err != nil {
@@ -160,8 +167,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 		removeFinalizer(source)
 		return nil
 	}
-
-	source.Status.InitializeConditions()
 
 	sinkURI, err := duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Sink, source.Namespace)
 	if err != nil {
@@ -209,6 +214,28 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
+}
+
+func (c *Reconciler) resolveProjectID(ctx context.Context, source *v1alpha1.PubSubSource) error {
+	logger := logging.FromContext(ctx)
+	_ = logger
+
+	// Always use the given project, if present.
+	if source.Spec.Project != "" {
+		source.Status.ProjectID = source.Spec.Project
+		return nil
+	}
+
+	// Try from metadata server.
+	if projectID, err := metadata.ProjectID(); err == nil {
+		source.Status.ProjectID = projectID
+		return nil
+	} else {
+		logger.Warnw("failed to get Project ID from GCP Metadata Server.", zap.Error(err))
+	}
+
+	// Unknown Project ID
+	return errors.New("project is required but not set")
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {
@@ -345,18 +372,18 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PubSub
 
 func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSubSource) (pubsubutil.PubSubSubscription, error) {
 	// TODO: this should be moved to the validation for pubsub source.
-	if src.Spec.GoogleCloudProject == "" {
+	if src.Status.ProjectID == "" {
 		return nil, errors.New("project is required but not set")
 	}
 	if src.Spec.Topic == "" {
 		return nil, errors.New("topic is required but not set")
 	}
 
-	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
+	psc, err := r.pubSubClientCreator(ctx, src.Status.ProjectID)
 	if err != nil {
 		return nil, err
 	}
-	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Spec.GoogleCloudProject)
+	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Status.ProjectID)
 	if exists, err := sub.Exists(ctx); err != nil {
 		return nil, err
 	} else if exists {
@@ -374,15 +401,15 @@ func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSu
 
 func (r *Reconciler) deleteSubscription(ctx context.Context, src *v1alpha1.PubSubSource) error {
 	// TODO: this should be moved to the validation for pubsub source.
-	if src.Spec.GoogleCloudProject == "" {
+	if src.Status.ProjectID == "" {
 		return errors.New("project is required but not set")
 	}
 
-	psc, err := r.pubSubClientCreator(ctx, src.Spec.GoogleCloudProject)
+	psc, err := r.pubSubClientCreator(ctx, src.Status.ProjectID)
 	if err != nil {
 		return err
 	}
-	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Spec.GoogleCloudProject)
+	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Status.ProjectID)
 	if exists, err := sub.Exists(ctx); err != nil {
 		return err
 	} else if !exists {
@@ -399,7 +426,7 @@ func (r *Reconciler) deleteSubscription(ctx context.Context, src *v1alpha1.PubSu
 //func (r *Reconciler) newEventTypeReconcilerArgs(src *v1alpha1.PubSub) *eventtype.ReconcilerArgs {
 //	spec := eventingv1alpha1.EventTypeSpec{
 //		Type:   v1alpha1.PubSubEventType,
-//		Source: v1alpha1.GetPubSub(src.Spec.GoogleCloudProject, src.Spec.Topic),
+//		Source: v1alpha1.GetPubSub(src.Status.ProjectID, src.Spec.Topic),
 //		Broker: src.Spec.Sink.Name,
 //	}
 //	specs := make([]eventingv1alpha1.EventTypeSpec, 0, 1)

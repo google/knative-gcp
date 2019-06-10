@@ -18,6 +18,7 @@ package pubsubsource
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"os"
 
 	"k8s.io/client-go/tools/cache"
@@ -59,12 +60,12 @@ func NewController(
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 	raPubSubSourceImage, defined := os.LookupEnv(raPubSubImageEnvVar)
 	if !defined {
-		logger.Fatalw("required environment variable '%s' not defined", raPubSubImageEnvVar)
+		logger.Fatalw("required environment variable not defined", zap.String("key", raPubSubImageEnvVar))
 	}
 
 	googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
 	if !defined {
-		logger.Fatalw("required environment variable '%s' not defined", googleCredsEnvVar)
+		logger.Fatalw("required environment variable not defined", zap.String("key", googleCredsEnvVar))
 	}
 
 	c := &Reconciler{

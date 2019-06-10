@@ -51,14 +51,15 @@ var _ = duck.VerifyType(&PubSubSource{}, &duckv1alpha1.Conditions{})
 
 // PubSubSourceSpec defines the desired state of the PubSubSource.
 type PubSubSourceSpec struct {
-	// GcpCredsSecret is the credential to use to poll the GCP PubSubSource Subscription. It is not used
+	// Secret is the credential to use to poll the PubSubSource Subscription. It is not used
 	// to create or delete the Subscription, only to poll it. The value of the secret entry must be
 	// a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	GcpCredsSecret corev1.SecretKeySelector `json:"gcpCredsSecret,omitempty"`
+	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
-	// GoogleCloudProject is the ID of the Google Cloud Project that the PubSubSource Topic exists in.
-	GoogleCloudProject string `json:"googleCloudProject,omitempty"`
+	// TODO: https://github.com/googleapis/google-cloud-go/blob/master/compute/metadata/metadata.go
+	// Project is the ID of the Google Cloud Project that the PubSubSource Topic exists in.
+	Project string `json:"project,omitempty"`
 
 	// Topic is the ID of the GCP PubSubSource Topic to Subscribe to. It must be in the form of the
 	// unique identifier within the project, not the entire name. E.g. it must be 'laconia', not
@@ -125,9 +126,13 @@ type PubSubSourceStatus struct {
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
 
-	// TransformerURI is the current active transformer URI that has been configured for the GcpPubSubSource.
+	// TransformerURI is the current active transformer URI that has been configured for the PubSubSource.
 	// +optional
 	TransformerURI string `json:"transformerUri,omitempty"`
+
+	// ProjectID is the current in use project ID that has been configured for the PubSubSource.
+	// +optional
+	ProjectID string `json:"projectID,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

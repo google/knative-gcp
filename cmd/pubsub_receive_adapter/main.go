@@ -18,13 +18,13 @@ package main
 
 import (
 	"flag"
+	"log"
+
 	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
 	"github.com/kelseyhightower/envconfig"
-	"log"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
 	"golang.org/x/net/context"
 )
 
@@ -72,7 +72,7 @@ func main() {
 		TransformerURI: env.Transformer,
 	}
 
-	logger.Info("Starting Pub/Sub Receive Adapter. %v", zap.Reflect("adapter", adapter))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", adapter))
 	if err := adapter.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

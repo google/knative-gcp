@@ -304,7 +304,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:b70b258562f5326dc1034c6555d1ffa7890c574217f3eb93901bfefe15f391ac"
+  digest = "1:d3a0fb22471b6861e87b14ffffbfe3cc9faa5bc06c71cf82fa94de56760cce37"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -330,6 +330,15 @@
     "configmap",
     "controller",
     "injection",
+    "injection/clients/dynamicclient",
+    "injection/clients/dynamicclient/fake",
+    "injection/clients/kubeclient",
+    "injection/clients/kubeclient/fake",
+    "injection/informers/kubeinformers/appsv1/deployment",
+    "injection/informers/kubeinformers/appsv1/deployment/fake",
+    "injection/informers/kubeinformers/factory",
+    "injection/informers/kubeinformers/factory/fake",
+    "injection/sharedmain",
     "kmeta",
     "kmp",
     "logging",
@@ -344,7 +353,7 @@
     "tracker",
   ]
   pruneopts = "T"
-  revision = "d8a2a739d6b359a325ee6bb1dcbee13ecfee8dcc"
+  revision = "28f181241cdb19fb0f288fda50af949c0d985b6f"
 
 [[projects]]
   branch = "master"
@@ -1071,6 +1080,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/pubsub",
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
@@ -1088,13 +1098,18 @@
     "github.com/knative/pkg/configmap",
     "github.com/knative/pkg/controller",
     "github.com/knative/pkg/injection",
+    "github.com/knative/pkg/injection/clients/dynamicclient",
+    "github.com/knative/pkg/injection/clients/dynamicclient/fake",
+    "github.com/knative/pkg/injection/clients/kubeclient",
+    "github.com/knative/pkg/injection/clients/kubeclient/fake",
+    "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment",
+    "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
+    "github.com/knative/pkg/injection/sharedmain",
     "github.com/knative/pkg/kmeta",
     "github.com/knative/pkg/logging",
-    "github.com/knative/pkg/logging/logkey",
     "github.com/knative/pkg/logging/testing",
     "github.com/knative/pkg/metrics",
     "github.com/knative/pkg/reconciler/testing",
-    "github.com/knative/pkg/signals",
     "github.com/knative/pkg/system",
     "github.com/knative/pkg/tracker",
     "github.com/knative/test-infra/scripts",
@@ -1122,13 +1137,12 @@
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
+    "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/dynamic",
     "k8s.io/client-go/dynamic/fake",
-    "k8s.io/client-go/informers",
-    "k8s.io/client-go/informers/apps/v1",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
@@ -1139,7 +1153,6 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
-    "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/code-generator/cmd/client-gen",

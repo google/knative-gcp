@@ -104,7 +104,7 @@ func TestAllCases_pubsub_clientfail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -124,7 +124,7 @@ func TestAllCases_pubsub_clientfail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -168,7 +168,7 @@ func TestAllCases_pubsub_subgetfail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -188,7 +188,7 @@ func TestAllCases_pubsub_subgetfail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -232,7 +232,7 @@ func TestAllCases_pubsub_sub_delete_fail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -273,7 +273,7 @@ func TestAllCases_pubsub_sub_create_fail(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -333,7 +333,7 @@ func TestAllCases(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -350,7 +350,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -372,7 +372,7 @@ func TestAllCases(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -390,7 +390,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -408,7 +408,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -422,7 +422,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -438,7 +438,7 @@ func TestAllCases(t *testing.T) {
 			NewPubSubSource(sourceName, testNS,
 				WithPubSubSourceUID(sourceUID),
 				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
+					Project:            testProject,
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -481,7 +481,7 @@ func newReceiveAdapter() runtime.Object {
 	source := NewPubSubSource(sourceName, testNS,
 		WithPubSubSourceUID(sourceUID),
 		WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-			GoogleCloudProject: testProject,
+			Project:            testProject,
 			Topic:              testTopicID,
 			ServiceAccountName: testServiceAccount,
 		}))

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Replace the following before applying this file:
-#   TOPIC_NAME: Replace with the GCP PubSub Topic name.
+#   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
 #   MY_GCP_PROJECT: Replace with the GCP Project's ID.
 
 apiVersion: events.cloud.run/v1alpha1
@@ -21,15 +21,19 @@ kind: PubSubSource
 metadata:
   name: TOPIC_NAME-source
 spec:
-  gcpCredsSecret:
-    name: google-cloud-key
-    key: key.json
-  googleCloudProject: MY_GCP_PROJECT
   topic: TOPIC_NAME
   sink:
     apiVersion: v1
     kind: Service
     name: event-display
+  # If running in GKE, we will ask the metadata server, change this if required.
+  #project: MY_GCP_PROJECT
+  # The default secret name and key, change this if required.
+  #secret:
+  #  name: google-cloud-key
+  #  key: key.json
+
+---
 
 # Example gcloud command to send a message:
-# gcloud pubsub topics publish demo --message '{"message":"hi from the terminal"}'
+# gcloud pubsub topics publish TOPIC_NAME --message '{"message":"hi from the terminal"}'

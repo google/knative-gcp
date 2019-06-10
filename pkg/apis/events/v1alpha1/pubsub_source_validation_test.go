@@ -25,14 +25,14 @@ import (
 
 var (
 	fullSpec = PubSubSourceSpec{
-		GcpCredsSecret: corev1.SecretKeySelector{
+		Secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "secret-name",
 			},
 			Key: "secret-key",
 		},
-		GoogleCloudProject: "my-eventing-project",
-		Topic:              "pubsub-topic",
+		Project: "my-eventing-project",
+		Topic:   "pubsub-topic",
 		Sink: &corev1.ObjectReference{
 			APIVersion: "foo",
 			Kind:       "bar",
@@ -53,48 +53,48 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 			updated: fullSpec,
 			allowed: true,
 		},
-		"GcpCredsSecret.Name changed": {
+		"Secret.Name changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "some-other-name",
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
+				Project:            fullSpec.Project,
 				Topic:              fullSpec.Topic,
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
 			},
 			allowed: false,
 		},
-		"GcpCredsSecret.Key changed": {
+		"Secret.Key changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
 					Key: "some-other-key",
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
+				Project:            fullSpec.Project,
 				Topic:              fullSpec.Topic,
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
 			},
 			allowed: false,
 		},
-		"GoogleCloudProject changed": {
+		"Project changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: "some-other-project",
+				Project:            "some-other-project",
 				Topic:              fullSpec.Topic,
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
@@ -104,13 +104,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Topic changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
+				Project:            fullSpec.Project,
 				Topic:              "some-other-topic",
 				Sink:               fullSpec.Sink,
 				ServiceAccountName: fullSpec.ServiceAccountName,
@@ -120,14 +120,14 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Sink.APIVersion changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
-				Topic:              fullSpec.Topic,
+				Project: fullSpec.Project,
+				Topic:   fullSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: "some-other-api-version",
 					Kind:       fullSpec.Sink.Kind,
@@ -141,14 +141,14 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Sink.Kind changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
-				Topic:              fullSpec.Topic,
+				Project: fullSpec.Project,
+				Topic:   fullSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: fullSpec.Sink.APIVersion,
 					Kind:       "some-other-kind",
@@ -162,14 +162,14 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Sink.Namespace changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
-				Topic:              fullSpec.Topic,
+				Project: fullSpec.Project,
+				Topic:   fullSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: fullSpec.Sink.APIVersion,
 					Kind:       fullSpec.Sink.Kind,
@@ -183,14 +183,14 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Sink.Name changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
-				Topic:              fullSpec.Topic,
+				Project: fullSpec.Project,
+				Topic:   fullSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: fullSpec.Sink.APIVersion,
 					Kind:       fullSpec.Sink.Kind,
@@ -204,14 +204,14 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"ServiceAccountName changed": {
 			orig: &fullSpec,
 			updated: PubSubSourceSpec{
-				GcpCredsSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.GcpCredsSecret.Name,
+						Name: fullSpec.Secret.Name,
 					},
-					Key: fullSpec.GcpCredsSecret.Key,
+					Key: fullSpec.Secret.Key,
 				},
-				GoogleCloudProject: fullSpec.GoogleCloudProject,
-				Topic:              fullSpec.Topic,
+				Project: fullSpec.Project,
+				Topic:   fullSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: fullSpec.Sink.APIVersion,
 					Kind:       fullSpec.Sink.Kind,
