@@ -151,7 +151,7 @@ service the source sinks to.
 
 You should see log lines similar to:
 
-```json
+```shell
 ☁️ cloudevents.Event
 Validation: valid
  Context Attributes,
