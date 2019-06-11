@@ -18,9 +18,8 @@ package pubsubsource
 
 import (
 	"context"
+	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
-	"os"
-
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/knative/pkg/configmap"
@@ -40,13 +39,15 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
-
-	// raImageEnvVar is the name of the environment variable that contains the receive adapter's
-	// image. It must be defined.
-	raPubSubImageEnvVar = "PUBSUB_RA_IMAGE"
-
-	googleCredsEnvVar = "GOOGLE_APPLICATION_CREDENTIALS"
 )
+
+type envConfig struct {
+	// ReceiveAdapter is the receive adapters image. Required.
+	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
+
+	// SubscriptionOps is the image for operating on subscriptions. Required.
+	SubscriptionOps string `envconfig:"PUBSUB_SUB_IMAGE" required:"true"`
+}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -59,22 +60,18 @@ func NewController(
 	sourceInformer := pubsubsourceinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
-	raPubSubSourceImage, defined := os.LookupEnv(raPubSubImageEnvVar)
-	if !defined {
-		logger.Fatalw("required environment variable not defined", zap.String("key", raPubSubImageEnvVar))
+
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	//googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
-	//if !defined {
-	//	logger.Fatalw("required environment variable not defined", zap.String("key", googleCredsEnvVar))
-	//}
-
 	c := &Reconciler{
-		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-		deploymentLister: deploymentInformer.Lister(),
-		sourceLister:     sourceInformer.Lister(),
-		//pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
-		receiveAdapterImage: raPubSubSourceImage,
+		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		deploymentLister:     deploymentInformer.Lister(),
+		sourceLister:         sourceInformer.Lister(),
+		receiveAdapterImage:  env.ReceiveAdapter,
+		subscriptionOpsImage: env.SubscriptionOps,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 

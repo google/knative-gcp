@@ -96,5 +96,9 @@ spec:
               type: string
             transformerUri:
               type: string
+            projectId:
+              type: string
+            subscriptionId:
+              type: string
           type: object
   version: v1alpha1

@@ -65,7 +65,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PubSubSourceStatus {
 			s := &PubSubSourceStatus{}
 			s.InitializeConditions()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			return s
 		}(),
 		want: false,
@@ -78,16 +78,16 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			return s
 		}(),
 		want: false,
-		//}, {
-		//	name: "mark sink and deployed",
-		//	s: func() *PubSubSourceStatus {
-		//		s := &PubSubSourceStatus{}
-		//		s.InitializeConditions()
-		//		s.MarkSink("uri://example")
-		//		s.MarkDeployed()
-		//		return s
-		//	}(),
-		//	want: false,
+	}, {
+		name: "mark sink and deployed",
+		s: func() *PubSubSourceStatus {
+			s := &PubSubSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink("uri://example")
+			s.MarkDeployed()
+			return s
+		}(),
+		want: false,
 	}, {
 		name: "mark sink and deployed and subscribed and event types",
 		s: func() *PubSubSourceStatus {
@@ -95,7 +95,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			return s
 		}(),
@@ -107,7 +107,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNoSink("Testing", "")
 			return s
@@ -120,7 +120,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkDeploying("Testing", "")
 			return s
@@ -133,7 +133,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNotDeployed("Testing", "")
 			return s
@@ -146,7 +146,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNoEventTypes("Testing", "")
 			return s
@@ -158,7 +158,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s := &PubSubSourceStatus{}
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkNotDeployed("MarkNotDeployed", "")
 			s.MarkDeploying("MarkDeploying", "")
 			s.MarkDeployed()
@@ -173,7 +173,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			return s
 		}(),
@@ -185,7 +185,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkSink("uri://example")
 			return s
@@ -257,7 +257,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PubSubSourceStatus {
 			s := &PubSubSourceStatus{}
 			s.InitializeConditions()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			return s
 		}(),
 		condQuery: PubSubSourceConditionReady,
@@ -278,20 +278,20 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			Type:   PubSubSourceConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
-		//}, {
-		//	name: "mark sink and deployed",
-		//	s: func() *PubSubSourceStatus {
-		//		s := &PubSubSourceStatus{}
-		//		s.InitializeConditions()
-		//		s.MarkSink("uri://example")
-		//		s.MarkDeployed()
-		//		return s
-		//	}(),
-		//	condQuery: PubSubSourceConditionReady,
-		//	want: &duckv1alpha1.Condition{
-		//		Type:   PubSubSourceConditionReady,
-		//		Status: corev1.ConditionUnknown,
-		//	},
+	}, {
+		name: "mark sink and deployed",
+		s: func() *PubSubSourceStatus {
+			s := &PubSubSourceStatus{}
+			s.InitializeConditions()
+			s.MarkSink("uri://example")
+			s.MarkDeployed()
+			return s
+		}(),
+		condQuery: PubSubSourceConditionReady,
+		want: &duckv1alpha1.Condition{
+			Type:   PubSubSourceConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
 	}, {
 		name: "mark sink and deployed and subscribed and event types",
 		s: func() *PubSubSourceStatus {
@@ -299,7 +299,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			return s
 		}(),
@@ -315,7 +315,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNoSink("Testing", "hi%s", "")
 			return s
@@ -334,7 +334,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkDeploying("Testing", "hi%s", "")
 			return s
@@ -353,7 +353,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNotDeployed("Testing", "hi%s", "")
 			return s
@@ -372,7 +372,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			s.MarkNoEventTypes("Testing", "hi%s", "")
 			return s
@@ -388,7 +388,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s := &PubSubSourceStatus{}
 			s.InitializeConditions()
 			s.MarkSink("uri://example")
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkNotDeployed("MarkNotDeployed", "%s", "")
 			s.MarkDeploying("MarkDeploying", "%s", "")
 			s.MarkDeployed()
@@ -407,7 +407,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkEventTypes()
 			return s
 		}(),
@@ -425,7 +425,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkSink("")
 			s.MarkDeployed()
-			//s.MarkSubscribed()
+			s.MarkSubscribed()
 			s.MarkSink("uri://example")
 			s.MarkEventTypes()
 			return s

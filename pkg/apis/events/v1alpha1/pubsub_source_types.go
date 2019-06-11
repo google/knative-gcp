@@ -98,9 +98,8 @@ const (
 	// PubSubSourceConditionDeployed has status True when the PubSubSource has had it's receive adapter deployment created.
 	PubSubSourceConditionDeployed duckv1alpha1.ConditionType = "Deployed"
 
-	// TODO: clean up after we are sure the controller does not control pub/sub.
 	// PubSubSourceConditionSubscribed has status True when a GCP PubSubSource Subscription has been created pointing at the created receive adapter deployment.
-	//PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
+	PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
 
 	// PubSubSourceConditionTransformerProvided has status True when the PubSubSource has been configured with a transformer target.
 	PubSubSourceConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
@@ -112,8 +111,7 @@ const (
 var pubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 	PubSubSourceConditionSinkProvided,
 	PubSubSourceConditionDeployed,
-
-//PubSubSourceConditionSubscribed,
+	PubSubSourceConditionSubscribed,
 )
 
 // PubSubSourceStatus defines the observed state of PubSubSource.
@@ -131,9 +129,13 @@ type PubSubSourceStatus struct {
 	// +optional
 	TransformerURI string `json:"transformerUri,omitempty"`
 
-	// ProjectID is the resolved project ID in use for the PubSubSource.
+	// ProjectID is the resolved project ID in use by the PubSubSource.
 	// +optional
-	//ProjectID string `json:"projectID,omitempty"`
+	//ProjectID string `json:"projectId,omitempty"`
+
+	// SubscriptionID is the created subscription ID in use by the PubSubSource.
+	// +optional
+	SubscriptionID string `json:"subscriptionId,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

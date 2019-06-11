@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/knative/pkg/configmap"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -498,62 +499,61 @@ func newReceiveAdapter() runtime.Object {
 	return resources.MakeReceiveAdapter(args)
 }
 
-//
-//func TestFinalizers(t *testing.T) {
-//	testCases := []struct {
-//		name     string
-//		original sets.String
-//		add      bool
-//		want     sets.String
-//	}{
-//		{
-//			name:     "empty, add",
-//			original: sets.NewString(),
-//			add:      true,
-//			want:     sets.NewString(finalizerName),
-//		}, {
-//			name:     "empty, delete",
-//			original: sets.NewString(),
-//			add:      false,
-//			want:     sets.NewString(),
-//		}, {
-//			name:     "existing, delete",
-//			original: sets.NewString(finalizerName),
-//			add:      false,
-//			want:     sets.NewString(),
-//		}, {
-//			name:     "existing, add",
-//			original: sets.NewString(finalizerName),
-//			add:      true,
-//			want:     sets.NewString(finalizerName),
-//		}, {
-//			name:     "existing two, delete",
-//			original: sets.NewString(finalizerName, "someother"),
-//			add:      false,
-//			want:     sets.NewString("someother"),
-//		}, {
-//			name:     "existing two, no change",
-//			original: sets.NewString(finalizerName, "someother"),
-//			add:      true,
-//			want:     sets.NewString(finalizerName, "someother"),
-//		},
-//	}
-//
-//	for _, tc := range testCases {
-//		original := &eventsv1alpha1.PubSubSource{}
-//		original.Finalizers = tc.original.List()
-//		if tc.add {
-//			//addFinalizer(original)
-//		} else {
-//			//removeFinalizer(original)
-//		}
-//		has := sets.NewString(original.Finalizers...)
-//		diff := has.Difference(tc.want)
-//		if diff.Len() > 0 {
-//			t.Errorf("%q failed, diff: %+v", tc.name, diff)
-//		}
-//	}
-//}
+func TestFinalizers(t *testing.T) {
+	testCases := []struct {
+		name     string
+		original sets.String
+		add      bool
+		want     sets.String
+	}{
+		{
+			name:     "empty, add",
+			original: sets.NewString(),
+			add:      true,
+			want:     sets.NewString(finalizerName),
+		}, {
+			name:     "empty, delete",
+			original: sets.NewString(),
+			add:      false,
+			want:     sets.NewString(),
+		}, {
+			name:     "existing, delete",
+			original: sets.NewString(finalizerName),
+			add:      false,
+			want:     sets.NewString(),
+		}, {
+			name:     "existing, add",
+			original: sets.NewString(finalizerName),
+			add:      true,
+			want:     sets.NewString(finalizerName),
+		}, {
+			name:     "existing two, delete",
+			original: sets.NewString(finalizerName, "someother"),
+			add:      false,
+			want:     sets.NewString("someother"),
+		}, {
+			name:     "existing two, no change",
+			original: sets.NewString(finalizerName, "someother"),
+			add:      true,
+			want:     sets.NewString(finalizerName, "someother"),
+		},
+	}
+
+	for _, tc := range testCases {
+		original := &eventsv1alpha1.PubSubSource{}
+		original.Finalizers = tc.original.List()
+		if tc.add {
+			addFinalizer(original)
+		} else {
+			removeFinalizer(original)
+		}
+		has := sets.NewString(original.Finalizers...)
+		diff := has.Difference(tc.want)
+		if diff.Len() > 0 {
+			t.Errorf("%q failed, diff: %+v", tc.name, diff)
+		}
+	}
+}
 
 func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}

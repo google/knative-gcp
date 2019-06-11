@@ -41,10 +41,6 @@ type envConfig struct {
 	// Environment variable containing the transformer URI.
 	Transformer string `envconfig:"TRANSFORMER_URI"`
 
-	// Mode is the mode the receive adapter should run in.
-	// Options: [start, delete]
-	Mode string `envconfig:"MODE" default:"start"`
-
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
@@ -89,24 +85,9 @@ func main() {
 		TransformerURI: env.Transformer,
 	}
 
-	switch env.Mode {
-	case "start":
-		logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", adapter))
-		if err := adapter.Start(ctx); err != nil {
-			logger.Fatal("failed to start adapter: ", zap.Error(err))
-		}
-
-	case "delete":
-		logger.Info("Deleting Pub/Sub Receive Adapter.", zap.Reflect("adapter", adapter))
-		if err := adapter.DeletePubSubSubscription(ctx); err != nil {
-			logger.Fatal("failed to delete adapter: ", zap.Error(err))
-		}
-		logger.Info("Successful.")
-		// Block until done.
-		<-ctx.Done()
-
-	default:
-		logger.Fatal("unknown MODE value.", zap.String("MODE", env.Mode))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", adapter))
+	if err := adapter.Start(ctx); err != nil {
+		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
 }
 

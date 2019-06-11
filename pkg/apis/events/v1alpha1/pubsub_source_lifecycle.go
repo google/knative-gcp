@@ -86,10 +86,20 @@ func (s *PubSubSourceStatus) MarkNotDeployed(reason, messageFormat string, messa
 	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionDeployed, reason, messageFormat, messageA...)
 }
 
-//
-//func (s *PubSubSourceStatus) MarkSubscribed() {
-//	pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSubscribed)
-//}
+// MarkSubscribed sets the condition that the subscription has been created.
+func (s *PubSubSourceStatus) MarkSubscribed() {
+	pubSubSourceCondSet.Manage(s).MarkTrue(PubSubSourceConditionSubscribed)
+}
+
+// MarkSubscribing sets the condition that the subscription is being created.
+func (s *PubSubSourceStatus) MarkSubscribing(reason, messageFormat string, messageA ...interface{}) {
+	pubSubSourceCondSet.Manage(s).MarkUnknown(PubSubSourceConditionSubscribed, reason, messageFormat, messageA...)
+}
+
+// MarkNotSubscribed sets the condition that the subscription failed to be created.
+func (s *PubSubSourceStatus) MarkNotSubscribed(reason, messageFormat string, messageA ...interface{}) {
+	pubSubSourceCondSet.Manage(s).MarkFalse(PubSubSourceConditionSubscribed, reason, messageFormat, messageA...)
+}
 
 // MarkEventTypes sets the condition that the source has created its event types.
 func (s *PubSubSourceStatus) MarkEventTypes() {

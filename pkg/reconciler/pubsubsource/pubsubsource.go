@@ -19,21 +19,19 @@ package pubsubsource
 import (
 	"context"
 	"encoding/json"
-	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"time"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
-	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
@@ -43,6 +41,11 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/kmeta"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/tracker"
+	"go.uber.org/zap"
 )
 
 const (
@@ -63,7 +66,9 @@ type Reconciler struct {
 
 	tracker tracker.Interface // TODO: use tracker.
 
-	receiveAdapterImage string
+	receiveAdapterImage  string
+	subscriptionOpsImage string
+
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
 	//pubSubClientCreator pubsubutil.PubSubClientCreator
@@ -189,6 +194,8 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 
 	subID := resources.GenerateSubName(source)
 
+	c.ensureSubscription(ctx, source)
+
 	//sub, err := c.createSubscription(ctx, source)
 	//if err != nil {
 	//	logger.Error("Unable to create the subscription", zap.Error(err))
@@ -218,6 +225,46 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
+}
+
+func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.PubSubSource) error {
+
+	// If the source has a finalizer on it, then it means the controller has
+	// tried at least once to make the subscription.
+
+	if hasFinalizer(source) {
+
+	}
+
+	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, resources.ActionCreate)))
+	// If the resource doesn't exist, we'll create it
+	if apierrs.IsNotFound(err) {
+		job = newJob
+		err = r.Create(ctx, job)
+
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+}
+
+func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls labels.Selector) (*v1.Job, error) {
+	list, err := r.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).List(metav1.ListOptions{
+		LabelSelector: ls.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range list.Items {
+		if metav1.IsControlledBy(&i, source) {
+			return &i, nil
+		}
+	}
+
+	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }
 
 //
@@ -317,18 +364,22 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Pub
 	return update, true, err
 }
 
-//
-//func addFinalizer(s *v1alpha1.PubSubSource) {
-//	finalizers := sets.NewString(s.Finalizers...)
-//	finalizers.Insert(finalizerName)
-//	s.Finalizers = finalizers.List()
-//}
-//
-//func removeFinalizer(s *v1alpha1.PubSubSource) {
-//	finalizers := sets.NewString(s.Finalizers...)
-//	finalizers.Delete(finalizerName)
-//	s.Finalizers = finalizers.List()
-//}
+func hasFinalizer(s *v1alpha1.PubSubSource) bool {
+	finalizers := sets.NewString(s.Finalizers...)
+	return finalizers.Has(finalizerName)
+}
+
+func addFinalizer(s *v1alpha1.PubSubSource) {
+	finalizers := sets.NewString(s.Finalizers...)
+	finalizers.Insert(finalizerName)
+	s.Finalizers = finalizers.List()
+}
+
+func removeFinalizer(s *v1alpha1.PubSubSource) {
+	finalizers := sets.NewString(s.Finalizers...)
+	finalizers.Delete(finalizerName)
+	s.Finalizers = finalizers.List()
+}
 
 func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.PubSubSource, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
 	ra, err := r.getReceiveAdapter(ctx, src)
