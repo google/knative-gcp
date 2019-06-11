@@ -33,7 +33,7 @@ import (
 
 type envConfig struct {
 	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID" required:"true"`
+	Project string `envconfig:"PROJECT_ID"`
 
 	// Environment variable containing the sink URI.
 	Sink string `envconfig:"SINK_URI" required:"true"`

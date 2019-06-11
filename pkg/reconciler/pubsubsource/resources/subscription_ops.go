@@ -39,6 +39,7 @@ func JobLabels(name, action string) map[string]string {
 type Opt struct {
 	Image          string
 	Action         string
+	ProjectID      string
 	TopicID        string
 	SubscriptionID string
 	Source         kmeta.Accessor
@@ -106,8 +107,11 @@ func GetFirstTerminationMessage(pod *corev1.Pod) string {
 // makePodTemplate creates a pod template for a Job.
 func makePodTemplate(opt Opt, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 	env := []corev1.EnvVar{{
-		Name:  "ACITON",
+		Name:  "ACTION",
 		Value: opt.Action,
+	}, {
+		Name:  "PROJECT_ID",
+		Value: opt.ProjectID,
 	}, {
 		Name:  "PUBSUB_TOPIC_ID",
 		Value: opt.TopicID,

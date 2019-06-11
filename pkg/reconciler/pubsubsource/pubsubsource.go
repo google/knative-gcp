@@ -194,7 +194,15 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 
 	subID := resources.GenerateSubName(source)
 
-	c.ensureSubscription(ctx, source)
+	cont, err := c.ensureSubscription(ctx, source, subID)
+	if err != nil {
+		logger.Error("Unable to ensure subscription", zap.Error(err))
+		return err
+	}
+	if !cont {
+		logger.Info("Waiting for Job.")
+		return nil
+	}
 
 	//sub, err := c.createSubscription(ctx, source)
 	//if err != nil {
@@ -227,27 +235,61 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 	return nil
 }
 
-func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.PubSubSource) error {
-
-	// If the source has a finalizer on it, then it means the controller has
-	// tried at least once to make the subscription.
-
-	if hasFinalizer(source) {
-
+func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.PubSubSource, subID string) (bool, error) {
+	if source.Status.GetCondition(v1alpha1.PubSubSourceConditionSubscribed).IsTrue() {
+		// For now, we will trust the status, no healing.
+		return true, nil
 	}
 
 	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, resources.ActionCreate)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
-		job = newJob
-		err = r.Create(ctx, job)
+		job = resources.NewSubscriptionOps(resources.Opt{
+			Image:          c.subscriptionOpsImage,
+			Action:         resources.ActionCreate,
+			ProjectID:      source.Spec.Project,
+			TopicID:        source.Spec.Topic,
+			SubscriptionID: subID,
+			Source:         source,
+		})
 
+		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
 		if err != nil {
-			return err
+			return false, nil
 		}
+		// If we created a job to make a subscription, then add the finalizer and update the status.
+		if job != nil {
+			addFinalizer(source)
+			source.Status.MarkSubscribing("OpsJob", "Created Job %q to create Subscription %q.", job.Name, subID)
+			source.Status.SubscriptionID = subID
+			jobRef := corev1.ObjectReference{
+				Kind:       job.Kind,
+				APIVersion: job.APIVersion,
+				Name:       job.Name,
+				Namespace:  job.Namespace,
+			}
+			err := c.tracker.Track(jobRef, source)
+			c.Logger.Info("tracking", zap.Any("jobRef", jobRef))
+			if err != nil {
+				return false, err
+			}
+		}
+		return false, nil
 	} else if err != nil {
-		return err
+		return false, err
 	}
+
+	if job.Status.Active == 0 {
+		if job.Status.Succeeded >= 1 {
+			source.Status.MarkSubscribed()
+			return true, nil
+		} else if job.Status.Failed >= 1 {
+			source.Status.MarkNotSubscribed("OpsFail", "Failed to create Subscription: %q", resources.JobFailedMessage(job))
+		}
+	} else {
+		source.Status.MarkSubscribing("OpsJob", "Running")
+	}
+	return false, nil
 }
 
 func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls labels.Selector) (*v1.Job, error) {

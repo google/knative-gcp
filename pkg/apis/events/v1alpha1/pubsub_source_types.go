@@ -131,7 +131,7 @@ type PubSubSourceStatus struct {
 
 	// ProjectID is the resolved project ID in use by the PubSubSource.
 	// +optional
-	//ProjectID string `json:"projectId,omitempty"`
+	ProjectID string `json:"projectId,omitempty"`
 
 	// SubscriptionID is the created subscription ID in use by the PubSubSource.
 	// +optional
