@@ -56,7 +56,6 @@ type PubSubSourceSpec struct {
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
-	// TODO: https://github.com/googleapis/google-cloud-go/blob/master/compute/metadata/metadata.go
 	// Project is the ID of the Google Cloud Project that the PubSubSource Topic exists in.
 	Project string `json:"project,omitempty"`
 

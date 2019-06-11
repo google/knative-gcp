@@ -17,6 +17,7 @@ limitations under the License.
 package adapter
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
@@ -46,7 +47,8 @@ type Adapter struct {
 	TransformerURI string
 
 	// inbound is the cloudevents client to use to receive events.
-	inbound cloudevents.Client
+	inbound          cloudevents.Client
+	inboundTransport *cepubsub.Transport
 
 	// outbound is the cloudevents client to use to send events.
 	outbound cloudevents.Client
@@ -82,6 +84,13 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 
 	return a.inbound.StartReceiver(ctx, a.receive)
+}
+
+func (a *Adapter) DeletePubSubSubscription(ctx context.Context) error {
+	if a.inboundTransport != nil {
+		return a.inboundTransport.DeleteSubscription(ctx)
+	}
+	return errors.New("no inbound transport set")
 }
 
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
