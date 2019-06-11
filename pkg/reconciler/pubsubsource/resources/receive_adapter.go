@@ -90,7 +90,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 							Value: credsFile,
 						}, {
 							Name:  "PROJECT_ID",
-							Value: args.Source.Status.ProjectID,
+							Value: args.Source.Spec.Project,
 						}, {
 							Name:  "PUBSUB_TOPIC_ID",
 							Value: args.Source.Spec.Topic,

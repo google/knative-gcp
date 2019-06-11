@@ -18,7 +18,6 @@ package pubsubsource
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/knative/pkg/configmap"
 	"testing"
@@ -27,20 +26,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil/fakepubsub"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
 	"github.com/knative/pkg/controller"
 	logtesting "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/tracker"
 
-	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
+	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
+
 	. "github.com/knative/pkg/reconciler/testing"
+
+	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
 
 const (
@@ -55,7 +54,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "test-subscription-id"
+	testSubscriptionID = "cloud-run-events-" + testNS + "-" + sourceName + "-" + sourceUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -93,216 +92,217 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
-func TestAllCases_pubsub_clientfail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientCreateErr: errors.New("test-induced-error"),
-	})
-
-	table := TableTest{{
-		Name: "cannot create client",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-				WithPubSubSourceProjectResolved(testProject),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}, {
-		Name: "deleting - cannot create client",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-				WithPubSubSourceProjectResolved(testProject),
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	},
-	}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_subgetfail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			SubscriptionData: fakepubsub.SubscriptionData{
-				ExistsErr: errors.New("test-induced-error"),
-			},
-		},
-	})
-
-	table := TableTest{{
-		Name: "error checking subscription exists",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}, {
-		Name: "deleting - error checking subscription exists",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_sub_delete_fail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			SubscriptionData: fakepubsub.SubscriptionData{
-				Exists:    true,
-				DeleteErr: errors.New("delete-test-induced-error"),
-			},
-		},
-	})
-
-	table := TableTest{{
-		Name: "deleting - cannot delete subscription",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "delete-test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_sub_create_fail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			CreateSubErr: errors.New("create-test-induced-error"),
-		},
-	})
-
-	table := TableTest{{
-		Name: "cannot create subscription",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
+//
+//func TestAllCases_pubsub_clientfail(t *testing.T) {
+//	//creator := fakepubsub.Creator(fakepubsub.CreatorData{
+//	//	ClientCreateErr: errors.New("test-induced-error"),
+//	//})
+//
+//	table := TableTest{{
+//		Name: "cannot create client",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceSink(sinkGVK, sinkName),
+//				WithPubSubSourceReady(sinkURI),
+//				//WithPubSubSourceProjectResolved(testProject),
+//			),
+//			newSink(),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
+//		},
+//	}, {
+//		Name: "deleting - cannot create client",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceReady(sinkDNS),
+//				WithPubSubSourceDeleted,
+//				//WithPubSubSourceProjectResolved(testProject),
+//			),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
+//		},
+//	},
+//	}
+//
+//	defer logtesting.ClearAll()
+//	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+//		return &Reconciler{
+//			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+//			deploymentLister:    listers.GetDeploymentLister(),
+//			sourceLister:        listers.GetPubSubSourceLister(),
+//			tracker:             tracker.New(func(string) {}, 0),
+//			receiveAdapterImage: "img",
+//			//pubSubClientCreator: creator,
+//		}
+//	}))
+//}
+//
+//func TestAllCases_pubsub_subgetfail(t *testing.T) {
+//	//creator := fakepubsub.Creator(fakepubsub.CreatorData{
+//	//	ClientData: fakepubsub.ClientData{
+//	//		SubscriptionData: fakepubsub.SubscriptionData{
+//	//			ExistsErr: errors.New("test-induced-error"),
+//	//		},
+//	//	},
+//	//})
+//
+//	table := TableTest{{
+//		Name: "error checking subscription exists",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceSink(sinkGVK, sinkName),
+//				WithPubSubSourceReady(sinkURI),
+//			),
+//			newSink(),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
+//		},
+//	}, {
+//		Name: "deleting - error checking subscription exists",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceReady(sinkDNS),
+//				WithPubSubSourceDeleted,
+//			),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
+//		},
+//	}}
+//
+//	defer logtesting.ClearAll()
+//	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+//		return &Reconciler{
+//			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+//			deploymentLister:    listers.GetDeploymentLister(),
+//			sourceLister:        listers.GetPubSubSourceLister(),
+//			tracker:             tracker.New(func(string) {}, 0),
+//			receiveAdapterImage: "img",
+//			//pubSubClientCreator: creator,
+//		}
+//	}))
+//}
+//
+//func TestAllCases_pubsub_sub_delete_fail(t *testing.T) {
+//	//creator := fakepubsub.Creator(fakepubsub.CreatorData{
+//	//	ClientData: fakepubsub.ClientData{
+//	//		SubscriptionData: fakepubsub.SubscriptionData{
+//	//			Exists:    true,
+//	//			DeleteErr: errors.New("delete-test-induced-error"),
+//	//		},
+//	//	},
+//	//})
+//
+//	table := TableTest{{
+//		Name: "deleting - cannot delete subscription",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceReady(sinkDNS),
+//				WithPubSubSourceDeleted,
+//			),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "delete-test-induced-error"),
+//		},
+//	}}
+//
+//	defer logtesting.ClearAll()
+//	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+//		return &Reconciler{
+//			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+//			deploymentLister:    listers.GetDeploymentLister(),
+//			sourceLister:        listers.GetPubSubSourceLister(),
+//			tracker:             tracker.New(func(string) {}, 0),
+//			receiveAdapterImage: "img",
+//			//pubSubClientCreator: creator,
+//		}
+//	}))
+//}
+//
+//func TestAllCases_pubsub_sub_create_fail(t *testing.T) {
+//	//creator := fakepubsub.Creator(fakepubsub.CreatorData{
+//	//	ClientData: fakepubsub.ClientData{
+//	//		CreateSubErr: errors.New("create-test-induced-error"),
+//	//	},
+//	//})
+//
+//	table := TableTest{{
+//		Name: "cannot create subscription",
+//		Objects: []runtime.Object{
+//			NewPubSubSource(sourceName, testNS,
+//				WithPubSubSourceUID(sourceUID),
+//				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+//					Project:            testProject,
+//					Topic:              testTopicID,
+//					ServiceAccountName: testServiceAccount,
+//				}),
+//				WithPubSubSourceSink(sinkGVK, sinkName),
+//				WithPubSubSourceReady(sinkURI),
+//			),
+//			newSink(),
+//		},
+//		Key:     testNS + "/" + sourceName,
+//		WantErr: true,
+//		WantEvents: []string{
+//			Eventf(corev1.EventTypeWarning, "InternalError", "create-test-induced-error"),
+//		},
+//	}}
+//
+//	defer logtesting.ClearAll()
+//	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+//		return &Reconciler{
+//			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+//			deploymentLister:    listers.GetDeploymentLister(),
+//			sourceLister:        listers.GetPubSubSourceLister(),
+//			tracker:             tracker.New(func(string) {}, 0),
+//			receiveAdapterImage: "img",
+//			//pubSubClientCreator: creator,
+//		}
+//	}))
+//}
 
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
@@ -345,7 +345,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
+			//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
 			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -365,9 +365,9 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			newReceiveAdapter(),
 		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
+		//WantPatches: []clientgotesting.PatchActionImpl{
+		//	patchFinalizers(testNS, sourceName, true),
+		//},
 	}, {
 		Name: "successful create - reuse existing receive adapter",
 		Objects: []runtime.Object{
@@ -385,7 +385,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
+			//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
 			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -402,9 +402,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSourceReady(sinkURI),
 			),
 		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
+		//WantPatches: []clientgotesting.PatchActionImpl{
+		//	patchFinalizers(testNS, sourceName, true),
+		//},
 	}, {
 		Name: "cannot get sink",
 		Objects: []runtime.Object{
@@ -434,30 +434,31 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSourceSinkNotFound(),
 			),
 		}},
-	}, {
-		Name: "deleting - remove finalizer",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkURI),
-				WithPubSubSourceFinalizers(finalizerName),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
-			//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, false),
-		},
 	},
+	//{
+	//	Name: "deleting - remove finalizer",
+	//	Objects: []runtime.Object{
+	//		NewPubSubSource(sourceName, testNS,
+	//			WithPubSubSourceUID(sourceUID),
+	//			WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+	//				Project:            testProject,
+	//				Topic:              testTopicID,
+	//				ServiceAccountName: testServiceAccount,
+	//			}),
+	//			WithPubSubSourceReady(sinkURI),
+	//			WithPubSubSourceFinalizers(finalizerName),
+	//			WithPubSubSourceDeleted,
+	//		),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
+	//		//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
+	//	},
+	//	WantPatches: []clientgotesting.PatchActionImpl{
+	//		patchFinalizers(testNS, sourceName, false),
+	//	},
+	//},
 
 	// TODO:
 	//			Name: "successful create event types",
@@ -473,7 +474,7 @@ func TestAllCases(t *testing.T) {
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
 			receiveAdapterImage: testImage,
-			pubSubClientCreator: fakepubsub.Creator(fakepubsub.CreatorData{}),
+			//pubSubClientCreator: fakepubsub.Creator(fakepubsub.CreatorData{}),
 		}
 	}))
 
@@ -497,61 +498,62 @@ func newReceiveAdapter() runtime.Object {
 	return resources.MakeReceiveAdapter(args)
 }
 
-func TestFinalizers(t *testing.T) {
-	testCases := []struct {
-		name     string
-		original sets.String
-		add      bool
-		want     sets.String
-	}{
-		{
-			name:     "empty, add",
-			original: sets.NewString(),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "empty, delete",
-			original: sets.NewString(),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, delete",
-			original: sets.NewString(finalizerName),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, add",
-			original: sets.NewString(finalizerName),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "existing two, delete",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      false,
-			want:     sets.NewString("someother"),
-		}, {
-			name:     "existing two, no change",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      true,
-			want:     sets.NewString(finalizerName, "someother"),
-		},
-	}
-
-	for _, tc := range testCases {
-		original := &eventsv1alpha1.PubSubSource{}
-		original.Finalizers = tc.original.List()
-		if tc.add {
-			addFinalizer(original)
-		} else {
-			removeFinalizer(original)
-		}
-		has := sets.NewString(original.Finalizers...)
-		diff := has.Difference(tc.want)
-		if diff.Len() > 0 {
-			t.Errorf("%q failed, diff: %+v", tc.name, diff)
-		}
-	}
-}
+//
+//func TestFinalizers(t *testing.T) {
+//	testCases := []struct {
+//		name     string
+//		original sets.String
+//		add      bool
+//		want     sets.String
+//	}{
+//		{
+//			name:     "empty, add",
+//			original: sets.NewString(),
+//			add:      true,
+//			want:     sets.NewString(finalizerName),
+//		}, {
+//			name:     "empty, delete",
+//			original: sets.NewString(),
+//			add:      false,
+//			want:     sets.NewString(),
+//		}, {
+//			name:     "existing, delete",
+//			original: sets.NewString(finalizerName),
+//			add:      false,
+//			want:     sets.NewString(),
+//		}, {
+//			name:     "existing, add",
+//			original: sets.NewString(finalizerName),
+//			add:      true,
+//			want:     sets.NewString(finalizerName),
+//		}, {
+//			name:     "existing two, delete",
+//			original: sets.NewString(finalizerName, "someother"),
+//			add:      false,
+//			want:     sets.NewString("someother"),
+//		}, {
+//			name:     "existing two, no change",
+//			original: sets.NewString(finalizerName, "someother"),
+//			add:      true,
+//			want:     sets.NewString(finalizerName, "someother"),
+//		},
+//	}
+//
+//	for _, tc := range testCases {
+//		original := &eventsv1alpha1.PubSubSource{}
+//		original.Finalizers = tc.original.List()
+//		if tc.add {
+//			//addFinalizer(original)
+//		} else {
+//			//removeFinalizer(original)
+//		}
+//		has := sets.NewString(original.Finalizers...)
+//		diff := has.Difference(tc.want)
+//		if diff.Len() > 0 {
+//			t.Errorf("%q failed, diff: %+v", tc.name, diff)
+//		}
+//	}
+//}
 
 func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}

@@ -133,7 +133,7 @@ type PubSubSourceStatus struct {
 
 	// ProjectID is the resolved project ID in use for the PubSubSource.
 	// +optional
-	ProjectID string `json:"projectID,omitempty"`
+	//ProjectID string `json:"projectID,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

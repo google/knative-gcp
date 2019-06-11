@@ -97,15 +97,15 @@ func WithPubSubSourceReady(sink string) PubSubSourceOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
 		s.Status.MarkDeployed()
-		s.Status.MarkSubscribed()
+		//s.Status.MarkSubscribed()
 	}
 }
 
-func WithPubSubSourceProjectResolved(projectID string) PubSubSourceOption {
-	return func(s *v1alpha1.PubSubSource) {
-		s.Status.ProjectID = projectID
-	}
-}
+//func WithPubSubSourceProjectResolved(projectID string) PubSubSourceOption {
+//	return func(s *v1alpha1.PubSubSource) {
+//		s.Status.ProjectID = projectID
+//	}
+//}
 
 func WithPubSubSourceSinkNotFound() PubSubSourceOption {
 	return func(s *v1alpha1.PubSubSource) {
