@@ -82,54 +82,41 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.Source.Spec.ServiceAccountName,
-					Containers: []corev1.Container{
-						{
-							Name:  "receive-adapter",
-							Image: args.Image,
-							Env: []corev1.EnvVar{
-								{
-									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-									Value: credsFile,
-								},
-								{
-									Name:  "PROJECT_ID",
-									Value: args.Source.Status.ProjectID,
-								},
-								{
-									Name:  "PUBSUB_TOPIC_ID",
-									Value: args.Source.Spec.Topic,
-								},
-								{
-									Name:  "PUBSUB_SUBSCRIPTION_ID",
-									Value: args.SubscriptionID,
-								},
-								{
-									Name:  "SINK_URI",
-									Value: args.SinkURI,
-								},
-								{
-									Name:  "TRANSFORMER_URI",
-									Value: args.TransformerURI,
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      credsVolume,
-									MountPath: credsMountPath,
-								},
+					Containers: []corev1.Container{{
+						Name:  "receive-adapter",
+						Image: args.Image,
+						Env: []corev1.EnvVar{{
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: credsFile,
+						}, {
+							Name:  "PROJECT_ID",
+							Value: args.Source.Status.ProjectID,
+						}, {
+							Name:  "PUBSUB_TOPIC_ID",
+							Value: args.Source.Spec.Topic,
+						}, {
+							Name:  "PUBSUB_SUBSCRIPTION_ID",
+							Value: args.SubscriptionID,
+						}, {
+							Name:  "SINK_URI",
+							Value: args.SinkURI,
+						}, {
+							Name:  "TRANSFORMER_URI",
+							Value: args.TransformerURI,
+						}},
+						VolumeMounts: []corev1.VolumeMount{{
+							Name:      credsVolume,
+							MountPath: credsMountPath,
+						}}},
+					},
+					Volumes: []corev1.Volume{{
+						Name: credsVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: secret.Name,
 							},
 						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: credsVolume,
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: secret.Name,
-								},
-							},
-						},
-					},
+					}},
 				},
 			},
 		},

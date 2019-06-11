@@ -218,7 +218,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 
 func (c *Reconciler) resolveProjectID(ctx context.Context, source *v1alpha1.PubSubSource) error {
 	logger := logging.FromContext(ctx)
-	_ = logger
 
 	// Always use the given project, if present.
 	if source.Spec.Project != "" {

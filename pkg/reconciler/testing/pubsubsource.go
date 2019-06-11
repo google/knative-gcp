@@ -101,6 +101,12 @@ func WithPubSubSourceReady(sink string) PubSubSourceOption {
 	}
 }
 
+func WithPubSubSourceProjectResolved(projectID string) PubSubSourceOption {
+	return func(s *v1alpha1.PubSubSource) {
+		s.Status.ProjectID = projectID
+	}
+}
+
 func WithPubSubSourceSinkNotFound() PubSubSourceOption {
 	return func(s *v1alpha1.PubSubSource) {
 		s.Status.MarkNoSink("NotFound", "")
