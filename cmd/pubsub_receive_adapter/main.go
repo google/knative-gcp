@@ -78,6 +78,8 @@ func main() {
 		env.Project = project
 	}
 
+	logger.Info("using project.", zap.String("project", env.Project))
+
 	adapter := &gcppubsub.Adapter{
 		ProjectID:      env.Project,
 		TopicID:        env.Topic,

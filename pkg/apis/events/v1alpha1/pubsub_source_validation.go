@@ -39,19 +39,24 @@ func (current *PubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError 
 	// Sink [required]
 	if equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
-	} else if err := invalidateRef(current.Sink); err != nil {
+	} else if err := validateRef(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
 	if !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
-		if err := invalidateRef(current.Transformer); err != nil {
+		if err := validateRef(current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
 	return nil
 }
 
-func invalidateRef(ref *corev1.ObjectReference) *apis.FieldError {
+func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
+	// nil check.
+	if ref == nil {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+	// Check the object.
 	var errs *apis.FieldError
 	// Required Fields
 	if ref.Name == "" {
