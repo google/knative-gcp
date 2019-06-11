@@ -60,7 +60,7 @@ type PubSubSourceSpec struct {
 	// Project is the ID of the Google Cloud Project that the PubSubSource Topic exists in.
 	Project string `json:"project,omitempty"`
 
-	// Topic is the ID of the GCP PubSubSource Topic to Subscribe to. It must be in the form of the
+	// Topic is the ID of the PubSubSource Topic to Subscribe to. It must be in the form of the
 	// unique identifier within the project, not the entire name. E.g. it must be 'laconia', not
 	// 'projects/my-eventing-project/topics/laconia'.
 	Topic string `json:"topic,omitempty"`
@@ -99,8 +99,9 @@ const (
 	// PubSubSourceConditionDeployed has status True when the PubSubSource has had it's receive adapter deployment created.
 	PubSubSourceConditionDeployed duckv1alpha1.ConditionType = "Deployed"
 
+	// TODO: clean up after we are sure the controller does not control pub/sub.
 	// PubSubSourceConditionSubscribed has status True when a GCP PubSubSource Subscription has been created pointing at the created receive adapter deployment.
-	PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
+	//PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
 
 	// PubSubSourceConditionTransformerProvided has status True when the PubSubSource has been configured with a transformer target.
 	PubSubSourceConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
@@ -112,7 +113,9 @@ const (
 var pubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 	PubSubSourceConditionSinkProvided,
 	PubSubSourceConditionDeployed,
-	PubSubSourceConditionSubscribed)
+
+//PubSubSourceConditionSubscribed,
+)
 
 // PubSubSourceStatus defines the observed state of PubSubSource.
 type PubSubSourceStatus struct {
@@ -129,7 +132,7 @@ type PubSubSourceStatus struct {
 	// +optional
 	TransformerURI string `json:"transformerUri,omitempty"`
 
-	// ProjectID is the current in use project ID that has been configured for the PubSubSource.
+	// ProjectID is the resolved project ID in use for the PubSubSource.
 	// +optional
 	ProjectID string `json:"projectID,omitempty"`
 }

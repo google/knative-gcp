@@ -23,16 +23,17 @@ import (
 
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
 
-	pubsubsourceinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
+
+	pubsubsourceinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource"
 )
 
 const (
@@ -63,16 +64,16 @@ func NewController(
 		logger.Fatalw("required environment variable not defined", zap.String("key", raPubSubImageEnvVar))
 	}
 
-	googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
-	if !defined {
-		logger.Fatalw("required environment variable not defined", zap.String("key", googleCredsEnvVar))
-	}
+	//googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
+	//if !defined {
+	//	logger.Fatalw("required environment variable not defined", zap.String("key", googleCredsEnvVar))
+	//}
 
 	c := &Reconciler{
-		Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-		deploymentLister:    deploymentInformer.Lister(),
-		sourceLister:        sourceInformer.Lister(),
-		pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
+		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
+		deploymentLister: deploymentInformer.Lister(),
+		sourceLister:     sourceInformer.Lister(),
+		//pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
 		receiveAdapterImage: raPubSubSourceImage,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)

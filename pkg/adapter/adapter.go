@@ -137,6 +137,7 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 		cepubsub.WithProjectID(a.ProjectID),
 		cepubsub.WithTopicID(a.TopicID),
 		cepubsub.WithSubscriptionID(a.SubscriptionID),
+		cepubsub.AllowCreateSubscription(true),
 	}
 
 	// Make a pubsub transport for the CloudEvents client.

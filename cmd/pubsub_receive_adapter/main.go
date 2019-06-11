@@ -17,15 +17,18 @@ limitations under the License.
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 
-	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
+	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
-
+	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
+
+	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
 )
 
 type envConfig struct {
@@ -37,6 +40,9 @@ type envConfig struct {
 
 	// Environment variable containing the transformer URI.
 	Transformer string `envconfig:"TRANSFORMER_URI"`
+
+	// Mode is the mode the receive adapter should run in. Options: [TODO]
+	// TODO: Mode string `envconfig:"MODE" default:"start"`
 
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
@@ -64,6 +70,14 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
+	if env.Project == "" {
+		project, err := resolveProjectID(ctx)
+		if err != nil {
+			logger.Fatal("failed to find project id. ", zap.Error(err))
+		}
+		env.Project = project
+	}
+
 	adapter := &gcppubsub.Adapter{
 		ProjectID:      env.Project,
 		TopicID:        env.Topic,
@@ -76,4 +90,18 @@ func main() {
 	if err := adapter.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
+}
+
+func resolveProjectID(ctx context.Context) (string, error) {
+	logger := logging.FromContext(ctx)
+
+	// Try from metadata server.
+	if projectID, err := metadata.ProjectID(); err == nil {
+		return projectID, nil
+	} else {
+		logger.Warnw("failed to get Project ID from GCP Metadata Server.", zap.Error(err))
+	}
+
+	// Unknown Project ID
+	return "", errors.New("project is required but not set")
 }
