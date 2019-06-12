@@ -320,7 +320,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:d3a0fb22471b6861e87b14ffffbfe3cc9faa5bc06c71cf82fa94de56760cce37"
+  digest = "1:33afd816eb96416e5d7c0a64c1c6412e277720faa03c90739ce1d1fb1764b8de"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -352,6 +352,8 @@
     "injection/clients/kubeclient/fake",
     "injection/informers/kubeinformers/appsv1/deployment",
     "injection/informers/kubeinformers/appsv1/deployment/fake",
+    "injection/informers/kubeinformers/batchv1/job",
+    "injection/informers/kubeinformers/batchv1/job/fake",
     "injection/informers/kubeinformers/factory",
     "injection/informers/kubeinformers/factory/fake",
     "injection/sharedmain",
@@ -371,7 +373,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "28f181241cdb19fb0f288fda50af949c0d985b6f"
+  revision = "68737b1b4e03d9a888e89ee2a44714a56eefd539"
 
 [[projects]]
   branch = "master"
@@ -1146,6 +1148,8 @@
     "github.com/knative/pkg/injection/clients/kubeclient/fake",
     "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment",
     "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
+    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job",
+    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake",
     "github.com/knative/pkg/injection/sharedmain",
     "github.com/knative/pkg/kmeta",
     "github.com/knative/pkg/logging",
@@ -1165,8 +1169,6 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/context",
-    "golang.org/x/oauth2/google",
-    "google.golang.org/api/option",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
