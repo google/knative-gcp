@@ -17,24 +17,21 @@ limitations under the License.
 package pubsubsource
 
 import (
-	"os"
 	"testing"
 
 	"github.com/knative/pkg/configmap"
 	logtesting "github.com/knative/pkg/logging/testing"
 	. "github.com/knative/pkg/reconciler/testing"
 
+	_ "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
+
 	// Fake injection informers
 	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource/fake"
-	_ "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
 )
 
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
-
-	_ = os.Setenv(raPubSubImageEnvVar, "IMAGE")
-	_ = os.Setenv(googleCredsEnvVar, "CREDS")
 
 	c := NewController(ctx, configmap.NewFixedWatcher())
 

@@ -18,21 +18,20 @@ package pubsubsource
 
 import (
 	"context"
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/client-go/tools/cache"
 
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-
-	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
+	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 
 	pubsubsourceinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource"
+	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
+	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
 )
 
 const (
@@ -58,6 +57,7 @@ func NewController(
 
 	deploymentInformer := deploymentinformer.Get(ctx)
 	sourceInformer := pubsubsourceinformers.Get(ctx)
+	jobInformer := jobinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 
@@ -79,6 +79,11 @@ func NewController(
 	sourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSubSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSubSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

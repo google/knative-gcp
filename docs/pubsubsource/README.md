@@ -50,8 +50,8 @@ most useful as a bridge from other GCP services, such as
    1. Create a secret on the kubernetes cluster with the downloaded key:
 
       ```shell
-      # The secret should not already exist, so just try to create it.
-      kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pubsubsource.json
+          # The secret should not already exist, so just try to create it.
+          kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pubsubsource.json
       ```
       
       `google-cloud-key` and `key.json` are pre-configured values in

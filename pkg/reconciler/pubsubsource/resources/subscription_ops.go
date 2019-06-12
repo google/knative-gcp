@@ -23,6 +23,8 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 )
 
 const (
@@ -36,29 +38,27 @@ func JobLabels(name, action string) map[string]string {
 	}
 }
 
-type Opt struct {
+type Args struct {
 	Image          string
 	Action         string
 	ProjectID      string
 	TopicID        string
 	SubscriptionID string
-	Source         kmeta.Accessor
+	Source         *v1alpha1.PubSubSource
 }
 
-func NewSubscriptionOps(opt Opt) *batchv1.Job {
-	podTemplate := makePodTemplate(opt)
+func NewSubscriptionOps(args Args) *batchv1.Job {
+	podTemplate := makePodTemplate(args)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "pubsub-" + opt.Source.GetName() + "-" + opt.Action + "-",
-			Namespace:    opt.Source.GetNamespace(),
-			Labels:       JobLabels(opt.Source.GetName(), opt.Action),
-			OwnerReferences: []metav1.OwnerReference{
-				*metav1.NewControllerRef(opt.Source, opt.Source.GroupVersionKind()),
-			},
+			GenerateName:    "pubsub-" + args.Source.GetName() + "-" + args.Action + "-",
+			Namespace:       args.Source.GetNamespace(),
+			Labels:          JobLabels(args.Source.GetName(), args.Action),
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
 		},
 		Spec: batchv1.JobSpec{
 			BackoffLimit: &backoffLimit,
@@ -75,6 +75,10 @@ func IsJobComplete(job *batchv1.Job) bool {
 		}
 	}
 	return false
+}
+
+func IsJobSucceeded(job *batchv1.Job) bool {
+	return !IsJobFailed(job)
 }
 
 func IsJobFailed(job *batchv1.Job) bool {
@@ -105,7 +109,7 @@ func GetFirstTerminationMessage(pod *corev1.Pod) string {
 }
 
 // makePodTemplate creates a pod template for a Job.
-func makePodTemplate(opt Opt, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+func makePodTemplate(opt Args, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 	env := []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: opt.Action,
