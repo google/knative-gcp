@@ -98,7 +98,7 @@ func resolveProjectID(ctx context.Context) (string, error) {
 	if projectID, err := metadata.ProjectID(); err == nil {
 		return projectID, nil
 	} else {
-		logger.Warnw("failed to get Project ID from GCP Metadata Server.", zap.Error(err))
+		logger.Warnw("failed to get Project ID from Google Cloud Metadata Server.", zap.Error(err))
 	}
 
 	// Unknown Project ID

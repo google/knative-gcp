@@ -1,7 +1,7 @@
 # Cloud Pub/Sub Source
 
 This sample shows how to configure the PubSub event source. This event source is
-most useful as a bridge from other GCP services, such as
+most useful as a bridge from other Google Cloud services, such as
 [Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications),
 [IoT Core](https://cloud.google.com/iot/docs/how-tos/devices) and
 [Cloud Scheduler](https://cloud.google.com/scheduler/docs/creating#).
@@ -25,7 +25,7 @@ most useful as a bridge from other GCP services, such as
    ```
 
 1. Create a
-   [GCP Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project).
+   [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project).
    This sample creates one service account for both registration and receiving
    messages, but you can also create a separate service account for receiving
    messages if you want additional privilege separation.
@@ -35,7 +35,7 @@ most useful as a bridge from other GCP services, such as
       ```shell
       gcloud iam service-accounts create cloudrunevents-pubsubsource
       ```
-   1. Give that Service Account the `Pub/Sub Editor` role on your GCP project:
+   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud project:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member=serviceAccount:cloudrunevents-pubsubsource@$PROJECT_ID.iam.gserviceaccount.com \
@@ -86,19 +86,19 @@ most useful as a bridge from other GCP services, such as
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the
-   [`MY_GCP_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+   [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    in [`pubsub-source.yaml`](./pubsub-source.yaml) and apply it.
 
-   If you're in the samples directory, you can replace `MY_GCP_PROJECT` and
+   If you're in the samples directory, you can replace `MY_PROJECT` and
    `TOPIC_NAME` and then apply in one command:
 
    ```shell
    sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pubsub-source.yaml | \
-   sed "s/\#project: MY_GCP_PROJECT/project: $PROJECT_ID/g" | \
+   sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
        kubectl apply --filename -
    ```
 
-   If you are replacing `MY_GCP_PROJECT` manually, then make sure you apply the
+   If you are replacing `MY_PROJECT` manually, then make sure you apply the
    resulting YAML:
 
    ```shell

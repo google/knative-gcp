@@ -14,7 +14,7 @@
 
 # Replace the following before applying this file:
 #   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
-#   MY_GCP_PROJECT: Replace with the GCP Project's ID.
+#   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
 apiVersion: events.cloud.run/v1alpha1
 kind: PubSubSource
@@ -27,7 +27,7 @@ spec:
     kind: Service
     name: event-display
   # If running in GKE, we will ask the metadata server, change this if required.
-  #project: MY_GCP_PROJECT
+  #project: MY_PROJECT
   # The default secret name and key, change this if required.
   #secret:
   #  name: google-cloud-key

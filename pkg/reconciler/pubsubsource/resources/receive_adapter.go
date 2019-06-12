@@ -26,8 +26,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReceiveAdapterArgs are the arguments needed to create a GCP PubSub Source Receive Adapter. Every
-// field is required.
+// ReceiveAdapterArgs are the arguments needed to create a PubSubSource Receive
+// Adapter. Every field is required.
 type ReceiveAdapterArgs struct {
 	Image          string
 	Source         *v1alpha1.PubSubSource
@@ -43,7 +43,7 @@ const (
 )
 
 // DefaultSecretSelector is the default secret selector used to load the creds
-// for the receive adapter to auth with GCP.
+// for the receive adapter to auth with Google Cloud.
 func DefaultSecretSelector() *corev1.SecretKeySelector {
 	return &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
@@ -54,7 +54,7 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 }
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
-// GCP PubSub Sources.
+// PubSubSources.
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret

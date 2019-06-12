@@ -65,14 +65,13 @@ type Reconciler struct {
 	// listers index properties about resources
 	sourceLister listers.PubSubSourceLister
 
-	tracker tracker.Interface // TODO: use tracker.
+	tracker tracker.Interface // TODO: use tracker for sink.
 
 	receiveAdapterImage  string
 	subscriptionOpsImage string
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
-	//pubSubClientCreator pubsubutil.PubSubClientCreator
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -144,23 +143,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSource) error {
 	logger := logging.FromContext(ctx)
 
-	// This Source attempts to reconcile three things.
-	// 1. Determine the sink's URI.
-	//     - Nothing to delete.
-	// 2. Create a receive adapter in the form of a Deployment.
-	//     - Will be garbage collected by K8s when this PubSubSource is deleted.
-	// 3. Register that receive adapter as a Pull endpoint for the specified PubSub Topic.
-	//     - This needs to deregister during deletion.
-	// 4. Create the EventTypes that it can emit.
-	//     - Will be garbage collected by K8s when this PubSubSource is deleted.
-	// Because there is something that must happen during deletion, we add this controller as a
-	// finalizer to every PubSubSource.
-
 	source.Status.InitializeConditions()
-
-	//if err := c.resolveProjectID(ctx, source); err != nil {
-	//	return err
-	//}
 
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
@@ -200,14 +183,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSubSourc
 		logger.Info("Waiting for Job.")
 		return nil
 	}
-
-	//sub, err := c.createSubscription(ctx, source)
-	//if err != nil {
-	//	logger.Error("Unable to create the subscription", zap.Error(err))
-	//	return err
-	//}
-	//addFinalizer(source)
-	//source.Status.MarkSubscribed()
 
 	_, err = c.createReceiveAdapter(ctx, source, subID, sinkURI, transformerURI)
 	if err != nil {
@@ -263,17 +238,6 @@ func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.Pu
 			addFinalizer(source)
 			source.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subID)
 			source.Status.SubscriptionID = subID
-			//jobRef := corev1.ObjectReference{
-			//	Kind:       "Job",
-			//	APIVersion: "batch/v1",
-			//	Name:       job.Name,
-			//	Namespace:  job.Namespace,
-			//}
-			//err := c.tracker.Track(jobRef, source)
-			//c.Logger.Info("tracking", zap.Any("jobRef", jobRef))
-			//if err != nil {
-			//	return false, err
-			//}
 		}
 		c.Logger.Info("Created Job.")
 		return false, nil
@@ -324,17 +288,6 @@ func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1al
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		if job != nil {
 			source.Status.MarkUnsubscribing("Deleting", "Created Job %q to delete Subscription %q.", job.Name, source.Status.SubscriptionID)
-			//jobRef := corev1.ObjectReference{
-			//	Kind:       job.Kind,
-			//	APIVersion: job.APIVersion,
-			//	Name:       job.Name,
-			//	Namespace:  job.Namespace,
-			//}
-			//err := c.tracker.Track(jobRef, source)
-			//c.Logger.Info("tracking", zap.Any("jobRef", jobRef))
-			//if err != nil {
-			//	return err
-			//}
 		}
 		return nil
 	} else if err != nil {
@@ -372,28 +325,6 @@ func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls label
 
 	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }
-
-//
-//func (c *Reconciler) resolveProjectID(ctx context.Context, source *v1alpha1.PubSubSource) error {
-//	logger := logging.FromContext(ctx)
-//
-//	// Always use the given project, if present.
-//	if source.Spec.Project != "" {
-//		source.Status.ProjectID = source.Spec.Project
-//		return nil
-//	}
-//
-//	// Try from metadata server.
-//	if projectID, err := metadata.ProjectID(); err == nil {
-//		source.Status.ProjectID = projectID
-//		return nil
-//	} else {
-//		logger.Warnw("failed to get Project ID from GCP Metadata Server.", zap.Error(err))
-//	}
-//
-//	// Unknown Project ID
-//	return errors.New("project is required but not set")
-//}
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSubSource) (*v1alpha1.PubSubSource, error) {
 	source, err := c.sourceLister.PubSubSources(desired.Namespace).Get(desired.Name)
@@ -470,11 +401,6 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Pub
 	return update, true, err
 }
 
-func hasFinalizer(s *v1alpha1.PubSubSource) bool {
-	finalizers := sets.NewString(s.Finalizers...)
-	return finalizers.Has(finalizerName)
-}
-
 func addFinalizer(s *v1alpha1.PubSubSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Insert(finalizerName)
@@ -532,52 +458,7 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PubSub
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 }
 
-//func (r *Reconciler) createSubscription(ctx context.Context, src *v1alpha1.PubSubSource) (pubsubutil.PubSubSubscription, error) {
-//	// With the goal of multi-tenant pubsub controller, we are we are going to
-//	// create the subscription on the receive adapter. But this means we loose
-//	// the control to delete. This will be solved later.
-//
-//	// TODO: clean this up when we no longer want the controller to make subscriptions.
-//
-//	psc, err := r.pubSubClientCreator(ctx, src.Status.ProjectID)
-//	if err != nil {
-//		return nil, err
-//	}
-//	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Status.ProjectID)
-//	if exists, err := sub.Exists(ctx); err != nil {
-//		return nil, err
-//	} else if exists {
-//		logging.FromContext(ctx).Info("Reusing existing subscription.")
-//		return sub, nil
-//	}
-//	createdSub, err := psc.CreateSubscription(ctx, sub.ID(), psc.Topic(src.Spec.Topic))
-//	if err != nil {
-//		logging.FromContext(ctx).Desugar().Info("Error creating new subscription", zap.Error(err))
-//	} else {
-//		logging.FromContext(ctx).Desugar().Info("Created new subscription", zap.Any("subscription", createdSub))
-//	}
-//	return createdSub, err
-//}
-//
-//func (r *Reconciler) deleteSubscription(ctx context.Context, src *v1alpha1.PubSubSource) error {
-//	// TODO: this should be moved to the validation for pubsub source.
-//	if src.Status.ProjectID == "" {
-//		return errors.New("project is required but not set")
-//	}
-//
-//	psc, err := r.pubSubClientCreator(ctx, src.Status.ProjectID)
-//	if err != nil {
-//		return err
-//	}
-//	sub := psc.SubscriptionInProject(resources.GenerateSubName(src), src.Status.ProjectID)
-//	if exists, err := sub.Exists(ctx); err != nil {
-//		return err
-//	} else if !exists {
-//		return nil
-//	}
-//	return sub.Delete(ctx)
-//}
-
+// TODO: Registry
 //func (r *Reconciler) reconcileEventTypes(ctx context.Context, src *v1alpha1.PubSubSource) error {
 //	args := r.newEventTypeReconcilerArgs(src)
 //	return r.eventTypeReconciler.Reconcile(ctx, src, args)

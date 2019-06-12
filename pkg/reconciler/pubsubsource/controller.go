@@ -88,7 +88,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx)) // TODO: use tracker.
+	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }
