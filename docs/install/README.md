@@ -12,7 +12,7 @@ Applying the `config` dir will:
 
 - create a new namespace, `cloud-run-events`.
 - install new CRDs,
-  - `PubSubSource.events.cloud.run`
+  - `pubsubsources.events.cloud.run`
 - install a controller to operate on the new resources,
   `cloud-run-events/cloud-run-events-controller`.
 - install a new service account, `cloud-run-events/cloud-run-events-controller`.
