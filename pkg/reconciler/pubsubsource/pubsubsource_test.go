@@ -18,29 +18,29 @@ package pubsubsource
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/knative/pkg/configmap"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil/fakepubsub"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
 	"github.com/knative/pkg/controller"
 	logtesting "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/tracker"
 
-	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
+	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsubsource/resources"
+
 	. "github.com/knative/pkg/reconciler/testing"
+
+	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "test-subscription-id"
+	testSubscriptionID = "cloud-run-events-" + testNS + "-" + sourceName + "-" + sourceUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -93,215 +93,6 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
-func TestAllCases_pubsub_clientfail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientCreateErr: errors.New("test-induced-error"),
-	})
-
-	table := TableTest{{
-		Name: "cannot create client",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}, {
-		Name: "deleting - cannot create client",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	},
-	}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_subgetfail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			SubscriptionData: fakepubsub.SubscriptionData{
-				ExistsErr: errors.New("test-induced-error"),
-			},
-		},
-	})
-
-	table := TableTest{{
-		Name: "error checking subscription exists",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}, {
-		Name: "deleting - error checking subscription exists",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_sub_delete_fail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			SubscriptionData: fakepubsub.SubscriptionData{
-				Exists:    true,
-				DeleteErr: errors.New("delete-test-induced-error"),
-			},
-		},
-	})
-
-	table := TableTest{{
-		Name: "deleting - cannot delete subscription",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkDNS),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "delete-test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
-func TestAllCases_pubsub_sub_create_fail(t *testing.T) {
-	creator := fakepubsub.Creator(fakepubsub.CreatorData{
-		ClientData: fakepubsub.ClientData{
-			CreateSubErr: errors.New("create-test-induced-error"),
-		},
-	})
-
-	table := TableTest{{
-		Name: "cannot create subscription",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				WithPubSubSourceReady(sinkURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-test-induced-error"),
-		},
-	}}
-
-	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPubSubSourceLister(),
-			tracker:             tracker.New(func(string) {}, 0),
-			receiveAdapterImage: "img",
-			pubSubClientCreator: creator,
-		}
-	}))
-}
-
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
 		Name: "bad workqueue key",
@@ -327,139 +118,195 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSourceSinkNotFound(),
 			),
 		}},
-	}, {
-		Name: "successful create",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				// Updates
-				WithInitPubSubSourceConditions,
-				WithPubSubSourceReady(sinkURI),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			newReceiveAdapter(),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
-	}, {
-		Name: "successful create - reuse existing receive adapter",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-			),
-			newSink(),
-			newReceiveAdapter(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				// Updates
-				WithInitPubSubSourceConditions,
-				WithPubSubSourceReady(sinkURI),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
-	}, {
-		Name: "cannot get sink",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-			)},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.run "sink" not found`),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceSink(sinkGVK, sinkName),
-				// updates
-				WithInitPubSubSourceConditions,
-				WithPubSubSourceSinkNotFound(),
-			),
-		}},
-	}, {
-		Name: "deleting - remove finalizer",
-		Objects: []runtime.Object{
-			NewPubSubSource(sourceName, testNS,
-				WithPubSubSourceUID(sourceUID),
-				WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-					GoogleCloudProject: testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
-				}),
-				WithPubSubSourceReady(sinkURI),
-				WithPubSubSourceFinalizers(finalizerName),
-				WithPubSubSourceDeleted,
-			),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
-			//Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, false),
-		},
 	},
+		//{
+		//	Name: "create subscription",
+		//	Objects: []runtime.Object{
+		//		NewPubSubSource(sourceName, testNS,
+		//			WithPubSubSourceUID(sourceUID),
+		//			WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+		//				Project:            testProject,
+		//				Topic:              testTopicID,
+		//				ServiceAccountName: testServiceAccount,
+		//			}),
+		//			WithPubSubSourceSink(sinkGVK, sinkName),
+		//			WithPubSubSourceSubscription(testSubscriptionID),
+		//		),
+		//		newSink(),
+		//	},
+		//	Key: testNS + "/" + sourceName,
+		//	WantEvents: []string{
+		//		/Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
+		//		Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
+		//	},
+		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+		//		Object: NewPubSubSource(sourceName, testNS,
+		//			WithPubSubSourceUID(sourceUID),
+		//			WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+		//				Project:            testProject,
+		//				Topic:              testTopicID,
+		//				ServiceAccountName: testServiceAccount,
+		//			}),
+		//			WithPubSubSourceSink(sinkGVK, sinkName),
+		//			WithPubSubSourceSubscription(testSubscriptionID),
+		//			// Updates
+		//			WithInitPubSubSourceConditions,
+		//			WithPubSubSourceReady(sinkURI),
+		//		),
+		//	}},
+		//	WantCreates: []runtime.Object{
+		//		newReceiveAdapter(),
+		//	},
+		//	WantPatches: []clientgotesting.PatchActionImpl{
+		//		patchFinalizers(testNS, sourceName, true),
+		//	},
+		//},
+		{
+			Name: "successful create",
+			Objects: []runtime.Object{
+				NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceUID(sourceUID),
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+					WithPubSubSourceSubscription(testSubscriptionID),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceUID(sourceUID),
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+					WithPubSubSourceSubscription(testSubscriptionID),
+					// Updates
+					WithInitPubSubSourceConditions,
+					WithPubSubSourceReady(sinkURI),
+				),
+			}},
+			WantCreates: []runtime.Object{
+				newReceiveAdapter(),
+			},
+		}, {
+			Name: "successful create - reuse existing receive adapter",
+			Objects: []runtime.Object{
+				NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceUID(sourceUID),
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+					WithPubSubSourceSubscription(testSubscriptionID),
+				),
+				newSink(),
+				newReceiveAdapter(),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceUID(sourceUID),
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+					WithPubSubSourceSubscription(testSubscriptionID),
+					// Updates
+					WithInitPubSubSourceConditions,
+					WithPubSubSourceReady(sinkURI),
+				),
+			}},
+		}, {
+			Name: "cannot get sink",
+			Objects: []runtime.Object{
+				NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+				)},
+			Key:     testNS + "/" + sourceName,
+			WantErr: true,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.run "sink" not found`),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceSink(sinkGVK, sinkName),
+					// updates
+					WithInitPubSubSourceConditions,
+					WithPubSubSourceSinkNotFound(),
+				),
+			}},
+		},
+		//{
+		//	Name: "deleting - delete subscription",
+		//	Objects: []runtime.Object{
+		//		NewPubSubSource(sourceName, testNS,
+		//			WithPubSubSourceUID(sourceUID),
+		//			WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+		//				Project:            testProject,
+		//				Topic:              testTopicID,
+		//				ServiceAccountName: testServiceAccount,
+		//			}),
+		//			WithPubSubSourceReady(sinkURI),
+		//			WithPubSubSourceFinalizers(finalizerName),
+		//			WithPubSubSourceDeleted,
+		//		),
+		//	},
+		//	Key: testNS + "/" + sourceName,
+		//WantEvents: []string{
+		//	Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source" finalizers`),
+		//	Eventf(corev1.EventTypeNormal, "Updated", `Updated PubSubSource "source"`),
+		//},
+		//WantPatches: []clientgotesting.PatchActionImpl{
+		//	patchFinalizers(testNS, sourceName, false),
+		//},
+		//},
+		{
+			Name: "deleting final stage",
+			Objects: []runtime.Object{
+				NewPubSubSource(sourceName, testNS,
+					WithPubSubSourceUID(sourceUID),
+					WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPubSubSourceReady(sinkURI),
+					WithPubSubSourceDeleted,
+				),
+			},
+			Key: testNS + "/" + sourceName,
+		},
 
-	// TODO:
-	//			Name: "successful create event types",
-	//			Name: "cannot create event types",
+		// TODO:
+		//			Name: "successful create event types",
+		//			Name: "cannot create event types",
 
 	}
 
@@ -471,7 +318,7 @@ func TestAllCases(t *testing.T) {
 			sourceLister:        listers.GetPubSubSourceLister(),
 			tracker:             tracker.New(func(string) {}, 0),
 			receiveAdapterImage: testImage,
-			pubSubClientCreator: fakepubsub.Creator(fakepubsub.CreatorData{}),
+			//pubSubClientCreator: fakepubsub.Creator(fakepubsub.CreatorData{}),
 		}
 	}))
 
@@ -481,7 +328,7 @@ func newReceiveAdapter() runtime.Object {
 	source := NewPubSubSource(sourceName, testNS,
 		WithPubSubSourceUID(sourceUID),
 		WithPubSubSourceSpec(eventsv1alpha1.PubSubSourceSpec{
-			GoogleCloudProject: testProject,
+			Project:            testProject,
 			Topic:              testTopicID,
 			ServiceAccountName: testServiceAccount,
 		}))

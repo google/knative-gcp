@@ -1,5 +1,6 @@
 # Operating system temporary files
 .DS_Store
+tmp/
 
 # Editor/IDE specific settings
 .idea

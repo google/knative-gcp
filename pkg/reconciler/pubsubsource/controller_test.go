@@ -25,16 +25,19 @@ import (
 	. "github.com/knative/pkg/reconciler/testing"
 
 	// Fake injection informers
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource/fake"
+
 	_ "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
+	_ "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake"
+
+	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource/fake"
 )
 
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	_ = os.Setenv(raPubSubImageEnvVar, "IMAGE")
-	_ = os.Setenv(googleCredsEnvVar, "CREDS")
+	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
+	_ = os.Setenv("PUBSUB_SUB_IMAGE", "PUBSUB_SUB_IMAGE")
 
 	c := NewController(ctx, configmap.NewFixedWatcher())
 

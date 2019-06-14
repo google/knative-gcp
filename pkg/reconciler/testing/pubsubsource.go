@@ -86,6 +86,13 @@ func WithPubSubSourceSink(gvk metav1.GroupVersionKind, name string) PubSubSource
 	}
 }
 
+func WithPubSubSourceSubscription(subscriptionID string) PubSubSourceOption {
+	return func(s *v1alpha1.PubSubSource) {
+		s.Status.MarkSubscribed()
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithPubSubSourceSpec(spec v1alpha1.PubSubSourceSpec) PubSubSourceOption {
 	return func(s *v1alpha1.PubSubSource) {
 		s.Spec = spec
@@ -100,6 +107,12 @@ func WithPubSubSourceReady(sink string) PubSubSourceOption {
 		s.Status.MarkSubscribed()
 	}
 }
+
+//func WithPubSubSourceProjectResolved(projectID string) PubSubSourceOption {
+//	return func(s *v1alpha1.PubSubSource) {
+//		s.Status.ProjectID = projectID
+//	}
+//}
 
 func WithPubSubSourceSinkNotFound() PubSubSourceOption {
 	return func(s *v1alpha1.PubSubSource) {

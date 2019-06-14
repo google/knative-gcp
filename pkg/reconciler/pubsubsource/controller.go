@@ -18,33 +18,35 @@ package pubsubsource
 
 import (
 	"context"
-	"os"
-
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsubutil"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
+	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 
 	pubsubsourceinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/pubsubsource"
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
+	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
 )
 
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
-
-	// raImageEnvVar is the name of the environment variable that contains the receive adapter's
-	// image. It must be defined.
-	raPubSubImageEnvVar = "PUBSUB_RA_IMAGE"
-
-	googleCredsEnvVar = "GOOGLE_APPLICATION_CREDENTIALS"
 )
+
+type envConfig struct {
+	// ReceiveAdapter is the receive adapters image. Required.
+	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
+
+	// SubscriptionOps is the image for operating on subscriptions. Required.
+	SubscriptionOps string `envconfig:"PUBSUB_SUB_IMAGE" required:"true"`
+}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -55,24 +57,21 @@ func NewController(
 
 	deploymentInformer := deploymentinformer.Get(ctx)
 	sourceInformer := pubsubsourceinformers.Get(ctx)
+	jobInformer := jobinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
-	raPubSubSourceImage, defined := os.LookupEnv(raPubSubImageEnvVar)
-	if !defined {
-		logger.Fatalw("required environment variable '%s' not defined", raPubSubImageEnvVar)
-	}
 
-	googleCreds, defined := os.LookupEnv(googleCredsEnvVar)
-	if !defined {
-		logger.Fatalw("required environment variable '%s' not defined", googleCredsEnvVar)
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
 	c := &Reconciler{
-		Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
-		deploymentLister:    deploymentInformer.Lister(),
-		sourceLister:        sourceInformer.Lister(),
-		pubSubClientCreator: pubsubutil.GcpPubSubClientCreatorWithCreds(context.Background(), googleCreds),
-		receiveAdapterImage: raPubSubSourceImage,
+		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		deploymentLister:     deploymentInformer.Lister(),
+		sourceLister:         sourceInformer.Lister(),
+		receiveAdapterImage:  env.ReceiveAdapter,
+		subscriptionOpsImage: env.SubscriptionOps,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -84,7 +83,12 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx)) // TODO: use tracker.
+	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSubSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }

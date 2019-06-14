@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"fmt"
-
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
@@ -51,36 +50,38 @@ var _ = duck.VerifyType(&PubSubSource{}, &duckv1alpha1.Conditions{})
 
 // PubSubSourceSpec defines the desired state of the PubSubSource.
 type PubSubSourceSpec struct {
-	// GcpCredsSecret is the credential to use to poll the GCP PubSubSource Subscription. It is not used
-	// to create or delete the Subscription, only to poll it. The value of the secret entry must be
-	// a service account key in the JSON format (see
-	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	GcpCredsSecret corev1.SecretKeySelector `json:"gcpCredsSecret,omitempty"`
+	// Secret is the credential to use to create and poll the PubSubSource
+	// Subscription. The value of the secret entry must be a service account
+	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
-	// GoogleCloudProject is the ID of the Google Cloud Project that the PubSubSource Topic exists in.
-	GoogleCloudProject string `json:"googleCloudProject,omitempty"`
+	// Project is the ID of the Google Cloud Project that the PubSubSource
+	// Topic exists in.
+	Project string `json:"project,omitempty"`
 
-	// Topic is the ID of the GCP PubSubSource Topic to Subscribe to. It must be in the form of the
-	// unique identifier within the project, not the entire name. E.g. it must be 'laconia', not
-	// 'projects/my-eventing-project/topics/laconia'.
+	// Topic is the ID of the PubSubSource Topic to Subscribe to. It must be in
+	// the form of the unique identifier within the project, not the entire
+	// name. E.g. it must be 'laconia', not 'projects/my-proj/topics/laconia'.
 	Topic string `json:"topic,omitempty"`
 
-	// Sink is a reference to an object that will resolve to a domain name to use as the sink.
+	// Sink is a reference to an object that will resolve to a domain name to
+	// use as the sink.
 	// +optional
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
 
-	// Transformer is a reference to an object that will resolve to a domain name to use as the transformer.
+	// Transformer is a reference to an object that will resolve to a domain
+	// name to use as the transformer.
 	// +optional
 	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to run the Receive
-	// Adapter Deployment.
+	// ServiceAccoutName is the name of the ServiceAccount that will be used to
+	// run the Receive Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 const (
-	// PubSubEventType is the GcpPubSub CloudEvent type, in case PubSubSource doesn't send a
-	// CloudEvent itself.
+	// PubSubEventType is the GcpPubSub CloudEvent type, in case PubSubSource
+	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
 )
 
@@ -90,44 +91,64 @@ func PubSubEventSource(googleCloudProject, topic string) string {
 }
 
 const (
-	// PubSubSourceConditionReady has status True when the PubSubSource is ready to send events.
+	// PubSubSourceConditionReady has status True when the PubSubSource is
+	// ready to send events.
 	PubSubSourceConditionReady = duckv1alpha1.ConditionReady
 
-	// PubSubSourceConditionSinkProvided has status True when the PubSubSource has been configured with a sink target.
+	// PubSubSourceConditionSinkProvided has status True when the PubSubSource
+	// has been configured with a sink target.
 	PubSubSourceConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
 
-	// PubSubSourceConditionDeployed has status True when the PubSubSource has had it's receive adapter deployment created.
+	// PubSubSourceConditionDeployed has status True when the PubSubSource has
+	// had it's receive adapter deployment created.
 	PubSubSourceConditionDeployed duckv1alpha1.ConditionType = "Deployed"
 
-	// PubSubSourceConditionSubscribed has status True when a GCP PubSubSource Subscription has been created pointing at the created receive adapter deployment.
+	// PubSubSourceConditionSubscribed has status True when a Google Cloud
+	// Pub/Sub Subscription has been created pointing at the created receive
+	// adapter deployment.
 	PubSubSourceConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
 
-	// PubSubSourceConditionTransformerProvided has status True when the PubSubSource has been configured with a transformer target.
+	// PubSubSourceConditionTransformerProvided has status True when the
+	// PubSubSource has been configured with a transformer target.
 	PubSubSourceConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
 
-	// PubSubSourceConditionEventTypesProvided has status True when the PubSubSource has been configured with event types.
+	// PubSubSourceConditionEventTypesProvided has status True when the
+	// PubSubSource has been configured with event types.
 	PubSubSourceConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypesProvided"
 )
 
 var pubSubSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 	PubSubSourceConditionSinkProvided,
 	PubSubSourceConditionDeployed,
-	PubSubSourceConditionSubscribed)
+	PubSubSourceConditionSubscribed,
+)
 
 // PubSubSourceStatus defines the observed state of PubSubSource.
 type PubSubSourceStatus struct {
 	// inherits duck/v1alpha1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
+	// * ObservedGeneration - the 'Generation' of the Service that was last
+	//   processed by the controller.
+	// * Conditions - the latest available observations of a resource's
+	//   current state.
 	duckv1alpha1.Status `json:",inline"`
 
-	// SinkURI is the current active sink URI that has been configured for the PubSubSource.
+	// SinkURI is the current active sink URI that has been configured for the
+	// PubSubSource.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
 
-	// TransformerURI is the current active transformer URI that has been configured for the GcpPubSubSource.
+	// TransformerURI is the current active transformer URI that has been
+	// configured for the PubSubSource.
 	// +optional
 	TransformerURI string `json:"transformerUri,omitempty"`
+
+	// ProjectID is the resolved project ID in use by the PubSubSource.
+	// +optional
+	ProjectID string `json:"projectId,omitempty"`
+
+	// SubscriptionID is the created subscription ID used by the PubSubSource.
+	// +optional
+	SubscriptionID string `json:"subscriptionId,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

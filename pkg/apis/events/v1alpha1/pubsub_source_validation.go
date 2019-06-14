@@ -19,9 +19,57 @@ package v1alpha1
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/knative/pkg/apis"
 )
+
+func (current *PubSubSource) Validate(ctx context.Context) *apis.FieldError {
+	return current.Spec.Validate(ctx).ViaField("spec")
+}
+
+func (current *PubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+	// Topic [required]
+	if current.Topic == "" {
+		errs = errs.Also(apis.ErrMissingField("topic"))
+	}
+	// Sink [required]
+	if equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
+		errs = errs.Also(apis.ErrMissingField("sink"))
+	} else if err := validateRef(current.Sink); err != nil {
+		errs = errs.Also(err.ViaField("sink"))
+	}
+	// Transformer [optional]
+	if !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
+		if err := validateRef(current.Transformer); err != nil {
+			errs = errs.Also(err.ViaField("transformer"))
+		}
+	}
+	return nil
+}
+
+func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
+	// nil check.
+	if ref == nil {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+	// Check the object.
+	var errs *apis.FieldError
+	// Required Fields
+	if ref.Name == "" {
+		errs = errs.Also(apis.ErrMissingField("name"))
+	}
+	if ref.APIVersion == "" {
+		errs = errs.Also(apis.ErrMissingField("apiVersion"))
+	}
+	if ref.Kind == "" {
+		errs = errs.Also(apis.ErrMissingField("kind"))
+	}
+	return errs
+}
 
 func (current *PubSubSource) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
 	original, ok := og.(*PubSubSource)
@@ -31,6 +79,8 @@ func (current *PubSubSource) CheckImmutableFields(ctx context.Context, og apis.I
 	if original == nil {
 		return nil
 	}
+
+	// TODO: revisit this.
 
 	// All of the fields are immutable because the controller doesn't understand when it would need
 	// to delete and create a new Receive Adapter with updated arguments. We could relax it slightly
