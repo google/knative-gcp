@@ -28,6 +28,10 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeEventsV1alpha1) PubSubChannels(namespace string) v1alpha1.PubSubChannelInterface {
+	return &FakePubSubChannels{c, namespace}
+}
+
 func (c *FakeEventsV1alpha1) PubSubSources(namespace string) v1alpha1.PubSubSourceInterface {
 	return &FakePubSubSources{c, namespace}
 }

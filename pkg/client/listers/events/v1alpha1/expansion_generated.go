@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// PubSubChannelListerExpansion allows custom methods to be added to
+// PubSubChannelLister.
+type PubSubChannelListerExpansion interface{}
+
+// PubSubChannelNamespaceListerExpansion allows custom methods to be added to
+// PubSubChannelNamespaceLister.
+type PubSubChannelNamespaceListerExpansion interface{}
+
 // PubSubSourceListerExpansion allows custom methods to be added to
 // PubSubSourceLister.
 type PubSubSourceListerExpansion interface{}

@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// PubSubChannels returns a PubSubChannelInformer.
+	PubSubChannels() PubSubChannelInformer
 	// PubSubSources returns a PubSubSourceInformer.
 	PubSubSources() PubSubSourceInformer
 }
@@ -37,6 +39,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// PubSubChannels returns a PubSubChannelInformer.
+func (v *version) PubSubChannels() PubSubChannelInformer {
+	return &pubSubChannelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // PubSubSources returns a PubSubSourceInformer.

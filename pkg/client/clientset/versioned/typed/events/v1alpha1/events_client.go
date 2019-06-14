@@ -27,12 +27,17 @@ import (
 
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	PubSubChannelsGetter
 	PubSubSourcesGetter
 }
 
 // EventsV1alpha1Client is used to interact with features provided by the events.cloud.run group.
 type EventsV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *EventsV1alpha1Client) PubSubChannels(namespace string) PubSubChannelInterface {
+	return newPubSubChannels(c, namespace)
 }
 
 func (c *EventsV1alpha1Client) PubSubSources(namespace string) PubSubSourceInterface {
