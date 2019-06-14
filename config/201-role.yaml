@@ -12,13 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Secret
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+
 metadata:
-  name: cloud-run-events-source-key
+  name: cloud-run-events-controller
   namespace: cloud-run-events
   labels:
     events.cloud.run/release: devel
-type: Opaque
-data:
-  'key.json': "" # <-- Insert the contents of the key, base64 encoded here.
+rules:
+- apiGroups:
+    - ""
+  resources:
+    - secrets
+    - configmaps
+  verbs: &everything
+    - get
+    - list
+    - watch
+    - create
+    - update
+    - patch
+    - delete

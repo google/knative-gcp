@@ -54,7 +54,7 @@ func TestReporter_ReportDuration(t *testing.T) {
 		t.Errorf("Failed to create reporter: %v", err)
 	}
 
-	kind := "Broker"
+	kind := "PubSubSource"
 	keys := KindToStatKeys[kind]
 
 	countWas := int64(0)

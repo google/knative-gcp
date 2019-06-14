@@ -1,7 +1,7 @@
 # Cloud Pub/Sub Source
 
 This sample shows how to configure the PubSub event source. This event source is
-most useful as a bridge from other GCP services, such as
+most useful as a bridge from other Google Cloud services, such as
 [Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications),
 [IoT Core](https://cloud.google.com/iot/docs/how-tos/devices) and
 [Cloud Scheduler](https://cloud.google.com/scheduler/docs/creating#).
@@ -25,43 +25,35 @@ most useful as a bridge from other GCP services, such as
    ```
 
 1. Create a
-   [GCP Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project).
+   [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project).
    This sample creates one service account for both registration and receiving
    messages, but you can also create a separate service account for receiving
    messages if you want additional privilege separation.
 
-   1. Create a new service account named `cloudrunevents-source` with the
+   1. Create a new service account named `cloudrunevents-pubsubsource` with the
       following command:
       ```shell
-      gcloud iam service-accounts create cloudrunevents-source
+      gcloud iam service-accounts create cloudrunevents-pubsubsource
       ```
-   1. Give that Service Account the `Pub/Sub Editor` role on your GCP project:
+   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud project:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member=serviceAccount:cloudrunevents-source@$PROJECT_ID.iam.gserviceaccount.com \
+        --member=serviceAccount:cloudrunevents-pubsubsource@$PROJECT_ID.iam.gserviceaccount.com \
         --role roles/pubsub.editor
       ```
    1. Download a new JSON private key for that Service Account. **Be sure not to
       check this key into source control!**
       ```shell
-      gcloud iam service-accounts keys create cloudrunevents-source.json \
-        --iam-account=cloudrunevents-source@$PROJECT_ID.iam.gserviceaccount.com
+      gcloud iam service-accounts keys create cloudrunevents-pubsubsource.json \
+        --iam-account=cloudrunevents-pubsubsource@$PROJECT_ID.iam.gserviceaccount.com
       ```
-   1. Create two secrets on the kubernetes cluster with the downloaded key:
+   1. Create a secret on the kubernetes cluster with the downloaded key:
 
       ```shell
-      # Note that the first secret may already have been created when installing
-      # Cloud Run Events. The following command will overwrite it. If you don't
-      # want to overwrite it, then skip this command.
-      kubectl --namespace cloud-run-events create secret generic cloud-run-events-source-key --from-file=key.json=cloudrunevents-source.json --dry-run --output yaml | kubectl apply --filename -
-
-      # The second secret should not already exist, so just try to create it.
-      kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-source.json
+          # The secret should not already exist, so just try to create it.
+          kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pubsubsource.json
       ```
-
-      `cloud-run-events-source-key` and `key.json` are pre-configured values in
-      the `controller` Deployment which manages Cloud Run Events resources.
-
+      
       `google-cloud-key` and `key.json` are pre-configured values in
       [`pubsub-source.yaml`](./pubsub-source.yaml).
 
@@ -94,19 +86,19 @@ most useful as a bridge from other GCP services, such as
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the
-   [`MY_GCP_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+   [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    in [`pubsub-source.yaml`](./pubsub-source.yaml) and apply it.
 
-   If you're in the samples directory, you can replace `MY_GCP_PROJECT` and
+   If you're in the samples directory, you can replace `MY_PROJECT` and
    `TOPIC_NAME` and then apply in one command:
 
    ```shell
    sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pubsub-source.yaml | \
-   sed "s/\#project: MY_GCP_PROJECT/project: $PROJECT_ID/g" | \
+   sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
        kubectl apply --filename -
    ```
 
-   If you are replacing `MY_GCP_PROJECT` manually, then make sure you apply the
+   If you are replacing `MY_PROJECT` manually, then make sure you apply the
    resulting YAML:
 
    ```shell
@@ -143,7 +135,7 @@ service the source sinks to.
 
      You should see at least one.
 
-1. Inspect the logs of the sercice:
+1. Inspect the logs of the service:
 
    ```shell
    kubectl logs --selector app=event-display -c user-container
@@ -202,6 +194,6 @@ kubectl apply --filename pubsub-source.yaml
 
 1. Delete the service used as the sink:
 
-   ```shell
-   kubectl delete --filename event-display.yaml
-   ```
+```shell
+kubectl delete --filename event-display.yaml
+```

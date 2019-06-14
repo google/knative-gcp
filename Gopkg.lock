@@ -134,6 +134,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:53151cc4366e3945282d4b783fd41f35222cabbc75601e68d8133648c63498d1"
+  name = "github.com/gobuffalo/envy"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "043cb4b8af871b49563291e32c66bb84378a60ac"
+  version = "v1.7.0"
+
+[[projects]]
   digest = "1:93344b9d2c6f6c951d852e753e09c7d433a222e3c0ac952ff86f6e2527873b37"
   name = "github.com/gogo/protobuf"
   packages = [
@@ -289,6 +297,14 @@
   revision = "c2b33e84"
 
 [[projects]]
+  digest = "1:da62aa6632d04e080b8a8b85a59ed9ed1550842a0099a55f3ae3a20d02a3745a"
+  name = "github.com/joho/godotenv"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:0243cffa4a3410f161ee613dfdd903a636d07e838a42d341da95d81f42cd1d41"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -304,7 +320,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:d3a0fb22471b6861e87b14ffffbfe3cc9faa5bc06c71cf82fa94de56760cce37"
+  digest = "1:33afd816eb96416e5d7c0a64c1c6412e277720faa03c90739ce1d1fb1764b8de"
   name = "github.com/knative/pkg"
   packages = [
     "apis",
@@ -336,6 +352,8 @@
     "injection/clients/kubeclient/fake",
     "injection/informers/kubeinformers/appsv1/deployment",
     "injection/informers/kubeinformers/appsv1/deployment/fake",
+    "injection/informers/kubeinformers/batchv1/job",
+    "injection/informers/kubeinformers/batchv1/job/fake",
     "injection/informers/kubeinformers/factory",
     "injection/informers/kubeinformers/factory/fake",
     "injection/sharedmain",
@@ -351,9 +369,11 @@
     "system",
     "system/testing",
     "tracker",
+    "version",
+    "webhook",
   ]
   pruneopts = "T"
-  revision = "28f181241cdb19fb0f288fda50af949c0d985b6f"
+  revision = "68737b1b4e03d9a888e89ee2a44714a56eefd539"
 
 [[projects]]
   branch = "master"
@@ -365,6 +385,14 @@
   ]
   pruneopts = "UT"
   revision = "bc30454936e210896ec6c91528c040e844b14b39"
+
+[[projects]]
+  digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
+  name = "github.com/markbates/inflect"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "24b83195037b3bc61fcda2d28b7b0518bce293b6"
+  version = "v1.0.4"
 
 [[projects]]
   branch = "master"
@@ -456,6 +484,18 @@
   pruneopts = "NUT"
   revision = "65bdadfa96aecebf4dcf888da995a29eab4fc964"
   version = "v0.0.1"
+
+[[projects]]
+  digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
+  name = "github.com/rogpeppe/go-internal"
+  packages = [
+    "modfile",
+    "module",
+    "semver",
+  ]
+  pruneopts = "NUT"
+  revision = "438578804ca6f31be148c27683afc419ce47c06e"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:d917313f309bda80d27274d53985bc65651f81a5b66b820749ac7f8ef061fd04"
@@ -745,9 +785,10 @@
   version = "v2.2.1"
 
 [[projects]]
-  digest = "1:4485f6050feae6844efd79bce3f5b35e5ed4a21dd79ef6a2dbbee263531cea09"
+  digest = "1:1d34342a53d8f8c625260d6c4c2e5c99442b1635bbf4208f426bd12aa210b870"
   name = "k8s.io/api"
   packages = [
+    "admission/v1beta1",
     "admissionregistration/v1alpha1",
     "admissionregistration/v1beta1",
     "apps/v1",
@@ -840,7 +881,7 @@
   version = "kubernetes-1.12.6"
 
 [[projects]]
-  digest = "1:b7dd0420e85cb2968ffb945f2810ea6c796dc2a08660618e2200c08c596f0624"
+  digest = "1:07be043078c2dc2ee33e81278b264a84f364c6d711811d2932aa42212fc4f2ae"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -988,9 +1029,11 @@
     "pkg/apis/clientauthentication/v1beta1",
     "pkg/version",
     "plugin/pkg/client/auth/exec",
+    "plugin/pkg/client/auth/gcp",
     "rest",
     "rest/watch",
     "testing",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -1008,6 +1051,7 @@
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
+    "util/jsonpath",
     "util/retry",
     "util/workqueue",
   ]
@@ -1104,14 +1148,19 @@
     "github.com/knative/pkg/injection/clients/kubeclient/fake",
     "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment",
     "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
+    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job",
+    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake",
     "github.com/knative/pkg/injection/sharedmain",
     "github.com/knative/pkg/kmeta",
     "github.com/knative/pkg/logging",
     "github.com/knative/pkg/logging/testing",
     "github.com/knative/pkg/metrics",
     "github.com/knative/pkg/reconciler/testing",
+    "github.com/knative/pkg/signals",
     "github.com/knative/pkg/system",
     "github.com/knative/pkg/tracker",
+    "github.com/knative/pkg/version",
+    "github.com/knative/pkg/webhook",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.opencensus.io/stats",
@@ -1120,9 +1169,8 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/context",
-    "golang.org/x/oauth2/google",
-    "google.golang.org/api/option",
     "k8s.io/api/apps/v1",
+    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/equality",
@@ -1150,9 +1198,11 @@
     "k8s.io/client-go/listers/apps/v1",
     "k8s.io/client-go/listers/core/v1",
     "k8s.io/client-go/listers/rbac/v1",
+    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
+    "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/code-generator/cmd/client-gen",

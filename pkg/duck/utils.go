@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,10 +25,6 @@ import (
 	"sync"
 
 	"k8s.io/apimachinery/pkg/util/validation"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 const (
@@ -80,19 +76,6 @@ func getClusterDomainName(r io.Reader) string {
 	}
 	// For all abnormal cases return default domain name
 	return defaultDomainName
-}
-
-func ObjectRef(obj metav1.Object, gvk schema.GroupVersionKind) corev1.ObjectReference {
-	// We can't always rely on the TypeMeta being populated.
-	// See: https://github.com/knative/serving/issues/2372
-	// Also: https://github.com/kubernetes/apiextensions-apiserver/issues/29
-	apiVersion, kind := gvk.ToAPIVersionAndKind()
-	return corev1.ObjectReference{
-		APIVersion: apiVersion,
-		Kind:       kind,
-		Namespace:  obj.GetNamespace(),
-		Name:       obj.GetName(),
-	}
 }
 
 // Converts 'name' to a valid DNS1123 subdomain, required for object names in K8s.

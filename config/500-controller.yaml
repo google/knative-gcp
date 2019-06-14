@@ -12,34 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Deploy webhook
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cloud-run-events-controller
+  name: controller
   namespace: cloud-run-events
   labels:
     events.cloud.run/release: devel
 spec:
   replicas: 1
   selector:
-    matchLabels: &labels
+    matchLabels:
       control-plane: cloud-run-events-controller
   template:
     metadata:
-      labels: *labels
+      labels:
+        control-plane: cloud-run-events-controller
     spec:
-      serviceAccountName: cloud-run-events-controller
+      serviceAccountName: controller
       containers:
       - name: controller
         image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/controller
         imagePullPolicy: Always
         env:
-        - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: /var/secrets/google/key.json
         - name: PUBSUB_RA_IMAGE
-          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub_receive_adapter
+          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/receive_adapter
+        - name: PUBSUB_SUB_IMAGE
+          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/subscription
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
@@ -51,8 +50,6 @@ spec:
         - name: METRICS_DOMAIN
           value: cloud.run/events
         volumeMounts:
-        - name: google-cloud-key
-          mountPath: /var/secrets/google
         - name: config-logging
           mountPath: /etc/config-logging
         resources:
@@ -69,8 +66,5 @@ spec:
       - name: config-logging
         configMap:
           name: config-logging
-      - name: google-cloud-key
-        secret:
-          secretName: cloud-run-events-source-key
-      serviceAccount: cloud-run-events-controller
+      serviceAccount: controller
       terminationGracePeriodSeconds: 10
