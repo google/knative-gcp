@@ -35,7 +35,8 @@ most useful as a bridge from other Google Cloud services, such as
       ```shell
       gcloud iam service-accounts create cloudrunevents-pubsubsource
       ```
-   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud project:
+   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud
+      project:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member=serviceAccount:cloudrunevents-pubsubsource@$PROJECT_ID.iam.gserviceaccount.com \
@@ -53,7 +54,7 @@ most useful as a bridge from other Google Cloud services, such as
           # The secret should not already exist, so just try to create it.
           kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pubsubsource.json
       ```
-      
+
       `google-cloud-key` and `key.json` are pre-configured values in
       [`pubsub-source.yaml`](./pubsub-source.yaml).
 
