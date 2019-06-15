@@ -21,9 +21,9 @@ metadata:
 rules:
 
 - apiGroups:
-    - events.cloud.run
+    - pubsub.cloud.run
   resources:
-    - pubsubsources
+    - pullsubscriptions
   verbs: &everything
     - get
     - list
@@ -36,7 +36,7 @@ rules:
 - apiGroups:
     - events.cloud.run
   resources:
-    - pubsubsources/status
+    - pullsubscriptions/status
   verbs:
     - get
     - update

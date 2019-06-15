@@ -33,7 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 const (
@@ -132,7 +132,7 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 
 func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		v1alpha1.SchemeGroupVersion.WithKind("PubSubSource"): &v1alpha1.PubSubSource{},
+		v1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &v1alpha1.PullSubscription{},
 	}
 	SharedMain(handlers)
 

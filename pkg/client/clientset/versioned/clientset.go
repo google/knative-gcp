@@ -19,7 +19,7 @@ limitations under the License.
 package versioned
 
 import (
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -27,27 +27,27 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
+	PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Events() eventsv1alpha1.EventsV1alpha1Interface
+	Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	eventsV1alpha1 *eventsv1alpha1.EventsV1alpha1Client
+	pubsubV1alpha1 *pubsubv1alpha1.PubsubV1alpha1Client
 }
 
-// EventsV1alpha1 retrieves the EventsV1alpha1Client
-func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
-	return c.eventsV1alpha1
+// PubsubV1alpha1 retrieves the PubsubV1alpha1Client
+func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
+	return c.pubsubV1alpha1
 }
 
-// Deprecated: Events retrieves the default version of EventsClient.
+// Deprecated: Pubsub retrieves the default version of PubsubClient.
 // Please explicitly pick a version.
-func (c *Clientset) Events() eventsv1alpha1.EventsV1alpha1Interface {
-	return c.eventsV1alpha1
+func (c *Clientset) Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface {
+	return c.pubsubV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -66,7 +66,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.eventsV1alpha1, err = eventsv1alpha1.NewForConfig(&configShallowCopy)
+	cs.pubsubV1alpha1, err = pubsubv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.eventsV1alpha1 = eventsv1alpha1.NewForConfigOrDie(c)
+	cs.pubsubV1alpha1 = pubsubv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -91,7 +91,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.eventsV1alpha1 = eventsv1alpha1.New(c)
+	cs.pubsubV1alpha1 = pubsubv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

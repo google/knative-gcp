@@ -14,18 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
-
-import (
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
-	"github.com/knative/pkg/injection/sharedmain"
-)
-
-func main() {
-	sharedmain.Main("controller",
-		pullsubscription.NewController,
-	)
-}
+// Package v1alpha1 contains API Schema definitions for the eventing v1alpha1 API group
+// +k8s:openapi-gen=true
+// +k8s:deepcopy-gen=package,register
+// +k8s:conversion-gen=github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub
+// +k8s:defaulter-gen=TypeMeta
+// +groupName=pubsub.cloud.run
+package v1alpha1
