@@ -17,11 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"cloud.google.com/go/pubsub"
 	"errors"
 	"flag"
 	"log"
 	"time"
+
+	"cloud.google.com/go/pubsub"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"

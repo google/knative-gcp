@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 )
 
