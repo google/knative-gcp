@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
-	fakeeventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
+	fakepubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -71,12 +71,12 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// EventsV1alpha1 retrieves the EventsV1alpha1Client
-func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
-	return &fakeeventsv1alpha1.FakeEventsV1alpha1{Fake: &c.Fake}
+// PubsubV1alpha1 retrieves the PubsubV1alpha1Client
+func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
+	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
 }
 
-// Events retrieves the EventsV1alpha1Client
-func (c *Clientset) Events() eventsv1alpha1.EventsV1alpha1Interface {
-	return &fakeeventsv1alpha1.FakeEventsV1alpha1{Fake: &c.Fake}
+// Pubsub retrieves the PubsubV1alpha1Client
+func (c *Clientset) Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface {
+	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
 }
