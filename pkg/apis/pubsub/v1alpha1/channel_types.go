@@ -93,8 +93,8 @@ type ChannelStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PubSubChannelList is a collection of in-memory channels.
-type PubSubChannelList struct {
+// ChannelList is a collection of in-memory channels.
+type ChannelList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
