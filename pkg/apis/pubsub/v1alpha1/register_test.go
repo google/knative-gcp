@@ -13,19 +13,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package main
+package v1alpha1
 
 import (
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"testing"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
-	"github.com/knative/pkg/injection/sharedmain"
+	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func main() {
-	sharedmain.Main("controller",
-		pullsubscription.NewController,
-	)
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func TestResource(t *testing.T) {
+	want := schema.GroupResource{
+		Group:    "pubsub.cloud.run",
+		Resource: "foo",
+	}
+
+	got := Resource("foo")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected resource (-want, +got) = %v", diff)
+	}
 }

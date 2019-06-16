@@ -17,9 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
-	eventslisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
 	fakesharedclientset "github.com/knative/pkg/client/clientset/versioned/fake"
 	"github.com/knative/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,6 +30,10 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
+
+	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
+	pubsublisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -94,8 +95,8 @@ func (l *Listers) GetSharedObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakesharedclientset.AddToScheme)
 }
 
-func (l *Listers) GetPubSubSourceLister() eventslisters.PubSubSourceLister {
-	return eventslisters.NewPubSubSourceLister(l.indexerFor(&eventsv1alpha1.PubSubSource{}))
+func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
+	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&eventsv1alpha1.PullSubscription{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

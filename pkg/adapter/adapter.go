@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"

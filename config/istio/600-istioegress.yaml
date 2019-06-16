@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Needed by PubSubSource to communicate with Google Cloud Pub/Sub.
+# Needed by PullSubscription to communicate with Google Cloud Pub/Sub.
 apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
