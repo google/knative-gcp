@@ -17,17 +17,14 @@ limitations under the License.
 package main
 
 import (
-	"cloud.google.com/go/pubsub"
-	"errors"
-	"flag"
-	"log"
-	"time"
-
 	"cloud.google.com/go/compute/metadata"
+	"cloud.google.com/go/pubsub"
+	"flag"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
+	"log"
 )
 
 type envConfig struct {
@@ -39,13 +36,9 @@ type envConfig struct {
 	Action string `envconfig:"ACTION" required:"true"`
 
 	// Topic is the environment variable containing the PubSub Topic being
-	// subscribed to's name. In the form that is unique within the project.
+	// created. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
 	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
-
-	// Subscription is the environment variable containing the name of the
-	// subscription to use.
-	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 }
 
 // TODO: the job could output the resolved projectID.
@@ -57,6 +50,7 @@ func main() {
 	logCfg := zap.NewProductionConfig() // TODO: to replace with a dynamically updating logger.
 	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	logger, err := logCfg.Build()
+
 	if err != nil {
 		log.Fatalf("Unable to create logger: %v", err)
 	}
@@ -78,19 +72,17 @@ func main() {
 		zap.String("action", env.Action),
 		zap.String("project", env.Project),
 		zap.String("topic", env.Topic),
-		zap.String("subscription", env.Subscription),
 	)
 
-	logger.Info("Pub/Sub Subscription Job.")
+	logger.Info("Pub/Sub Topic Job.")
 
 	client, err := pubsub.NewClient(ctx, env.Project)
 	if err != nil {
 		logger.Fatal("Failed to create Pub/Sub client.", zap.Error(err))
 	}
 
-	// Load the subscription.
-	sub := client.Subscription(env.Subscription)
-	exists, err := sub.Exists(ctx)
+	topic := client.Topic(env.Topic)
+	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
 	}
@@ -99,30 +91,21 @@ func main() {
 	case "create":
 		// If topic doesn't exist, create it.
 		if !exists {
-			// Load the topic.
-			topic, err := getTopic(ctx, client, env.Topic)
+			// Create a new topic with the given name.
+			topic, err = client.CreateTopic(ctx, env.Topic)
 			if err != nil {
-				logger.Fatal("Failed to get topic.", zap.Error(err))
-			}
-			// Create a new subscription to the previous topic with the given name.
-			sub, err = client.CreateSubscription(ctx, env.Subscription, pubsub.SubscriptionConfig{
-				Topic:             topic,
-				AckDeadline:       30 * time.Second,
-				RetentionDuration: 25 * time.Hour,
-			})
-			if err != nil {
-				logger.Fatal("Failed to create subscription.", zap.Error(err))
+				logger.Fatal("Failed to create topic.", zap.Error(err))
 			}
 			logger.Info("Successfully created.")
 		} else {
-			// TODO: here is where we could update config.
+			// TODO: here is where we could update topic config.
 			logger.Info("Previously created.")
 		}
 
 	case "delete":
 		if exists {
-			if err := sub.Delete(ctx); err != nil {
-				logger.Fatal("Failed to delete subscription.", zap.Error(err))
+			if err := topic.Delete(ctx); err != nil {
+				logger.Fatal("Failed to delete topic.", zap.Error(err))
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -130,21 +113,8 @@ func main() {
 		}
 
 	default:
-		logger.Fatal("unknown action value.")
+		logger.Fatal("Unknown action value.")
 	}
 
 	logger.Info("Done.")
-}
-
-func getTopic(ctx context.Context, client *pubsub.Client, topicID string) (*pubsub.Topic, error) {
-	// Load the topic.
-	topic := client.Topic(topicID)
-	ok, err := topic.Exists(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if ok {
-		return topic, err
-	}
-	return nil, errors.New("topic does not exist")
 }
