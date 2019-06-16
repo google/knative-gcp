@@ -23,11 +23,11 @@ import (
 	"github.com/knative/pkg/apis"
 )
 
-func (c *PubSubChannel) Validate(ctx context.Context) *apis.FieldError {
+func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
 	return c.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (cs *PubSubChannelSpec) Validate(ctx context.Context) *apis.FieldError {
+func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
 	if cs.Subscribable != nil {

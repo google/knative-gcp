@@ -16,8 +16,8 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   labels:
-    events.cloud.run/release: devel
     eventing.knative.dev/source: "true"
+    events.cloud.run/release: devel
     events.cloud.run/crd-install: "true"
   name: pullsubscriptions.pubsub.cloud.run
 spec:

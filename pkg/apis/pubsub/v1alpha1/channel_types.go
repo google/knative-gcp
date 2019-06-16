@@ -31,31 +31,31 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PubSubChannel is a resource representing an channel backed by Google Cloud Pub/Sub.
-type PubSubChannel struct {
+// Channel is a resource representing an channel backed by Google Cloud Pub/Sub.
+type Channel struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec defines the desired state of the Channel.
-	Spec PubSubChannelSpec `json:"spec,omitempty"`
+	Spec ChannelSpec `json:"spec,omitempty"`
 
 	// Status represents the current state of the Channel. This data may be out of
 	// date.
 	// +optional
-	Status PubSubChannelStatus `json:"status,omitempty"`
+	Status ChannelStatus `json:"status,omitempty"`
 }
 
 // Check that Channel can be validated, can be defaulted, and has immutable fields.
-var _ apis.Validatable = (*PubSubChannel)(nil)
-var _ apis.Defaultable = (*PubSubChannel)(nil)
-var _ runtime.Object = (*PubSubChannel)(nil)
-var _ webhook.GenericCRD = (*PubSubChannel)(nil)
+var _ apis.Validatable = (*Channel)(nil)
+var _ apis.Defaultable = (*Channel)(nil)
+var _ runtime.Object = (*Channel)(nil)
+var _ webhook.GenericCRD = (*Channel)(nil)
 
-// PubSubChannelSpec defines which subscribers have expressed interest in
-// receiving events from this PubSubChannel.
+// ChannelSpec defines which subscribers have expressed interest in
+// receiving events from this Channel.
 // arguments for a Channel.
-type PubSubChannelSpec struct {
+type ChannelSpec struct {
 	// Secret is the credential to use to create and poll the PubSubSource
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
@@ -73,14 +73,14 @@ type PubSubChannelSpec struct {
 	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
 }
 
-// PubSubChannelStatus represents the current state of a Channel.
-type PubSubChannelStatus struct {
+// ChannelStatus represents the current state of a Channel.
+type ChannelStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
 	duckv1beta1.Status `json:",inline"`
 
-	// PubSubChannel is Addressable. It currently exposes the endpoint as a
+	// Channel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
 	// provided targets from inside the cluster.
 	//
@@ -98,10 +98,10 @@ type PubSubChannelList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []PubSubChannel `json:"items"`
+	Items           []Channel `json:"items"`
 }
 
 // GetGroupVersionKind returns GroupVersionKind for PubSubChannels
-func (c *PubSubChannel) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("PubSubChannel")
+func (c *Channel) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Channel")
 }

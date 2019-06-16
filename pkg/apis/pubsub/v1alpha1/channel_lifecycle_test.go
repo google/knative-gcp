@@ -29,22 +29,22 @@ import (
 )
 
 var condReady = apis.Condition{
-	Type:   PubSubChannelConditionReady,
+	Type:   ChannelConditionReady,
 	Status: corev1.ConditionTrue,
 }
 
 var condServiceReady = apis.Condition{
-	Type:   PubSubChannelConditionServiceReady,
+	Type:   ChannelConditionServiceReady,
 	Status: corev1.ConditionTrue,
 }
 
 var condEndpointsReady = apis.Condition{
-	Type:   PubSubChannelConditionEndpointsReady,
+	Type:   ChannelConditionEndpointsReady,
 	Status: corev1.ConditionTrue,
 }
 
 var condAddressable = apis.Condition{
-	Type:   PubSubChannelConditionAddressable,
+	Type:   ChannelConditionAddressable,
 	Status: corev1.ConditionTrue,
 }
 
@@ -70,12 +70,12 @@ var ignoreLastTransitionTime = cmpopts.IgnoreFields(apis.Condition{}, "LastTrans
 func TestChannelGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		cs        *PubSubChannelStatus
+		cs        *ChannelStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name: "single condition",
-		cs: &PubSubChannelStatus{
+		cs: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{
 					condReady,
@@ -98,87 +98,87 @@ func TestChannelGetCondition(t *testing.T) {
 func TestChannelInitializeConditions(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   *PubSubChannelStatus
-		want *PubSubChannelStatus
+		cs   *ChannelStatus
+		want *ChannelStatus
 	}{{
 		name: "empty",
-		cs:   &PubSubChannelStatus{},
-		want: &PubSubChannelStatus{
+		cs:   &ChannelStatus{},
+		want: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   PubSubChannelConditionAddressable,
+					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionChannelServiceReady,
+					Type:   ChannelConditionChannelServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionEndpointsReady,
+					Type:   ChannelConditionEndpointsReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionReady,
+					Type:   ChannelConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionServiceReady,
+					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
 	}, {
 		name: "one false",
-		cs: &PubSubChannelStatus{
+		cs: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   PubSubChannelConditionAddressable,
+					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionFalse,
 				}},
 			},
 		},
-		want: &PubSubChannelStatus{
+		want: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   PubSubChannelConditionAddressable,
+					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionFalse,
 				}, {
-					Type:   PubSubChannelConditionChannelServiceReady,
+					Type:   ChannelConditionChannelServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionEndpointsReady,
+					Type:   ChannelConditionEndpointsReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionReady,
+					Type:   ChannelConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionServiceReady,
+					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
 	}, {
 		name: "one true",
-		cs: &PubSubChannelStatus{
+		cs: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   PubSubChannelConditionAddressable,
+					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionTrue,
 				}},
 			},
 		},
-		want: &PubSubChannelStatus{
+		want: &ChannelStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   PubSubChannelConditionAddressable,
+					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionTrue,
 				}, {
-					Type:   PubSubChannelConditionChannelServiceReady,
+					Type:   ChannelConditionChannelServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionEndpointsReady,
+					Type:   ChannelConditionEndpointsReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionReady,
+					Type:   ChannelConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   PubSubChannelConditionServiceReady,
+					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
@@ -248,7 +248,7 @@ func TestChannelIsReady(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cs := &PubSubChannelStatus{}
+			cs := &ChannelStatus{}
 			cs.InitializeConditions()
 			if test.markServiceReady {
 				cs.MarkServiceTrue()
@@ -279,20 +279,20 @@ func TestChannelIsReady(t *testing.T) {
 func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 	testCases := map[string]struct {
 		url  *apis.URL
-		want *PubSubChannelStatus
+		want *ChannelStatus
 	}{
 		"empty string": {
-			want: &PubSubChannelStatus{
+			want: &ChannelStatus{
 				Status: duckv1beta1.Status{
 					Conditions: []apis.Condition{
 						{
-							Type:   PubSubChannelConditionAddressable,
+							Type:   ChannelConditionAddressable,
 							Status: corev1.ConditionFalse,
 						},
 						// Note that Ready is here because when the condition is marked False, duck
 						// automatically sets Ready to false.
 						{
-							Type:   PubSubChannelConditionReady,
+							Type:   ChannelConditionReady,
 							Status: corev1.ConditionFalse,
 						},
 					},
@@ -302,7 +302,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 		},
 		"has domain": {
 			url: &apis.URL{Scheme: "http", Host: "test-domain"},
-			want: &PubSubChannelStatus{
+			want: &ChannelStatus{
 				AddressStatus: duckv1alpha1.AddressStatus{
 					Address: &duckv1alpha1.Addressable{
 						duckv1beta1.Addressable{
@@ -316,7 +316,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 				},
 				Status: duckv1beta1.Status{
 					Conditions: []apis.Condition{{
-						Type:   PubSubChannelConditionAddressable,
+						Type:   ChannelConditionAddressable,
 						Status: corev1.ConditionTrue,
 					}},
 				},
@@ -325,7 +325,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			cs := &PubSubChannelStatus{}
+			cs := &ChannelStatus{}
 			cs.SetAddress(tc.url)
 			if diff := cmp.Diff(tc.want, cs, ignoreAllButTypeAndStatus); diff != "" {
 				t.Errorf("unexpected conditions (-want, +got) = %v", diff)

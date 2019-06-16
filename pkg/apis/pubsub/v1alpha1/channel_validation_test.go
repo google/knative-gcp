@@ -34,14 +34,14 @@ func TestImMemoryChannelValidation(t *testing.T) {
 		want *apis.FieldError
 	}{{
 		name: "empty",
-		cr: &PubSubChannel{
-			Spec: PubSubChannelSpec{},
+		cr: &Channel{
+			Spec: ChannelSpec{},
 		},
 		want: nil,
 	}, {
 		name: "valid subscribers array",
-		cr: &PubSubChannel{
-			Spec: PubSubChannelSpec{
+		cr: &Channel{
+			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: "subscriberendpoint",
@@ -52,8 +52,8 @@ func TestImMemoryChannelValidation(t *testing.T) {
 		want: nil,
 	}, {
 		name: "empty subscriber at index 1",
-		cr: &PubSubChannel{
-			Spec: PubSubChannelSpec{
+		cr: &Channel{
+			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: "subscriberendpoint",
@@ -68,8 +68,8 @@ func TestImMemoryChannelValidation(t *testing.T) {
 		}(),
 	}, {
 		name: "2 empty subscribers",
-		cr: &PubSubChannel{
-			Spec: PubSubChannelSpec{
+		cr: &Channel{
+			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{}, {}},
 				},
