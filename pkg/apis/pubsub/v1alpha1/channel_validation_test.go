@@ -27,7 +27,7 @@ import (
 	"github.com/knative/pkg/apis"
 )
 
-func TestImMemoryChannelValidation(t *testing.T) {
+func TestChannelValidation(t *testing.T) {
 	tests := []struct {
 		name string
 		cr   webhook.GenericCRD

@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // +genclient
@@ -85,7 +86,7 @@ const (
 	PubSubEventType = "google.pubsub.topic.publish"
 )
 
-// PubSubEventSource returns the GcpPubSub CloudEvent source value.
+// PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
 func PubSubEventSource(googleCloudProject, topic string) string {
 	return fmt.Sprintf("//pubsub.googleapis.com/%s/topics/%s", googleCloudProject, topic)
 }
@@ -158,4 +159,9 @@ type PullSubscriptionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PullSubscription `json:"items"`
+}
+
+// GetGroupVersionKind returns the GroupVersionKind.
+func (s *PullSubscription) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("PullSubscription")
 }

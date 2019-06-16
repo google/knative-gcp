@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,38 +13,37 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func TestResource(t *testing.T) {
-	want := schema.GroupResource{
-		Group:    "pubsub.cloud.run",
-		Resource: "foo",
-	}
+func TestPubSubEventSource(t *testing.T) {
+	want := "//pubsub.googleapis.com/PROJECT/topics/TOPIC"
 
-	got := Resource("foo")
+	got := PubSubEventSource("PROJECT", "TOPIC")
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected resource (-want, +got) = %v", diff)
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
 
-func TestKind(t *testing.T) {
-	want := schema.GroupKind{
-		Group: "pubsub.cloud.run",
-		Kind:  "foo",
+func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
+	want := schema.GroupVersionKind{
+		Group:   "pubsub.cloud.run",
+		Version: "v1alpha1",
+		Kind:    "PullSubscription",
 	}
 
-	got := Kind("foo")
+	c := &PullSubscription{}
+	got := c.GetGroupVersionKind()
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected resource (-want, +got) = %v", diff)
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }

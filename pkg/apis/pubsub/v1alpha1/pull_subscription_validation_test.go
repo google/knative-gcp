@@ -45,7 +45,7 @@ var (
 
 func TestPubSubCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    *PullSubscriptionSpec
+		orig    interface{}
 		updated PullSubscriptionSpec
 		allowed bool
 	}{
@@ -227,14 +227,22 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 			updated: fullSpec,
 			allowed: true,
 		},
+		"not spec": {
+			orig:    []string{"wrong"},
+			updated: fullSpec,
+			allowed: true,
+		},
 	}
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var orig *PullSubscription
+
 			if tc.orig != nil {
-				orig = &PullSubscription{
-					Spec: *tc.orig,
+				if spec, ok := tc.orig.(*PullSubscriptionSpec); ok {
+					orig = &PullSubscription{
+						Spec: *spec,
+					}
 				}
 			}
 			updated := &PullSubscription{
