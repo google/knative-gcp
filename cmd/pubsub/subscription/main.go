@@ -26,7 +26,6 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
@@ -69,86 +68,73 @@ func main() {
 	}
 
 	if env.Project == "" {
-		project, err := resolveProjectID(ctx)
+		project, err := metadata.ProjectID()
 		if err != nil {
 			logger.Fatal("failed to find project id. ", zap.Error(err))
 		}
 		env.Project = project
 	}
 
-	logger.Info("Pub/Sub Subscription Job.", zap.Reflect("env", env))
+	logger = logger.With(
+		zap.String("action", env.Action),
+		zap.String("project", env.Project),
+		zap.String("topic", env.Topic),
+		zap.String("subscription", env.Subscription),
+	)
+
+	logger.Info("Pub/Sub Subscription Job.")
 
 	client, err := pubsub.NewClient(ctx, env.Project)
 	if err != nil {
 		logger.Fatal("Failed to create Pub/Sub client.", zap.Error(err))
 	}
 
+	// Load the subscription.
+	sub := client.Subscription(env.Subscription)
+	exists, err := sub.Exists(ctx)
+	if err != nil {
+		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+	}
+
 	switch env.Action {
 	case "create":
-		_, err := getOrCreateSubscription(ctx, client, env.Topic, env.Subscription)
-		if err != nil {
-			logger.Fatal("Failed to create subscription.", zap.Error(err))
+		// If topic doesn't exist, create it.
+		if !exists {
+			// Load the topic.
+			topic, err := getTopic(ctx, client, env.Topic)
+			if err != nil {
+				logger.Fatal("Failed to get topic.", zap.Error(err))
+			}
+			// Create a new subscription to the previous topic with the given name.
+			sub, err = client.CreateSubscription(ctx, env.Subscription, pubsub.SubscriptionConfig{
+				Topic:             topic,
+				AckDeadline:       30 * time.Second,
+				RetentionDuration: 25 * time.Hour,
+			})
+			if err != nil {
+				logger.Fatal("Failed to create subscription.", zap.Error(err))
+			}
+			logger.Info("Successfully created.")
+		} else {
+			// TODO: here is where we could update config.
+			logger.Info("Previously created.")
 		}
-		logger.Info("Successfully Created.", zap.String("subscription", env.Subscription))
 
 	case "delete":
-		sub := client.Subscription(env.Subscription)
-		ok, err := sub.Exists(ctx)
-		if err != nil {
-			logger.Fatal("Failed to get subscription.", zap.Error(err))
-		}
-		if ok {
+		if exists {
 			if err := sub.Delete(ctx); err != nil {
 				logger.Fatal("Failed to delete subscription.", zap.Error(err))
 			}
+			logger.Info("Successfully deleted.")
+		} else {
+			logger.Info("Previously deleted.")
 		}
-		logger.Info("Successfully Deleted.", zap.String("subscription", env.Subscription))
 
 	default:
-		logger.Fatal("unknown action value.", zap.String("Action", env.Action))
+		logger.Fatal("unknown action value.")
 	}
 
 	logger.Info("Done.")
-}
-
-func resolveProjectID(ctx context.Context) (string, error) {
-	logger := logging.FromContext(ctx)
-
-	// Try from metadata server.
-	if projectID, err := metadata.ProjectID(); err == nil {
-		return projectID, nil
-	} else {
-		logger.Warnw("failed to get Project ID from GCP Metadata Server.", zap.Error(err))
-	}
-
-	// Unknown Project ID
-	return "", errors.New("project is required but not set")
-}
-
-func getOrCreateSubscription(ctx context.Context, client *pubsub.Client, topicID, subscriptionID string) (*pubsub.Subscription, error) {
-	var err error
-	// Load the topic.
-	var topic *pubsub.Topic
-	topic, err = getTopic(ctx, client, topicID)
-	if err != nil {
-		return nil, err
-	}
-	// Load the subscription.
-	sub := client.Subscription(subscriptionID)
-	ok, err := sub.Exists(ctx)
-	if err != nil {
-		return nil, err
-	}
-	// If subscription doesn't exist, create it.
-	if !ok {
-		// Create a new subscription to the previous topic with the given name.
-		return client.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{
-			Topic:             topic,
-			AckDeadline:       30 * time.Second,
-			RetentionDuration: 25 * time.Hour,
-		})
-	}
-	return sub, nil
 }
 
 func getTopic(ctx context.Context, client *pubsub.Client, topicID string) (*pubsub.Topic, error) {

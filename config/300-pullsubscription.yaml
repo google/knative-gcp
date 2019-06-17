@@ -17,22 +17,33 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
-    events.cloud.run/crd-install: "true"
     events.cloud.run/release: devel
+    events.cloud.run/crd-install: "true"
   name: pullsubscriptions.pubsub.cloud.run
 spec:
   group: pubsub.cloud.run
+  version: v1alpha1
   names:
     categories:
     - all
     - knative
-    - eventing
     - pubsub
+    - eventing
     kind: PullSubscription
     plural: pullsubscriptions
   scope: Namespaced
   subresources:
     status: {}
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
   validation:
     openAPIV3Schema:
       properties:
@@ -101,4 +112,3 @@ spec:
             subscriptionId:
               type: string
           type: object
-  version: v1alpha1

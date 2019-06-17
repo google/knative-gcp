@@ -18,13 +18,7 @@ package v1alpha1
 
 import (
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
-// GetGroupVersionKind returns the GroupVersionKind.
-func (s *PullSubscription) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("PullSubscription")
-}
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *PullSubscriptionStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {

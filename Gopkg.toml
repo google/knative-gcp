@@ -22,6 +22,11 @@ required = [
   branch = "master"
 
 [[override]]
+  name = "github.com/knative/eventing"
+  # HEAD as of 2919-06-14
+  revision = "0251d1f09a39631bc40c415cfb457347f9335c6f"
+
+[[override]]
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
 

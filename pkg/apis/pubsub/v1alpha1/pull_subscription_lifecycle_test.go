@@ -260,10 +260,68 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.MarkSubscribed()
 			return s
 		}(),
-		condQuery: PullSubscriptionConditionReady,
+		condQuery: PullSubscriptionConditionSubscribed,
 		want: &duckv1alpha1.Condition{
-			Type:   PullSubscriptionConditionReady,
-			Status: corev1.ConditionUnknown,
+			Type:   PullSubscriptionConditionSubscribed,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark not subscribed",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkNotSubscribed("reason", "%s", "message")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionSubscribed,
+		want: &duckv1alpha1.Condition{
+			Type:    PullSubscriptionConditionSubscribed,
+			Status:  corev1.ConditionFalse,
+			Reason:  "reason",
+			Message: "message",
+		},
+	}, {
+		name: "mark unsubscribed",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkUnsubscribed()
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionSubscribed,
+		want: &duckv1alpha1.Condition{
+			Type:   PullSubscriptionConditionSubscribed,
+			Status: corev1.ConditionFalse,
+		},
+	}, {
+		name: "mark subscribing",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkSubscribing("reason", "%s", "message")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionSubscribed,
+		want: &duckv1alpha1.Condition{
+			Type:    PullSubscriptionConditionSubscribed,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "reason",
+			Message: "message",
+		},
+	}, {
+		name: "mark unsubscribing",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkUnsubscribing("reason", "%s", "message")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionSubscribed,
+		want: &duckv1alpha1.Condition{
+			Type:    PullSubscriptionConditionSubscribed,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "reason",
+			Message: "message",
 		},
 	}, {
 		name: "mark event types",
@@ -277,6 +335,49 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		want: &duckv1alpha1.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "mark transformer",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkTransformer("url")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionTransformerProvided,
+		want: &duckv1alpha1.Condition{
+			Type:   PullSubscriptionConditionTransformerProvided,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark transformer unknown",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkTransformer("")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionTransformerProvided,
+		want: &duckv1alpha1.Condition{
+			Type:    PullSubscriptionConditionTransformerProvided,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "TransformerEmpty",
+			Message: "Transformer has resolved to empty.",
+		},
+	}, {
+		name: "mark no transformer",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkNoTransformer("reason", "%s", "message")
+			return s
+		}(),
+		condQuery: PullSubscriptionConditionTransformerProvided,
+		want: &duckv1alpha1.Condition{
+			Type:    PullSubscriptionConditionTransformerProvided,
+			Status:  corev1.ConditionFalse,
+			Reason:  "reason",
+			Message: "message",
 		},
 	}, {
 		name: "mark sink and deployed",

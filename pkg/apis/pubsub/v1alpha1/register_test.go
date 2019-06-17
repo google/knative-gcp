@@ -35,3 +35,16 @@ func TestResource(t *testing.T) {
 		t.Errorf("unexpected resource (-want, +got) = %v", diff)
 	}
 }
+
+func TestKind(t *testing.T) {
+	want := schema.GroupKind{
+		Group: "pubsub.cloud.run",
+		Kind:  "foo",
+	}
+
+	got := Kind("foo")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected resource (-want, +got) = %v", diff)
+	}
+}

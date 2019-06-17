@@ -27,12 +27,17 @@ import (
 
 type PubsubV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	ChannelsGetter
 	PullSubscriptionsGetter
 }
 
 // PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.run group.
 type PubsubV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *PubsubV1alpha1Client) Channels(namespace string) ChannelInterface {
+	return newChannels(c, namespace)
 }
 
 func (c *PubsubV1alpha1Client) PullSubscriptions(namespace string) PullSubscriptionInterface {

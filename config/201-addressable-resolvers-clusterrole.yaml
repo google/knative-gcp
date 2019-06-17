@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use this aggregated ClusterRole when you need readonly access to "Addressables"
+# Use this aggregated ClusterRole when you need readonly access to "Addressables".
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -42,3 +42,22 @@ rules:
   - get
   - list
   - watch
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pubsub-channel-addressable-resolver
+  labels:
+    duck.knative.dev/addressable: "true"
+# Do not use this role directly. These rules will be added to the "addressable-resolver" role.
+rules:
+  - apiGroups:
+      - pubsub.cloud.run
+    resources:
+      - channels
+    verbs:
+      - get
+      - list
+      - watch

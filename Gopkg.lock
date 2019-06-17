@@ -320,6 +320,13 @@
   version = "v1.4.0"
 
 [[projects]]
+  digest = "1:2469f21c2e0acdf8ce9914e0bcbb46aaf35f207cbe44f378637e3fd5d2234cfd"
+  name = "github.com/knative/eventing"
+  packages = ["pkg/apis/duck/v1alpha1"]
+  pruneopts = "NUT"
+  revision = "0251d1f09a39631bc40c415cfb457347f9335c6f"
+
+[[projects]]
   branch = "master"
   digest = "1:3299b6b6a92ccbc12eb35c9374dd161545e90cc29fcc59725bce0b0ae6230fd0"
   name = "github.com/knative/pkg"
@@ -1135,9 +1142,11 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
     "github.com/kelseyhightower/envconfig",
+    "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
     "github.com/knative/pkg/apis",
     "github.com/knative/pkg/apis/duck",
     "github.com/knative/pkg/apis/duck/v1alpha1",
+    "github.com/knative/pkg/apis/duck/v1beta1",
     "github.com/knative/pkg/client/clientset/versioned/fake",
     "github.com/knative/pkg/codegen/cmd/injection-gen",
     "github.com/knative/pkg/configmap",
