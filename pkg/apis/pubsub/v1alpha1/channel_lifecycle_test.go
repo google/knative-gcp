@@ -305,13 +305,13 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 			want: &ChannelStatus{
 				AddressStatus: duckv1alpha1.AddressStatus{
 					Address: &duckv1alpha1.Addressable{
-						duckv1beta1.Addressable{
+						Addressable: duckv1beta1.Addressable{
 							URL: &apis.URL{
 								Scheme: "http",
 								Host:   "test-domain",
 							},
 						},
-						"test-domain",
+						Hostname: "test-domain",
 					},
 				},
 				Status: duckv1beta1.Status{

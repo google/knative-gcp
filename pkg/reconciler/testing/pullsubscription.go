@@ -101,14 +101,21 @@ func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOpt
 
 func WithPullSubscriptionMarkSubscribing(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkUnsubscribing("Creating", "Created Job to create Subscription %q.", subscriptionID)
+		s.Status.MarkSubscriptionOperation("Creating", "Created Job to create Subscription %q.", subscriptionID)
 		s.Status.SubscriptionID = subscriptionID
 	}
 }
 
 func WithPullSubscriptionMarkUnsubscribing(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkUnsubscribing("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
+		s.Status.MarkSubscriptionOperation("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
+	}
+}
+
+func WithPullSubscriptionMarkNoSubscription(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkNoSubscription("Deleted", "Successfully deleted Subscription %q.", subscriptionID)
+		s.Status.SubscriptionID = ""
 	}
 }
 

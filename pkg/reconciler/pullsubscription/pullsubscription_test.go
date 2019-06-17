@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"testing"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -140,8 +141,8 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source" finalizers`),
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -183,7 +184,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -222,7 +223,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -289,7 +290,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -324,10 +325,35 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
 				),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete),
+				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete, true),
 			},
 			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+					// updates
+					WithPullSubscriptionMarkNoSubscription(testSubscriptionID),
+				),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, false),
+			},
 		},
 
 		// TODO:
@@ -380,6 +406,41 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		SubscriptionID: testSubscriptionID,
 		Owner:          owner,
 	})
+}
+
+func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+	job := operations.NewSubscriptionOps(operations.SubArgs{
+		Image:          testImage,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		SubscriptionID: testSubscriptionID,
+		Owner:          owner,
+	})
+
+	if success {
+		job.Status.Active = 0
+		job.Status.Succeeded = 1
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionFalse,
+		}}
+	} else {
+		job.Status.Active = 0
+		job.Status.Succeeded = 0
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionTrue,
+		}}
+	}
+
+	return job
 }
 
 func TestFinalizers(t *testing.T) {

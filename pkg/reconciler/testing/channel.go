@@ -86,19 +86,19 @@ func WithInitChannelConditions(s *v1alpha1.Channel) {
 //	}
 //}
 //
-//func WithChannelSubscription(subscriptionID string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.MarkSubscribed()
-//		s.Status.SubscriptionID = subscriptionID
-//	}
-//}
-//
-//func WithChannelMarkSubscribing(subscriptionID string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.MarkUnsubscribing("Creating", "Created Job to create Subscription %q.", subscriptionID)
-//	}
-//}
-//
+func WithChannelTopic(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.MarkTopicReady()
+		s.Status.TopicID = topicID
+	}
+}
+
+func WithChannelMarkTopicCreating(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.MarkTopicOperating("Creating", "Created Job to create Topic %q.", topicID)
+	}
+}
+
 //func WithChannelMarkUnsubscribing(subscriptionID string) ChannelOption {
 //	return func(s *v1alpha1.Channel) {
 //		s.Status.MarkUnsubscribing("Deleting", "Created Job to delete Subscription %q.", subscriptionID)

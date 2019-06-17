@@ -19,39 +19,45 @@ package channel
 import (
 	"context"
 	"fmt"
+	"github.com/knative/pkg/kmeta"
+	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	logtesting "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/tracker"
 
-	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
+
 	. "github.com/knative/pkg/reconciler/testing"
+
+	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
 
 const (
-	sourceName = "source"
-	sinkName   = "sink"
+	channelName = "pschan"
+	sinkName    = "sink"
 
 	testNS = "testnamespace"
 
 	testImage = "test_image"
 
-	sourceUID = sourceName + "-abc-123"
+	channelUID = channelName + "-abc-123"
 
 	testProject        = "test-project-id"
-	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-events-" + testNS + "-" + sourceName + "-" + sourceUID
+	testTopicID        = channelUID + "-TOPIC"
+	testSubscriptionID = "cloud-run-events-" + testNS + "-" + channelName + "-" + channelUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -98,71 +104,47 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "create topic",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q finalizers", channelName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				// Updates
+				WithInitChannelConditions,
+				WithChannelMarkTopicCreating(sinkURI),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionCreate),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
 	},
-	//{
-	//	Name: "incomplete source - sink ref is nil",
-	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS),
-	//	},
-	//	Key:     testNS + "/" + sourceName,
-	//	WantErr: true,
-	//	WantEvents: []string{
-	//		Eventf(corev1.EventTypeWarning, "InternalError", "sink ref is nil"),
-	//	},
-	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(sourceName, testNS,
-	//			WithInitChannelConditions,
-	//			//WithChannelSinkNotFound(),
-	//		),
-	//	}},
-	//},
-	//{
-	//	Name: "create subscription",
-	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//		),
-	//		newSink(),
-	//	},
-	//	Key: testNS + "/" + sourceName,
-	//	WantEvents: []string{
-	//		/Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source" finalizers`),
-	//		Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
-	//	},
-	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//			// Updates
-	//			WithInitChannelConditions,
-	//			WithChannelReady(sinkURI),
-	//		),
-	//	}},
-	//	WantCreates: []runtime.Object{
-	//		newReceiveAdapter(),
-	//	},
-	//	WantPatches: []clientgotesting.PatchActionImpl{
-	//		patchFinalizers(testNS, sourceName, true),
-	//	},
-	//},
 	//{
 	//	Name: "successful create",
 	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -173,13 +155,13 @@ func TestAllCases(t *testing.T) {
 	//		),
 	//		newSink(),
 	//	},
-	//	Key: testNS + "/" + sourceName,
+	//	Key: testNS + "/" + channelName,
 	//	WantEvents: []string{
 	//		Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
 	//	},
 	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		Object: NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -198,8 +180,8 @@ func TestAllCases(t *testing.T) {
 	//}, {
 	//	Name: "successful create - reuse existing receive adapter",
 	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -211,13 +193,13 @@ func TestAllCases(t *testing.T) {
 	//		newSink(),
 	//		newReceiveAdapter(),
 	//	},
-	//	Key: testNS + "/" + sourceName,
+	//	Key: testNS + "/" + channelName,
 	//	WantEvents: []string{
 	//		Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
 	//	},
 	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		Object: NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -233,7 +215,7 @@ func TestAllCases(t *testing.T) {
 	//}, {
 	//	Name: "cannot get sink",
 	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
+	//		NewChannel(channelName, testNS,
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -241,13 +223,13 @@ func TestAllCases(t *testing.T) {
 	//			}),
 	//			WithChannelSink(sinkGVK, sinkName),
 	//		)},
-	//	Key:     testNS + "/" + sourceName,
+	//	Key:     testNS + "/" + channelName,
 	//	WantErr: true,
 	//	WantEvents: []string{
 	//		Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.run "sink" not found`),
 	//	},
 	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(sourceName, testNS,
+	//		Object: NewChannel(channelName, testNS,
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -263,8 +245,8 @@ func TestAllCases(t *testing.T) {
 	//{
 	//	Name: "deleting - delete subscription",
 	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -275,20 +257,20 @@ func TestAllCases(t *testing.T) {
 	//			WithChannelDeleted,
 	//		),
 	//	},
-	//	Key: testNS + "/" + sourceName,
+	//	Key: testNS + "/" + channelName,
 	//WantEvents: []string{
 	//	Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source" finalizers`),
 	//	Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
 	//},
 	//WantPatches: []clientgotesting.PatchActionImpl{
-	//	patchFinalizers(testNS, sourceName, false),
+	//	patchFinalizers(testNS, channelName, false),
 	//},
 	//},
 	//{
 	//	Name: "deleting final stage",
 	//	Objects: []runtime.Object{
-	//		NewChannel(sourceName, testNS,
-	//			WithChannelUID(sourceUID),
+	//		NewChannel(channelName, testNS,
+	//			WithChannelUID(channelUID),
 	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
 	//				Project:            testProject,
 	//				Topic:              testTopicID,
@@ -298,7 +280,7 @@ func TestAllCases(t *testing.T) {
 	//			WithChannelDeleted,
 	//		),
 	//	},
-	//	Key: testNS + "/" + sourceName,
+	//	Key: testNS + "/" + channelName,
 	//},
 
 	// TODO:
@@ -392,4 +374,14 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
+}
+
+func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+	return operations.NewTopicOps(operations.TopicArgs{
+		Image:     testImage,
+		Action:    action,
+		ProjectID: testProject,
+		TopicID:   testTopicID,
+		Owner:     owner,
+	})
 }

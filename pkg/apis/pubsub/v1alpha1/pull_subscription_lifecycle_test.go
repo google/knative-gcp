@@ -270,7 +270,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkNotSubscribed("reason", "%s", "message")
+			s.MarkNoSubscription("reason", "%s", "message")
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionSubscribed,
@@ -281,39 +281,11 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			Message: "message",
 		},
 	}, {
-		name: "mark unsubscribed",
-		s: func() *PullSubscriptionStatus {
-			s := &PullSubscriptionStatus{}
-			s.InitializeConditions()
-			s.MarkUnsubscribed()
-			return s
-		}(),
-		condQuery: PullSubscriptionConditionSubscribed,
-		want: &duckv1alpha1.Condition{
-			Type:   PullSubscriptionConditionSubscribed,
-			Status: corev1.ConditionFalse,
-		},
-	}, {
 		name: "mark subscribing",
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSubscribing("reason", "%s", "message")
-			return s
-		}(),
-		condQuery: PullSubscriptionConditionSubscribed,
-		want: &duckv1alpha1.Condition{
-			Type:    PullSubscriptionConditionSubscribed,
-			Status:  corev1.ConditionUnknown,
-			Reason:  "reason",
-			Message: "message",
-		},
-	}, {
-		name: "mark unsubscribing",
-		s: func() *PullSubscriptionStatus {
-			s := &PullSubscriptionStatus{}
-			s.InitializeConditions()
-			s.MarkUnsubscribing("reason", "%s", "message")
+			s.MarkSubscriptionOperation("reason", "%s", "message")
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionSubscribed,

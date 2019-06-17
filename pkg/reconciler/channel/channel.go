@@ -145,108 +145,96 @@ func (c *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 
 	channel.Status.InitializeConditions()
 
+	// 1. create a topic.
+	// 2. create all subscriptions that are in spec and not in status.
+	// 3. delete all subscriptions that are in status but not in spec.
+	// 4. deploy invoker with updated subscriptions to target list.
+	// ?- how to update invoker with that list.
+	// Bad options:
+	// channel could make a Topic resource and n PullSubscriptions per subscriber and that is it.
+	//   downside is that there would be 1+n resources per channel and n subscribers.
+
 	if channel.GetDeletionTimestamp() != nil {
 		logger.Info("Channel Deleting.")
 
-		// TODO: delete the topic.
+		state, err := c.EnsureTopicDeleted(ctx, channel, channel.Spec.Project, channel.Status.TopicID)
+		switch state {
+		case pubsub.OpsGetFailedState:
+			logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
+			return err
 
-		//err := c.ensureSubscriptionRemoval(ctx, channel)
-		//if err != nil {
-		//	logger.Error("Unable to delete the Subscription", zap.Error(err))
-		//	return err
-		//}
+		case pubsub.OpsCreatedState:
+			// If we created a job to make a subscription, then add the finalizer and update the status.
+			channel.Status.MarkTopicOperating(
+				"Deleting",
+				"Created Job to delete Topic %q.",
+				channel.Status.TopicID)
+			return nil
+
+		case pubsub.OpsCompeteSuccessfulState:
+			channel.Status.MarkNoTopic("Deleted", "Successfully deleted Topic %q.", channel.Status.TopicID)
+			channel.Status.TopicID = ""
+			removeFinalizer(channel)
+
+		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
+
+			msg := "unknown"
+			if err != nil {
+				msg = err.Error()
+			}
+			channel.Status.MarkNoTopic(
+				"DeleteFailed",
+				"Failed to delete Topic: %q.",
+				msg)
+			return err
+		}
 		return nil
 	}
 
 	// TODO: there will be a lot of these jobs, we should collect them and run them all at the same time.
 
-	//topicID := resources.GenerateTopicName(channel)
-	//
-	//if cont, err := c.ensureTopic(ctx, channel, topicID); err != nil {
-	//	logger.Error("Unable to ensure topic", zap.Error(err))
-	//	return err
-	//} else if !cont {
-	//	logger.Info("Waiting for Job.")
-	//	return nil
-	//}
-	//
-	//subID := resources.GenerateSubscriptionName(channel)
-	//
-	//state, err := c.EnsureSubscription(ctx, channel, channel.Spec.Project, topicID, subID)
-	//	logger.Error("Unable to ensure subscription", zap.Error(err))
-	//	return err
-	//} else if !cont {
-	//	logger.Info("Waiting for Job.")
-	//	return nil
-	//}
-	//switch state {
-	//
-	//case OpsCreatedState:
-	//	// If we created a job to make a subscription, then add the finalizer and update the status.
-	//	addFinalizer(channel)
-	//	//channel.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subscription)
-	//	//channel.Status.SubscriptionID = subscription
-	//
-	//case OpsCreateFailedState:
-	//
-	//case OpsGetFailedState:
-	//
-	//case OpsCompeteSuccessfulState:
-	//	//channel.Status.MarkSubscribed()
-	//
-	//case OpsCompeteFailedState:
-	//	//channel.Status.MarkNotSubscribed(
-	//	//	"CreateFailed",
-	//	//	"Failed to create Subscription: %q",
-	//	//	operations.JobFailedMessage(job))
-	//}
+	channel.Status.TopicID = resources.GenerateTopicName(channel)
+	state, err := c.EnsureTopic(ctx, channel, channel.Spec.Project, channel.Status.TopicID)
+	switch state {
+	case pubsub.OpsGetFailedState:
+		logger.Error("Failed to get topic ops job.", zap.Any("state", state), zap.Error(err))
+		return err
 
-	_, err := c.createInvoker(ctx, channel)
+	case pubsub.OpsCreatedState:
+		// If we created a job to make a subscription, then add the finalizer and update the status.
+		addFinalizer(channel)
+		channel.Status.MarkTopicOperating("Creating",
+			"Created Job to create Topic %q.",
+			channel.Status.TopicID)
+		return nil
+
+	case pubsub.OpsCompeteSuccessfulState:
+		channel.Status.MarkTopicReady()
+
+	case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+		logger.Error("Failed to create Topic.", zap.Any("state", state), zap.Error(err))
+
+		msg := "unknown"
+		if err != nil {
+			msg = err.Error()
+		}
+		channel.Status.MarkNoTopic(
+			"CreateFailed",
+			"Failed to create Topic: %q",
+			msg)
+		return err
+	}
+
+	_, err = c.createInvoker(ctx, channel)
 	if err != nil {
 		logger.Error("Unable to create the invoker", zap.Error(err))
 		return err
 	}
 	channel.Status.MarkDeployed()
 
-	// TODO: Registry
-	//// Only create EventTypes for Broker sinks.
-	//if channel.Spec.Sink.Kind == "Broker" {
-	//	err = r.reconcileEventTypes(ctx, src)
-	//	if err != nil {
-	//		logger.Error("Unable to reconcile the event types", zap.Error(err))
-	//		return err
-	//	}
-	//	src.Status.MarkEventTypes()
-	//}
-
 	return nil
 }
-
-/*
-
-switch X {
-
-case OpsCreatedState:
-	// If we created a job to make a subscription, then add the finalizer and update the status.
-	addFinalizer(channel)
-	channel.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subscription)
-	channel.Status.SubscriptionID = subscription
-
-case OpsCreateFailedState:
-
-case OpsGetFailedState:
-
-case OpsCompeteSuccessfulState:
-	channel.Status.MarkSubscribed()
-
-case OpsCompeteFailedState:
-	channel.Status.MarkNotSubscribed(
-		"CreateFailed",
-		"Failed to create Subscription: %q",
-		operations.JobFailedMessage(job))
-}
-
-*/
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel) (*v1alpha1.Channel, error) {
 	channel, err := c.channelLister.Channels(desired.Namespace).Get(desired.Name)
@@ -375,24 +363,3 @@ func (r *Reconciler) getInvoker(ctx context.Context, src *v1alpha1.Channel) (*ap
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 }
-
-// TODO: Registry
-//func (r *Reconciler) reconcileEventTypes(ctx context.Context, src *v1alpha1.Channel) error {
-//	args := r.newEventTypeReconcilerArgs(src)
-//	return r.eventTypeReconciler.Reconcile(ctx, src, args)
-//}
-//
-//func (r *Reconciler) newEventTypeReconcilerArgs(src *v1alpha1.PubSub) *eventtype.ReconcilerArgs {
-//	spec := eventingv1alpha1.EventTypeSpec{
-//		Type:   v1alpha1.PubSubEventType,
-//		Source: v1alpha1.GetPubSub(src.Status.ProjectID, src.Spec.Topic),
-//		Broker: src.Spec.Sink.Name,
-//	}
-//	specs := make([]eventingv1alpha1.EventTypeSpec, 0, 1)
-//	specs = append(specs, spec)
-//	return &eventtype.ReconcilerArgs{
-//		Specs:     specs,
-//		Namespace: src.Namespace,
-//		Labels:    getLabels(src),
-//	}
-//}

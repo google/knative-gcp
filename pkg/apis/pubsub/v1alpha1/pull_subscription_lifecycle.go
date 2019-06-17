@@ -85,23 +85,13 @@ func (s *PullSubscriptionStatus) MarkSubscribed() {
 	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionSubscribed)
 }
 
-// MarkSubscribed sets the condition that the subscription has been created.
-func (s *PullSubscriptionStatus) MarkUnsubscribed() {
-	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, "", "")
-}
-
-// MarkSubscribing sets the condition that the subscription is being created.
-func (s *PullSubscriptionStatus) MarkSubscribing(reason, messageFormat string, messageA ...interface{}) {
+// MarkSubscriptionOperation sets the condition that the subscription is being operated on.
+func (s *PullSubscriptionStatus) MarkSubscriptionOperation(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
 }
 
-// MarkUnsubscribing sets the condition that the subscription is being deleted.
-func (s *PullSubscriptionStatus) MarkUnsubscribing(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
-}
-
-// MarkNotSubscribed sets the condition that the subscription failed to be created.
-func (s *PullSubscriptionStatus) MarkNotSubscribed(reason, messageFormat string, messageA ...interface{}) {
+// MarkNoSubscription sets the condition that the subscription does not exist.
+func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
 }
 

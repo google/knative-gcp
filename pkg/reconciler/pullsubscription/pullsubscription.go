@@ -112,7 +112,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
 	} else if _, updated, fErr := c.updateFinalizers(ctx, source); fErr != nil {
-		logger.Warnw("Failed to update source finalizers", zap.Error(fErr))
+		logger.Warnw("Failed to update PullSubscription finalizers", zap.Error(fErr))
 		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update finalizers for PullSubscription %q: %v", source.Name, fErr)
 		return fErr
@@ -158,14 +158,17 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 		case pubsub.OpsCreatedState:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
-			source.Status.MarkUnsubscribing(
+			source.Status.MarkSubscriptionOperation(
 				"Deleting",
 				"Created Job to delete Subscription %q.",
 				source.Status.SubscriptionID)
 			return nil
 
 		case pubsub.OpsCompeteSuccessfulState:
-			source.Status.MarkUnsubscribed()
+			source.Status.MarkNoSubscription(
+				"Deleted",
+				"Successfully deleted Subscription %q.",
+				source.Status.SubscriptionID)
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
 
@@ -176,7 +179,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			if err != nil {
 				msg = err.Error()
 			}
-			source.Status.MarkNotSubscribed(
+			source.Status.MarkNoSubscription(
 				"DeleteFailed",
 				"Failed to delete Subscription: %q",
 				msg)
@@ -214,7 +217,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	case pubsub.OpsCreatedState:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		addFinalizer(source)
-		source.Status.MarkSubscribing("Creating",
+		source.Status.MarkSubscriptionOperation("Creating",
 			"Created Job to create Subscription %q.",
 			source.Status.SubscriptionID)
 		return nil
@@ -229,9 +232,9 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		if err != nil {
 			msg = err.Error()
 		}
-		source.Status.MarkNotSubscribed(
+		source.Status.MarkNoSubscription(
 			"CreateFailed",
-			"Failed to create Subscription: %q",
+			"Failed to create Subscription: %q.",
 			msg)
 		return err
 	}
