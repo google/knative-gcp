@@ -120,6 +120,9 @@ func TestChannelInitializeConditions(t *testing.T) {
 				}, {
 					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   ChannelConditionTopicReady,
+					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
@@ -149,6 +152,9 @@ func TestChannelInitializeConditions(t *testing.T) {
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   ChannelConditionServiceReady,
+					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   ChannelConditionTopicReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
@@ -180,6 +186,9 @@ func TestChannelInitializeConditions(t *testing.T) {
 				}, {
 					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   ChannelConditionTopicReady,
+					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
@@ -202,6 +211,7 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady bool
 		setAddress              bool
 		markEndpointsReady      bool
+		markTopic               bool
 		wantReady               bool
 	}{{
 		name:                    "all happy",
@@ -209,6 +219,7 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady: true,
 		markEndpointsReady:      true,
 		setAddress:              true,
+		markTopic:               true,
 		wantReady:               true,
 	}, {
 		name:                    "service not ready",
@@ -216,6 +227,7 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady: false,
 		markEndpointsReady:      true,
 		setAddress:              true,
+		markTopic:               true,
 		wantReady:               false,
 	}, {
 		name:                    "endpoints not ready",
@@ -223,6 +235,7 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady: false,
 		markEndpointsReady:      false,
 		setAddress:              true,
+		markTopic:               true,
 		wantReady:               false,
 	}, {
 		name:                    "deployment not ready",
@@ -230,6 +243,7 @@ func TestChannelIsReady(t *testing.T) {
 		markEndpointsReady:      true,
 		markChannelServiceReady: false,
 		setAddress:              true,
+		markTopic:               true,
 		wantReady:               false,
 	}, {
 		name:                    "address not set",
@@ -237,6 +251,7 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady: false,
 		markEndpointsReady:      true,
 		setAddress:              false,
+		markTopic:               true,
 		wantReady:               false,
 	}, {
 		name:                    "channel service not ready",
@@ -244,6 +259,15 @@ func TestChannelIsReady(t *testing.T) {
 		markChannelServiceReady: false,
 		markEndpointsReady:      true,
 		setAddress:              true,
+		markTopic:               true,
+		wantReady:               false,
+	}, {
+		name:                    "topic not ready",
+		markServiceReady:        true,
+		markChannelServiceReady: true,
+		markEndpointsReady:      true,
+		setAddress:              true,
+		markTopic:               false,
 		wantReady:               false,
 	}}
 	for _, test := range tests {
@@ -267,6 +291,11 @@ func TestChannelIsReady(t *testing.T) {
 				cs.MarkEndpointsTrue()
 			} else {
 				cs.MarkEndpointsFailed("NotReadyEndpoints", "testing")
+			}
+			if test.markTopic {
+				cs.MarkTopicReady()
+			} else {
+				cs.MarkNoTopic("NoTopic", "UnitTest")
 			}
 			got := cs.IsReady()
 			if test.wantReady != got {

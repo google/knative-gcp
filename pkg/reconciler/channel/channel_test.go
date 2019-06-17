@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,6 +39,7 @@ import (
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/channel/resources"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
 	. "github.com/knative/pkg/reconciler/testing"
@@ -46,7 +48,7 @@ import (
 )
 
 const (
-	channelName = "pschan"
+	channelName = "chan"
 	sinkName    = "sink"
 
 	testNS = "testnamespace"
@@ -56,8 +58,8 @@ const (
 	channelUID = channelName + "-abc-123"
 
 	testProject        = "test-project-id"
-	testTopicID        = channelUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-events-" + testNS + "-" + channelName + "-" + channelUID
+	testTopicID        = "cloud-run-channel-" + testNS + "-" + channelName + "-" + channelUID
+	testSubscriptionID = "cloud-run-channel-" + testNS + "-" + channelName + "-" + channelUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -130,7 +132,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithInitChannelConditions,
-				WithChannelMarkTopicCreating(sinkURI),
+				WithChannelMarkTopicCreating(testTopicID),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -139,154 +141,147 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, channelName, true),
 		},
+	}, {
+		Name: "successful create",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithInitChannelConditions,
+				WithChannelTopic(testTopicID),
+			),
+			newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionCreate),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithInitChannelConditions,
+				WithChannelTopic(testTopicID),
+				// Updates
+				WithChannelInvokerDeployed,
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newInvoker(),
+		},
+	}, {
+		Name: "successful create - reuse existing receive adapter",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithInitChannelConditions,
+				WithChannelTopic(testTopicID),
+			),
+			newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionCreate),
+			newInvoker(),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithInitChannelConditions,
+				// Updates
+				WithChannelReady(testTopicID),
+			),
+		}},
+	}, {
+		Name: "deleting - delete topic",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithChannelReady(testTopicID),
+				WithChannelFinalizers(finalizerName),
+				WithChannelDeleted,
+			),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithChannelReady(testTopicID),
+				WithChannelFinalizers(finalizerName),
+				WithChannelDeleted,
+				// Updates
+				WithChannelTopicDeleting(testTopicID),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionDelete),
+		},
+	}, {
+		Name: "deleting final stage",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithChannelReady(testTopicID),
+				WithChannelFinalizers(finalizerName),
+				WithChannelDeleted,
+				WithChannelTopicDeleting(testTopicID),
+			),
+			newTopicJobFinished(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionDelete, true),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q finalizers", channelName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+					Project:            testProject,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithChannelReady(testTopicID),
+				WithChannelFinalizers(finalizerName),
+				WithChannelDeleted,
+				// Updates
+				WithChannelTopicDeleted(testTopicID),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, false),
+		},
 	},
-	//{
-	//	Name: "successful create",
-	//	Objects: []runtime.Object{
-	//		NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//		),
-	//		newSink(),
-	//	},
-	//	Key: testNS + "/" + channelName,
-	//	WantEvents: []string{
-	//		Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
-	//	},
-	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//			// Updates
-	//			WithInitChannelConditions,
-	//			WithChannelReady(sinkURI),
-	//		),
-	//	}},
-	//	WantCreates: []runtime.Object{
-	//		newReceiveAdapter(),
-	//	},
-	//}, {
-	//	Name: "successful create - reuse existing receive adapter",
-	//	Objects: []runtime.Object{
-	//		NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//		),
-	//		newSink(),
-	//		newReceiveAdapter(),
-	//	},
-	//	Key: testNS + "/" + channelName,
-	//	WantEvents: []string{
-	//		Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
-	//	},
-	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			WithChannelSubscription(testSubscriptionID),
-	//			// Updates
-	//			WithInitChannelConditions,
-	//			WithChannelReady(sinkURI),
-	//		),
-	//	}},
-	//}, {
-	//	Name: "cannot get sink",
-	//	Objects: []runtime.Object{
-	//		NewChannel(channelName, testNS,
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//		)},
-	//	Key:     testNS + "/" + channelName,
-	//	WantErr: true,
-	//	WantEvents: []string{
-	//		Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.run "sink" not found`),
-	//	},
-	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-	//		Object: NewChannel(channelName, testNS,
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelSink(sinkGVK, sinkName),
-	//			// updates
-	//			WithInitChannelConditions,
-	//			WithChannelSinkNotFound(),
-	//		),
-	//	}},
-	//},
-	//{
-	//	Name: "deleting - delete subscription",
-	//	Objects: []runtime.Object{
-	//		NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelReady(sinkURI),
-	//			WithChannelFinalizers(finalizerName),
-	//			WithChannelDeleted,
-	//		),
-	//	},
-	//	Key: testNS + "/" + channelName,
-	//WantEvents: []string{
-	//	Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source" finalizers`),
-	//	Eventf(corev1.EventTypeNormal, "Updated", `Updated Channel "source"`),
-	//},
-	//WantPatches: []clientgotesting.PatchActionImpl{
-	//	patchFinalizers(testNS, channelName, false),
-	//},
-	//},
-	//{
-	//	Name: "deleting final stage",
-	//	Objects: []runtime.Object{
-	//		NewChannel(channelName, testNS,
-	//			WithChannelUID(channelUID),
-	//			WithChannelSpec(pubsubv1alpha1.ChannelSpec{
-	//				Project:            testProject,
-	//				Topic:              testTopicID,
-	//				ServiceAccountName: testServiceAccount,
-	//			}),
-	//			WithChannelReady(sinkURI),
-	//			WithChannelDeleted,
-	//		),
-	//	},
-	//	Key: testNS + "/" + channelName,
-	//},
 
-	// TODO:
-	//			Name: "successful create event types",
-	//			Name: "cannot create event types",
-
+	// TODO: subscriptions.
 	}
 
 	defer logtesting.ClearAll()
@@ -376,12 +371,61 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
+func newInvoker() runtime.Object {
+	channel := NewChannel(channelName, testNS,
+		WithChannelUID(channelUID),
+		WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+			Project:            testProject,
+			ServiceAccountName: testServiceAccount,
+		}))
+	args := &resources.InvokerArgs{
+		Image:   testImage,
+		Channel: channel,
+		Labels:  resources.GetLabels(controllerAgentName, channelName),
+	}
+	return resources.MakeInvoker(args)
+}
+
 func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	return operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage,
+		Image:     testImage + "top",
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
 		Owner:     owner,
 	})
+}
+
+func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+	job := operations.NewTopicOps(operations.TopicArgs{
+		Image:     testImage + "top",
+		Action:    action,
+		ProjectID: testProject,
+		TopicID:   testTopicID,
+		Owner:     owner,
+	})
+
+	if success {
+		job.Status.Active = 0
+		job.Status.Succeeded = 1
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionFalse,
+		}}
+	} else {
+		job.Status.Active = 0
+		job.Status.Succeeded = 0
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionTrue,
+		}}
+	}
+
+	return job
 }

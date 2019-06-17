@@ -75,17 +75,6 @@ func WithInitChannelConditions(s *v1alpha1.Channel) {
 	s.Status.InitializeConditions()
 }
 
-//
-//func WithChannelSink(gvk metav1.GroupVersionKind, name string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Spec.Sink = &corev1.ObjectReference{
-//			APIVersion: apiVersion(gvk),
-//			Kind:       gvk.Kind,
-//			Name:       name,
-//		}
-//	}
-//}
-//
 func WithChannelTopic(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicReady()
@@ -96,14 +85,23 @@ func WithChannelTopic(topicID string) ChannelOption {
 func WithChannelMarkTopicCreating(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicOperating("Creating", "Created Job to create Topic %q.", topicID)
+		s.Status.TopicID = topicID
 	}
 }
 
-//func WithChannelMarkUnsubscribing(subscriptionID string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.MarkUnsubscribing("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
-//	}
-//}
+func WithChannelTopicDeleting(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.MarkTopicOperating("Deleting", "Created Job to delete Topic %q.", topicID)
+		s.Status.TopicID = topicID
+	}
+}
+
+func WithChannelTopicDeleted(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.MarkNoTopic("Deleted", "Successfully deleted Topic %q.", topicID)
+		s.Status.TopicID = ""
+	}
+}
 
 func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	return func(s *v1alpha1.Channel) {
@@ -111,15 +109,18 @@ func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	}
 }
 
-//
-//func WithChannelReady(sink string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.InitializeConditions()
-//		s.Status.MarkSink(sink)
-//		s.Status.MarkDeployed()
-//		s.Status.MarkSubscribed()
-//	}
-//}
+func WithChannelInvokerDeployed(s *v1alpha1.Channel) {
+	s.Status.MarkDeployed()
+}
+
+func WithChannelReady(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.InitializeConditions()
+		s.Status.MarkDeployed()
+		s.Status.MarkTopicReady()
+		s.Status.TopicID = topicID
+	}
+}
 
 //func WithChannelProjectResolved(projectID string) ChannelOption {
 //	return func(s *v1alpha1.Channel) {

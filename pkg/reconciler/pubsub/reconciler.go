@@ -84,7 +84,7 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, action string, owner km
 		c.Logger.Debugw("Job not found, creating.")
 
 		job = operations.NewTopicOps(operations.TopicArgs{
-			Image:     c.SubscriptionOpsImage,
+			Image:     c.TopicOpsImage,
 			Action:    action,
 			ProjectID: project,
 			TopicID:   topic,
