@@ -18,8 +18,9 @@ package reconciler
 
 import (
 	"context"
-	"github.com/knative/pkg/logging"
 	"time"
+
+	"github.com/knative/pkg/logging"
 
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/injection/clients/dynamicclient"
