@@ -56,17 +56,18 @@ var _ webhook.GenericCRD = (*Channel)(nil)
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
-	// Secret is the credential to use to create and poll the PubSubSource
-	// Subscription. The value of the secret entry must be a service account
-	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// Secret is the credential to use to create, publish, and poll the Pub/Sub
+	// Topic and Subscriptions. The value of the secret entry must be a
+	// service account key in the JSON format
+	// (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
-	// Project is the ID of the Google Cloud Project that the PubSubSource
-	// Topic exists in.
+	// Project is the ID of the Google Cloud Project that the Pub/Sub
+	// Topic and Subscriptions will be created in.
 	Project string `json:"project,omitempty"`
 
 	// ServiceAccoutName is the name of the ServiceAccount that will be used to
-	// run the Receive Adapter Deployment.
+	// run the Channel Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
 	// Channel conforms to Duck type Subscribable.
@@ -93,7 +94,7 @@ type ChannelStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ChannelList is a collection of in-memory channels.
+// ChannelList is a collection of Pub/Sub backed Channels.
 type ChannelList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -101,7 +102,7 @@ type ChannelList struct {
 	Items           []Channel `json:"items"`
 }
 
-// GetGroupVersionKind returns GroupVersionKind for PubSubChannels
+// GetGroupVersionKind returns GroupVersionKind for Pub/Sub backed Channel.
 func (c *Channel) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Channel")
 }
