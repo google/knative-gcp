@@ -65,7 +65,7 @@ func TestMakeInvoker(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "pubsub.cloud.run/v1alpha1",
-				Kind:               "PullSubscription",
+				Kind:               "Channel",
 				Name:               "channel-name",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
@@ -90,7 +90,7 @@ func TestMakeInvoker(t *testing.T) {
 					ServiceAccountName: "channel-svc-acct",
 					Containers: []corev1.Container{
 						{
-							Name:  "receive-adapter",
+							Name:  "invoker",
 							Image: "test-image",
 							Env: []corev1.EnvVar{{
 								Name:  "GOOGLE_APPLICATION_CREDENTIALS",

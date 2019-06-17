@@ -31,7 +31,7 @@ import (
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
 
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
 	pubsublisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 )
@@ -96,7 +96,11 @@ func (l *Listers) GetSharedObjects() []runtime.Object {
 }
 
 func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
-	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&eventsv1alpha1.PullSubscription{}))
+	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
+}
+
+func (l *Listers) GetChannelLister() pubsublisters.ChannelLister {
+	return pubsublisters.NewChannelLister(l.indexerFor(&pubsubv1alpha1.Channel{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

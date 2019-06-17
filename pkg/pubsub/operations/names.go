@@ -17,8 +17,9 @@ limitations under the License.
 package operations
 
 import (
-	"github.com/knative/pkg/kmeta"
 	"strings"
+
+	"github.com/knative/pkg/kmeta"
 )
 
 // TopicJobName creates the name of a topic ops job.

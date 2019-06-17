@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package reconciler
+package pubsub
 
 import (
 	"context"
 	"errors"
+
 	"github.com/knative/pkg/kmeta"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/batch/v1"
@@ -66,6 +67,53 @@ func (c *PubSubBase) EnsureSubscription(ctx context.Context, owner kmeta.OwnerRe
 
 func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {
 	return c.ensureSubscriptionJob(ctx, operations.ActionDelete, owner, project, topic, subscription)
+}
+
+func (c *PubSubBase) EnsureTopic(ctx context.Context, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
+	return c.ensureTopicJob(ctx, operations.ActionCreate, owner, project, topic)
+}
+
+func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
+	return c.ensureTopicJob(ctx, operations.ActionDelete, owner, project, topic)
+}
+
+func (c *PubSubBase) ensureTopicJob(ctx context.Context, action string, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
+	job, err := c.getJob(ctx, owner.GetObjectMeta(), labels.SelectorFromSet(operations.TopicJobLabels(owner, action)))
+	// If the resource doesn't exist, we'll create it
+	if apierrs.IsNotFound(err) {
+		c.Logger.Debugw("Job not found, creating.")
+
+		job = operations.NewTopicOps(operations.TopicArgs{
+			Image:     c.SubscriptionOpsImage,
+			Action:    action,
+			ProjectID: project,
+			TopicID:   topic,
+			Owner:     owner,
+		})
+
+		job, err := c.KubeClientSet.BatchV1().Jobs(owner.GetObjectMeta().GetNamespace()).Create(job)
+		if err != nil || job == nil {
+			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
+			return OpsCreateFailedState, nil
+		}
+
+		c.Logger.Debugw("Created Job.")
+		return OpsCreatedState, nil
+	} else if err != nil {
+		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
+		return OpsGetFailedState, err
+	}
+
+	if operations.IsJobComplete(job) {
+		c.Logger.Debugw("Job is complete.")
+		if operations.IsJobSucceeded(job) {
+			return OpsCompeteSuccessfulState, nil
+		} else if operations.IsJobFailed(job) {
+			return OpsCompeteFailedState, errors.New(operations.JobFailedMessage(job))
+		}
+	}
+	c.Logger.Debug("Job still active.", zap.Any("job", job))
+	return OpsOngoingState, nil
 }
 
 func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, action string, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {

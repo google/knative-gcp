@@ -86,10 +86,29 @@ func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubs
 	}
 }
 
+func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkSink(uri)
+	}
+}
+
 func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSubscribed()
 		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
+func WithPullSubscriptionMarkSubscribing(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkUnsubscribing("Creating", "Created Job to create Subscription %q.", subscriptionID)
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
+func WithPullSubscriptionMarkUnsubscribing(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkUnsubscribing("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
 	}
 }
 

@@ -28,8 +28,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	pubsubreconciler "github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
@@ -69,7 +69,7 @@ func NewController(
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	pubsubBase := &pubsubreconciler.PubSubBase{
+	pubsubBase := &pubsub.PubSubBase{
 		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
 		SubscriptionOpsImage: env.SubscriptionOps,
 	}

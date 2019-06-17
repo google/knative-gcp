@@ -42,7 +42,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 )
 
@@ -55,7 +55,7 @@ const (
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
 type Reconciler struct {
-	*reconciler.PubSubBase
+	*pubsub.PubSubBase
 
 	deploymentLister appsv1listers.DeploymentLister
 
@@ -102,6 +102,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// updates regardless of whether the reconciliation errored out.
 	var reconcileErr = c.reconcile(ctx, source)
 
+	// If no error is returned, mark the observed generation.
+	// This has to be done before updateStatus is called.
+	if reconcileErr == nil {
+		source.Status.ObservedGeneration = source.Generation
+	}
+
 	if equality.Semantic.DeepEqual(original.Finalizers, source.Finalizers) {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
@@ -146,11 +152,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 		switch state {
-		case reconciler.OpsGetFailedState:
+		case pubsub.OpsGetFailedState:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 			return err
 
-		case reconciler.OpsCreatedState:
+		case pubsub.OpsCreatedState:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
 			source.Status.MarkUnsubscribing(
 				"Deleting",
@@ -158,12 +164,12 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				source.Status.SubscriptionID)
 			return nil
 
-		case reconciler.OpsCompeteSuccessfulState:
+		case pubsub.OpsCompeteSuccessfulState:
 			source.Status.MarkUnsubscribed()
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
 
-		case reconciler.OpsCreateFailedState, reconciler.OpsCompeteFailedState:
+		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
 			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
 
 			msg := "unknown"
@@ -201,11 +207,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	state, err := c.EnsureSubscription(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 	switch state {
-	case reconciler.OpsGetFailedState:
+	case pubsub.OpsGetFailedState:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 		return err
 
-	case reconciler.OpsCreatedState:
+	case pubsub.OpsCreatedState:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		addFinalizer(source)
 		source.Status.MarkSubscribing("Creating",
@@ -213,10 +219,10 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID)
 		return nil
 
-	case reconciler.OpsCompeteSuccessfulState:
+	case pubsub.OpsCompeteSuccessfulState:
 		source.Status.MarkSubscribed()
 
-	case reconciler.OpsCreateFailedState, reconciler.OpsCompeteFailedState:
+	case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
 		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
 
 		msg := "unknown"
@@ -247,8 +253,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	//	}
 	//	src.Status.MarkEventTypes()
 	//}
-
-	source.Status.ObservedGeneration = source.Generation
 
 	return nil
 }

@@ -36,8 +36,9 @@ func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
+	_ = os.Setenv("PUBSUB_INVOKER_IMAGE", "PUBSUB_INVOKER_IMAGE")
 	_ = os.Setenv("PUBSUB_SUB_IMAGE", "PUBSUB_SUB_IMAGE")
+	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
 	c := NewController(ctx, configmap.NewFixedWatcher())
 
