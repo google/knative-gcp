@@ -1,7 +1,8 @@
 # Cloud Pub/Sub PullSubscription
 
-This sample shows how to configure the Cloud Pub/Sub Pull Subscription. This event source is
-most useful as a bridge from other Google Cloud services from a Pub/Sub topic, such as
+This sample shows how to configure the Cloud Pub/Sub Pull Subscription. This
+event source is most useful as a bridge from other Google Cloud services from a
+Pub/Sub topic, such as
 [Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications),
 [IoT Core](https://cloud.google.com/iot/docs/how-tos/devices) and
 [Cloud Scheduler](https://cloud.google.com/scheduler/docs/creating#).
@@ -30,12 +31,13 @@ most useful as a bridge from other Google Cloud services from a Pub/Sub topic, s
    messages, but you can also create a separate service account for receiving
    messages if you want additional privilege separation.
 
-   1. Create a new service account named `cloudrunevents-pullsubscription` with the
-      following command:
+   1. Create a new service account named `cloudrunevents-pullsubscription` with
+      the following command:
       ```shell
       gcloud iam service-accounts create cloudrunevents-pullsubscription
       ```
-   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud project:
+   1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud
+      project:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
         --member=serviceAccount:cloudrunevents-pullsubscription@$PROJECT_ID.iam.gserviceaccount.com \
@@ -53,7 +55,7 @@ most useful as a bridge from other Google Cloud services from a Pub/Sub topic, s
           # The secret should not already exist, so just try to create it.
           kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pullsubscription.json
       ```
-      
+
       `google-cloud-key` and `key.json` are pre-configured values in
       [`pullsubscription.yaml`](pullsubscription.yaml).
 
@@ -66,8 +68,8 @@ most useful as a bridge from other Google Cloud services from a Pub/Sub topic, s
    gcloud pubsub topics create $TOPIC_NAME
    ```
 
-1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml) and
-   apply it.
+1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
+   and apply it.
 
    If you're in the samples directory, you can replace `TOPIC_NAME` and apply in
    one command:
@@ -168,8 +170,8 @@ For more information about CloudEvents, see the
 
 ## What's Next
 
-The Pub/Sub PullSubscription implements what Knative Eventing considers to be a `source`.
-This component can work alone, but it also works well when
+The Pub/Sub PullSubscription implements what Knative Eventing considers to be a
+`source`. This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
 
