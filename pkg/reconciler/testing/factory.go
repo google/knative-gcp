@@ -18,9 +18,10 @@ package testing
 
 import (
 	"context"
+	"testing"
+
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/logging"
-	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
