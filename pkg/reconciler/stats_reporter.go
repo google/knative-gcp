@@ -30,14 +30,23 @@ import (
 type Measurement int
 
 const (
-	// PullSubscriptionReadyCountN is the number of pubsub sources that have become ready.
+	// ChannelReadyCountN is the number of channels that have become ready.
+	ChannelReadyCountN = "channel_ready_count"
+	// ChannelReadyLatencyN is the time it takes for a channel to become ready since the resource is created.
+	ChannelReadyLatencyN = "channel_ready_latency"
+
+	// PullSubscriptionReadyCountN is the number of pull subscriptions that have become ready.
 	PullSubscriptionReadyCountN = "pullsubscription_ready_count"
-	// PullSubscriptionReadyLatencyN is the time it takes for a pubsub source to become ready since the resource is created.
+	// PullSubscriptionReadyLatencyN is the time it takes for a pull subscription to become ready since the resource is created.
 	PullSubscriptionReadyLatencyN = "pullsubscription_ready_latency"
 )
 
 var (
 	KindToStatKeys = map[string]StatKey{
+		"Channel": {
+			ReadyCountKey:   ChannelReadyCountN,
+			ReadyLatencyKey: ChannelReadyLatencyN,
+		},
 		"PullSubscription": {
 			ReadyCountKey:   PullSubscriptionReadyCountN,
 			ReadyLatencyKey: PullSubscriptionReadyLatencyN,
