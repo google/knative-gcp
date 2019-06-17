@@ -45,6 +45,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 )
@@ -214,18 +215,18 @@ func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.Pu
 		return true, nil
 	}
 
-	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, resources.ActionCreate)))
+	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, operations.ActionCreate)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
 		c.Logger.Info("Job not found, creating.")
 
-		job = resources.NewSubscriptionOps(resources.Args{
+		job = operations.NewSubscriptionOps(operations.SubArgs{
 			Image:          c.subscriptionOpsImage,
-			Action:         resources.ActionCreate,
+			Action:         operations.ActionCreate,
 			ProjectID:      source.Spec.Project,
 			TopicID:        source.Spec.Topic,
 			SubscriptionID: subID,
-			Source:         source,
+			Owner:          source,
 		})
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
@@ -246,12 +247,12 @@ func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.Pu
 		return false, err
 	}
 
-	if resources.IsJobComplete(job) {
+	if operations.IsJobComplete(job) {
 		c.Logger.Info("Job Complete.")
-		if resources.IsJobSucceeded(job) {
+		if operations.IsJobSucceeded(job) {
 			source.Status.MarkSubscribed()
 			return true, nil
-		} else if resources.IsJobFailed(job) {
+		} else if operations.IsJobFailed(job) {
 			source.Status.MarkNotSubscribed("CreateFailed", "Failed to create Subscription: %q", resources.JobFailedMessage(job))
 		}
 	} else {
@@ -268,16 +269,16 @@ func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1al
 		return nil
 	}
 
-	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, resources.ActionDelete)))
+	job, err := c.getJob(ctx, source, labels.SelectorFromSet(operations.SubscriptionJobLabels(source, operations.ActionDelete)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
-		job = resources.NewSubscriptionOps(resources.Args{
+		job = operations.NewSubscriptionOps(operations.SubArgs{
 			Image:          c.subscriptionOpsImage,
-			Action:         resources.ActionDelete,
+			Action:         operations.ActionDelete,
 			ProjectID:      source.Spec.Project,
 			TopicID:        source.Spec.Topic,
 			SubscriptionID: source.Status.SubscriptionID,
-			Source:         source,
+			Owner:          source,
 		})
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
@@ -295,15 +296,15 @@ func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1al
 		return err
 	}
 
-	if resources.IsJobComplete(job) {
+	if operations.IsJobComplete(job) {
 		c.Logger.Info("Job Complete.")
-		if resources.IsJobSucceeded(job) {
+		if operations.IsJobSucceeded(job) {
 			source.Status.MarkUnsubscribed()
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
-		} else if resources.IsJobFailed(job) {
+		} else if operations.IsJobFailed(job) {
 			source.Status.MarkNotSubscribed("DeleteFailed", "Failed to delete Subscription: %q",
-				resources.JobFailedMessage(job))
+				operations.JobFailedMessage(job))
 		}
 	}
 	return nil

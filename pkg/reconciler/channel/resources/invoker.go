@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+
 	"github.com/knative/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
@@ -26,15 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReceiveAdapterArgs are the arguments needed to create a Channel Receive
+// ReceiveAdapterArgs are the arguments needed to create a PullSubscription Receive
 // Adapter. Every field is required.
 type ReceiveAdapterArgs struct {
-	Image          string
-	Source         *v1alpha1.Channel
-	Labels         map[string]string
-	SubscriptionID string
-	SinkURI        string
-	TransformerURI string
+	Image   string
+	Channel *v1alpha1.Channel
+	Labels  map[string]string
 }
 
 const (
@@ -54,10 +52,10 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 }
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
-// Channels.
+// PullSubscriptions.
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
-	secret := args.Source.Spec.Secret
+	secret := args.Channel.Spec.Secret
 	if secret == nil {
 		secret = DefaultSecretSelector()
 	}
@@ -66,10 +64,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	replicas := int32(1)
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       args.Source.Namespace,
-			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
+			Namespace:       args.Channel.Namespace,
+			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Channel.Name),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Channel)},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -81,28 +79,16 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 					Labels: args.Labels,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Source.Spec.ServiceAccountName,
+					ServiceAccountName: args.Channel.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
-						Name:  "receive-adapter",
+						Name:  "invoker",
 						Image: args.Image,
 						Env: []corev1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: credsFile,
 						}, {
 							Name:  "PROJECT_ID",
-							Value: args.Source.Spec.Project,
-						}, {
-							Name:  "PUBSUB_TOPIC_ID",
-							Value: args.Source.Spec.Topic,
-						}, {
-							Name:  "PUBSUB_SUBSCRIPTION_ID",
-							Value: args.SubscriptionID,
-						}, {
-							Name:  "SINK_URI",
-							Value: args.SinkURI,
-						}, {
-							Name:  "TRANSFORMER_URI",
-							Value: args.TransformerURI,
+							Value: args.Channel.Spec.Project,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

@@ -27,12 +27,12 @@ import (
 )
 
 func TestMakeReceiveAdapter(t *testing.T) {
-	src := &v1alpha1.Channel{
+	src := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "source-name",
 			Namespace: "source-namespace",
 		},
-		Spec: v1alpha1.ChannelSpec{
+		Spec: v1alpha1.PullSubscriptionSpec{
 			ServiceAccountName: "source-svc-acct",
 			Project:            "eventing-name",
 			Topic:              "topic",
@@ -69,7 +69,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion:         "pubsub.cloud.run/v1alpha1",
-					Kind:               "Channel",
+					Kind:               "PullSubscription",
 					Name:               "source-name",
 					Controller:         &yes,
 					BlockOwnerDeletion: &yes,
