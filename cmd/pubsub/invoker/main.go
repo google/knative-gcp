@@ -26,27 +26,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/invoker"
 )
 
 type envConfig struct {
 	// Environment variable containing project id.
 	Project string `envconfig:"PROJECT_ID"`
-
-	// Environment variable containing the sink URI.
-	Sink string `envconfig:"SINK_URI" required:"true"`
-
-	// Environment variable containing the transformer URI.
-	Transformer string `envconfig:"TRANSFORMER_URI"`
-
-	// Topic is the environment variable containing the PubSub Topic being
-	// subscribed to's name. In the form that is unique within the project.
-	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
-
-	// Subscription is the environment variable containing the name of the
-	// subscription to use.
-	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 }
 
 func main() {
@@ -75,15 +60,12 @@ func main() {
 
 	logger.Info("using project.", zap.String("project", env.Project))
 
-	startable := &adapter.Adapter{
-		ProjectID:      env.Project,
-		TopicID:        env.Topic,
-		SinkURI:        env.Sink,
-		SubscriptionID: env.Subscription,
-		TransformerURI: env.Transformer,
+	startable := &invoker.Invoker{
+		ProjectID: env.Project,
+		// TODO: this is not done.
 	}
 
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", startable))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("invoker", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

@@ -27,9 +27,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// ReceiveAdapterArgs are the arguments needed to create a PullSubscription Receive
-// Adapter. Every field is required.
-type ReceiveAdapterArgs struct {
+// InvokerArgs are the arguments needed to create a Channel invoker.
+// Every field is required.
+type InvokerArgs struct {
 	Image   string
 	Channel *v1alpha1.Channel
 	Labels  map[string]string
@@ -41,7 +41,7 @@ const (
 )
 
 // DefaultSecretSelector is the default secret selector used to load the creds
-// for the receive adapter to auth with Google Cloud.
+// for the invoker to auth with Google Cloud.
 func DefaultSecretSelector() *corev1.SecretKeySelector {
 	return &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
@@ -51,9 +51,9 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-// MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
-// PullSubscriptions.
-func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
+// MakeInvoker generates (but does not insert into K8s) the Invoker Deployment for
+// Channels.
+func MakeInvoker(args *InvokerArgs) *v1.Deployment {
 
 	secret := args.Channel.Spec.Secret
 	if secret == nil {

@@ -332,14 +332,14 @@ func newReceiveAdapter() runtime.Object {
 			Topic:              testTopicID,
 			ServiceAccountName: testServiceAccount,
 		}))
-	args := &resources.ReceiveAdapterArgs{
+	args := &resources.InvokerArgs{
 		Image:          testImage,
 		Source:         source,
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
 	}
-	return resources.MakeReceiveAdapter(args)
+	return resources.MakeInvoker(args)
 }
 
 func TestFinalizers(t *testing.T) {

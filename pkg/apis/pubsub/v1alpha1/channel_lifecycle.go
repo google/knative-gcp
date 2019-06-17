@@ -29,28 +29,35 @@ var channelCondSet = apis.NewLivingConditionSet(
 )
 
 const (
-	// ChannelConditionReady has status True when all subconditions below have been set to True.
+	// ChannelConditionReady has status True when all subconditions below have
+	// been set to True.
 	ChannelConditionReady = apis.ConditionReady
 
-	// ChannelConditionAddressable has status true when this Channel meets
-	// the Addressable contract and has a non-empty hostname.
+	// ChannelConditionAddressable has status true when this Channel meets the
+	// Addressable contract and has a non-empty hostname.
 	ChannelConditionAddressable apis.ConditionType = "Addressable"
 
-	// ChannelConditionServiceReady has status True when a k8s Service is ready. This
-	// basically just means it exists because there's no meaningful status in Service. See Endpoints
-	// below.
+	// ChannelConditionServiceReady has status True when a k8s Service is
+	// ready. This basically just means it exists because there's no meaningful
+	// status in Service. See Endpoints below.
 	ChannelConditionServiceReady apis.ConditionType = "ServiceReady"
 
-	// ChannelConditionEndpointsReady has status True when a k8s Service Endpoints are backed
-	// by at least one endpoint.
+	// ChannelConditionEndpointsReady has status True when a k8s Service
+	// Endpoints are backed by at least one endpoint.
 	ChannelConditionEndpointsReady apis.ConditionType = "EndpointsReady"
 
-	// ChannelConditionServiceReady has status True when a k8s Service representing the channel is ready.
-	// Because this uses ExternalName, there are no endpoints to check.
+	// ChannelConditionServiceReady has status True when a k8s Service
+	// representing the channel is ready. Because this uses ExternalName,
+	// there are no endpoints to check.
 	ChannelConditionChannelServiceReady apis.ConditionType = "ChannelServiceReady"
+
+	// ChannelConditionInvokerDeployed has status True when the Channel has had
+	// its invoker deployment created.
+	ChannelConditionInvokerDeployed apis.ConditionType = "InvokerDeployed"
 )
 
-// GetCondition returns the condition currently associated with the given type, or nil.
+// GetCondition returns the condition currently associated with the given type,
+// or nil.
 func (cs *ChannelStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return channelCondSet.Manage(cs).GetCondition(t)
 }
@@ -103,4 +110,19 @@ func (cs *ChannelStatus) MarkEndpointsFailed(reason, messageFormat string, messa
 
 func (cs *ChannelStatus) MarkEndpointsTrue() {
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionEndpointsReady)
+}
+
+// MarkDeployed sets the condition that the invoker has been deployed.
+func (s *ChannelStatus) MarkDeployed() {
+	channelCondSet.Manage(s).MarkTrue(ChannelConditionInvokerDeployed)
+}
+
+// MarkDeploying sets the condition that the invoker is deploying.
+func (s *ChannelStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
+	channelCondSet.Manage(s).MarkUnknown(ChannelConditionInvokerDeployed, reason, messageFormat, messageA...)
+}
+
+// MarkNotDeployed sets the condition that the invoker has not been deployed.
+func (s *ChannelStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
+	channelCondSet.Manage(s).MarkFalse(ChannelConditionInvokerDeployed, reason, messageFormat, messageA...)
 }

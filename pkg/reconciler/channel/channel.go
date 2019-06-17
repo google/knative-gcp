@@ -19,6 +19,8 @@ package channel
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -44,8 +46,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/channel/resources"
 )
 
@@ -58,7 +60,7 @@ const (
 
 // Reconciler implements controller.Reconciler for Channel resources.
 type Reconciler struct {
-	*reconciler.Base
+	*reconciler.PubSubBase
 
 	deploymentLister appsv1listers.DeploymentLister
 
@@ -67,9 +69,7 @@ type Reconciler struct {
 
 	tracker tracker.Interface // TODO: use tracker for sink.
 
-	invokerImage         string
-	topicOpsImage        string
-	subscriptionOpsImage string
+	invokerImage string
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
@@ -90,8 +90,8 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	logger := logging.FromContext(ctx)
 
-	// Get the Service resource with this namespace/name
-	original, err := c.sourceLister.Channels(namespace).Get(name)
+	// Get the Channel resource with this namespace/name
+	original, err := c.channelLister.Channels(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
 		logger.Errorf("service %q in work queue no longer exists", key)
@@ -101,54 +101,57 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Don't modify the informers copy
-	source := original.DeepCopy()
+	channel := original.DeepCopy()
 
-	// Reconcile this copy of the source and then write back any status
+	// Reconcile this copy of the channel and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = c.reconcile(ctx, source)
+	var reconcileErr = c.reconcile(ctx, channel)
 
-	if equality.Semantic.DeepEqual(original.Finalizers, source.Finalizers) {
+	if equality.Semantic.DeepEqual(original.Finalizers, channel.Finalizers) {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
-	} else if _, updated, fErr := c.updateFinalizers(ctx, source); fErr != nil {
-		logger.Warnw("Failed to update source finalizers", zap.Error(fErr))
-		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update finalizers for Channel %q: %v", source.Name, fErr)
+	} else if _, updated, fErr := c.updateFinalizers(ctx, channel); fErr != nil {
+		logger.Warnw("Failed to update Channel finalizers", zap.Error(fErr))
+		c.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update finalizers for Channel %q: %v", channel.Name, fErr)
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		c.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated Channel %q finalizers", source.GetName())
+		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "Updated", "Updated Channel %q finalizers", channel.GetName())
 	}
 
-	if equality.Semantic.DeepEqual(original.Status, source.Status) {
+	if equality.Semantic.DeepEqual(original.Status, channel.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(ctx, source); uErr != nil {
-		logger.Warnw("Failed to update source status", zap.Error(uErr))
-		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Channel %q: %v", source.Name, uErr)
+	} else if _, uErr := c.updateStatus(ctx, channel); uErr != nil {
+		logger.Warnw("Failed to update Channel status", zap.Error(uErr))
+		c.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for Channel %q: %v", channel.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		c.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated Channel %q", source.GetName())
+		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "Updated", "Updated Channel %q", channel.GetName())
 	}
 	if reconcileErr != nil {
-		c.Recorder.Event(source, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+		c.Recorder.Event(channel, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
 	return reconcileErr
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.Channel) error {
+func (c *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
 	logger := logging.FromContext(ctx)
 
-	source.Status.InitializeConditions()
+	channel.Status.InitializeConditions()
 
-	if source.GetDeletionTimestamp() != nil {
-		logger.Info("Source Deleting.")
-		err := c.ensureSubscriptionRemoval(ctx, source)
+	if channel.GetDeletionTimestamp() != nil {
+		logger.Info("Channel Deleting.")
+
+		// TODO: delete the topic.
+
+		err := c.ensureSubscriptionRemoval(ctx, channel)
 		if err != nil {
 			logger.Error("Unable to delete the Subscription", zap.Error(err))
 			return err
@@ -156,45 +159,59 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.Channel) er
 		return nil
 	}
 
-	sinkURI, err := duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Sink, source.Namespace)
-	if err != nil {
-		source.Status.MarkNoSink("NotFound", "")
+	// TODO: there will be a lot of these jobs, we should collect them and run them all at the same time.
+
+	topicID := resources.GenerateTopicName(channel)
+
+	if cont, err := c.ensureTopic(ctx, channel, topicID); err != nil {
+		logger.Error("Unable to ensure topic", zap.Error(err))
 		return err
-	}
-	source.Status.MarkSink(sinkURI)
-
-	var transformerURI string
-	if source.Spec.Transformer != nil {
-		transformerURI, err = duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Transformer, source.Namespace)
-		if err != nil {
-			source.Status.MarkNoSink("NotFound", "")
-			return err
-		}
-		source.Status.MarkSink(sinkURI)
-	}
-
-	subID := resources.GenerateSubName(source)
-
-	cont, err := c.ensureSubscription(ctx, source, subID)
-	if err != nil {
-		logger.Error("Unable to ensure subscription", zap.Error(err))
-		return err
-	}
-	if !cont {
+	} else if !cont {
 		logger.Info("Waiting for Job.")
 		return nil
 	}
 
-	_, err = c.createReceiveAdapter(ctx, source, subID, sinkURI, transformerURI)
+	subID := resources.GenerateSubscriptionName(channel)
+
+	state, err := c.ensureSubscription(ctx, channel, channel.Spec.Project, topicID, subID)
+	//	logger.Error("Unable to ensure subscription", zap.Error(err))
+	//	return err
+	//} else if !cont {
+	//	logger.Info("Waiting for Job.")
+	//	return nil
+	//}
+	switch state {
+
+	case OpsCreatedState:
+		// If we created a job to make a subscription, then add the finalizer and update the status.
+		addFinalizer(channel)
+		//channel.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subscription)
+		//channel.Status.SubscriptionID = subscription
+
+	case OpsCreateFailedState:
+
+	case OpsGetFailedState:
+
+	case OpsCompeteSuccessfulState:
+		//channel.Status.MarkSubscribed()
+
+	case OpsCompeteFailedState:
+		//channel.Status.MarkNotSubscribed(
+		//	"CreateFailed",
+		//	"Failed to create Subscription: %q",
+		//	operations.JobFailedMessage(job))
+	}
+
+	_, err := c.createInvoker(ctx, channel)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
 	}
-	source.Status.MarkDeployed()
+	channel.Status.MarkDeployed()
 
 	// TODO: Registry
 	//// Only create EventTypes for Broker sinks.
-	//if source.Spec.Sink.Kind == "Broker" {
+	//if channel.Spec.Sink.Kind == "Broker" {
 	//	err = r.reconcileEventTypes(ctx, src)
 	//	if err != nil {
 	//		logger.Error("Unable to reconcile the event types", zap.Error(err))
@@ -203,62 +220,91 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.Channel) er
 	//	src.Status.MarkEventTypes()
 	//}
 
-	source.Status.ObservedGeneration = source.Generation
+	channel.Status.ObservedGeneration = channel.Generation
 
 	return nil
 }
 
-func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.Channel, subID string) (bool, error) {
-	if source.Status.GetCondition(v1alpha1.ChannelConditionSubscribed).IsTrue() {
-		c.Logger.Info("Subscription is subscribed.")
-		// For now, we will trust the status, no healing.
-		return true, nil
-	}
+func (c *Reconciler) ensureTopic(ctx context.Context, channel *v1alpha1.Channel, topicID string) (bool, error) {
+	return false, errors.New("not implemented")
+}
 
-	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, resources.ActionCreate)))
+type OpsState string
+
+const (
+	OpsGetFailedState         OpsState = "JOB_GET_FAILED"
+	OpsCreatedState           OpsState = "JOB_CREATED"
+	OpsCreateFailedState      OpsState = "JOB_CREATE_FAILED"
+	OpsCompeteSuccessfulState OpsState = "JOB_SUCCESSFUL"
+	OpsCompeteFailedState     OpsState = "JOB_FAILED"
+	OpsOngoingState           OpsState = "JOB_ONGOING"
+)
+
+/*
+
+switch X {
+
+case OpsCreatedState:
+	// If we created a job to make a subscription, then add the finalizer and update the status.
+	addFinalizer(channel)
+	channel.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subscription)
+	channel.Status.SubscriptionID = subscription
+
+case OpsCreateFailedState:
+
+case OpsGetFailedState:
+
+case OpsCompeteSuccessfulState:
+	channel.Status.MarkSubscribed()
+
+case OpsCompeteFailedState:
+	channel.Status.MarkNotSubscribed(
+		"CreateFailed",
+		"Failed to create Subscription: %q",
+		operations.JobFailedMessage(job))
+}
+
+*/
+
+func (c *Reconciler) ensureSubscription(ctx context.Context, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {
+	job, err := c.getJob(ctx, owner.GetObjectMeta(), labels.SelectorFromSet(operations.SubscriptionJobLabels(owner, operations.ActionCreate)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
-		c.Logger.Info("Job not found, creating.")
+		c.Logger.Debug("Job not found, creating.")
 
-		job = resources.NewSubscriptionOps(resources.Args{
+		job = operations.NewSubscriptionOps(operations.SubArgs{
 			Image:          c.subscriptionOpsImage,
-			Action:         resources.ActionCreate,
-			ProjectID:      source.Spec.Project,
-			TopicID:        source.Spec.Topic,
-			SubscriptionID: subID,
-			Source:         source,
+			Action:         operations.ActionCreate,
+			ProjectID:      project,
+			TopicID:        topic,
+			SubscriptionID: subscription,
+			Owner:          owner,
 		})
 
-		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
-		if err != nil {
-			c.Logger.Info("Failed to create Job.", zap.Error(err))
-			return false, nil
+		job, err := c.KubeClientSet.BatchV1().Jobs(owner.GetObjectMeta().GetNamespace()).Create(job)
+		if err != nil || job == nil {
+			c.Logger.Debug("Failed to create Job.", zap.Error(err))
+			return OpsCreateFailedState, nil
 		}
-		// If we created a job to make a subscription, then add the finalizer and update the status.
-		if job != nil {
-			addFinalizer(source)
-			source.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subID)
-			source.Status.SubscriptionID = subID
-		}
-		c.Logger.Info("Created Job.")
-		return false, nil
+
+		c.Logger.Debug("Created Job.")
+		return OpsCreatedState, nil
 	} else if err != nil {
-		c.Logger.Info("Failed to get Job.", zap.Error(err))
-		return false, err
+		c.Logger.Debug("Failed to get Job.", zap.Error(err))
+		return OpsGetFailedState, err
 	}
 
-	if resources.IsJobComplete(job) {
+	if operations.IsJobComplete(job) {
 		c.Logger.Info("Job Complete.")
-		if resources.IsJobSucceeded(job) {
-			source.Status.MarkSubscribed()
-			return true, nil
-		} else if resources.IsJobFailed(job) {
-			source.Status.MarkNotSubscribed("CreateFailed", "Failed to create Subscription: %q", resources.JobFailedMessage(job))
+		if operations.IsJobSucceeded(job) {
+			return OpsCompeteSuccessfulState, nil
+		} else if operations.IsJobFailed(job) {
+			return OpsCompeteFailedState, fmt.Errorf("job failed with message: %q", operations.JobFailedMessage(job))
 		}
 	} else {
-		c.Logger.Info("Job still active.", zap.Any("job", job))
+		c.Logger.Debug("Job still active.", zap.Any("job", job))
+		return OpsOngoingState, nil
 	}
-	return false, nil
 }
 
 func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1alpha1.Channel) error {
@@ -310,8 +356,8 @@ func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1al
 	return nil
 }
 
-func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls labels.Selector) (*v1.Job, error) {
-	list, err := r.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).List(metav1.ListOptions{
+func (r *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*v1.Job, error) {
+	list, err := r.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
 		LabelSelector: ls.String(),
 	})
 	if err != nil {
@@ -319,7 +365,7 @@ func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls label
 	}
 
 	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, source) {
+		if metav1.IsControlledBy(&i, owner) {
 			return &i, nil
 		}
 	}
@@ -328,34 +374,34 @@ func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls label
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel) (*v1alpha1.Channel, error) {
-	source, err := c.sourceLister.Channels(desired.Namespace).Get(desired.Name)
+	channel, err := c.channelLister.Channels(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(source.Status, desired.Status) {
-		return source, nil
+	if reflect.DeepEqual(channel.Status, desired.Status) {
+		return channel, nil
 	}
-	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
+	becomesReady := desired.Status.IsReady() && !channel.Status.IsReady()
 	// Don't modify the informers copy.
-	existing := source.DeepCopy()
+	existing := channel.DeepCopy()
 	existing.Status = desired.Status
 
-	src, err := c.RunClientSet.PubsubV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
+	ch, err := c.RunClientSet.PubsubV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
-		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Channel %q became ready after %v", source.Name, duration)
+		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
+		c.Logger.Infof("Channel %q became ready after %v", channel.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("Channel", source.Namespace, source.Name, duration); err != nil {
+		if err := c.StatsReporter.ReportReady("Channel", channel.Namespace, channel.Name, duration); err != nil {
 			logging.FromContext(ctx).Infof("failed to record ready for Channel, %v", err)
 		}
 	}
 
-	return src, err
+	return ch, err
 }
 
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Channel) (*v1alpha1.Channel, bool, error) {
-	source, err := c.sourceLister.Channels(desired.Namespace).Get(desired.Name)
+	source, err := c.channelLister.Channels(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
 	}
@@ -414,31 +460,27 @@ func removeFinalizer(s *v1alpha1.Channel) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Channel, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
-	ra, err := r.getReceiveAdapter(ctx, src)
+func (r *Reconciler) createInvoker(ctx context.Context, channel *v1alpha1.Channel) (*appsv1.Deployment, error) {
+	ra, err := r.getInvoker(ctx, channel)
 	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
+		logging.FromContext(ctx).Error("Unable to get an existing invoker", zap.Error(err))
 		return nil, err
 	}
 	if ra != nil {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing receive adapter", zap.Any("receiveAdapter", ra))
+		logging.FromContext(ctx).Desugar().Info("Reusing existing invoker", zap.Any("invoker", ra))
 		return ra, nil
 	}
-	dp := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
-		Image:          r.receiveAdapterImage,
-		Source:         src,
-		Labels:         resources.GetLabels(controllerAgentName, src.Name),
-		SubscriptionID: subscriptionID,
-		SinkURI:        sinkURI,
-		TransformerURI: transformerURI,
+	dp := resources.MakeInvoker(&resources.InvokerArgs{
+		Image:   r.invokerImage,
+		Channel: channel,
+		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
 	})
-	dp, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(dp)
-	logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", dp))
+	dp, err = r.KubeClientSet.AppsV1().Deployments(channel.Namespace).Create(dp)
+	logging.FromContext(ctx).Desugar().Info("Invoker created.", zap.Error(err), zap.Any("invoker", dp))
 	return dp, err
 }
 
-func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.Channel) (*appsv1.Deployment, error) {
-
+func (r *Reconciler) getInvoker(ctx context.Context, src *v1alpha1.Channel) (*appsv1.Deployment, error) {
 	dl, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
 		LabelSelector: resources.GetLabelSelector(controllerAgentName, src.Name).String(),
 		TypeMeta: metav1.TypeMeta{

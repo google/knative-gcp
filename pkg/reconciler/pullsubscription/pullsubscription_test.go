@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"fmt"
+	"github.com/knative/pkg/kmeta"
 	"testing"
 
 	"github.com/knative/pkg/configmap"
@@ -36,6 +37,8 @@ import (
 	"github.com/knative/pkg/tracker"
 
 	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
+	pubsubreconciler "github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 
@@ -56,7 +59,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-events-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -176,6 +179,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -214,6 +218,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 				newReceiveAdapter(),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -244,7 +249,8 @@ func TestAllCases(t *testing.T) {
 						ServiceAccountName: testServiceAccount,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
-				)},
+				),
+			},
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
@@ -301,6 +307,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 				),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete),
 			},
 			Key: testNS + "/" + sourceName,
 		},
@@ -313,8 +320,12 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+		pubsubBase := &pubsubreconciler.PubSubBase{
+			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+			SubscriptionOpsImage: testImage,
+		}
 		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
 			tracker:             tracker.New(func(string) {}, 0),
@@ -341,6 +352,17 @@ func newReceiveAdapter() runtime.Object {
 		SinkURI:        sinkURI,
 	}
 	return resources.MakeReceiveAdapter(args)
+}
+
+func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+	return operations.NewSubscriptionOps(operations.SubArgs{
+		Image:          testImage,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		SubscriptionID: testSubscriptionID,
+		Owner:          owner,
+	})
 }
 
 func TestFinalizers(t *testing.T) {

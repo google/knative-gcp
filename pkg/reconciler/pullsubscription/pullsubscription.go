@@ -23,13 +23,11 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -37,7 +35,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/logging"
 	"github.com/knative/pkg/tracker"
 	"go.uber.org/zap"
@@ -45,8 +42,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 )
 
@@ -59,7 +55,7 @@ const (
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
 type Reconciler struct {
-	*reconciler.Base
+	*reconciler.PubSubBase
 
 	deploymentLister appsv1listers.DeploymentLister
 
@@ -68,8 +64,7 @@ type Reconciler struct {
 
 	tracker tracker.Interface // TODO: use tracker for sink.
 
-	receiveAdapterImage  string
-	subscriptionOpsImage string
+	receiveAdapterImage string
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
@@ -90,7 +85,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 	logger := logging.FromContext(ctx)
 
-	// Get the Service resource with this namespace/name
+	// Get the PullSubscription resource with this namespace/name
 	original, err := c.sourceLister.PullSubscriptions(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
@@ -148,11 +143,40 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
-		err := c.ensureSubscriptionRemoval(ctx, source)
-		if err != nil {
-			logger.Error("Unable to delete the Subscription", zap.Error(err))
+
+		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+		switch state {
+		case reconciler.OpsGetFailedState:
+			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
+			return err
+
+		case reconciler.OpsCreatedState:
+			// If we created a job to make a subscription, then add the finalizer and update the status.
+			source.Status.MarkUnsubscribing(
+				"Deleting",
+				"Created Job to delete Subscription %q.",
+				source.Status.SubscriptionID)
+			return nil
+
+		case reconciler.OpsCompeteSuccessfulState:
+			source.Status.MarkUnsubscribed()
+			source.Status.SubscriptionID = ""
+			removeFinalizer(source)
+
+		case reconciler.OpsCreateFailedState, reconciler.OpsCompeteFailedState:
+			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
+
+			msg := "unknown"
+			if err != nil {
+				msg = err.Error()
+			}
+			source.Status.MarkNotSubscribed(
+				"DeleteFailed",
+				"Failed to delete Subscription: %q",
+				msg)
 			return err
 		}
+
 		return nil
 	}
 
@@ -173,19 +197,40 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		source.Status.MarkSink(sinkURI)
 	}
 
-	subID := resources.GenerateSubName(source)
+	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	cont, err := c.ensureSubscription(ctx, source, subID)
-	if err != nil {
-		logger.Error("Unable to ensure subscription", zap.Error(err))
+	state, err := c.EnsureSubscription(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+	switch state {
+	case reconciler.OpsGetFailedState:
+		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
+		return err
+
+	case reconciler.OpsCreatedState:
+		// If we created a job to make a subscription, then add the finalizer and update the status.
+		addFinalizer(source)
+		source.Status.MarkSubscribing("Creating",
+			"Created Job to create Subscription %q.",
+			source.Status.SubscriptionID)
+		return nil
+
+	case reconciler.OpsCompeteSuccessfulState:
+		source.Status.MarkSubscribed()
+
+	case reconciler.OpsCreateFailedState, reconciler.OpsCompeteFailedState:
+		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
+
+		msg := "unknown"
+		if err != nil {
+			msg = err.Error()
+		}
+		source.Status.MarkNotSubscribed(
+			"CreateFailed",
+			"Failed to create Subscription: %q",
+			msg)
 		return err
 	}
-	if !cont {
-		logger.Info("Waiting for Job.")
-		return nil
-	}
 
-	_, err = c.createReceiveAdapter(ctx, source, subID, sinkURI, transformerURI)
+	_, err = c.createReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
@@ -206,125 +251,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	source.Status.ObservedGeneration = source.Generation
 
 	return nil
-}
-
-func (c *Reconciler) ensureSubscription(ctx context.Context, source *v1alpha1.PullSubscription, subID string) (bool, error) {
-	if source.Status.GetCondition(v1alpha1.PullSubscriptionConditionSubscribed).IsTrue() {
-		c.Logger.Info("Subscription is subscribed.")
-		// For now, we will trust the status, no healing.
-		return true, nil
-	}
-
-	job, err := c.getJob(ctx, source, labels.SelectorFromSet(resources.JobLabels(source.Name, operations.ActionCreate)))
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		c.Logger.Info("Job not found, creating.")
-
-		job = operations.NewSubscriptionOps(operations.SubArgs{
-			Image:          c.subscriptionOpsImage,
-			Action:         operations.ActionCreate,
-			ProjectID:      source.Spec.Project,
-			TopicID:        source.Spec.Topic,
-			SubscriptionID: subID,
-			Owner:          source,
-		})
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
-		if err != nil {
-			c.Logger.Info("Failed to create Job.", zap.Error(err))
-			return false, nil
-		}
-		// If we created a job to make a subscription, then add the finalizer and update the status.
-		if job != nil {
-			addFinalizer(source)
-			source.Status.MarkSubscribing("Creating", "Created Job %q to create Subscription %q.", job.Name, subID)
-			source.Status.SubscriptionID = subID
-		}
-		c.Logger.Info("Created Job.")
-		return false, nil
-	} else if err != nil {
-		c.Logger.Info("Failed to get Job.", zap.Error(err))
-		return false, err
-	}
-
-	if operations.IsJobComplete(job) {
-		c.Logger.Info("Job Complete.")
-		if operations.IsJobSucceeded(job) {
-			source.Status.MarkSubscribed()
-			return true, nil
-		} else if operations.IsJobFailed(job) {
-			source.Status.MarkNotSubscribed("CreateFailed", "Failed to create Subscription: %q", resources.JobFailedMessage(job))
-		}
-	} else {
-		c.Logger.Info("Job still active.", zap.Any("job", job))
-	}
-	return false, nil
-}
-
-func (c *Reconciler) ensureSubscriptionRemoval(ctx context.Context, source *v1alpha1.PullSubscription) error {
-	c.Logger.Info("Starting to Ensure Subscription Removal.", zap.Any("source.name", source.Name))
-	if source.Status.SubscriptionID == "" {
-		c.Logger.Info("SubscriptionID is empty.")
-		// For now, we will trust the status, no healing.
-		return nil
-	}
-
-	job, err := c.getJob(ctx, source, labels.SelectorFromSet(operations.SubscriptionJobLabels(source, operations.ActionDelete)))
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		job = operations.NewSubscriptionOps(operations.SubArgs{
-			Image:          c.subscriptionOpsImage,
-			Action:         operations.ActionDelete,
-			ProjectID:      source.Spec.Project,
-			TopicID:        source.Spec.Topic,
-			SubscriptionID: source.Status.SubscriptionID,
-			Owner:          source,
-		})
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).Create(job)
-		if err != nil {
-			c.Logger.Info("Failed to create Job.", zap.Error(err))
-			return nil
-		}
-		// If we created a job to make a subscription, then add the finalizer and update the status.
-		if job != nil {
-			source.Status.MarkUnsubscribing("Deleting", "Created Job %q to delete Subscription %q.", job.Name, source.Status.SubscriptionID)
-		}
-		return nil
-	} else if err != nil {
-		c.Logger.Info("Failed to get Job.", zap.Error(err))
-		return err
-	}
-
-	if operations.IsJobComplete(job) {
-		c.Logger.Info("Job Complete.")
-		if operations.IsJobSucceeded(job) {
-			source.Status.MarkUnsubscribed()
-			source.Status.SubscriptionID = ""
-			removeFinalizer(source)
-		} else if operations.IsJobFailed(job) {
-			source.Status.MarkNotSubscribed("DeleteFailed", "Failed to delete Subscription: %q",
-				operations.JobFailedMessage(job))
-		}
-	}
-	return nil
-}
-
-func (r *Reconciler) getJob(ctx context.Context, source kmeta.Accessor, ls labels.Selector) (*v1.Job, error) {
-	list, err := r.KubeClientSet.BatchV1().Jobs(source.GetNamespace()).List(metav1.ListOptions{
-		LabelSelector: ls.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, source) {
-			return &i, nil
-		}
-	}
-
-	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
@@ -438,7 +364,6 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Pul
 }
 
 func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-
 	dl, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
 		LabelSelector: resources.GetLabelSelector(controllerAgentName, src.Name).String(),
 		TypeMeta: metav1.TypeMeta{
