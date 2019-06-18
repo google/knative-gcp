@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/google/go-cmp/cmp"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestPubSubEventSource(t *testing.T) {
