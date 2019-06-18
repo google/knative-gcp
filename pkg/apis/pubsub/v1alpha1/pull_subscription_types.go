@@ -102,7 +102,7 @@ const (
 	PullSubscriptionConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
 
 	// PullSubscriptionConditionDeployed has status True when the PullSubscription has
-	// had it's receive adapter deployment created.
+	// had its receive adapter deployment created.
 	PullSubscriptionConditionDeployed duckv1alpha1.ConditionType = "Deployed"
 
 	// PullSubscriptionConditionSubscribed has status True when a Google Cloud

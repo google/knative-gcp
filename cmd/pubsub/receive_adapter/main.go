@@ -17,18 +17,16 @@ limitations under the License.
 package main
 
 import (
-	"errors"
 	"flag"
 	"log"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 
-	gcppubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/adapter"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
 )
 
 type envConfig struct {
@@ -68,7 +66,7 @@ func main() {
 	}
 
 	if env.Project == "" {
-		project, err := resolveProjectID(ctx)
+		project, err := metadata.ProjectID()
 		if err != nil {
 			logger.Fatal("failed to find project id. ", zap.Error(err))
 		}
@@ -77,7 +75,7 @@ func main() {
 
 	logger.Info("using project.", zap.String("project", env.Project))
 
-	adapter := &gcppubsub.Adapter{
+	startable := &adapter.Adapter{
 		ProjectID:      env.Project,
 		TopicID:        env.Topic,
 		SinkURI:        env.Sink,
@@ -85,22 +83,8 @@ func main() {
 		TransformerURI: env.Transformer,
 	}
 
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", adapter))
-	if err := adapter.Start(ctx); err != nil {
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", startable))
+	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
-}
-
-func resolveProjectID(ctx context.Context) (string, error) {
-	logger := logging.FromContext(ctx)
-
-	// Try from metadata server.
-	if projectID, err := metadata.ProjectID(); err == nil {
-		return projectID, nil
-	} else {
-		logger.Warnw("failed to get Project ID from Google Cloud Metadata Server.", zap.Error(err))
-	}
-
-	// Unknown Project ID
-	return "", errors.New("project is required but not set")
 }

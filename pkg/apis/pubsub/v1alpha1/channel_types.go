@@ -74,6 +74,46 @@ type ChannelSpec struct {
 	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
 }
 
+var channelCondSet = apis.NewLivingConditionSet(
+	ChannelConditionServiceReady,
+	ChannelConditionEndpointsReady,
+	ChannelConditionAddressable,
+	ChannelConditionChannelServiceReady,
+	ChannelConditionTopicReady,
+)
+
+const (
+	// ChannelConditionReady has status True when all subconditions below have
+	// been set to True.
+	ChannelConditionReady = apis.ConditionReady
+
+	// ChannelConditionAddressable has status true when this Channel meets the
+	// Addressable contract and has a non-empty hostname.
+	ChannelConditionAddressable apis.ConditionType = "Addressable"
+
+	// ChannelConditionServiceReady has status True when a k8s Service is
+	// ready. This basically just means it exists because there's no meaningful
+	// status in Service. See Endpoints below.
+	ChannelConditionServiceReady apis.ConditionType = "ServiceReady"
+
+	// ChannelConditionEndpointsReady has status True when a k8s Service
+	// Endpoints are backed by at least one endpoint.
+	ChannelConditionEndpointsReady apis.ConditionType = "EndpointsReady"
+
+	// ChannelConditionServiceReady has status True when a k8s Service
+	// representing the channel is ready. Because this uses ExternalName,
+	// there are no endpoints to check.
+	ChannelConditionChannelServiceReady apis.ConditionType = "ChannelServiceReady"
+
+	// ChannelConditionTopicReady has status True when the Channel has had a
+	// Pub/Sub topic created for it.
+	ChannelConditionTopicReady apis.ConditionType = "TopicDeployed"
+
+	// ChannelConditionInvokerDeployed has status True when the Channel has had
+	// its invoker deployment created.
+	ChannelConditionInvokerDeployed apis.ConditionType = "InvokerDeployed"
+)
+
 // ChannelStatus represents the current state of a Channel.
 type ChannelStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
@@ -90,6 +130,14 @@ type ChannelStatus struct {
 
 	// Subscribers is populated with the statuses of each of the Channelable's subscribers.
 	eventingduck.SubscribableStatus `json:",inline"`
+
+	// ProjectID is the resolved project ID in use by the PullSubscription.
+	// +optional
+	ProjectID string `json:"projectId,omitempty"`
+
+	// TopicID is the created topic ID used by the Channel.
+	// +optional
+	TopicID string `json:"topicId,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

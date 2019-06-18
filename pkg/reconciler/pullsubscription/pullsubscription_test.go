@@ -21,22 +21,25 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/knative/pkg/configmap"
-	"k8s.io/apimachinery/pkg/util/sets"
-
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/kmeta"
 	logtesting "github.com/knative/pkg/logging/testing"
 	"github.com/knative/pkg/tracker"
 
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 
 	. "github.com/knative/pkg/reconciler/testing"
@@ -56,7 +59,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-events-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
 	testServiceAccount = "test-project-id"
 )
 
@@ -73,7 +76,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = eventsv1alpha1.AddToScheme(scheme.Scheme)
+	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
 }
 
 func newSink() *unstructured.Unstructured {
@@ -120,54 +123,55 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	},
-		//{
-		//	Name: "create subscription",
-		//	Objects: []runtime.Object{
-		//		NewPullSubscription(sourceName, testNS,
-		//			WithPullSubscriptionUID(sourceUID),
-		//			WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
-		//				Project:            testProject,
-		//				Topic:              testTopicID,
-		//				ServiceAccountName: testServiceAccount,
-		//			}),
-		//			WithPullSubscriptionSink(sinkGVK, sinkName),
-		//			WithPullSubscriptionSubscription(testSubscriptionID),
-		//		),
-		//		newSink(),
-		//	},
-		//	Key: testNS + "/" + sourceName,
-		//	WantEvents: []string{
-		//		/Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source" finalizers`),
-		//		Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
-		//	},
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewPullSubscription(sourceName, testNS,
-		//			WithPullSubscriptionUID(sourceUID),
-		//			WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
-		//				Project:            testProject,
-		//				Topic:              testTopicID,
-		//				ServiceAccountName: testServiceAccount,
-		//			}),
-		//			WithPullSubscriptionSink(sinkGVK, sinkName),
-		//			WithPullSubscriptionSubscription(testSubscriptionID),
-		//			// Updates
-		//			WithInitPullSubscriptionConditions,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//	}},
-		//	WantCreates: []runtime.Object{
-		//		newReceiveAdapter(),
-		//	},
-		//	WantPatches: []clientgotesting.PatchActionImpl{
-		//		patchFinalizers(testNS, sourceName, true),
-		//	},
-		//},
+		{
+			Name: "create subscription",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionMarkSink(sinkURI),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionMarkSink(sinkURI),
+					// Updates
+					WithPullSubscriptionMarkSubscribing(testSubscriptionID),
+				),
+			}},
+			WantCreates: []runtime.Object{
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, true),
+			},
+		},
 		{
 			Name: "successful create",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
@@ -176,15 +180,16 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
@@ -204,7 +209,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
@@ -214,15 +219,16 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 				newReceiveAdapter(),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
@@ -238,13 +244,14 @@ func TestAllCases(t *testing.T) {
 			Name: "cannot get sink",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
-				)},
+				),
+			},
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
@@ -252,7 +259,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
@@ -264,45 +271,89 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 		},
-		//{
-		//	Name: "deleting - delete subscription",
-		//	Objects: []runtime.Object{
-		//		NewPullSubscription(sourceName, testNS,
-		//			WithPullSubscriptionUID(sourceUID),
-		//			WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
-		//				Project:            testProject,
-		//				Topic:              testTopicID,
-		//				ServiceAccountName: testServiceAccount,
-		//			}),
-		//			WithPullSubscriptionReady(sinkURI),
-		//			WithPullSubscriptionFinalizers(finalizerName),
-		//			WithPullSubscriptionDeleted,
-		//		),
-		//	},
-		//	Key: testNS + "/" + sourceName,
-		//WantEvents: []string{
-		//	Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source" finalizers`),
-		//	Eventf(corev1.EventTypeNormal, "Updated", `Updated PullSubscription "source"`),
-		//},
-		//WantPatches: []clientgotesting.PatchActionImpl{
-		//	patchFinalizers(testNS, sourceName, false),
-		//},
-		//},
+		{
+			Name: "deleting - delete subscription",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+					WithPullSubscriptionDeleted,
+				),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+					WithPullSubscriptionDeleted,
+					// updates
+					WithPullSubscriptionMarkUnsubscribing(testSubscriptionID),
+				),
+			}},
+			WantCreates: []runtime.Object{
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete),
+			},
+		},
 		{
 			Name: "deleting final stage",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project:            testProject,
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
 				),
+				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete, true),
 			},
 			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+					// updates
+					WithPullSubscriptionMarkNoSubscription(testSubscriptionID),
+				),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, false),
+			},
 		},
 
 		// TODO:
@@ -313,13 +364,16 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+		pubsubBase := &pubsub.PubSubBase{
+			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+			SubscriptionOpsImage: testImage,
+		}
 		return &Reconciler{
-			Base:                reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
 			tracker:             tracker.New(func(string) {}, 0),
 			receiveAdapterImage: testImage,
-			//pubSubClientCreator: fakepubsub.Creator(fakepubsub.CreatorData{}),
 		}
 	}))
 
@@ -328,7 +382,7 @@ func TestAllCases(t *testing.T) {
 func newReceiveAdapter() runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
-		WithPullSubscriptionSpec(eventsv1alpha1.PullSubscriptionSpec{
+		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 			Project:            testProject,
 			Topic:              testTopicID,
 			ServiceAccountName: testServiceAccount,
@@ -341,6 +395,52 @@ func newReceiveAdapter() runtime.Object {
 		SinkURI:        sinkURI,
 	}
 	return resources.MakeReceiveAdapter(args)
+}
+
+func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+	return operations.NewSubscriptionOps(operations.SubArgs{
+		Image:          testImage,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		SubscriptionID: testSubscriptionID,
+		Owner:          owner,
+	})
+}
+
+func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+	job := operations.NewSubscriptionOps(operations.SubArgs{
+		Image:          testImage,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		SubscriptionID: testSubscriptionID,
+		Owner:          owner,
+	})
+
+	if success {
+		job.Status.Active = 0
+		job.Status.Succeeded = 1
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionFalse,
+		}}
+	} else {
+		job.Status.Active = 0
+		job.Status.Succeeded = 0
+		job.Status.Conditions = []batchv1.JobCondition{{
+			Type:   batchv1.JobComplete,
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   batchv1.JobFailed,
+			Status: corev1.ConditionTrue,
+		}}
+	}
+
+	return job
 }
 
 func TestFinalizers(t *testing.T) {
@@ -384,7 +484,7 @@ func TestFinalizers(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		original := &eventsv1alpha1.PullSubscription{}
+		original := &pubsubv1alpha1.PullSubscription{}
 		original.Finalizers = tc.original.List()
 		if tc.add {
 			addFinalizer(original)

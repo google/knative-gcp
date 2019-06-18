@@ -14,14 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package operations
 
-import (
-	"fmt"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+const (
+	ActionCreate = "create"
+	ActionDelete = "delete"
 )
-
-func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {
-	return fmt.Sprintf("cloud-run-pull-%s-%s-%s", src.Namespace, src.Name, src.UID)
-}

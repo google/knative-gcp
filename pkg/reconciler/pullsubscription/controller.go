@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
@@ -68,12 +69,16 @@ func NewController(
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	c := &Reconciler{
+	pubsubBase := &pubsub.PubSubBase{
 		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-		deploymentLister:     deploymentInformer.Lister(),
-		sourceLister:         sourceInformer.Lister(),
-		receiveAdapterImage:  env.ReceiveAdapter,
-		subscriptionOpsImage: env.SubscriptionOps,
+		SubscriptionOpsImage: env.SubscriptionOps,
+	}
+
+	c := &Reconciler{
+		PubSubBase:          pubsubBase,
+		deploymentLister:    deploymentInformer.Lister(),
+		sourceLister:        sourceInformer.Lister(),
+		receiveAdapterImage: env.ReceiveAdapter,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 

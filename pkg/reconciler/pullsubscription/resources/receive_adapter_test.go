@@ -66,15 +66,13 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "pubsub.cloud.run/v1alpha1",
-					Kind:               "PullSubscription",
-					Name:               "source-name",
-					Controller:         &yes,
-					BlockOwnerDeletion: &yes,
-				},
-			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "pubsub.cloud.run/v1alpha1",
+				Kind:               "PullSubscription",
+				Name:               "source-name",
+				Controller:         &yes,
+				BlockOwnerDeletion: &yes,
+			}},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -93,53 +91,40 @@ func TestMakeReceiveAdapter(t *testing.T) {
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "source-svc-acct",
-					Containers: []corev1.Container{
-						{
-							Name:  "receive-adapter",
-							Image: "test-image",
-							Env: []corev1.EnvVar{
-								{
-									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-									Value: "/var/secrets/google/eventing-secret-key",
-								},
-								{
-									Name:  "PROJECT_ID",
-									Value: "eventing-name",
-								},
-								{
-									Name:  "PUBSUB_TOPIC_ID",
-									Value: "topic",
-								},
-								{
-									Name:  "PUBSUB_SUBSCRIPTION_ID",
-									Value: "sub-id",
-								},
-								{
-									Name:  "SINK_URI",
-									Value: "sink-uri",
-								},
-								{
-									Name: "TRANSFORMER_URI",
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      credsVolume,
-									MountPath: credsMountPath,
-								},
+					Containers: []corev1.Container{{
+						Name:  "receive-adapter",
+						Image: "test-image",
+						Env: []corev1.EnvVar{{
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/var/secrets/google/eventing-secret-key",
+						}, {
+							Name:  "PROJECT_ID",
+							Value: "eventing-name",
+						}, {
+							Name:  "PUBSUB_TOPIC_ID",
+							Value: "topic",
+						}, {
+							Name:  "PUBSUB_SUBSCRIPTION_ID",
+							Value: "sub-id",
+						}, {
+							Name:  "SINK_URI",
+							Value: "sink-uri",
+						}, {
+							Name: "TRANSFORMER_URI",
+						}},
+						VolumeMounts: []corev1.VolumeMount{{
+							Name:      credsVolume,
+							MountPath: credsMountPath,
+						}},
+					}},
+					Volumes: []corev1.Volume{{
+						Name: credsVolume,
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "eventing-secret-name",
 							},
 						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: credsVolume,
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "eventing-secret-name",
-								},
-							},
-						},
-					},
+					}},
 				},
 			},
 		},
