@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/knative/pkg/kmeta"
 
@@ -108,6 +109,31 @@ func MakePublisher(args *PublisherArgs) *v1.Deployment {
 					}},
 				},
 			},
+		},
+	}
+}
+
+// MakePublisherService creates the in-memory representation of the Broker's ingress Service.
+func MakePublisherService(args *PublisherArgs) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: args.Topic.Namespace,
+			Name:      fmt.Sprintf("%s-topic", args.Topic.Name),
+			Labels:    args.Labels,
+			OwnerReferences: []metav1.OwnerReference{
+				*kmeta.NewControllerRef(args.Topic),
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: args.Labels,
+			Ports: []corev1.ServicePort{{
+				Name:       "http",
+				Port:       80,
+				TargetPort: intstr.FromInt(8080),
+			}, {
+				Name: "metrics",
+				Port: 9090,
+			}},
 		},
 	}
 }

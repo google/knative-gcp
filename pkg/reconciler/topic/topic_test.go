@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/knative/pkg/kmeta"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -50,19 +52,18 @@ const (
 	topicName = "hubbub"
 	sinkName  = "sink"
 
-	testNS = "testnamespace"
-
-	testImage = "test_image"
-
-	topicUID = topicName + "-abc-123"
-
+	testNS             = "testnamespace"
+	testImage          = "test_image"
+	topicUID           = topicName + "-abc-123"
 	testProject        = "test-project-id"
 	testTopicID        = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
-	testSubscriptionID = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
 	testServiceAccount = "test-project-id"
+	testTopicURI       = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
 )
 
 var (
+	trueVal = true
+
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
 
@@ -193,6 +194,9 @@ func TestAllCases(t *testing.T) {
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
 		},
 		Key: testNS + "/" + topicName,
+		WithReactors: []clientgotesting.ReactionFunc{
+			ProvideResource("create", "deployments", newPublisher(true)),
+		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
 		},
@@ -208,10 +212,15 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopic(testTopicID),
 				// Updates
 				WithTopicDeployed,
+				WithTopicAddress(testTopicURI),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newPubslicher(),
+			newPublisher(false),
+			NewService(topicName+"-topic", testNS,
+				WithServiceOwnerReferences(ownerReferences()),
+				WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
+				WithServicePorts(servicePorts())),
 		},
 	}, {
 		Name: "successful create - reuse existing receive adapter",
@@ -227,12 +236,17 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopic(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
-			newPubslicher(),
+			newPublisher(true),
+			NewService(topicName+"-topic", testNS,
+				WithServiceOwnerReferences(ownerReferences()),
+				WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
+				WithServicePorts(servicePorts())),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
 		},
+		WithReactors: []clientgotesting.ReactionFunc{},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
@@ -244,6 +258,7 @@ func TestAllCases(t *testing.T) {
 				WithInitTopicConditions,
 				// Updates
 				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
 			),
 		}},
 	}, {
@@ -349,10 +364,7 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, false),
 		},
-	},
-
-	// TODO: subscriptions.
-	}
+	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
@@ -364,6 +376,7 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:       pubsubBase,
 			deploymentLister: listers.GetDeploymentLister(),
 			topicLister:      listers.GetTopicLister(),
+			serviceLister:    listers.GetK8sServiceLister(),
 			publisherImage:   testImage,
 		}
 	}))
@@ -426,6 +439,15 @@ func TestFinalizers(t *testing.T) {
 	}
 }
 
+func ProvideResource(verb, resource string, obj runtime.Object) clientgotesting.ReactionFunc {
+	return func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+		if !action.Matches("create", "deployments") {
+			return false, nil, nil
+		}
+		return true, obj, nil
+	}
+}
+
 func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
@@ -439,7 +461,32 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
-func newPubslicher() runtime.Object {
+func ownerReferences() []metav1.OwnerReference {
+	return []metav1.OwnerReference{{
+		APIVersion:         "pubsub.cloud.run/v1alpha1",
+		Kind:               "Topic",
+		Name:               topicName,
+		UID:                topicUID,
+		Controller:         &trueVal,
+		BlockOwnerDeletion: &trueVal,
+	}}
+}
+
+func servicePorts() []corev1.ServicePort {
+	svcPorts := []corev1.ServicePort{
+		{
+			Name:       "http",
+			Port:       80,
+			TargetPort: intstr.FromInt(8080),
+		}, {
+			Name: "metrics",
+			Port: 9090,
+		},
+	}
+	return svcPorts
+}
+
+func newPublisher(done bool) runtime.Object {
 	topic := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
@@ -452,7 +499,14 @@ func newPubslicher() runtime.Object {
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
-	return resources.MakePublisher(args)
+	pub := resources.MakePublisher(args)
+	if done {
+		pub.Status.Conditions = []appsv1.DeploymentCondition{{
+			Type:   appsv1.DeploymentAvailable,
+			Status: "True",
+		}}
+	}
+	return pub
 }
 
 func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {

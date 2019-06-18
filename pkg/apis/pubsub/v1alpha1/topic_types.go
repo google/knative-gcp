@@ -89,7 +89,7 @@ const (
 var topicCondSet = apis.NewLivingConditionSet(
 	TopicConditionAddressable,
 	TopicConditionTopicExists,
-	TopicConditionPublisherDeployed,
+	TopicConditionPublisherReady,
 )
 
 const (
@@ -105,9 +105,9 @@ const (
 	// Pub/Sub topic created for it.
 	TopicConditionTopicExists apis.ConditionType = "TopicExists"
 
-	// TopicConditionPublisherDeployed has status True when the Topic has had
+	// TopicConditionPublisherReady has status True when the Topic has had
 	// its publisher deployment created.
-	TopicConditionPublisherDeployed apis.ConditionType = "PublisherDeployed"
+	TopicConditionPublisherReady apis.ConditionType = "PublisherReady"
 )
 
 // TopicStatus represents the current state of a Topic.

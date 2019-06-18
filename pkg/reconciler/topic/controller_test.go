@@ -28,6 +28,7 @@ import (
 
 	_ "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
 	_ "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake"
+	_ "github.com/knative/pkg/injection/informers/kubeinformers/corev1/service/fake"
 
 	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 )

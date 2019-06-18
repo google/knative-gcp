@@ -17,6 +17,8 @@
 package v1alpha1
 
 import (
+	appsv1 "k8s.io/api/apps/v1"
+
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck/v1alpha1"
 )
@@ -53,19 +55,36 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	}
 }
 
+func (ts *TopicStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
+	for _, cond := range d.Status.Conditions {
+		if cond.Type == appsv1.DeploymentAvailable {
+			switch cond.Status {
+			case "True":
+				ts.MarkDeployed()
+			case "False":
+				ts.MarkNotDeployed(cond.Reason, cond.Message)
+			default:
+				ts.MarkDeploying(cond.Reason, cond.Message)
+			}
+			return
+		}
+	}
+	ts.MarkDeploying("DeploymentStatus", "Failed to inspect Deployment status.")
+}
+
 // MarkDeployed sets the condition that the invoker has been deployed.
 func (ts *TopicStatus) MarkDeployed() {
-	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherDeployed)
+	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherReady)
 }
 
 // MarkDeploying sets the condition that the invoker is deploying.
 func (ts *TopicStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherDeployed, reason, messageFormat, messageA...)
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
 // MarkNotDeployed sets the condition that the invoker has not been deployed.
 func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherDeployed, reason, messageFormat, messageA...)
+	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the topic has been created.

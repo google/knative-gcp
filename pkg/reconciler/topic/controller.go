@@ -32,6 +32,7 @@ import (
 
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
+	serviceinformer "github.com/knative/pkg/injection/informers/kubeinformers/corev1/service"
 
 	topicinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
@@ -60,6 +61,7 @@ func NewController(
 	deploymentInformer := deploymentinformer.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
+	serviceInformer := serviceinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 
@@ -75,8 +77,9 @@ func NewController(
 
 	c := &Reconciler{
 		PubSubBase:       pubsubBase,
-		deploymentLister: deploymentInformer.Lister(),
 		topicLister:      topicInformer.Lister(),
+		deploymentLister: deploymentInformer.Lister(),
+		serviceLister:    serviceInformer.Lister(),
 		publisherImage:   env.Publisher,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
@@ -85,6 +88,11 @@ func NewController(
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

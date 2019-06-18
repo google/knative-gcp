@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"github.com/knative/pkg/apis"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,20 +36,6 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-		},
-	}
-	for _, opt := range so {
-		opt(s)
-	}
-	s.SetDefaults(context.Background())
-	return s
-}
-
-// NewTopicWithoutNamespace creates a Topic with TopicOptions but without a specific namespace
-func NewTopicWithoutNamespace(name string, so ...TopicOption) *v1alpha1.Topic {
-	s := &v1alpha1.Topic{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
 		},
 	}
 	for _, opt := range so {
@@ -107,6 +94,17 @@ func WithTopicTopicDeleted(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topicID)
 		s.Status.TopicID = ""
+	}
+}
+
+func WithTopicAddress(uri string) TopicOption {
+	return func(s *v1alpha1.Topic) {
+		if uri != "" {
+			u, _ := apis.ParseURL(uri)
+			s.Status.SetAddress(u)
+		} else {
+			s.Status.SetAddress(nil)
+		}
 	}
 }
 
