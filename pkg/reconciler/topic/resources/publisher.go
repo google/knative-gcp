@@ -27,12 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// InvokerArgs are the arguments needed to create a Channel invoker.
+// PublisherArgs are the arguments needed to create a Channel invoker.
 // Every field is required.
-type InvokerArgs struct {
-	Image   string
-	Channel *v1alpha1.Channel
-	Labels  map[string]string
+type PublisherArgs struct {
+	Image  string
+	Topic  *v1alpha1.Topic
+	Labels map[string]string
 }
 
 const (
@@ -51,11 +51,11 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-// MakeInvoker generates (but does not insert into K8s) the Invoker Deployment for
+// MakePublisher generates (but does not insert into K8s) the Invoker Deployment for
 // Channels.
-func MakeInvoker(args *InvokerArgs) *v1.Deployment {
+func MakePublisher(args *PublisherArgs) *v1.Deployment {
 
-	secret := args.Channel.Spec.Secret
+	secret := args.Topic.Spec.Secret
 	if secret == nil {
 		secret = DefaultSecretSelector()
 	}
@@ -64,10 +64,10 @@ func MakeInvoker(args *InvokerArgs) *v1.Deployment {
 	replicas := int32(1)
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       args.Channel.Namespace,
-			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Channel.Name),
+			Namespace:       args.Topic.Namespace,
+			GenerateName:    fmt.Sprintf("pubsub-publisher-%s-", args.Topic.Name),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Channel)},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -79,7 +79,7 @@ func MakeInvoker(args *InvokerArgs) *v1.Deployment {
 					Labels: args.Labels,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Channel.Spec.ServiceAccountName,
+					ServiceAccountName: args.Topic.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
 						Name:  "invoker",
 						Image: args.Image,
@@ -88,7 +88,10 @@ func MakeInvoker(args *InvokerArgs) *v1.Deployment {
 							Value: credsFile,
 						}, {
 							Name:  "PROJECT_ID",
-							Value: args.Channel.Spec.Project,
+							Value: args.Topic.Spec.Project,
+						}, {
+							Name:  "TOPIC_ID",
+							Value: args.Topic.Spec.Topic,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

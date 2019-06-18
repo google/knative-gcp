@@ -24,9 +24,9 @@ func GetLabelSelector(controller, source string) labels.Selector {
 	return labels.SelectorFromSet(GetLabels(controller, source))
 }
 
-func GetLabels(controller, channel string) map[string]string {
+func GetLabels(controller, topic string) map[string]string {
 	return map[string]string{
-		"cloud-run-events-channel":      controller,
-		"cloud-run-events-channel-name": channel,
+		"cloud-run-pubsub-topic":      controller,
+		"cloud-run-pubsub-topic-name": topic,
 	}
 }

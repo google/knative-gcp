@@ -21,11 +21,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic"
+
 	"github.com/knative/pkg/injection/sharedmain"
 )
 
 func main() {
 	sharedmain.Main("controller",
 		pullsubscription.NewController,
+		topic.NewController,
 	)
 }

@@ -17,7 +17,6 @@
 package v1alpha1
 
 import (
-	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 	"github.com/knative/pkg/apis"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
@@ -74,10 +73,10 @@ type TopicSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
-var TopicCondSet = apis.NewLivingConditionSet(
+var topicCondSet = apis.NewLivingConditionSet(
 	TopicConditionAddressable,
 	TopicConditionTopicExists,
-	TopicConditionSinkDeployed,
+	TopicConditionPublisherDeployed,
 )
 
 const (
@@ -93,9 +92,9 @@ const (
 	// Pub/Sub topic created for it.
 	TopicConditionTopicExists apis.ConditionType = "TopicExists"
 
-	// TopicConditionSinkDeployed has status True when the Topic has had
-	// its invoker deployment created.
-	TopicConditionSinkDeployed apis.ConditionType = "SinkDeployed"
+	// TopicConditionPublisherDeployed has status True when the Topic has had
+	// its publisher deployment created.
+	TopicConditionPublisherDeployed apis.ConditionType = "PublisherDeployed"
 )
 
 // TopicStatus represents the current state of a Topic.

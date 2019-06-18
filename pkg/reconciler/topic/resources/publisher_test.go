@@ -44,7 +44,7 @@ func TestMakeInvoker(t *testing.T) {
 		},
 	}
 
-	got := MakeInvoker(&InvokerArgs{
+	got := MakePublisher(&PublisherArgs{
 		Image:   "test-image",
 		Channel: channel,
 		Labels: map[string]string{

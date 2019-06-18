@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package channel
+package topic
 
 import (
 	"os"
@@ -36,8 +36,7 @@ func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	_ = os.Setenv("PUBSUB_INVOKER_IMAGE", "PUBSUB_INVOKER_IMAGE")
-	_ = os.Setenv("PUBSUB_SUB_IMAGE", "PUBSUB_SUB_IMAGE")
+	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
 	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
 	c := NewController(ctx, configmap.NewFixedWatcher())

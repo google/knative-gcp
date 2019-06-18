@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package channel
+package topic
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
@@ -34,24 +33,21 @@ import (
 	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
 
-	channelinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/channel"
+	topicinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-pubsub-source-controller"
+	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
 )
 
 type envConfig struct {
-	// Invoker is the invokers image. Required.
-	Invoker string `envconfig:"PUBSUB_INVOKER_IMAGE" required:"true"`
+	// Publisher is the image used to publish to Pub/Sub. Required.
+	Publisher string `envconfig:"PUBSUB_PUBLISHER_IMAGE" required:"true"`
 
 	// TopicOps is the image for operating on topics. Required.
 	TopicOps string `envconfig:"PUBSUB_TOPIC_IMAGE" required:"true"`
-
-	// SubscriptionOps is the image for operating on subscriptions. Required.
-	SubscriptionOps string `envconfig:"PUBSUB_SUB_IMAGE" required:"true"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -62,7 +58,7 @@ func NewController(
 ) *controller.Impl {
 
 	deploymentInformer := deploymentinformer.Get(ctx)
-	channelInformer := channelinformers.Get(ctx)
+	topicInformer := topicinformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
@@ -73,33 +69,30 @@ func NewController(
 	}
 
 	pubsubBase := &pubsub.PubSubBase{
-		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-		TopicOpsImage:        env.TopicOps,
-		SubscriptionOpsImage: env.SubscriptionOps,
+		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+		TopicOpsImage: env.TopicOps,
 	}
 
 	c := &Reconciler{
 		PubSubBase:       pubsubBase,
 		deploymentLister: deploymentInformer.Lister(),
-		channelLister:    channelInformer.Lister(),
-		invokerImage:     env.Invoker,
+		topicLister:      topicInformer.Lister(),
+		publisherImage:   env.Publisher,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
-
-	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }

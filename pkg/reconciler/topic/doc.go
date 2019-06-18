@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package channel implements the Pub/Sub Channel controller.
-package channel
+// Package topic implements the Cloud Pub/Sub Topic controller.
+package topic

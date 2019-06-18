@@ -23,87 +23,63 @@ import (
 
 // GetCondition returns the condition currently associated with the given type,
 // or nil.
-func (cs *ChannelStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return channelCondSet.Manage(cs).GetCondition(t)
+func (ts *TopicStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return topicCondSet.Manage(ts).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
-func (cs *ChannelStatus) IsReady() bool {
-	return channelCondSet.Manage(cs).IsHappy()
+func (ts *TopicStatus) IsReady() bool {
+	return topicCondSet.Manage(ts).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (cs *ChannelStatus) InitializeConditions() {
-	channelCondSet.Manage(cs).InitializeConditions()
+func (ts *TopicStatus) InitializeConditions() {
+	topicCondSet.Manage(ts).InitializeConditions()
 }
 
 // TODO: Use the new beta duck types.
-func (cs *ChannelStatus) SetAddress(url *apis.URL) {
-	if cs.Address == nil {
-		cs.Address = &v1alpha1.Addressable{}
+func (ts *TopicStatus) SetAddress(url *apis.URL) {
+	if ts.Address == nil {
+		ts.Address = &v1alpha1.Addressable{}
 	}
 	if url != nil {
-		cs.Address.Hostname = url.Host
-		cs.Address.URL = url
-		channelCondSet.Manage(cs).MarkTrue(ChannelConditionAddressable)
+		ts.Address.Hostname = url.Host
+		ts.Address.URL = url
+		topicCondSet.Manage(ts).MarkTrue(TopicConditionAddressable)
 	} else {
-		cs.Address.Hostname = ""
-		cs.Address.URL = nil
-		channelCondSet.Manage(cs).MarkFalse(ChannelConditionAddressable, "emptyHostname", "hostname is the empty string")
+		ts.Address.Hostname = ""
+		ts.Address.URL = nil
+		topicCondSet.Manage(ts).MarkFalse(TopicConditionAddressable, "emptyHostname", "hostname is the empty string")
 	}
-}
-
-func (cs *ChannelStatus) MarkServiceFailed(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(cs).MarkFalse(ChannelConditionServiceReady, reason, messageFormat, messageA...)
-}
-
-func (cs *ChannelStatus) MarkServiceTrue() {
-	channelCondSet.Manage(cs).MarkTrue(ChannelConditionServiceReady)
-}
-
-func (cs *ChannelStatus) MarkChannelServiceFailed(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(cs).MarkFalse(ChannelConditionChannelServiceReady, reason, messageFormat, messageA...)
-}
-
-func (cs *ChannelStatus) MarkChannelServiceTrue() {
-	channelCondSet.Manage(cs).MarkTrue(ChannelConditionChannelServiceReady)
-}
-
-func (cs *ChannelStatus) MarkEndpointsFailed(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(cs).MarkFalse(ChannelConditionEndpointsReady, reason, messageFormat, messageA...)
-}
-
-func (cs *ChannelStatus) MarkEndpointsTrue() {
-	channelCondSet.Manage(cs).MarkTrue(ChannelConditionEndpointsReady)
 }
 
 // MarkDeployed sets the condition that the invoker has been deployed.
-func (s *ChannelStatus) MarkDeployed() {
-	channelCondSet.Manage(s).MarkTrue(ChannelConditionInvokerDeployed)
+func (ts *TopicStatus) MarkDeployed() {
+	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherDeployed)
 }
 
 // MarkDeploying sets the condition that the invoker is deploying.
-func (s *ChannelStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(s).MarkUnknown(ChannelConditionInvokerDeployed, reason, messageFormat, messageA...)
+func (ts *TopicStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherDeployed, reason, messageFormat, messageA...)
 }
 
 // MarkNotDeployed sets the condition that the invoker has not been deployed.
-func (s *ChannelStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(s).MarkFalse(ChannelConditionInvokerDeployed, reason, messageFormat, messageA...)
+func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
+	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherDeployed, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the topic has been created.
-func (s *ChannelStatus) MarkTopicReady() {
-	channelCondSet.Manage(s).MarkTrue(ChannelConditionTopicReady)
+func (ts *TopicStatus) MarkTopicReady() {
+	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)
 }
 
 // MarkTopicOperating sets the condition that the topic is currently involved in an operation.
-func (s *ChannelStatus) MarkTopicOperating(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(s).MarkUnknown(ChannelConditionTopicReady, reason, messageFormat, messageA...)
+func (ts *TopicStatus) MarkTopicOperating(reason, messageFormat string, messageA ...interface{}) {
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionTopicExists, reason, messageFormat, messageA...)
 }
 
 // MarkNoTopic sets the condition that signals there is not a topic for this
-// Channel. This could be because of an error or the Channel is being deleted.
-func (s *ChannelStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(s).MarkFalse(ChannelConditionTopicReady, reason, messageFormat, messageA...)
+// Topic. This could be because of an error or the Topic is being deleted.
+func (ts *TopicStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
+	topicCondSet.Manage(ts).MarkFalse(TopicConditionTopicExists, reason, messageFormat, messageA...)
 }
