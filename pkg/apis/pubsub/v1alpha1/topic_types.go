@@ -68,10 +68,21 @@ type TopicSpec struct {
 	// Topic is the ID of the Topic to create in Google Cloud Pub/Sub.
 	Topic string `json:"topic,omitempty"`
 
+	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes.
+	PropagationPolicy PropagationPolicyType `json:"propagationPolicy,omitempty"`
+
 	// ServiceAccoutName is the name of the ServiceAccount that will be used to
 	// run the Topic Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
+
+type PropagationPolicyType string
+
+const (
+	TopicPolicyCreateDelete                 PropagationPolicyType = "CreateDelete"
+	TopicPolicyCreateRestrictDelete         PropagationPolicyType = "CreateRestrictDelete"
+	TopicPolicyRestrictCreateRestrictDelete PropagationPolicyType = "RestrictCreateRestrictDelete"
+)
 
 var topicCondSet = apis.NewLivingConditionSet(
 	TopicConditionAddressable,

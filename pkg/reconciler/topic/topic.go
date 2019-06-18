@@ -40,8 +40,8 @@ import (
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/Topic/resources"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic/resources"
 )
 
 const (
@@ -149,81 +149,143 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	//   downside is that there would be 1+n resources per topic and n subscribers.
 
 	if topic.GetDeletionTimestamp() != nil {
-		logger.Info("topic Deleting.")
+		logger.Debug("Topic Deleting.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
 
-		state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+		switch topic.Spec.PropagationPolicy {
+		case v1alpha1.TopicPolicyCreateDelete:
+			// Ensure the Topic is deleted.
+			state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+			switch state {
+			case pubsub.OpsGetFailedState:
+				logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
+				return err
+
+			case pubsub.OpsCreatedState:
+				// If we created a job to make a subscription, then add the finalizer and update the status.
+				topic.Status.MarkTopicOperating(
+					"Deleting",
+					"Created Job to delete topic %q.",
+					topic.Status.TopicID)
+				return nil
+
+			case pubsub.OpsCompeteSuccessfulState:
+				topic.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topic.Status.TopicID)
+				topic.Status.TopicID = ""
+				removeFinalizer(topic)
+
+			case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+				logger.Error("Failed to delete topic.", zap.Any("state", state), zap.Error(err))
+
+				msg := "unknown"
+				if err != nil {
+					msg = err.Error()
+				}
+				topic.Status.MarkNoTopic(
+					"DeleteFailed",
+					"Failed to delete topic: %q.",
+					msg)
+				return err
+			}
+
+		default:
+			removeFinalizer(topic)
+		}
+
+		return nil
+	}
+
+	// Set the topic being used.
+	topic.Status.TopicID = topic.Spec.Topic
+
+	switch topic.Spec.PropagationPolicy {
+	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateRestrictDelete:
+		state, err := c.EnsureTopicCreated(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+		// Check state.
 		switch state {
 		case pubsub.OpsGetFailedState:
-			logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
+			logger.Error("Failed to get topic ops job.",
+				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
+				zap.Any("state", state),
+				zap.Error(err))
 			return err
 
 		case pubsub.OpsCreatedState:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
-			topic.Status.MarkTopicOperating(
-				"Deleting",
-				"Created Job to delete topic %q.",
+			addFinalizer(topic)
+			topic.Status.MarkTopicOperating("Creating",
+				"Created Job to create topic %q.",
 				topic.Status.TopicID)
 			return nil
 
 		case pubsub.OpsCompeteSuccessfulState:
-			topic.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topic.Status.TopicID)
-			topic.Status.TopicID = ""
-			removeFinalizer(topic)
+			topic.Status.MarkTopicReady()
 
 		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
-			logger.Error("Failed to delete topic.", zap.Any("state", state), zap.Error(err))
+			logger.Error("Failed to create topic.",
+				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
+				zap.Any("state", state),
+				zap.Error(err))
 
 			msg := "unknown"
 			if err != nil {
 				msg = err.Error()
 			}
 			topic.Status.MarkNoTopic(
-				"DeleteFailed",
-				"Failed to delete topic: %q.",
+				"CreateFailed",
+				"Failed to create Topic: %q",
 				msg)
 			return err
 		}
-		return nil
-	}
 
-	topic.Status.TopicID = topic.Spec.Topic
-	state, err := c.EnsureTopic(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
-	switch state {
-	case pubsub.OpsGetFailedState:
-		logger.Error("Failed to get topic ops job.", zap.Any("state", state), zap.Error(err))
-		return err
+	case v1alpha1.TopicPolicyRestrictCreateRestrictDelete:
+		state, err := c.EnsureTopicExists(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+		// Check state.
+		switch state {
+		case pubsub.OpsGetFailedState:
+			logger.Error("Failed to get topic ops job.",
+				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
+				zap.Any("state", state),
+				zap.Error(err))
+			return err
 
-	case pubsub.OpsCreatedState:
-		// If we created a job to make a subscription, then add the finalizer and update the status.
-		addFinalizer(topic)
-		topic.Status.MarkTopicOperating("Creating",
-			"Created Job to create topic %q.",
-			topic.Status.TopicID)
-		return nil
+		case pubsub.OpsCreatedState:
+			// If we created a job to make a subscription, then add the finalizer and update the status.
+			topic.Status.MarkTopicOperating("Verifying",
+				"Created Job to verify topic %q.",
+				topic.Status.TopicID)
+			return nil
 
-	case pubsub.OpsCompeteSuccessfulState:
-		topic.Status.MarkTopicReady()
+		case pubsub.OpsCompeteSuccessfulState:
+			topic.Status.MarkTopicReady()
 
-	case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
-		logger.Error("Failed to create topic.", zap.Any("state", state), zap.Error(err))
+		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+			logger.Error("Failed to verify topic.",
+				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
+				zap.Any("state", state),
+				zap.Error(err))
 
-		msg := "unknown"
-		if err != nil {
-			msg = err.Error()
+			msg := "unknown"
+			if err != nil {
+				msg = err.Error()
+			}
+			topic.Status.MarkNoTopic(
+				"VerifyFailed",
+				"Failed to verify Topic: %q",
+				msg)
+			return err
 		}
-		topic.Status.MarkNoTopic(
-			"CreateFailed",
-			"Failed to create Topic: %q",
-			msg)
-		return err
+	default:
+		logger.Error("Unknown propagation policy.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
+		return nil
 	}
 
-	_, err = c.createPublisher(ctx, topic)
-	if err != nil {
-		logger.Error("Unable to create the invoker", zap.Error(err))
+	if _, err := c.createPublisher(ctx, topic); err != nil {
+		logger.Error("Unable to create the publisher", zap.Error(err))
 		return err
 	}
 	topic.Status.MarkDeployed()
+
+	// TODO: need to set the addressable parts.
 
 	return nil
 }

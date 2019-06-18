@@ -27,14 +27,15 @@ import (
 )
 
 func TestMakeInvoker(t *testing.T) {
-	channel := &v1alpha1.Channel{
+	topic := &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "channel-name",
-			Namespace: "channel-namespace",
+			Name:      "topic-name",
+			Namespace: "topic-namespace",
 		},
-		Spec: v1alpha1.ChannelSpec{
-			ServiceAccountName: "channel-svc-acct",
+		Spec: v1alpha1.TopicSpec{
+			ServiceAccountName: "topic-svc-acct",
 			Project:            "eventing-name",
+			Topic:              "topic-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -45,8 +46,8 @@ func TestMakeInvoker(t *testing.T) {
 	}
 
 	got := MakePublisher(&PublisherArgs{
-		Image:   "test-image",
-		Channel: channel,
+		Image: "test-image",
+		Topic: topic,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -57,16 +58,16 @@ func TestMakeInvoker(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "channel-namespace",
-			GenerateName: "pubsub-channel-name-",
+			Namespace:    "topic-namespace",
+			GenerateName: "pubsub-publisher-topic-name-",
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "pubsub.cloud.run/v1alpha1",
-				Kind:               "Channel",
-				Name:               "channel-name",
+				Kind:               "Topic",
+				Name:               "topic-name",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -87,7 +88,7 @@ func TestMakeInvoker(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "channel-svc-acct",
+					ServiceAccountName: "topic-svc-acct",
 					Containers: []corev1.Container{
 						{
 							Name:  "invoker",
@@ -98,6 +99,9 @@ func TestMakeInvoker(t *testing.T) {
 							}, {
 								Name:  "PROJECT_ID",
 								Value: "eventing-name",
+							}, {
+								Name:  "TOPIC_ID",
+								Value: "topic-name",
 							}},
 							VolumeMounts: []corev1.VolumeMount{{
 								Name:      credsVolume,

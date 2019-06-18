@@ -61,7 +61,11 @@ const (
 	OpsOngoingState           OpsState = "JOB_ONGOING"
 )
 
-func (c *PubSubBase) EnsureSubscription(ctx context.Context, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {
+func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {
+	return c.ensureSubscriptionJob(ctx, operations.ActionExists, owner, project, topic, subscription)
+}
+
+func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.OwnerRefable, project, topic, subscription string) (OpsState, error) {
 	return c.ensureSubscriptionJob(ctx, operations.ActionCreate, owner, project, topic, subscription)
 }
 
@@ -69,7 +73,11 @@ func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.
 	return c.ensureSubscriptionJob(ctx, operations.ActionDelete, owner, project, topic, subscription)
 }
 
-func (c *PubSubBase) EnsureTopic(ctx context.Context, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
+func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
+	return c.ensureTopicJob(ctx, operations.ActionExists, owner, project, topic)
+}
+
+func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRefable, project, topic string) (OpsState, error) {
 	return c.ensureTopicJob(ctx, operations.ActionCreate, owner, project, topic)
 }
 

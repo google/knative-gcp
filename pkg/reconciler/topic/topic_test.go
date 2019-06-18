@@ -34,7 +34,6 @@ import (
 	"github.com/knative/pkg/configmap"
 	"github.com/knative/pkg/controller"
 	logtesting "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/tracker"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
@@ -48,7 +47,7 @@ import (
 )
 
 const (
-	topicName = "chan"
+	topicName = "hubbub"
 	sinkName  = "sink"
 
 	testNS = "testnamespace"
@@ -107,12 +106,48 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
+		Name: "verify topic",
+		Objects: []runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project:            testProject,
+					Topic:              testTopicID,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithTopicPropagationPolicy("RestrictCreateRestrictDelete"),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project:            testProject,
+					Topic:              testTopicID,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithTopicPropagationPolicy("RestrictCreateRestrictDelete"),
+				// Updates
+				WithInitTopicConditions,
+				WithTopicMarkTopicVerifying(testTopicID),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionExists),
+		},
+	}, {
 		Name: "create topic",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 			),
@@ -128,6 +163,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 				// Updates
@@ -148,6 +184,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 				WithInitTopicConditions,
@@ -164,16 +201,17 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopic(testTopicID),
 				// Updates
-				WithTopicInvokerDeployed,
+				WithTopicDeployed,
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newInvoker(),
+			newPubslicher(),
 		},
 	}, {
 		Name: "successful create - reuse existing receive adapter",
@@ -182,13 +220,14 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopic(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
-			newInvoker(),
+			newPubslicher(),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -199,6 +238,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
 				WithInitTopicConditions,
@@ -207,14 +247,38 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "deleting - delete topic",
+		Name: "deleting - delete topic - policy CreateRestrictDelete",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+			),
+		},
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, false),
+		},
+	}, {
+		Name: "deleting - delete topic - policy CreateDelete",
+		Objects: []runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project:            testProject,
+					Topic:              testTopicID,
+					ServiceAccountName: testServiceAccount,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
@@ -229,8 +293,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
+				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
@@ -242,14 +308,16 @@ func TestAllCases(t *testing.T) {
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionDelete),
 		},
 	}, {
-		Name: "deleting final stage",
+		Name: "deleting final stage - policy CreateDelete",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
+				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
@@ -267,8 +335,10 @@ func TestAllCases(t *testing.T) {
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project:            testProject,
+					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
+				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
@@ -287,16 +357,14 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		pubsubBase := &pubsub.PubSubBase{
-			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-			SubscriptionOpsImage: testImage + "sub",
-			TopicOpsImage:        testImage + "top",
+			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+			TopicOpsImage: testImage + "pub",
 		}
 		return &Reconciler{
 			PubSubBase:       pubsubBase,
 			deploymentLister: listers.GetDeploymentLister(),
 			topicLister:      listers.GetTopicLister(),
-			tracker:          tracker.New(func(string) {}, 0),
-			invokerImage:     testImage,
+			publisherImage:   testImage,
 		}
 	}))
 
@@ -371,11 +439,12 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
-func newInvoker() runtime.Object {
+func newPubslicher() runtime.Object {
 	topic := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
 			Project:            testProject,
+			Topic:              testTopicID,
 			ServiceAccountName: testServiceAccount,
 		}))
 	args := &resources.PublisherArgs{
@@ -388,7 +457,7 @@ func newInvoker() runtime.Object {
 
 func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	return operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "top",
+		Image:     testImage + "pub",
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
@@ -398,7 +467,7 @@ func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 
 func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	job := operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "top",
+		Image:     testImage + "pub",
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,

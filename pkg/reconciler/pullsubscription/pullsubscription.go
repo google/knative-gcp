@@ -208,7 +208,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscription(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 	switch state {
 	case pubsub.OpsGetFailedState:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))

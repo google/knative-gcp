@@ -32,7 +32,7 @@ type envConfig struct {
 	Project string `envconfig:"PROJECT_ID"`
 
 	// Action is the operation the job should run.
-	// Options: [create, delete]
+	// Options: [exists, create, delete]
 	Action string `envconfig:"ACTION" required:"true"`
 
 	// Topic is the environment variable containing the PubSub Topic being
@@ -88,6 +88,13 @@ func main() {
 	}
 
 	switch env.Action {
+	case "exists":
+		// If topic doesn't exist, that is an error.
+		if !exists {
+			logger.Fatal("Topic does not exist.")
+		}
+		logger.Info("Previously created.")
+
 	case "create":
 		// If topic doesn't exist, create it.
 		if !exists {

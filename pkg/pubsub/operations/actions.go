@@ -17,6 +17,7 @@ limitations under the License.
 package operations
 
 const (
+	ActionExists = "exists"
 	ActionCreate = "create"
 	ActionDelete = "delete"
 )
