@@ -152,11 +152,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 		switch state {
-		case pubsub.OpsGetFailedState:
+		case pubsub.OpsJobGetFailed:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 			return err
 
-		case pubsub.OpsCreatedState:
+		case pubsub.OpsJobCreated:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
 			source.Status.MarkSubscriptionOperation(
 				"Deleting",
@@ -164,7 +164,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				source.Status.SubscriptionID)
 			return nil
 
-		case pubsub.OpsCompeteSuccessfulState:
+		case pubsub.OpsJobCompleteSuccessful:
 			source.Status.MarkNoSubscription(
 				"Deleted",
 				"Successfully deleted Subscription %q.",
@@ -172,7 +172,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
 
-		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+		case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
 			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
 
 			msg := "unknown"
@@ -210,11 +210,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 	switch state {
-	case pubsub.OpsGetFailedState:
+	case pubsub.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 		return err
 
-	case pubsub.OpsCreatedState:
+	case pubsub.OpsJobCreated:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		addFinalizer(source)
 		source.Status.MarkSubscriptionOperation("Creating",
@@ -222,10 +222,10 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID)
 		return nil
 
-	case pubsub.OpsCompeteSuccessfulState:
+	case pubsub.OpsJobCompleteSuccessful:
 		source.Status.MarkSubscribed()
 
-	case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+	case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
 		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
 
 		msg := "unknown"

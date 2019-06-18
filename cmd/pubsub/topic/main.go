@@ -17,14 +17,15 @@ limitations under the License.
 package main
 
 import (
+	"flag"
+	"log"
+
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
-	"flag"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
-	"log"
 )
 
 type envConfig struct {
