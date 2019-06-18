@@ -72,6 +72,6 @@ func main() {
 
 	logger.Info("Starting Pub/Sub Publisher.", zap.Reflect("publisher", startable))
 	if err := startable.Start(ctx); err != nil {
-		logger.Fatal("failed to start adapter: ", zap.Error(err))
+		logger.Fatal("failed to start publisher: ", zap.Error(err))
 	}
 }

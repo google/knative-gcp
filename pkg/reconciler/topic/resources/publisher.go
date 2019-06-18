@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PublisherArgs are the arguments needed to create a Channel invoker.
+// PublisherArgs are the arguments needed to create a Topic publisher.
 // Every field is required.
 type PublisherArgs struct {
 	Image  string
@@ -42,7 +42,7 @@ const (
 )
 
 // DefaultSecretSelector is the default secret selector used to load the creds
-// for the invoker to auth with Google Cloud.
+// for the publisher to auth with Google Cloud.
 func DefaultSecretSelector() *corev1.SecretKeySelector {
 	return &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
@@ -82,7 +82,7 @@ func MakePublisher(args *PublisherArgs) *v1.Deployment {
 				Spec: corev1.PodSpec{
 					ServiceAccountName: args.Topic.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
-						Name:  "invoker",
+						Name:  "publisher",
 						Image: args.Image,
 						Env: []corev1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
@@ -91,7 +91,7 @@ func MakePublisher(args *PublisherArgs) *v1.Deployment {
 							Name:  "PROJECT_ID",
 							Value: args.Topic.Spec.Project,
 						}, {
-							Name:  "TOPIC_ID",
+							Name:  "PUBSUB_TOPIC_ID",
 							Value: args.Topic.Spec.Topic,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{

@@ -62,6 +62,13 @@ rules:
     - jobs
   verbs: *everything
 
+
+- apiGroups:
+    - ""
+  resources:
+    - services
+  verbs: *everything
+
 - apiGroups:
     - ""
   resources:

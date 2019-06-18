@@ -72,17 +72,17 @@ func (ts *TopicStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
 	ts.MarkDeploying("DeploymentStatus", "Failed to inspect Deployment status.")
 }
 
-// MarkDeployed sets the condition that the invoker has been deployed.
+// MarkDeployed sets the condition that the publisher has been deployed.
 func (ts *TopicStatus) MarkDeployed() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherReady)
 }
 
-// MarkDeploying sets the condition that the invoker is deploying.
+// MarkDeploying sets the condition that the publisher is deploying.
 func (ts *TopicStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
-// MarkNotDeployed sets the condition that the invoker has not been deployed.
+// MarkNotDeployed sets the condition that the publisher has not been deployed.
 func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }

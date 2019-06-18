@@ -24,22 +24,26 @@ import (
 
 // TopicJobName creates the name of a topic ops job.
 func TopicJobName(owner kmeta.OwnerRefable, action string) string {
-	return strings.Join(append([]string{
-		"pubsub",
-		"t",
-		owner.GetObjectMeta().GetName(),
-		owner.GetGroupVersionKind().Kind,
-		action}),
-		"-") + "-"
+	return strings.ToLower(
+		strings.Join(append([]string{
+			"pubsub",
+			"t",
+			owner.GetObjectMeta().GetName(),
+			owner.GetGroupVersionKind().Kind,
+			action}),
+			"-") + "-",
+	)
 }
 
 // SubscriptionJobName creates the name of a subscription ops job.
 func SubscriptionJobName(owner kmeta.OwnerRefable, action string) string {
-	return strings.Join(append([]string{
-		"pubsub",
-		"s",
-		owner.GetObjectMeta().GetName(),
-		owner.GetGroupVersionKind().Kind,
-		action}),
-		"-") + "-"
+	return strings.ToLower(
+		strings.Join(append([]string{
+			"pubsub",
+			"s",
+			owner.GetObjectMeta().GetName(),
+			owner.GetGroupVersionKind().Kind,
+			action}),
+			"-") + "-",
+	)
 }

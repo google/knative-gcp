@@ -52,7 +52,7 @@ func (a *Publisher) Start(ctx context.Context) error {
 
 	// Send Events on Pub/Sub.
 	if a.outbound == nil {
-		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
+		if a.outbound, err = a.newPubSubClient(ctx); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}

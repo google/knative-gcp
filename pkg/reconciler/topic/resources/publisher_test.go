@@ -91,7 +91,7 @@ func TestMakeInvoker(t *testing.T) {
 					ServiceAccountName: "topic-svc-acct",
 					Containers: []corev1.Container{
 						{
-							Name:  "invoker",
+							Name:  "publisher",
 							Image: "test-image",
 							Env: []corev1.EnvVar{{
 								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
@@ -100,7 +100,7 @@ func TestMakeInvoker(t *testing.T) {
 								Name:  "PROJECT_ID",
 								Value: "eventing-name",
 							}, {
-								Name:  "TOPIC_ID",
+								Name:  "PUBSUB_TOPIC_ID",
 								Value: "topic-name",
 							}},
 							VolumeMounts: []corev1.VolumeMount{{

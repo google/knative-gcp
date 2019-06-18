@@ -144,15 +144,6 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	topic.Status.InitializeConditions()
 
-	// 1. create a topic.
-	// 2. create all subscriptions that are in spec and not in status.
-	// 3. delete all subscriptions that are in status but not in spec.
-	// 4. deploy invoker with updated subscriptions to target list.
-	// ?- how to update invoker with that list.
-	// Bad options:
-	// topic could make a topic resource and n PullSubscriptions per subscriber and that is it.
-	//   downside is that there would be 1+n resources per topic and n subscribers.
-
 	if topic.GetDeletionTimestamp() != nil {
 		logger.Debug("Topic Deleting.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
 
@@ -393,6 +384,8 @@ func removeFinalizer(s *v1alpha1.Topic) {
 }
 
 func (r *Reconciler) createPublisher(ctx context.Context, topic *v1alpha1.Topic) (*appsv1.Deployment, error) {
+	// TODO: there is a bug here if the publisher image is updated, the deployment is not updated.
+
 	pub, err := r.getPublisher(ctx, topic)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
