@@ -24,6 +24,7 @@ rules:
     - pubsub.cloud.run
   resources:
     - pullsubscriptions
+    - topics
   verbs: &everything
     - get
     - list
@@ -37,6 +38,7 @@ rules:
     - events.cloud.run
   resources:
     - pullsubscriptions/status
+    - topics/status
   verbs:
     - get
     - update
