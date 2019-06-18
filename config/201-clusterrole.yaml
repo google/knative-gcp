@@ -35,7 +35,7 @@ rules:
     - delete
 
 - apiGroups:
-    - events.cloud.run
+    - pubsub.cloud.run
   resources:
     - pullsubscriptions/status
     - topics/status
