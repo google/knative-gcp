@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"github.com/knative/pkg/apis"
+	"github.com/knative/pkg/apis/duck"
 	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	"github.com/knative/pkg/webhook"
@@ -46,10 +47,11 @@ type Topic struct {
 }
 
 // Check that Topic can be validated, can be defaulted, and has immutable fields.
-var _ apis.Validatable = (*Topic)(nil)
-var _ apis.Defaultable = (*Topic)(nil)
 var _ runtime.Object = (*Topic)(nil)
 var _ webhook.GenericCRD = (*Topic)(nil)
+
+// Check that PullSubscription implements the Conditions duck type.
+var _ = duck.VerifyType(&Topic{}, &duckv1beta1.Conditions{})
 
 // TopicSpec defines which subscribers have expressed interest in
 // receiving events from this Topic.

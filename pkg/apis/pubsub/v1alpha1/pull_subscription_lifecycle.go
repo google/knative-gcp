@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	"github.com/knative/pkg/apis"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *PullSubscriptionStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (s *PullSubscriptionStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return pullSubscriptionCondSet.Manage(s).GetCondition(t)
 }
 

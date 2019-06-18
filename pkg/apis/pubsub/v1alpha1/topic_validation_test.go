@@ -18,30 +18,103 @@ package v1alpha1
 
 import (
 	"context"
+	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/webhook"
+	corev1 "k8s.io/api/core/v1"
+)
+
+var (
+	topicSpec = TopicSpec{
+		Secret: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: "secret-name",
+			},
+			Key: "secret-key",
+		},
+		Project:            "my-eventing-project",
+		Topic:              "pubsub-topic",
+		ServiceAccountName: "service-account-name",
+	}
 )
 
 func TestTopicValidation(t *testing.T) {
 	tests := []struct {
 		name string
 		cr   webhook.GenericCRD
-		want *apis.FieldError
+		want []string
 	}{{
 		name: "empty",
 		cr: &Topic{
 			Spec: TopicSpec{},
+		},
+		want: []string{
+			"spec.propagationPolicy",
+			"spec.topic",
+		},
+	}, {
+		name: "min",
+		cr: &Topic{
+			Spec: TopicSpec{
+				Topic:             "topic",
+				PropagationPolicy: TopicPolicyCreateRestrictDelete,
+			},
 		},
 		want: nil,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.cr.Validate(context.TODO())
-			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Errorf("%s: validate (-want, +got) = %v", test.name, diff)
+
+			for _, v := range test.want {
+				if !strings.Contains(got.Error(), v) {
+					t.Errorf("%s: validate contains (want, got) = %v, %v", test.name, v, got.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestTopicCheckImmutableFields(t *testing.T) {
+	testCases := map[string]struct {
+		orig    interface{}
+		updated TopicSpec
+		allowed bool
+	}{
+		"nil orig": {
+			updated: topicSpec,
+			allowed: true,
+		},
+		"Topic changed": {
+			orig: &topicSpec,
+			updated: TopicSpec{
+				Secret:             topicSpec.Secret,
+				Project:            topicSpec.Project,
+				Topic:              "updated",
+				ServiceAccountName: topicSpec.ServiceAccountName,
+			},
+			allowed: false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var orig *Topic
+
+			if tc.orig != nil {
+				if spec, ok := tc.orig.(*TopicSpec); ok {
+					orig = &Topic{
+						Spec: *spec,
+					}
+				}
+			}
+			updated := &Topic{
+				Spec: tc.updated,
+			}
+			err := updated.CheckImmutableFields(context.TODO(), orig)
+			if tc.allowed != (err == nil) {
+				t.Fatalf("Unexpected immutable field check. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}

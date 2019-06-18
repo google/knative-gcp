@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestPubSubEventSource(t *testing.T) {

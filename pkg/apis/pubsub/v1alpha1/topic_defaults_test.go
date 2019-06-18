@@ -24,9 +24,11 @@ import (
 )
 
 func TestTopicDefaults(t *testing.T) {
-	want := &Topic{Spec: TopicSpec{}}
+	want := &Topic{Spec: TopicSpec{
+		PropagationPolicy: TopicPolicyCreateRestrictDelete,
+	}}
 
-	got := want.DeepCopy()
+	got := &Topic{Spec: TopicSpec{}}
 	got.SetDefaults(context.Background())
 
 	if diff := cmp.Diff(want, got); diff != "" {

@@ -58,13 +58,16 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, og apis.Immutabl
 		return nil
 	}
 
+	var errs *apis.FieldError
+
 	// Topic is immutable.
 	if original.Spec.Topic != current.Spec.Topic {
-		return &apis.FieldError{
-			Message: "Immutable field changed",
-			Paths:   []string{"spec", "topic"},
-			Details: fmt.Sprintf("was %q, now %q", original.Spec.Topic, current.Spec.Topic),
-		}
+		errs = errs.Also(
+			&apis.FieldError{
+				Message: "Immutable field changed",
+				Paths:   []string{"spec", "topic"},
+				Details: fmt.Sprintf("was %q, now %q", original.Spec.Topic, current.Spec.Topic),
+			})
 	}
-	return nil
+	return errs
 }
