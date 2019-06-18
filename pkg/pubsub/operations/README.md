@@ -20,7 +20,7 @@ Each Job accepts an Action, supported Actions are:
 
 ### Within Reconcilers
 
-These jobs are used with [PubSubBase](../pkg/reconciler/pubsub/reconciler.go) and provides the following methods:
+These jobs are used with PubSubBase and provides the following methods:
 
 - `EnsureSubscription` - Confirm or Create Subscription.
 - `EnsureSubscriptionDeleted` - Delete Subscription.
