@@ -28,7 +28,6 @@ spec:
     - all
     - knative
     - pubsub
-    - eventing
     kind: PullSubscription
     plural: pullsubscriptions
   scope: Namespaced

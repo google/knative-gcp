@@ -21,7 +21,7 @@ import (
 
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,7 +48,7 @@ var _ runtime.Object = (*PullSubscription)(nil)
 var _ apis.Immutable = (*PullSubscription)(nil)
 
 // Check that PullSubscription implements the Conditions duck type.
-var _ = duck.VerifyType(&PullSubscription{}, &duckv1alpha1.Conditions{})
+var _ = duck.VerifyType(&PullSubscription{}, &duckv1beta1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
@@ -95,31 +95,31 @@ func PubSubEventSource(googleCloudProject, topic string) string {
 const (
 	// PullSubscriptionConditionReady has status True when the PullSubscription is
 	// ready to send events.
-	PullSubscriptionConditionReady = duckv1alpha1.ConditionReady
+	PullSubscriptionConditionReady = apis.ConditionReady
 
 	// PullSubscriptionConditionSinkProvided has status True when the PullSubscription
 	// has been configured with a sink target.
-	PullSubscriptionConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
+	PullSubscriptionConditionSinkProvided apis.ConditionType = "SinkProvided"
 
 	// PullSubscriptionConditionDeployed has status True when the PullSubscription has
 	// had its receive adapter deployment created.
-	PullSubscriptionConditionDeployed duckv1alpha1.ConditionType = "Deployed"
+	PullSubscriptionConditionDeployed apis.ConditionType = "Deployed"
 
 	// PullSubscriptionConditionSubscribed has status True when a Google Cloud
 	// Pub/Sub Subscription has been created pointing at the created receive
 	// adapter deployment.
-	PullSubscriptionConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
+	PullSubscriptionConditionSubscribed apis.ConditionType = "Subscribed"
 
 	// PullSubscriptionConditionTransformerProvided has status True when the
 	// PullSubscription has been configured with a transformer target.
-	PullSubscriptionConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
+	PullSubscriptionConditionTransformerProvided apis.ConditionType = "TransformerProvided"
 
 	// PullSubscriptionConditionEventTypesProvided has status True when the
 	// PullSubscription has been configured with event types.
-	PullSubscriptionConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypesProvided"
+	PullSubscriptionConditionEventTypesProvided apis.ConditionType = "EventTypesProvided"
 )
 
-var pullSubscriptionCondSet = duckv1alpha1.NewLivingConditionSet(
+var pullSubscriptionCondSet = apis.NewLivingConditionSet(
 	PullSubscriptionConditionSinkProvided,
 	PullSubscriptionConditionDeployed,
 	PullSubscriptionConditionSubscribed,
@@ -127,12 +127,10 @@ var pullSubscriptionCondSet = duckv1alpha1.NewLivingConditionSet(
 
 // PullSubscriptionStatus defines the observed state of PullSubscription.
 type PullSubscriptionStatus struct {
-	// inherits duck/v1alpha1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last
-	//   processed by the controller.
-	// * Conditions - the latest available observations of a resource's
-	//   current state.
-	duckv1alpha1.Status `json:",inline"`
+	// inherits duck/v1beta1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1beta1.Status `json:",inline"`
 
 	// SinkURI is the current active sink URI that has been configured for the
 	// PullSubscription.

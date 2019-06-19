@@ -48,7 +48,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pubsub-channel-addressable-resolver
+  name: pubsub-topic-addressable-resolver
   labels:
     duck.knative.dev/addressable: "true"
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
@@ -56,7 +56,7 @@ rules:
   - apiGroups:
       - pubsub.cloud.run
     resources:
-      - channels
+      - topics
     verbs:
       - get
       - list

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package operations
-
-const (
-	ActionExists = "exists"
-	ActionCreate = "create"
-	ActionDelete = "delete"
-)
+// Package logstream lets end-to-end tests incorporate controller logs
+// into the error output of tests.  It is enabled by setting the
+// SYSTEM_NAMESPACE environment variable, which tells this package
+// what namespace to stream logs from.
+package logstream
