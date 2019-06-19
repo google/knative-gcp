@@ -99,6 +99,10 @@ func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionList
 	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
 }
 
+func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
+	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
+}
+
 func (l *Listers) GetChannelLister() pubsublisters.ChannelLister {
 	return pubsublisters.NewChannelLister(l.indexerFor(&pubsubv1alpha1.Channel{}))
 }
