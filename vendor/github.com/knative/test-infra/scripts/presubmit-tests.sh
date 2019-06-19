@@ -64,7 +64,10 @@ function initialize_environment() {
     echo -e "Changed files in commit ${PULL_PULL_SHA}:\n${CHANGED_FILES}"
     local no_presubmit_files="${NO_PRESUBMIT_FILES[*]}"
     pr_only_contains "${no_presubmit_files}" && IS_PRESUBMIT_EXEMPT_PR=1
-    pr_only_contains "\.md ${no_presubmit_files}" && IS_DOCUMENTATION_PR=1
+    # A documentation PR must contain markdown files
+    if pr_only_contains "\.md ${no_presubmit_files}"; then
+      [[ -n "$(echo "${CHANGED_FILES}" | grep '\.md')" ]] && IS_DOCUMENTATION_PR=1
+    fi
   else
     header "NO CHANGED FILES REPORTED, ASSUMING IT'S AN ERROR AND RUNNING TESTS ANYWAY"
   fi
@@ -80,6 +83,24 @@ function results_banner() {
   local result
   [[ $2 -eq 0 ]] && result="PASSED" || result="FAILED"
   header "$1 tests ${result}"
+}
+
+# Create a JUnit XML for a failure.
+# Parameters: $1 - check name as an identifier (e.g., PresubmitBuildTest)
+#             $2 - failure message (can contain newlines)
+function create_junit_xml() {
+  local xml="$(mktemp ${ARTIFACTS}/junit_XXXXXXXX.xml)"
+  # Transform newlines into HTML code.
+  local msg="$(echo -n "$2" | sed 's/$/\&#xA;/g' | tr -d '\n')"
+  cat << EOF > "${xml}"
+<testsuites>
+	<testsuite tests="1" failures="1" time="0.000" name="">
+		<testcase classname="" name="$1" time="0.0">
+			<failure message="Failed" type="">${msg}</failure>
+		</testcase>
+	</testsuite>
+</testsuites>
+EOF
 }
 
 # Run build tests. If there's no `build_tests` function, run the default
@@ -145,7 +166,15 @@ function default_build_test_runner() {
   [[ -z "${go_pkg_dirs}" ]] && return ${failed}
   # Ensure all the code builds
   subheader "Checking that go code builds"
-  go build -v ./... || failed=1
+  local report=$(mktemp)
+  go build -v ./... 2>&1 | tee ${report}
+  local build_failed=( ${PIPESTATUS[@]} )
+  if [[ ${build_failed[0]} -ne 0 ]]; then
+    failed=1
+    # Consider an error message everything that's not a package name.
+    local errors="$(grep -v '^github.com/' "${report}" | sort | uniq)"
+    create_junit_xml PresubmitBuildTest "${errors}"
+  fi
   # Get all build tags in go code (ignore /vendor)
   local tags="$(grep -r '// +build' . \
       | grep -v '^./vendor/' | cut -f3 -d' ' | sort | uniq | tr '\n' ' ')"
@@ -166,6 +195,10 @@ function default_build_test_runner() {
 # unit test runner.
 function run_unit_tests() {
   (( ! RUN_UNIT_TESTS )) && return 0
+  if (( IS_DOCUMENTATION_PR )); then
+    header "Documentation only PR, skipping unit tests"
+    return 0
+  fi
   header "Running unit tests"
   local failed=0
   # Run pre-unit tests, if any
@@ -198,7 +231,10 @@ function default_unit_test_runner() {
 function run_integration_tests() {
   # Don't run integration tests if not requested OR on documentation PRs
   (( ! RUN_INTEGRATION_TESTS )) && return 0
-  (( IS_DOCUMENTATION_PR )) && return 0
+  if (( IS_DOCUMENTATION_PR )); then
+    header "Documentation only PR, skipping integration tests"
+    return 0
+  fi
   header "Running integration tests"
   local failed=0
   # Run pre-integration tests, if any
@@ -313,7 +349,10 @@ function main() {
       abort "--run-test must be used alone"
     fi
     # If this is a presubmit run, but a documentation-only PR, don't run the test
-    (( IS_PRESUBMIT && IS_DOCUMENTATION_PR )) && exit 0
+    if (( IS_PRESUBMIT && IS_DOCUMENTATION_PR )); then
+      header "Documentation only PR, skipping running custom test"
+      exit 0
+    fi
     ${TEST_TO_RUN} || failed=1
   fi
 
