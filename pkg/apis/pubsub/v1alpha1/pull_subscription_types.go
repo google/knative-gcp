@@ -76,7 +76,7 @@ type PullSubscriptionSpec struct {
 	// +optional
 	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to
+	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Receive Adapter Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }

@@ -58,7 +58,7 @@ func TestTopicValidation(t *testing.T) {
 		cr: &Topic{
 			Spec: TopicSpec{
 				Topic:             "topic",
-				PropagationPolicy: TopicPolicyCreateRestrictDelete,
+				PropagationPolicy: TopicPolicyCreateNoDelete,
 			},
 		},
 		want: nil,

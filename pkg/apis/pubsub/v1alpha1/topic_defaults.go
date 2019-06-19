@@ -24,6 +24,6 @@ func (t *Topic) SetDefaults(ctx context.Context) {
 
 func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
-		ts.PropagationPolicy = TopicPolicyCreateRestrictDelete
+		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
 }
