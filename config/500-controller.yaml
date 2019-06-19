@@ -37,6 +37,10 @@ spec:
         env:
         - name: PUBSUB_RA_IMAGE
           value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/receive_adapter
+        - name: PUBSUB_PUBLISHER_IMAGE
+          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/publisher
+        - name: PUBSUB_TOPIC_IMAGE
+          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/topic
         - name: PUBSUB_SUB_IMAGE
           value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/subscription
         - name: SYSTEM_NAMESPACE
