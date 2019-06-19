@@ -37,7 +37,7 @@ func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	switch ts.PropagationPolicy {
-	case TopicPolicyCreateDelete, TopicPolicyCreateRestrictDelete, TopicPolicyRestrictCreateRestrictDelete:
+	case TopicPolicyCreateDelete, TopicPolicyCreateNoDelete, TopicPolicyNoCreateNoDelete:
 	// Valid value.
 
 	default:

@@ -66,7 +66,7 @@ type ChannelSpec struct {
 	// Topic and Subscriptions will be created in.
 	Project string `json:"project,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to
+	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Channel Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 

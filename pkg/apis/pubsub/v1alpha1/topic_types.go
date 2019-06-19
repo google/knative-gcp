@@ -53,8 +53,8 @@ var _ webhook.GenericCRD = (*Topic)(nil)
 // Check that Topic implements the Conditions duck type.
 var _ = duck.VerifyType(&Topic{}, &duckv1beta1.Conditions{})
 
-// TopicSpec defines an parameters for creating or publishing to a Cloud
-// Pub/Sub Topic depending the PropagationPolicy.
+// TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
+// Topic depending on the PropagationPolicy.
 type TopicSpec struct {
 	// Secret is the credential to be used to create and publish into the
 	// Cloud Pub/Sub Topic. The value of the secret entry must be a service
@@ -69,10 +69,11 @@ type TopicSpec struct {
 	// Topic is the ID of the Topic to create/use in Google Cloud Pub/Sub.
 	Topic string `json:"topic,omitempty"`
 
-	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes.
+	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for
+	// lifecycle changes. Defaults to TopicPolicyCreateNoDelete if empty.
 	PropagationPolicy PropagationPolicyType `json:"propagationPolicy,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to
+	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Topic Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
@@ -82,19 +83,19 @@ type PropagationPolicyType string
 
 const (
 	// TopicPolicyCreateDelete defines the Cloud Pub/Sub topic management
-	// policy for creating topic if not present, and delete topic when the
+	// policy for creating topic (if not present), and deleting topic when the
 	// Topic resource is deleted.
 	TopicPolicyCreateDelete PropagationPolicyType = "CreateDelete"
 
-	// TopicPolicyCreateRestrictDelete defines the Cloud Pub/Sub topic
-	// management policy for creating topic if not present, and do not delete
-	// topic when the Topic resource is deleted.
-	TopicPolicyCreateRestrictDelete PropagationPolicyType = "CreateRestrictDelete"
+	// TopicPolicyCreateNoDelete defines the Cloud Pub/Sub topic management
+	// policy for creating topic (if not present), and not deleting topic when
+	// the Topic resource is deleted.
+	TopicPolicyCreateNoDelete PropagationPolicyType = "CreateNoDelete"
 
-	// TopicPolicyRestrictCreateRestrictDelete defines the Cloud Pub/Sub topic
-	// management policy for only using existing topics, and do not delete
+	// TopicPolicyNoCreateNoDelete defines the Cloud Pub/Sub topic
+	// management policy for only using existing topics, and not deleting
 	// topic when the Topic resource is deleted.
-	TopicPolicyRestrictCreateRestrictDelete PropagationPolicyType = "RestrictCreateRestrictDelete"
+	TopicPolicyNoCreateNoDelete PropagationPolicyType = "NoCreateNoDelete"
 )
 
 var topicCondSet = apis.NewLivingConditionSet(
@@ -117,7 +118,7 @@ const (
 	TopicConditionTopicExists apis.ConditionType = "TopicExists"
 
 	// TopicConditionPublisherReady has status True when the Topic has had
-	// its publisher deployment created.
+	// its publisher deployment created and ready.
 	TopicConditionPublisherReady apis.ConditionType = "PublisherReady"
 )
 
