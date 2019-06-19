@@ -116,7 +116,7 @@ func TestAllCases(t *testing.T) {
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
-				WithTopicPropagationPolicy("RestrictCreateRestrictDelete"),
+				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
 			newSink(),
 		},
@@ -132,7 +132,7 @@ func TestAllCases(t *testing.T) {
 					Topic:              testTopicID,
 					ServiceAccountName: testServiceAccount,
 				}),
-				WithTopicPropagationPolicy("RestrictCreateRestrictDelete"),
+				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
 				WithTopicMarkTopicVerifying(testTopicID),
@@ -262,7 +262,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "deleting - delete topic - policy CreateRestrictDelete",
+		Name: "deleting - delete topic - policy CreateNoDelete",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),

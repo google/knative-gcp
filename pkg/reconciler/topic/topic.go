@@ -194,7 +194,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	topic.Status.TopicID = topic.Spec.Topic
 
 	switch topic.Spec.PropagationPolicy {
-	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateRestrictDelete:
+	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateNoDelete:
 		state, err := c.EnsureTopicCreated(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
@@ -233,7 +233,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			return err
 		}
 
-	case v1alpha1.TopicPolicyRestrictCreateRestrictDelete:
+	case v1alpha1.TopicPolicyNoCreateNoDelete:
 		state, err := c.EnsureTopicExists(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
