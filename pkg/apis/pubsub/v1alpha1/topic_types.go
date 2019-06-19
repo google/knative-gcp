@@ -31,7 +31,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Topic is a resource representing an Topic backed by Google Cloud Pub/Sub.
+// Topic is a resource representing a Topic backed by Google Cloud Pub/Sub.
 type Topic struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -50,12 +50,11 @@ type Topic struct {
 var _ runtime.Object = (*Topic)(nil)
 var _ webhook.GenericCRD = (*Topic)(nil)
 
-// Check that PullSubscription implements the Conditions duck type.
+// Check that Topic implements the Conditions duck type.
 var _ = duck.VerifyType(&Topic{}, &duckv1beta1.Conditions{})
 
-// TopicSpec defines which subscribers have expressed interest in
-// receiving events from this Topic.
-// arguments for a Topic.
+// TopicSpec defines an parameters for creating or publishing to a Cloud
+// Pub/Sub Topic depending the PropagationPolicy.
 type TopicSpec struct {
 	// Secret is the credential to be used to create and publish into the
 	// Cloud Pub/Sub Topic. The value of the secret entry must be a service
@@ -64,10 +63,10 @@ type TopicSpec struct {
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the Pub/Sub
-	// Topic will be created in.
+	// Topic will be created in or used from.
 	Project string `json:"project,omitempty"`
 
-	// Topic is the ID of the Topic to create in Google Cloud Pub/Sub.
+	// Topic is the ID of the Topic to create/use in Google Cloud Pub/Sub.
 	Topic string `json:"topic,omitempty"`
 
 	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes.
@@ -78,11 +77,23 @@ type TopicSpec struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
+// PropagationPolicyType defines enum type for TopicPolicy
 type PropagationPolicyType string
 
 const (
-	TopicPolicyCreateDelete                 PropagationPolicyType = "CreateDelete"
-	TopicPolicyCreateRestrictDelete         PropagationPolicyType = "CreateRestrictDelete"
+	// TopicPolicyCreateDelete defines the Cloud Pub/Sub topic management
+	// policy for creating topic if not present, and delete topic when the
+	// Topic resource is deleted.
+	TopicPolicyCreateDelete PropagationPolicyType = "CreateDelete"
+
+	// TopicPolicyCreateRestrictDelete defines the Cloud Pub/Sub topic
+	// management policy for creating topic if not present, and do not delete
+	// topic when the Topic resource is deleted.
+	TopicPolicyCreateRestrictDelete PropagationPolicyType = "CreateRestrictDelete"
+
+	// TopicPolicyRestrictCreateRestrictDelete defines the Cloud Pub/Sub topic
+	// management policy for only using existing topics, and do not delete
+	// topic when the Topic resource is deleted.
 	TopicPolicyRestrictCreateRestrictDelete PropagationPolicyType = "RestrictCreateRestrictDelete"
 )
 
@@ -124,7 +135,7 @@ type TopicStatus struct {
 	// It generally has the form {Topic}.{namespace}.svc.{cluster domain name}
 	duckv1alpha1.AddressStatus `json:",inline"`
 
-	// ProjectID is the resolved project ID in use by the PullSubscription.
+	// ProjectID is the resolved project ID in use by the Topic.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 
