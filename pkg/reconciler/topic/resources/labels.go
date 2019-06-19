@@ -14,21 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package resources
 
 import (
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic"
-
-	"github.com/knative/pkg/injection/sharedmain"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
-func main() {
-	sharedmain.Main("controller",
-		pullsubscription.NewController,
-		topic.NewController,
-	)
+func GetLabelSelector(controller, source string) labels.Selector {
+	return labels.SelectorFromSet(GetLabels(controller, source))
+}
+
+func GetLabels(controller, topic string) map[string]string {
+	return map[string]string{
+		"cloud-run-pubsub-topic":      controller,
+		"cloud-run-pubsub-topic-name": topic,
+	}
 }

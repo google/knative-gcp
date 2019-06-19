@@ -14,21 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
-
-import (
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic"
-
-	"github.com/knative/pkg/injection/sharedmain"
-)
-
-func main() {
-	sharedmain.Main("controller",
-		pullsubscription.NewController,
-		topic.NewController,
-	)
-}
+// Package topic implements the Cloud Pub/Sub Topic controller.
+package topic
