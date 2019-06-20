@@ -124,12 +124,9 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 
 	var raw json.RawMessage
 	if err := event.DataAs(&raw); err != nil {
-		logger.Warnw("Failed to get data as raw json.", zap.Error(err))
-
-		// try data as a string if it is not a RawMessage.
-		if b, ok := event.Data.([]byte); ok {
-			msg.Data = string(b)
-		}
+		logger.Debugw("Failed to get data as raw json, using as is.", zap.Error(err))
+		// Use data as a byte slice.
+		msg.Data = event.Data
 	} else {
 		// Use data as a raw message.
 		msg.Data = raw
