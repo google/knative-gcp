@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/go-cmp/cmp"
 	"reflect"
 	"time"
 
@@ -239,7 +240,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return err
 	}
 
-	_, err = c.createReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
+	_, err = c.createOrUpdateReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
@@ -347,17 +348,14 @@ func removeFinalizer(s *v1alpha1.PullSubscription) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
-	ra, err := r.getReceiveAdapter(ctx, src)
+func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
+	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
 		return nil, err
 	}
-	if ra != nil {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing receive adapter", zap.Any("receiveAdapter", ra))
-		return ra, nil
-	}
-	dp := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
+
+	desired := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
 		Image:          r.receiveAdapterImage,
 		Source:         src,
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
@@ -365,9 +363,21 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Pul
 		SinkURI:        sinkURI,
 		TransformerURI: transformerURI,
 	})
-	dp, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(dp)
-	logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", dp))
-	return dp, err
+
+	if existing == nil {
+		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
+		logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", ra))
+		return ra, err
+	}
+	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+		existing.Spec = desired.Spec
+		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		logging.FromContext(ctx).Desugar().Info("Receive Adapter updated.",
+			zap.Error(err), zap.Any("receiveAdapter", ra), zap.String("diff", diff))
+		return ra, err
+	}
+	logging.FromContext(ctx).Desugar().Info("Reusing existing Receive Adapter", zap.Any("receiveAdapter", existing))
+	return existing, nil
 }
 
 func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
