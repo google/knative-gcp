@@ -65,7 +65,7 @@ const (
 
 var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS + "/"
+	sinkURI = "http://" + sinkDNS
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.run",

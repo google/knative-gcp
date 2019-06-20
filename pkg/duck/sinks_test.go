@@ -58,13 +58,21 @@ func TestGetSinkURI(t *testing.T) {
 		wantErr   error
 		ref       *corev1.ObjectReference
 	}{
-		"happy": {
+		"happy v1alpha1": {
 			objects: []runtime.Object{
-				getAddressable(),
+				getAddressableV1Alpha1(),
 			},
 			namespace: testNS,
 			ref:       getAddressableRef(),
-			want:      fmt.Sprintf("http://%s/", addressableDNS),
+			want:      fmt.Sprintf("http://%s", addressableDNS),
+		},
+		"happy v1beta1": {
+			objects: []runtime.Object{
+				getAddressableV1Beta1(),
+			},
+			namespace: testNS,
+			ref:       getAddressableRef(),
+			want:      fmt.Sprintf("http://%s", addressableDNS),
 		},
 		"nil hostname": {
 			objects: []runtime.Object{
@@ -128,7 +136,7 @@ func TestGetSinkURI(t *testing.T) {
 	}
 }
 
-func getAddressable() *unstructured.Unstructured {
+func getAddressableV1Alpha1() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": addressableAPIVersion,
@@ -140,6 +148,24 @@ func getAddressable() *unstructured.Unstructured {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"hostname": addressableDNS,
+				},
+			},
+		},
+	}
+}
+
+func getAddressableV1Beta1() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": "http://" + addressableDNS,
 				},
 			},
 		},

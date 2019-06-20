@@ -17,23 +17,27 @@ limitations under the License.
 package transformer
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/uuid"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 )
 
 // PushMessage represents the format Pub/Sub uses to push events.
 type PushMessage struct {
+	// Subscription is the subscription ID that received this Message.
+	Subscription string `json:"subscription"`
+	// Message holds the Pub/Sub message contents.
+	Message *PubSubMessage `json:"message,omitempty"`
+}
+
+type PubSubMessage struct {
 	// ID identifies this message.
 	// This ID is assigned by the server and is populated for Messages obtained from a subscription.
 	// This field is read-only.
@@ -55,9 +59,6 @@ type PushMessage struct {
 // Transformer implements the Pub/Sub transformer to convert generic Cloud
 // Pub/Sub events into compatible formats.
 type Transformer struct {
-	// Mode is the mode to transform the event.
-	Mode string
-
 	// client is the cloudevents client to use to receive events.
 	client cloudevents.Client
 }
@@ -78,7 +79,63 @@ func (a *Transformer) Start(ctx context.Context) error {
 func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
 
-	resp.RespondWith(200, r)
+	// Convert data to PushMessage.
 
+	push := cloudevents.NewEvent(event.SpecVersion())
+	push.Context = event.Context.Clone()
+
+	attrs := map[string]string{}
+	var s string
+	if err := event.ExtensionAs("attributes", &s); err != nil {
+		logger.Warnw("Failed to get attributes extensions.", zap.Error(err))
+	} else {
+		logger.Info("attributes:", zap.String("s", s))
+		// TODO
+	}
+
+	logger.Info("fyi, attributes:", zap.Any("event.attrs", event.Extensions()["attributes"]))
+
+	msg := &PubSubMessage{
+		ID:          event.ID(),
+		Attributes:  attrs,
+		PublishTime: event.Time(),
+	}
+
+	var subscription string
+	if sub, ok := event.Extensions()["subscription"]; ok {
+		subscription = sub.(string)
+	}
+
+	logger.Info("Event:", zap.String("event", event.String())) // TODO: remove.
+	logger.Info("Data:", zap.Any("data", event.Data))          // TODO: remove.
+
+	//if event.DataEncoded {
+	//	push.DataEncoded = true
+	//	msg.Data = event.Data.([]byte)
+	//} else if event.Data != nil {
+
+	//var err error
+	//msg.Data, err = event.DataBytes()
+	var raw json.RawMessage
+	if err := event.DataAs(&raw); err != nil {
+		logger.Warnw("Failed to get data as raw json.", zap.Error(err))
+	} else {
+		msg.Data = raw
+		logger.Info("Success getting json raw.", zap.Any("raw", raw))
+	}
+	//
+	//if err := event.DataAs(&msg.Data); err != nil {
+	//	logger.Warnw("Failed to get data.", zap.Error(err))
+	//}
+	//}
+
+	if err := push.SetData(&PushMessage{
+		Subscription: subscription,
+		Message:      msg,
+	}); err != nil {
+		logger.Warnw("Failed to set data.", zap.Error(err))
+	}
+
+	resp.RespondWith(200, &push)
 	return nil
 }

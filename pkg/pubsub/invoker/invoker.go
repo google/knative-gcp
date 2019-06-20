@@ -30,8 +30,6 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 )
 
-// TODO: not ready.
-
 // Invoker implements the Pub/Sub invoker to deliver Pub/Sub messages from a
 // pre-existing topic with a set of pre-existing subscriptions to the set of
 // Channel Subscribers.

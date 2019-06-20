@@ -20,36 +20,28 @@ import (
 	"flag"
 	"log"
 
-	"cloud.google.com/go/compute/metadata"
-	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/context"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/transformer"
 )
 
 func main() {
 	flag.Parse()
 
 	ctx := context.Background()
-	logCfg := zap.NewProductionConfig() // TODO: to replace with a dynamically updating logger.
+	logCfg := zap.NewProductionConfig()
 	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	logger, err := logCfg.Build()
 	if err != nil {
 		log.Fatalf("Unable to create logger: %v", err)
 	}
 
-	startable := &adapter.Adapter{
-		ProjectID:      env.Project,
-		TopicID:        env.Topic,
-		SinkURI:        env.Sink,
-		SubscriptionID: env.Subscription,
-		TransformerURI: env.Transformer,
-	}
+	startable := &transformer.Transformer{}
 
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", startable))
+	logger.Info("Starting Pub/Sub Transformer.", zap.Reflect("transformer", startable))
 	if err := startable.Start(ctx); err != nil {
-		logger.Fatal("failed to start adapter: ", zap.Error(err))
+		logger.Fatal("failed to start transformer: ", zap.Error(err))
 	}
 }
