@@ -115,6 +115,8 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 }
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
+	logger := logging.FromContext(ctx)
+	logger.Debug("Converting event from transport.")
 	if msg, ok := m.(*cepubsub.Message); ok {
 		tx := cepubsub.TransportContextFrom(ctx)
 		// Make a new event and convert the message payload.
@@ -126,7 +128,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetType(v1alpha1.PubSubEventType)
 		event.SetID(uuid.New().String())
 		event.Data = msg.Data
-		// TODO: this will drop the other metadata related to the the topic and subscription names.
+		// TODO: this will drop the other metadata related to the the topic and subscription names
 		return &event, nil
 	}
 	return nil, err

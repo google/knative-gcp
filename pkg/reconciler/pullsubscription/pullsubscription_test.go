@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -202,10 +203,10 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newReceiveAdapter(),
+				newReceiveAdapter(testImage),
 			},
 		}, {
-			Name: "successful create - reuse existing receive adapter",
+			Name: "successful create - reuse existing receive adapter - match",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
@@ -218,13 +219,57 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newReceiveAdapter(),
+				newReceiveAdapter(testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					// Updates
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionReady(sinkURI),
+				),
+			}},
+		}, {
+			Name: "successful create - reuse existing receive adapter - mismatch",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project:            testProject,
+						Topic:              testTopicID,
+						ServiceAccountName: testServiceAccount,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+				),
+				newSink(),
+				newReceiveAdapter("old" + testImage),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS,
+					Verb:      "update",
+					Resource:  receiveAdapterGVR(),
+				},
+				Object: newReceiveAdapter(testImage),
+			}},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
@@ -379,7 +424,7 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newReceiveAdapter() runtime.Object {
+func newReceiveAdapter(image string) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -388,13 +433,21 @@ func newReceiveAdapter() runtime.Object {
 			ServiceAccountName: testServiceAccount,
 		}))
 	args := &resources.ReceiveAdapterArgs{
-		Image:          testImage,
+		Image:          image,
 		Source:         source,
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
 	}
 	return resources.MakeReceiveAdapter(args)
+}
+
+func receiveAdapterGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "deployment",
+	}
 }
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
