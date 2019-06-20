@@ -19,6 +19,8 @@ package transformer
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -26,6 +28,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 )
 
@@ -79,22 +82,34 @@ func (a *Transformer) Start(ctx context.Context) error {
 func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
 
+	if event.Type() != v1alpha1.PubSubEventType {
+		logger.Warnw("Not attempting to convert non-Pub/Sub type.", zap.String("type", event.Type()))
+		resp.RespondWith(http.StatusNotModified, &event)
+	}
+
 	// Convert data to PushMessage.
 
 	push := cloudevents.NewEvent(event.SpecVersion())
 	push.Context = event.Context.Clone()
 
-	attrs := map[string]string{}
-
-	logger.Info("attributes:", zap.Any("ext", event.Extensions()))
-
-	//var s string
-	//if err := event.ExtensionAs("attributes", &s); err != nil {
-	//	logger.Warnw("Failed to get attributes extensions.", zap.Error(err))
-	//} else {
-	//	logger.Info("attributes:", zap.String("s", s))
-	//	// TODO
-	//}
+	// This is a workaround with the current CloudEvents SDK, it does not
+	// handle extensions very well. The following code converts the
+	// "attributes" extension into a attributes map that Pub/Sub push
+	// consumers expect.
+	attrs := make(map[string]string, 0)
+	if at, ok := event.Extensions()["attributes"]; ok {
+		if m, ok := at.(map[string]interface{}); ok {
+			for k, v := range m {
+				if vs, ok := v.([]string); ok {
+					var err error
+					attrs[k], err = strconv.Unquote(vs[0])
+					if err != nil {
+						logger.Warnw("Failed to unquote attributes string value.", zap.Error(err))
+					}
+				}
+			}
+		}
+	}
 
 	msg := &PubSubMessage{
 		ID:          event.ID(),
@@ -127,6 +142,6 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 		logger.Warnw("Failed to set data.", zap.Error(err))
 	}
 
-	resp.RespondWith(200, &push)
+	resp.RespondWith(http.StatusOK, &push)
 	return nil
 }

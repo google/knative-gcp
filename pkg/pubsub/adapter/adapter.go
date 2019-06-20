@@ -135,7 +135,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
-	logger.Debug("Converting event from transport.")
+	logger.Debug("Converting event from transport. %s")
 	if msg, ok := m.(*cepubsub.Message); ok {
 		tx := cepubsub.TransportContextFrom(ctx)
 		// Make a new event and convert the message payload.
@@ -147,7 +147,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetType(v1alpha1.PubSubEventType)
 		event.SetID(uuid.New().String())
 		for k, v := range msg.Attributes {
-			event.SetExtension("attribute-"+k, v)
+			event.SetExtension("attributes-"+k, v)
 		}
 		event.SetExtension("topic", tx.Topic)
 		event.SetExtension("subscription", tx.Subscription)
