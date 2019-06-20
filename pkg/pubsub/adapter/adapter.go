@@ -146,13 +146,13 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
 		event.SetID(uuid.New().String())
-		event.SetExtension("attributes", msg.Attributes)
+		for k, v := range msg.Attributes {
+			event.SetExtension("attribute-"+k, v)
+		}
 		event.SetExtension("topic", tx.Topic)
 		event.SetExtension("subscription", tx.Subscription)
-
-		logging.FromContext(ctx).Info("Data: ", zap.String("data", string(msg.Data)))
 		event.Data = msg.Data
-		event.SetDataContentEncoding(cloudevents.Base64) // pubsub is giving us base64 encoded messages.
+		event.DataEncoded = true
 		return &event, nil
 	}
 	return nil, err

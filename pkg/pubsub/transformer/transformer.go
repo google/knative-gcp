@@ -44,7 +44,7 @@ type PubSubMessage struct {
 	ID string `json:"id,omitempty"`
 
 	// Data is the actual data in the message.
-	Data []byte `json:"data,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 
 	// Attributes represents the key-value pairs the current message
 	// is labelled with.
@@ -85,15 +85,16 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 	push.Context = event.Context.Clone()
 
 	attrs := map[string]string{}
-	var s string
-	if err := event.ExtensionAs("attributes", &s); err != nil {
-		logger.Warnw("Failed to get attributes extensions.", zap.Error(err))
-	} else {
-		logger.Info("attributes:", zap.String("s", s))
-		// TODO
-	}
 
-	logger.Info("fyi, attributes:", zap.Any("event.attrs", event.Extensions()["attributes"]))
+	logger.Info("attributes:", zap.Any("ext", event.Extensions()))
+
+	//var s string
+	//if err := event.ExtensionAs("attributes", &s); err != nil {
+	//	logger.Warnw("Failed to get attributes extensions.", zap.Error(err))
+	//} else {
+	//	logger.Info("attributes:", zap.String("s", s))
+	//	// TODO
+	//}
 
 	msg := &PubSubMessage{
 		ID:          event.ID(),
@@ -106,28 +107,18 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 		subscription = sub.(string)
 	}
 
-	logger.Info("Event:", zap.String("event", event.String())) // TODO: remove.
-	logger.Info("Data:", zap.Any("data", event.Data))          // TODO: remove.
-
-	//if event.DataEncoded {
-	//	push.DataEncoded = true
-	//	msg.Data = event.Data.([]byte)
-	//} else if event.Data != nil {
-
-	//var err error
-	//msg.Data, err = event.DataBytes()
 	var raw json.RawMessage
 	if err := event.DataAs(&raw); err != nil {
 		logger.Warnw("Failed to get data as raw json.", zap.Error(err))
+
+		// try data as a string if it is not a RawMessage.
+		if b, ok := event.Data.([]byte); ok {
+			msg.Data = string(b)
+		}
 	} else {
+		// Use data as a raw message.
 		msg.Data = raw
-		logger.Info("Success getting json raw.", zap.Any("raw", raw))
 	}
-	//
-	//if err := event.DataAs(&msg.Data); err != nil {
-	//	logger.Warnw("Failed to get data.", zap.Error(err))
-	//}
-	//}
 
 	if err := push.SetData(&PushMessage{
 		Subscription: subscription,
