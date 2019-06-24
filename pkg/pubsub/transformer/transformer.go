@@ -66,6 +66,7 @@ type Transformer struct {
 	client cloudevents.Client
 }
 
+// Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Transformer) Start(ctx context.Context) error {
 	var err error
 

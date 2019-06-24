@@ -40,7 +40,7 @@ func main() {
 
 	startable := &transformer.Transformer{}
 
-	logger.Info("Starting Pub/Sub Transformer.", zap.Reflect("transformer", startable))
+	logger.Info("Starting Pub/Sub Transformer.", zap.Any("transformer", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start transformer: ", zap.Error(err))
 	}

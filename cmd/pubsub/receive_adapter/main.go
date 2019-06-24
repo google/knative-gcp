@@ -83,7 +83,7 @@ func main() {
 		TransformerURI: env.Transformer,
 	}
 
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", startable))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

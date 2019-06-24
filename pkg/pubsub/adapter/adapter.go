@@ -71,6 +71,7 @@ const (
 	DefaultSendMode = Binary
 )
 
+// Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
 
@@ -135,7 +136,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
-	logger.Debug("Converting event from transport. %s")
+	logger.Debug("Converting event from transport.")
 	if msg, ok := m.(*cepubsub.Message); ok {
 		tx := cepubsub.TransportContextFrom(ctx)
 		// Make a new event and convert the message payload.
@@ -198,13 +199,8 @@ func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
 	}
 
 	// Use the transport to make a new CloudEvents client.
-	c, err := cloudevents.NewClient(t,
+	return cloudevents.NewClient(t,
 		cloudevents.WithUUIDs(),
 		cloudevents.WithTimeNow(),
 	)
-
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
