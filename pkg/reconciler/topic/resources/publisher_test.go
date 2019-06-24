@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestMakeInvoker(t *testing.T) {
+func TestMakePublisher(t *testing.T) {
 	topic := &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
@@ -46,12 +46,9 @@ func TestMakeInvoker(t *testing.T) {
 	}
 
 	got := MakePublisher(&PublisherArgs{
-		Image: "test-image",
-		Topic: topic,
-		Labels: map[string]string{
-			"test-key1": "test-value1",
-			"test-key2": "test-value2",
-		},
+		Image:  "test-image",
+		Topic:  topic,
+		Labels: GetLabels("controller-name", "topic-name"),
 	})
 
 	one := int32(1)
@@ -61,8 +58,8 @@ func TestMakeInvoker(t *testing.T) {
 			Namespace:    "topic-namespace",
 			GenerateName: "pubsub-publisher-topic-name-",
 			Labels: map[string]string{
-				"test-key1": "test-value1",
-				"test-key2": "test-value2",
+				"cloud-run-pubsub-topic":      "controller-name",
+				"cloud-run-pubsub-topic-name": "topic-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "pubsub.cloud.run/v1alpha1",
@@ -75,16 +72,16 @@ func TestMakeInvoker(t *testing.T) {
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"test-key1": "test-value1",
-					"test-key2": "test-value2",
+					"cloud-run-pubsub-topic":      "controller-name",
+					"cloud-run-pubsub-topic-name": "topic-name",
 				},
 			},
 			Replicas: &one,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"test-key1": "test-value1",
-						"test-key2": "test-value2",
+						"cloud-run-pubsub-topic":      "controller-name",
+						"cloud-run-pubsub-topic-name": "topic-name",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -124,5 +121,17 @@ func TestMakeInvoker(t *testing.T) {
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+	}
+}
+
+func TestMakePublisherSelector(t *testing.T) {
+	selector := GetLabelSelector("controller-name", "topic-name")
+
+	want := "cloud-run-pubsub-topic=controller-name,cloud-run-pubsub-topic-name=topic-name"
+
+	got := selector.String()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected selector (-want, +got) = %v", diff)
 	}
 }
