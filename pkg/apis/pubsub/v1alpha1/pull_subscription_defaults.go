@@ -18,6 +18,12 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
+)
+
+var (
+	defaultAckDeadline       = 30 * time.Second
+	defaultRetentionDuration = 7 * 24 * time.Hour
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
@@ -25,5 +31,11 @@ func (s *PullSubscription) SetDefaults(ctx context.Context) {
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
-	// None
+	if ss.AckDeadline == nil {
+		ss.AckDeadline = &defaultAckDeadline
+	}
+
+	if ss.RetentionDuration == nil {
+		ss.RetentionDuration = &defaultRetentionDuration
+	}
 }

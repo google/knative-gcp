@@ -122,6 +122,7 @@ func WithPullSubscriptionMarkNoSubscription(subscriptionID string) PullSubscript
 func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
+		s.Spec.SetDefaults(context.Background())
 	}
 }
 

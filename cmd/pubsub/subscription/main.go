@@ -17,12 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"cloud.google.com/go/pubsub"
 	"errors"
 	"flag"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"log"
 	"time"
-
-	"cloud.google.com/go/pubsub"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
@@ -47,7 +48,15 @@ type envConfig struct {
 	// Subscription is the environment variable containing the name of the
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
+
+	AckDeadline         time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD" required:"true" default:"30s"`
+	RetainAckedMessages bool          `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED" required:"true" default:"false"`
+	RetentionDuration   time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR" required:"true" default:"168h"`
 }
+
+var (
+	ignoreSubConfig = cmpopts.IgnoreFields(pubsub.SubscriptionConfig{}, "Topic", "PushConfig", "Labels")
+)
 
 // TODO: the job could output the resolved projectID.
 
@@ -105,26 +114,46 @@ func main() {
 		logger.Info("Previously created.")
 
 	case "create":
+		// Load the topic.
+		topic, err := getTopic(ctx, client, env.Topic)
+		if err != nil {
+			logger.Fatal("Failed to get topic.", zap.Error(err))
+		}
+		// subConfig is the wanted config based on settings.
+		subConfig := pubsub.SubscriptionConfig{
+			Topic:               topic,
+			AckDeadline:         env.AckDeadline,
+			RetainAckedMessages: env.RetainAckedMessages,
+			RetentionDuration:   env.RetentionDuration,
+		}
 		// If topic doesn't exist, create it.
 		if !exists {
-			// Load the topic.
-			topic, err := getTopic(ctx, client, env.Topic)
-			if err != nil {
-				logger.Fatal("Failed to get topic.", zap.Error(err))
-			}
 			// Create a new subscription to the previous topic with the given name.
-			sub, err = client.CreateSubscription(ctx, env.Subscription, pubsub.SubscriptionConfig{
-				Topic:             topic,
-				AckDeadline:       30 * time.Second,
-				RetentionDuration: 25 * time.Hour,
-			})
+			sub, err = client.CreateSubscription(ctx, env.Subscription, subConfig)
 			if err != nil {
 				logger.Fatal("Failed to create subscription.", zap.Error(err))
 			}
 			logger.Info("Successfully created.")
 		} else {
-			// TODO: here is where we could update config.
 			logger.Info("Previously created.")
+			// Get current config.
+			currentConfig, err := sub.Config(ctx)
+			if err != nil {
+				logger.Fatal("Failed to get subscription config.", zap.Error(err))
+			}
+			// Compare the current config to the expected config. Update if different.
+			if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
+				_, err := sub.Update(ctx, pubsub.SubscriptionConfigToUpdate{
+					AckDeadline:         env.AckDeadline,
+					RetainAckedMessages: env.RetainAckedMessages,
+					RetentionDuration:   env.RetentionDuration,
+					Labels:              currentConfig.Labels,
+				})
+				if err != nil {
+					logger.Fatal("Failed to update subscription config.", zap.Error(err))
+				}
+				logger.Info("Updated subscription config.", zap.String("diff", diff))
+			}
 		}
 
 	case "delete":

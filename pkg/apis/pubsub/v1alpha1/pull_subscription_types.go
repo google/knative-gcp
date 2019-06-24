@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/apis/duck"
@@ -55,16 +56,35 @@ type PullSubscriptionSpec struct {
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// +optional
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the PullSubscription
 	// Topic exists in.
+	// +optional
 	Project string `json:"project,omitempty"`
 
 	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must be in
 	// the form of the unique identifier within the project, not the entire
 	// name. E.g. it must be 'laconia', not 'projects/my-proj/topics/laconia'.
 	Topic string `json:"topic,omitempty"`
+
+	// The default maximum time after a subscriber receives a message before
+	// the subscriber should acknowledge the message. Defaults to 30 seconds.
+	// +optional
+	AckDeadline *time.Duration `json:"ackDeadline,omitempty"`
+
+	// Whether to retain acknowledged messages. If true, acknowledged messages
+	// will not be expunged until they fall out of the RetentionDuration window.
+	RetainAckedMessages bool `json:"retainAckedMessages,omitempty"`
+
+	// How long to retain messages in backlog, from the time of publish. If
+	// RetainAckedMessages is true, this duration affects the retention of
+	// acknowledged messages, otherwise only unacknowledged messages are
+	// retained. Defaults to 7 days. Cannot be longer than 7 days or shorter
+	// than 10 minutes.
+	// +optional
+	RetentionDuration *time.Duration `json:"retentionDuration,omitempty"`
 
 	// Sink is a reference to an object that will resolve to a domain name to
 	// use as the sink.
@@ -78,6 +98,7 @@ type PullSubscriptionSpec struct {
 
 	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Receive Adapter Deployment.
+	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 

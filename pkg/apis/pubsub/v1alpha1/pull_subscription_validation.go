@@ -18,12 +18,18 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/knative/pkg/apis"
+)
+
+const (
+	minRetentionDuration = 10 * time.Second   // 10 seconds.
+	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
@@ -47,6 +53,11 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		if err := validateRef(current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
+	}
+
+	// RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
+	if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
+		errs = errs.Also(apis.ErrInvalidValue(current.RetentionDuration, "retentionDuration"))
 	}
 	return nil
 }

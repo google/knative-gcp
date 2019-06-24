@@ -18,6 +18,8 @@ package operations
 
 import (
 	"github.com/knative/pkg/kmeta"
+	"strconv"
+	"time"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -25,16 +27,19 @@ import (
 )
 
 type SubArgs struct {
-	Image          string
-	Action         string
-	ProjectID      string
-	TopicID        string
-	SubscriptionID string
-	Owner          kmeta.OwnerRefable
+	Image               string
+	Action              string
+	ProjectID           string
+	TopicID             string
+	SubscriptionID      string
+	AckDeadline         time.Duration
+	RetainAckedMessages bool
+	RetentionDuration   time.Duration
+	Owner               kmeta.OwnerRefable
 }
 
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
+	env := []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {
@@ -46,7 +51,23 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	}, {
 		Name:  "PUBSUB_SUBSCRIPTION_ID",
 		Value: arg.SubscriptionID,
-	}}...)
+	}}
+
+	switch arg.Action {
+	case ActionCreate:
+		env = append(env, []corev1.EnvVar{{
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD",
+			Value: arg.AckDeadline.String(),
+		}, {
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED",
+			Value: strconv.FormatBool(arg.RetainAckedMessages),
+		}, {
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR",
+			Value: arg.RetentionDuration.String(),
+		}}...)
+	}
+
+	podTemplate := makePodTemplate(arg.Image, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
