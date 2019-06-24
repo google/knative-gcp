@@ -17,7 +17,12 @@ limitations under the License.
 package operations
 
 import (
+	"cloud.google.com/go/compute/metadata"
+	"cloud.google.com/go/pubsub"
+	"context"
 	"github.com/knative/pkg/kmeta"
+	"github.com/knative/pkg/logging"
+	"go.uber.org/zap"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -60,4 +65,87 @@ func NewTopicOps(arg TopicArgs) *batchv1.Job {
 			Template:     *podTemplate,
 		},
 	}
+}
+
+type TopicOps struct {
+	// Environment variable containing project id.
+	Project string `envconfig:"PROJECT_ID"`
+
+	// Action is the operation the job should run.
+	// Options: [exists, create, delete]
+	Action string `envconfig:"ACTION" required:"true"`
+
+	// Topic is the environment variable containing the PubSub Topic being
+	// created. In the form that is unique within the project.
+	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+}
+
+func (t *TopicOps) Run(ctx context.Context) {
+	logger := logging.FromContext(ctx)
+
+	if t.Project == "" {
+		project, err := metadata.ProjectID()
+		if err != nil {
+			logger.Fatal("failed to find project id. ", zap.Error(err))
+		}
+		t.Project = project
+	}
+
+	logger = logger.With(
+		zap.String("action", t.Action),
+		zap.String("project", t.Project),
+		zap.String("topic", t.Topic),
+	)
+
+	logger.Info("Pub/Sub Topic Job.")
+
+	client, err := pubsub.NewClient(ctx, t.Project)
+	if err != nil {
+		logger.Fatal("Failed to create Pub/Sub client.", zap.Error(err))
+	}
+
+	topic := client.Topic(t.Topic)
+	exists, err := topic.Exists(ctx)
+	if err != nil {
+		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+	}
+
+	switch t.Action {
+	case ActionExists:
+		// If topic doesn't exist, that is an error.
+		if !exists {
+			logger.Fatal("Topic does not exist.")
+		}
+		logger.Info("Previously created.")
+
+	case ActionCreate:
+		// If topic doesn't exist, create it.
+		if !exists {
+			// Create a new topic with the given name.
+			topic, err = client.CreateTopic(ctx, t.Topic)
+			if err != nil {
+				logger.Fatal("Failed to create topic.", zap.Error(err))
+			}
+			logger.Info("Successfully created.")
+		} else {
+			// TODO: here is where we could update topic config.
+			logger.Info("Previously created.")
+		}
+
+	case ActionDelete:
+		if exists {
+			if err := topic.Delete(ctx); err != nil {
+				logger.Fatal("Failed to delete topic.", zap.Error(err))
+			}
+			logger.Info("Successfully deleted.")
+		} else {
+			logger.Info("Previously deleted.")
+		}
+
+	default:
+		logger.Fatal("Unknown action value.")
+	}
+
+	logger.Info("Done.")
 }
