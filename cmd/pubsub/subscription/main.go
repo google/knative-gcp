@@ -38,5 +38,10 @@ func main() {
 	if err := envconfig.Process("", &ops); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
-	ops.Run(ctx)
+	if err := ops.CreateClient(ctx); err != nil {
+		logger.Fatalw("Failed to create Pub/Sub Client.", zap.Error(err))
+	}
+	if err := ops.Run(ctx); err != nil {
+		logger.Fatalw("Failed to run Subscription Operation.", zap.Error(err))
+	}
 }
