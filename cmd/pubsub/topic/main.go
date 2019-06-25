@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/kelseyhightower/envconfig"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
