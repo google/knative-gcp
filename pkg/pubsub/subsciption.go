@@ -23,10 +23,12 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
+// Subscription implements pubsub.Client.Subscription
 func (c *PubSubClient) Subscription(id string) Subscription {
 	return &PubSubSubscription{sub: c.client.Subscription(id)}
 }
 
+// CreateSubscription implements pubsub.Client.CreateSubscription
 func (c *PubSubClient) CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error) {
 	var topic *pubsub.Topic
 	if t, ok := cfg.Topic.(*PubSubTopic); ok {
@@ -46,6 +48,8 @@ func (c *PubSubClient) CreateSubscription(ctx context.Context, id string, cfg Su
 	}
 }
 
+// SubscriptionConfig re-implements pubsub.SubscriptionConfig to allow us to
+// use a wrapped Topic internally.
 type SubscriptionConfig struct {
 	Topic               Topic
 	AckDeadline         time.Duration
@@ -54,14 +58,17 @@ type SubscriptionConfig struct {
 	Labels              map[string]string
 }
 
+// PubSubSubscription wraps pubsub.Subscription
 type PubSubSubscription struct {
 	sub *pubsub.Subscription
 }
 
+// Exists implements pubsub.Subscription.Exists
 func (s *PubSubSubscription) Exists(ctx context.Context) (bool, error) {
 	return s.sub.Exists(ctx)
 }
 
+// Config implements pubsub.Subscription.Config
 func (s *PubSubSubscription) Config(ctx context.Context) (SubscriptionConfig, error) {
 	if cfg, err := s.sub.Config(ctx); err != nil {
 		return SubscriptionConfig{}, err
@@ -76,6 +83,7 @@ func (s *PubSubSubscription) Config(ctx context.Context) (SubscriptionConfig, er
 	}
 }
 
+// Delete implements pubsub.Subscription.Delete
 func (s *PubSubSubscription) Delete(ctx context.Context) error {
 	return s.sub.Delete(ctx)
 }

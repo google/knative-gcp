@@ -22,6 +22,7 @@ import (
 	"google.golang.org/api/option"
 )
 
+// NewClient creates a new wrapped Pub/Sub client.
 func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error) {
 	if client, err := pubsub.NewClient(ctx, projectID, opts...); err != nil {
 		return nil, err
@@ -32,10 +33,12 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 	}
 }
 
+// PubSubClient wraps pubsub.Client.
 type PubSubClient struct {
 	client *pubsub.Client
 }
 
+// Close implements pubsub.Client.Close
 func (c *PubSubClient) Close() error {
 	return c.client.Close()
 }

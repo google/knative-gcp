@@ -22,26 +22,32 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
 )
 
+// Subscription implements Client.Subscription.
 func (c *TestClient) Subscription(id string) pubsub.Subscription {
 	return &TestSubscription{id: id}
 }
 
+// CreateSubscription implements Client.CreateSubscription.
 func (c *TestClient) CreateSubscription(ctx context.Context, id string, cfg pubsub.SubscriptionConfig) (pubsub.Subscription, error) {
 	return &TestSubscription{id: id}, nil
 }
 
+// TestSubscription is a test Pub/Sub subscription.
 type TestSubscription struct {
 	id string
 }
 
+// Exists implements Subscription.Exists.
 func (s *TestSubscription) Exists(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
+// Config implements Subscription.Config.
 func (s *TestSubscription) Config(ctx context.Context) (pubsub.SubscriptionConfig, error) {
 	return pubsub.SubscriptionConfig{}, nil
 }
 
+// Delete implements Subscription.Delete.
 func (s *TestSubscription) Delete(ctx context.Context) error {
 	return nil
 }

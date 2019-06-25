@@ -22,14 +22,17 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
 )
 
+// Topic implements Client.Topic.
 func (c *TestClient) Topic(id string) pubsub.Topic {
 	return &TestTopic{id: id}
 }
 
+// TestTopic is a test Pub/Sub topic.
 type TestTopic struct {
 	id string
 }
 
+// Exists implements Topic.Exists.
 func (t *TestTopic) Exists(ctx context.Context) (bool, error) {
 	return true, nil
 }

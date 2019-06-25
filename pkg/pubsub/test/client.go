@@ -23,14 +23,17 @@ import (
 	"google.golang.org/api/option"
 )
 
+// NewClient creates a new test Pub/Sub client.
 func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (pubsub.Client, error) {
 	return &TestClient{Project: projectID}, nil
 }
 
+// TestClient is a test Pub/Sub client.
 type TestClient struct {
 	Project string
 }
 
+// Close implements client.Close
 func (c *TestClient) Close() error {
 	return nil
 }

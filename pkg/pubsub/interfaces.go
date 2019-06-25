@@ -20,24 +20,35 @@ import (
 	"context"
 )
 
+// Client matches the interface exposed by pubsub.Client
+// see https://godoc.org/cloud.google.com/go/pubsub#Client
 type Client interface {
-	// Client
+	// Close see https://godoc.org/cloud.google.com/go/pubsub#Client.Close
 	Close() error
 
-	// Topic
+	// Topic see https://godoc.org/cloud.google.com/go/pubsub#Client.Topic
 	Topic(id string) Topic
 
-	// Subscription
+	// Subscription see https://godoc.org/cloud.google.com/go/pubsub#Client.Subscription
 	Subscription(id string) Subscription
+	// CreateSubscription see https://godoc.org/cloud.google.com/go/pubsub#Client.CreateSubscription
 	CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error)
 }
 
+// Client matches the interface exposed by pubsub.Subscription
+// see https://godoc.org/cloud.google.com/go/pubsub#Subscription
 type Subscription interface {
+	// Exists see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Exists
 	Exists(ctx context.Context) (bool, error)
+	// Config see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Config
 	Config(ctx context.Context) (SubscriptionConfig, error)
+	// Delete see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Delete
 	Delete(ctx context.Context) error
 }
 
+// Client matches the interface exposed by pubsub.Topic
+// see https://godoc.org/cloud.google.com/go/pubsub#Topic
 type Topic interface {
+	// Exists see https://godoc.org/cloud.google.com/go/pubsub#Topic.Exists
 	Exists(ctx context.Context) (bool, error)
 }

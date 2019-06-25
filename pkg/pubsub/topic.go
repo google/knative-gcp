@@ -21,14 +21,17 @@ import (
 	"context"
 )
 
+// Topic implements pubsub.Client.Topic
 func (c *PubSubClient) Topic(id string) Topic {
 	return &PubSubTopic{topic: c.client.Topic(id)}
 }
 
+// PubSubTopic wrapps pubsub.Topic
 type PubSubTopic struct {
 	topic *pubsub.Topic
 }
 
+// Exists implements pubsub.Topic.Exists
 func (t *PubSubTopic) Exists(ctx context.Context) (bool, error) {
 	return t.topic.Exists(ctx)
 }
