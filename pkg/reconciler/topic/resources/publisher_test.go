@@ -19,11 +19,11 @@ package resources
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/go-cmp/cmp"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 func TestMakePublisher(t *testing.T) {
@@ -45,79 +45,16 @@ func TestMakePublisher(t *testing.T) {
 		},
 	}
 
-	got := MakePublisher(&PublisherArgs{
+	pub := MakePublisher(&PublisherArgs{
 		Image:  "test-image",
 		Topic:  topic,
 		Labels: GetLabels("controller-name", "topic-name"),
 	})
 
-	one := int32(1)
-	yes := true
-	want := &v1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "topic-namespace",
-			GenerateName: "pubsub-publisher-topic-name-",
-			Labels: map[string]string{
-				"cloud-run-pubsub-topic":      "controller-name",
-				"cloud-run-pubsub-topic-name": "topic-name",
-			},
-			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "pubsub.cloud.run/v1alpha1",
-				Kind:               "Topic",
-				Name:               "topic-name",
-				Controller:         &yes,
-				BlockOwnerDeletion: &yes,
-			}},
-		},
-		Spec: v1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"cloud-run-pubsub-topic":      "controller-name",
-					"cloud-run-pubsub-topic-name": "topic-name",
-				},
-			},
-			Replicas: &one,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"cloud-run-pubsub-topic":      "controller-name",
-						"cloud-run-pubsub-topic-name": "topic-name",
-					},
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: "topic-svc-acct",
-					Containers: []corev1.Container{
-						{
-							Name:  "publisher",
-							Image: "test-image",
-							Env: []corev1.EnvVar{{
-								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-								Value: "/var/secrets/google/eventing-secret-key",
-							}, {
-								Name:  "PROJECT_ID",
-								Value: "eventing-name",
-							}, {
-								Name:  "PUBSUB_TOPIC_ID",
-								Value: "topic-name",
-							}},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      credsVolume,
-								MountPath: credsMountPath,
-							}},
-						},
-					},
-					Volumes: []corev1.Volume{{
-						Name: credsVolume,
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "eventing-secret-name",
-							},
-						},
-					}},
-				},
-			},
-		},
-	}
+
+	got := json.
+
+	want := ``
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected deploy (-want, +got) = %v", diff)

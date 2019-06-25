@@ -18,14 +18,14 @@ package resources
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	"github.com/knative/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/knative/pkg/kmeta"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
@@ -54,59 +54,60 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 
 // MakePublisher generates (but does not insert into K8s) the Invoker Deployment for
 // Channels.
-func MakePublisher(args *PublisherArgs) *v1.Deployment {
-
+func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 	secret := args.Topic.Spec.Secret
 	if secret == nil {
 		secret = DefaultSecretSelector()
 	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
-	replicas := int32(1)
-	return &v1.Deployment{
+
+	podSpec := corev1.PodSpec{
+		ServiceAccountName: args.Topic.Spec.ServiceAccountName,
+		Containers: []corev1.Container{{
+			Name:  "publisher",
+			Image: args.Image,
+			Env: []corev1.EnvVar{{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: credsFile,
+			}, {
+				Name:  "PROJECT_ID",
+				Value: args.Topic.Spec.Project,
+			}, {
+				Name:  "PUBSUB_TOPIC_ID",
+				Value: args.Topic.Spec.Topic,
+			}},
+			VolumeMounts: []corev1.VolumeMount{{
+				Name:      credsVolume,
+				MountPath: credsMountPath,
+			}}},
+		},
+		Volumes: []corev1.Volume{{
+			Name: credsVolume,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secret.Name,
+				},
+			},
+		}},
+	}
+
+	return &servingv1beta1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Topic.Namespace,
 			GenerateName:    fmt.Sprintf("pubsub-publisher-%s-", args.Topic.Name),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
 		},
-		Spec: v1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: args.Labels,
-			},
-			Replicas: &replicas,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: args.Labels,
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Topic.Spec.ServiceAccountName,
-					Containers: []corev1.Container{{
-						Name:  "publisher",
-						Image: args.Image,
-						Env: []corev1.EnvVar{{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: credsFile,
-						}, {
-							Name:  "PROJECT_ID",
-							Value: args.Topic.Spec.Project,
-						}, {
-							Name:  "PUBSUB_TOPIC_ID",
-							Value: args.Topic.Spec.Topic,
-						}},
-						VolumeMounts: []corev1.VolumeMount{{
-							Name:      credsVolume,
-							MountPath: credsMountPath,
-						}}},
+		Spec: servingv1beta1.ServiceSpec{
+			ConfigurationSpec: servingv1beta1.ConfigurationSpec{
+				Template: servingv1beta1.RevisionTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: args.Labels,
 					},
-					Volumes: []corev1.Volume{{
-						Name: credsVolume,
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: secret.Name,
-							},
-						},
-					}},
+					Spec: servingv1beta1.RevisionSpec{
+						PodSpec: podSpec,
+					},
 				},
 			},
 		},
