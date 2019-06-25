@@ -17,20 +17,21 @@ limitations under the License.
 package pubsub
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
+
+	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
 )
 
 // NewClient creates a new wrapped Pub/Sub client.
 func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error) {
-	if client, err := pubsub.NewClient(ctx, projectID, opts...); err != nil {
+	client, err := pubsub.NewClient(ctx, projectID, opts...)
+	if err != nil {
 		return nil, err
-	} else {
-		return &PubSubClient{
-			client: client,
-		}, nil
 	}
+	return &PubSubClient{
+		client: client,
+	}, nil
 }
 
 // PubSubClient wraps pubsub.Client.

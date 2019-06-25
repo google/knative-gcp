@@ -17,8 +17,9 @@ limitations under the License.
 package pubsub
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
+
+	"cloud.google.com/go/pubsub"
 )
 
 // Topic implements pubsub.Client.Topic

@@ -41,11 +41,11 @@ func (c *PubSubClient) CreateSubscription(ctx context.Context, id string, cfg Su
 		RetentionDuration:   cfg.RetentionDuration,
 		Labels:              cfg.Labels,
 	}
-	if sub, err := c.client.CreateSubscription(ctx, id, pscfg); err != nil {
+	sub, err := c.client.CreateSubscription(ctx, id, pscfg)
+	if err != nil {
 		return nil, err
-	} else {
-		return &PubSubSubscription{sub: sub}, nil
 	}
+	return &PubSubSubscription{sub: sub}, nil
 }
 
 // SubscriptionConfig re-implements pubsub.SubscriptionConfig to allow us to
@@ -70,17 +70,17 @@ func (s *PubSubSubscription) Exists(ctx context.Context) (bool, error) {
 
 // Config implements pubsub.Subscription.Config
 func (s *PubSubSubscription) Config(ctx context.Context) (SubscriptionConfig, error) {
-	if cfg, err := s.sub.Config(ctx); err != nil {
+	cfg, err := s.sub.Config(ctx)
+	if err != nil {
 		return SubscriptionConfig{}, err
-	} else {
-		return SubscriptionConfig{
-			Topic:               &PubSubTopic{topic: cfg.Topic},
-			AckDeadline:         cfg.AckDeadline,
-			RetainAckedMessages: cfg.RetainAckedMessages,
-			RetentionDuration:   cfg.RetentionDuration,
-			Labels:              cfg.Labels,
-		}, nil
 	}
+	return SubscriptionConfig{
+		Topic:               &PubSubTopic{topic: cfg.Topic},
+		AckDeadline:         cfg.AckDeadline,
+		RetainAckedMessages: cfg.RetainAckedMessages,
+		RetentionDuration:   cfg.RetentionDuration,
+		Labels:              cfg.Labels,
+	}, nil
 }
 
 // Delete implements pubsub.Subscription.Delete

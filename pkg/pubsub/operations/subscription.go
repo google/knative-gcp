@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
 	Image          string
 	Action         string
@@ -41,6 +42,7 @@ type SubArgs struct {
 	Owner          kmeta.OwnerRefable
 }
 
+// NewSubscriptionOps returns a new batch Job resource.
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
 		Name:  "ACTION",
@@ -76,6 +78,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 
 // TODO: the job could output the resolved projectID.
 
+// SubscriptionOps defines the configuration to use for this operation.
 type SubscriptionOps struct {
 	PubSubOps
 
@@ -93,6 +96,7 @@ type SubscriptionOps struct {
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 }
 
+// Run will perform the action configured upon a subscription.
 func (s *SubscriptionOps) Run(ctx context.Context) error {
 	if s.Client == nil {
 		return errors.New("pub/sub client is nil")
