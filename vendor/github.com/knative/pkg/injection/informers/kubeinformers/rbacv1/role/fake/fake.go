@@ -14,27 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package fake
 
 import (
-	"testing"
+	"context"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/knative/pkg/controller"
+	"github.com/knative/pkg/injection"
+	"github.com/knative/pkg/injection/informers/kubeinformers/factory/fake"
+	"github.com/knative/pkg/injection/informers/kubeinformers/rbacv1/role"
 )
 
-func TestTopicGetGroupVersionKind(t *testing.T) {
-	want := schema.GroupVersionKind{
-		Group:   "pubsub.cloud.run",
-		Version: "v1alpha1",
-		Kind:    "Topic",
-	}
+var Get = role.Get
 
-	p := &Topic{}
-	got := p.GetGroupVersionKind()
+func init() {
+	injection.Fake.RegisterInformer(withInformer)
+}
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
+func withInformer(ctx context.Context) (context.Context, controller.Informer) {
+	f := fake.Get(ctx)
+	inf := f.Rbac().V1().Roles()
+	return context.WithValue(ctx, role.Key{}, inf), inf.Informer()
 }
