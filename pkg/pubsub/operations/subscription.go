@@ -21,17 +21,18 @@ import (
 	"errors"
 	"time"
 
-	"cloud.google.com/go/compute/metadata"
-	"cloud.google.com/go/pubsub"
 	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
 	Image          string
 	Action         string
@@ -41,6 +42,7 @@ type SubArgs struct {
 	Owner          kmeta.OwnerRefable
 }
 
+// NewSubscriptionOps returns a new batch Job resource.
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
 		Name:  "ACTION",
@@ -76,9 +78,9 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 
 // TODO: the job could output the resolved projectID.
 
+// SubscriptionOps defines the configuration to use for this operation.
 type SubscriptionOps struct {
-	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID"`
+	PubSubOps
 
 	// Action is the operation the job should run.
 	// Options: [exists, create, delete]
@@ -94,16 +96,12 @@ type SubscriptionOps struct {
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 }
 
-func (s *SubscriptionOps) Run(ctx context.Context) {
-	logger := logging.FromContext(ctx)
-
-	if s.Project == "" {
-		project, err := metadata.ProjectID()
-		if err != nil {
-			logger.Fatal("failed to find project id. ", zap.Error(err))
-		}
-		s.Project = project
+// Run will perform the action configured upon a subscription.
+func (s *SubscriptionOps) Run(ctx context.Context) error {
+	if s.Client == nil {
+		return errors.New("pub/sub client is nil")
 	}
+	logger := logging.FromContext(ctx)
 
 	logger = logger.With(
 		zap.String("action", s.Action),
@@ -114,13 +112,8 @@ func (s *SubscriptionOps) Run(ctx context.Context) {
 
 	logger.Info("Pub/Sub Subscription Job.")
 
-	client, err := pubsub.NewClient(ctx, s.Project)
-	if err != nil {
-		logger.Fatal("Failed to create Pub/Sub client.", zap.Error(err))
-	}
-
 	// Load the subscription.
-	sub := client.Subscription(s.Subscription)
+	sub := s.Client.Subscription(s.Subscription)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
@@ -138,12 +131,12 @@ func (s *SubscriptionOps) Run(ctx context.Context) {
 		// If topic doesn't exist, create it.
 		if !exists {
 			// Load the topic.
-			topic, err := getTopic(ctx, client, s.Topic)
+			topic, err := s.getTopic(ctx)
 			if err != nil {
 				logger.Fatal("Failed to get topic.", zap.Error(err))
 			}
 			// Create a new subscription to the previous topic with the given name.
-			sub, err = client.CreateSubscription(ctx, s.Subscription, pubsub.SubscriptionConfig{
+			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, pubsub.SubscriptionConfig{
 				Topic:             topic,
 				AckDeadline:       30 * time.Second,
 				RetentionDuration: 25 * time.Hour,
@@ -172,11 +165,12 @@ func (s *SubscriptionOps) Run(ctx context.Context) {
 	}
 
 	logger.Info("Done.")
+	return nil
 }
 
-func getTopic(ctx context.Context, client *pubsub.Client, topicID string) (*pubsub.Topic, error) {
+func (s *SubscriptionOps) getTopic(ctx context.Context) (pubsub.Topic, error) {
 	// Load the topic.
-	topic := client.Topic(topicID)
+	topic := s.Client.Topic(s.Topic)
 	ok, err := topic.Exists(ctx)
 	if err != nil {
 		return nil, err
