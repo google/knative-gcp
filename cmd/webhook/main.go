@@ -134,6 +134,7 @@ func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
 		v1alpha1.SchemeGroupVersion.WithKind("Channel"):          &v1alpha1.Channel{},
 		v1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &v1alpha1.PullSubscription{},
+		v1alpha1.SchemeGroupVersion.WithKind("Topic"):            &v1alpha1.Topic{},
 	}
 	SharedMain(handlers)
 

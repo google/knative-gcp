@@ -28,6 +28,8 @@ type Interface interface {
 	Channels() ChannelInformer
 	// PullSubscriptions returns a PullSubscriptionInformer.
 	PullSubscriptions() PullSubscriptionInformer
+	// Topics returns a TopicInformer.
+	Topics() TopicInformer
 }
 
 type version struct {
@@ -49,4 +51,9 @@ func (v *version) Channels() ChannelInformer {
 // PullSubscriptions returns a PullSubscriptionInformer.
 func (v *version) PullSubscriptions() PullSubscriptionInformer {
 	return &pullSubscriptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Topics returns a TopicInformer.
+func (v *version) Topics() TopicInformer {
+	return &topicInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

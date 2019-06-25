@@ -33,3 +33,11 @@ type PullSubscriptionListerExpansion interface{}
 // PullSubscriptionNamespaceListerExpansion allows custom methods to be added to
 // PullSubscriptionNamespaceLister.
 type PullSubscriptionNamespaceListerExpansion interface{}
+
+// TopicListerExpansion allows custom methods to be added to
+// TopicLister.
+type TopicListerExpansion interface{}
+
+// TopicNamespaceListerExpansion allows custom methods to be added to
+// TopicNamespaceLister.
+type TopicNamespaceListerExpansion interface{}
