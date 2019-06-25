@@ -17,9 +17,10 @@ limitations under the License.
 package operations
 
 import (
+	"context"
+
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
-	"context"
 	"github.com/knative/pkg/kmeta"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
