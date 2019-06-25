@@ -80,7 +80,7 @@ func TestGetSinkURI(t *testing.T) {
 			},
 			namespace: testNS,
 			ref:       getUnaddressableRef(),
-			wantErr:   fmt.Errorf(`sink "testnamespace/testunaddressable" (duck.knative.dev/v1alpha1, Kind=KResource) contains an empty hostname`),
+			wantErr:   fmt.Errorf(`sink "testnamespace/testunaddressable" (duck.knative.dev/v1alpha1, Kind=KResource) contains an empty host`),
 		},
 		"nil sink": {
 			objects: []runtime.Object{

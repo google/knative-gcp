@@ -67,7 +67,7 @@ const (
 	Binary ModeType = "binary"
 	// Structured mode is structured encoding.
 	Structured ModeType = "structured"
-	// Default
+	// DefaultSendMode is the default choice.
 	DefaultSendMode = Binary
 )
 

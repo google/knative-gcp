@@ -20,8 +20,8 @@ import (
 	"flag"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 )
@@ -34,7 +34,7 @@ func main() {
 	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
 	defer logger.Sync()
 
-	ctx := logging.WithLogger(context.Background(), logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	ops := operations.TopicOps{}
 	if err := envconfig.Process("", &ops); err != nil {

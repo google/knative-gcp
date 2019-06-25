@@ -18,11 +18,9 @@ package main
 
 import (
 	"flag"
-	"log"
-
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/transformer"
 )
@@ -30,13 +28,10 @@ import (
 func main() {
 	flag.Parse()
 
-	ctx := context.Background()
-	logCfg := zap.NewProductionConfig()
-	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	logger, err := logCfg.Build()
-	if err != nil {
-		log.Fatalf("Unable to create logger: %v", err)
-	}
+	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
+	defer logger.Sync()
+
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	startable := &transformer.Transformer{}
 

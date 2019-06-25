@@ -40,9 +40,10 @@ type PushMessage struct {
 	Message *PubSubMessage `json:"message,omitempty"`
 }
 
+// PubSubMessage matches the inner message format used by Push Subscriptions.
 type PubSubMessage struct {
-	// ID identifies this message.
-	// This ID is assigned by the server and is populated for Messages obtained from a subscription.
+	// ID identifies this message. This ID is assigned by the server and is
+	// populated for Messages obtained from a subscription.
 	// This field is read-only.
 	ID string `json:"id,omitempty"`
 
@@ -53,8 +54,8 @@ type PubSubMessage struct {
 	// is labelled with.
 	Attributes map[string]string `json:"attributes,omitempty"`
 
-	// The time at which the message was published.
-	// This is populated by the server for Messages obtained from a subscription.
+	// The time at which the message was published. This is populated by the
+	// server for Messages obtained from a subscription.
 	// This field is read-only.
 	PublishTime time.Time `json:"publish_time,omitempty"`
 }
@@ -86,6 +87,7 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 	if event.Type() != v1alpha1.PubSubEventType {
 		logger.Warnw("Not attempting to convert non-Pub/Sub type.", zap.String("type", event.Type()))
 		resp.RespondWith(http.StatusNotModified, &event)
+		return nil
 	}
 
 	// Convert data to PushMessage.

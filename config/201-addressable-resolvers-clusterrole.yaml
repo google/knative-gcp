@@ -57,6 +57,7 @@ rules:
       - serving.knative.dev
     resources:
       - services
+      - routes
     verbs:
       - get
       - list

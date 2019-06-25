@@ -17,14 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"flag"
-	"log"
-
 	"cloud.google.com/go/compute/metadata"
+	"flag"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
 )
@@ -52,13 +50,10 @@ type envConfig struct {
 func main() {
 	flag.Parse()
 
-	ctx := context.Background()
-	logCfg := zap.NewProductionConfig() // TODO: to replace with a dynamically updating logger.
-	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	logger, err := logCfg.Build()
-	if err != nil {
-		log.Fatalf("Unable to create logger: %v", err)
-	}
+	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
+	defer logger.Sync()
+
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
