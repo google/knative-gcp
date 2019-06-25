@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,19 +30,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
-	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/knative/pkg/apis"
 	"github.com/knative/pkg/controller"
 	"github.com/knative/pkg/logging"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
+	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
 	"go.uber.org/zap"
-
-	"github.com/knative/pkg/apis"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/duck"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic/resources"
 )
@@ -59,11 +57,9 @@ const (
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	deploymentLister appsv1listers.DeploymentLister
-
 	// listers index properties about resources
 	topicLister   listers.TopicLister
-	serviceLister corev1listers.ServiceLister
+	serviceLister servinglisters.ServiceLister
 
 	publisherImage string
 }
@@ -275,24 +271,16 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		return nil
 	}
 
-	publisher, err := c.createPublisher(ctx, topic)
+	publisher, err := c.createOrUpdatePublisher(ctx, topic)
 	if err != nil {
 		logger.Error("Unable to create the publisher", zap.Error(err))
 		return err
 	}
-	topic.Status.PropagateDeploymentAvailability(publisher)
+	topic.Status.PropagatePublisherStatus(publisher.Status.GetCondition(apis.ConditionReady))
 
-	svc, err := c.createService(ctx, topic)
-	if err != nil {
-		logging.FromContext(ctx).Error("Problem reconciling publisher Service", zap.Error(err))
-		topic.Status.SetAddress(nil)
-		return err
+	if publisher.Status.IsReady() {
+		topic.Status.SetAddress(publisher.Status.Address.URL)
 	}
-	topic.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   duck.ServiceHostName(svc.Name, svc.Namespace),
-	})
-
 	return nil
 }
 
@@ -383,78 +371,50 @@ func removeFinalizer(s *v1alpha1.Topic) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createPublisher(ctx context.Context, topic *v1alpha1.Topic) (*appsv1.Deployment, error) {
-	// TODO: there is a bug here if the publisher image is updated, the deployment is not updated.
-
-	pub, err := r.getPublisher(ctx, topic)
+func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha1.Topic) (*servingv1beta1.Service, error) {
+	existing, err := r.getPublisher(ctx, topic)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
 		return nil, err
 	}
-	if pub != nil {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", pub))
-		return pub, nil
-	}
-	dp := resources.MakePublisher(&resources.PublisherArgs{
+
+	desired := resources.MakePublisher(&resources.PublisherArgs{
 		Image:  r.publisherImage,
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topic.Name),
 	})
-	dp, err = r.KubeClientSet.AppsV1().Deployments(topic.Namespace).Create(dp)
-	logging.FromContext(ctx).Desugar().Info("Publisher created.", zap.Error(err), zap.Any("publisher", dp))
-	return dp, err
+
+	if existing == nil {
+		svc, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Create(desired)
+		logging.FromContext(ctx).Desugar().Info("Publisher created.", zap.Error(err), zap.Any("publisher", svc))
+		return svc, err
+	}
+
+	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+		existing.Spec = desired.Spec
+		svc, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Update(existing)
+		logging.FromContext(ctx).Desugar().Info("Publisher updated.",
+			zap.Error(err), zap.Any("publisher", svc), zap.String("diff", diff))
+		return svc, err
+	}
+
+	logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
+	return existing, nil
 }
 
-func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*appsv1.Deployment, error) {
-	dl, err := r.KubeClientSet.AppsV1().Deployments(topic.Namespace).List(metav1.ListOptions{
+func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*servingv1beta1.Service, error) {
+	pl, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).List(metav1.ListOptions{
 		LabelSelector: resources.GetLabelSelector(controllerAgentName, topic.Name).String(),
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: appsv1.SchemeGroupVersion.String(),
-			Kind:       "Deployment",
-		},
 	})
 
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to list deployments: %v", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Unable to list services: %v", zap.Error(err))
 		return nil, err
 	}
-	for _, dep := range dl.Items {
-		if metav1.IsControlledBy(&dep, topic) {
-			return &dep, nil
+	for _, pub := range pl.Items {
+		if metav1.IsControlledBy(&pub, topic) {
+			return &pub, nil
 		}
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
-}
-
-// createService creates the K8s Service 'svc'.
-func (r *Reconciler) createService(ctx context.Context, topic *v1alpha1.Topic) (*corev1.Service, error) {
-	svc := resources.MakePublisherService(&resources.PublisherArgs{
-		Topic:  topic,
-		Labels: resources.GetLabels(controllerAgentName, topic.Name),
-	})
-
-	current, err := r.serviceLister.Services(svc.Namespace).Get(svc.Name)
-	if apierrs.IsNotFound(err) {
-		current, err = r.KubeClientSet.CoreV1().Services(svc.Namespace).Create(svc)
-		if err != nil {
-			return nil, err
-		}
-		return current, nil
-	} else if err != nil {
-		return nil, err
-	}
-
-	// spec.clusterIP is immutable and is set on existing services. If we don't set this to the same value, we will
-	// encounter an error while updating.
-	svc.Spec.ClusterIP = current.Spec.ClusterIP
-	if !equality.Semantic.DeepDerivative(svc.Spec, current.Spec) {
-		// Don't modify the informers copy.
-		desired := current.DeepCopy()
-		desired.Spec = svc.Spec
-		current, err = r.KubeClientSet.CoreV1().Services(current.Namespace).Update(desired)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return current, nil
 }

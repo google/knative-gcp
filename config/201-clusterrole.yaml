@@ -57,6 +57,12 @@ rules:
   verbs: *everything
 
 - apiGroups:
+    - serving.knative.dev
+  resources:
+    - services
+  verbs: *everything
+
+- apiGroups:
     - batch
   resources:
     - jobs

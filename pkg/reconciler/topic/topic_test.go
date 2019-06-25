@@ -19,8 +19,9 @@ package topic
 import (
 	"context"
 	"fmt"
+	"github.com/knative/pkg/apis"
+	"github.com/knative/pkg/apis/duck/v1beta1"
 	"github.com/knative/pkg/kmeta"
-	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"testing"
@@ -195,7 +196,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		WithReactors: []clientgotesting.ReactionFunc{
-			ProvideResource("create", "deployments", newPublisher(true)),
+			ProvideResource("create", "services", newPublisher(true, true)),
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
@@ -216,14 +217,10 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newPublisher(false),
-			NewService(topicName+"-topic", testNS,
-				WithServiceOwnerReferences(ownerReferences()),
-				WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
-				WithServicePorts(servicePorts())),
+			newPublisher(false, false),
 		},
 	}, {
-		Name: "successful create - reuse existing receive adapter",
+		Name: "successful create - reuse existing publisher",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
@@ -236,7 +233,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopic(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
-			newPublisher(true),
+			newPublisher(true, true),
 			NewService(topicName+"-topic", testNS,
 				WithServiceOwnerReferences(ownerReferences()),
 				WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
@@ -373,11 +370,10 @@ func TestAllCases(t *testing.T) {
 			TopicOpsImage: testImage + "pub",
 		}
 		return &Reconciler{
-			PubSubBase:       pubsubBase,
-			deploymentLister: listers.GetDeploymentLister(),
-			topicLister:      listers.GetTopicLister(),
-			serviceLister:    listers.GetK8sServiceLister(),
-			publisherImage:   testImage,
+			PubSubBase:     pubsubBase,
+			topicLister:    listers.GetTopicLister(),
+			serviceLister:  listers.GetServiceLister(),
+			publisherImage: testImage,
 		}
 	}))
 
@@ -441,7 +437,7 @@ func TestFinalizers(t *testing.T) {
 
 func ProvideResource(verb, resource string, obj runtime.Object) clientgotesting.ReactionFunc {
 	return func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-		if !action.Matches("create", "deployments") {
+		if !action.Matches(verb, resource) {
 			return false, nil, nil
 		}
 		return true, obj, nil
@@ -486,7 +482,7 @@ func servicePorts() []corev1.ServicePort {
 	return svcPorts
 }
 
-func newPublisher(done bool) runtime.Object {
+func newPublisher(get, done bool) runtime.Object {
 	topic := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
@@ -500,11 +496,20 @@ func newPublisher(done bool) runtime.Object {
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
 	pub := resources.MakePublisher(args)
-	if done {
-		pub.Status.Conditions = []appsv1.DeploymentCondition{{
-			Type:   appsv1.DeploymentAvailable,
-			Status: "True",
-		}}
+	if get {
+		if done {
+			pub.Status.Conditions = []apis.Condition{{
+				Type:   apis.ConditionReady,
+				Status: "True",
+			}}
+			uri, _ := apis.ParseURL(testTopicURI)
+			pub.Status.Address = &v1beta1.Addressable{URL: uri}
+		} else {
+			pub.Status.Conditions = []apis.Condition{{
+				Type:   apis.ConditionReady,
+				Status: "Unknown",
+			}}
+		}
 	}
 	return pub
 }

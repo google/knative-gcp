@@ -19,13 +19,12 @@ package resources
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/knative/pkg/kmeta"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
@@ -110,31 +109,6 @@ func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 					},
 				},
 			},
-		},
-	}
-}
-
-// MakePublisherService creates the in-memory representation of the Broker's ingress Service.
-func MakePublisherService(args *PublisherArgs) *corev1.Service {
-	return &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: args.Topic.Namespace,
-			Name:      fmt.Sprintf("%s-topic", args.Topic.Name),
-			Labels:    args.Labels,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(args.Topic),
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: args.Labels,
-			Ports: []corev1.ServicePort{{
-				Name:       "http",
-				Port:       80,
-				TargetPort: intstr.FromInt(8080),
-			}, {
-				Name: "metrics",
-				Port: 9090,
-			}},
 		},
 	}
 }

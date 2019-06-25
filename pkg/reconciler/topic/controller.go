@@ -30,9 +30,8 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
-	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
-	serviceinformer "github.com/knative/pkg/injection/informers/kubeinformers/corev1/service"
+	serviceinformer "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service"
 
 	topicinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
@@ -58,7 +57,7 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 
-	deploymentInformer := deploymentinformer.Get(ctx)
+	//deploymentInformer := deploymentinformer.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
@@ -76,21 +75,15 @@ func NewController(
 	}
 
 	c := &Reconciler{
-		PubSubBase:       pubsubBase,
-		topicLister:      topicInformer.Lister(),
-		deploymentLister: deploymentInformer.Lister(),
-		serviceLister:    serviceInformer.Lister(),
-		publisherImage:   env.Publisher,
+		PubSubBase:     pubsubBase,
+		topicLister:    topicInformer.Lister(),
+		serviceLister:  serviceInformer.Lister(),
+		publisherImage: env.Publisher,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
 
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),

@@ -27,6 +27,11 @@ required = [
   revision = "0251d1f09a39631bc40c415cfb457347f9335c6f"
 
 [[override]]
+  name = "github.com/knative/serving"
+  # HEAD as of 2919-06-25
+  revision = "6c59766d80dc943d94e5e31ccf242dfa303d1d1f"
+
+[[override]]
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
 
