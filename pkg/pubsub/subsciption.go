@@ -24,14 +24,14 @@ import (
 )
 
 // Subscription implements pubsub.Client.Subscription
-func (c *PubSubClient) Subscription(id string) Subscription {
-	return &PubSubSubscription{sub: c.client.Subscription(id)}
+func (c *pubsubClient) Subscription(id string) Subscription {
+	return &pubsubSubscription{sub: c.client.Subscription(id)}
 }
 
 // CreateSubscription implements pubsub.Client.CreateSubscription
-func (c *PubSubClient) CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error) {
+func (c *pubsubClient) CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error) {
 	var topic *pubsub.Topic
-	if t, ok := cfg.Topic.(*PubSubTopic); ok {
+	if t, ok := cfg.Topic.(*pubsubTopic); ok {
 		topic = t.topic
 	}
 	pscfg := pubsub.SubscriptionConfig{
@@ -45,7 +45,7 @@ func (c *PubSubClient) CreateSubscription(ctx context.Context, id string, cfg Su
 	if err != nil {
 		return nil, err
 	}
-	return &PubSubSubscription{sub: sub}, nil
+	return &pubsubSubscription{sub: sub}, nil
 }
 
 // SubscriptionConfig re-implements pubsub.SubscriptionConfig to allow us to
@@ -58,24 +58,24 @@ type SubscriptionConfig struct {
 	Labels              map[string]string
 }
 
-// PubSubSubscription wraps pubsub.Subscription
-type PubSubSubscription struct {
+// pubsubSubscription wraps pubsub.Subscription
+type pubsubSubscription struct {
 	sub *pubsub.Subscription
 }
 
 // Exists implements pubsub.Subscription.Exists
-func (s *PubSubSubscription) Exists(ctx context.Context) (bool, error) {
+func (s *pubsubSubscription) Exists(ctx context.Context) (bool, error) {
 	return s.sub.Exists(ctx)
 }
 
 // Config implements pubsub.Subscription.Config
-func (s *PubSubSubscription) Config(ctx context.Context) (SubscriptionConfig, error) {
+func (s *pubsubSubscription) Config(ctx context.Context) (SubscriptionConfig, error) {
 	cfg, err := s.sub.Config(ctx)
 	if err != nil {
 		return SubscriptionConfig{}, err
 	}
 	return SubscriptionConfig{
-		Topic:               &PubSubTopic{topic: cfg.Topic},
+		Topic:               &pubsubTopic{topic: cfg.Topic},
 		AckDeadline:         cfg.AckDeadline,
 		RetainAckedMessages: cfg.RetainAckedMessages,
 		RetentionDuration:   cfg.RetentionDuration,
@@ -84,6 +84,6 @@ func (s *PubSubSubscription) Config(ctx context.Context) (SubscriptionConfig, er
 }
 
 // Delete implements pubsub.Subscription.Delete
-func (s *PubSubSubscription) Delete(ctx context.Context) error {
+func (s *pubsubSubscription) Delete(ctx context.Context) error {
 	return s.sub.Delete(ctx)
 }

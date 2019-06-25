@@ -23,16 +23,16 @@ import (
 )
 
 // Topic implements pubsub.Client.Topic
-func (c *PubSubClient) Topic(id string) Topic {
-	return &PubSubTopic{topic: c.client.Topic(id)}
+func (c *pubsubClient) Topic(id string) Topic {
+	return &pubsubTopic{topic: c.client.Topic(id)}
 }
 
-// PubSubTopic wrapps pubsub.Topic
-type PubSubTopic struct {
+// pubsubTopic wrapps pubsub.Topic
+type pubsubTopic struct {
 	topic *pubsub.Topic
 }
 
 // Exists implements pubsub.Topic.Exists
-func (t *PubSubTopic) Exists(ctx context.Context) (bool, error) {
+func (t *pubsubTopic) Exists(ctx context.Context) (bool, error) {
 	return t.topic.Exists(ctx)
 }

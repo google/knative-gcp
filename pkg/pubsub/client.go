@@ -29,17 +29,17 @@ func NewClient(ctx context.Context, projectID string, opts ...option.ClientOptio
 	if err != nil {
 		return nil, err
 	}
-	return &PubSubClient{
+	return &pubsubClient{
 		client: client,
 	}, nil
 }
 
-// PubSubClient wraps pubsub.Client.
-type PubSubClient struct {
+// pubsubClient wraps pubsub.Client.
+type pubsubClient struct {
 	client *pubsub.Client
 }
 
 // Close implements pubsub.Client.Close
-func (c *PubSubClient) Close() error {
+func (c *pubsubClient) Close() error {
 	return c.client.Close()
 }
