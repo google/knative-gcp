@@ -19,11 +19,11 @@ package topic
 import (
 	"context"
 	"fmt"
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/kmeta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/kmeta"
 	"testing"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -34,9 +34,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	logtesting "github.com/knative/pkg/logging/testing"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
@@ -44,7 +44,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic/resources"
 
-	. "github.com/knative/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )

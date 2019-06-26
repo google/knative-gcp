@@ -334,66 +334,7 @@
   revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
 
 [[projects]]
-  branch = "master"
-<<<<<<< HEAD
-  digest = "1:186d2291ff272b2cb4aac318b2eead8c3863c47be37d590484aeabde83318025"
-  name = "github.com/knative/pkg"
-  packages = [
-    "apis",
-    "apis/duck",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
-    "apis/istio",
-    "apis/istio/authentication",
-    "apis/istio/authentication/v1alpha1",
-    "apis/istio/common/v1alpha1",
-    "apis/istio/v1alpha3",
-    "changeset",
-    "client/clientset/versioned",
-    "client/clientset/versioned/fake",
-    "client/clientset/versioned/scheme",
-    "client/clientset/versioned/typed/authentication/v1alpha1",
-    "client/clientset/versioned/typed/authentication/v1alpha1/fake",
-    "client/clientset/versioned/typed/istio/v1alpha3",
-    "client/clientset/versioned/typed/istio/v1alpha3/fake",
-    "codegen/cmd/injection-gen",
-    "codegen/cmd/injection-gen/args",
-    "codegen/cmd/injection-gen/generators",
-    "configmap",
-    "controller",
-    "injection",
-    "injection/clients/dynamicclient",
-    "injection/clients/dynamicclient/fake",
-    "injection/clients/kubeclient",
-    "injection/clients/kubeclient/fake",
-    "injection/informers/kubeinformers/appsv1/deployment",
-    "injection/informers/kubeinformers/appsv1/deployment/fake",
-    "injection/informers/kubeinformers/batchv1/job",
-    "injection/informers/kubeinformers/batchv1/job/fake",
-    "injection/informers/kubeinformers/factory",
-    "injection/informers/kubeinformers/factory/fake",
-    "injection/sharedmain",
-    "kmeta",
-    "kmp",
-    "logging",
-    "logging/logkey",
-    "logging/testing",
-    "metrics",
-    "metrics/metricskey",
-    "ptr",
-    "reconciler/testing",
-    "signals",
-    "system",
-    "system/testing",
-    "tracker",
-    "version",
-    "webhook",
-  ]
-  pruneopts = "T"
-  revision = "b3be0a29a2ab3cb44e5afb0f153c95ea6c619579"
-
-[[projects]]
-  digest = "1:c6dcf2bffddc4a269406b6c606707ea13f7af57c93fda81814a74e47d96b99ee"
+  digest = "1:68ecd48e097f4e52b9802781008a5d282a6f350f0efa86f2314d7fd81eefe99e"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -436,14 +377,11 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "6c59766d80dc943d94e5e31ccf242dfa303d1d1f"
+  revision = "50cdf8762deae58ed89763adef26a88e7efecac7"
 
 [[projects]]
   branch = "master"
-  digest = "1:04ae9896d666c624a68884a7fac73eb9ab92387c19ffbb39f001c14356c36eda"
-=======
   digest = "1:cdd3c19a395031148cd55f5aa770a77c0c38429cd109563f99e9567c11f7ef04"
->>>>>>> master
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
@@ -1232,6 +1170,7 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
+    "ptr",
     "reconciler/testing",
     "signals",
     "system",
@@ -1271,6 +1210,7 @@
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.uber.org/zap",
+    "go.uber.org/zap/zapcore",
     "golang.org/x/net/context",
     "google.golang.org/api/option",
     "k8s.io/api/apps/v1",

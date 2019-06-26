@@ -33,12 +33,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
 	"go.uber.org/zap"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"

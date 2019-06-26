@@ -29,9 +29,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/reconciler/testing"
 
-	"github.com/knative/pkg/reconciler/testing"
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
+	"knative.dev/pkg/reconciler/testing"
 
 	fakeservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
