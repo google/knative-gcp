@@ -145,13 +145,19 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
+		event.Data = msg.Data
+		event.DataEncoded = true
+
+		// The following is experimental additions to support converting pubsub
+		// messages received by the PullSubscription into a form that matches
+		// how Pub/Sub produces http push requests. These might change as
+		// more testing is done with this concept.
 		if msg.Attributes != nil && len(msg.Attributes) > 0 {
 			event.SetExtension("attributes", msg.Attributes)
 		}
 		event.SetExtension("topic", tx.Topic)
 		event.SetExtension("subscription", tx.Subscription)
-		event.Data = msg.Data
-		event.DataEncoded = true
+
 		return &event, nil
 	}
 	return nil, err
