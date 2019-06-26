@@ -27,7 +27,6 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/reconciler/testing"
 
 	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
 	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
