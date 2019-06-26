@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -100,18 +99,12 @@ func (a *Transformer) receive(ctx context.Context, event cloudevents.Event, resp
 	// "attributes" extension into a attributes map that Pub/Sub push
 	// consumers expect.
 	attrs := make(map[string]string, 0)
-	if at, ok := event.Extensions()["attributes"]; ok {
-		if m, ok := at.(map[string]interface{}); ok {
-			for k, v := range m {
-				if vs, ok := v.([]string); ok {
-					var err error
-					attrs[k], err = strconv.Unquote(vs[0])
-					if err != nil {
-						logger.Warnw("Failed to unquote attributes string value.", zap.Error(err))
-					}
-				}
-			}
+	if at, ok := event.Extensions()["attributes"].(map[string]interface{}); ok {
+		for k, v := range at {
+			attrs[k] = v.(string)
 		}
+	} else {
+		logger.Warnw("Attributes not found.")
 	}
 
 	msg := &PubSubMessage{

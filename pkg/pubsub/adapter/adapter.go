@@ -147,8 +147,8 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
 		event.SetID(uuid.New().String())
-		for k, v := range msg.Attributes {
-			event.SetExtension("attributes-"+k, v)
+		if msg.Attributes != nil && len(msg.Attributes) > 0 {
+			event.SetExtension("attributes", msg.Attributes)
 		}
 		event.SetExtension("topic", tx.Topic)
 		event.SetExtension("subscription", tx.Subscription)
