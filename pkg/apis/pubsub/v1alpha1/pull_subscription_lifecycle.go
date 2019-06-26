@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.

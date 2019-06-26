@@ -18,11 +18,11 @@ package main
 
 import (
 	"flag"
-	"github.com/knative/pkg/signals"
+	"knative.dev/pkg/signals"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 )

@@ -36,10 +36,10 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
 	"go.uber.org/zap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/tracker"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"

@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"testing"
 
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

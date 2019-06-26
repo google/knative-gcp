@@ -23,9 +23,9 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"

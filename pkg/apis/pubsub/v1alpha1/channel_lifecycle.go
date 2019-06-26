@@ -17,8 +17,8 @@
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck/v1alpha1"
 )
 
 // GetCondition returns the condition currently associated with the given type,

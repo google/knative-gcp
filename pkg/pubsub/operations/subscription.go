@@ -21,9 +21,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/knative/pkg/kmeta"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
 
