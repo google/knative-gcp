@@ -1,0 +1,9 @@
+apiVersion: serving.knative.dev/v1beta1
+kind: Service
+metadata:
+  name: pubsub-push
+spec:
+  template:
+    spec:
+      containers:
+        - image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/push_transformer
