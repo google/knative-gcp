@@ -22,7 +22,6 @@ import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/uuid"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -146,7 +145,6 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
-		event.SetID(uuid.New().String())
 		if msg.Attributes != nil && len(msg.Attributes) > 0 {
 			event.SetExtension("attributes", msg.Attributes)
 		}
@@ -175,8 +173,6 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 	// Use the transport to make a new CloudEvents client.
 	return cloudevents.NewClient(t,
 		cloudevents.WithConverterFn(a.convert),
-		cloudevents.WithUUIDs(),
-		cloudevents.WithTimeNow(),
 	)
 }
 
@@ -199,8 +195,5 @@ func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
 	}
 
 	// Use the transport to make a new CloudEvents client.
-	return cloudevents.NewClient(t,
-		cloudevents.WithUUIDs(),
-		cloudevents.WithTimeNow(),
-	)
+	return cloudevents.NewClient(t)
 }
