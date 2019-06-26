@@ -18,9 +18,9 @@ package main
 
 import (
 	"flag"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/transformer"
 )

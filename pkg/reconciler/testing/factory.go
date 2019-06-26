@@ -20,22 +20,22 @@ import (
 	"context"
 	"testing"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/logging"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
-	"github.com/knative/pkg/controller"
-	logtesting "github.com/knative/pkg/logging/testing"
+	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
 
 	fakerunclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client/fake"
-	fakedynamicclient "github.com/knative/pkg/injection/clients/dynamicclient/fake"
-	fakekubeclient "github.com/knative/pkg/injection/clients/kubeclient/fake"
+	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	fakekubeclient "knative.dev/pkg/injection/clients/kubeclient/fake"
 
-	. "github.com/knative/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (

@@ -20,9 +20,9 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"flag"
 	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
 )

@@ -20,18 +20,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/knative/pkg/logging"
+	"knative.dev/pkg/logging"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection/clients/dynamicclient"
-	"github.com/knative/pkg/injection/clients/kubeclient"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/injection/clients/kubeclient"
 
 	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
 
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
 	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/system"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,6 +39,8 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/system"
 )
 
 // Options defines the common reconciler options.

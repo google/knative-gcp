@@ -21,7 +21,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription"
-	"github.com/knative/pkg/injection/sharedmain"
+	"knative.dev/pkg/injection/sharedmain"
 )
 
 func main() {

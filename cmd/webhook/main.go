@@ -22,16 +22,16 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/signals"
-	"github.com/knative/pkg/system"
-	"github.com/knative/pkg/version"
-	"github.com/knative/pkg/webhook"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
+	"knative.dev/pkg/system"
+	"knative.dev/pkg/version"
+	"knative.dev/pkg/webhook"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )

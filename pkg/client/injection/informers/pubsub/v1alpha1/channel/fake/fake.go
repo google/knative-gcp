@@ -23,8 +23,8 @@ import (
 
 	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/factory/fake"
 	channel "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/channel"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
 var Get = channel.Get

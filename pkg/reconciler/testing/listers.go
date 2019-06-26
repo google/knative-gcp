@@ -17,8 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	fakesharedclientset "github.com/knative/pkg/client/clientset/versioned/fake"
-	"github.com/knative/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -30,6 +28,8 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
+	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
+	"knative.dev/pkg/reconciler/testing"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
