@@ -20,15 +20,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/knative/pkg/configmap"
-	logtesting "github.com/knative/pkg/logging/testing"
-	. "github.com/knative/pkg/reconciler/testing"
+	"knative.dev/pkg/configmap"
+	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 
 	// Fake injection informers
 
 	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
-	_ "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
-	_ "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake"
+	_ "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
+	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
 )
 
 func TestNew(t *testing.T) {

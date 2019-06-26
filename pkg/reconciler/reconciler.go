@@ -20,18 +20,6 @@ import (
 	"context"
 	"time"
 
-	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
-	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
-	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection/clients/dynamicclient"
-	"github.com/knative/pkg/injection/clients/kubeclient"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/system"
-	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	servingclient "github.com/knative/serving/pkg/client/injection/client"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -40,6 +28,19 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+
+	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
+	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
+	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	servingclient "github.com/knative/serving/pkg/client/injection/client"
+	"go.uber.org/zap"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/injection/clients/kubeclient"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 )
 
 // Options defines the common reconciler options.

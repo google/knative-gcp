@@ -23,8 +23,8 @@ import (
 
 	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/factory/fake"
 	topic "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
-	controller "github.com/knative/pkg/controller"
-	injection "github.com/knative/pkg/injection"
+	controller "knative.dev/pkg/controller"
+	injection "knative.dev/pkg/injection"
 )
 
 var Get = topic.Get

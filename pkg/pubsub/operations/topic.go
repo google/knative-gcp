@@ -17,12 +17,13 @@ limitations under the License.
 package operations
 
 import (
+	"context"
+
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
-	"context"
-	"github.com/knative/pkg/kmeta"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"

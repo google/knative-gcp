@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {

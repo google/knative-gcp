@@ -18,12 +18,13 @@ package main
 
 import (
 	"flag"
+	"knative.dev/pkg/signals"
+
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
-	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/logging"
-	"go.uber.org/zap"
-	"golang.org/x/net/context"
 )
 
 func main() {
@@ -32,11 +33,16 @@ func main() {
 	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
 	defer logger.Sync()
 
-	ctx := logging.WithLogger(context.Background(), logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	ops := operations.SubscriptionOps{}
 	if err := envconfig.Process("", &ops); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
-	ops.Run(ctx)
+	if err := ops.CreateClient(ctx); err != nil {
+		logger.Fatalw("Failed to create Pub/Sub Client.", zap.Error(err))
+	}
+	if err := ops.Run(ctx); err != nil {
+		logger.Fatalw("Failed to run Subscription Operation.", zap.Error(err))
+	}
 }

@@ -17,23 +17,25 @@ limitations under the License.
 package testing
 
 import (
-	fakesharedclientset "github.com/knative/pkg/client/clientset/versioned/fake"
-	"github.com/knative/pkg/reconciler/testing"
-	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
-	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/reconciler/testing"
+
+	"github.com/knative/pkg/reconciler/testing"
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
+	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
 
 	fakeservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
