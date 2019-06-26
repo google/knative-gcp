@@ -70,11 +70,13 @@ func GetSinkURI(ctx context.Context, dynamicClient dynamic.Interface, sink *core
 		return "", fmt.Errorf("sink %s does not contain address", objIdentifier)
 	}
 
-	if t.Status.Address.Hostname == "" {
-		return "", fmt.Errorf("sink %s contains an empty hostname", objIdentifier)
+	uri := t.Status.Address.GetURL()
+
+	if uri.Host == "" {
+		return "", fmt.Errorf("sink %s contains an empty host", objIdentifier)
 	}
 
-	return fmt.Sprintf("http://%s/", t.Status.Address.Hostname), nil
+	return uri.String(), nil
 }
 
 // DomainToURL converts a domain into an HTTP URL.

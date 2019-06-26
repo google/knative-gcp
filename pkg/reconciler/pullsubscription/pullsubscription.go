@@ -205,7 +205,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.MarkNoSink("NotFound", "")
 			return err
 		}
-		source.Status.MarkSink(sinkURI)
+		source.Status.MarkTransformer(transformerURI)
 	}
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)

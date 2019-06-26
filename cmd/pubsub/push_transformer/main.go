@@ -18,13 +18,11 @@ package main
 
 import (
 	"flag"
-	"github.com/knative/pkg/signals"
-
-	"github.com/kelseyhightower/envconfig"
 	"github.com/knative/pkg/logging"
+	"github.com/knative/pkg/signals"
 	"go.uber.org/zap"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/transformer"
 )
 
 func main() {
@@ -35,14 +33,10 @@ func main() {
 
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
-	ops := operations.SubscriptionOps{}
-	if err := envconfig.Process("", &ops); err != nil {
-		logger.Fatal("Failed to process env var", zap.Error(err))
-	}
-	if err := ops.CreateClient(ctx); err != nil {
-		logger.Fatalw("Failed to create Pub/Sub Client.", zap.Error(err))
-	}
-	if err := ops.Run(ctx); err != nil {
-		logger.Fatalw("Failed to run Subscription Operation.", zap.Error(err))
+	startable := &transformer.Transformer{}
+
+	logger.Info("Starting Pub/Sub Transformer.", zap.Any("transformer", startable))
+	if err := startable.Start(ctx); err != nil {
+		logger.Fatal("failed to start transformer: ", zap.Error(err))
 	}
 }

@@ -18,11 +18,10 @@ package adapter
 
 import (
 	"fmt"
-
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/uuid"
 	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -46,6 +45,9 @@ type Adapter struct {
 	// before they are sent to SinkURI.
 	TransformerURI string
 
+	// SendMode describes how the adapter sends events. Default: Binary
+	SendMode ModeType
+
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
 
@@ -56,8 +58,25 @@ type Adapter struct {
 	transformer cloudevents.Client
 }
 
+// ModeType is the type for mode enum.
+type ModeType string
+
+const (
+	// Binary mode is binary encoding.
+	Binary ModeType = "binary"
+	// Structured mode is structured encoding.
+	Structured ModeType = "structured"
+	// DefaultSendMode is the default choice.
+	DefaultSendMode = Binary
+)
+
+// Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
+
+	if a.SendMode == "" {
+		a.SendMode = DefaultSendMode
+	}
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
@@ -68,7 +87,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Send events on HTTP.
 	if a.outbound == nil {
-		if a.outbound, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
+		if a.outbound, err = a.newHTTPClient(a.SinkURI); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}
@@ -126,9 +145,19 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
-		event.SetID(uuid.New().String())
 		event.Data = msg.Data
-		// TODO: this will drop the other metadata related to the the topic and subscription names
+		event.DataEncoded = true
+
+		// The following is experimental additions to support converting pubsub
+		// messages received by the PullSubscription into a form that matches
+		// how Pub/Sub produces http push requests. These might change as
+		// more testing is done with this concept.
+		if msg.Attributes != nil && len(msg.Attributes) > 0 {
+			event.SetExtension("attributes", msg.Attributes)
+		}
+		event.SetExtension("topic", tx.Topic)
+		event.SetExtension("subscription", tx.Subscription)
+
 		return &event, nil
 	}
 	return nil, err
@@ -136,7 +165,6 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 
 func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
 	tOpts := []cepubsub.Option{
-		cepubsub.WithBinaryEncoding(),
 		cepubsub.WithProjectID(a.ProjectID),
 		cepubsub.WithTopicID(a.TopicID),
 		cepubsub.WithSubscriptionID(a.SubscriptionID),
@@ -150,8 +178,28 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 
 	// Use the transport to make a new CloudEvents client.
 	return cloudevents.NewClient(t,
-		cloudevents.WithUUIDs(),
-		cloudevents.WithTimeNow(),
 		cloudevents.WithConverterFn(a.convert),
 	)
+}
+
+func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
+	tOpts := []http.Option{
+		cloudevents.WithTarget(target),
+	}
+
+	switch a.SendMode {
+	case Binary:
+		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
+	case Structured:
+		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
+	}
+
+	// Make an http transport for the CloudEvents client.
+	t, err := cloudevents.NewHTTPTransport(tOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use the transport to make a new CloudEvents client.
+	return cloudevents.NewClient(t)
 }
