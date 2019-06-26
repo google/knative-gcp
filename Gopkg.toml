@@ -23,8 +23,8 @@ required = [
 
 [[override]]
   name = "github.com/knative/eventing"
-  # HEAD as of 2919-06-14
-  revision = "0251d1f09a39631bc40c415cfb457347f9335c6f"
+  # HEAD as of 2919-06-26
+  revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
 
 [[override]]
   name = "go.uber.org/zap"
