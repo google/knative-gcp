@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+
 	"knative.dev/pkg/signals"
 
 	"github.com/kelseyhightower/envconfig"
