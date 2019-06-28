@@ -17,6 +17,7 @@ limitations under the License.
 package transformer
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,7 +25,6 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
 	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"

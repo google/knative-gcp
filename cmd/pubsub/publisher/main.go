@@ -70,7 +70,7 @@ func main() {
 		TopicID:   env.Topic,
 	}
 
-	logger.Info("Starting Pub/Sub Publisher.", zap.Reflect("publisher", startable))
+	logger.Info("Starting Pub/Sub Publisher.", zap.Any("publisher", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start publisher: ", zap.Error(err))
 	}

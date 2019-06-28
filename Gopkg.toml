@@ -23,7 +23,7 @@ required = [
 
 [[override]]
   name = "github.com/knative/eventing"
-  # HEAD as of 2919-06-26
+  # HEAD as of 2019-06-26
   revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
 
 [[override]]

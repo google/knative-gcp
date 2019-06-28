@@ -30,10 +30,9 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
+	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	serviceinformer "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service"
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
-
-	topicinformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
 const (
@@ -56,9 +55,7 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-
-	//deploymentInformer := deploymentinformer.Get(ctx)
-	topicInformer := topicinformers.Get(ctx)
+	topicInformer := topicinformer.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 
