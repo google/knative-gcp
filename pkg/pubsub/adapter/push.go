@@ -53,6 +53,8 @@ func ConvertToPush(ctx context.Context, event cloudevents.Event) cloudevents.Eve
 	for k, _ := range event.Extensions() {
 		var v string
 		if err := event.ExtensionAs(k, &v); err != nil {
+			logger.Warnw("Not using extension as attribute for push payload.", zap.String("key", k))
+		} else {
 			attrs[k] = v
 		}
 	}

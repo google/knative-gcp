@@ -56,7 +56,7 @@ func main() {
 
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
-	startable := &adapter.Adapter{}
+	startable := adapter.Adapter{}
 	if err := envconfig.Process("", &startable); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
