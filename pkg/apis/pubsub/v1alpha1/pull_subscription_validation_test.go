@@ -39,6 +39,12 @@ var (
 			Namespace:  "baz",
 			Name:       "qux",
 		},
+		Transformer: &corev1.ObjectReference{
+			APIVersion: "foo",
+			Kind:       "bar",
+			Namespace:  "baz",
+			Name:       "qux",
+		},
 		ServiceAccountName: "service-account-name",
 	}
 )
@@ -136,7 +142,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Kind changed": {
 			orig: &pullSubscriptionSpec,
@@ -157,7 +163,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Namespace changed": {
 			orig: &pullSubscriptionSpec,
@@ -178,7 +184,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Name changed": {
 			orig: &pullSubscriptionSpec,
@@ -199,9 +205,9 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
 			},
-			allowed: false,
+			allowed: true,
 		},
-		"ServiceAccountName changed": {
+		"Transformer.APIVersion changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
@@ -213,12 +219,91 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
+					APIVersion: "some-other-api-version",
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
+			},
+			allowed: true,
+		},
+		"Transformer.Kind changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       "some-other-kind",
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
+			},
+			allowed: true,
+		},
+		"Transformer.Namespace changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  "some-other-namespace",
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
+			},
+			allowed: true,
+		},
+		"Transformer.Name changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
 					Name:       "some-other-name",
 				},
 				ServiceAccountName: pullSubscriptionSpec.ServiceAccountName,
+			},
+			allowed: true,
+		},
+		"ServiceAccountName changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project:            pullSubscriptionSpec.Project,
+				Topic:              pullSubscriptionSpec.Topic,
+				Sink:               pullSubscriptionSpec.Sink,
+				ServiceAccountName: "some-other-name",
 			},
 			allowed: false,
 		},
