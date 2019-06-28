@@ -143,8 +143,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	if topic.GetDeletionTimestamp() != nil {
 		logger.Debug("Topic Deleting.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
 
-		switch topic.Spec.PropagationPolicy {
-		case v1alpha1.TopicPolicyCreateDelete:
+		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			// Ensure the Topic is deleted.
 			state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 			switch state {
@@ -153,7 +152,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				return err
 
 			case pubsub.OpsJobCreated:
-				// If we created a job to make a subscription, then add the finalizer and update the status.
+				// If we created a job to make a topic, then add the finalizer and update the status.
 				topic.Status.MarkTopicOperating(
 					"Deleting",
 					"Created Job to delete topic %q.",
@@ -178,8 +177,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 					msg)
 				return err
 			}
-
-		default:
+		} else {
 			removeFinalizer(topic)
 		}
 
@@ -202,7 +200,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			return err
 
 		case pubsub.OpsJobCreated:
-			// If we created a job to make a subscription, then add the finalizer and update the status.
+			// If we created a job to make a topic, then add the finalizer and update the status.
 			addFinalizer(topic)
 			topic.Status.MarkTopicOperating("Creating",
 				"Created Job to create topic %q.",
@@ -241,7 +239,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			return err
 
 		case pubsub.OpsJobCreated:
-			// If we created a job to make a subscription, then add the finalizer and update the status.
+			// If we created a job to verify a topic, then update the status.
 			topic.Status.MarkTopicOperating("Verifying",
 				"Created Job to verify topic %q.",
 				topic.Status.TopicID)
