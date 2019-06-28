@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 
@@ -80,12 +81,9 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 		return nil
 	}
 
-	// TODO: revisit this.
-
-	// All of the fields are immutable because the controller doesn't understand when it would need
-	// to delete and create a new Receive Adapter with updated arguments. We could relax it slightly
-	// to allow a nil Sink -> non-nil Sink, but I don't think it is needed yet.
-	if diff := cmp.Diff(original.Spec, current.Spec); diff != "" {
+	// Modification of Sink and Transform allowed. Everything else is immutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
