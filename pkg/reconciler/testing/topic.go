@@ -56,7 +56,7 @@ func WithInitTopicConditions(s *v1alpha1.Topic) {
 	s.Status.InitializeConditions()
 }
 
-func WithTopicTopic(topicID string) TopicOption {
+func WithTopicTopicID(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
