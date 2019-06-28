@@ -19,12 +19,13 @@ package topic
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
-	"testing"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"

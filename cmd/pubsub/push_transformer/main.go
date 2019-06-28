@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"

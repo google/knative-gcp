@@ -17,8 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"cloud.google.com/go/compute/metadata"
 	"flag"
+
+	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
