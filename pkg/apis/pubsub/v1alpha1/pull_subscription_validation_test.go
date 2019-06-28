@@ -49,6 +49,16 @@ var (
 	}
 )
 
+func TestPubSubCheckValidationFields(t *testing.T) {
+	obj := pullSubscriptionSpec.DeepCopy()
+
+	err := obj.Validate(context.TODO())
+
+	if err != nil {
+		t.Fatalf("Unexpected validation field error. Expected %v. Actual %v", nil, err)
+	}
+}
+
 func TestPubSubCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
 		orig    interface{}
