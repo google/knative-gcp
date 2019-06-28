@@ -56,28 +56,20 @@ func main() {
 
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
+	startable := &adapter.Adapter{}
+	if err := envconfig.Process("", &startable); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	if env.Project == "" {
+	if startable.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
 			logger.Fatal("failed to find project id. ", zap.Error(err))
 		}
-		env.Project = project
+		startable.Project = project
 	}
 
-	logger.Info("using project.", zap.String("project", env.Project))
-
-	startable := &adapter.Adapter{
-		ProjectID:      env.Project,
-		TopicID:        env.Topic,
-		SinkURI:        env.Sink,
-		SubscriptionID: env.Subscription,
-		TransformerURI: env.Transformer,
-	}
+	logger.Info("using project.", zap.String("project", startable.Project))
 
 	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
