@@ -41,6 +41,13 @@ type PullSubscription struct {
 	Status PullSubscriptionStatus `json:"status,omitempty"`
 }
 
+func (p *PullSubscription) PubSubMode() string {
+	if mode, ok := p.ObjectMeta.Annotations[PubSubModeAnnotation]; ok {
+		return mode
+	}
+	return ""
+}
+
 // Check that PullSubscription can be validated and can be defaulted.
 var _ runtime.Object = (*PullSubscription)(nil)
 
@@ -85,6 +92,11 @@ const (
 	// PubSubEventType is the GcpPubSub CloudEvent type, in case PullSubscription
 	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
+
+	PubSubModeAnnotation            = "pubsub.cloud.run/mode"
+	PubSubModeCloudEventsBinary     = "CloudEventsBinary"
+	PubSubModeCloudEventsStructured = "CloudEventsStructured"
+	PubSubModePushCompatible        = "PushCompatible"
 )
 
 // PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.

@@ -62,6 +62,7 @@ func TestMakeReceiveAdapter(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "source-namespace",
 			GenerateName: "pubsub-source-name-",
+			Annotations:  map[string]string{},
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -111,6 +112,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 							Value: "sink-uri",
 						}, {
 							Name: "TRANSFORMER_URI",
+						}, {
+							Name:  "SEND_MODE",
+							Value: "binary",
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

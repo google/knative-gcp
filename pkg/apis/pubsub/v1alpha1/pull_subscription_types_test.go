@@ -19,9 +19,9 @@ package v1alpha1
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestPubSubEventSource(t *testing.T) {
@@ -43,6 +43,32 @@ func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
 
 	c := &PullSubscription{}
 	got := c.GetGroupVersionKind()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionPubSubMode_nil(t *testing.T) {
+	want := ""
+
+	c := &PullSubscription{}
+	got := c.PubSubMode()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionPubSubMode_set(t *testing.T) {
+	want := "test"
+
+	c := &PullSubscription{ObjectMeta: metav1.ObjectMeta{
+		Annotations: map[string]string{
+			PubSubModeAnnotation: "test",
+		},
+	}}
+	got := c.PubSubMode()
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
