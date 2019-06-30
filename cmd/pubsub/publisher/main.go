@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/publisher"
 )

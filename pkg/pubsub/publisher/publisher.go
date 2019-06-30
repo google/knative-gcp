@@ -19,9 +19,10 @@ package publisher
 import (
 	"fmt"
 
+	"context"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 )
