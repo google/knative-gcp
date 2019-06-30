@@ -93,9 +93,11 @@ func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 
 	return &servingv1beta1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       args.Topic.Namespace,
-			GenerateName:    fmt.Sprintf("pubsub-publisher-%s-", args.Topic.Name),
-			Labels:          args.Labels, // TODO: not sure we should use labels like this.
+			Namespace:    args.Topic.Namespace,
+			GenerateName: fmt.Sprintf("pubsub-publisher-%s-", args.Topic.Name),
+			// TODO: not sure we should use labels like this. It depends on the
+			//  upstream caller to use the correct label creation method.
+			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
 		},
 		Spec: servingv1beta1.ServiceSpec{
