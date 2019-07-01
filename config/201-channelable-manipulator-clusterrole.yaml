@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use this aggregated ClusterRole when you nead and update permissions on "Channelables".
+# Use the 'channelable-manipulator' aggregated ClusterRole when you need read and update permissions
+# on "Channelables". Is is defined in knative/eventing:
+# https://github.com/knative/eventing/blob/master/config/200-channelable-manipulator-clusterrole.yaml
+
+---
 
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pubsub-channel-addressable-resolver
+  name: pubsub-channel-channelable-manipulator
   labels:
     duck.knative.dev/channelable: "true"
 # Do not use this role directly. These rules will be added to the "channelable-manipulator" role.

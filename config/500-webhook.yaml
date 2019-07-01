@@ -24,12 +24,12 @@ spec:
   selector:
     matchLabels:
       app: webhook
-      role: webhook
+      role: cloud-run-events-webhook
   template:
     metadata:
       labels:
         app: webhook
-        role: webhook
+        role: cloud-run-events-webhook
         events.cloud.run/release: devel
     spec:
       serviceAccountName: controller

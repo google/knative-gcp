@@ -28,6 +28,7 @@ spec:
     metadata:
       labels:
         control-plane: cloud-run-events-controller
+        events.cloud.run/release: devel
     spec:
       serviceAccountName: controller
       containers:

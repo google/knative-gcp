@@ -21,8 +21,8 @@ metadata:
   name: webhook
   namespace: cloud-run-events
 spec:
+  selector:
+    role: cloud-run-events-webhook
   ports:
     - port: 443
       targetPort: 8443
-  selector:
-    role: webhook
