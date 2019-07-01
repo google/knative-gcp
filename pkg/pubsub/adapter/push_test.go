@@ -1,10 +1,11 @@
 package adapter
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
-	"github.com/google/go-cmp/cmp"
 	"testing"
+
+	"cloud.google.com/go/pubsub"
+	"github.com/google/go-cmp/cmp"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
