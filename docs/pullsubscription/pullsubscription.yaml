@@ -30,9 +30,7 @@ spec:
   # If running in GKE, we will ask the metadata server, change this if required.
   #project: MY_PROJECT
   # The default secret name and key, change this if required.
-  #secret:
-  #  name: google-cloud-key
-  #  key: key.json
+  #secret: { name: google-cloud-key, key: key.json }
 
 ---
 

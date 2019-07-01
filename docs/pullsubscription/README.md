@@ -12,10 +12,14 @@ Pub/Sub topic, such as
 1. Create a
    [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    and install the `gcloud` CLI and run `gcloud auth login`. This sample will
-   use a mix of `gcloud` and `kubectl` commands. The rest of the sample assumes
-   that you've set the `$PROJECT_ID` environment variable to your Google Cloud
-   project id, and also set your project ID as default using
-   `gcloud config set project $PROJECT_ID`.
+   use a mix of `gcloud` and `kubectl` commands.
+
+1. Save the Google Cloud Project's ID to an environment variable and ensure `gcloud` is using that
+   project.
+   ```shell
+   export PROJECT_ID="my-gcp-project" # Replace 'my-gcp-project' with your project's ID.
+   gcloud config set project $PROJECT_ID
+   ```
 
 1. [Install Cloud Run Events](../install).
 
@@ -25,7 +29,7 @@ Pub/Sub topic, such as
    gcloud services enable pubsub.googleapis.com
    ```
 
-1. Create a
+1. [TODO - This is only required outside of GKE] Create a
    [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project).
    This sample creates one service account for both registration and receiving
    messages, but you can also create a separate service account for receiving
@@ -68,44 +72,47 @@ Pub/Sub topic, such as
    gcloud pubsub topics create $TOPIC_NAME
    ```
 
-1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
-   and apply it.
+1. Replace the placeholders with real values.
 
-   If you're in the samples directory, you can replace `TOPIC_NAME` and apply in
-   one command:
+      1. Placeholders:
+          - `TOPIC_NAME` - Must be replaced.
+          - `MY_PROJECT` - Replaced only if you are running outside of Google Kubernetes Engine.
+            Note that if you are replacing this, then you should also uncomment the `#secret:` line.
+      1.  Running inside Google Kubernetes Engine:
 
-   ```shell
-   sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
-       kubectl apply --filename -
-   ```
+           If you're in the samples directory, you can replace `TOPIC_NAME` and apply in
+           one command:
 
-   If you are replacing `TOPIC_NAME` manually, then make sure you apply the
-   resulting YAML:
+           ```shell
+           sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
+               kubectl apply --filename -
+           ```
 
-   ```shell
-   kubectl apply --filename pullsubscription.yaml
-   ```
+           If you are replacing `TOPIC_NAME` manually, then make sure you apply the
+           resulting YAML:
 
-1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
-   project, uncomment and replace the
-   [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-   in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it.
+           ```shell
+           kubectl apply --filename pullsubscription.yaml
+           ```
+      1. Running outside Google Kubenetes Engine or want to use a Pub/Sub Topic from a different
+         project than your GKE cluster:
 
-   If you're in the samples directory, you can replace `MY_PROJECT` and
-   `TOPIC_NAME` and then apply in one command:
+           If you're in the samples directory, you can replace `MY_PROJECT`,
+           `TOPIC_NAME`, uncomment `#secret:`, and then apply in a single command:
 
-   ```shell
-   sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
-   sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
-       kubectl apply --filename -
-   ```
+           ```shell
+           sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
+           sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
+           sed "s/\#secret: /secret: /g" | \
+               kubectl apply --filename -
+           ```
 
-   If you are replacing `MY_PROJECT` manually, then make sure you apply the
-   resulting YAML:
+           If you are replacing `TOPIC_NAME`, `MY_PROJECT`, and uncommenting the secret manually,
+           then make sure you apply the resulting YAML:
 
-   ```shell
-   kubectl apply --filename pullsubscription.yaml
-   ```
+           ```shell
+           kubectl apply --filename pullsubscription.yaml
+           ```
 
 1. Create a service that the Pub/Sub Subscription will sink into:
 
@@ -161,7 +168,7 @@ Validation: valid
    }
 ```
 
-For more information about the format of the `Data,` second of the message, see
+For more information about the format of the `Data`, section of the message, see
 the `data` field of
 [PubsubMessage documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage).
 
@@ -191,7 +198,7 @@ If you are replaced `TOPIC_NAME` manually, then make sure you delete the
 resulting YAML:
 
 ```shell
-kubectl apply --filename pullsubscription.yaml
+kubectl delete --filename pullsubscription.yaml
 ```
 
 1. Delete the service used as the sink:
