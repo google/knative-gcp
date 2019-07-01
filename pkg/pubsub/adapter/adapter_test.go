@@ -2,8 +2,9 @@ package adapter
 
 import (
 	"context"
-	cloudevents "github.com/cloudevents/sdk-go"
 	"testing"
+
+	cloudevents "github.com/cloudevents/sdk-go"
 
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"

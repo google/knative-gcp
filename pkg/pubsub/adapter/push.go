@@ -50,7 +50,7 @@ func ConvertToPush(ctx context.Context, event cloudevents.Event) cloudevents.Eve
 
 	// Grab all extensions as a string, set them as attributes payload.
 	attrs := make(map[string]string, 0)
-	for k, _ := range event.Extensions() {
+	for k := range event.Extensions() {
 		var v string
 		if err := event.ExtensionAs(k, &v); err != nil {
 			logger.Warnw("Not using extension as attribute for push payload.", zap.String("key", k))
