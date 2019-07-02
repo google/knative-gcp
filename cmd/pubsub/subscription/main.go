@@ -19,10 +19,11 @@ package main
 import (
 	"flag"
 
+	"knative.dev/pkg/signals"
+
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/signals"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 )
@@ -30,20 +31,19 @@ import (
 func main() {
 	flag.Parse()
 
-	sl, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
-	logger := sl.Desugar()
+	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
 	defer logger.Sync()
 
-	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	ops := operations.SubscriptionOps{}
 	if err := envconfig.Process("", &ops); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 	if err := ops.CreateClient(ctx); err != nil {
-		logger.Fatal("Failed to create Pub/Sub Client.", zap.Error(err))
+		logger.Fatalw("Failed to create Pub/Sub Client.", zap.Error(err))
 	}
 	if err := ops.Run(ctx); err != nil {
-		logger.Fatal("Failed to run Subscription Operation.", zap.Error(err))
+		logger.Fatalw("Failed to run Subscription Operation.", zap.Error(err))
 	}
 }

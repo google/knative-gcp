@@ -32,11 +32,10 @@ import (
 func main() {
 	flag.Parse()
 
-	sl, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
-	logger := sl.Desugar()
+	logger, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
 	defer logger.Sync()
 
-	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	ops := operations.TopicOps{}
 	if err := envconfig.Process("", &ops); err != nil {
