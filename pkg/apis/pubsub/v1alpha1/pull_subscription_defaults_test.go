@@ -22,21 +22,55 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestPullSubscriptionDefaults(t *testing.T) {
-	days7 := 7 * 24 * time.Hour
-	secs30 := 30 * time.Second
-	want := &PullSubscription{Spec: PullSubscriptionSpec{
-		AckDeadline:       &secs30,
-		RetentionDuration: &days7,
+	tests := []struct {
+		name  string
+		start *PullSubscription
+		want  *PullSubscription
+	}{{
+		name: "non-nil",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{},
+			},
+			Spec: PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+				},
+			},
+			Spec: PullSubscriptionSpec{},
+		},
+	}, {
+		name: "nil annotations",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+				},
+			},
+			Spec: PullSubscriptionSpec{},
+		},
 	}}
 
-	got := &PullSubscription{Spec: PullSubscriptionSpec{}}
-	got.SetDefaults(context.Background())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.start
+			got.SetDefaults(context.Background())
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("failed to get expected (-want, +got) = %v", diff)
+			}
+		})
 	}
 }
 
@@ -50,7 +84,6 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 
 	got := want.DeepCopy()
 	got.SetDefaults(context.Background())
-
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

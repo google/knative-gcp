@@ -17,15 +17,15 @@ limitations under the License.
 package adapter
 
 import (
+	"context"
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/uuid"
-	"github.com/knative/pkg/logging"
 	"go.uber.org/zap"
-	"golang.org/x/net/context"
+	"knative.dev/pkg/logging"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
@@ -34,17 +34,27 @@ import (
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
 // pre-existing topic/subscription to a Sink.
 type Adapter struct {
-	// ProjectID is the pre-existing eventing project id to use.
-	ProjectID string
-	// TopicID is the pre-existing eventing pub/sub topic id to use.
-	TopicID string
-	// SubscriptionID is the pre-existing eventing pub/sub subscription id to use.
-	SubscriptionID string
-	// SinkURI is the URI messages will be forwarded on to.
-	SinkURI string
-	// TransformerURI is the URI messages will be forwarded on to for any transformation
-	// before they are sent to SinkURI.
-	TransformerURI string
+	// Environment variable containing project id.
+	Project string `envconfig:"PROJECT_ID"`
+
+	// Environment variable containing the sink URI.
+	Sink string `envconfig:"SINK_URI" required:"true"`
+
+	// Environment variable containing the transformer URI.
+	Transformer string `envconfig:"TRANSFORMER_URI"`
+
+	// Topic is the environment variable containing the PubSub Topic being
+	// subscribed to's name. In the form that is unique within the project.
+	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+
+	// Subscription is the environment variable containing the name of the
+	// subscription to use.
+	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
+
+	// SendMode describes how the adapter sends events.
+	// One of [binary, structured, push]. Default: binary
+	SendMode ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -56,8 +66,27 @@ type Adapter struct {
 	transformer cloudevents.Client
 }
 
+// ModeType is the type for mode enum.
+type ModeType string
+
+const (
+	// Binary mode is binary encoding.
+	Binary ModeType = "binary"
+	// Structured mode is structured encoding.
+	Structured ModeType = "structured"
+	// Push mode emulates Pub/Sub push encoding.
+	Push ModeType = "push"
+	// DefaultSendMode is the default choice.
+	DefaultSendMode = Binary
+)
+
+// Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
+
+	if a.SendMode == "" {
+		a.SendMode = DefaultSendMode
+	}
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
@@ -68,15 +97,15 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Send events on HTTP.
 	if a.outbound == nil {
-		if a.outbound, err = kncloudevents.NewDefaultClient(a.SinkURI); err != nil {
+		if a.outbound, err = a.newHTTPClient(a.Sink); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
-	if a.TransformerURI != "" {
+	if a.Transformer != "" {
 		if a.transformer == nil {
-			if a.transformer, err = kncloudevents.NewDefaultClient(a.TransformerURI); err != nil {
+			if a.transformer, err = kncloudevents.NewDefaultClient(a.Transformer); err != nil {
 				return fmt.Errorf("failed to create transformer cloudevent client: %s", err.Error())
 			}
 		}
@@ -86,7 +115,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
-	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.SinkURI))
+	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
 	// If a transformer has been configured, then transform the message.
 	if a.transformer != nil {
@@ -103,6 +132,11 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		}
 		// Update the event with the transformed one.
 		event = *transformedEvent
+	}
+
+	// If send mode is Push, convert to Pub/Sub Push payload style.
+	if a.SendMode == Push {
+		event = ConvertToPush(ctx, event)
 	}
 
 	if r, err := a.outbound.Send(ctx, event); err != nil {
@@ -126,9 +160,15 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
-		event.SetID(uuid.New().String())
 		event.Data = msg.Data
-		// TODO: this will drop the other metadata related to the the topic and subscription names
+		event.DataEncoded = true
+		// Attributes are extensions.
+		if msg.Attributes != nil && len(msg.Attributes) > 0 {
+			for k, v := range msg.Attributes {
+				event.SetExtension(k, v)
+			}
+		}
+
 		return &event, nil
 	}
 	return nil, err
@@ -136,10 +176,9 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 
 func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
 	tOpts := []cepubsub.Option{
-		cepubsub.WithBinaryEncoding(),
-		cepubsub.WithProjectID(a.ProjectID),
-		cepubsub.WithTopicID(a.TopicID),
-		cepubsub.WithSubscriptionID(a.SubscriptionID),
+		cepubsub.WithProjectID(a.Project),
+		cepubsub.WithTopicID(a.Topic),
+		cepubsub.WithSubscriptionID(a.Subscription),
 	}
 
 	// Make a pubsub transport for the CloudEvents client.
@@ -150,8 +189,28 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 
 	// Use the transport to make a new CloudEvents client.
 	return cloudevents.NewClient(t,
-		cloudevents.WithUUIDs(),
-		cloudevents.WithTimeNow(),
 		cloudevents.WithConverterFn(a.convert),
 	)
+}
+
+func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
+	tOpts := []http.Option{
+		cloudevents.WithTarget(target),
+	}
+
+	switch a.SendMode {
+	case Binary, Push:
+		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
+	case Structured:
+		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
+	}
+
+	// Make an http transport for the CloudEvents client.
+	t, err := cloudevents.NewHTTPTransport(tOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Use the transport to make a new CloudEvents client.
+	return cloudevents.NewClient(t)
 }

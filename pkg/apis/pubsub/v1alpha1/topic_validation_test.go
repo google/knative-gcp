@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/knative/pkg/webhook"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/webhook"
 )
 
 var (

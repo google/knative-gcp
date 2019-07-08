@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // +genclient
@@ -40,6 +40,13 @@ type PullSubscription struct {
 
 	Spec   PullSubscriptionSpec   `json:"spec,omitempty"`
 	Status PullSubscriptionStatus `json:"status,omitempty"`
+}
+
+func (p *PullSubscription) PubSubMode() string {
+	if mode, ok := p.ObjectMeta.Annotations[PubSubModeAnnotation]; ok {
+		return mode
+	}
+	return ""
 }
 
 // Check that PullSubscription can be validated and can be defaulted.
@@ -106,6 +113,11 @@ const (
 	// PubSubEventType is the GcpPubSub CloudEvent type, in case PullSubscription
 	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
+
+	PubSubModeAnnotation            = "pubsub.cloud.run/mode"
+	PubSubModeCloudEventsBinary     = "CloudEventsBinary"
+	PubSubModeCloudEventsStructured = "CloudEventsStructured"
+	PubSubModePushCompatible        = "PushCompatible"
 )
 
 // PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.

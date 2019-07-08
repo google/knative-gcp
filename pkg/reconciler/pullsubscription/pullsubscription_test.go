@@ -33,11 +33,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/kmeta"
-	logtesting "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/tracker"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
+	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/tracker"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
@@ -45,7 +45,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 
-	. "github.com/knative/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
@@ -68,7 +68,7 @@ const (
 
 var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS + "/"
+	sinkURI = "http://" + sinkDNS
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.run",

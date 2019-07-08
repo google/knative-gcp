@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {

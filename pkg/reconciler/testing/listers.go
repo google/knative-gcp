@@ -17,19 +17,24 @@ limitations under the License.
 package testing
 
 import (
-	fakesharedclientset "github.com/knative/pkg/client/clientset/versioned/fake"
-	"github.com/knative/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
+
+	servingv1beta1 "github.com/knative/serving/pkg/apis/serving/v1beta1"
+	servinglisters "github.com/knative/serving/pkg/client/listers/serving/v1beta1"
+	"knative.dev/pkg/reconciler/testing"
+
+	fakeservingclientset "github.com/knative/serving/pkg/client/clientset/versioned/fake"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
@@ -45,11 +50,13 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakekubeclientset.AddToScheme,
 	fakesharedclientset.AddToScheme,
 	fakeeventsclientset.AddToScheme,
+	fakeservingclientset.AddToScheme,
 	sinkAddToScheme,
 }
 
 type Listers struct {
 	sorter testing.ObjectSorter
+	servinglisters.ConfigurationLister
 }
 
 func NewListers(objs []runtime.Object) Listers {
@@ -91,12 +98,20 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 	return all
 }
 
+func (l *Listers) GetServingObjects() []runtime.Object {
+	return l.sorter.ObjectsForSchemeFunc(fakeservingclientset.AddToScheme)
+}
+
 func (l *Listers) GetSharedObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakesharedclientset.AddToScheme)
 }
 
 func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
 	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
+}
+
+func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
+	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
 func (l *Listers) GetChannelLister() pubsublisters.ChannelLister {
@@ -109,6 +124,10 @@ func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 
 func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
+}
+
+func (l *Listers) GetServiceLister() servinglisters.ServiceLister {
+	return servinglisters.NewServiceLister(l.indexerFor(&servingv1beta1.Service{}))
 }
 
 func (l *Listers) GetNamespaceLister() corev1listers.NamespaceLister {

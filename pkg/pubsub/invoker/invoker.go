@@ -17,20 +17,17 @@ limitations under the License.
 package invoker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	"github.com/google/uuid"
-	"golang.org/x/net/context"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
 )
-
-// TODO: not ready.
 
 // Invoker implements the Pub/Sub invoker to deliver Pub/Sub messages from a
 // pre-existing topic with a set of pre-existing subscriptions to the set of
@@ -96,7 +93,6 @@ func (a *Invoker) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
-		event.SetID(uuid.New().String())
 		event.Data = msg.Data
 		// TODO: this will drop the other metadata related to the the topic and subscription names.
 		return &event, nil

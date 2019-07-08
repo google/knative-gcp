@@ -20,19 +20,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/knative/pkg/logging"
-
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/injection/clients/dynamicclient"
-	"github.com/knative/pkg/injection/clients/kubeclient"
-
-	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
-
-	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
-	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/system"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -41,6 +28,19 @@ import (
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+
+	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
+	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
+	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
+	servingclient "github.com/knative/serving/pkg/client/injection/client"
+	"go.uber.org/zap"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection/clients/dynamicclient"
+	"knative.dev/pkg/injection/clients/kubeclient"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/system"
 )
 
 // Options defines the common reconciler options.
@@ -100,7 +100,11 @@ type Base struct {
 	// DynamicClientSet allows us to configure pluggable Build objects
 	DynamicClientSet dynamic.Interface
 
+	// RunClientSet is the client for cloud run events.
 	RunClientSet clientset.Interface
+
+	// ServingClientSet is the client for Knative Serving
+	ServingClientSet servingclientset.Interface
 
 	// ConfigMapWatcher allows us to watch for ConfigMap changes.
 	ConfigMapWatcher configmap.Watcher
@@ -167,6 +171,7 @@ func NewBase(ctx context.Context, controllerAgentName string, cmw configmap.Watc
 	base := &Base{
 		KubeClientSet:    kubeClient,
 		RunClientSet:     runclient.Get(ctx),
+		ServingClientSet: servingclient.Get(ctx),
 		DynamicClientSet: dynamicclient.Get(ctx),
 		ConfigMapWatcher: cmw,
 		Recorder:         recorder,

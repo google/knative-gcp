@@ -78,7 +78,7 @@ function make_banner() {
     echo -e "${border}\n${msg}\n${border}"
     # TODO(adrcunha): Remove once logs have timestamps on Prow
     # For details, see https://github.com/kubernetes/test-infra/issues/10100
-    echo -e "$1$1$1$1 $(date)\n${border}"
+    echo -e "$1$1$1$1 $(TZ='America/Los_Angeles' date)\n${border}"
 }
 
 # Simple header for logging purposes.
@@ -517,7 +517,7 @@ function get_latest_knative_yaml_source() {
 # These MUST come last.
 
 readonly _TEST_INFRA_SCRIPTS_DIR="$(dirname $(get_canonical_path ${BASH_SOURCE[0]}))"
-readonly REPO_NAME_FORMATTED="Knative $(capitalize ${REPO_NAME//-/})"
+readonly REPO_NAME_FORMATTED="Knative $(capitalize ${REPO_NAME//-/ })"
 
 # Public latest nightly or release yaml files.
 readonly KNATIVE_SERVING_RELEASE="$(get_latest_knative_yaml_source "serving" "serving")"

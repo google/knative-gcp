@@ -48,9 +48,9 @@ spec:
   validation:
     openAPIV3Schema:
       properties:
-        required:
-          - topic
         spec:
+          required:
+            - topic
           properties:
             secret:
               type: object

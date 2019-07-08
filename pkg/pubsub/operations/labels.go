@@ -19,7 +19,7 @@ package operations
 import (
 	"strings"
 
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/kmeta"
 )
 
 // TopicJobLabels creates a label to find a job again.

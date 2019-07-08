@@ -19,9 +19,11 @@ package resources
 import (
 	"fmt"
 
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,6 +65,16 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		secret = DefaultSecretSelector()
 	}
 
+	var mode adapter.ModeType
+	switch args.Source.PubSubMode() {
+	case "", v1alpha1.PubSubModeCloudEventsBinary:
+		mode = adapter.Binary
+	case v1alpha1.PubSubModeCloudEventsStructured:
+		mode = adapter.Structured
+	case v1alpha1.PubSubModePushCompatible:
+		mode = adapter.Push
+	}
+
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	replicas := int32(1)
 	return &v1.Deployment{
@@ -71,6 +83,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
+			Annotations:     map[string]string{},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -104,6 +117,9 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						}, {
 							Name:  "TRANSFORMER_URI",
 							Value: args.TransformerURI,
+						}, {
+							Name:  "SEND_MODE",
+							Value: string(mode),
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

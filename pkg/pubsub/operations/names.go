@@ -19,7 +19,7 @@ package operations
 import (
 	"strings"
 
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/kmeta"
 )
 
 // TopicJobName creates the name of a topic ops job.

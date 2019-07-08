@@ -17,15 +17,25 @@ limitations under the License.
 package operations
 
 import (
-	"github.com/knative/pkg/kmeta"
+	"context"
+	"errors"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
 	Image               string
 	Action              string
@@ -38,6 +48,7 @@ type SubArgs struct {
 	Owner               kmeta.OwnerRefable
 }
 
+// NewSubscriptionOps returns a new batch Job resource.
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	env := []corev1.EnvVar{{
 		Name:  "ACTION",
@@ -85,4 +96,145 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 			Template:     *podTemplate,
 		},
 	}
+}
+
+// TODO: the job could output the resolved projectID.
+
+// SubscriptionOps defines the configuration to use for this operation.
+type SubscriptionOps struct {
+	PubSubOps
+
+	// Action is the operation the job should run.
+	// Options: [exists, create, delete]
+	Action string `envconfig:"ACTION" required:"true"`
+
+	// Topic is the environment variable containing the PubSub Topic being
+	// subscribed to's name. In the form that is unique within the project.
+	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+
+	// Subscription is the environment variable containing the name of the
+	// subscription to use.
+	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
+
+	// AckDeadline
+	AckDeadline time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD" required:"true" default:"30s"`
+
+	// RetainAckedMessages
+	RetainAckedMessages bool `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED" required:"true" default:"false"`
+
+	// RetentionDuration
+	RetentionDuration time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR" required:"true" default:"168h"`
+}
+
+var (
+	ignoreSubConfig = cmpopts.IgnoreFields(pubsub.SubscriptionConfig{}, "Topic", "PushConfig", "Labels")
+)
+
+// Run will perform the action configured upon a subscription.
+func (s *SubscriptionOps) Run(ctx context.Context) error {
+	if s.Client == nil {
+		return errors.New("pub/sub client is nil")
+	}
+	logger := logging.FromContext(ctx)
+
+	logger = logger.With(
+		zap.String("action", s.Action),
+		zap.String("project", s.Project),
+		zap.String("topic", s.Topic),
+		zap.String("subscription", s.Subscription),
+	)
+
+	logger.Info("Pub/Sub Subscription Job.")
+
+	// Load the subscription.
+	sub := s.Client.Subscription(s.Subscription)
+	exists, err := sub.Exists(ctx)
+	if err != nil {
+		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+	}
+
+	switch s.Action {
+	case ActionExists:
+		// If subscription doesn't exist, that is an error.
+		if !exists {
+			logger.Fatal("Subscription does not exist.")
+		}
+		logger.Info("Previously created.")
+
+	case ActionCreate:
+		// Load the topic.
+		topic, err := s.getTopic(ctx)
+		if err != nil {
+			logger.Fatal("Failed to get topic.", zap.Error(err))
+		}
+		// subConfig is the wanted config based on settings.
+		subConfig := pubsub.SubscriptionConfig{
+			Topic:               topic,
+			AckDeadline:         s.AckDeadline,
+			RetainAckedMessages: s.RetainAckedMessages,
+			RetentionDuration:   s.RetentionDuration,
+		}
+
+		// If topic doesn't exist, create it.
+		if !exists {
+			// Create a new subscription to the previous topic with the given name.
+			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, subConfig)
+			if err != nil {
+				logger.Fatal("Failed to create subscription.", zap.Error(err))
+			}
+			logger.Info("Successfully created.")
+		} else {
+			// TODO: here is where we could update config.
+			logger.Info("Previously created.")
+			// Get current config.
+			currentConfig, err := sub.Config(ctx)
+			if err != nil {
+				logger.Fatal("Failed to get subscription config.", zap.Error(err))
+			}
+			// Compare the current config to the expected config. Update if different.
+			if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
+				_, err := sub.Update(ctx, pubsub.SubscriptionConfig{
+					AckDeadline:         s.AckDeadline,
+					RetainAckedMessages: s.RetainAckedMessages,
+					RetentionDuration:   s.RetentionDuration,
+					Labels:              currentConfig.Labels,
+				})
+				if err != nil {
+					logger.Fatal("Failed to update subscription config.", zap.Error(err))
+				}
+				logger.Info("Updated subscription config.", zap.String("diff", diff))
+
+			}
+		}
+
+	case ActionDelete:
+		if exists {
+			if err := sub.Delete(ctx); err != nil {
+				logger.Fatal("Failed to delete subscription.", zap.Error(err))
+			}
+			logger.Info("Successfully deleted.")
+		} else {
+			logger.Info("Previously deleted.")
+		}
+
+	default:
+		logger.Fatal("unknown action value.")
+	}
+
+	logger.Info("Done.")
+	return nil
+}
+
+func (s *SubscriptionOps) getTopic(ctx context.Context) (pubsub.Topic, error) {
+	// Load the topic.
+	topic := s.Client.Topic(s.Topic)
+	ok, err := topic.Exists(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		return topic, err
+	}
+	return nil, errors.New("topic does not exist")
 }

@@ -27,6 +27,14 @@ var (
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
+	if s.ObjectMeta.Annotations == nil {
+		s.ObjectMeta.Annotations = map[string]string{
+			PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+		}
+	} else if _, ok := s.ObjectMeta.Annotations[PubSubModeAnnotation]; !ok {
+		s.ObjectMeta.Annotations[PubSubModeAnnotation] = PubSubModeCloudEventsBinary
+	}
+
 	s.Spec.SetDefaults(ctx)
 }
 
