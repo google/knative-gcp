@@ -137,7 +137,7 @@ type SubscriptionOps struct {
 }
 
 var (
-	ignoreSubConfig = cmpopts.IgnoreFields(pubsub.SubscriptionConfig{}, "Topic", "PushConfig", "Labels")
+	ignoreSubConfig = cmpopts.IgnoreFields(pubsub.SubscriptionConfig{}, "Topic", "Labels")
 )
 
 // Run will perform the action configured upon a subscription.

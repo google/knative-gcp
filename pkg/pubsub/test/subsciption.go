@@ -47,6 +47,11 @@ func (s *TestSubscription) Config(ctx context.Context) (pubsub.SubscriptionConfi
 	return pubsub.SubscriptionConfig{}, nil
 }
 
+// Update implements Subscription.Update.
+func (s *TestSubscription) Update(ctx context.Context, cfg pubsub.SubscriptionConfig) (pubsub.SubscriptionConfig, error) {
+	return cfg, nil
+}
+
 // Delete implements Subscription.Delete.
 func (s *TestSubscription) Delete(ctx context.Context) error {
 	return nil

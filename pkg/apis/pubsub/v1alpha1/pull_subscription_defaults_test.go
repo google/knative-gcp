@@ -44,7 +44,10 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
 				},
 			},
-			Spec: PullSubscriptionSpec{},
+			Spec: PullSubscriptionSpec{
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
+			},
 		},
 	}, {
 		name: "nil annotations",
@@ -58,7 +61,10 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
 				},
 			},
-			Spec: PullSubscriptionSpec{},
+			Spec: PullSubscriptionSpec{
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
+			},
 		},
 	}}
 
@@ -77,10 +83,17 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	days2 := 2 * 24 * time.Hour
 	secs60 := 60 * time.Second
-	want := &PullSubscription{Spec: PullSubscriptionSpec{
-		AckDeadline:       &secs60,
-		RetentionDuration: &days2,
-	}}
+	want := &PullSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+			},
+		},
+		Spec: PullSubscriptionSpec{
+			AckDeadline:       &secs60,
+			RetentionDuration: &days2,
+		},
+	}
 
 	got := want.DeepCopy()
 	got.SetDefaults(context.Background())
