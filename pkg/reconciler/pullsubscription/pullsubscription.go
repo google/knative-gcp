@@ -289,6 +289,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	return src, err
 }
 
+// updateFinalizers is a generic method for future compatibility with a
+// reconciler SDK.
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
 	source, err := c.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {

@@ -309,6 +309,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 	return ch, err
 }
 
+// updateFinalizers is a generic method for future compatibility with a
+// reconciler SDK.
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Topic) (*v1alpha1.Topic, bool, error) {
 	source, err := c.topicLister.Topics(desired.Namespace).Get(desired.Name)
 	if err != nil {
