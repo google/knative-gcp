@@ -14,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package serving
+package v1alpha1
 
-import (
-	"github.com/knative/serving/pkg/apis/autoscaling"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-)
+// GetStatus returns Status of an ClusterIngress
+func (ci *ClusterIngress) GetStatus() *IngressStatus {
+	return &ci.Status
+}
 
-// ValidateObjectMetadata validates that `metadata` stanza of the
-// resources is correct.
-func ValidateObjectMetadata(meta metav1.Object) *apis.FieldError {
-	return apis.ValidateObjectMetadata(meta).Also(
-		autoscaling.ValidateAnnotations(meta.GetAnnotations()).ViaField("annotations"))
+// GetSpec returns Spec of an ClusterIngress
+func (ci *ClusterIngress) GetSpec() *IngressSpec {
+	return &ci.Spec
+}
+
+// SetStatus assigns ingress status
+func (ci *ClusterIngress) SetStatus(status IngressStatus) {
+	ci.Status = status
 }
