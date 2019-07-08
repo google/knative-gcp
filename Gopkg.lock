@@ -209,6 +209,13 @@
   revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
+  digest = "1:7915c656a10819b240db94ffd6afc6a621af4687db735341d9919668750485ec"
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  pruneopts = "NUT"
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
+
+[[projects]]
   branch = "master"
   digest = "1:52c5834e2bebac9030c97cc0798ac11c3aa8a39f098aeb419f142533da6cd3cc"
   name = "github.com/google/gofuzz"
@@ -325,6 +332,52 @@
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
   revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
+
+[[projects]]
+  digest = "1:68ecd48e097f4e52b9802781008a5d282a6f350f0efa86f2314d7fd81eefe99e"
+  name = "github.com/knative/serving"
+  packages = [
+    "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
+    "pkg/apis/networking",
+    "pkg/apis/networking/v1alpha1",
+    "pkg/apis/serving",
+    "pkg/apis/serving/v1alpha1",
+    "pkg/apis/serving/v1beta1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
+    "pkg/client/injection/client",
+    "pkg/client/injection/client/fake",
+    "pkg/client/injection/informers/serving/factory",
+    "pkg/client/injection/informers/serving/factory/fake",
+    "pkg/client/injection/informers/serving/v1beta1/service",
+    "pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "50cdf8762deae58ed89763adef26a88e7efecac7"
 
 [[projects]]
   branch = "master"
@@ -1117,6 +1170,7 @@
     "logging/testing",
     "metrics",
     "metrics/metricskey",
+    "ptr",
     "reconciler/testing",
     "signals",
     "system",
@@ -1142,13 +1196,21 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
+    "github.com/knative/serving/pkg/apis/serving/v1beta1",
+    "github.com/knative/serving/pkg/client/clientset/versioned",
+    "github.com/knative/serving/pkg/client/clientset/versioned/fake",
+    "github.com/knative/serving/pkg/client/injection/client",
+    "github.com/knative/serving/pkg/client/injection/client/fake",
+    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service",
+    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "github.com/knative/serving/pkg/client/listers/serving/v1beta1",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
     "go.uber.org/zap",
-    "golang.org/x/net/context",
+    "go.uber.org/zap/zapcore",
     "google.golang.org/api/option",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
@@ -1163,6 +1225,7 @@
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",

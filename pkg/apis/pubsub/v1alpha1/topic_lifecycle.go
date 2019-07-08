@@ -17,8 +17,6 @@
 package v1alpha1
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
-
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/v1alpha1"
 )
@@ -55,21 +53,17 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	}
 }
 
-func (ts *TopicStatus) PropagateDeploymentAvailability(d *appsv1.Deployment) {
-	for _, cond := range d.Status.Conditions {
-		if cond.Type == appsv1.DeploymentAvailable {
-			switch cond.Status {
-			case "True":
-				ts.MarkDeployed()
-			case "False":
-				ts.MarkNotDeployed(cond.Reason, cond.Message)
-			default:
-				ts.MarkDeploying(cond.Reason, cond.Message)
-			}
-			return
-		}
+func (ts *TopicStatus) PropagatePublisherStatus(ready *apis.Condition) {
+	switch {
+	case ready == nil:
+		ts.MarkDeploying("PublisherStatus", "Publisher has no Ready type status.")
+	case ready.IsTrue():
+		ts.MarkDeployed()
+	case ready.IsFalse():
+		ts.MarkNotDeployed(ready.Reason, ready.Message)
+	default:
+		ts.MarkDeploying(ready.Reason, ready.Message)
 	}
-	ts.MarkDeploying("DeploymentStatus", "Failed to inspect Deployment status.")
 }
 
 // MarkDeployed sets the condition that the publisher has been deployed.

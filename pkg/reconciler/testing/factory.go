@@ -20,18 +20,17 @@ import (
 	"context"
 	"testing"
 
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/logging"
-
 	"k8s.io/apimachinery/pkg/runtime"
-
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	fakerunclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client/fake"
+	fakeservingclient "github.com/knative/serving/pkg/client/injection/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	fakekubeclient "knative.dev/pkg/injection/clients/kubeclient/fake"
 
@@ -58,6 +57,7 @@ func MakeFactory(ctor Ctor) Factory {
 
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, client := fakerunclient.With(ctx, ls.GetEventsObjects()...)
+		ctx, servingclient := fakeservingclient.With(ctx, ls.GetServingObjects()...)
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
@@ -88,6 +88,7 @@ func MakeFactory(ctor Ctor) Factory {
 			kubeClient.PrependReactor("*", "*", reactor)
 			client.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
+			servingclient.PrependReactor("*", "*", reactor)
 		}
 
 		// Validate all Create operations through the serving client.
@@ -100,7 +101,7 @@ func MakeFactory(ctor Ctor) Factory {
 			return ValidateUpdates(context.Background(), action)
 		})
 
-		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient}
+		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, servingclient}
 		eventList := EventList{Recorder: eventRecorder}
 
 		return c, actionRecorderList, eventList, statsReporter
