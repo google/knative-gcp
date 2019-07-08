@@ -301,24 +301,24 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Pul
 	var finalizers []string
 
 	// If there's nothing to update, just return.
-	exisitingFinalizers := sets.NewString(existing.Finalizers...)
+	existingFinalizers := sets.NewString(existing.Finalizers...)
 	desiredFinalizers := sets.NewString(desired.Finalizers...)
 
 	if desiredFinalizers.Has(finalizerName) {
-		if exisitingFinalizers.Has(finalizerName) {
+		if existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Add the finalizer.
 		finalizers = append(existing.Finalizers, finalizerName)
 	} else {
-		if !exisitingFinalizers.Has(finalizerName) {
+		if !existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Remove the finalizer.
-		exisitingFinalizers.Delete(finalizerName)
-		finalizers = exisitingFinalizers.List()
+		existingFinalizers.Delete(finalizerName)
+		finalizers = existingFinalizers.List()
 	}
 
 	mergePatch := map[string]interface{}{
