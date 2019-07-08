@@ -19,10 +19,11 @@ package operations
 import (
 	"context"
 	"errors"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"strconv"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/kmeta"
@@ -117,13 +118,21 @@ type SubscriptionOps struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
-	// AckDeadline
+	// AckDeadline is the default maximum time after a subscriber receives a
+	// message before the subscriber should acknowledge the message. Defaults
+	// to 30 seconds.
 	AckDeadline time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD" required:"true" default:"30s"`
 
-	// RetainAckedMessages
+	// RetainAckedMessages defines whether to retain acknowledged messages. If
+	// true, acknowledged messages will not be expunged until they fall out of
+	// the RetentionDuration window.
 	RetainAckedMessages bool `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED" required:"true" default:"false"`
 
-	// RetentionDuration
+	// RetentionDuration defines how long to retain messages in backlog, from
+	// the time of publish. If RetainAckedMessages is true, this duration
+	// affects the retention of acknowledged messages, otherwise only
+	// unacknowledged messages are retained. Defaults to 7 days. Cannot be
+	// longer than 7 days or shorter than 10 minutes.
 	RetentionDuration time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR" required:"true" default:"168h"`
 }
 
