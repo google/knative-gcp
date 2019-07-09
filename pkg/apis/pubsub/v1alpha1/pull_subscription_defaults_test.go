@@ -53,7 +53,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModePushCompatible,
+				Mode:              ModePushCompatible,
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
 			},
 		},
 	}, {
@@ -65,7 +67,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModeCloudEventsBinary,
+				Mode:              ModeCloudEventsBinary,
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
 			},
 		},
 	}, {
