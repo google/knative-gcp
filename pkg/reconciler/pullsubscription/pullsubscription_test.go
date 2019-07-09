@@ -440,7 +440,6 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	return operations.NewSubscriptionOps(operations.SubArgs{
 		Image:          testImage,
-		ServiceAccount: testServiceAccount,
 		Action:         action,
 		ProjectID:      testProject,
 		TopicID:        testTopicID,
@@ -452,7 +451,6 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	job := operations.NewSubscriptionOps(operations.SubArgs{
 		Image:          testImage,
-		ServiceAccount: testServiceAccount,
 		Action:         action,
 		ProjectID:      testProject,
 		TopicID:        testTopicID,

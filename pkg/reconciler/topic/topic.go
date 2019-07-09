@@ -145,7 +145,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			// Ensure the Topic is deleted.
-			state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.ServiceAccountName, topic.Spec.Project, topic.Status.TopicID)
+			state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 			switch state {
 			case pubsub.OpsJobGetFailed:
 				logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
@@ -189,7 +189,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	switch topic.Spec.PropagationPolicy {
 	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateNoDelete:
-		state, err := c.EnsureTopicCreated(ctx, topic, topic.Spec.ServiceAccountName, topic.Spec.Project, topic.Status.TopicID)
+		state, err := c.EnsureTopicCreated(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
 		case pubsub.OpsJobGetFailed:
@@ -228,7 +228,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		}
 
 	case v1alpha1.TopicPolicyNoCreateNoDelete:
-		state, err := c.EnsureTopicExists(ctx, topic, topic.Spec.ServiceAccountName, topic.Spec.Project, topic.Status.TopicID)
+		state, err := c.EnsureTopicExists(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
 		case pubsub.OpsJobGetFailed:

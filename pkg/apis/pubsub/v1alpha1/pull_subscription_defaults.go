@@ -23,9 +23,8 @@ import (
 )
 
 const (
-	DefaultServiceAccountName = "default"
-	DefaultSecretName         = "google-cloud-key"
-	DefaultSecretKey          = "key.json"
+	DefaultSecretName = "google-cloud-key"
+	DefaultSecretKey  = "key.json"
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
