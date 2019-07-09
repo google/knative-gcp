@@ -38,18 +38,26 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
+	if current.Sink == nil || equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateRef(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
 		if err := validateRef(current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
-	return nil
+	// Mode [optional]
+	switch current.Mode {
+	case "", ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
+		// valid
+	default:
+		errs = errs.Also(apis.ErrInvalidValue(current.Mode, "mode"))
+	}
+
+	return errs
 }
 
 func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
@@ -69,6 +77,7 @@ func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
 	if ref.Kind == "" {
 		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
+
 	return errs
 }
 
@@ -83,7 +92,7 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 
 	// Modification of Sink and Transform allowed. Everything else is immutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer")); diff != "" {
+		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer", "Mode")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

@@ -116,7 +116,7 @@ func TestAllCases(t *testing.T) {
 		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "sink ref is nil"),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for PullSubscription %q: missing field(s): spec.sink, spec.topic", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -369,6 +369,7 @@ func TestAllCases(t *testing.T) {
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -389,6 +390,7 @@ func TestAllCases(t *testing.T) {
 						Topic:              testTopicID,
 						ServiceAccountName: testServiceAccount,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),

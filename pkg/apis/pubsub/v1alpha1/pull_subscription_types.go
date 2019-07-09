@@ -41,11 +41,9 @@ type PullSubscription struct {
 	Status PullSubscriptionStatus `json:"status,omitempty"`
 }
 
-func (p *PullSubscription) PubSubMode() string {
-	if mode, ok := p.ObjectMeta.Annotations[PubSubModeAnnotation]; ok {
-		return mode
-	}
-	return ""
+// PubSubMode returns the mode currently set for PullSubscription.
+func (p *PullSubscription) PubSubMode() ModeType {
+	return p.Spec.Mode
 }
 
 // Check that PullSubscription can be validated and can be defaulted.
@@ -62,10 +60,12 @@ type PullSubscriptionSpec struct {
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// +optional
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the PullSubscription
 	// Topic exists in.
+	// +optional
 	Project string `json:"project,omitempty"`
 
 	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must be in
@@ -83,20 +83,38 @@ type PullSubscriptionSpec struct {
 	// +optional
 	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
 
+	// Mode defines the encoding and structure of the payload of when the
+	// PullSubscription invokes the sink.
+	// +optional
+	Mode ModeType `json:"mode,omitempty"`
+
 	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Receive Adapter Deployment.
+	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
+
+type ModeType string
 
 const (
 	// PubSubEventType is the GcpPubSub CloudEvent type, in case PullSubscription
 	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
 
-	PubSubModeAnnotation            = "pubsub.cloud.run/mode"
-	PubSubModeCloudEventsBinary     = "CloudEventsBinary"
-	PubSubModeCloudEventsStructured = "CloudEventsStructured"
-	PubSubModePushCompatible        = "PushCompatible"
+	// TODO: we need to plumb the mode through in the event to signal how to
+	//  process the payload on the consumer side.
+
+	// ModeCloudEventsBinary will use CloudEvents binary HTTP mode with
+	// flattened Pub/Sub payload.
+	ModeCloudEventsBinary ModeType = "CloudEventsBinary"
+
+	// ModeCloudEventsStructured will use CloudEvents structured HTTP mode with
+	// flattened Pub/Sub payload.
+	ModeCloudEventsStructured ModeType = "CloudEventsStructured"
+
+	// ModePushCompatible will use CloudEvents binary HTTP mode with expanded
+	// Pub/Sub payload that matches how Cloud Pub/Sub delivers a push message.
+	ModePushCompatible ModeType = "PushCompatible"
 )
 
 // PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
