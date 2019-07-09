@@ -22,10 +22,15 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestPullSubscriptionDefaults(t *testing.T) {
+
+	defaultRetentionDuration := defaultRetentionDuration
+	defaultAckDeadline := defaultAckDeadline
+
 	tests := []struct {
 		name  string
 		start *PullSubscription
@@ -35,6 +40,12 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		start: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode: ModeCloudEventsStructured,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
 			},
 		},
 		want: &PullSubscription{
@@ -42,6 +53,12 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
 			},
 		},
 	}, {
@@ -56,6 +73,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModePushCompatible,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
+				Secret:            defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -70,6 +88,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
+				Secret:            defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -83,6 +102,19 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
+				Secret:            defaultSecretSelector(),
+			},
+		},
+	}, {
+		name: "nil secret",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode:   ModeCloudEventsBinary,
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}}
