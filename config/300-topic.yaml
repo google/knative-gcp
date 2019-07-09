@@ -65,7 +65,8 @@ spec:
               description: "ID of the Cloud Pub/Sub Topic to create. It must be in the form of the unique identifier within the project, not the entire name. E.g. it must be 'laconia', not 'projects/my-gcp-project/topics/laconia'."
             propagationPolicy:
               type: string
-              description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Options: [CreateNoDelete, CreateDelete, NoCreateNoDelete]. Default is CreateNoDelete."
+              enum: [CreateDelete, CreateNoDelete, NoCreateNoDelete]
+              description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
         status:
           properties:
             conditions:
