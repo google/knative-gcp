@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,11 +35,23 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		start: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode: ModeCloudEventsStructured,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
 			},
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode: ModeCloudEventsStructured,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
 			},
 		},
 	}, {
@@ -50,7 +63,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModePushCompatible,
+				Mode:   ModePushCompatible,
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -62,7 +76,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModeCloudEventsBinary,
+				Mode:   ModeCloudEventsBinary,
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -73,7 +88,20 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModeCloudEventsBinary,
+				Mode:   ModeCloudEventsBinary,
+				Secret: defaultSecretSelector(),
+			},
+		},
+	}, {
+		name: "nil secret",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode:   ModeCloudEventsBinary,
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}}

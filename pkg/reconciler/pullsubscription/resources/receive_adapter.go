@@ -45,25 +45,11 @@ const (
 	credsMountPath = "/var/secrets/google"
 )
 
-// DefaultSecretSelector is the default secret selector used to load the creds
-// for the receive adapter to auth with Google Cloud.
-func DefaultSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "google-cloud-key",
-		},
-		Key: "key.json",
-	}
-}
-
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
 // PullSubscriptions.
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
-	if secret == nil {
-		secret = DefaultSecretSelector()
-	}
 
 	var mode adapter.ModeType
 	switch args.Source.PubSubMode() {
