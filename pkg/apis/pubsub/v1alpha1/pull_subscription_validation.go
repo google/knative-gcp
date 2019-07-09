@@ -59,7 +59,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	if current.RetentionDuration != nil {
 		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
 		if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
-			errs = errs.Also(apis.ErrInvalidValue(current.RetentionDuration, "retentionDuration"))
+			errs = errs.Also(apis.ErrOutOfBoundsValue(current.RetentionDuration, minRetentionDuration, maxRetentionDuration, "retentionDuration"))
 		}
 	}
 
