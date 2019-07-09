@@ -22,7 +22,7 @@ import (
 )
 
 // makePodTemplate creates a pod template for a Job.
-func makePodTemplate(image, serviceAccount string, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 
 	env := extEnv
 	// We do not have any defaults yet.
@@ -37,8 +37,7 @@ func makePodTemplate(image, serviceAccount string, extEnv ...corev1.EnvVar) *cor
 			},
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: serviceAccount,
-			RestartPolicy:      corev1.RestartPolicyNever,
+			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{{
 				Name:            "job",
 				Image:           image,

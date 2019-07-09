@@ -31,16 +31,15 @@ import (
 )
 
 type TopicArgs struct {
-	Image          string
-	ServiceAccount string
-	Action         string
-	ProjectID      string
-	TopicID        string
-	Owner          kmeta.OwnerRefable
+	Image     string
+	Action    string
+	ProjectID string
+	TopicID   string
+	Owner     kmeta.OwnerRefable
 }
 
 func NewTopicOps(arg TopicArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, arg.ServiceAccount, []corev1.EnvVar{{
+	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {

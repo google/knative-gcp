@@ -31,69 +31,65 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		start *PullSubscription
 		want  *PullSubscription
 	}{{
-		name: "non-nil",
+		name: "non-nil structured",
 		start: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{},
-			},
 			Spec: PullSubscriptionSpec{
+				Mode: ModeCloudEventsStructured,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",
 					},
 					Key: "test.json",
 				},
-				ServiceAccountName: "TestServiceAccount",
 			},
 		},
 		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
 			Spec: PullSubscriptionSpec{
+				Mode: ModeCloudEventsStructured,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",
 					},
 					Key: "test.json",
 				},
-				ServiceAccountName: "TestServiceAccount",
 			},
 		},
 	}, {
-		name: "nil annotations",
+		name: "non-nil push",
+		start: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: ModePushCompatible,
+			},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode:   ModePushCompatible,
+				Secret: DefaultSecretSelector(),
+			},
+		},
+	}, {
+		name: "non-nil invalid",
+		start: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: "invalid",
+			},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode:   ModeCloudEventsBinary,
+				Secret: DefaultSecretSelector(),
+			},
+		},
+	}, {
+		name: "nil",
 		start: &PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec:       PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
 			Spec: PullSubscriptionSpec{
-				Secret:             DefaultSecretSelector(),
-				ServiceAccountName: DefaultServiceAccountName,
-			},
-		},
-	}, {
-		name: "blank service account",
-		start: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       PullSubscriptionSpec{},
-		},
-		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
-			Spec: PullSubscriptionSpec{
-				Secret:             DefaultSecretSelector(),
-				ServiceAccountName: DefaultServiceAccountName,
+				Mode:   ModeCloudEventsBinary,
+				Secret: DefaultSecretSelector(),
 			},
 		},
 	}, {
@@ -103,14 +99,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 			Spec:       PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
 			Spec: PullSubscriptionSpec{
-				Secret:             DefaultSecretSelector(),
-				ServiceAccountName: DefaultServiceAccountName,
+				Mode:   ModeCloudEventsBinary,
+				Secret: DefaultSecretSelector(),
 			},
 		},
 	}}

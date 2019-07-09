@@ -33,9 +33,8 @@ func TestMakeReceiveAdapter(t *testing.T) {
 			Namespace: "source-namespace",
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
-			ServiceAccountName: "source-svc-acct",
-			Project:            "eventing-name",
-			Topic:              "topic",
+			Project: "eventing-name",
+			Topic:   "topic",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -91,7 +90,6 @@ func TestMakeReceiveAdapter(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "source-svc-acct",
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",
