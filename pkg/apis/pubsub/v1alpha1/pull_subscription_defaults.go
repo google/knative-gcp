@@ -21,17 +21,15 @@ import (
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
-	if s.ObjectMeta.Annotations == nil {
-		s.ObjectMeta.Annotations = map[string]string{
-			PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-		}
-	} else if _, ok := s.ObjectMeta.Annotations[PubSubModeAnnotation]; !ok {
-		s.ObjectMeta.Annotations[PubSubModeAnnotation] = PubSubModeCloudEventsBinary
-	}
-
 	s.Spec.SetDefaults(ctx)
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
-	// None
+	switch ss.Mode {
+	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
+		// Valid Mode.
+	default:
+		// Default is CloudEvents Binary Mode.
+		ss.Mode = ModeCloudEventsBinary
+	}
 }
