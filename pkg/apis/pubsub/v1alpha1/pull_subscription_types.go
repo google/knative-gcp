@@ -87,11 +87,6 @@ type PullSubscriptionSpec struct {
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
-
-	// ServiceAccountName is the name of the ServiceAccount that will be used to
-	// run the Receive Adapter Deployment.
-	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 type ModeType string

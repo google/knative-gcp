@@ -66,10 +66,6 @@ spec:
               type: string
               # TODO: document we default.
               description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'."
-            serviceAccountName:
-              type: string
-              # TODO: document we default.
-              description: "Name of the Kubernetes ServiceAccount that is running the Receiver Adapter Pods."
             sink:
               type: object
               description: "Reference to an object that will resolve to a domain name to use as the sink."

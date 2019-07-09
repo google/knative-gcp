@@ -37,8 +37,7 @@ func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateS
 			},
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: "default",
-			RestartPolicy:      corev1.RestartPolicyNever,
+			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{{
 				Name:            "job",
 				Image:           image,
