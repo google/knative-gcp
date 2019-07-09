@@ -66,10 +66,6 @@ spec:
             propagationPolicy:
               type: string
               description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Options: [CreateNoDelete, CreateDelete, NoCreateNoDelete]. Default is CreateNoDelete."
-            serviceAccountName:
-              type: string
-              # TODO: document we default.
-              description: "Name of the Kubernetes ServiceAccount to run as."
         status:
           properties:
             conditions:

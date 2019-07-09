@@ -34,9 +34,8 @@ func TestMakePublisher(t *testing.T) {
 			Namespace: "topic-namespace",
 		},
 		Spec: v1alpha1.TopicSpec{
-			ServiceAccountName: "topic-svc-acct",
-			Project:            "eventing-name",
-			Topic:              "topic-name",
+			Project: "eventing-name",
+			Topic:   "topic-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -119,8 +118,7 @@ func TestMakePublisher(t *testing.T) {
               }
             ]
           }
-        ],
-        "serviceAccountName": "topic-svc-acct"
+        ]
       }
     }
   },

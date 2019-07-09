@@ -45,8 +45,7 @@ var (
 			Namespace:  "baz",
 			Name:       "qux",
 		},
-		ServiceAccountName: "service-account-name",
-		Mode:               ModeCloudEventsStructured,
+		Mode: ModeCloudEventsStructured,
 	}
 )
 
