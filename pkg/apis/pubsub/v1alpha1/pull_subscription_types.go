@@ -101,9 +101,6 @@ const (
 	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
 
-	// TODO: we need to plumb the mode through in the event to signal how to
-	//  process the payload on the consumer side.
-
 	// ModeCloudEventsBinary will use CloudEvents binary HTTP mode with
 	// flattened Pub/Sub payload.
 	ModeCloudEventsBinary ModeType = "CloudEventsBinary"

@@ -160,6 +160,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 		event.SetType(v1alpha1.PubSubEventType)
+		event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", a.SendMode))
 		event.Data = msg.Data
 		event.DataEncoded = true
 		// Attributes are extensions.
