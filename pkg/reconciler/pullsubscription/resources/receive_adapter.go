@@ -95,7 +95,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 					Labels: args.Labels,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Source.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: args.Image,
