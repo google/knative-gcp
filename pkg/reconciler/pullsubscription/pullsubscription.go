@@ -152,7 +152,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
 
-		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.ServiceAccountName, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 		switch state {
 		case pubsub.OpsJobGetFailed:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
@@ -210,7 +210,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.ServiceAccountName, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 	switch state {
 	case pubsub.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))

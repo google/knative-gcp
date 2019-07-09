@@ -35,6 +35,7 @@ import (
 // SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
 	Image          string
+	ServiceAccount string
 	Action         string
 	ProjectID      string
 	TopicID        string
@@ -44,7 +45,7 @@ type SubArgs struct {
 
 // NewSubscriptionOps returns a new batch Job resource.
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
+	podTemplate := makePodTemplate(arg.Image, arg.ServiceAccount, []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {

@@ -22,7 +22,7 @@ import (
 )
 
 // makePodTemplate creates a pod template for a Job.
-func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+func makePodTemplate(image, serviceAccount string, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 
 	env := extEnv
 	// We do not have any defaults yet.
@@ -33,11 +33,11 @@ func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateS
 	return &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"sidecar.istio.io/inject": "false", // TODO: real istio enabled clusters might need istio to talk out the cluster.
+				"sidecar.istio.io/inject": "false",
 			},
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: "default",
+			ServiceAccountName: serviceAccount,
 			RestartPolicy:      corev1.RestartPolicyNever,
 			Containers: []corev1.Container{{
 				Name:            "job",

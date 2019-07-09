@@ -26,4 +26,7 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
+	if ts.ServiceAccountName == "" {
+		ts.ServiceAccountName = DefaultServiceAccountName
+	}
 }

@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -35,7 +36,15 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{},
 			},
-			Spec: PullSubscriptionSpec{},
+			Spec: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
+				ServiceAccountName: "TestServiceAccount",
+			},
 		},
 		want: &PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{
@@ -43,7 +52,15 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
 				},
 			},
-			Spec: PullSubscriptionSpec{},
+			Spec: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
+				},
+				ServiceAccountName: "TestServiceAccount",
+			},
 		},
 	}, {
 		name: "nil annotations",
@@ -57,7 +74,44 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
 				},
 			},
-			Spec: PullSubscriptionSpec{},
+			Spec: PullSubscriptionSpec{
+				Secret:             DefaultSecretSelector(),
+				ServiceAccountName: DefaultServiceAccountName,
+			},
+		},
+	}, {
+		name: "blank service account",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+				},
+			},
+			Spec: PullSubscriptionSpec{
+				Secret:             DefaultSecretSelector(),
+				ServiceAccountName: DefaultServiceAccountName,
+			},
+		},
+	}, {
+		name: "nil secret",
+		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{},
+			Spec:       PullSubscriptionSpec{},
+		},
+		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
+				},
+			},
+			Spec: PullSubscriptionSpec{
+				Secret:             DefaultSecretSelector(),
+				ServiceAccountName: DefaultServiceAccountName,
+			},
 		},
 	}}
 

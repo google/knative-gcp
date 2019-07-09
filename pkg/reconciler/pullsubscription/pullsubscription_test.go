@@ -62,7 +62,7 @@ const (
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
-	testServiceAccount = "test-project-id"
+	testServiceAccount = "test-project-account"
 )
 
 var (
@@ -454,6 +454,7 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	return operations.NewSubscriptionOps(operations.SubArgs{
 		Image:          testImage,
+		ServiceAccount: testServiceAccount,
 		Action:         action,
 		ProjectID:      testProject,
 		TopicID:        testTopicID,
@@ -465,6 +466,7 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	job := operations.NewSubscriptionOps(operations.SubArgs{
 		Image:          testImage,
+		ServiceAccount: testServiceAccount,
 		Action:         action,
 		ProjectID:      testProject,
 		TopicID:        testTopicID,

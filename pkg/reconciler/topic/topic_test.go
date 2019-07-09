@@ -59,7 +59,7 @@ const (
 	topicUID           = topicName + "-abc-123"
 	testProject        = "test-project-id"
 	testTopicID        = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
-	testServiceAccount = "test-project-id"
+	testServiceAccount = "test-project-account"
 	testTopicURI       = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
 )
 
@@ -517,21 +517,23 @@ func newPublisher(get, done bool) runtime.Object {
 
 func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	return operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Owner:     owner,
+		Image:          testImage + "pub",
+		ServiceAccount: testServiceAccount,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		Owner:          owner,
 	})
 }
 
 func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	job := operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Owner:     owner,
+		Image:          testImage + "pub",
+		ServiceAccount: testServiceAccount,
+		Action:         action,
+		ProjectID:      testProject,
+		TopicID:        testTopicID,
+		Owner:          owner,
 	})
 
 	if success {

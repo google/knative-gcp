@@ -25,7 +25,8 @@ import (
 
 func TestTopicDefaults(t *testing.T) {
 	want := &Topic{Spec: TopicSpec{
-		PropagationPolicy: TopicPolicyCreateNoDelete,
+		PropagationPolicy:  TopicPolicyCreateNoDelete,
+		ServiceAccountName: DefaultServiceAccountName,
 	}}
 
 	got := &Topic{Spec: TopicSpec{}}
