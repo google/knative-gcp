@@ -21,6 +21,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	time "time"
+
 	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -200,6 +202,16 @@ func (in *PullSubscriptionSpec) DeepCopyInto(out *PullSubscriptionSpec) {
 		in, out := &in.Secret, &out.Secret
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.AckDeadline != nil {
+		in, out := &in.AckDeadline, &out.AckDeadline
+		*out = new(time.Duration)
+		**out = **in
+	}
+	if in.RetentionDuration != nil {
+		in, out := &in.RetentionDuration, &out.RetentionDuration
+		*out = new(time.Duration)
+		**out = **in
 	}
 	if in.Sink != nil {
 		in, out := &in.Sink, &out.Sink
