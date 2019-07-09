@@ -64,7 +64,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:   ModePushCompatible,
-				Secret: DefaultSecretSelector(),
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -77,7 +77,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:   ModeCloudEventsBinary,
-				Secret: DefaultSecretSelector(),
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -89,7 +89,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:   ModeCloudEventsBinary,
-				Secret: DefaultSecretSelector(),
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}, {
@@ -101,7 +101,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:   ModeCloudEventsBinary,
-				Secret: DefaultSecretSelector(),
+				Secret: defaultSecretSelector(),
 			},
 		},
 	}}
