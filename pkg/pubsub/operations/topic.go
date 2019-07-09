@@ -18,6 +18,8 @@ package operations
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
@@ -82,13 +84,13 @@ type TopicOps struct {
 	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
 }
 
-func (t *TopicOps) Run(ctx context.Context) {
+func (t *TopicOps) Run(ctx context.Context) error {
 	logger := logging.FromContext(ctx)
 
 	if t.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
-			logger.Fatal("failed to find project id. ", zap.Error(err))
+			return fmt.Errorf("failed to find project id, %s", err)
 		}
 		t.Project = project
 	}
@@ -103,20 +105,20 @@ func (t *TopicOps) Run(ctx context.Context) {
 
 	client, err := pubsub.NewClient(ctx, t.Project)
 	if err != nil {
-		logger.Fatal("Failed to create Pub/Sub client.", zap.Error(err))
+		return fmt.Errorf("failed to create Pub/Sub client, %s", err)
 	}
 
 	topic := client.Topic(t.Topic)
 	exists, err := topic.Exists(ctx)
 	if err != nil {
-		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+		return fmt.Errorf("failed to verify topic exists, %s", err)
 	}
 
 	switch t.Action {
 	case ActionExists:
 		// If topic doesn't exist, that is an error.
 		if !exists {
-			logger.Fatal("Topic does not exist.")
+			return errors.New("topic does not exist")
 		}
 		logger.Info("Previously created.")
 
@@ -126,7 +128,7 @@ func (t *TopicOps) Run(ctx context.Context) {
 			// Create a new topic with the given name.
 			topic, err = client.CreateTopic(ctx, t.Topic)
 			if err != nil {
-				logger.Fatal("Failed to create topic.", zap.Error(err))
+				return fmt.Errorf("failed to create topic, %s", err)
 			}
 			logger.Info("Successfully created.")
 		} else {
@@ -137,7 +139,7 @@ func (t *TopicOps) Run(ctx context.Context) {
 	case ActionDelete:
 		if exists {
 			if err := topic.Delete(ctx); err != nil {
-				logger.Fatal("Failed to delete topic.", zap.Error(err))
+				return fmt.Errorf("failed to delete topic, %s", err)
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -145,8 +147,9 @@ func (t *TopicOps) Run(ctx context.Context) {
 		}
 
 	default:
-		logger.Fatal("Unknown action value.")
+		return fmt.Errorf("unknown action value %s", t.Action)
 	}
 
 	logger.Info("Done.")
+	return nil
 }

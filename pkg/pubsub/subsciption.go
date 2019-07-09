@@ -83,6 +83,27 @@ func (s *pubsubSubscription) Config(ctx context.Context) (SubscriptionConfig, er
 	}, nil
 }
 
+// Update implements pubsub.Subscription.Update
+func (s *pubsubSubscription) Update(ctx context.Context, cfg SubscriptionConfig) (SubscriptionConfig, error) {
+	config := pubsub.SubscriptionConfigToUpdate{
+		Labels:              cfg.Labels,
+		RetainAckedMessages: cfg.RetainAckedMessages,
+		RetentionDuration:   cfg.RetentionDuration,
+		AckDeadline:         cfg.AckDeadline,
+	}
+	updatedConfig, err := s.sub.Update(ctx, config)
+	if err != nil {
+		return SubscriptionConfig{}, err
+	}
+	return SubscriptionConfig{
+		Topic:               &pubsubTopic{topic: updatedConfig.Topic},
+		AckDeadline:         updatedConfig.AckDeadline,
+		RetainAckedMessages: updatedConfig.RetainAckedMessages,
+		RetentionDuration:   updatedConfig.RetentionDuration,
+		Labels:              updatedConfig.Labels,
+	}, err
+}
+
 // Delete implements pubsub.Subscription.Delete
 func (s *pubsubSubscription) Delete(ctx context.Context) error {
 	return s.sub.Delete(ctx)

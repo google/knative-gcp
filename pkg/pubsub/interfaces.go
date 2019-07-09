@@ -42,6 +42,8 @@ type Subscription interface {
 	Exists(ctx context.Context) (bool, error)
 	// Config see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Config
 	Config(ctx context.Context) (SubscriptionConfig, error)
+	// Update see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Update
+	Update(ctx context.Context, cfg SubscriptionConfig) (SubscriptionConfig, error)
 	// Delete see https://godoc.org/cloud.google.com/go/pubsub#Subscription.Delete
 	Delete(ctx context.Context) error
 }

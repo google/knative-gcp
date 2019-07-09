@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -438,24 +439,34 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 }
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+	days7 := 7 * 24 * time.Hour
+	secs30 := 30 * time.Second
 	return operations.NewSubscriptionOps(operations.SubArgs{
-		Image:          testImage,
-		Action:         action,
-		ProjectID:      testProject,
-		TopicID:        testTopicID,
-		SubscriptionID: testSubscriptionID,
-		Owner:          owner,
+		Image:               testImage,
+		Action:              action,
+		ProjectID:           testProject,
+		TopicID:             testTopicID,
+		SubscriptionID:      testSubscriptionID,
+		AckDeadline:         secs30,
+		RetainAckedMessages: false,
+		RetentionDuration:   days7,
+		Owner:               owner,
 	})
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+	days7 := 7 * 24 * time.Hour
+	secs30 := 30 * time.Second
 	job := operations.NewSubscriptionOps(operations.SubArgs{
-		Image:          testImage,
-		Action:         action,
-		ProjectID:      testProject,
-		TopicID:        testTopicID,
-		SubscriptionID: testSubscriptionID,
-		Owner:          owner,
+		Image:               testImage,
+		Action:              action,
+		ProjectID:           testProject,
+		TopicID:             testTopicID,
+		SubscriptionID:      testSubscriptionID,
+		AckDeadline:         secs30,
+		RetainAckedMessages: false,
+		RetentionDuration:   days7,
+		Owner:               owner,
 	})
 
 	if success {

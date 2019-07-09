@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
@@ -25,6 +26,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
+)
+
+const (
+	minRetentionDuration = 10 * time.Second   // 10 seconds.
+	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
@@ -49,6 +55,14 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
+
+	if current.RetentionDuration != nil {
+		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
+		if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(current.RetentionDuration, minRetentionDuration, maxRetentionDuration, "retentionDuration"))
+		}
+	}
+
 	// Mode [optional]
 	switch current.Mode {
 	case "", ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:

@@ -19,7 +19,12 @@ package operations
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/kmeta"
@@ -34,17 +39,20 @@ import (
 
 // SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
-	Image          string
-	Action         string
-	ProjectID      string
-	TopicID        string
-	SubscriptionID string
-	Owner          kmeta.OwnerRefable
+	Image               string
+	Action              string
+	ProjectID           string
+	TopicID             string
+	SubscriptionID      string
+	AckDeadline         time.Duration
+	RetainAckedMessages bool
+	RetentionDuration   time.Duration
+	Owner               kmeta.OwnerRefable
 }
 
 // NewSubscriptionOps returns a new batch Job resource.
 func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
+	env := []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {
@@ -56,7 +64,23 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	}, {
 		Name:  "PUBSUB_SUBSCRIPTION_ID",
 		Value: arg.SubscriptionID,
-	}}...)
+	}}
+
+	switch arg.Action {
+	case ActionCreate:
+		env = append(env, []corev1.EnvVar{{
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD",
+			Value: arg.AckDeadline.String(),
+		}, {
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED",
+			Value: strconv.FormatBool(arg.RetainAckedMessages),
+		}, {
+			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR",
+			Value: arg.RetentionDuration.String(),
+		}}...)
+	}
+
+	podTemplate := makePodTemplate(arg.Image, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
@@ -94,7 +118,28 @@ type SubscriptionOps struct {
 	// Subscription is the environment variable containing the name of the
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
+
+	// AckDeadline is the default maximum time after a subscriber receives a
+	// message before the subscriber should acknowledge the message. Defaults
+	// to 30 seconds.
+	AckDeadline time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD" required:"true" default:"30s"`
+
+	// RetainAckedMessages defines whether to retain acknowledged messages. If
+	// true, acknowledged messages will not be expunged until they fall out of
+	// the RetentionDuration window.
+	RetainAckedMessages bool `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED" required:"true" default:"false"`
+
+	// RetentionDuration defines how long to retain messages in backlog, from
+	// the time of publish. If RetainAckedMessages is true, this duration
+	// affects the retention of acknowledged messages, otherwise only
+	// unacknowledged messages are retained. Defaults to 7 days. Cannot be
+	// longer than 7 days or shorter than 10 minutes.
+	RetentionDuration time.Duration `envconfig:"PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR" required:"true" default:"168h"`
 }
+
+var (
+	ignoreSubConfig = cmpopts.IgnoreFields(pubsub.SubscriptionConfig{}, "Topic", "Labels")
+)
 
 // Run will perform the action configured upon a subscription.
 func (s *SubscriptionOps) Run(ctx context.Context) error {
@@ -116,44 +161,67 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	sub := s.Client.Subscription(s.Subscription)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
-		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+		return fmt.Errorf("failed to verify topic exists: %s", err)
 	}
 
 	switch s.Action {
 	case ActionExists:
 		// If subscription doesn't exist, that is an error.
 		if !exists {
-			logger.Fatal("Subscription does not exist.")
+			return errors.New("subscription does not exist")
 		}
 		logger.Info("Previously created.")
 
 	case ActionCreate:
+		// Load the topic.
+		topic, err := s.getTopic(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get topic, %s", err)
+		}
+		// subConfig is the wanted config based on settings.
+		subConfig := pubsub.SubscriptionConfig{
+			Topic:               topic,
+			AckDeadline:         s.AckDeadline,
+			RetainAckedMessages: s.RetainAckedMessages,
+			RetentionDuration:   s.RetentionDuration,
+		}
+
 		// If topic doesn't exist, create it.
 		if !exists {
-			// Load the topic.
-			topic, err := s.getTopic(ctx)
-			if err != nil {
-				logger.Fatal("Failed to get topic.", zap.Error(err))
-			}
 			// Create a new subscription to the previous topic with the given name.
-			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, pubsub.SubscriptionConfig{
-				Topic:             topic,
-				AckDeadline:       30 * time.Second,
-				RetentionDuration: 25 * time.Hour,
-			})
+			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, subConfig)
 			if err != nil {
-				logger.Fatal("Failed to create subscription.", zap.Error(err))
+				return fmt.Errorf("failed to create subscription, %s", err)
 			}
 			logger.Info("Successfully created.")
 		} else {
 			// TODO: here is where we could update config.
 			logger.Info("Previously created.")
+			// Get current config.
+			currentConfig, err := sub.Config(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to get subscription config, %s", err)
+			}
+			// Compare the current config to the expected config. Update if different.
+			if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
+				_, err := sub.Update(ctx, pubsub.SubscriptionConfig{
+					AckDeadline:         s.AckDeadline,
+					RetainAckedMessages: s.RetainAckedMessages,
+					RetentionDuration:   s.RetentionDuration,
+					Labels:              currentConfig.Labels,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to update subscription config, %s", err)
+				}
+				logger.Info("Updated subscription config.", zap.String("diff", diff))
+
+			}
 		}
 
 	case ActionDelete:
 		if exists {
 			if err := sub.Delete(ctx); err != nil {
-				logger.Fatal("Failed to delete subscription.", zap.Error(err))
+				return fmt.Errorf("failed to delete subscription, %s", err)
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -161,7 +229,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		}
 
 	default:
-		logger.Fatal("unknown action value.")
+		return fmt.Errorf("unknown action value %v", s.Action)
 	}
 
 	logger.Info("Done.")

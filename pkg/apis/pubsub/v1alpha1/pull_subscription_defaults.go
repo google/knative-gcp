@@ -18,13 +18,17 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const (
-	defaultSecretName = "google-cloud-key"
-	defaultSecretKey  = "key.json"
+	defaultSecretName        = "google-cloud-key"
+	defaultSecretKey         = "key.json"
+	defaultRetentionDuration = 7 * 24 * time.Hour
+	defaultAckDeadline       = 30 * time.Second
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
@@ -43,9 +47,20 @@ func defaultSecretSelector() *corev1.SecretKeySelector {
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
+	if ss.AckDeadline == nil {
+		ackDeadline := defaultAckDeadline
+		ss.AckDeadline = &ackDeadline
+	}
+
+	if ss.RetentionDuration == nil {
+		retentionDuration := defaultRetentionDuration
+		ss.RetentionDuration = &retentionDuration
+	}
+
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
 		ss.Secret = defaultSecretSelector()
 	}
+
 	switch ss.Mode {
 	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
 		// Valid Mode.
