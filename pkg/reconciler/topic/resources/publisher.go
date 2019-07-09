@@ -62,7 +62,6 @@ func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 
 	podSpec := corev1.PodSpec{
-		ServiceAccountName: args.Topic.Spec.ServiceAccountName,
 		Containers: []corev1.Container{{
 			Name:  "publisher",
 			Image: args.Image,

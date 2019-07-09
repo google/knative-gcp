@@ -33,9 +33,8 @@ var (
 			},
 			Key: "secret-key",
 		},
-		Project:            "my-eventing-project",
-		Topic:              "pubsub-topic",
-		ServiceAccountName: "service-account-name",
+		Project: "my-eventing-project",
+		Topic:   "pubsub-topic",
 	}
 )
 
@@ -89,10 +88,9 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 		"Topic changed": {
 			orig: &topicSpec,
 			updated: TopicSpec{
-				Secret:             topicSpec.Secret,
-				Project:            topicSpec.Project,
-				Topic:              "updated",
-				ServiceAccountName: topicSpec.ServiceAccountName,
+				Secret:  topicSpec.Secret,
+				Project: topicSpec.Project,
+				Topic:   "updated",
 			},
 			allowed: false,
 		},
