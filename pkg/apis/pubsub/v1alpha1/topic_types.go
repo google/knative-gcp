@@ -72,10 +72,6 @@ type TopicSpec struct {
 	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for
 	// lifecycle changes. Defaults to TopicPolicyCreateNoDelete if empty.
 	PropagationPolicy PropagationPolicyType `json:"propagationPolicy,omitempty"`
-
-	// ServiceAccountName is the name of the ServiceAccount that will be used to
-	// run the Topic Deployment.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 // PropagationPolicyType defines enum type for TopicPolicy

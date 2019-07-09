@@ -54,13 +54,12 @@ const (
 	topicName = "hubbub"
 	sinkName  = "sink"
 
-	testNS             = "testnamespace"
-	testImage          = "test_image"
-	topicUID           = topicName + "-abc-123"
-	testProject        = "test-project-id"
-	testTopicID        = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
-	testServiceAccount = "test-project-id"
-	testTopicURI       = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
+	testNS       = "testnamespace"
+	testImage    = "test_image"
+	topicUID     = topicName + "-abc-123"
+	testProject  = "test-project-id"
+	testTopicID  = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
+	testTopicURI = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
 )
 
 var (
@@ -114,9 +113,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
@@ -130,9 +128,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
@@ -149,9 +146,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 			),
 			newSink(),
@@ -165,9 +161,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				// Updates
 				WithInitTopicConditions,
@@ -186,9 +181,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -206,9 +200,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -226,9 +219,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -249,9 +241,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithInitTopicConditions,
 				// Updates
@@ -265,9 +256,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
@@ -287,9 +277,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -305,9 +294,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -326,9 +314,8 @@ func TestAllCases(t *testing.T) {
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -347,9 +334,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project:            testProject,
-					Topic:              testTopicID,
-					ServiceAccountName: testServiceAccount,
+					Project: testProject,
+					Topic:   testTopicID,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -487,9 +473,8 @@ func newPublisher(get, done bool) runtime.Object {
 	topic := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
-			Project:            testProject,
-			Topic:              testTopicID,
-			ServiceAccountName: testServiceAccount,
+			Project: testProject,
+			Topic:   testTopicID,
 		}))
 	args := &resources.PublisherArgs{
 		Image:  testImage,
