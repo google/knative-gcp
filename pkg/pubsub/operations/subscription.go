@@ -19,6 +19,7 @@ package operations
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -160,14 +161,14 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	sub := s.Client.Subscription(s.Subscription)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
-		logger.Fatal("Failed to verify topic exists.", zap.Error(err))
+		return fmt.Errorf("failed to verify topic exists: %s", err)
 	}
 
 	switch s.Action {
 	case ActionExists:
 		// If subscription doesn't exist, that is an error.
 		if !exists {
-			logger.Fatal("Subscription does not exist.")
+			return errors.New("subscription does not exist")
 		}
 		logger.Info("Previously created.")
 
@@ -175,7 +176,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		// Load the topic.
 		topic, err := s.getTopic(ctx)
 		if err != nil {
-			logger.Fatal("Failed to get topic.", zap.Error(err))
+			return fmt.Errorf("failed to get topic, %s", err)
 		}
 		// subConfig is the wanted config based on settings.
 		subConfig := pubsub.SubscriptionConfig{
@@ -190,7 +191,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 			// Create a new subscription to the previous topic with the given name.
 			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, subConfig)
 			if err != nil {
-				logger.Fatal("Failed to create subscription.", zap.Error(err))
+				return fmt.Errorf("failed to create subscription, %s", err)
 			}
 			logger.Info("Successfully created.")
 		} else {
@@ -199,7 +200,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 			// Get current config.
 			currentConfig, err := sub.Config(ctx)
 			if err != nil {
-				logger.Fatal("Failed to get subscription config.", zap.Error(err))
+				return fmt.Errorf("failed to get subscription config, %s", err)
 			}
 			// Compare the current config to the expected config. Update if different.
 			if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
@@ -210,7 +211,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 					Labels:              currentConfig.Labels,
 				})
 				if err != nil {
-					logger.Fatal("Failed to update subscription config.", zap.Error(err))
+					return fmt.Errorf("failed to update subscription config, %s", err)
 				}
 				logger.Info("Updated subscription config.", zap.String("diff", diff))
 
@@ -220,7 +221,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	case ActionDelete:
 		if exists {
 			if err := sub.Delete(ctx); err != nil {
-				logger.Fatal("Failed to delete subscription.", zap.Error(err))
+				return fmt.Errorf("failed to delete subscription, %s", err)
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -228,7 +229,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		}
 
 	default:
-		logger.Fatal("unknown action value.")
+		return fmt.Errorf("unknown action value %v", s.Action)
 	}
 
 	logger.Info("Done.")
