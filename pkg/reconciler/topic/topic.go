@@ -152,7 +152,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				return err
 
 			case pubsub.OpsJobCreated:
-				// If we created a job to make a topic, then add the finalizer and update the status.
+				// If we created a job to delete a topic, update the status.
 				topic.Status.MarkTopicOperating(
 					"Deleting",
 					"Created Job to delete topic %q.",
@@ -309,6 +309,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 	return ch, err
 }
 
+// updateFinalizers is a generic method for future compatibility with a
+// reconciler SDK.
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Topic) (*v1alpha1.Topic, bool, error) {
 	source, err := c.topicLister.Topics(desired.Namespace).Get(desired.Name)
 	if err != nil {
@@ -321,24 +323,24 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Top
 	var finalizers []string
 
 	// If there's nothing to update, just return.
-	exisitingFinalizers := sets.NewString(existing.Finalizers...)
+	existingFinalizers := sets.NewString(existing.Finalizers...)
 	desiredFinalizers := sets.NewString(desired.Finalizers...)
 
 	if desiredFinalizers.Has(finalizerName) {
-		if exisitingFinalizers.Has(finalizerName) {
+		if existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Add the finalizer.
 		finalizers = append(existing.Finalizers, finalizerName)
 	} else {
-		if !exisitingFinalizers.Has(finalizerName) {
+		if !existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Remove the finalizer.
-		exisitingFinalizers.Delete(finalizerName)
-		finalizers = exisitingFinalizers.List()
+		existingFinalizers.Delete(finalizerName)
+		finalizers = existingFinalizers.List()
 	}
 
 	mergePatch := map[string]interface{}{

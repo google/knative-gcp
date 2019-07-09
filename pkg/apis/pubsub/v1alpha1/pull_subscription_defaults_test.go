@@ -31,37 +31,52 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		start *PullSubscription
 		want  *PullSubscription
 	}{{
-		name: "non-nil",
+		name: "non-nil structured",
 		start: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{},
+			Spec: PullSubscriptionSpec{
+				Mode: ModeCloudEventsStructured,
 			},
-			Spec: PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
 			Spec: PullSubscriptionSpec{
+				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
 			},
 		},
 	}, {
-		name: "nil annotations",
+		name: "non-nil push",
+		start: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: ModePushCompatible,
+			},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: ModePushCompatible,
+			},
+		},
+	}, {
+		name: "non-nil invalid",
+		start: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: "invalid",
+			},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode: ModeCloudEventsBinary,
+			},
+		},
+	}, {
+		name: "nil",
 		start: &PullSubscription{
 			ObjectMeta: metav1.ObjectMeta{},
 			Spec:       PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-				},
-			},
 			Spec: PullSubscriptionSpec{
+				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: &defaultRetentionDuration,
 				AckDeadline:       &defaultAckDeadline,
 			},
@@ -84,12 +99,8 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	days2 := 2 * 24 * time.Hour
 	secs60 := 60 * time.Second
 	want := &PullSubscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				PubSubModeAnnotation: PubSubModeCloudEventsBinary,
-			},
-		},
 		Spec: PullSubscriptionSpec{
+			Mode:              ModeCloudEventsBinary,
 			AckDeadline:       &secs60,
 			RetentionDuration: &days2,
 		},

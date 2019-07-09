@@ -63,7 +63,6 @@ const (
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
-	testServiceAccount = "test-project-id"
 )
 
 var (
@@ -117,7 +116,7 @@ func TestAllCases(t *testing.T) {
 		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "sink ref is nil"),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for PullSubscription %q: missing field(s): spec.sink, spec.topic", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -132,9 +131,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -151,9 +149,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -175,9 +172,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -193,9 +189,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -213,9 +208,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -232,9 +226,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -249,9 +242,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -276,9 +268,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -292,9 +283,8 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 				),
@@ -307,9 +297,8 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					// updates
@@ -324,9 +313,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -343,9 +331,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -366,10 +353,10 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -386,10 +373,10 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -430,9 +417,8 @@ func newReceiveAdapter(image string) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			Project:            testProject,
-			Topic:              testTopicID,
-			ServiceAccountName: testServiceAccount,
+			Project: testProject,
+			Topic:   testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,

@@ -67,11 +67,11 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	var mode adapter.ModeType
 	switch args.Source.PubSubMode() {
-	case "", v1alpha1.PubSubModeCloudEventsBinary:
+	case "", v1alpha1.ModeCloudEventsBinary:
 		mode = adapter.Binary
-	case v1alpha1.PubSubModeCloudEventsStructured:
+	case v1alpha1.ModeCloudEventsStructured:
 		mode = adapter.Structured
-	case v1alpha1.PubSubModePushCompatible:
+	case v1alpha1.ModePushCompatible:
 		mode = adapter.Push
 	}
 
@@ -95,7 +95,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 					Labels: args.Labels,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Source.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: args.Image,

@@ -111,12 +111,19 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		SecretName:     "webhook-certs",
 		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
 	}
+
+	stats, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("Failed to initialize the stats reporter", zap.Error(err))
+	}
+
 	controller := webhook.AdmissionController{
 		Client:                kubeClient,
 		Options:               options,
 		Handlers:              handlers,
 		Logger:                logger,
 		DisallowUnknownFields: true,
+		StatsReporter:         stats,
 
 		WithContext: func(ctx context.Context) context.Context {
 			for _, store := range stores {
