@@ -39,7 +39,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		name: "non-nil structured",
 		start: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode: ModeCloudEventsStructured,
+				Mode:              ModeCloudEventsStructured,
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",
@@ -113,8 +115,10 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		},
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
-				Mode:   ModeCloudEventsBinary,
-				Secret: defaultSecretSelector(),
+				Mode:              ModeCloudEventsBinary,
+				RetentionDuration: &defaultRetentionDuration,
+				AckDeadline:       &defaultAckDeadline,
+				Secret:            defaultSecretSelector(),
 			},
 		},
 	}}
@@ -139,6 +143,12 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 			Mode:              ModeCloudEventsBinary,
 			AckDeadline:       &secs60,
 			RetentionDuration: &days2,
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "my-cloud-key",
+				},
+				Key: "test.json",
+			},
 		},
 	}
 
