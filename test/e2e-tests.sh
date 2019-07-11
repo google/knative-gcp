@@ -14,11 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/e2e-tests.sh
-
-function knative_setup() {
-  start_latest_knative_serving
-}
+source $(dirname $0)/e2e-common.sh
 
 # Script entry point.
 
