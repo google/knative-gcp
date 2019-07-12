@@ -297,6 +297,14 @@
   version = "v0.3.7"
 
 [[projects]]
+  digest = "1:e8c27ef37de85711f491f6d2fa4170317e758410c5c43b28d3bffd6422200fa6"
+  name = "github.com/jcrossley3/manifestival"
+  packages = ["pkg/manifestival"]
+  pruneopts = "NUT"
+  revision = "9157edb8aeef0b2d88b33634e5053c45131ea85e"
+  source = "github.com/n3wscott/manifestival"
+
+[[projects]]
   digest = "1:1f2aebae7e7c856562355ec0198d8ca2fa222fb05e5b1b66632a1fce39631885"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -332,6 +340,14 @@
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
   revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9a72bb15cb54f102f1c88b079f8b7ef5e02b7c5bf2d0dac1ebb1e5e8afc55b01"
+  name = "github.com/knative/pkg"
+  packages = ["apis"]
+  pruneopts = "NUT"
+  revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
 
 [[projects]]
   digest = "1:68ecd48e097f4e52b9802781008a5d282a6f350f0efa86f2314d7fd81eefe99e"
@@ -445,6 +461,14 @@
   pruneopts = "NUT"
   revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
   version = "v3.0.0"
+
+[[projects]]
+  digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:09fd8d3e830bac0a0e2d1f7009fe33a0c435ee14ae818be9cc9ceb5f77da18ae"
@@ -1175,6 +1199,13 @@
     "signals",
     "system",
     "system/testing",
+    "test",
+    "test/helpers",
+    "test/ingress",
+    "test/logging",
+    "test/monitoring",
+    "test/spoof",
+    "test/zipkin",
     "tracker",
     "version",
     "webhook",
@@ -1194,6 +1225,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
     "github.com/knative/serving/pkg/apis/serving/v1beta1",
@@ -1279,6 +1311,8 @@
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",
+    "knative.dev/pkg/test",
+    "knative.dev/pkg/test/helpers",
     "knative.dev/pkg/tracker",
     "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",

@@ -29,6 +29,7 @@ readonly E2E_TEST_NAMESPACE="default"
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
+readonly E2E_SMOKE_TEST_TOPIC="e2e-smoke-test"
 
 # Setup the Cloud Run Events environment for running tests.
 function cloud_run_events_setup() {
@@ -47,6 +48,8 @@ function knative_setup() {
 # Setup resources common to all eventing tests.
 function test_setup() {
   pubsub_setup || return 1
+
+  gcloud pubsub topics create e2e-smoke-test
 
   # TODO: Publish test images.
   # echo ">> Publishing test images"
@@ -69,6 +72,9 @@ function pubsub_setup() {
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
+
+  # Smoke test needs a known pub/sub topic.
+  gcloud pubsub topics create ${E2E_SMOKE_TEST_TOPIC}
 }
 
 # Delete resources that were used for Pub/Sub Admin setup
@@ -84,5 +90,8 @@ function pubsub_teardown() {
     gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
+
+  # Clean up the smoke test pub/sub topic.
+  gcloud pubsub topics delete ${E2E_SMOKE_TEST_TOPIC}
 }
 

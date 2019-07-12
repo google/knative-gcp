@@ -51,6 +51,12 @@ required = [
   name = "k8s.io/client-go"
   version = "kubernetes-1.12.6"
 
+# manifestival is a testing only dep.
+[[constraint]]
+  name = "github.com/jcrossley3/manifestival"
+  revision = "9157edb8aeef0b2d88b33634e5053c45131ea85e"
+  source = "github.com/n3wscott/manifestival"
+
 [[override]]
   name = "github.com/cloudevents/sdk-go"
   # HEAD as of 2019-06-04
