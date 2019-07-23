@@ -21,15 +21,15 @@ required = [
   name = "knative.dev/pkg"
   branch = "master"
 
+# This is a preemptive override.
 [[override]]
   name = "github.com/knative/eventing"
-  # HEAD as of 2019-06-26
-  revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
+  branch = "master"
 
+# This is a preemptive override.
 [[override]]
   name = "github.com/knative/serving"
-  # HEAD as of 2919-06-26
-  revision = "50cdf8762deae58ed89763adef26a88e7efecac7"
+  branch = "master"
 
 [[override]]
   name = "go.uber.org/zap"
