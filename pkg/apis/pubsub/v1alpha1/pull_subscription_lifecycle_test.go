@@ -19,9 +19,10 @@ package v1alpha1
 import (
 	"testing"
 
+	"knative.dev/pkg/apis"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -207,8 +208,8 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
 		s         *PullSubscriptionStatus
-		condQuery duckv1alpha1.ConditionType
-		want      *duckv1alpha1.Condition
+		condQuery apis.ConditionType
+		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
 		s:         &PullSubscriptionStatus{},
@@ -222,7 +223,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
@@ -235,7 +236,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
@@ -248,7 +249,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
@@ -261,7 +262,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionSubscribed,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionSubscribed,
 			Status: corev1.ConditionTrue,
 		},
@@ -274,7 +275,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionSubscribed,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionSubscribed,
 			Status:  corev1.ConditionFalse,
 			Reason:  "reason",
@@ -289,7 +290,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionSubscribed,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionSubscribed,
 			Status:  corev1.ConditionUnknown,
 			Reason:  "reason",
@@ -304,7 +305,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
@@ -317,7 +318,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionTransformerProvided,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionTransformerProvided,
 			Status: corev1.ConditionTrue,
 		},
@@ -330,7 +331,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionTransformerProvided,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionTransformerProvided,
 			Status:  corev1.ConditionUnknown,
 			Reason:  "TransformerEmpty",
@@ -345,7 +346,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionTransformerProvided,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionTransformerProvided,
 			Status:  corev1.ConditionFalse,
 			Reason:  "reason",
@@ -361,7 +362,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
@@ -377,7 +378,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionTrue,
 		},
@@ -394,7 +395,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "Testing",
@@ -413,7 +414,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionUnknown,
 			Reason:  "Testing",
@@ -432,7 +433,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "Testing",
@@ -451,7 +452,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionTrue,
 		},
@@ -469,7 +470,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionTrue,
 		},
@@ -485,7 +486,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:    PullSubscriptionConditionReady,
 			Status:  corev1.ConditionUnknown,
 			Reason:  "SinkEmpty",
@@ -504,7 +505,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
-		want: &duckv1alpha1.Condition{
+		want: &apis.Condition{
 			Type:   PullSubscriptionConditionReady,
 			Status: corev1.ConditionTrue,
 		},
@@ -513,7 +514,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.s.GetCondition(test.condQuery)
-			ignoreTime := cmpopts.IgnoreFields(duckv1alpha1.Condition{},
+			ignoreTime := cmpopts.IgnoreFields(apis.Condition{},
 				"LastTransitionTime", "Severity")
 			if diff := cmp.Diff(test.want, got, ignoreTime); diff != "" {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)

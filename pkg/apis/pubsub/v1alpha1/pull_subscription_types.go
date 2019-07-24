@@ -18,14 +18,15 @@ package v1alpha1
 
 import (
 	"fmt"
+	"time"
 
-	"github.com/knative/pkg/apis"
-	"github.com/knative/pkg/apis/duck"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // +genclient
@@ -41,6 +42,11 @@ type PullSubscription struct {
 	Status PullSubscriptionStatus `json:"status,omitempty"`
 }
 
+// PubSubMode returns the mode currently set for PullSubscription.
+func (p *PullSubscription) PubSubMode() ModeType {
+	return p.Spec.Mode
+}
+
 // Check that PullSubscription can be validated and can be defaulted.
 var _ runtime.Object = (*PullSubscription)(nil)
 
@@ -48,23 +54,45 @@ var _ runtime.Object = (*PullSubscription)(nil)
 var _ apis.Immutable = (*PullSubscription)(nil)
 
 // Check that PullSubscription implements the Conditions duck type.
-var _ = duck.VerifyType(&PullSubscription{}, &duckv1alpha1.Conditions{})
+var _ = duck.VerifyType(&PullSubscription{}, &duckv1beta1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// +optional
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the PullSubscription
 	// Topic exists in.
+	// +optional
 	Project string `json:"project,omitempty"`
 
-	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must be in
-	// the form of the unique identifier within the project, not the entire
-	// name. E.g. it must be 'laconia', not 'projects/my-proj/topics/laconia'.
+	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must
+	// be in the form of the unique identifier within the project, not the
+	// entire name. E.g. it must be 'laconia', not
+	// 'projects/my-proj/topics/laconia'.
 	Topic string `json:"topic,omitempty"`
+
+	// AckDeadline is the default maximum time after a subscriber receives a
+	// message before the subscriber should acknowledge the message. Defaults
+	// to 30 seconds.
+	// +optional
+	AckDeadline *time.Duration `json:"ackDeadline,omitempty"`
+
+	// RetainAckedMessages defines whether to retain acknowledged messages. If
+	// true, acknowledged messages will not be expunged until they fall out of
+	// the RetentionDuration window.
+	RetainAckedMessages bool `json:"retainAckedMessages,omitempty"`
+
+	// RetentionDuration defines how long to retain messages in backlog, from
+	// the time of publish. If RetainAckedMessages is true, this duration
+	// affects the retention of acknowledged messages, otherwise only
+	// unacknowledged messages are retained. Defaults to 7 days. Cannot be
+	// longer than 7 days or shorter than 10 minutes.
+	// +optional
+	RetentionDuration *time.Duration `json:"retentionDuration,omitempty"`
 
 	// Sink is a reference to an object that will resolve to a domain name to
 	// use as the sink.
@@ -76,15 +104,30 @@ type PullSubscriptionSpec struct {
 	// +optional
 	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to
-	// run the Receive Adapter Deployment.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+	// Mode defines the encoding and structure of the payload of when the
+	// PullSubscription invokes the sink.
+	// +optional
+	Mode ModeType `json:"mode,omitempty"`
 }
+
+type ModeType string
 
 const (
 	// PubSubEventType is the GcpPubSub CloudEvent type, in case PullSubscription
 	// doesn't send a CloudEvent itself.
 	PubSubEventType = "google.pubsub.topic.publish"
+
+	// ModeCloudEventsBinary will use CloudEvents binary HTTP mode with
+	// flattened Pub/Sub payload.
+	ModeCloudEventsBinary ModeType = "CloudEventsBinary"
+
+	// ModeCloudEventsStructured will use CloudEvents structured HTTP mode with
+	// flattened Pub/Sub payload.
+	ModeCloudEventsStructured ModeType = "CloudEventsStructured"
+
+	// ModePushCompatible will use CloudEvents binary HTTP mode with expanded
+	// Pub/Sub payload that matches how Cloud Pub/Sub delivers a push message.
+	ModePushCompatible ModeType = "PushCompatible"
 )
 
 // PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
@@ -95,31 +138,31 @@ func PubSubEventSource(googleCloudProject, topic string) string {
 const (
 	// PullSubscriptionConditionReady has status True when the PullSubscription is
 	// ready to send events.
-	PullSubscriptionConditionReady = duckv1alpha1.ConditionReady
+	PullSubscriptionConditionReady = apis.ConditionReady
 
 	// PullSubscriptionConditionSinkProvided has status True when the PullSubscription
 	// has been configured with a sink target.
-	PullSubscriptionConditionSinkProvided duckv1alpha1.ConditionType = "SinkProvided"
+	PullSubscriptionConditionSinkProvided apis.ConditionType = "SinkProvided"
 
 	// PullSubscriptionConditionDeployed has status True when the PullSubscription has
 	// had its receive adapter deployment created.
-	PullSubscriptionConditionDeployed duckv1alpha1.ConditionType = "Deployed"
+	PullSubscriptionConditionDeployed apis.ConditionType = "Deployed"
 
 	// PullSubscriptionConditionSubscribed has status True when a Google Cloud
 	// Pub/Sub Subscription has been created pointing at the created receive
 	// adapter deployment.
-	PullSubscriptionConditionSubscribed duckv1alpha1.ConditionType = "Subscribed"
+	PullSubscriptionConditionSubscribed apis.ConditionType = "Subscribed"
 
 	// PullSubscriptionConditionTransformerProvided has status True when the
 	// PullSubscription has been configured with a transformer target.
-	PullSubscriptionConditionTransformerProvided duckv1alpha1.ConditionType = "TransformerProvided"
+	PullSubscriptionConditionTransformerProvided apis.ConditionType = "TransformerProvided"
 
 	// PullSubscriptionConditionEventTypesProvided has status True when the
 	// PullSubscription has been configured with event types.
-	PullSubscriptionConditionEventTypesProvided duckv1alpha1.ConditionType = "EventTypesProvided"
+	PullSubscriptionConditionEventTypesProvided apis.ConditionType = "EventTypesProvided"
 )
 
-var pullSubscriptionCondSet = duckv1alpha1.NewLivingConditionSet(
+var pullSubscriptionCondSet = apis.NewLivingConditionSet(
 	PullSubscriptionConditionSinkProvided,
 	PullSubscriptionConditionDeployed,
 	PullSubscriptionConditionSubscribed,
@@ -127,12 +170,10 @@ var pullSubscriptionCondSet = duckv1alpha1.NewLivingConditionSet(
 
 // PullSubscriptionStatus defines the observed state of PullSubscription.
 type PullSubscriptionStatus struct {
-	// inherits duck/v1alpha1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last
-	//   processed by the controller.
-	// * Conditions - the latest available observations of a resource's
-	//   current state.
-	duckv1alpha1.Status `json:",inline"`
+	// inherits duck/v1beta1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1beta1.Status `json:",inline"`
 
 	// SinkURI is the current active sink URI that has been configured for the
 	// PullSubscription.

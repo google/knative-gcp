@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	fullSpec = PullSubscriptionSpec{
+	pullSubscriptionSpec = PullSubscriptionSpec{
 		Secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "secret-name",
@@ -39,9 +39,25 @@ var (
 			Namespace:  "baz",
 			Name:       "qux",
 		},
-		ServiceAccountName: "service-account-name",
+		Transformer: &corev1.ObjectReference{
+			APIVersion: "foo",
+			Kind:       "bar",
+			Namespace:  "baz",
+			Name:       "qux",
+		},
+		Mode: ModeCloudEventsStructured,
 	}
 )
+
+func TestPubSubCheckValidationFields(t *testing.T) {
+	obj := pullSubscriptionSpec.DeepCopy()
+
+	err := obj.Validate(context.TODO())
+
+	if err != nil {
+		t.Fatalf("Unexpected validation field error. Expected %v. Actual %v", nil, err)
+	}
+}
 
 func TestPubSubCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
@@ -50,186 +66,265 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		allowed bool
 	}{
 		"nil orig": {
-			updated: fullSpec,
+			updated: pullSubscriptionSpec,
 			allowed: true,
 		},
 		"Secret.Name changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "some-other-name",
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project:            fullSpec.Project,
-				Topic:              fullSpec.Topic,
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Sink:    pullSubscriptionSpec.Sink,
+				Mode:    pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Secret.Key changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
 					Key: "some-other-key",
 				},
-				Project:            fullSpec.Project,
-				Topic:              fullSpec.Topic,
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Sink:    pullSubscriptionSpec.Sink,
+				Mode:    pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Project changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project:            "some-other-project",
-				Topic:              fullSpec.Topic,
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Project: "some-other-project",
+				Topic:   pullSubscriptionSpec.Topic,
+				Sink:    pullSubscriptionSpec.Sink,
+				Mode:    pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Topic changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project:            fullSpec.Project,
-				Topic:              "some-other-topic",
-				Sink:               fullSpec.Sink,
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   "some-other-topic",
+				Sink:    pullSubscriptionSpec.Sink,
+				Mode:    pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Sink.APIVersion changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project: fullSpec.Project,
-				Topic:   fullSpec.Topic,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
 					APIVersion: "some-other-api-version",
-					Kind:       fullSpec.Sink.Kind,
-					Namespace:  fullSpec.Sink.Namespace,
-					Name:       fullSpec.Sink.Name,
+					Kind:       pullSubscriptionSpec.Sink.Kind,
+					Namespace:  pullSubscriptionSpec.Sink.Namespace,
+					Name:       pullSubscriptionSpec.Sink.Name,
 				},
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Mode: pullSubscriptionSpec.Mode,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Kind changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project: fullSpec.Project,
-				Topic:   fullSpec.Topic,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
-					APIVersion: fullSpec.Sink.APIVersion,
+					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
 					Kind:       "some-other-kind",
-					Namespace:  fullSpec.Sink.Namespace,
-					Name:       fullSpec.Sink.Name,
+					Namespace:  pullSubscriptionSpec.Sink.Namespace,
+					Name:       pullSubscriptionSpec.Sink.Name,
 				},
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Mode: pullSubscriptionSpec.Mode,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Namespace changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project: fullSpec.Project,
-				Topic:   fullSpec.Topic,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
-					APIVersion: fullSpec.Sink.APIVersion,
-					Kind:       fullSpec.Sink.Kind,
+					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+					Kind:       pullSubscriptionSpec.Sink.Kind,
 					Namespace:  "some-other-namespace",
-					Name:       fullSpec.Sink.Name,
+					Name:       pullSubscriptionSpec.Sink.Name,
 				},
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Mode: pullSubscriptionSpec.Mode,
 			},
-			allowed: false,
+			allowed: true,
 		},
 		"Sink.Name changed": {
-			orig: &fullSpec,
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project: fullSpec.Project,
-				Topic:   fullSpec.Topic,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
-					APIVersion: fullSpec.Sink.APIVersion,
-					Kind:       fullSpec.Sink.Kind,
-					Namespace:  fullSpec.Sink.Namespace,
+					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+					Kind:       pullSubscriptionSpec.Sink.Kind,
+					Namespace:  pullSubscriptionSpec.Sink.Namespace,
 					Name:       "some-other-name",
 				},
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Mode: pullSubscriptionSpec.Mode,
 			},
-			allowed: false,
+			allowed: true,
 		},
-		"ServiceAccountName changed": {
-			orig: &fullSpec,
+		"Transformer.APIVersion changed": {
+			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: fullSpec.Secret.Name,
+						Name: pullSubscriptionSpec.Secret.Name,
 					},
-					Key: fullSpec.Secret.Key,
+					Key: pullSubscriptionSpec.Secret.Key,
 				},
-				Project: fullSpec.Project,
-				Topic:   fullSpec.Topic,
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
 				Sink: &corev1.ObjectReference{
-					APIVersion: fullSpec.Sink.APIVersion,
-					Kind:       fullSpec.Sink.Kind,
-					Namespace:  fullSpec.Sink.Namespace,
+					APIVersion: "some-other-api-version",
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				Mode: pullSubscriptionSpec.Mode,
+			},
+			allowed: true,
+		},
+		"Transformer.Kind changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       "some-other-kind",
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				Mode: pullSubscriptionSpec.Mode,
+			},
+			allowed: true,
+		},
+		"Transformer.Namespace changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  "some-other-namespace",
+					Name:       pullSubscriptionSpec.Transformer.Name,
+				},
+				Mode: pullSubscriptionSpec.Mode,
+			},
+			allowed: true,
+		},
+		"Transformer.Name changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Transformer: &corev1.ObjectReference{
+					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+					Kind:       pullSubscriptionSpec.Transformer.Kind,
+					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
 					Name:       "some-other-name",
 				},
-				ServiceAccountName: fullSpec.ServiceAccountName,
+				Mode: pullSubscriptionSpec.Mode,
 			},
-			allowed: false,
+			allowed: true,
+		},
+		"Mode changed": {
+			orig: &pullSubscriptionSpec,
+			updated: PullSubscriptionSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: pullSubscriptionSpec.Secret.Name,
+					},
+					Key: pullSubscriptionSpec.Secret.Key,
+				},
+				Project: pullSubscriptionSpec.Project,
+				Topic:   pullSubscriptionSpec.Topic,
+				Sink:    pullSubscriptionSpec.Sink,
+				Mode:    ModePushCompatible,
+			},
+			allowed: true,
 		},
 		"no change": {
-			orig:    &fullSpec,
-			updated: fullSpec,
+			orig:    &pullSubscriptionSpec,
+			updated: pullSubscriptionSpec,
 			allowed: true,
 		},
 		"not spec": {
 			orig:    []string{"wrong"},
-			updated: fullSpec,
+			updated: pullSubscriptionSpec,
 			allowed: true,
 		},
 	}

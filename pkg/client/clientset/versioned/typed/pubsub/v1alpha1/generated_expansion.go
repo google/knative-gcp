@@ -21,3 +21,5 @@ package v1alpha1
 type ChannelExpansion interface{}
 
 type PullSubscriptionExpansion interface{}
+
+type TopicExpansion interface{}

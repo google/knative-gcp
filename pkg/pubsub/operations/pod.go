@@ -33,12 +33,11 @@ func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateS
 	return &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
-				"sidecar.istio.io/inject": "false", // TODO: real istio enabled clusters might need istio to talk out the cluster.
+				"sidecar.istio.io/inject": "false",
 			},
 		},
 		Spec: corev1.PodSpec{
-			ServiceAccountName: "default",
-			RestartPolicy:      corev1.RestartPolicyNever,
+			RestartPolicy: corev1.RestartPolicyNever,
 			Containers: []corev1.Container{{
 				Name:            "job",
 				Image:           image,

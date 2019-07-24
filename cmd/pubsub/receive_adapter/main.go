@@ -18,13 +18,12 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/context"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
 )
@@ -52,38 +51,28 @@ type envConfig struct {
 func main() {
 	flag.Parse()
 
-	ctx := context.Background()
-	logCfg := zap.NewProductionConfig() // TODO: to replace with a dynamically updating logger.
-	logCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	logger, err := logCfg.Build()
-	if err != nil {
-		log.Fatalf("Unable to create logger: %v", err)
-	}
+	sl, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
+	logger := sl.Desugar()
+	defer logger.Sync()
 
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
+	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+
+	startable := adapter.Adapter{}
+	if err := envconfig.Process("", &startable); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	if env.Project == "" {
+	if startable.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
 			logger.Fatal("failed to find project id. ", zap.Error(err))
 		}
-		env.Project = project
+		startable.Project = project
 	}
 
-	logger.Info("using project.", zap.String("project", env.Project))
+	logger.Info("using project.", zap.String("project", startable.Project))
 
-	startable := &adapter.Adapter{
-		ProjectID:      env.Project,
-		TopicID:        env.Topic,
-		SinkURI:        env.Sink,
-		SubscriptionID: env.Subscription,
-		TransformerURI: env.Transformer,
-	}
-
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Reflect("adapter", startable))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

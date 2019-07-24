@@ -19,9 +19,11 @@ package resources
 import (
 	"fmt"
 
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,24 +45,20 @@ const (
 	credsMountPath = "/var/secrets/google"
 )
 
-// DefaultSecretSelector is the default secret selector used to load the creds
-// for the receive adapter to auth with Google Cloud.
-func DefaultSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "google-cloud-key",
-		},
-		Key: "key.json",
-	}
-}
-
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
 // PullSubscriptions.
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
-	if secret == nil {
-		secret = DefaultSecretSelector()
+
+	var mode adapter.ModeType
+	switch args.Source.PubSubMode() {
+	case "", v1alpha1.ModeCloudEventsBinary:
+		mode = adapter.Binary
+	case v1alpha1.ModeCloudEventsStructured:
+		mode = adapter.Structured
+	case v1alpha1.ModePushCompatible:
+		mode = adapter.Push
 	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
@@ -71,6 +69,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
+			Annotations:     map[string]string{},
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -82,7 +81,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 					Labels: args.Labels,
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: args.Source.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: args.Image,
@@ -104,6 +102,9 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						}, {
 							Name:  "TRANSFORMER_URI",
 							Value: args.TransformerURI,
+						}, {
+							Name:  "SEND_MODE",
+							Value: string(mode),
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

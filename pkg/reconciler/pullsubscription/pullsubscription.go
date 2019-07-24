@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -34,10 +36,10 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
 	"go.uber.org/zap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/tracker"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
@@ -152,11 +154,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 		state, err := c.EnsureSubscriptionDeleted(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 		switch state {
-		case pubsub.OpsGetFailedState:
+		case pubsub.OpsJobGetFailed:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 			return err
 
-		case pubsub.OpsCreatedState:
+		case pubsub.OpsJobCreated:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
 			source.Status.MarkSubscriptionOperation(
 				"Deleting",
@@ -164,7 +166,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				source.Status.SubscriptionID)
 			return nil
 
-		case pubsub.OpsCompeteSuccessfulState:
+		case pubsub.OpsJobCompleteSuccessful:
 			source.Status.MarkNoSubscription(
 				"Deleted",
 				"Successfully deleted Subscription %q.",
@@ -172,7 +174,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
 
-		case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+		case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
 			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
 
 			msg := "unknown"
@@ -203,18 +205,18 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.MarkNoSink("NotFound", "")
 			return err
 		}
-		source.Status.MarkSink(sinkURI)
+		source.Status.MarkTransformer(transformerURI)
 	}
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscription(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID, *source.Spec.AckDeadline, source.Spec.RetainAckedMessages, *source.Spec.RetentionDuration)
 	switch state {
-	case pubsub.OpsGetFailedState:
+	case pubsub.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 		return err
 
-	case pubsub.OpsCreatedState:
+	case pubsub.OpsJobCreated:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		addFinalizer(source)
 		source.Status.MarkSubscriptionOperation("Creating",
@@ -222,10 +224,10 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID)
 		return nil
 
-	case pubsub.OpsCompeteSuccessfulState:
+	case pubsub.OpsJobCompleteSuccessful:
 		source.Status.MarkSubscribed()
 
-	case pubsub.OpsCreateFailedState, pubsub.OpsCompeteFailedState:
+	case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
 		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
 
 		msg := "unknown"
@@ -239,7 +241,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return err
 	}
 
-	_, err = c.createReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
+	_, err = c.createOrUpdateReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
@@ -287,6 +289,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	return src, err
 }
 
+// updateFinalizers is a generic method for future compatibility with a
+// reconciler SDK.
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
 	source, err := c.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
@@ -299,24 +303,24 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Pul
 	var finalizers []string
 
 	// If there's nothing to update, just return.
-	exisitingFinalizers := sets.NewString(existing.Finalizers...)
+	existingFinalizers := sets.NewString(existing.Finalizers...)
 	desiredFinalizers := sets.NewString(desired.Finalizers...)
 
 	if desiredFinalizers.Has(finalizerName) {
-		if exisitingFinalizers.Has(finalizerName) {
+		if existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Add the finalizer.
 		finalizers = append(existing.Finalizers, finalizerName)
 	} else {
-		if !exisitingFinalizers.Has(finalizerName) {
+		if !existingFinalizers.Has(finalizerName) {
 			// Nothing to do.
 			return desired, false, nil
 		}
 		// Remove the finalizer.
-		exisitingFinalizers.Delete(finalizerName)
-		finalizers = exisitingFinalizers.List()
+		existingFinalizers.Delete(finalizerName)
+		finalizers = existingFinalizers.List()
 	}
 
 	mergePatch := map[string]interface{}{
@@ -347,17 +351,14 @@ func removeFinalizer(s *v1alpha1.PullSubscription) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
-	ra, err := r.getReceiveAdapter(ctx, src)
+func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
+	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
 		return nil, err
 	}
-	if ra != nil {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing receive adapter", zap.Any("receiveAdapter", ra))
-		return ra, nil
-	}
-	dp := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
+
+	desired := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
 		Image:          r.receiveAdapterImage,
 		Source:         src,
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
@@ -365,9 +366,21 @@ func (r *Reconciler) createReceiveAdapter(ctx context.Context, src *v1alpha1.Pul
 		SinkURI:        sinkURI,
 		TransformerURI: transformerURI,
 	})
-	dp, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(dp)
-	logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", dp))
-	return dp, err
+
+	if existing == nil {
+		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
+		logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", ra))
+		return ra, err
+	}
+	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+		existing.Spec = desired.Spec
+		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
+		logging.FromContext(ctx).Desugar().Info("Receive Adapter updated.",
+			zap.Error(err), zap.Any("receiveAdapter", ra), zap.String("diff", diff))
+		return ra, err
+	}
+	logging.FromContext(ctx).Desugar().Info("Reusing existing Receive Adapter", zap.Any("receiveAdapter", existing))
+	return existing, nil
 }
 
 func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {

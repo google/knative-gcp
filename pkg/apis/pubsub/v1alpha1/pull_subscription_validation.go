@@ -18,12 +18,19 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
+)
+
+const (
+	minRetentionDuration = 10 * time.Second   // 10 seconds.
+	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
@@ -37,18 +44,34 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
+	if current.Sink == nil || equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateRef(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
 		if err := validateRef(current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
-	return nil
+
+	if current.RetentionDuration != nil {
+		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
+		if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(current.RetentionDuration, minRetentionDuration, maxRetentionDuration, "retentionDuration"))
+		}
+	}
+
+	// Mode [optional]
+	switch current.Mode {
+	case "", ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
+		// valid
+	default:
+		errs = errs.Also(apis.ErrInvalidValue(current.Mode, "mode"))
+	}
+
+	return errs
 }
 
 func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
@@ -68,6 +91,7 @@ func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
 	if ref.Kind == "" {
 		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
+
 	return errs
 }
 
@@ -80,12 +104,9 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 		return nil
 	}
 
-	// TODO: revisit this.
-
-	// All of the fields are immutable because the controller doesn't understand when it would need
-	// to delete and create a new Receive Adapter with updated arguments. We could relax it slightly
-	// to allow a nil Sink -> non-nil Sink, but I don't think it is needed yet.
-	if diff := cmp.Diff(original.Spec, current.Spec); diff != "" {
+	// Modification of Sink and Transform allowed. Everything else is immutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer", "Mode")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

@@ -18,14 +18,14 @@ package v1alpha1
 
 import (
 	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
-	"github.com/knative/pkg/apis"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/webhook"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/webhook"
 )
 
 // +genclient
@@ -66,7 +66,7 @@ type ChannelSpec struct {
 	// Topic and Subscriptions will be created in.
 	Project string `json:"project,omitempty"`
 
-	// ServiceAccoutName is the name of the ServiceAccount that will be used to
+	// ServiceAccountName is the name of the ServiceAccount that will be used to
 	// run the Channel Deployment.
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 

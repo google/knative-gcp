@@ -209,6 +209,13 @@
   revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
 
 [[projects]]
+  digest = "1:7915c656a10819b240db94ffd6afc6a621af4687db735341d9919668750485ec"
+  name = "github.com/google/go-containerregistry"
+  packages = ["pkg/name"]
+  pruneopts = "NUT"
+  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
+
+[[projects]]
   branch = "master"
   digest = "1:52c5834e2bebac9030c97cc0798ac11c3aa8a39f098aeb419f142533da6cd3cc"
   name = "github.com/google/gofuzz"
@@ -320,79 +327,70 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:2469f21c2e0acdf8ce9914e0bcbb46aaf35f207cbe44f378637e3fd5d2234cfd"
+  branch = "master"
+  digest = "1:33f216908b58f1c8f1bff9eab0bd12fda0b462d26979103a71a9e91652cd3e69"
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "0251d1f09a39631bc40c415cfb457347f9335c6f"
+  revision = "3c6e1cfb6feb705a71f2236243e2929bb93b41ea"
 
 [[projects]]
   branch = "master"
-  digest = "1:3299b6b6a92ccbc12eb35c9374dd161545e90cc29fcc59725bce0b0ae6230fd0"
-  name = "github.com/knative/pkg"
+  digest = "1:cf9de140518581b36ea05db973a8fa81815e600e6b2740b1469f74e6fcd5eb15"
+  name = "github.com/knative/serving"
   packages = [
-    "apis",
-    "apis/duck",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
-    "apis/istio",
-    "apis/istio/authentication",
-    "apis/istio/authentication/v1alpha1",
-    "apis/istio/common/v1alpha1",
-    "apis/istio/v1alpha3",
-    "changeset",
-    "client/clientset/versioned",
-    "client/clientset/versioned/fake",
-    "client/clientset/versioned/scheme",
-    "client/clientset/versioned/typed/authentication/v1alpha1",
-    "client/clientset/versioned/typed/authentication/v1alpha1/fake",
-    "client/clientset/versioned/typed/istio/v1alpha3",
-    "client/clientset/versioned/typed/istio/v1alpha3/fake",
-    "codegen/cmd/injection-gen",
-    "codegen/cmd/injection-gen/args",
-    "codegen/cmd/injection-gen/generators",
-    "configmap",
-    "controller",
-    "injection",
-    "injection/clients/dynamicclient",
-    "injection/clients/dynamicclient/fake",
-    "injection/clients/kubeclient",
-    "injection/clients/kubeclient/fake",
-    "injection/informers/kubeinformers/appsv1/deployment",
-    "injection/informers/kubeinformers/appsv1/deployment/fake",
-    "injection/informers/kubeinformers/batchv1/job",
-    "injection/informers/kubeinformers/batchv1/job/fake",
-    "injection/informers/kubeinformers/factory",
-    "injection/informers/kubeinformers/factory/fake",
-    "injection/sharedmain",
-    "kmeta",
-    "kmp",
-    "logging",
-    "logging/logkey",
-    "logging/testing",
-    "metrics",
-    "metrics/metricskey",
-    "reconciler/testing",
-    "signals",
-    "system",
-    "system/testing",
-    "tracker",
-    "version",
-    "webhook",
+    "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
+    "pkg/apis/networking",
+    "pkg/apis/networking/v1alpha1",
+    "pkg/apis/serving",
+    "pkg/apis/serving/v1alpha1",
+    "pkg/apis/serving/v1beta1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
+    "pkg/client/injection/client",
+    "pkg/client/injection/client/fake",
+    "pkg/client/injection/informers/serving/factory",
+    "pkg/client/injection/informers/serving/factory/fake",
+    "pkg/client/injection/informers/serving/v1beta1/service",
+    "pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
   ]
-  pruneopts = "T"
-  revision = "b328e2d3f5aa0694db41afd0fa23d61e34b13d42"
+  pruneopts = "NUT"
+  revision = "53d92beda79619c817c098df1c5a5963c0f901be"
 
 [[projects]]
   branch = "master"
-  digest = "1:149fd8b4ad9b88f71ecfcf8d8e060e70ae6a591d347db524f86c0076e1173bbd"
+  digest = "1:5197df8038ae4c7d05c2edda32a77d7f16faa635df3c560f01fb73fa42682f69"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "bc30454936e210896ec6c91528c040e844b14b39"
+  revision = "81861c7c2060af68e3dbdc72bcd3a2f0584566d2"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -1128,6 +1126,64 @@
   pruneopts = "NUT"
   revision = "a01b7d5d6c2258c80a4a10070f3dee9cd575d9c7"
 
+[[projects]]
+  branch = "master"
+  digest = "1:4563adec376c56f3441da3767facc1d6c733d93a39f593495c009fed54dbb76c"
+  name = "knative.dev/pkg"
+  packages = [
+    "apis",
+    "apis/duck",
+    "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
+    "apis/istio",
+    "apis/istio/authentication",
+    "apis/istio/authentication/v1alpha1",
+    "apis/istio/common/v1alpha1",
+    "apis/istio/v1alpha3",
+    "changeset",
+    "client/clientset/versioned",
+    "client/clientset/versioned/fake",
+    "client/clientset/versioned/scheme",
+    "client/clientset/versioned/typed/authentication/v1alpha1",
+    "client/clientset/versioned/typed/authentication/v1alpha1/fake",
+    "client/clientset/versioned/typed/istio/v1alpha3",
+    "client/clientset/versioned/typed/istio/v1alpha3/fake",
+    "codegen/cmd/injection-gen",
+    "codegen/cmd/injection-gen/args",
+    "codegen/cmd/injection-gen/generators",
+    "configmap",
+    "controller",
+    "injection",
+    "injection/clients/dynamicclient",
+    "injection/clients/dynamicclient/fake",
+    "injection/clients/kubeclient",
+    "injection/clients/kubeclient/fake",
+    "injection/informers/kubeinformers/appsv1/deployment",
+    "injection/informers/kubeinformers/appsv1/deployment/fake",
+    "injection/informers/kubeinformers/batchv1/job",
+    "injection/informers/kubeinformers/batchv1/job/fake",
+    "injection/informers/kubeinformers/factory",
+    "injection/informers/kubeinformers/factory/fake",
+    "injection/sharedmain",
+    "kmeta",
+    "kmp",
+    "logging",
+    "logging/logkey",
+    "logging/testing",
+    "metrics",
+    "metrics/metricskey",
+    "ptr",
+    "reconciler/testing",
+    "signals",
+    "system",
+    "system/testing",
+    "tracker",
+    "version",
+    "webhook",
+  ]
+  pruneopts = "T"
+  revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1140,37 +1196,16 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
-    "github.com/google/uuid",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
-    "github.com/knative/pkg/apis",
-    "github.com/knative/pkg/apis/duck",
-    "github.com/knative/pkg/apis/duck/v1alpha1",
-    "github.com/knative/pkg/apis/duck/v1beta1",
-    "github.com/knative/pkg/client/clientset/versioned/fake",
-    "github.com/knative/pkg/codegen/cmd/injection-gen",
-    "github.com/knative/pkg/configmap",
-    "github.com/knative/pkg/controller",
-    "github.com/knative/pkg/injection",
-    "github.com/knative/pkg/injection/clients/dynamicclient",
-    "github.com/knative/pkg/injection/clients/dynamicclient/fake",
-    "github.com/knative/pkg/injection/clients/kubeclient",
-    "github.com/knative/pkg/injection/clients/kubeclient/fake",
-    "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment",
-    "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
-    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job",
-    "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job/fake",
-    "github.com/knative/pkg/injection/sharedmain",
-    "github.com/knative/pkg/kmeta",
-    "github.com/knative/pkg/logging",
-    "github.com/knative/pkg/logging/testing",
-    "github.com/knative/pkg/metrics",
-    "github.com/knative/pkg/reconciler/testing",
-    "github.com/knative/pkg/signals",
-    "github.com/knative/pkg/system",
-    "github.com/knative/pkg/tracker",
-    "github.com/knative/pkg/version",
-    "github.com/knative/pkg/webhook",
+    "github.com/knative/serving/pkg/apis/serving/v1beta1",
+    "github.com/knative/serving/pkg/client/clientset/versioned",
+    "github.com/knative/serving/pkg/client/clientset/versioned/fake",
+    "github.com/knative/serving/pkg/client/injection/client",
+    "github.com/knative/serving/pkg/client/injection/client/fake",
+    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service",
+    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "github.com/knative/serving/pkg/client/listers/serving/v1beta1",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.opencensus.io/stats",
@@ -1178,7 +1213,7 @@
     "go.opencensus.io/tag",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
-    "golang.org/x/net/context",
+    "google.golang.org/api/option",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
@@ -1192,6 +1227,7 @@
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
@@ -1220,6 +1256,34 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
+    "knative.dev/pkg/apis",
+    "knative.dev/pkg/apis/duck",
+    "knative.dev/pkg/apis/duck/v1alpha1",
+    "knative.dev/pkg/apis/duck/v1beta1",
+    "knative.dev/pkg/client/clientset/versioned/fake",
+    "knative.dev/pkg/codegen/cmd/injection-gen",
+    "knative.dev/pkg/configmap",
+    "knative.dev/pkg/controller",
+    "knative.dev/pkg/injection",
+    "knative.dev/pkg/injection/clients/dynamicclient",
+    "knative.dev/pkg/injection/clients/dynamicclient/fake",
+    "knative.dev/pkg/injection/clients/kubeclient",
+    "knative.dev/pkg/injection/clients/kubeclient/fake",
+    "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment",
+    "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
+    "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job",
+    "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake",
+    "knative.dev/pkg/injection/sharedmain",
+    "knative.dev/pkg/kmeta",
+    "knative.dev/pkg/logging",
+    "knative.dev/pkg/logging/testing",
+    "knative.dev/pkg/metrics",
+    "knative.dev/pkg/reconciler/testing",
+    "knative.dev/pkg/signals",
+    "knative.dev/pkg/system",
+    "knative.dev/pkg/tracker",
+    "knative.dev/pkg/version",
+    "knative.dev/pkg/webhook",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,11 +33,11 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/kmeta"
-	logtesting "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/tracker"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
+	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/tracker"
 
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
@@ -42,7 +45,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 
-	. "github.com/knative/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
@@ -60,12 +63,11 @@ const (
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
-	testServiceAccount = "test-project-id"
 )
 
 var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS + "/"
+	sinkURI = "http://" + sinkDNS
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.run",
@@ -114,7 +116,7 @@ func TestAllCases(t *testing.T) {
 		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "sink ref is nil"),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for PullSubscription %q: missing field(s): spec.sink, spec.topic", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -129,9 +131,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -148,9 +149,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -172,9 +172,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -190,9 +189,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -202,23 +200,22 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newReceiveAdapter(),
+				newReceiveAdapter(testImage),
 			},
 		}, {
-			Name: "successful create - reuse existing receive adapter",
+			Name: "successful create - reuse existing receive adapter - match",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newReceiveAdapter(),
+				newReceiveAdapter(testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
@@ -229,9 +226,50 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					// Updates
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionReady(sinkURI),
+				),
+			}},
+		}, {
+			Name: "successful create - reuse existing receive adapter - mismatch",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+				),
+				newSink(),
+				newReceiveAdapter("old" + testImage),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS,
+					Verb:      "update",
+					Resource:  receiveAdapterGVR(),
+				},
+				Object: newReceiveAdapter(testImage),
+			}},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -245,9 +283,8 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 				),
@@ -260,9 +297,8 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					// updates
@@ -277,9 +313,8 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -296,9 +331,8 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -319,10 +353,10 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -339,10 +373,10 @@ func TestAllCases(t *testing.T) {
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project:            testProject,
-						Topic:              testTopicID,
-						ServiceAccountName: testServiceAccount,
+						Project: testProject,
+						Topic:   testTopicID,
 					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionDeleted,
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -379,16 +413,15 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newReceiveAdapter() runtime.Object {
+func newReceiveAdapter(image string) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			Project:            testProject,
-			Topic:              testTopicID,
-			ServiceAccountName: testServiceAccount,
+			Project: testProject,
+			Topic:   testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
-		Image:          testImage,
+		Image:          image,
 		Source:         source,
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
@@ -397,25 +430,43 @@ func newReceiveAdapter() runtime.Object {
 	return resources.MakeReceiveAdapter(args)
 }
 
+func receiveAdapterGVR() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    "apps",
+		Version:  "v1",
+		Resource: "deployment",
+	}
+}
+
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+	days7 := 7 * 24 * time.Hour
+	secs30 := 30 * time.Second
 	return operations.NewSubscriptionOps(operations.SubArgs{
-		Image:          testImage,
-		Action:         action,
-		ProjectID:      testProject,
-		TopicID:        testTopicID,
-		SubscriptionID: testSubscriptionID,
-		Owner:          owner,
+		Image:               testImage,
+		Action:              action,
+		ProjectID:           testProject,
+		TopicID:             testTopicID,
+		SubscriptionID:      testSubscriptionID,
+		AckDeadline:         secs30,
+		RetainAckedMessages: false,
+		RetentionDuration:   days7,
+		Owner:               owner,
 	})
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+	days7 := 7 * 24 * time.Hour
+	secs30 := 30 * time.Second
 	job := operations.NewSubscriptionOps(operations.SubArgs{
-		Image:          testImage,
-		Action:         action,
-		ProjectID:      testProject,
-		TopicID:        testTopicID,
-		SubscriptionID: testSubscriptionID,
-		Owner:          owner,
+		Image:               testImage,
+		Action:              action,
+		ProjectID:           testProject,
+		TopicID:             testTopicID,
+		SubscriptionID:      testSubscriptionID,
+		AckDeadline:         secs30,
+		RetainAckedMessages: false,
+		RetentionDuration:   days7,
+		Owner:               owner,
 	})
 
 	if success {

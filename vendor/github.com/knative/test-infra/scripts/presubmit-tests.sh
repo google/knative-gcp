@@ -64,7 +64,10 @@ function initialize_environment() {
     echo -e "Changed files in commit ${PULL_PULL_SHA}:\n${CHANGED_FILES}"
     local no_presubmit_files="${NO_PRESUBMIT_FILES[*]}"
     pr_only_contains "${no_presubmit_files}" && IS_PRESUBMIT_EXEMPT_PR=1
-    pr_only_contains "\.md ${no_presubmit_files}" && IS_DOCUMENTATION_PR=1
+    # A documentation PR must contain markdown files
+    if pr_only_contains "\.md ${no_presubmit_files}"; then
+      [[ -n "$(echo "${CHANGED_FILES}" | grep '\.md')" ]] && IS_DOCUMENTATION_PR=1
+    fi
   else
     header "NO CHANGED FILES REPORTED, ASSUMING IT'S AN ERROR AND RUNNING TESTS ANYWAY"
   fi
@@ -80,6 +83,29 @@ function results_banner() {
   local result
   [[ $2 -eq 0 ]] && result="PASSED" || result="FAILED"
   header "$1 tests ${result}"
+}
+
+# Create a JUnit XML for a test.
+# Parameters: $1 - check class name as an identifier (e.g. BuildTests)
+#             $2 - check name as an identifier (e.g., GoBuild)
+#             $3 - failure message (can contain newlines), optional (means success)
+function create_junit_xml() {
+  local xml="$(mktemp ${ARTIFACTS}/junit_XXXXXXXX.xml)"
+  local failure=""
+  if [[ "$3" != "" ]]; then
+    # Transform newlines into HTML code.
+    local msg="$(echo -n "$3" | sed 's/$/\&#xA;/g' | tr -d '\n')"
+    failure="<failure message=\"Failed\" type=\"\">${msg}</failure>"
+  fi
+  cat << EOF > "${xml}"
+<testsuites>
+	<testsuite tests="1" failures="1" time="0.000" name="$1">
+		<testcase classname="" name="$2" time="0.0">
+			${failure}
+		</testcase>
+	</testsuite>
+</testsuites>
+EOF
 }
 
 # Run build tests. If there's no `build_tests` function, run the default
@@ -145,7 +171,16 @@ function default_build_test_runner() {
   [[ -z "${go_pkg_dirs}" ]] && return ${failed}
   # Ensure all the code builds
   subheader "Checking that go code builds"
-  go build -v ./... || failed=1
+  local report=$(mktemp)
+  local errors=""
+  go build -v ./... 2>&1 | tee ${report}
+  local build_failed=( ${PIPESTATUS[@]} )
+  if [[ ${build_failed[0]} -ne 0 ]]; then
+    failed=1
+    # Consider an error message everything that's not a package name.
+    errors="$(grep -v '^github.com/' "${report}" | sort | uniq)"
+  fi
+  create_junit_xml _build_tests Build_Go "${errors}"
   # Get all build tags in go code (ignore /vendor)
   local tags="$(grep -r '// +build' . \
       | grep -v '^./vendor/' | cut -f3 -d' ' | sort | uniq | tr '\n' ' ')"
@@ -166,6 +201,10 @@ function default_build_test_runner() {
 # unit test runner.
 function run_unit_tests() {
   (( ! RUN_UNIT_TESTS )) && return 0
+  if (( IS_DOCUMENTATION_PR )); then
+    header "Documentation only PR, skipping unit tests"
+    return 0
+  fi
   header "Running unit tests"
   local failed=0
   # Run pre-unit tests, if any
@@ -198,7 +237,10 @@ function default_unit_test_runner() {
 function run_integration_tests() {
   # Don't run integration tests if not requested OR on documentation PRs
   (( ! RUN_INTEGRATION_TESTS )) && return 0
-  (( IS_DOCUMENTATION_PR )) && return 0
+  if (( IS_DOCUMENTATION_PR )); then
+    header "Documentation only PR, skipping integration tests"
+    return 0
+  fi
   header "Running integration tests"
   local failed=0
   # Run pre-integration tests, if any
@@ -262,12 +304,23 @@ function main() {
     go version
     echo ">> git version"
     git version
+    echo ">> ko built from commit"
+    [[ -f /ko_version ]] && cat /ko_version || echo "unknown"
     echo ">> bazel version"
-    bazel version 2> /dev/null
+    [[ -f /bazel_version ]] && cat /bazel_version || echo "unknown"
     if [[ "${DOCKER_IN_DOCKER_ENABLED}" == "true" ]]; then
       echo ">> docker version"
       docker version
     fi
+    # node/pod names are important for debugging purposes, but they are missing
+    # after migrating from bootstrap to podutil.
+    # Report it here with the same logic as in bootstrap until it is fixed.
+    # (https://github.com/kubernetes/test-infra/blob/09bd4c6709dc64308406443f8996f90cf3b40ed1/jenkins/bootstrap.py#L588)
+    # TODO(chaodaiG): follow up on https://github.com/kubernetes/test-infra/blob/0fabd2ea816daa8c15d410c77a0c93c0550b283f/prow/initupload/run.go#L49
+    echo ">> node name"
+    echo "$(curl -H "Metadata-Flavor: Google" 'http://169.254.169.254/computeMetadata/v1/instance/name' 2> /dev/null)"
+    echo ">> pod name"
+    echo ${HOSTNAME}
   fi
 
   [[ -z $1 ]] && set -- "--all-tests"
@@ -313,7 +366,10 @@ function main() {
       abort "--run-test must be used alone"
     fi
     # If this is a presubmit run, but a documentation-only PR, don't run the test
-    (( IS_PRESUBMIT && IS_DOCUMENTATION_PR )) && exit 0
+    if (( IS_PRESUBMIT && IS_DOCUMENTATION_PR )); then
+      header "Documentation only PR, skipping running custom test"
+      exit 0
+    fi
     ${TEST_TO_RUN} || failed=1
   fi
 

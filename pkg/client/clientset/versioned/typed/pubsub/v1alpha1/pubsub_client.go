@@ -29,6 +29,7 @@ type PubsubV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ChannelsGetter
 	PullSubscriptionsGetter
+	TopicsGetter
 }
 
 // PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.run group.
@@ -42,6 +43,10 @@ func (c *PubsubV1alpha1Client) Channels(namespace string) ChannelInterface {
 
 func (c *PubsubV1alpha1Client) PullSubscriptions(namespace string) PullSubscriptionInterface {
 	return newPullSubscriptions(c, namespace)
+}
+
+func (c *PubsubV1alpha1Client) Topics(namespace string) TopicInterface {
+	return newTopics(c, namespace)
 }
 
 // NewForConfig creates a new PubsubV1alpha1Client for the given config.

@@ -18,12 +18,54 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+)
+
+const (
+	defaultSecretName        = "google-cloud-key"
+	defaultSecretKey         = "key.json"
+	defaultRetentionDuration = 7 * 24 * time.Hour
+	defaultAckDeadline       = 30 * time.Second
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
 }
 
+// defaultSecretSelector is the default secret selector used to load the creds
+// for the receive adapter to auth with Google Cloud.
+func defaultSecretSelector() *corev1.SecretKeySelector {
+	return &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: defaultSecretName,
+		},
+		Key: defaultSecretKey,
+	}
+}
+
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
-	// None
+	if ss.AckDeadline == nil {
+		ackDeadline := defaultAckDeadline
+		ss.AckDeadline = &ackDeadline
+	}
+
+	if ss.RetentionDuration == nil {
+		retentionDuration := defaultRetentionDuration
+		ss.RetentionDuration = &retentionDuration
+	}
+
+	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
+		ss.Secret = defaultSecretSelector()
+	}
+
+	switch ss.Mode {
+	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
+		// Valid Mode.
+	default:
+		// Default is CloudEvents Binary Mode.
+		ss.Mode = ModeCloudEventsBinary
+	}
 }

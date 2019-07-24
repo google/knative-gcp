@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestPubSubEventSource(t *testing.T) {
@@ -42,6 +42,17 @@ func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
 
 	c := &PullSubscription{}
 	got := c.GetGroupVersionKind()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionPubSubMode_nil(t *testing.T) {
+	want := ModeType("")
+
+	c := &PullSubscription{}
+	got := c.PubSubMode()
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

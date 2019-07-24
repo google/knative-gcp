@@ -20,19 +20,19 @@ import (
 	"context"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/tracker"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/tracker"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
-	deploymentinformer "github.com/knative/pkg/injection/informers/kubeinformers/appsv1/deployment"
-	jobinformer "github.com/knative/pkg/injection/informers/kubeinformers/batchv1/job"
+	deploymentinformer "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment"
+	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 
 	pullsubscriptioninformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 )

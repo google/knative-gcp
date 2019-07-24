@@ -22,16 +22,16 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/logging"
-	"github.com/knative/pkg/signals"
-	"github.com/knative/pkg/system"
-	"github.com/knative/pkg/version"
-	"github.com/knative/pkg/webhook"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/signals"
+	"knative.dev/pkg/system"
+	"knative.dev/pkg/version"
+	"knative.dev/pkg/webhook"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
@@ -103,6 +103,11 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
+	stats, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("Failed to initialize the stats reporter", zap.Error(err))
+	}
+
 	options := webhook.ControllerOptions{
 		ServiceName:    "webhook",
 		DeploymentName: "webhook",
@@ -110,7 +115,9 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		Port:           8443,
 		SecretName:     "webhook-certs",
 		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		StatsReporter:  stats,
 	}
+
 	controller := webhook.AdmissionController{
 		Client:                kubeClient,
 		Options:               options,
@@ -134,6 +141,7 @@ func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
 		v1alpha1.SchemeGroupVersion.WithKind("Channel"):          &v1alpha1.Channel{},
 		v1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &v1alpha1.PullSubscription{},
+		v1alpha1.SchemeGroupVersion.WithKind("Topic"):            &v1alpha1.Topic{},
 	}
 	SharedMain(handlers)
 

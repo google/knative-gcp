@@ -24,6 +24,7 @@ rules:
     - pubsub.cloud.run
   resources:
     - pullsubscriptions
+    - topics
   verbs: &everything
     - get
     - list
@@ -34,9 +35,10 @@ rules:
     - delete
 
 - apiGroups:
-    - events.cloud.run
+    - pubsub.cloud.run
   resources:
     - pullsubscriptions/status
+    - topics/status
   verbs:
     - get
     - update
@@ -55,9 +57,22 @@ rules:
   verbs: *everything
 
 - apiGroups:
+    - serving.knative.dev
+  resources:
+    - services
+  verbs: *everything
+
+- apiGroups:
     - batch
   resources:
     - jobs
+  verbs: *everything
+
+
+- apiGroups:
+    - ""
+  resources:
+    - services
   verbs: *everything
 
 - apiGroups:

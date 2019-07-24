@@ -22,12 +22,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/knative/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/scheme"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
 var (
@@ -58,13 +58,21 @@ func TestGetSinkURI(t *testing.T) {
 		wantErr   error
 		ref       *corev1.ObjectReference
 	}{
-		"happy": {
+		"happy v1alpha1": {
 			objects: []runtime.Object{
-				getAddressable(),
+				getAddressableV1Alpha1(),
 			},
 			namespace: testNS,
 			ref:       getAddressableRef(),
-			want:      fmt.Sprintf("http://%s/", addressableDNS),
+			want:      fmt.Sprintf("http://%s", addressableDNS),
+		},
+		"happy v1beta1": {
+			objects: []runtime.Object{
+				getAddressableV1Beta1(),
+			},
+			namespace: testNS,
+			ref:       getAddressableRef(),
+			want:      fmt.Sprintf("http://%s", addressableDNS),
 		},
 		"nil hostname": {
 			objects: []runtime.Object{
@@ -72,7 +80,7 @@ func TestGetSinkURI(t *testing.T) {
 			},
 			namespace: testNS,
 			ref:       getUnaddressableRef(),
-			wantErr:   fmt.Errorf(`sink "testnamespace/testunaddressable" (duck.knative.dev/v1alpha1, Kind=KResource) contains an empty hostname`),
+			wantErr:   fmt.Errorf(`sink "testnamespace/testunaddressable" (duck.knative.dev/v1alpha1, Kind=KResource) contains an empty host`),
 		},
 		"nil sink": {
 			objects: []runtime.Object{
@@ -128,7 +136,7 @@ func TestGetSinkURI(t *testing.T) {
 	}
 }
 
-func getAddressable() *unstructured.Unstructured {
+func getAddressableV1Alpha1() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": addressableAPIVersion,
@@ -140,6 +148,24 @@ func getAddressable() *unstructured.Unstructured {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"hostname": addressableDNS,
+				},
+			},
+		},
+	}
+}
+
+func getAddressableV1Beta1() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": addressableAPIVersion,
+			"kind":       addressableKind,
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      addressableName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": "http://" + addressableDNS,
 				},
 			},
 		},
