@@ -21,20 +21,21 @@ package fake
 import (
 	"context"
 
-	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/factory/fake"
-	channel "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/channel"
+	externalversions "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions"
+	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client/fake"
+	factory "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
 
-var Get = channel.Get
+var Get = factory.Get
 
 func init() {
-	injection.Fake.RegisterInformer(withInformer)
+	injection.Fake.RegisterInformerFactory(withInformerFactory)
 }
 
-func withInformer(ctx context.Context) (context.Context, controller.Informer) {
-	f := fake.Get(ctx)
-	inf := f.Pubsub().V1alpha1().Channels()
-	return context.WithValue(ctx, channel.Key{}, inf), inf.Informer()
+func withInformerFactory(ctx context.Context) context.Context {
+	c := fake.Get(ctx)
+	return context.WithValue(ctx, factory.Key{},
+		externalversions.NewSharedInformerFactory(c, controller.GetResyncPeriod(ctx)))
 }

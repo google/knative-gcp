@@ -19,22 +19,22 @@ package resources
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/go-cmp/cmp"
-	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
-func TestMakeInvoker(t *testing.T) {
+func TestMakeTopic(t *testing.T) {
 	channel := &v1alpha1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
 		},
 		Spec: v1alpha1.ChannelSpec{
-			ServiceAccountName: "channel-svc-acct",
-			Project:            "eventing-name",
+			Project: "eventing-name",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -42,20 +42,25 @@ func TestMakeInvoker(t *testing.T) {
 				Key: "eventing-secret-key",
 			},
 		},
+		Status: v1alpha1.ChannelStatus{
+			ProjectID: "project-123",
+			TopicID:   "topic-abc",
+		},
 	}
 
-	got := MakeInvoker(&InvokerArgs{
-		Image:   "test-image",
-		Channel: channel,
+	got := MakeTopic(&TopicArgs{
+		Owner:   channel,
+		Project: channel.Status.ProjectID,
+		Topic:   channel.Status.TopicID,
+		Secret:  channel.Spec.Secret,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
 		},
 	})
 
-	one := int32(1)
 	yes := true
-	want := &v1.Deployment{
+	want := &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "channel-namespace",
 			GenerateName: "pubsub-channel-name-",
@@ -71,50 +76,16 @@ func TestMakeInvoker(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: v1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"test-key1": "test-value1",
-					"test-key2": "test-value2",
+		Spec: pubsubv1alpha1.TopicSpec{
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "eventing-secret-name",
 				},
+				Key: "eventing-secret-key",
 			},
-			Replicas: &one,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"test-key1": "test-value1",
-						"test-key2": "test-value2",
-					},
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: "channel-svc-acct",
-					Containers: []corev1.Container{
-						{
-							Name:  "invoker",
-							Image: "test-image",
-							Env: []corev1.EnvVar{{
-								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-								Value: "/var/secrets/google/eventing-secret-key",
-							}, {
-								Name:  "PROJECT_ID",
-								Value: "eventing-name",
-							}},
-							VolumeMounts: []corev1.VolumeMount{{
-								Name:      credsVolume,
-								MountPath: credsMountPath,
-							}},
-						},
-					},
-					Volumes: []corev1.Volume{{
-						Name: credsVolume,
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: "eventing-secret-name",
-							},
-						},
-					}},
-				},
-			},
+			Project:           "project-123",
+			Topic:             "topic-abc",
+			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 

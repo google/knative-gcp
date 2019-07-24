@@ -21,10 +21,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
@@ -33,39 +31,9 @@ var condReady = apis.Condition{
 	Status: corev1.ConditionTrue,
 }
 
-var condServiceReady = apis.Condition{
-	Type:   ChannelConditionServiceReady,
-	Status: corev1.ConditionTrue,
-}
-
-var condEndpointsReady = apis.Condition{
-	Type:   ChannelConditionEndpointsReady,
-	Status: corev1.ConditionTrue,
-}
-
-var condAddressable = apis.Condition{
-	Type:   ChannelConditionAddressable,
-	Status: corev1.ConditionTrue,
-}
-
-var deploymentConditionReady = appsv1.DeploymentCondition{
-	Type:   appsv1.DeploymentAvailable,
-	Status: corev1.ConditionTrue,
-}
-
-var deploymentConditionNotReady = appsv1.DeploymentCondition{
-	Type:   appsv1.DeploymentAvailable,
-	Status: corev1.ConditionFalse,
-}
-
-var deploymentStatusReady = &appsv1.DeploymentStatus{Conditions: []appsv1.DeploymentCondition{deploymentConditionReady}}
-var deploymentStatusNotReady = &appsv1.DeploymentStatus{Conditions: []appsv1.DeploymentCondition{deploymentConditionNotReady}}
-
 var ignoreAllButTypeAndStatus = cmpopts.IgnoreFields(
 	apis.Condition{},
 	"LastTransitionTime", "Message", "Reason", "Severity")
-
-var ignoreLastTransitionTime = cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")
 
 func TestChannelGetCondition(t *testing.T) {
 	tests := []struct {
@@ -109,16 +77,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   ChannelConditionChannelServiceReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionEndpointsReady,
-					Status: corev1.ConditionUnknown,
-				}, {
 					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   ChannelConditionTopicReady,
@@ -142,16 +101,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionFalse,
 				}, {
-					Type:   ChannelConditionChannelServiceReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionEndpointsReady,
-					Status: corev1.ConditionUnknown,
-				}, {
 					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   ChannelConditionTopicReady,
@@ -175,16 +125,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 					Type:   ChannelConditionAddressable,
 					Status: corev1.ConditionTrue,
 				}, {
-					Type:   ChannelConditionChannelServiceReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionEndpointsReady,
-					Status: corev1.ConditionUnknown,
-				}, {
 					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   ChannelConditionTopicReady,
@@ -206,91 +147,32 @@ func TestChannelInitializeConditions(t *testing.T) {
 
 func TestChannelIsReady(t *testing.T) {
 	tests := []struct {
-		name                    string
-		markServiceReady        bool
-		markChannelServiceReady bool
-		setAddress              bool
-		markEndpointsReady      bool
-		markTopic               bool
-		wantReady               bool
+		name       string
+		setAddress bool
+		markTopic  bool
+		wantReady  bool
 	}{{
-		name:                    "all happy",
-		markServiceReady:        true,
-		markChannelServiceReady: true,
-		markEndpointsReady:      true,
-		setAddress:              true,
-		markTopic:               true,
-		wantReady:               true,
+		name:       "all happy",
+		setAddress: true,
+		markTopic:  true,
+		wantReady:  true,
 	}, {
-		name:                    "service not ready",
-		markServiceReady:        false,
-		markChannelServiceReady: false,
-		markEndpointsReady:      true,
-		setAddress:              true,
-		markTopic:               true,
-		wantReady:               false,
+		name:       "address not set",
+		setAddress: false,
+		markTopic:  true,
+		wantReady:  false,
 	}, {
-		name:                    "endpoints not ready",
-		markServiceReady:        true,
-		markChannelServiceReady: false,
-		markEndpointsReady:      false,
-		setAddress:              true,
-		markTopic:               true,
-		wantReady:               false,
-	}, {
-		name:                    "deployment not ready",
-		markServiceReady:        true,
-		markEndpointsReady:      true,
-		markChannelServiceReady: false,
-		setAddress:              true,
-		markTopic:               true,
-		wantReady:               false,
-	}, {
-		name:                    "address not set",
-		markServiceReady:        true,
-		markChannelServiceReady: false,
-		markEndpointsReady:      true,
-		setAddress:              false,
-		markTopic:               true,
-		wantReady:               false,
-	}, {
-		name:                    "channel service not ready",
-		markServiceReady:        true,
-		markChannelServiceReady: false,
-		markEndpointsReady:      true,
-		setAddress:              true,
-		markTopic:               true,
-		wantReady:               false,
-	}, {
-		name:                    "topic not ready",
-		markServiceReady:        true,
-		markChannelServiceReady: true,
-		markEndpointsReady:      true,
-		setAddress:              true,
-		markTopic:               false,
-		wantReady:               false,
+		name:       "topic not ready",
+		setAddress: true,
+		markTopic:  false,
+		wantReady:  false,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cs := &ChannelStatus{}
 			cs.InitializeConditions()
-			if test.markServiceReady {
-				cs.MarkServiceTrue()
-			} else {
-				cs.MarkServiceFailed("NotReadyService", "testing")
-			}
-			if test.markChannelServiceReady {
-				cs.MarkChannelServiceTrue()
-			} else {
-				cs.MarkChannelServiceFailed("NotReadyChannelService", "testing")
-			}
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
-			}
-			if test.markEndpointsReady {
-				cs.MarkEndpointsTrue()
-			} else {
-				cs.MarkEndpointsFailed("NotReadyEndpoints", "testing")
 			}
 			if test.markTopic {
 				cs.MarkTopicReady()
@@ -326,21 +208,18 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 						},
 					},
 				},
-				AddressStatus: duckv1alpha1.AddressStatus{Address: &duckv1alpha1.Addressable{}},
+				AddressStatus: duckv1beta1.AddressStatus{Address: &duckv1beta1.Addressable{}},
 			},
 		},
 		"has domain": {
 			url: &apis.URL{Scheme: "http", Host: "test-domain"},
 			want: &ChannelStatus{
-				AddressStatus: duckv1alpha1.AddressStatus{
-					Address: &duckv1alpha1.Addressable{
-						Addressable: duckv1beta1.Addressable{
-							URL: &apis.URL{
-								Scheme: "http",
-								Host:   "test-domain",
-							},
+				AddressStatus: duckv1beta1.AddressStatus{
+					Address: &duckv1beta1.Addressable{
+						URL: &apis.URL{
+							Scheme: "http",
+							Host:   "test-domain",
 						},
-						Hostname: "test-domain",
 					},
 				},
 				Status: duckv1beta1.Status{

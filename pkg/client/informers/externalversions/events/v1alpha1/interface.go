@@ -24,10 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// PullSubscriptions returns a PullSubscriptionInformer.
-	PullSubscriptions() PullSubscriptionInformer
-	// Topics returns a TopicInformer.
-	Topics() TopicInformer
+	// Channels returns a ChannelInformer.
+	Channels() ChannelInformer
 }
 
 type version struct {
@@ -41,12 +39,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// PullSubscriptions returns a PullSubscriptionInformer.
-func (v *version) PullSubscriptions() PullSubscriptionInformer {
-	return &pullSubscriptionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// Topics returns a TopicInformer.
-func (v *version) Topics() TopicInformer {
-	return &topicInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Channels returns a ChannelInformer.
+func (v *version) Channels() ChannelInformer {
+	return &channelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

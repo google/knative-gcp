@@ -33,7 +33,8 @@ import (
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 const (
@@ -139,9 +140,9 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 
 func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		v1alpha1.SchemeGroupVersion.WithKind("Channel"):          &v1alpha1.Channel{},
-		v1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &v1alpha1.PullSubscription{},
-		v1alpha1.SchemeGroupVersion.WithKind("Topic"):            &v1alpha1.Topic{},
+		eventsv1alpha1.SchemeGroupVersion.WithKind("Channel"):          &eventsv1alpha1.Channel{},
+		pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
+		pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 	}
 	SharedMain(handlers)
 

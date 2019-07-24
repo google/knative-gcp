@@ -19,33 +19,28 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
-type PubsubV1alpha1Interface interface {
+type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	PullSubscriptionsGetter
-	TopicsGetter
+	ChannelsGetter
 }
 
-// PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.run group.
-type PubsubV1alpha1Client struct {
+// EventsV1alpha1Client is used to interact with features provided by the events.cloud.run group.
+type EventsV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *PubsubV1alpha1Client) PullSubscriptions(namespace string) PullSubscriptionInterface {
-	return newPullSubscriptions(c, namespace)
+func (c *EventsV1alpha1Client) Channels(namespace string) ChannelInterface {
+	return newChannels(c, namespace)
 }
 
-func (c *PubsubV1alpha1Client) Topics(namespace string) TopicInterface {
-	return newTopics(c, namespace)
-}
-
-// NewForConfig creates a new PubsubV1alpha1Client for the given config.
-func NewForConfig(c *rest.Config) (*PubsubV1alpha1Client, error) {
+// NewForConfig creates a new EventsV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*EventsV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -54,12 +49,12 @@ func NewForConfig(c *rest.Config) (*PubsubV1alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &PubsubV1alpha1Client{client}, nil
+	return &EventsV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new PubsubV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new EventsV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *PubsubV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *EventsV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -67,9 +62,9 @@ func NewForConfigOrDie(c *rest.Config) *PubsubV1alpha1Client {
 	return client
 }
 
-// New creates a new PubsubV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *PubsubV1alpha1Client {
-	return &PubsubV1alpha1Client{c}
+// New creates a new EventsV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *EventsV1alpha1Client {
+	return &EventsV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -87,7 +82,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *PubsubV1alpha1Client) RESTClient() rest.Interface {
+func (c *EventsV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

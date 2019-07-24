@@ -19,13 +19,13 @@ package resources
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	v1alpha12 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 )
 
-func GenerateTopicName(src *v1alpha1.Channel) string {
+func GenerateTopicName(src *v1alpha12.Channel) string {
 	return fmt.Sprintf("cloud-run-channel-%s-%s-%s", src.Namespace, src.Name, src.UID)
 }
 
-func GenerateSubscriptionName(src *v1alpha1.Channel) string {
+func GenerateSubscriptionName(src *v1alpha12.Channel) string {
 	return fmt.Sprintf("cloud-run-channel-%s-%s-%s", src.Namespace, src.Name, src.UID)
 }

@@ -36,6 +36,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
 
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
 	pubsublisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
@@ -115,7 +116,7 @@ func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
 }
 
 func (l *Listers) GetChannelLister() pubsublisters.ChannelLister {
-	return pubsublisters.NewChannelLister(l.indexerFor(&pubsubv1alpha1.Channel{}))
+	return pubsublisters.NewChannelLister(l.indexerFor(&v1alpha1.Channel{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

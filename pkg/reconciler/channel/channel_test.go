@@ -19,8 +19,8 @@ package channel
 import (
 	"context"
 	"fmt"
-	"github.com/knative/pkg/kmeta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"knative.dev/pkg/kmeta"
 	"testing"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -31,18 +31,17 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"github.com/knative/pkg/configmap"
-	"github.com/knative/pkg/controller"
-	logtesting "github.com/knative/pkg/logging/testing"
-	"github.com/knative/pkg/tracker"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/tracker"
 
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/channel/resources"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
-
-	. "github.com/knative/pkg/reconciler/testing"
 
 	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
 )
@@ -111,7 +110,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -126,7 +125,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -146,7 +145,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -162,7 +161,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -180,7 +179,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -197,7 +196,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -211,7 +210,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -227,7 +226,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -246,7 +245,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -265,7 +264,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
-				WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project:            testProject,
 					ServiceAccountName: testServiceAccount,
 				}),
@@ -343,7 +342,7 @@ func TestFinalizers(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		original := &pubsubv1alpha1.Channel{}
+		original := &v1alpha1.Channel{}
 		original.Finalizers = tc.original.List()
 		if tc.add {
 			addFinalizer(original)
@@ -374,7 +373,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newInvoker() runtime.Object {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
-		WithChannelSpec(pubsubv1alpha1.ChannelSpec{
+		WithChannelSpec(v1alpha1.ChannelSpec{
 			Project:            testProject,
 			ServiceAccountName: testServiceAccount,
 		}))

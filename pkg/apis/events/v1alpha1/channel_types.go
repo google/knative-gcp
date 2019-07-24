@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/webhook"
 )
@@ -60,25 +59,21 @@ type ChannelSpec struct {
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format
 	// (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// +optional
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the Pub/Sub
 	// Topic and Subscriptions will be created in.
+	// +optional
 	Project string `json:"project,omitempty"`
 
-	// ServiceAccountName is the name of the ServiceAccount that will be used to
-	// run the Channel Deployment.
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
 	// Channel conforms to Duck type Subscribable.
+	// +optional
 	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
 }
 
 var channelCondSet = apis.NewLivingConditionSet(
-	ChannelConditionServiceReady,
-	ChannelConditionEndpointsReady,
 	ChannelConditionAddressable,
-	ChannelConditionChannelServiceReady,
 	ChannelConditionTopicReady,
 )
 
@@ -88,30 +83,12 @@ const (
 	ChannelConditionReady = apis.ConditionReady
 
 	// ChannelConditionAddressable has status true when this Channel meets the
-	// Addressable contract and has a non-empty hostname.
+	// Addressable contract and has a non-empty url.
 	ChannelConditionAddressable apis.ConditionType = "Addressable"
-
-	// ChannelConditionServiceReady has status True when a k8s Service is
-	// ready. This basically just means it exists because there's no meaningful
-	// status in Service. See Endpoints below.
-	ChannelConditionServiceReady apis.ConditionType = "ServiceReady"
-
-	// ChannelConditionEndpointsReady has status True when a k8s Service
-	// Endpoints are backed by at least one endpoint.
-	ChannelConditionEndpointsReady apis.ConditionType = "EndpointsReady"
-
-	// ChannelConditionServiceReady has status True when a k8s Service
-	// representing the channel is ready. Because this uses ExternalName,
-	// there are no endpoints to check.
-	ChannelConditionChannelServiceReady apis.ConditionType = "ChannelServiceReady"
 
 	// ChannelConditionTopicReady has status True when the Channel has had a
 	// Pub/Sub topic created for it.
-	ChannelConditionTopicReady apis.ConditionType = "TopicDeployed"
-
-	// ChannelConditionInvokerDeployed has status True when the Channel has had
-	// its invoker deployment created.
-	ChannelConditionInvokerDeployed apis.ConditionType = "InvokerDeployed"
+	ChannelConditionTopicReady apis.ConditionType = "TopicReady"
 )
 
 // ChannelStatus represents the current state of a Channel.
@@ -126,12 +103,12 @@ type ChannelStatus struct {
 	// provided targets from inside the cluster.
 	//
 	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
-	duckv1alpha1.AddressStatus `json:",inline"`
+	duckv1beta1.AddressStatus `json:",inline"`
 
 	// Subscribers is populated with the statuses of each of the Channelable's subscribers.
 	eventingduck.SubscribableStatus `json:",inline"`
 
-	// ProjectID is the resolved project ID in use by the PullSubscription.
+	// ProjectID is the resolved project ID in use by the Channel.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 
