@@ -18,7 +18,6 @@ package channel
 
 import (
 	"context"
-	"knative.dev/pkg/kmeta"
 	"reflect"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"go.uber.org/zap"
@@ -35,31 +35,29 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/channel/resources"
 )
 
 const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "Channels"
-
-	finalizerName = controllerAgentName
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
 type Reconciler struct {
 	*reconciler.Base
 
+	// listers index properties about resources
+	channelLister      listers.ChannelLister
 	topicLister        pubsublisters.TopicLister
 	subscriptionLister pubsublisters.PullSubscriptionLister
-
-	// listers index properties about resources
-	channelLister listers.ChannelLister
 
 	tracker tracker.Interface // TODO: use tracker for sink.
 }
@@ -126,20 +124,39 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return reconcileErr
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
+func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
 	logger := logging.FromContext(ctx)
 
 	channel.Status.InitializeConditions()
 
 	if channel.Status.TopicID == "" {
-		channel.Status.TopicID = kmeta.ChildName(channel.Name, channel.Namespace)
+		channel.Status.TopicID = resources.GenerateTopicName(channel.Name, channel.UID)
 	}
 
-	// 1. create a Topic.
-	// 2. create all subscriptions that are in spec and not in status.
-	// 3. delete all subscriptions that are in status but not in spec.
+	// 1. Create the Topic.
+	if topic, err := r.createTopic(ctx, channel); err != nil {
+		channel.Status.MarkNoTopic("FailedCreate", "Error when attempting to create Topic.")
+		return err
+	} else {
+		// Propagate Status.
+		if c := topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady); c != nil {
+			if c.IsTrue() {
+				channel.Status.MarkTopicReady()
+			} else if c.IsUnknown() {
+				channel.Status.MarkTopicOperating(c.Reason, c.Message)
+			} else if c.IsFalse() {
+				channel.Status.MarkNoTopic(c.Reason, c.Message)
+			}
+		}
+	}
+	// 2. Sync all subscriptions.
+	//   a. create all subscriptions that are in spec and not in status.
+	//   b. delete all subscriptions that are in status but not in spec.
+	if err := r.syncSubscribers(ctx, channel); err != nil {
+		return err
+	}
 
-	_ = logger
+	_ = logger // TODO
 
 	return nil
 }
@@ -171,6 +188,52 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 	return ch, err
 }
 
+func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
+	subC := []eventingduck.SubscriberSpec(nil)
+	subU := []eventingduck.SubscriberSpec(nil)
+	subD := []eventingduck.SubscriberStatus(nil)
+
+	exists := make(map[types.UID]eventingduck.SubscriberStatus)
+	for _, s := range channel.Status.Subscribers {
+		exists[s.UID] = s
+	}
+
+	if channel.Spec.Subscribable != nil {
+		for _, want := range channel.Spec.Subscribable.Subscribers {
+			if got, ok := exists[want.UID]; !ok {
+				// If it does not exist, then update it.
+				subC = append(subC, want)
+			} else {
+				if got.ObservedGeneration != want.Generation {
+					subU = append(subU)
+				}
+			}
+			// Remove want from exists.
+			delete(exists, want.UID)
+		}
+	}
+
+	// Remaining exists will be deleted.
+	for _, e := range exists {
+		subD = append(subD, e)
+	}
+
+	for _, s := range subC {
+		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
+		c.Logger.Infof("Channel %q will create subscription %s", channel.Name, genName)
+	}
+	for _, s := range subU {
+		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
+		c.Logger.Infof("Channel %q will update subscription %s", channel.Name, genName)
+	}
+	for _, s := range subD {
+		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
+		c.Logger.Infof("Channel %q will delete subscription %s", channel.Name, genName)
+	}
+
+	return nil
+}
+
 func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
 	topic, err := r.getTopic(ctx, channel)
 	if err != nil && !apierrors.IsNotFound(err) {
@@ -179,16 +242,25 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 	}
 	if topic != nil {
 		logging.FromContext(ctx).Desugar().Info("Reusing existing Topic", zap.Any("topic", topic))
+		if topic.Status.Address != nil {
+			channel.Status.SetAddress(topic.Status.Address.URL)
+		} else {
+			channel.Status.SetAddress(nil)
+		}
 		return topic, nil
 	}
-	dp := resources.MakeTopic(&resources.InvokerArgs{
-		Image:   r.invokerImage,
-		Channel: channel,
+	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(resources.MakeTopic(&resources.TopicArgs{
+		Owner:   channel,
+		Project: channel.Spec.Project,
+		Secret:  channel.Spec.Secret,
+		Topic:   channel.Status.TopicID,
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
-	})
-	dp, err = r.KubeClientSet.AppsV1().Deployments(channel.Namespace).Create(dp)
-	logging.FromContext(ctx).Desugar().Info("Invoker created.", zap.Error(err), zap.Any("invoker", dp))
-	return dp, err
+	}))
+	if err != nil {
+		logging.FromContext(ctx).Info("Topic created.", zap.Error(err), zap.Any("topic", topic))
+		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", topic.GetName())
+	}
+	return topic, err
 }
 
 func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {

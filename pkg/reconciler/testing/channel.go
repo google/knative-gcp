@@ -23,15 +23,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1alpha12 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 )
 
 // ChannelOption enables further configuration of a Channel.
-type ChannelOption func(*v1alpha12.Channel)
+type ChannelOption func(*v1alpha1.Channel)
 
 // NewChannel creates a Channel with ChannelOptions
-func NewChannel(name, namespace string, so ...ChannelOption) *v1alpha12.Channel {
-	s := &v1alpha12.Channel{
+func NewChannel(name, namespace string, so ...ChannelOption) *v1alpha1.Channel {
+	s := &v1alpha1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -45,8 +45,8 @@ func NewChannel(name, namespace string, so ...ChannelOption) *v1alpha12.Channel 
 }
 
 // NewChannelWithoutNamespace creates a Channel with ChannelOptions but without a specific namespace
-func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1alpha12.Channel {
-	s := &v1alpha12.Channel{
+func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1alpha1.Channel {
+	s := &v1alpha1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
@@ -59,100 +59,81 @@ func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1alpha12.Cha
 }
 
 func WithChannelUID(uid types.UID) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.UID = uid
 	}
 }
 
 func WithChannelGenerateName(generateName string) ChannelOption {
-	return func(c *v1alpha12.Channel) {
+	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.GenerateName = generateName
 	}
 }
 
 // WithInitChannelConditions initializes the Channels's conditions.
-func WithInitChannelConditions(s *v1alpha12.Channel) {
+func WithInitChannelConditions(s *v1alpha1.Channel) {
 	s.Status.InitializeConditions()
 }
 
 func WithChannelTopic(topicID string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithChannelMarkTopicCreating(topicID string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicOperating("Creating", "Created Job to create Topic %q.", topicID)
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithChannelTopicDeleting(topicID string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicOperating("Deleting", "Created Job to delete Topic %q.", topicID)
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithChannelTopicDeleted(topicID string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.Status.MarkNoTopic("Deleted", "Successfully deleted Topic %q.", topicID)
 		s.Status.TopicID = ""
 	}
 }
 
-func WithChannelSpec(spec v1alpha12.ChannelSpec) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
+	return func(s *v1alpha1.Channel) {
 		s.Spec = spec
 	}
 }
 
-func WithChannelInvokerDeployed(s *v1alpha12.Channel) {
-	s.Status.MarkDeployed()
+func WithChannelDefaults(s *v1alpha1.Channel) {
+	s.SetDefaults(context.Background())
 }
 
 func WithChannelReady(topicID string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
+	return func(s *v1alpha1.Channel) {
 		s.Status.InitializeConditions()
-		s.Status.MarkDeployed()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
-//func WithChannelProjectResolved(projectID string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.ProjectID = projectID
-//	}
-//}
-//
-//func WithChannelSinkNotFound() ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.MarkNoSink("NotFound", "")
-//	}
-//}
-
-func WithChannelDeleted(s *v1alpha12.Channel) {
+func WithChannelDeleted(s *v1alpha1.Channel) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
 func WithChannelOwnerReferences(ownerReferences []metav1.OwnerReference) ChannelOption {
-	return func(c *v1alpha12.Channel) {
+	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.OwnerReferences = ownerReferences
 	}
 }
 
 func WithChannelLabels(labels map[string]string) ChannelOption {
-	return func(c *v1alpha12.Channel) {
+	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.Labels = labels
-	}
-}
-
-func WithChannelFinalizers(finalizers ...string) ChannelOption {
-	return func(s *v1alpha12.Channel) {
-		s.Finalizers = finalizers
 	}
 }

@@ -17,7 +17,6 @@ limitations under the License.
 package channel
 
 import (
-	"os"
 	"testing"
 
 	"knative.dev/pkg/configmap"
@@ -26,19 +25,14 @@ import (
 
 	// Fake injection informers
 
-	_ "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
-	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
-
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/channel/fake"
+	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/channel/fake"
+	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
+	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 )
 
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
-
-	_ = os.Setenv("PUBSUB_INVOKER_IMAGE", "PUBSUB_INVOKER_IMAGE")
-	_ = os.Setenv("PUBSUB_SUB_IMAGE", "PUBSUB_SUB_IMAGE")
-	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
 	c := NewController(ctx, configmap.NewFixedWatcher())
 

@@ -63,13 +63,13 @@ func TestMakeTopic(t *testing.T) {
 	want := &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "channel-namespace",
-			GenerateName: "pubsub-channel-name-",
+			GenerateName: "channel-channel-name-",
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "pubsub.cloud.run/v1alpha1",
+				APIVersion:         "events.cloud.run/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				Controller:         &yes,

@@ -24,9 +24,11 @@ import (
 )
 
 func TestChannelDefaults(t *testing.T) {
-	want := &Channel{Spec: ChannelSpec{}}
+	want := &Channel{Spec: ChannelSpec{
+		Secret: defaultSecretSelector(),
+	}}
 
-	got := want.DeepCopy()
+	got := &Channel{Spec: ChannelSpec{}}
 	got.SetDefaults(context.Background())
 
 	if diff := cmp.Diff(want, got); diff != "" {

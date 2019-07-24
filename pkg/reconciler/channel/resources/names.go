@@ -18,14 +18,14 @@ package resources
 
 import (
 	"fmt"
-
-	v1alpha12 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/kmeta"
 )
 
-func GenerateTopicName(src *v1alpha12.Channel) string {
-	return fmt.Sprintf("cloud-run-channel-%s-%s-%s", src.Namespace, src.Name, src.UID)
+func GenerateTopicName(name string, UID types.UID) string {
+	return kmeta.ChildName(fmt.Sprintf("cloud-run-chan-%s-%s", name, UID), "")
 }
 
-func GenerateSubscriptionName(src *v1alpha12.Channel) string {
-	return fmt.Sprintf("cloud-run-channel-%s-%s-%s", src.Namespace, src.Name, src.UID)
+func GenerateSubscriptionName(name string, UID types.UID) string {
+	return kmeta.ChildName(fmt.Sprintf("cloud-run-sub-%s-%s", name, UID), "")
 }
