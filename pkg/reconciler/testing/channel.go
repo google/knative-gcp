@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"knative.dev/pkg/apis"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -84,7 +85,7 @@ func WithChannelTopic(topicID string) ChannelOption {
 
 func WithChannelMarkTopicCreating(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("Creating", "Created Job to create Topic %q.", topicID)
+		s.Status.MarkTopicOperating("", "")
 		s.Status.TopicID = topicID
 	}
 }
@@ -118,6 +119,13 @@ func WithChannelReady(topicID string) ChannelOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
+	}
+}
+
+func WithChannelAddress(url string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		u, _ := apis.ParseURL(url)
+		s.Status.SetAddress(u)
 	}
 }
 

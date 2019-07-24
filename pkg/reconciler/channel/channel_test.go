@@ -19,12 +19,12 @@ package channel
 import (
 	"context"
 	"k8s.io/apimachinery/pkg/runtime"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/tracker"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -44,7 +44,7 @@ import (
 
 const (
 	channelName = "chan"
-	sinkName    = "sink"
+	//sinkName    = "sink"
 
 	testNS = "testnamespace"
 
@@ -59,8 +59,8 @@ const (
 )
 
 var (
-	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS + "/"
+	topicDNS = channelName + ".mynamespace.svc.cluster.local"
+	topicURI = "http://" + topicDNS + "/"
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.run",
@@ -74,23 +74,24 @@ func init() {
 	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
 }
 
-func newSink() *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.run/v1alpha1",
-			"kind":       "Sink",
-			"metadata": map[string]interface{}{
-				"namespace": testNS,
-				"name":      sinkName,
-			},
-			"status": map[string]interface{}{
-				"address": map[string]interface{}{
-					"hostname": sinkDNS,
-				},
-			},
-		},
-	}
-}
+//
+//func newSink() *unstructured.Unstructured {
+//	return &unstructured.Unstructured{
+//		Object: map[string]interface{}{
+//			"apiVersion": "testing.cloud.run/v1alpha1",
+//			"kind":       "Sink",
+//			"metadata": map[string]interface{}{
+//				"namespace": testNS,
+//				"name":      sinkName,
+//			},
+//			"status": map[string]interface{}{
+//				"address": map[string]interface{}{
+//					"hostname": sinkDNS,
+//				},
+//			},
+//		},
+//	}
+//}
 
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
@@ -111,7 +112,6 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithChannelDefaults,
 			),
-			newSink(),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
@@ -133,7 +133,7 @@ func TestAllCases(t *testing.T) {
 			newTopic(),
 		},
 	}, {
-		Name: "successful created topic",
+		Name: "topic ready",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -141,10 +141,10 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
-				WithChannelTopic(testTopicID),
 				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
 			),
-			newTopic(),
+			newReadyTopic(),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
@@ -157,9 +157,10 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
+				WithChannelDefaults,
 				WithChannelTopic(testTopicID),
 				// Updates
-
+				WithChannelAddress(topicURI),
 			),
 		}},
 		//WantCreates: []runtime.Object{
@@ -275,8 +276,7 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newTopic() runtime.Object {
-
+func newTopic() *pubsubv1alpha1.Topic {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
 		WithChannelSpec(v1alpha1.ChannelSpec{
@@ -293,4 +293,13 @@ func newTopic() runtime.Object {
 		Secret:  channel.Spec.Secret,
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
 	})
+}
+
+func newReadyTopic() *pubsubv1alpha1.Topic {
+	topic := newTopic()
+	url, _ := apis.ParseURL(topicURI)
+	topic.Status.SetAddress(url)
+	topic.Status.MarkDeployed()
+	topic.Status.MarkTopicReady()
+	return topic
 }
