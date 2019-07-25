@@ -19,7 +19,6 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -268,7 +267,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(source.Status, desired.Status) {
+	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
 		return source, nil
 	}
 	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
