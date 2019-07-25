@@ -139,7 +139,8 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 
 	// Modification of Sink and Transform allowed. Everything else is immutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer", "Mode")); diff != "" {
+		cmpopts.IgnoreFields(PullSubscriptionSpec{},
+			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
