@@ -20,11 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"knative.dev/pkg/apis"
-	"reflect"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +34,9 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
@@ -297,7 +295,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(source.Status, desired.Status) {
+	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
 		return source, nil
 	}
 	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
