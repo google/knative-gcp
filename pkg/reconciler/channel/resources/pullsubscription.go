@@ -27,9 +27,9 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
-// TopicArgs are the arguments needed to create a Channel Topic.
+// PullSubscriptionArgs are the arguments needed to create a Channel Subscriber.
 // Every field is required.
-type TopicArgs struct {
+type PullSubscriptionArgs struct {
 	Owner   kmeta.OwnerRefable
 	Project string
 	Topic   string
@@ -37,16 +37,17 @@ type TopicArgs struct {
 	Labels  map[string]string
 }
 
-// MakeInvoker generates (but does not insert into K8s) the Topic for Channels.
-func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
-	return &v1alpha1.Topic{
+// MakePullSubscription generates (but does not insert into K8s) the
+// PullSubscription for Channels.
+func MakePullSubscription(args *TopicArgs) *v1alpha1.PullSubscription {
+	return &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
 			GenerateName:    fmt.Sprintf("ch-%s-", args.Owner.GetObjectMeta().GetName()),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: v1alpha1.TopicSpec{
+		Spec: v1alpha1.PullSubscriptionSpec{
 			Secret:            args.Secret,
 			Project:           args.Project,
 			Topic:             args.Topic,

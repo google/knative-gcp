@@ -189,9 +189,9 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 }
 
 func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
-	subC := []eventingduck.SubscriberSpec(nil)
-	subU := []eventingduck.SubscriberSpec(nil)
-	subD := []eventingduck.SubscriberStatus(nil)
+	subCreates := []eventingduck.SubscriberSpec(nil)
+	subUpdates := []eventingduck.SubscriberSpec(nil)
+	subDeletes := []eventingduck.SubscriberStatus(nil)
 
 	exists := make(map[types.UID]eventingduck.SubscriberStatus)
 	for _, s := range channel.Status.Subscribers {
@@ -202,10 +202,10 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		for _, want := range channel.Spec.Subscribable.Subscribers {
 			if got, ok := exists[want.UID]; !ok {
 				// If it does not exist, then update it.
-				subC = append(subC, want)
+				subCreates = append(subCreates, want)
 			} else {
 				if got.ObservedGeneration != want.Generation {
-					subU = append(subU)
+					subUpdates = append(subUpdates)
 				}
 			}
 			// Remove want from exists.
@@ -215,20 +215,27 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 
 	// Remaining exists will be deleted.
 	for _, e := range exists {
-		subD = append(subD, e)
+		subDeletes = append(subDeletes, e)
 	}
 
-	for _, s := range subC {
+	for _, s := range subCreates {
 		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
 		c.Logger.Infof("Channel %q will create subscription %s", channel.Name, genName)
 	}
-	for _, s := range subU {
+	for _, s := range subUpdates {
 		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
 		c.Logger.Infof("Channel %q will update subscription %s", channel.Name, genName)
+
 	}
-	for _, s := range subD {
+	for _, s := range subDeletes {
 		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
 		c.Logger.Infof("Channel %q will delete subscription %s", channel.Name, genName)
+		// TODO: we need to handle the case of a already deleted pull subscription. Perhaps move to ensure deleted method.
+		if err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Delete(genName, &metav1.DeleteOptions{}); err != nil {
+			c.Logger.Errorf("unable to delete PullSubscription %s for Channel %q, %s", genName, channel.Name, err.Error())
+			return err
+		}
+		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", genName)
 	}
 
 	return nil

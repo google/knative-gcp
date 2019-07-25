@@ -23,9 +23,9 @@ import (
 )
 
 func GenerateTopicName(name string, UID types.UID) string {
-	return kmeta.ChildName(fmt.Sprintf("cloud-run-chan-%s-%s", name, UID), "")
+	return kmeta.ChildName(fmt.Sprintf("cre-chan-%s", name), string(UID))
 }
 
 func GenerateSubscriptionName(name string, UID types.UID) string {
-	return kmeta.ChildName(fmt.Sprintf("cloud-run-sub-%s-%s", name, UID), "")
+	return kmeta.ChildName(fmt.Sprintf("cre-sub-%s", name), string(UID))
 }

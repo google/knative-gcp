@@ -53,11 +53,13 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, og apis.Immuta
 	}
 
 	// Modification of TopicID is not allowed.
-	if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
-		return &apis.FieldError{
-			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"status", "topicId"},
-			Details: diff,
+	if original.Status.TopicID != "" {
+		if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
+			return &apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"status", "topicId"},
+				Details: diff,
+			}
 		}
 	}
 	return nil

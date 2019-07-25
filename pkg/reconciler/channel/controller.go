@@ -56,6 +56,7 @@ func NewController(
 
 	c := &Reconciler{
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		channelLister:      channelInformer.Lister(),
 		topicLister:        topicInformer.Lister(),
 		subscriptionLister: subscriptionInformer.Lister(),
 	}
