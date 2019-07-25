@@ -193,7 +193,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return nil
 	}
 
-	// Sink is required. // TODO: this is a problem for channels.
+	// Sink is required.
 	if source.Spec.Sink != nil {
 		sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
 		if err != nil {
@@ -219,7 +219,8 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID, *source.Spec.AckDeadline, source.Spec.RetainAckedMessages, *source.Spec.RetentionDuration)
+	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic,
+		source.Status.SubscriptionID, source.Spec.GetAckDeadline(), source.Spec.RetainAckedMessages, source.Spec.GetRetentionDuration())
 	switch state {
 	case pubsub.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))

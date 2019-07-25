@@ -31,6 +31,9 @@ import (
 const (
 	minRetentionDuration = 10 * time.Second   // 10 seconds.
 	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
+
+	minAckDeadline = 0 * time.Second  // 0 seconds.
+	maxAckDeadline = 10 * time.Minute // 10 minutes.
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
@@ -58,8 +61,21 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 
 	if current.RetentionDuration != nil {
 		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
-		if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(current.RetentionDuration, minRetentionDuration, maxRetentionDuration, "retentionDuration"))
+		rd, err := time.ParseDuration(*current.RetentionDuration)
+		if err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(*current.RetentionDuration, "retentionDuration"))
+		} else if rd < minRetentionDuration || rd > maxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, minRetentionDuration.String(), maxRetentionDuration.String(), "retentionDuration"))
+		}
+	}
+
+	if current.AckDeadline != nil {
+		// If set, AckDeadline needs to parse to a valid duration.
+		ad, err := time.ParseDuration(*current.AckDeadline)
+		if err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(*current.AckDeadline, "ackDeadline"))
+		} else if ad < minAckDeadline || ad > maxAckDeadline {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
 		}
 	}
 
