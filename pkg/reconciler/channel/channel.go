@@ -221,6 +221,19 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 	for _, s := range subCreates {
 		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
 		c.Logger.Infof("Channel %q will create subscription %s", channel.Name, genName)
+
+		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
+			Owner:      channel,
+			Project:    channel.Spec.Project,
+			Topic:      channel.Status.TopicID,
+			Secret:     channel.Spec.Secret,
+			Labels:     resources.GetLabels(controllerAgentName, channel.Name),
+			Subscriber: s,
+		})
+		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
+		if err != nil {
+			return err
+		}
 	}
 	for _, s := range subUpdates {
 		genName := resources.GenerateSubscriptionName(channel.Name, s.UID)
