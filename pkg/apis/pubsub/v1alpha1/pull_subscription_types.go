@@ -94,20 +94,25 @@ type PullSubscriptionSpec struct {
 	// +optional
 	RetentionDuration *time.Duration `json:"retentionDuration,omitempty"`
 
-	// Sink is a reference to an object that will resolve to a domain name to
-	// use as the sink.
+	// Sink is a reference to an object that will resolve to a domain name or a
+	// URI directly to use as the sink.
 	// +optional
-	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+	Sink *Destination `json:"sink,omitempty"`
 
 	// Transformer is a reference to an object that will resolve to a domain
-	// name to use as the transformer.
+	// name or a URI directly to use as the transformer or a URI directly.
 	// +optional
-	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
+	Transformer *Destination `json:"transformer,omitempty"`
 
 	// Mode defines the encoding and structure of the payload of when the
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
+}
+
+type Destination struct {
+	*corev1.ObjectReference `json:",inline"`
+	URI                     *apis.URL `json:"uri,omitempty"`
 }
 
 type ModeType string

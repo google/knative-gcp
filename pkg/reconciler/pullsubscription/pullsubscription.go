@@ -19,6 +19,8 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"knative.dev/pkg/apis"
 	"reflect"
 	"time"
 
@@ -191,21 +193,28 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return nil
 	}
 
-	sinkURI, err := duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Sink, source.Namespace)
-	if err != nil {
-		source.Status.MarkNoSink("NotFound", "")
-		return err
-	}
-	source.Status.MarkSink(sinkURI)
-
-	var transformerURI string
-	if source.Spec.Transformer != nil {
-		transformerURI, err = duck.GetSinkURI(ctx, c.DynamicClientSet, source.Spec.Transformer, source.Namespace)
+	// Sink is required. // TODO: this is a problem for channels.
+	if source.Spec.Sink != nil {
+		sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
 		if err != nil {
-			source.Status.MarkNoSink("NotFound", "")
+			source.Status.MarkNoSink("InvalidSink", err.Error())
 			return err
+		} else {
+			source.Status.MarkSink(sinkURI.String())
 		}
-		source.Status.MarkTransformer(transformerURI)
+	} else {
+		source.Status.MarkNoSink("NotFound", "sink is nil")
+		return nil
+	}
+
+	// Transformer is optional.
+	if source.Spec.Transformer != nil {
+		transformerURI, err := c.resolveDestination(ctx, source.Spec.Transformer, source.Namespace)
+		if err != nil {
+			source.Status.MarkNoTransformer("InvalidTransformer", err.Error())
+		} else {
+			source.Status.MarkTransformer(transformerURI.String())
+		}
 	}
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
@@ -241,7 +250,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return err
 	}
 
-	_, err = c.createOrUpdateReceiveAdapter(ctx, source, source.Status.SubscriptionID, sinkURI, transformerURI)
+	_, err = c.createOrUpdateReceiveAdapter(ctx, source)
 	if err != nil {
 		logger.Error("Unable to create the receive adapter", zap.Error(err))
 		return err
@@ -260,6 +269,25 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	//}
 
 	return nil
+}
+
+func (c *Reconciler) resolveDestination(ctx context.Context, destination *v1alpha1.Destination, namespace string) (*apis.URL, error) {
+	if destination != nil {
+		if destination.URI != nil {
+			return destination.URI, nil
+		} else {
+			if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+				return nil, err
+			} else {
+				if destURI, err := apis.ParseURL(uri); err != nil {
+					return nil, err
+				} else {
+					return destURI, nil
+				}
+			}
+		}
+	}
+	return nil, errors.New("destination is nil")
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
@@ -351,7 +379,7 @@ func removeFinalizer(s *v1alpha1.PullSubscription) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription, subscriptionID, sinkURI, transformerURI string) (*appsv1.Deployment, error) {
+func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
 	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
@@ -362,9 +390,9 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		Image:          r.receiveAdapterImage,
 		Source:         src,
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
-		SubscriptionID: subscriptionID,
-		SinkURI:        sinkURI,
-		TransformerURI: transformerURI,
+		SubscriptionID: src.Status.SubscriptionID,
+		SinkURI:        src.Status.SinkURI,
+		TransformerURI: src.Status.TransformerURI,
 	})
 
 	if existing == nil {

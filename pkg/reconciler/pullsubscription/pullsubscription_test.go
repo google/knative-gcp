@@ -61,7 +61,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cre-pull-" + testNS + "-" + sourceName + "-" + sourceUID
 )
 
 var (
@@ -120,7 +120,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSinkNotFound(),
+				WithPullSubscriptionSinkNil(),
 			),
 		}},
 	},
