@@ -17,17 +17,20 @@ limitations under the License.
 package resources
 
 import (
+	"knative.dev/pkg/apis"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
-func TestMakeTopic(t *testing.T) {
+func TestMakePullSubscription(t *testing.T) {
 	channel := &v1alpha1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
@@ -48,7 +51,7 @@ func TestMakeTopic(t *testing.T) {
 		},
 	}
 
-	got := MakeTopic(&TopicArgs{
+	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
@@ -57,10 +60,14 @@ func TestMakeTopic(t *testing.T) {
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
 		},
+		Subscriber: duckv1alpha1.SubscriberSpec{
+			SubscriberURI: "http://subscriber/",
+			ReplyURI:      "http://reply/",
+		},
 	})
 
 	yes := true
-	want := &pubsubv1alpha1.Topic{
+	want := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    "channel-namespace",
 			GenerateName: "ch-channel-name-",
@@ -76,16 +83,21 @@ func TestMakeTopic(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.TopicSpec{
+		Spec: pubsubv1alpha1.PullSubscriptionSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
 				},
 				Key: "eventing-secret-key",
 			},
-			Project:           "project-123",
-			Topic:             "topic-abc",
-			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+			Project: "project-123",
+			Topic:   "topic-abc",
+			Sink: pubsubv1alpha1.Destination{
+				URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+			},
+			Transformer: &pubsubv1alpha1.Destination{
+				URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
+			},
 		},
 	}
 
