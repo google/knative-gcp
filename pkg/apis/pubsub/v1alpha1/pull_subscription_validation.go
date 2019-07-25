@@ -82,6 +82,9 @@ func validateDestination(dest *Destination) *apis.FieldError {
 		if dest.ObjectReference != nil {
 			return apis.ErrMultipleOneOf("uri", "name")
 		}
+		if dest.URI.Host == "" || dest.URI.Scheme == "" {
+			return apis.ErrInvalidValue(dest.URI.String(), "uri")
+		}
 	} else {
 		return validateRef(dest.ObjectReference)
 	}
