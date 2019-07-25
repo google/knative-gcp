@@ -33,17 +33,21 @@ var (
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
-		Sink: &corev1.ObjectReference{
-			APIVersion: "foo",
-			Kind:       "bar",
-			Namespace:  "baz",
-			Name:       "qux",
+		Sink: &Destination{
+			ObjectReference: &corev1.ObjectReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
 		},
-		Transformer: &corev1.ObjectReference{
-			APIVersion: "foo",
-			Kind:       "bar",
-			Namespace:  "baz",
-			Name:       "qux",
+		Transformer: &Destination{
+			ObjectReference: &corev1.ObjectReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
 		},
 		Mode: ModeCloudEventsStructured,
 	}
@@ -144,11 +148,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: "some-other-api-version",
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "some-other-api-version",
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -165,11 +171,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       "some-other-kind",
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       "some-other-kind",
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -186,11 +194,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  "some-other-namespace",
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  "some-other-namespace",
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -207,11 +217,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       "some-other-name",
+				Sink: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       "some-other-name",
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -228,11 +240,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: "some-other-api-version",
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Sink: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "some-other-api-version",
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -249,11 +263,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       "some-other-kind",
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       "some-other-kind",
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -270,11 +286,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  "some-other-namespace",
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  "some-other-namespace",
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -291,11 +309,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       "some-other-name",
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       "some-other-name",
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},

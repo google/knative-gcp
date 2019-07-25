@@ -46,12 +46,12 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	// Sink [required]
 	if current.Sink == nil || equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
-	} else if err := validateRef(current.Sink); err != nil {
+	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
 	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
-		if err := validateRef(current.Transformer); err != nil {
+		if err := validateDestination(current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
@@ -72,6 +72,20 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	}
 
 	return errs
+}
+
+func validateDestination(dest *Destination) *apis.FieldError {
+	if dest == nil {
+		return apis.ErrMissingField(apis.CurrentField)
+	}
+	if dest.URI != nil {
+		if dest.ObjectReference != nil {
+			return apis.ErrMultipleOneOf("uri", "name")
+		}
+	} else {
+		return validateRef(dest.ObjectReference)
+	}
+	return nil
 }
 
 func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
