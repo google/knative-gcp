@@ -17,7 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"knative.dev/pkg/ptr"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,6 +55,46 @@ func TestPullSubscriptionPubSubMode_nil(t *testing.T) {
 
 	c := &PullSubscription{}
 	got := c.PubSubMode()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGetAckDeadline(t *testing.T) {
+	want := 10 * time.Second
+	s := &PullSubscriptionSpec{AckDeadline: ptr.String("10s")}
+	got := s.GetAckDeadline()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGetRetentionDuration(t *testing.T) {
+	want := 10 * time.Second
+	s := &PullSubscriptionSpec{RetentionDuration: ptr.String("10s")}
+	got := s.GetRetentionDuration()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGetAckDeadline_default(t *testing.T) {
+	want := defaultAckDeadline
+	s := &PullSubscriptionSpec{}
+	got := s.GetAckDeadline()
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGetRetentionDuration_default(t *testing.T) {
+	want := defaultRetentionDuration
+	s := &PullSubscriptionSpec{}
+	got := s.GetRetentionDuration()
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

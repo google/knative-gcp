@@ -110,7 +110,7 @@ type PullSubscriptionSpec struct {
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
 func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
-	if ps.AckDeadline == nil {
+	if ps.AckDeadline != nil {
 		if duration, err := time.ParseDuration(*ps.AckDeadline); err == nil {
 			return duration
 		}
@@ -120,7 +120,7 @@ func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
 func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
-	if ps.RetentionDuration == nil {
+	if ps.RetentionDuration != nil {
 		if duration, err := time.ParseDuration(*ps.RetentionDuration); err == nil {
 			return duration
 		}
