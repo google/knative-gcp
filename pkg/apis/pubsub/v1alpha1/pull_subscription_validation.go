@@ -31,6 +31,9 @@ import (
 const (
 	minRetentionDuration = 10 * time.Second   // 10 seconds.
 	maxRetentionDuration = 7 * 24 * time.Hour // 7 days.
+
+	minAckDeadline = 0 * time.Second  // 0 seconds.
+	maxAckDeadline = 10 * time.Minute // 10 minutes.
 )
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
@@ -44,22 +47,35 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if current.Sink == nil || equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
+	if equality.Semantic.DeepEqual(current.Sink, Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
-		if err := validateDestination(current.Transformer); err != nil {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &Destination{}) {
+		if err := validateDestination(*current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
 
 	if current.RetentionDuration != nil {
 		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
-		if *current.RetentionDuration < minRetentionDuration || *current.RetentionDuration > maxRetentionDuration {
-			errs = errs.Also(apis.ErrOutOfBoundsValue(current.RetentionDuration, minRetentionDuration, maxRetentionDuration, "retentionDuration"))
+		rd, err := time.ParseDuration(*current.RetentionDuration)
+		if err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(*current.RetentionDuration, "retentionDuration"))
+		} else if rd < minRetentionDuration || rd > maxRetentionDuration {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.RetentionDuration, minRetentionDuration.String(), maxRetentionDuration.String(), "retentionDuration"))
+		}
+	}
+
+	if current.AckDeadline != nil {
+		// If set, AckDeadline needs to parse to a valid duration.
+		ad, err := time.ParseDuration(*current.AckDeadline)
+		if err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(*current.AckDeadline, "ackDeadline"))
+		} else if ad < minAckDeadline || ad > maxAckDeadline {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
 		}
 	}
 
@@ -74,10 +90,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	return errs
 }
 
-func validateDestination(dest *Destination) *apis.FieldError {
-	if dest == nil {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
+func validateDestination(dest Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.ObjectReference != nil {
 			return apis.ErrMultipleOneOf("uri", "name")
@@ -123,7 +136,8 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 
 	// Modification of Sink and Transform allowed. Everything else is immutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(PullSubscriptionSpec{}, "Sink", "Transformer", "Mode")); diff != "" {
+		cmpopts.IgnoreFields(PullSubscriptionSpec{},
+			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

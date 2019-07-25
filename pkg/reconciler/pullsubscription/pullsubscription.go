@@ -19,12 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"knative.dev/pkg/apis"
-	"reflect"
 	"time"
-
-	"github.com/google/go-cmp/cmp"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +33,9 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
@@ -193,23 +190,18 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		return nil
 	}
 
-	// Sink is required. // TODO: this is a problem for channels.
-	if source.Spec.Sink != nil {
-		sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
-		if err != nil {
-			source.Status.MarkNoSink("InvalidSink", err.Error())
-			return err
-		} else {
-			source.Status.MarkSink(sinkURI.String())
-		}
+	// Sink is required.
+	sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
+	if err != nil {
+		source.Status.MarkNoSink("InvalidSink", err.Error())
+		return err
 	} else {
-		source.Status.MarkNoSink("NotFound", "sink is nil")
-		return nil
+		source.Status.MarkSink(sinkURI.String())
 	}
 
 	// Transformer is optional.
 	if source.Spec.Transformer != nil {
-		transformerURI, err := c.resolveDestination(ctx, source.Spec.Transformer, source.Namespace)
+		transformerURI, err := c.resolveDestination(ctx, *source.Spec.Transformer, source.Namespace)
 		if err != nil {
 			source.Status.MarkNoTransformer("InvalidTransformer", err.Error())
 		} else {
@@ -219,7 +211,8 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID, *source.Spec.AckDeadline, source.Spec.RetainAckedMessages, *source.Spec.RetentionDuration)
+	state, err := c.EnsureSubscriptionCreated(ctx, source, source.Spec.Project, source.Spec.Topic,
+		source.Status.SubscriptionID, source.Spec.GetAckDeadline(), source.Spec.RetainAckedMessages, source.Spec.GetRetentionDuration())
 	switch state {
 	case pubsub.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
@@ -271,23 +264,20 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination *v1alpha1.Destination, namespace string) (*apis.URL, error) {
-	if destination != nil {
-		if destination.URI != nil {
-			return destination.URI, nil
+func (c *Reconciler) resolveDestination(ctx context.Context, destination v1alpha1.Destination, namespace string) (*apis.URL, error) {
+	if destination.URI != nil {
+		return destination.URI, nil
+	} else {
+		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+			return nil, err
 		} else {
-			if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+			if destURI, err := apis.ParseURL(uri); err != nil {
 				return nil, err
 			} else {
-				if destURI, err := apis.ParseURL(uri); err != nil {
-					return nil, err
-				} else {
-					return destURI, nil
-				}
+				return destURI, nil
 			}
 		}
 	}
-	return nil, errors.New("destination is nil")
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
@@ -296,7 +286,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(source.Status, desired.Status) {
+	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
 		return source, nil
 	}
 	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()

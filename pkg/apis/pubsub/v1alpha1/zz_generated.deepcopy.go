@@ -21,8 +21,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	time "time"
-
 	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	apis "knative.dev/pkg/apis"
@@ -125,19 +123,15 @@ func (in *PullSubscriptionSpec) DeepCopyInto(out *PullSubscriptionSpec) {
 	}
 	if in.AckDeadline != nil {
 		in, out := &in.AckDeadline, &out.AckDeadline
-		*out = new(time.Duration)
+		*out = new(string)
 		**out = **in
 	}
 	if in.RetentionDuration != nil {
 		in, out := &in.RetentionDuration, &out.RetentionDuration
-		*out = new(time.Duration)
+		*out = new(string)
 		**out = **in
 	}
-	if in.Sink != nil {
-		in, out := &in.Sink, &out.Sink
-		*out = new(Destination)
-		(*in).DeepCopyInto(*out)
-	}
+	in.Sink.DeepCopyInto(&out.Sink)
 	if in.Transformer != nil {
 		in, out := &in.Transformer, &out.Transformer
 		*out = new(Destination)

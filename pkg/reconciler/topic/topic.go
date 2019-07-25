@@ -19,7 +19,6 @@ package topic
 import (
 	"context"
 	"encoding/json"
-	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -288,7 +287,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 		return nil, err
 	}
 	// If there's nothing to update, just return.
-	if reflect.DeepEqual(topic.Status, desired.Status) {
+	if equality.Semantic.DeepEqual(topic.Status, desired.Status) {
 		return topic, nil
 	}
 	becomesReady := desired.Status.IsReady() && !topic.Status.IsReady()
