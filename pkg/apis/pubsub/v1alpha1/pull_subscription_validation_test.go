@@ -18,6 +18,8 @@ package v1alpha1
 
 import (
 	"context"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/ptr"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -54,12 +56,135 @@ var (
 )
 
 func TestPubSubCheckValidationFields(t *testing.T) {
-	obj := pullSubscriptionSpec.DeepCopy()
-
-	err := obj.Validate(context.TODO())
-
-	if err != nil {
-		t.Fatalf("Unexpected validation field error. Expected %v. Actual %v", nil, err)
+	testCases := map[string]struct {
+		spec  PullSubscriptionSpec
+		error bool
+	}{
+		"ok": {
+			spec:  pullSubscriptionSpec,
+			error: false,
+		},
+		"bad RetentionDuration": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.RetentionDuration = ptr.String("wrong")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad RetentionDuration, range": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.RetentionDuration = ptr.String("10000h")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad AckDeadline": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.AckDeadline = ptr.String("wrong")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad AckDeadline, range": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.AckDeadline = ptr.String("10000h")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, name": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, apiVersion": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.APIVersion = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, kind": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.Kind = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, nil": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = nil
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri scheme": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = &Destination{
+					URI: &apis.URL{
+						Host: "example.com",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri host": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = &Destination{
+					URI: &apis.URL{
+						Scheme: "http",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri and ref": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = &Destination{
+					URI: &apis.URL{
+						Scheme: "http",
+						Host:   "example.com",
+					},
+					ObjectReference: &corev1.ObjectReference{
+						Name: "foo",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad transformer, name": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Transformer = obj.Sink.DeepCopy()
+				obj.Transformer.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			err := tc.spec.Validate(context.TODO())
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
+			}
+		})
 	}
 }
 
