@@ -95,7 +95,7 @@ type PullSubscriptionSpec struct {
 
 	// Sink is a reference to an object that will resolve to a domain name or a
 	// URI directly to use as the sink.
-	Sink *Destination `json:"sink,omitempty"`
+	Sink Destination `json:"sink"`
 
 	// Transformer is a reference to an object that will resolve to a domain
 	// name or a URI directly to use as the transformer or a URI directly.

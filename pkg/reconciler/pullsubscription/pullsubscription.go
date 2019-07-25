@@ -19,7 +19,6 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -192,22 +191,17 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	}
 
 	// Sink is required.
-	if source.Spec.Sink != nil {
-		sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
-		if err != nil {
-			source.Status.MarkNoSink("InvalidSink", err.Error())
-			return err
-		} else {
-			source.Status.MarkSink(sinkURI.String())
-		}
+	sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
+	if err != nil {
+		source.Status.MarkNoSink("InvalidSink", err.Error())
+		return err
 	} else {
-		source.Status.MarkNoSink("NotFound", "sink is nil")
-		return nil
+		source.Status.MarkSink(sinkURI.String())
 	}
 
 	// Transformer is optional.
 	if source.Spec.Transformer != nil {
-		transformerURI, err := c.resolveDestination(ctx, source.Spec.Transformer, source.Namespace)
+		transformerURI, err := c.resolveDestination(ctx, *source.Spec.Transformer, source.Namespace)
 		if err != nil {
 			source.Status.MarkNoTransformer("InvalidTransformer", err.Error())
 		} else {
@@ -270,23 +264,20 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination *v1alpha1.Destination, namespace string) (*apis.URL, error) {
-	if destination != nil {
-		if destination.URI != nil {
-			return destination.URI, nil
+func (c *Reconciler) resolveDestination(ctx context.Context, destination v1alpha1.Destination, namespace string) (*apis.URL, error) {
+	if destination.URI != nil {
+		return destination.URI, nil
+	} else {
+		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+			return nil, err
 		} else {
-			if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+			if destURI, err := apis.ParseURL(uri); err != nil {
 				return nil, err
 			} else {
-				if destURI, err := apis.ParseURL(uri); err != nil {
-					return nil, err
-				} else {
-					return destURI, nil
-				}
+				return destURI, nil
 			}
 		}
 	}
-	return nil, errors.New("destination is nil")
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {

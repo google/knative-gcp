@@ -47,14 +47,14 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if current.Sink == nil || equality.Semantic.DeepEqual(current.Sink, &corev1.ObjectReference{}) {
+	if equality.Semantic.DeepEqual(current.Sink, Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &corev1.ObjectReference{}) {
-		if err := validateDestination(current.Transformer); err != nil {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &Destination{}) {
+		if err := validateDestination(*current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
 	}
@@ -90,10 +90,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	return errs
 }
 
-func validateDestination(dest *Destination) *apis.FieldError {
-	if dest == nil {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
+func validateDestination(dest Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.ObjectReference != nil {
 			return apis.ErrMultipleOneOf("uri", "name")

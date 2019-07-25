@@ -238,11 +238,7 @@ func (in *PullSubscriptionSpec) DeepCopyInto(out *PullSubscriptionSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Sink != nil {
-		in, out := &in.Sink, &out.Sink
-		*out = new(Destination)
-		(*in).DeepCopyInto(*out)
-	}
+	in.Sink.DeepCopyInto(&out.Sink)
 	if in.Transformer != nil {
 		in, out := &in.Transformer, &out.Transformer
 		*out = new(Destination)
