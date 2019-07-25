@@ -18,10 +18,11 @@ package resources
 
 import (
 	"fmt"
+	"knative.dev/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {
-	return fmt.Sprintf("cloud-run-pull-%s-%s-%s", src.Namespace, src.Name, src.UID)
+	return kmeta.ChildName(fmt.Sprintf("cre-pull-%s-%s", src.Namespace, src.Name), "-"+string(src.UID))
 }
