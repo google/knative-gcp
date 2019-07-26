@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -31,6 +29,7 @@ import (
 // Every field is required.
 type TopicArgs struct {
 	Owner   kmeta.OwnerRefable
+	Name    string
 	Project string
 	Topic   string
 	Secret  *corev1.SecretKeySelector
@@ -42,7 +41,7 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 	return &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
-			GenerateName:    fmt.Sprintf("ch-%s-", args.Owner.GetObjectMeta().GetName()),
+			Name:            args.Name,
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},

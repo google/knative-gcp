@@ -61,7 +61,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cre-pull-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cre-pull-" + sourceUID
 )
 
 var (

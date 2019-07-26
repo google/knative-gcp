@@ -50,6 +50,7 @@ func TestMakeTopic(t *testing.T) {
 
 	got := MakeTopic(&TopicArgs{
 		Owner:   channel,
+		Name:    GenerateTopicName("channel-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -62,8 +63,8 @@ func TestMakeTopic(t *testing.T) {
 	yes := true
 	want := &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "channel-namespace",
-			GenerateName: "ch-channel-name-",
+			Namespace: "channel-namespace",
+			Name:      "cre-chan-channel-uid",
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",

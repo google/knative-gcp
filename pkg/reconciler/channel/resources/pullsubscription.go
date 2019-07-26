@@ -17,7 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +32,7 @@ import (
 // Every field is required.
 type PullSubscriptionArgs struct {
 	Owner      kmeta.OwnerRefable
+	Name       string
 	Project    string
 	Topic      string
 	Secret     *corev1.SecretKeySelector
@@ -94,7 +94,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 	return &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
-			GenerateName:    fmt.Sprintf("ch-%s-", args.Owner.GetObjectMeta().GetName()),
+			Name:            args.Name,
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},

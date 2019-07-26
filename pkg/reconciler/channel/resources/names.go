@@ -19,13 +19,12 @@ package resources
 import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/kmeta"
 )
 
-func GenerateTopicName(name string, UID types.UID) string {
-	return kmeta.ChildName(fmt.Sprintf("cre-chan-%s", name), string(UID))
+func GenerateTopicName(UID types.UID) string {
+	return fmt.Sprintf("cre-chan-%s", string(UID))
 }
 
-func GenerateSubscriptionName(name string, UID types.UID) string {
-	return kmeta.ChildName(fmt.Sprintf("cre-sub-%s", name), string(UID))
+func GenerateSubscriptionName(UID types.UID) string {
+	return fmt.Sprintf("cre-sub-%s", string(UID))
 }

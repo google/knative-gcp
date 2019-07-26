@@ -64,7 +64,9 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		log.Fatal("Error parsing logging configuration:", err)
 	}
 	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 	logger = logger.With(zap.String("cloud.run/events", component))
 
 	logger.Info("Starting the Cloud Run Events Webhook")

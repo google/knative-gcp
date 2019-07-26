@@ -52,10 +52,8 @@ const (
 
 	channelUID = channelName + "-abc-123"
 
-	testProject        = "test-project-id"
-	testTopicID        = "cloud-run-chan-" + channelName + "-" + channelUID
-	testSubscriptionID = "cloud-run-chan-" + channelName + "-" + channelUID
-	testServiceAccount = "test-project-id"
+	testProject = "test-project-id"
+	testTopicID = "cre-chan-" + channelUID
 )
 
 var (
@@ -288,6 +286,7 @@ func newTopic() *pubsubv1alpha1.Topic {
 
 	return resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
+		Name:    resources.GenerateTopicName(channel.UID),
 		Project: channel.Spec.Project,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,

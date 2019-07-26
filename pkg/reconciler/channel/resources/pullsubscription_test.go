@@ -35,6 +35,7 @@ func TestMakePullSubscription(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "channel-name",
 			Namespace: "channel-namespace",
+			UID:       "channel-uid",
 		},
 		Spec: v1alpha1.ChannelSpec{
 			Project: "eventing-name",
@@ -53,6 +54,7 @@ func TestMakePullSubscription(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
+		Name:    GenerateSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -69,8 +71,8 @@ func TestMakePullSubscription(t *testing.T) {
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "channel-namespace",
-			GenerateName: "ch-channel-name-",
+			Namespace: "channel-namespace",
+			Name:      "cre-sub-subscriber-uid",
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -79,6 +81,7 @@ func TestMakePullSubscription(t *testing.T) {
 				APIVersion:         "events.cloud.run/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
+				UID:                "channel-uid",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
