@@ -16,6 +16,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -47,4 +48,21 @@ func TestKind(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected resource (-want, +got) = %v", diff)
 	}
+}
+
+// TestKnownTypes makes sure that expected types get added.
+func TestKnownTypes(t *testing.T) {
+	scheme := runtime.NewScheme()
+	addKnownTypes(scheme)
+	types := scheme.KnownTypes(SchemeGroupVersion)
+
+	for _, name := range []string{
+		"Channel",
+		"ChannelList",
+	} {
+		if _, ok := types[name]; !ok {
+			t.Errorf("Did not find %q as registered type", name)
+		}
+	}
+
 }
