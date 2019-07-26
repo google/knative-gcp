@@ -24,6 +24,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 )
 
@@ -90,20 +92,6 @@ func WithChannelMarkTopicCreating(topicID string) ChannelOption {
 	}
 }
 
-func WithChannelTopicDeleting(topicID string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("Deleting", "Created Job to delete Topic %q.", topicID)
-		s.Status.TopicID = topicID
-	}
-}
-
-func WithChannelTopicDeleted(topicID string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Status.MarkNoTopic("Deleted", "Successfully deleted Topic %q.", topicID)
-		s.Status.TopicID = ""
-	}
-}
-
 func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Spec = spec
@@ -126,6 +114,20 @@ func WithChannelAddress(url string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		u, _ := apis.ParseURL(url)
 		s.Status.SetAddress(u)
+	}
+}
+
+func WithChannelSubscribers(subscribers []duckv1alpha1.SubscriberSpec) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Spec.Subscribable = &duckv1alpha1.Subscribable{
+			Subscribers: subscribers,
+		}
+	}
+}
+
+func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Status.Subscribers = subscribers
 	}
 }
 

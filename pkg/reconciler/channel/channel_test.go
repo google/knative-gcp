@@ -18,19 +18,22 @@ package channel
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/tracker"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/tracker"
+
+	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
@@ -54,6 +57,10 @@ const (
 
 	testProject = "test-project-id"
 	testTopicID = "cre-chan-" + channelUID
+
+	subscriptionUID        = subscriptionName + "-abc-123"
+	subscriptionName       = "testsubscription"
+	subscriptionGeneration = 1
 )
 
 var (
@@ -65,6 +72,12 @@ var (
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
+
+	subscriberDNS = "subscriber.mynamespace.svc.cluster.local"
+	subscriberURI = "http://" + subscriberDNS
+
+	replyDNS = "reply.mynamespace.svc.cluster.local"
+	replyURI = "http://" + replyDNS
 )
 
 func init() {
@@ -161,11 +174,8 @@ func TestAllCases(t *testing.T) {
 				WithChannelAddress(topicURI),
 			),
 		}},
-		//WantCreates: []runtime.Object{
-		//
-		//},
-	}, /* {
-		Name: "successful create - reuse existing receive adapter",
+	}, {
+		Name: "new subscriber",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -173,13 +183,18 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithInitChannelConditions,
+				WithChannelDefaults,
 				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
 			),
-			//newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionCreate),
-			//newInvoker(),
+			newReadyTopic(),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -190,58 +205,45 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithInitChannelConditions,
 				WithChannelDefaults,
-				// Updates
-				WithChannelReady(testTopicID),
-			),
-		}},
-	}, {
-		Name: "deleting - delete topic",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 				}),
-				WithChannelReady(testTopicID),
-				WithChannelDeleted,
-			),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithChannelReady(testTopicID),
-				WithChannelDeleted,
 				// Updates
-				WithChannelTopicDeleting(testTopicID),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID},
+				}),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			//newTopicJob(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionDelete),
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		},
 	}, {
-		Name: "deleting final stage",
+		Name: "update subscriber",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
 				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelReady(testTopicID),
-				WithChannelDeleted,
-				WithChannelTopicDeleting(testTopicID),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID, ObservedGeneration: 1},
+				}),
 			),
-			//newTopicJobFinished(NewChannel(channelName, testNS, WithChannelUID(channelUID)), operations.ActionDelete, true),
+			newReadyTopic(),
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: "http://wrong/", ReplyURI: "http://wrong/"}),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q finalizers", channelName),
+			Eventf(corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -250,14 +252,69 @@ func TestAllCases(t *testing.T) {
 				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelReady(testTopicID),
-				WithChannelDeleted,
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
 				// Updates
-				WithChannelTopicDeleted(testTopicID),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID, ObservedGeneration: 2},
+				}),
 			),
 		}},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+		}},
+	}, {
+		Name: "delete subscriber",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID},
+				}),
+			),
+			newReadyTopic(),
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
+				// Updates
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+			),
+		}},
+		WantDeletes: []clientgotesting.DeleteActionImpl{
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Name: "cre-sub-testsubscription-abc-123",
+			},
+		},
 	},
-	*/
 	// TODO: subscriptions.
 	}
 
@@ -301,4 +358,25 @@ func newReadyTopic() *pubsubv1alpha1.Topic {
 	topic.Status.MarkDeployed()
 	topic.Status.MarkTopicReady()
 	return topic
+}
+
+func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1.PullSubscription {
+	channel := NewChannel(channelName, testNS,
+		WithChannelUID(channelUID),
+		WithChannelSpec(v1alpha1.ChannelSpec{
+			Project: testProject,
+		}),
+		WithInitChannelConditions,
+		WithChannelTopic(testTopicID),
+		WithChannelDefaults)
+
+	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
+		Owner:      channel,
+		Name:       resources.GenerateSubscriptionName(subscriber.UID),
+		Project:    channel.Spec.Project,
+		Topic:      channel.Status.TopicID,
+		Secret:     channel.Spec.Secret,
+		Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID)),
+		Subscriber: subscriber,
+	})
 }

@@ -125,8 +125,6 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
-	logger := logging.FromContext(ctx)
-
 	channel.Status.InitializeConditions()
 
 	if channel.Status.TopicID == "" {
@@ -155,8 +153,6 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	if err := r.syncSubscribers(ctx, channel); err != nil {
 		return err
 	}
-
-	_ = logger // TODO
 
 	return nil
 }
@@ -209,7 +205,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				subCreates = append(subCreates, want)
 			} else {
 				if got.ObservedGeneration != want.Generation {
-					subUpdates = append(subUpdates)
+					subUpdates = append(subUpdates, want)
 				}
 			}
 			// Remove want from exists.
@@ -232,7 +228,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetLabels(controllerAgentName, channel.Name),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
 			Subscriber: s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -259,7 +255,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, string(s.UID)),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
 			Subscriber: s,
 		})
 
@@ -288,9 +284,9 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				return err
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", ps.Name)
-			for _, ss := range channel.Status.Subscribers {
+			for i, ss := range channel.Status.Subscribers {
 				if ss.UID == s.UID {
-					ss.ObservedGeneration = s.Generation
+					channel.Status.Subscribers[i].ObservedGeneration = s.Generation
 				}
 			}
 			return nil
