@@ -20,8 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func GetLabelSelector(controller, source string) labels.Selector {
-	return labels.SelectorFromSet(GetLabels(controller, source))
+func GetLabelSelector(controller, channel string) labels.Selector {
+	return labels.SelectorFromSet(GetLabels(controller, channel))
 }
 
 func GetLabels(controller, channel string) map[string]string {
