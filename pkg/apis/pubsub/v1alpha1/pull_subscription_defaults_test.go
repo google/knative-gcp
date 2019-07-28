@@ -18,9 +18,10 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/ptr"
 	"testing"
 	"time"
+
+	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
