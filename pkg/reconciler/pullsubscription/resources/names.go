@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+
 	"knative.dev/pkg/kmeta"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
