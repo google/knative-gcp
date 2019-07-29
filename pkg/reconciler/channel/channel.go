@@ -366,24 +366,3 @@ func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
 }
-
-func (r *Reconciler) getPullSubscription(ctx context.Context, channel *v1alpha1.Channel, subscriber types.UID) (*pubsubv1alpha1.PullSubscription, error) {
-	sl, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).List(metav1.ListOptions{
-		LabelSelector: resources.GetPullSubscriptionLabelSelector(controllerAgentName, channel.Name, string(subscriber)).String(),
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-			Kind:       "Channel",
-		},
-	})
-
-	if err != nil {
-		logging.FromContext(ctx).Error("Unable to list pullsubscriptions: %v", zap.Error(err))
-		return nil, err
-	}
-	for _, subscription := range sl.Items {
-		if metav1.IsControlledBy(&subscription, channel) {
-			return &subscription, nil
-		}
-	}
-	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
-}

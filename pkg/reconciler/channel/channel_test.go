@@ -269,6 +269,55 @@ func TestAllCases(t *testing.T) {
 			Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		}},
 	}, {
+		Name: "update subscriber missing",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID, ObservedGeneration: 1},
+				}),
+			),
+			newReadyTopic(),
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: "http://wrong/", ReplyURI: "http://wrong/"}),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+				// Updates
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID, ObservedGeneration: 2},
+				}),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+		},
+	}, {
 		Name: "delete subscriber",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
