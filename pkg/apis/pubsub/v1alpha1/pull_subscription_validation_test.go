@@ -18,9 +18,10 @@ package v1alpha1
 
 import (
 	"context"
+	"testing"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
-	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 )
