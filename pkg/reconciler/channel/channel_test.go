@@ -269,7 +269,7 @@ func TestAllCases(t *testing.T) {
 			Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		}},
 	}, {
-		Name: "update subscriber missing",
+		Name: "update - subscriber missing",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -281,39 +281,38 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				WithChannelAddress(topicURI),
 				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 				}),
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
 					{UID: subscriptionUID, ObservedGeneration: 1},
 				}),
 			),
 			newReadyTopic(),
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: "http://wrong/", ReplyURI: "http://wrong/"}),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			//Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				// Updates
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 2},
-				}),
-			),
-		}},
+		//WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+		//	Object: NewChannel(channelName, testNS,
+		//		WithChannelUID(channelUID),
+		//		WithChannelSpec(v1alpha1.ChannelSpec{
+		//			Project: testProject,
+		//		}),
+		//		WithInitChannelConditions,
+		//		WithChannelDefaults,
+		//		WithChannelTopic(testTopicID),
+		//		WithChannelAddress(topicURI),
+		//		WithChannelSubscribers([]eventingduck.SubscriberSpec{
+		//			{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+		//		}),
+		//		WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+		//			{UID: subscriptionUID, ObservedGeneration: 1},
+		//		}),
+		//	),
+		//}
+		//},
 		WantCreates: []runtime.Object{
 			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		},
@@ -363,9 +362,7 @@ func TestAllCases(t *testing.T) {
 				Name: "cre-sub-testsubscription-abc-123",
 			},
 		},
-	},
-	// TODO: subscriptions.
-	}
+	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {

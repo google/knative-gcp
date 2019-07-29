@@ -36,9 +36,7 @@ func GetPullSubscriptionLabelSelector(controller, source, subscriber string) lab
 }
 
 func GetPullSubscriptionLabels(controller, channel, subscriber string) map[string]string {
-	return map[string]string{
-		"cloud-run-events-channel":            controller,
-		"cloud-run-events-channel-name":       channel,
-		"cloud-run-events-channel-subscriber": subscriber,
-	}
+	l := GetLabels(controller, channel)
+	l["cloud-run-events-channel-subscriber"] = subscriber
+	return l
 }
