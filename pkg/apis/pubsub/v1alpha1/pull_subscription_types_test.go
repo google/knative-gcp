@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"knative.dev/pkg/ptr"
 	"testing"
 	"time"
+
+	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
