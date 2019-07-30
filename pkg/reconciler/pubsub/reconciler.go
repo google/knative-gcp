@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
 
-	v1alpha12 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 )
@@ -47,7 +47,7 @@ type PubSubBase struct {
 	SubscriptionOpsImage string
 }
 
-func (c *PubSubBase) ensureTopic(ctx context.Context, channel *v1alpha12.Channel, topicID string) (bool, error) {
+func (c *PubSubBase) ensureTopic(ctx context.Context, channel *v1alpha1.Channel, topicID string) (bool, error) {
 	return false, errors.New("not implemented")
 }
 

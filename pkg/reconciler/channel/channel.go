@@ -211,7 +211,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 	if channel.Spec.Subscribable != nil {
 		for _, want := range channel.Spec.Subscribable.Subscribers {
 			if got, ok := exists[want.UID]; !ok {
-				// If it does not exist, then update it.
+				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
 				_, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
