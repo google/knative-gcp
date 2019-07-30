@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"knative.dev/pkg/ptr"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,8 +42,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		start: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsStructured,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",
@@ -53,8 +55,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsStructured,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "my-cloud-key",
@@ -73,8 +75,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModePushCompatible,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            defaultSecretSelector(),
 			},
 		},
@@ -88,8 +90,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            defaultSecretSelector(),
 			},
 		},
@@ -102,8 +104,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            defaultSecretSelector(),
 			},
 		},
@@ -116,8 +118,8 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 		want: &PullSubscription{
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
-				RetentionDuration: &defaultRetentionDuration,
-				AckDeadline:       &defaultAckDeadline,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            defaultSecretSelector(),
 			},
 		},
@@ -141,8 +143,8 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	want := &PullSubscription{
 		Spec: PullSubscriptionSpec{
 			Mode:              ModeCloudEventsBinary,
-			AckDeadline:       &secs60,
-			RetentionDuration: &days2,
+			AckDeadline:       ptr.String(secs60.String()),
+			RetentionDuration: ptr.String(days2.String()),
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "my-cloud-key",

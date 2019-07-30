@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package v1alpha1
 
-import (
-	"fmt"
+// GetStatus returns Status of an ClusterIngress
+func (ci *ClusterIngress) GetStatus() *IngressStatus {
+	return &ci.Status
+}
 
-	"knative.dev/pkg/kmeta"
+// GetSpec returns Spec of an ClusterIngress
+func (ci *ClusterIngress) GetSpec() *IngressSpec {
+	return &ci.Spec
+}
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-)
-
-func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {
-	return kmeta.ChildName(fmt.Sprintf("cre-pull-%s-%s", src.Namespace, src.Name), "-"+string(src.UID))
+// SetStatus assigns ingress status
+func (ci *ClusterIngress) SetStatus(status IngressStatus) {
+	ci.Status = status
 }

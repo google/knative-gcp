@@ -20,6 +20,9 @@ import (
 	"context"
 	"testing"
 
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/ptr"
+
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -33,29 +36,156 @@ var (
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
-		Sink: &corev1.ObjectReference{
-			APIVersion: "foo",
-			Kind:       "bar",
-			Namespace:  "baz",
-			Name:       "qux",
+		Sink: Destination{
+			ObjectReference: &corev1.ObjectReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
 		},
-		Transformer: &corev1.ObjectReference{
-			APIVersion: "foo",
-			Kind:       "bar",
-			Namespace:  "baz",
-			Name:       "qux",
+		Transformer: &Destination{
+			ObjectReference: &corev1.ObjectReference{
+				APIVersion: "foo",
+				Kind:       "bar",
+				Namespace:  "baz",
+				Name:       "qux",
+			},
 		},
 		Mode: ModeCloudEventsStructured,
 	}
 )
 
 func TestPubSubCheckValidationFields(t *testing.T) {
-	obj := pullSubscriptionSpec.DeepCopy()
-
-	err := obj.Validate(context.TODO())
-
-	if err != nil {
-		t.Fatalf("Unexpected validation field error. Expected %v. Actual %v", nil, err)
+	testCases := map[string]struct {
+		spec  PullSubscriptionSpec
+		error bool
+	}{
+		"ok": {
+			spec:  pullSubscriptionSpec,
+			error: false,
+		},
+		"bad RetentionDuration": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.RetentionDuration = ptr.String("wrong")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad RetentionDuration, range": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.RetentionDuration = ptr.String("10000h")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad AckDeadline": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.AckDeadline = ptr.String("wrong")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad AckDeadline, range": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.AckDeadline = ptr.String("10000h")
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, name": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, apiVersion": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.APIVersion = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, kind": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink.Kind = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, empty": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = Destination{}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri scheme": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = Destination{
+					URI: &apis.URL{
+						Host: "example.com",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri host": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = Destination{
+					URI: &apis.URL{
+						Scheme: "http",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, uri and ref": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Sink = Destination{
+					URI: &apis.URL{
+						Scheme: "http",
+						Host:   "example.com",
+					},
+					ObjectReference: &corev1.ObjectReference{
+						Name: "foo",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad transformer, name": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Transformer = obj.Sink.DeepCopy()
+				obj.Transformer.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			err := tc.spec.Validate(context.TODO())
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
+			}
+		})
 	}
 }
 
@@ -144,11 +274,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: "some-other-api-version",
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "some-other-api-version",
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -165,11 +297,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       "some-other-kind",
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       "some-other-kind",
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -186,11 +320,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  "some-other-namespace",
-					Name:       pullSubscriptionSpec.Sink.Name,
+				Sink: Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  "some-other-namespace",
+						Name:       pullSubscriptionSpec.Sink.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -207,11 +343,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-					Kind:       pullSubscriptionSpec.Sink.Kind,
-					Namespace:  pullSubscriptionSpec.Sink.Namespace,
-					Name:       "some-other-name",
+				Sink: Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+						Kind:       pullSubscriptionSpec.Sink.Kind,
+						Namespace:  pullSubscriptionSpec.Sink.Namespace,
+						Name:       "some-other-name",
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -228,11 +366,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: &corev1.ObjectReference{
-					APIVersion: "some-other-api-version",
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Sink: Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "some-other-api-version",
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -249,11 +389,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       "some-other-kind",
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       "some-other-kind",
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -270,11 +412,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  "some-other-namespace",
-					Name:       pullSubscriptionSpec.Transformer.Name,
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  "some-other-namespace",
+						Name:       pullSubscriptionSpec.Transformer.Name,
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},
@@ -291,11 +435,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &corev1.ObjectReference{
-					APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
-					Kind:       pullSubscriptionSpec.Transformer.Kind,
-					Namespace:  pullSubscriptionSpec.Transformer.Namespace,
-					Name:       "some-other-name",
+				Transformer: &Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Kind,
+						Namespace:  pullSubscriptionSpec.Transformer.Namespace,
+						Name:       "some-other-name",
+					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
 			},

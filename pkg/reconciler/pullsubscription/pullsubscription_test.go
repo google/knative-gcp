@@ -62,7 +62,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cloud-run-pull-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cre-pull-" + testNS + "-" + sourceName + "-" + sourceUID
 )
 
 var (
@@ -109,63 +109,46 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "incomplete source - sink ref is nil",
+		Name: "create subscription",
 		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS),
+			NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+			),
+			newSink(),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for PullSubscription %q: missing field(s): spec.sink, spec.topic", sourceName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+				}),
 				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSinkNotFound(),
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+				// Updates
+				WithPullSubscriptionMarkSubscribing(testSubscriptionID),
 			),
 		}},
-	},
-		{
-			Name: "create subscription",
-			Objects: []runtime.Object{
-				NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-					}),
-					WithInitPullSubscriptionConditions,
-					WithPullSubscriptionSink(sinkGVK, sinkName),
-					WithPullSubscriptionMarkSink(sinkURI),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + sourceName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-					}),
-					WithInitPullSubscriptionConditions,
-					WithPullSubscriptionSink(sinkGVK, sinkName),
-					WithPullSubscriptionMarkSink(sinkURI),
-					// Updates
-					WithPullSubscriptionMarkSubscribing(testSubscriptionID),
-				),
-			}},
-			WantCreates: []runtime.Object{
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, sourceName, true),
-			},
+		WantCreates: []runtime.Object{
+			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
+	},
 		{
 			Name: "successful create",
 			Objects: []runtime.Object{

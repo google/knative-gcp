@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"knative.dev/pkg/ptr"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
@@ -49,12 +51,12 @@ func defaultSecretSelector() *corev1.SecretKeySelector {
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	if ss.AckDeadline == nil {
 		ackDeadline := defaultAckDeadline
-		ss.AckDeadline = &ackDeadline
+		ss.AckDeadline = ptr.String(ackDeadline.String())
 	}
 
 	if ss.RetentionDuration == nil {
 		retentionDuration := defaultRetentionDuration
-		ss.RetentionDuration = &retentionDuration
+		ss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {

@@ -335,22 +335,15 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:f8ac968f0d483716fab4458f0393d40f7eee1816500633324887decb1f34ae08"
+  branch = "master"
+  digest = "1:33f216908b58f1c8f1bff9eab0bd12fda0b462d26979103a71a9e91652cd3e69"
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "677d3d17e84b7337f006220d6bb465af4f416f81"
+  revision = "3c6e1cfb6feb705a71f2236243e2929bb93b41ea"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9a72bb15cb54f102f1c88b079f8b7ef5e02b7c5bf2d0dac1ebb1e5e8afc55b01"
-  name = "github.com/knative/pkg"
-  packages = ["apis"]
-  pruneopts = "NUT"
-  revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
-
-[[projects]]
-  digest = "1:68ecd48e097f4e52b9802781008a5d282a6f350f0efa86f2314d7fd81eefe99e"
+  digest = "1:cf9de140518581b36ea05db973a8fa81815e600e6b2740b1469f74e6fcd5eb15"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -393,18 +386,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "50cdf8762deae58ed89763adef26a88e7efecac7"
+  revision = "53d92beda79619c817c098df1c5a5963c0f901be"
 
 [[projects]]
   branch = "master"
-  digest = "1:1bc2182db9fca862cd2b3a028aad73e473705be1c3f2454429a37b8626e16eda"
+  digest = "1:5197df8038ae4c7d05c2edda32a77d7f16faa635df3c560f01fb73fa42682f69"
   name = "github.com/knative/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "f7f13f8e3a8af17943e1a44102607f1d3fc4751d"
+  revision = "81861c7c2060af68e3dbdc72bcd3a2f0584566d2"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -1150,7 +1143,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ed15fad369d1d253ebcae3defd279859d26e54d83e1e601fb3cf40d192377404"
+  digest = "1:4563adec376c56f3441da3767facc1d6c733d93a39f593495c009fed54dbb76c"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1211,7 +1204,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "84d3910c565e397fa044f246398f94712da53303"
+  revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1308,6 +1301,7 @@
     "knative.dev/pkg/logging",
     "knative.dev/pkg/logging/testing",
     "knative.dev/pkg/metrics",
+    "knative.dev/pkg/ptr",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",

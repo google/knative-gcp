@@ -103,6 +103,11 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
+	stats, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("Failed to initialize the stats reporter", zap.Error(err))
+	}
+
 	options := webhook.ControllerOptions{
 		ServiceName:    "webhook",
 		DeploymentName: "webhook",
@@ -110,11 +115,7 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		Port:           8443,
 		SecretName:     "webhook-certs",
 		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
-	}
-
-	stats, err := webhook.NewStatsReporter()
-	if err != nil {
-		logger.Fatalw("Failed to initialize the stats reporter", zap.Error(err))
+		StatsReporter:  stats,
 	}
 
 	controller := webhook.AdmissionController{
@@ -123,7 +124,6 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		Handlers:              handlers,
 		Logger:                logger,
 		DisallowUnknownFields: true,
-		StatsReporter:         stats,
 
 		WithContext: func(ctx context.Context) context.Context {
 			for _, store := range stores {

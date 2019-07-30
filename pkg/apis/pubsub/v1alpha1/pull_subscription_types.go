@@ -77,9 +77,9 @@ type PullSubscriptionSpec struct {
 
 	// AckDeadline is the default maximum time after a subscriber receives a
 	// message before the subscriber should acknowledge the message. Defaults
-	// to 30 seconds.
+	// to 30 seconds ('30s').
 	// +optional
-	AckDeadline *time.Duration `json:"ackDeadline,omitempty"`
+	AckDeadline *string `json:"ackDeadline,omitempty"`
 
 	// RetainAckedMessages defines whether to retain acknowledged messages. If
 	// true, acknowledged messages will not be expunged until they fall out of
@@ -89,25 +89,49 @@ type PullSubscriptionSpec struct {
 	// RetentionDuration defines how long to retain messages in backlog, from
 	// the time of publish. If RetainAckedMessages is true, this duration
 	// affects the retention of acknowledged messages, otherwise only
-	// unacknowledged messages are retained. Defaults to 7 days. Cannot be
-	// longer than 7 days or shorter than 10 minutes.
+	// unacknowledged messages are retained. Cannot be longer than 7 days or
+	// shorter than 10 minutes. Defaults to 7 days ('7d').
 	// +optional
-	RetentionDuration *time.Duration `json:"retentionDuration,omitempty"`
+	RetentionDuration *string `json:"retentionDuration,omitempty"`
 
-	// Sink is a reference to an object that will resolve to a domain name to
-	// use as the sink.
-	// +optional
-	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+	// Sink is a reference to an object that will resolve to a domain name or a
+	// URI directly to use as the sink.
+	Sink Destination `json:"sink"`
 
 	// Transformer is a reference to an object that will resolve to a domain
-	// name to use as the transformer.
+	// name or a URI directly to use as the transformer or a URI directly.
 	// +optional
-	Transformer *corev1.ObjectReference `json:"transformer,omitempty"`
+	Transformer *Destination `json:"transformer,omitempty"`
 
 	// Mode defines the encoding and structure of the payload of when the
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
+}
+
+// GetAckDeadline parses AckDeadline and returns the default if an error occurs.
+func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
+	if ps.AckDeadline != nil {
+		if duration, err := time.ParseDuration(*ps.AckDeadline); err == nil {
+			return duration
+		}
+	}
+	return defaultAckDeadline
+}
+
+// GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
+func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
+	if ps.RetentionDuration != nil {
+		if duration, err := time.ParseDuration(*ps.RetentionDuration); err == nil {
+			return duration
+		}
+	}
+	return defaultRetentionDuration
+}
+
+type Destination struct {
+	*corev1.ObjectReference `json:",inline"`
+	URI                     *apis.URL `json:"uri,omitempty"`
 }
 
 type ModeType string
