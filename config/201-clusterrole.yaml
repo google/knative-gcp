@@ -45,13 +45,13 @@ rules:
     - patch
 
 - apiGroups:
-    - events.cloud.run
+    - messaging.cloud.run
   resources:
     - channels
   verbs: *everything
 
 - apiGroups:
-    - events.cloud.run
+    - messaging.cloud.run
   resources:
     - channels/status
   verbs:

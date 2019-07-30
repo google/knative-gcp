@@ -93,7 +93,7 @@ metadata:
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
   - apiGroups:
-      - events.cloud.run
+      - messaging.cloud.run
     resources:
       - channels
     verbs:

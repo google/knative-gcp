@@ -26,7 +26,7 @@ import (
 
 	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -78,7 +78,7 @@ func TestMakePullSubscription(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.run/v1alpha1",
+				APIVersion:         "messaging.cloud.run/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",
@@ -156,7 +156,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.run/v1alpha1",
+				APIVersion:         "messaging.cloud.run/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",
@@ -231,7 +231,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.run/v1alpha1",
+				APIVersion:         "messaging.cloud.run/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				UID:                "channel-uid",

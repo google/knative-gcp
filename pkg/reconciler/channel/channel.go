@@ -37,9 +37,9 @@ import (
 
 	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
+	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/channel/resources"
@@ -171,7 +171,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 	existing := channel.DeepCopy()
 	existing.Status = desired.Status
 
-	ch, err := c.RunClientSet.EventsV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
+	ch, err := c.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
 		c.Logger.Infof("Channel %q became ready after %v", channel.Name, duration)
