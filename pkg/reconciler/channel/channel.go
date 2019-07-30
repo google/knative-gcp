@@ -18,6 +18,7 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -350,24 +350,16 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 }
 
 func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
-	tl, err := r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).List(metav1.ListOptions{
-		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name).String(),
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.SchemeGroupVersion.String(),
-			Kind:       "Channel",
-		},
-	})
-
+	name := resources.GenerateTopicName(channel.UID)
+	topic, err := r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		logging.FromContext(ctx).Error("Unable to list topics: %v", zap.Error(err))
 		return nil, err
 	}
-	for _, topic := range tl.Items {
-		if metav1.IsControlledBy(&topic, channel) {
-			return &topic, nil
-		}
+	if !metav1.IsControlledBy(topic, channel) {
+		channel.Status.MarkTopicNotOwned("Topic %q is owned by another resource.", name)
+		return nil, fmt.Errorf("Channel: %s does not own Topic: %s", channel.Name, name)
 	}
-	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+	return topic, nil
 }
 
 func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1alpha1.Channel) ([]pubsubv1alpha1.PullSubscription, error) {

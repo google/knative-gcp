@@ -67,3 +67,7 @@ func (cs *ChannelStatus) MarkTopicOperating(reason, messageFormat string, messag
 func (cs *ChannelStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkFalse(ChannelConditionTopicReady, reason, messageFormat, messageA...)
 }
+
+func (cs *ChannelStatus) MarkTopicNotOwned(messageFormat string, messageA ...interface{}) {
+	channelCondSet.Manage(cs).MarkFalse(ChannelConditionTopicReady, "NotOwned", messageFormat, messageA...)
+}
