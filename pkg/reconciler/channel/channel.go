@@ -271,25 +271,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Subscriber: s,
 		})
 
-		existingPs, found := pullsubs[genName] //c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Get(genName, metav1.GetOptions{})
-		//if apierrs.IsNotFound(err) {
-		//	// PullSubscription does not exist, that's ok, create it now.
-		//	ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
-		//	if err != nil {
-		//		c.Recorder.Eventf(channel, corev1.EventTypeWarning, "CreateSubscriberFailed", "Creating Subscriber %q failed", genName)
-		//		return err
-		//	}
-		//	c.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", ps.Name)
-		//	// This is an update, so it means what exists did not match what is in the spec, even for create.
-		//	for i, ss := range channel.Status.Subscribers {
-		//		if ss.UID == s.UID {
-		//			channel.Status.Subscribers[i].ObservedGeneration = s.Generation
-		//		}
-		//	}
-		//	return nil // Signal a re-reconcile.
-		//} else if err != nil {
-		//	return err
-		//}
+		existingPs, found := pullsubs[genName]
 		if !found {
 			// PullSubscription does not exist, that's ok, create it now.
 			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
