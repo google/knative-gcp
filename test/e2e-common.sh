@@ -49,8 +49,6 @@ function knative_setup() {
 function test_setup() {
   pubsub_setup || return 1
 
-  gcloud pubsub topics create e2e-smoke-test
-
   # TODO: Publish test images.
   # echo ">> Publishing test images"
   # $(dirname $0)/upload-test-images.sh e2e || fail_test "Error uploading test images"
