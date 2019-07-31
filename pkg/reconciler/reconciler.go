@@ -32,8 +32,6 @@ import (
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
 	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
 	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
-	servingclientset "github.com/knative/serving/pkg/client/clientset/versioned"
-	servingclient "github.com/knative/serving/pkg/client/injection/client"
 	"go.uber.org/zap"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -41,6 +39,8 @@ import (
 	"knative.dev/pkg/injection/clients/kubeclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
+	servingclientset "knative.dev/serving/pkg/client/clientset/versioned"
+	servingclient "knative.dev/serving/pkg/client/injection/client"
 )
 
 // Options defines the common reconciler options.

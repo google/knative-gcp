@@ -11,6 +11,8 @@ required = [
   "knative.dev/pkg/codegen/cmd/injection-gen",
   "github.com/knative/test-infra/scripts",
   "github.com/knative/test-infra/tools/dep-collector",
+  "golang.org/x/net/http2/h2c",
+  "go.opencensus.io/metric/metricexport"
 ]
 
 [[override]]
@@ -28,7 +30,7 @@ required = [
 
 # This is a preemptive override.
 [[override]]
-  name = "github.com/knative/serving"
+  name = "knative.dev/serving"
   branch = "master"
 
 [[override]]
@@ -88,3 +90,7 @@ required = [
   name = "knative.dev/pkg"
   unused-packages = false
   non-go = false
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
