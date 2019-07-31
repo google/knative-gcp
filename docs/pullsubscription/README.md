@@ -31,29 +31,29 @@ Pub/Sub topic, such as
    messages, but you can also create a separate service account for receiving
    messages if you want additional privilege separation.
 
-   1. Create a new service account named `cloudrunevents-pullsubscription` with
+   1. Create a new service account named `cloudrunevents-pullsub` with
       the following command:
       ```shell
-      gcloud iam service-accounts create cloudrunevents-pullsubscription
+      gcloud iam service-accounts create cloudrunevents-pullsub
       ```
    1. Give that Service Account the `Pub/Sub Editor` role on your Google Cloud
       project:
       ```shell
       gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member=serviceAccount:cloudrunevents-pullsubscription@$PROJECT_ID.iam.gserviceaccount.com \
+        --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
         --role roles/pubsub.editor
       ```
    1. Download a new JSON private key for that Service Account. **Be sure not to
       check this key into source control!**
       ```shell
-      gcloud iam service-accounts keys create cloudrunevents-pullsubscription.json \
-        --iam-account=cloudrunevents-pullsubscription@$PROJECT_ID.iam.gserviceaccount.com
+      gcloud iam service-accounts keys create cloudrunevents-pullsub.json \
+        --iam-account=cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com
       ```
    1. Create a secret on the kubernetes cluster with the downloaded key:
 
       ```shell
           # The secret should not already exist, so just try to create it.
-          kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pullsubscription.json
+          kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pullsub.json
       ```
 
       `google-cloud-key` and `key.json` are pre-configured values in
@@ -71,7 +71,7 @@ Pub/Sub topic, such as
 1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
    and apply it.
 
-   If you're in the samples directory, you can replace `TOPIC_NAME` and apply in
+   If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and apply in
    one command:
 
    ```shell
@@ -91,7 +91,7 @@ Pub/Sub topic, such as
    [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it.
 
-   If you're in the samples directory, you can replace `MY_PROJECT` and
+   If you're in the pullsubscription directory, you can replace `MY_PROJECT` and
    `TOPIC_NAME` and then apply in one command:
 
    ```shell
@@ -110,7 +110,7 @@ Pub/Sub topic, such as
 1. Create a service that the Pub/Sub Subscription will sink into:
 
    ```shell
-   kubectl apply --filename event-display.yaml
+   ko apply --filename event-display.yaml
    ```
 
 ## Publish
@@ -179,7 +179,7 @@ the cluster.
 
 1. Delete the Pub/Sub PullSubscription:
 
-If you're in the samples directory, you can replace `TOPIC_NAME` and delete in
+If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and delete in
 one command:
 
 ```shell
