@@ -69,7 +69,8 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 		t.Fatalf("Couldn't initialize clients: %v", err)
 	}
 
-	CreateNamespaceIfNeeded(t, client, namespace)
+	client.CreateNamespaceIfNeeded(t)
+	client.DuplicateSecret(t, "google-cloud-key", "default")
 
 	// Disallow manually interrupting the tests.
 	// TODO(Fredy-Z): t.Skip() can only be called on its own goroutine.
@@ -138,23 +139,44 @@ func NewClient(configPath string, clusterName string, namespace string, t *testi
 }
 
 // CreateNamespaceIfNeeded creates a new namespace if it does not exist.
-func CreateNamespaceIfNeeded(t *testing.T, client *Client, namespace string) {
-	nsSpec, err := client.Kube.Kube.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+func (c *Client) CreateNamespaceIfNeeded(t *testing.T) {
+	nsSpec, err := c.Kube.Kube.CoreV1().Namespaces().Get(c.Namespace, metav1.GetOptions{})
 
 	if err != nil && errors.IsNotFound(err) {
-		nsSpec = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-		nsSpec, err = client.Kube.Kube.CoreV1().Namespaces().Create(nsSpec)
+		nsSpec = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: c.Namespace}}
+		nsSpec, err = c.Kube.Kube.CoreV1().Namespaces().Create(nsSpec)
 
 		if err != nil {
-			t.Fatalf("Failed to create Namespace: %s; %v", namespace, err)
+			t.Fatalf("Failed to create Namespace: %s; %v", c.Namespace, err)
 		}
 
 		// https://github.com/kubernetes/kubernetes/issues/66689
 		// We can only start creating pods after the default ServiceAccount is created by the kube-controller-manager.
-		err = waitForServiceAccountExists(t, client, "default", namespace)
+		err = waitForServiceAccountExists(t, c, "default", c.Namespace)
 		if err != nil {
-			t.Fatalf("The default ServiceAccount was not created for the Namespace: %s", namespace)
+			t.Fatalf("The default ServiceAccount was not created for the Namespace: %s", c.Namespace)
 		}
+	}
+}
+
+// DuplicateSecret duplicates a secret from a namespace to a new namespace.
+func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
+	secret, err := c.Kube.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+
+	if err == nil && !errors.IsNotFound(err) {
+		newSecret := &corev1.Secret{}
+		newSecret.Name = name
+		newSecret.Namespace = c.Namespace
+		newSecret.Data = secret.Data
+		newSecret.StringData = secret.StringData
+		newSecret.Type = secret.Type
+		newSecret, err = c.Kube.Kube.CoreV1().Secrets(c.Namespace).Create(newSecret)
+		if err != nil {
+			t.Fatalf("Failed to create Secret: %s; %v", c.Namespace, err)
+		}
+	}
+	if err != nil {
+		t.Fatalf("Failed to find Secret: %q in Namespace: %q: %s", name, namespace, err)
 	}
 }
 
