@@ -31,8 +31,8 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
-	serviceinformer "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service"
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
 )
 
 const (
