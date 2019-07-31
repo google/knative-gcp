@@ -348,7 +348,7 @@
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "f1d1ea898d91fd995f8ec01ccae8a73f1604f7e8"
+  revision = "4005ecf8042e491ff53c8c21005ea2d6cefc0892"
 
 [[projects]]
   branch = "master"
