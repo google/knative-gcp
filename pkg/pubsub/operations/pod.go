@@ -17,18 +17,26 @@ limitations under the License.
 package operations
 
 import (
+	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// makePodTemplate creates a pod template for a Job.
-func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+const (
+	credsVolume    = "google-cloud-key"
+	credsMountPath = "/var/secrets/google"
+)
 
-	env := extEnv
-	// We do not have any defaults yet.
-	//if len(extEnv) > 0 {
-	//	env = append(env, extEnv...)
-	//}
+// makePodTemplate creates a pod template for a Job.
+func makePodTemplate(image string, secret corev1.SecretKeySelector, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
+	env := []corev1.EnvVar{{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: credsFile,
+	}}
+	if len(extEnv) > 0 {
+		env = append(env, extEnv...)
+	}
 
 	return &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -43,6 +51,18 @@ func makePodTemplate(image string, extEnv ...corev1.EnvVar) *corev1.PodTemplateS
 				Image:           image,
 				ImagePullPolicy: "Always",
 				Env:             env,
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      credsVolume,
+					MountPath: credsMountPath,
+				}},
+			}},
+			Volumes: []corev1.Volume{{
+				Name: credsVolume,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: secret.Name,
+					},
+				},
 			}},
 		},
 	}

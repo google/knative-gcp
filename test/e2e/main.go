@@ -162,21 +162,19 @@ func (c *Client) CreateNamespaceIfNeeded(t *testing.T) {
 // DuplicateSecret duplicates a secret from a namespace to a new namespace.
 func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
 	secret, err := c.Kube.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-
-	if err == nil && !errors.IsNotFound(err) {
-		newSecret := &corev1.Secret{}
-		newSecret.Name = name
-		newSecret.Namespace = c.Namespace
-		newSecret.Data = secret.Data
-		newSecret.StringData = secret.StringData
-		newSecret.Type = secret.Type
-		newSecret, err = c.Kube.Kube.CoreV1().Secrets(c.Namespace).Create(newSecret)
-		if err != nil {
-			t.Fatalf("Failed to create Secret: %s; %v", c.Namespace, err)
-		}
-	}
 	if err != nil {
 		t.Fatalf("Failed to find Secret: %q in Namespace: %q: %s", name, namespace, err)
+		return
+	}
+	newSecret := &corev1.Secret{}
+	newSecret.Name = name
+	newSecret.Namespace = c.Namespace
+	newSecret.Data = secret.Data
+	newSecret.StringData = secret.StringData
+	newSecret.Type = secret.Type
+	newSecret, err = c.Kube.Kube.CoreV1().Secrets(c.Namespace).Create(newSecret)
+	if err != nil {
+		t.Fatalf("Failed to create Secret: %s; %v", c.Namespace, err)
 	}
 }
 

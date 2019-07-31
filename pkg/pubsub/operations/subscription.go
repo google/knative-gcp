@@ -47,6 +47,7 @@ type SubArgs struct {
 	AckDeadline         time.Duration
 	RetainAckedMessages bool
 	RetentionDuration   time.Duration
+	Secret              corev1.SecretKeySelector
 	Owner               kmeta.OwnerRefable
 }
 
@@ -80,7 +81,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 		}}...)
 	}
 
-	podTemplate := makePodTemplate(arg.Image, env...)
+	podTemplate := makePodTemplate(arg.Image, arg.Secret, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
