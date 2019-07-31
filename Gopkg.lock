@@ -336,11 +336,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:33f216908b58f1c8f1bff9eab0bd12fda0b462d26979103a71a9e91652cd3e69"
+  digest = "1:a9f64683b2be58b2b7b11972346940f60989363009e0366972544d92358e94e0"
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "3c6e1cfb6feb705a71f2236243e2929bb93b41ea"
+  revision = "97bb000514364fbda2a2ca67a6c57b0dc85cd608"
 
 [[projects]]
   branch = "master"
