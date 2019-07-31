@@ -18,39 +18,75 @@ package e2etest
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
+	"text/template"
 
 	yaml "github.com/jcrossley3/manifestival/pkg/manifestival"
 	"k8s.io/client-go/dynamic"
 )
 
-func NewInstaller(ns string, dc dynamic.Interface, paths ...string) *Installer {
-	var path string
-	if len(paths) == 0 || (len(path) == 1 && paths[0] == "") {
+func NewInstaller(dc dynamic.Interface, config map[string]string, paths ...string) *Installer {
+	if len(paths) == 0 || (len(paths) == 1 && paths[0] == "") {
 		// default to ko path:
-		path = "/var/run/ko/install"
-	} else {
-		path = strings.Join(paths, ",")
+		paths[0] = "/var/run/ko/install"
 	}
+
+	for i, p := range paths {
+		paths[i] = ParseTemplates(p, config)
+	}
+	path := strings.Join(paths, ",")
 
 	manifest, err := yaml.NewYamlManifest(path, true, dc)
 	if err != nil {
 		panic(err)
 	}
-	return &Installer{ns: ns, dc: dc, manifest: manifest}
+	return &Installer{dc: dc, manifest: manifest}
+}
+
+func ParseTemplates(path string, config map[string]string) string {
+	dir, err := ioutil.TempDir("", "processed_yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(info.Name(), "yaml") {
+
+			t, err := template.ParseFiles(path)
+			if err != nil {
+				return err
+			}
+			tmpfile, err := ioutil.TempFile(dir, strings.Replace(info.Name(), ".yaml", "-*.yaml", 1))
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = t.Execute(tmpfile, config)
+			if err != nil {
+				log.Print("execute: ", err)
+				return err
+			}
+			_ = tmpfile.Close()
+		}
+		return nil
+	})
+	log.Print("new files in ", dir)
+	if err != nil {
+		panic(err)
+	}
+	return dir
 }
 
 type Installer struct {
-	ns string
 	dc dynamic.Interface
 
 	manifest yaml.Manifest
 }
 
 func (r *Installer) Do(verb string) error {
-
-	// TODO: might need to take the paths and apply a namespace.
-
 	switch strings.ToLower(verb) {
 	case "create", "setup", "install", "apply", "start":
 		return r.manifest.ApplyAll()

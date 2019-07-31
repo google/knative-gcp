@@ -18,7 +18,8 @@ package e2etest
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,18 +29,36 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/test"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
 )
 
+var seededRand = rand.New(
+	rand.NewSource(time.Now().UnixNano()))
+
+const charset = "abcdefghijklmnopqrstuvwxyz"
+
+func RandomStringn(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
+
 // Setup creates the client objects needed in the e2e tests,
 // and does other setups, like creating namespaces, set the test case to run in parallel, etc.
 func Setup(t *testing.T, runInParallel bool) *Client {
 	// Create a new namespace to run this test case.
-	baseFuncName := helpers.GetBaseFuncName(t.Name())
-	namespace := helpers.MakeK8sNamePrefix(baseFuncName)
+	baseName := fmt.Sprintf("%s-%s", helpers.GetBaseFuncName(t.Name()), RandomStringn(5))
+	namespace := helpers.MakeK8sNamePrefix(baseName)
 	t.Logf("namespace is : %q", namespace)
 	client, err := NewClient(
 		pkgTest.Flags.Kubeconfig,
@@ -139,6 +158,11 @@ func CreateNamespaceIfNeeded(t *testing.T, client *Client, namespace string) {
 	}
 }
 
+const (
+	interval = 100 * time.Millisecond
+	timeout  = 1 * time.Minute
+)
+
 // waitForServiceAccountExists waits until the ServiceAccount exists.
 func waitForServiceAccountExists(t *testing.T, client *Client, name, namespace string) error {
 	return wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
@@ -147,5 +171,26 @@ func waitForServiceAccountExists(t *testing.T, client *Client, name, namespace s
 			return true, nil
 		}
 		return false, nil
+	})
+}
+
+// WaitForResourceReady waits until the specified resource in the given namespace are ready.
+func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVersionResource) error {
+
+	like := &duckv1beta1.KResource{}
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+
+		us, err := c.Dynamic.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		obj := like.DeepCopy()
+		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
+			log.Fatalf("Error DefaultUnstructuree.Dynamiconverter. %v", err)
+		}
+		obj.ResourceVersion = gvr.Version
+		obj.APIVersion = gvr.GroupVersion().String()
+
+		return obj.Status.GetCondition(apis.ConditionReady).IsTrue(), nil
 	})
 }

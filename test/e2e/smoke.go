@@ -18,11 +18,10 @@ package e2etest
 
 import (
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"path/filepath"
 	"runtime"
 	"testing"
-	"time"
-
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -32,11 +31,12 @@ func Smoke(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
-	ns := "default"
-
 	_, filename, _, _ := runtime.Caller(0)
 
-	installer := NewInstaller(ns, client.Dynamic, fmt.Sprintf("%s/config/smoketest/", filepath.Dir(filename)))
+	yamls := fmt.Sprintf("%s/config/smoketest/", filepath.Dir(filename))
+	installer := NewInstaller(client.Dynamic, map[string]string{
+		"namespace": client.Namespace,
+	}, yamls)
 
 	// Delete deferred.
 	defer func() {
@@ -50,6 +50,11 @@ func Smoke(t *testing.T) {
 		t.Errorf("failed to create, %s", err)
 	}
 
-	// TODO: verify stuff...
-	time.Sleep(2 * time.Second)
+	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{
+		Group:    "pubsub.cloud.run",
+		Version:  "v1alpha1",
+		Resource: "pullsubscriptions",
+	}); err != nil {
+		t.Error(err)
+	}
 }

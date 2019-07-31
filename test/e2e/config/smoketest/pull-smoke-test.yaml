@@ -16,7 +16,7 @@ apiVersion: serving.knative.dev/v1beta1
 kind: Service
 metadata:
   name: event-display
-  namespace: default
+  namespace: {{.namespace}}
 spec:
   template:
     spec:
@@ -29,7 +29,7 @@ apiVersion: pubsub.cloud.run/v1alpha1
 kind: PullSubscription
 metadata:
   name: e2e-smoke-test
-  namespace: default
+  namespace: {{.namespace}}
 spec:
   topic: e2e-smoke-test
   sink:
