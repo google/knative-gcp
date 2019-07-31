@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,14 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+// Package events contains Cloud Run Events API versions
+package messaging
 
-import "context"
-
-func (c *Channel) SetDefaults(ctx context.Context) {
-	c.Spec.SetDefaults(ctx)
-}
-
-func (c *ChannelSpec) SetDefaults(ctx context.Context) {
-	// TODO: Nothing to default here...
-}
+const (
+	GroupName = "messaging.cloud.run"
+)

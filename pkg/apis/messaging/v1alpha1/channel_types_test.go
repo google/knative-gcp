@@ -26,7 +26,7 @@ import (
 
 func TestChannelGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "pubsub.cloud.run",
+		Group:   "messaging.cloud.run",
 		Version: "v1alpha1",
 		Kind:    "Channel",
 	}
