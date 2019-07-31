@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kapis "github.com/knative/pkg/apis"
+	kapis "knative.dev/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

@@ -44,6 +44,7 @@ onBranchEnsure () { # 1=branch 2=import
   dep ensure -update $dep_import
 }
 
+onBranchEnsure master knative.dev/pkg
 onBranchEnsure master knative.dev/serving
 onBranchEnsure master github.com/knative/eventing
 
