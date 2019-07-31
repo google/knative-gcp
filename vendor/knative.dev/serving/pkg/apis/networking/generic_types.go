@@ -19,14 +19,14 @@ package networking
 import (
 	"context"
 
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 )
 
 // This files contains the versionless types and enums that are strongly
 // unlikely to change from version to version.
 
 // ProtocolType is an enumeration of the supported application-layer protocols
-// See also: https://github.com/knative/serving/blob/master/docs/runtime-contract.md#protocols-and-ports
+// See also: https://knative.dev/serving/blob/master/docs/runtime-contract.md#protocols-and-ports
 type ProtocolType string
 
 const (
@@ -41,6 +41,8 @@ func (p ProtocolType) Validate(context.Context) *apis.FieldError {
 	switch p {
 	case ProtocolH2C, ProtocolHTTP1:
 		return nil
+	case ProtocolType(""):
+		return apis.ErrMissingField(apis.CurrentField)
 	}
 	return apis.ErrInvalidValue(p, apis.CurrentField)
 }

@@ -17,9 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var serverlessServiceCondSet = apis.NewLivingConditionSet(
@@ -53,7 +57,29 @@ func (sss *ServerlessServiceStatus) MarkEndpointsNotOwned(kind, name string) {
 		"Resource %s of type %s is not owned by SKS", name, kind)
 }
 
-// MarkEndpointsNotReady marks the ServerlessServiceStatus endpoints populated conditiohn to unknown.
+// MarkActivatorEndpointsPopulated is setting the ActivatorEndpointsPopulated to True.
+func (sss *ServerlessServiceStatus) MarkActivatorEndpointsPopulated() {
+	serverlessServiceCondSet.Manage(sss).SetCondition(apis.Condition{
+		Type:     ActivatorEndpointsPopulated,
+		Status:   corev1.ConditionTrue,
+		Severity: apis.ConditionSeverityInfo,
+		Reason:   "ActivatorEndpointsPopulated",
+		Message:  "Revision is backed by Activator",
+	})
+}
+
+// MarkActivatorEndpointsRemoved is setting the ActivatorEndpointsPopulated to False.
+func (sss *ServerlessServiceStatus) MarkActivatorEndpointsRemoved() {
+	serverlessServiceCondSet.Manage(sss).SetCondition(apis.Condition{
+		Type:     ActivatorEndpointsPopulated,
+		Status:   corev1.ConditionFalse,
+		Severity: apis.ConditionSeverityInfo,
+		Reason:   "ActivatorEndpointsPopulated",
+		Message:  "Revision is backed by Activator",
+	})
+}
+
+// MarkEndpointsNotReady marks the ServerlessServiceStatus endpoints populated condition to unknown.
 func (sss *ServerlessServiceStatus) MarkEndpointsNotReady(reason string) {
 	serverlessServiceCondSet.Manage(sss).MarkUnknown(
 		ServerlessServiceConditionEndspointsPopulated, reason,
@@ -67,4 +93,14 @@ func (sss *ServerlessServiceStatus) IsReady() bool {
 
 func (sss *ServerlessServiceStatus) duck() *duckv1beta1.Status {
 	return &sss.Status
+}
+
+// ProxyFor returns how long it has been since Activator was moved
+// to the request path.
+func (sss *ServerlessServiceStatus) ProxyFor() time.Duration {
+	cond := sss.GetCondition(ActivatorEndpointsPopulated)
+	if cond == nil || cond.Status != corev1.ConditionTrue {
+		return 0
+	}
+	return time.Since(cond.LastTransitionTime.Inner.Time)
 }

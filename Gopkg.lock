@@ -340,75 +340,15 @@
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "97bb000514364fbda2a2ca67a6c57b0dc85cd608"
+  revision = "f1d1ea898d91fd995f8ec01ccae8a73f1604f7e8"
 
 [[projects]]
   branch = "master"
-  digest = "1:22f620e839f5a94d948c7ca54fcaf18b69b100d9e4e0088a46f939d1faf64f35"
+  digest = "1:81b89d636ce36d99e558f65b3b83f9ab84ccf735720baa3c2a5a2bf6ca303c26"
   name = "github.com/knative/pkg"
-  packages = [
-    "apis",
-    "apis/duck",
-    "apis/duck/v1alpha1",
-    "apis/duck/v1beta1",
-    "configmap",
-    "controller",
-    "injection",
-    "kmeta",
-    "kmp",
-    "logging",
-    "ptr",
-  ]
+  packages = ["apis"]
   pruneopts = "NUT"
   revision = "972acd413fb96750dc6a4b98e4ba344c594a385b"
-
-[[projects]]
-  branch = "master"
-  digest = "1:209ea5835d38780caea359a102d375bfbb8984cb42aedcbd9724fb1a81c51293"
-  name = "github.com/knative/serving"
-  packages = [
-    "pkg/apis/autoscaling",
-    "pkg/apis/autoscaling/v1alpha1",
-    "pkg/apis/config",
-    "pkg/apis/networking",
-    "pkg/apis/networking/v1alpha1",
-    "pkg/apis/serving",
-    "pkg/apis/serving/v1alpha1",
-    "pkg/apis/serving/v1beta1",
-    "pkg/client/clientset/versioned",
-    "pkg/client/clientset/versioned/fake",
-    "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
-    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
-    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
-    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
-    "pkg/client/clientset/versioned/typed/serving/v1beta1",
-    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
-    "pkg/client/informers/externalversions",
-    "pkg/client/informers/externalversions/autoscaling",
-    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
-    "pkg/client/informers/externalversions/internalinterfaces",
-    "pkg/client/informers/externalversions/networking",
-    "pkg/client/informers/externalversions/networking/v1alpha1",
-    "pkg/client/informers/externalversions/serving",
-    "pkg/client/informers/externalversions/serving/v1alpha1",
-    "pkg/client/informers/externalversions/serving/v1beta1",
-    "pkg/client/injection/client",
-    "pkg/client/injection/client/fake",
-    "pkg/client/injection/informers/serving/factory",
-    "pkg/client/injection/informers/serving/v1beta1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service/fake",
-    "pkg/client/listers/autoscaling/v1alpha1",
-    "pkg/client/listers/networking/v1alpha1",
-    "pkg/client/listers/serving/v1alpha1",
-    "pkg/client/listers/serving/v1beta1",
-    "pkg/gc",
-    "pkg/network",
-  ]
-  pruneopts = "NUT"
-  revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
 
 [[projects]]
   branch = "master"
@@ -1230,7 +1170,8 @@
   revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
 
 [[projects]]
-  digest = "1:5402c5f3e8d93c44a0da7c2a335a72afa4e2fbd4b2f46b6e8bd616e27353c2ae"
+  branch = "master"
+  digest = "1:5ac6c75b25bd7ebaf7e1f98c8e51af8dded65382c2c927cdb42ab0684bb3f2f3"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1262,18 +1203,21 @@
     "pkg/client/informers/externalversions/serving/v1alpha1",
     "pkg/client/informers/externalversions/serving/v1beta1",
     "pkg/client/injection/client",
+    "pkg/client/injection/client/fake",
     "pkg/client/injection/informers/serving/factory",
     "pkg/client/injection/informers/serving/factory/fake",
     "pkg/client/injection/informers/serving/v1beta1/service",
+    "pkg/client/injection/informers/serving/v1beta1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
     "pkg/client/listers/serving/v1beta1",
+    "pkg/gc",
+    "pkg/network",
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "ce4ce706afb5d9c323d1c073746d64562a722f8f"
-  version = "v0.7.1"
+  revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1290,14 +1234,6 @@
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
-    "github.com/knative/serving/pkg/apis/serving/v1beta1",
-    "github.com/knative/serving/pkg/client/clientset/versioned",
-    "github.com/knative/serving/pkg/client/clientset/versioned/fake",
-    "github.com/knative/serving/pkg/client/injection/client",
-    "github.com/knative/serving/pkg/client/injection/client/fake",
-    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service",
-    "github.com/knative/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
-    "github.com/knative/serving/pkg/client/listers/serving/v1beta1",
     "github.com/knative/test-infra/scripts",
     "github.com/knative/test-infra/tools/dep-collector",
     "go.opencensus.io/stats",
@@ -1380,6 +1316,14 @@
     "knative.dev/pkg/tracker",
     "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",
+    "knative.dev/serving/pkg/apis/serving/v1beta1",
+    "knative.dev/serving/pkg/client/clientset/versioned",
+    "knative.dev/serving/pkg/client/clientset/versioned/fake",
+    "knative.dev/serving/pkg/client/injection/client",
+    "knative.dev/serving/pkg/client/injection/client/fake",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "knative.dev/serving/pkg/client/listers/serving/v1beta1",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -17,10 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/kmeta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/kmeta"
 )
 
 // +genclient
@@ -30,7 +30,7 @@ import (
 // Users create new Revisions by updating the Configuration's spec.
 // The "latest created" revision's name is available under status, as is the
 // "latest ready" revision's name.
-// See also: https://github.com/knative/serving/blob/master/docs/spec/overview.md#configuration
+// See also: https://knative.dev/serving/blob/master/docs/spec/overview.md#configuration
 type Configuration struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional

@@ -28,7 +28,7 @@ required = [
 
 # This is a preemptive override.
 [[override]]
-  name = "github.com/knative/serving"
+  name = "knative.dev/serving"
   branch = "master"
 
 [[override]]

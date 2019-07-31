@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/knative/pkg/apis"
-	"github.com/knative/serving/pkg/apis/serving/v1beta1"
+	"knative.dev/pkg/apis"
+	"knative.dev/serving/pkg/apis/serving/v1beta1"
 )
 
 // ConvertUp implements apis.Convertible

@@ -19,9 +19,9 @@ package v1beta1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
-	"github.com/knative/pkg/kmeta"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/kmeta"
 )
 
 // +genclient
@@ -38,7 +38,7 @@ import (
 // The Service's controller will track the statuses of its owned Configuration
 // and Route, reflecting their statuses and conditions as its own.
 //
-// See also: https://github.com/knative/serving/blob/master/docs/spec/overview.md#service
+// See also: https://knative.dev/serving/blob/master/docs/spec/overview.md#service
 type Service struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
