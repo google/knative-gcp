@@ -19,6 +19,7 @@ limitations under the License.
 package versioned
 
 import (
+	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -27,6 +28,9 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
+	// Deprecated: please explicitly pick a version if possible.
+	Messaging() messagingv1alpha1.MessagingV1alpha1Interface
 	PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface
 	// Deprecated: please explicitly pick a version if possible.
 	Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface
@@ -36,7 +40,19 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	pubsubV1alpha1 *pubsubv1alpha1.PubsubV1alpha1Client
+	messagingV1alpha1 *messagingv1alpha1.MessagingV1alpha1Client
+	pubsubV1alpha1    *pubsubv1alpha1.PubsubV1alpha1Client
+}
+
+// MessagingV1alpha1 retrieves the MessagingV1alpha1Client
+func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface {
+	return c.messagingV1alpha1
+}
+
+// Deprecated: Messaging retrieves the default version of MessagingClient.
+// Please explicitly pick a version.
+func (c *Clientset) Messaging() messagingv1alpha1.MessagingV1alpha1Interface {
+	return c.messagingV1alpha1
 }
 
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
@@ -66,6 +82,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.messagingV1alpha1, err = messagingv1alpha1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.pubsubV1alpha1, err = pubsubv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -82,6 +102,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.messagingV1alpha1 = messagingv1alpha1.NewForConfigOrDie(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -91,6 +112,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.messagingV1alpha1 = messagingv1alpha1.New(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

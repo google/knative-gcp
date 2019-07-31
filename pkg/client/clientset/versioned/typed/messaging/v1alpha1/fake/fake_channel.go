@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,13 +30,13 @@ import (
 
 // FakeChannels implements ChannelInterface
 type FakeChannels struct {
-	Fake *FakePubsubV1alpha1
+	Fake *FakeMessagingV1alpha1
 	ns   string
 }
 
-var channelsResource = schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "channels"}
+var channelsResource = schema.GroupVersionResource{Group: "messaging.cloud.run", Version: "v1alpha1", Resource: "channels"}
 
-var channelsKind = schema.GroupVersionKind{Group: "pubsub.cloud.run", Version: "v1alpha1", Kind: "Channel"}
+var channelsKind = schema.GroupVersionKind{Group: "messaging.cloud.run", Version: "v1alpha1", Kind: "Channel"}
 
 // Get takes name of the channel, and returns the corresponding channel object, and an error if there is any.
 func (c *FakeChannels) Get(name string, options v1.GetOptions) (result *v1alpha1.Channel, err error) {

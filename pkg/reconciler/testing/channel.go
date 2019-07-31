@@ -18,12 +18,15 @@ package testing
 
 import (
 	"context"
+	"knative.dev/pkg/apis"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 )
 
 // ChannelOption enables further configuration of a Channel.
@@ -84,22 +87,8 @@ func WithChannelTopic(topicID string) ChannelOption {
 
 func WithChannelMarkTopicCreating(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("Creating", "Created Job to create Topic %q.", topicID)
+		s.Status.MarkTopicOperating("", "")
 		s.Status.TopicID = topicID
-	}
-}
-
-func WithChannelTopicDeleting(topicID string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("Deleting", "Created Job to delete Topic %q.", topicID)
-		s.Status.TopicID = topicID
-	}
-}
-
-func WithChannelTopicDeleted(topicID string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Status.MarkNoTopic("Deleted", "Successfully deleted Topic %q.", topicID)
-		s.Status.TopicID = ""
 	}
 }
 
@@ -109,30 +98,38 @@ func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	}
 }
 
-func WithChannelInvokerDeployed(s *v1alpha1.Channel) {
-	s.Status.MarkDeployed()
+func WithChannelDefaults(s *v1alpha1.Channel) {
+	s.SetDefaults(context.Background())
 }
 
 func WithChannelReady(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.InitializeConditions()
-		s.Status.MarkDeployed()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
-//func WithChannelProjectResolved(projectID string) ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.ProjectID = projectID
-//	}
-//}
-//
-//func WithChannelSinkNotFound() ChannelOption {
-//	return func(s *v1alpha1.Channel) {
-//		s.Status.MarkNoSink("NotFound", "")
-//	}
-//}
+func WithChannelAddress(url string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		u, _ := apis.ParseURL(url)
+		s.Status.SetAddress(u)
+	}
+}
+
+func WithChannelSubscribers(subscribers []duckv1alpha1.SubscriberSpec) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Spec.Subscribable = &duckv1alpha1.Subscribable{
+			Subscribers: subscribers,
+		}
+	}
+}
+
+func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Status.Subscribers = subscribers
+	}
+}
 
 func WithChannelDeleted(s *v1alpha1.Channel) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
@@ -148,11 +145,5 @@ func WithChannelOwnerReferences(ownerReferences []metav1.OwnerReference) Channel
 func WithChannelLabels(labels map[string]string) ChannelOption {
 	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.Labels = labels
-	}
-}
-
-func WithChannelFinalizers(finalizers ...string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Finalizers = finalizers
 	}
 }

@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/factory/fake"
-	channel "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/channel"
+	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/factory/fake"
+	channel "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/v1alpha1/channel"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Pubsub().V1alpha1().Channels()
+	inf := f.Messaging().V1alpha1().Channels()
 	return context.WithValue(ctx, channel.Key{}, inf), inf.Informer()
 }

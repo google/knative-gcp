@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-
+	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
 )
 
@@ -41,4 +41,26 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 	}
 
 	return errs
+}
+
+func (current *Channel) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
+	original, ok := og.(*Channel)
+	if !ok {
+		return &apis.FieldError{Message: "The provided original was not a Channel"}
+	}
+	if original == nil {
+		return nil
+	}
+
+	// Modification of TopicID is not allowed.
+	if original.Status.TopicID != "" {
+		if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
+			return &apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"status", "topicId"},
+				Details: diff,
+			}
+		}
+	}
+	return nil
 }

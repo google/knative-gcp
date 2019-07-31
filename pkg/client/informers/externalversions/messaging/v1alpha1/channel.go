@@ -21,10 +21,10 @@ package v1alpha1
 import (
 	time "time"
 
-	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/messaging/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -61,16 +61,16 @@ func NewFilteredChannelInformer(client versioned.Interface, namespace string, re
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.PubsubV1alpha1().Channels(namespace).List(options)
+				return client.MessagingV1alpha1().Channels(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.PubsubV1alpha1().Channels(namespace).Watch(options)
+				return client.MessagingV1alpha1().Channels(namespace).Watch(options)
 			},
 		},
-		&pubsubv1alpha1.Channel{},
+		&messagingv1alpha1.Channel{},
 		resyncPeriod,
 		indexers,
 	)
@@ -81,7 +81,7 @@ func (f *channelInformer) defaultInformer(client versioned.Interface, resyncPeri
 }
 
 func (f *channelInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&pubsubv1alpha1.Channel{}, f.defaultInformer)
+	return f.factory.InformerFor(&messagingv1alpha1.Channel{}, f.defaultInformer)
 }
 
 func (f *channelInformer) Lister() v1alpha1.ChannelLister {

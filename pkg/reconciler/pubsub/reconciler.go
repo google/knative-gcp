@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 )

@@ -45,9 +45,8 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pullsubscription/resources"
 
-	. "knative.dev/pkg/reconciler/testing"
-
 	. "github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/testing"
+	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -62,7 +61,7 @@ const (
 
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cre-pull-" + testNS + "-" + sourceName + "-" + sourceUID
+	testSubscriptionID = "cre-pull-" + sourceUID
 )
 
 var (

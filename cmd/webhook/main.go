@@ -33,7 +33,8 @@ import (
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	MessagingV1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
+	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
 const (
@@ -63,7 +64,9 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 		log.Fatal("Error parsing logging configuration:", err)
 	}
 	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 	logger = logger.With(zap.String("cloud.run/events", component))
 
 	logger.Info("Starting the Cloud Run Events Webhook")
@@ -139,9 +142,9 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 
 func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		v1alpha1.SchemeGroupVersion.WithKind("Channel"):          &v1alpha1.Channel{},
-		v1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &v1alpha1.PullSubscription{},
-		v1alpha1.SchemeGroupVersion.WithKind("Topic"):            &v1alpha1.Topic{},
+		MessagingV1alpha1.SchemeGroupVersion.WithKind("Channel"):       &MessagingV1alpha1.Channel{},
+		pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
+		pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 	}
 	SharedMain(handlers)
 

@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
+	fakemessagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	fakepubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,6 +72,16 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// MessagingV1alpha1 retrieves the MessagingV1alpha1Client
+func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface {
+	return &fakemessagingv1alpha1.FakeMessagingV1alpha1{Fake: &c.Fake}
+}
+
+// Messaging retrieves the MessagingV1alpha1Client
+func (c *Clientset) Messaging() messagingv1alpha1.MessagingV1alpha1Interface {
+	return &fakemessagingv1alpha1.FakeMessagingV1alpha1{Fake: &c.Fake}
+}
 
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
 func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {

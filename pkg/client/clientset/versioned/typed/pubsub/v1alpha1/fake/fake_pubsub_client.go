@@ -28,10 +28,6 @@ type FakePubsubV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakePubsubV1alpha1) Channels(namespace string) v1alpha1.ChannelInterface {
-	return &FakeChannels{c, namespace}
-}
-
 func (c *FakePubsubV1alpha1) PullSubscriptions(namespace string) v1alpha1.PullSubscriptionInterface {
 	return &FakePullSubscriptions{c, namespace}
 }

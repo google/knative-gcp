@@ -21,8 +21,8 @@ package channel
 import (
 	"context"
 
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/pubsub/v1alpha1"
-	factory "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/factory"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/messaging/v1alpha1"
+	factory "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
@@ -37,7 +37,7 @@ type Key struct{}
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := factory.Get(ctx)
-	inf := f.Pubsub().V1alpha1().Channels()
+	inf := f.Messaging().V1alpha1().Channels()
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 

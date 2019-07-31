@@ -17,13 +17,13 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pubsub-channel-addressable-resolver
+  name: events-channel-addressable-resolver
   labels:
     duck.knative.dev/channelable: "true"
 # Do not use this role directly. These rules will be added to the "channelable-manipulator" role.
 rules:
   - apiGroups:
-      - pubsub.cloud.run
+      - messaging.cloud.run
     resources:
       - channels
     verbs:
