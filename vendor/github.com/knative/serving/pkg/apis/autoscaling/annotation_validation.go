@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	"knative.dev/pkg/apis"
 )
@@ -36,15 +37,14 @@ func getIntGE0(m map[string]string, k string) (int64, *apis.FieldError) {
 	return i, nil
 }
 
-func ValidateAnnotations(annotations map[string]string) *apis.FieldError {
-	if len(annotations) == 0 {
+func ValidateAnnotations(anns map[string]string) *apis.FieldError {
+	if len(anns) == 0 {
 		return nil
 	}
-
-	return validateMinMaxScale(annotations).Also(validateWindows(annotations))
+	return validateMinMaxScale(anns).Also(validateFloats(anns)).Also(validateWindows(anns))
 }
 
-func validateWindows(annotations map[string]string) *apis.FieldError {
+func validateFloats(annotations map[string]string) *apis.FieldError {
 	var errs *apis.FieldError
 	if v, ok := annotations[PanicWindowPercentageAnnotationKey]; ok {
 		if fv, err := strconv.ParseFloat(v, 64); err != nil {
@@ -60,6 +60,39 @@ func validateWindows(annotations map[string]string) *apis.FieldError {
 		} else if fv < PanicThresholdPercentageMin || fv > PanicThresholdPercentageMax {
 			errs = errs.Also(apis.ErrOutOfBoundsValue(v, PanicThresholdPercentageMin, PanicThresholdPercentageMax,
 				PanicThresholdPercentageAnnotationKey))
+		}
+	}
+
+	if v, ok := annotations[TargetAnnotationKey]; ok {
+		if fv, err := strconv.ParseFloat(v, 64); err != nil || fv < TargetMin {
+			errs = errs.Also(apis.ErrInvalidValue(v, TargetAnnotationKey))
+		}
+	}
+
+	if v, ok := annotations[TargetUtilizationPercentageKey]; ok {
+		if fv, err := strconv.ParseFloat(v, 64); err != nil {
+			errs = errs.Also(apis.ErrInvalidValue(v, TargetUtilizationPercentageKey))
+		} else if fv < 1 || fv > 100 {
+			errs = errs.Also(apis.ErrOutOfBoundsValue(v, 1, 100, TargetUtilizationPercentageKey))
+		}
+	}
+
+	if v, ok := annotations[TargetBurstCapacityKey]; ok {
+		if fv, err := strconv.ParseFloat(v, 64); err != nil || fv < 0 && fv != -1 {
+			errs = errs.Also(apis.ErrInvalidValue(v, TargetBurstCapacityKey))
+		}
+	}
+	return errs
+}
+
+func validateWindows(annotations map[string]string) *apis.FieldError {
+	var errs *apis.FieldError
+	if v, ok := annotations[WindowAnnotationKey]; ok {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			errs = apis.ErrInvalidValue(v, WindowAnnotationKey)
+		} else if d < WindowMin || d > WindowMax {
+			errs = apis.ErrOutOfBoundsValue(v, WindowMin, WindowMax, WindowAnnotationKey)
 		}
 	}
 	return errs

@@ -90,7 +90,7 @@ type IngressSpec struct {
 	// This property will be dropped in future Knative releases and should
 	// not be used - use metadata.generation
 	//
-	// Tracking issue: https://github.com/knative/serving/issues/643
+	// Tracking issue: https://knative.dev/serving/issues/643
 	//
 	// +optional
 	DeprecatedGeneration int64 `json:"generation,omitempty"`
@@ -169,6 +169,11 @@ type IngressRule struct {
 	// If multiple matching Hosts were provided, the first rule will take precedent.
 	// +optional
 	Hosts []string `json:"hosts,omitempty"`
+
+	// Visibility signifies whether this rule should `ClusterLocal`. If it's not
+	// specified then it defaults to `ExternalIP`.
+	// +optional
+	Visibility IngressVisibility `json:"visibility,omitempty"`
 
 	// HTTP represents a rule to apply against incoming requests. If the
 	// rule is satisfied, the request is routed to the specified backend.

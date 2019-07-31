@@ -22,8 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 
-	"github.com/knative/serving/pkg/apis/serving"
-	"github.com/knative/serving/pkg/apis/serving/v1beta1"
+	"knative.dev/serving/pkg/apis/serving"
+	"knative.dev/serving/pkg/apis/serving/v1beta1"
 )
 
 func (s *Service) SetDefaults(ctx context.Context) {
@@ -34,7 +34,7 @@ func (s *Service) SetDefaults(ctx context.Context) {
 		ans := s.GetAnnotations()
 		if ans == nil {
 			ans = map[string]string{}
-			defer s.SetAnnotations(ans)
+			s.SetAnnotations(ans)
 		}
 
 		if apis.IsInUpdate(ctx) {

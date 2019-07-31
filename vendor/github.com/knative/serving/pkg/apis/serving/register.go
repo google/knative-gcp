@@ -17,6 +17,7 @@ limitations under the License.
 package serving
 
 const (
+	// GroupName is the group name for knative labels and annotations
 	GroupName = "serving.knative.dev"
 
 	// ConfigurationLabelKey is the label key attached to a Revision indicating by
@@ -31,6 +32,8 @@ const (
 	// which Route it is configured as traffic target.
 	// The key can also be attached to ClusterIngress resources to indicate
 	// which Route triggered their creation.
+	// The key is also attached to k8s Service resources to indicate which Route
+	// triggered their creation.
 	RouteLabelKey = GroupName + "/route"
 
 	// RouteNamespaceLabelKey is the label key attached to a ClusterIngress

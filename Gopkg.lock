@@ -343,7 +343,28 @@
   revision = "3c6e1cfb6feb705a71f2236243e2929bb93b41ea"
 
 [[projects]]
-  digest = "1:cf9de140518581b36ea05db973a8fa81815e600e6b2740b1469f74e6fcd5eb15"
+  branch = "master"
+  digest = "1:22f620e839f5a94d948c7ca54fcaf18b69b100d9e4e0088a46f939d1faf64f35"
+  name = "github.com/knative/pkg"
+  packages = [
+    "apis",
+    "apis/duck",
+    "apis/duck/v1alpha1",
+    "apis/duck/v1beta1",
+    "configmap",
+    "controller",
+    "injection",
+    "kmeta",
+    "kmp",
+    "logging",
+    "ptr",
+  ]
+  pruneopts = "NUT"
+  revision = "972acd413fb96750dc6a4b98e4ba344c594a385b"
+
+[[projects]]
+  branch = "master"
+  digest = "1:209ea5835d38780caea359a102d375bfbb8984cb42aedcbd9724fb1a81c51293"
   name = "github.com/knative/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -377,16 +398,17 @@
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
     "pkg/client/injection/informers/serving/factory",
-    "pkg/client/injection/informers/serving/factory/fake",
     "pkg/client/injection/informers/serving/v1beta1/service",
     "pkg/client/injection/informers/serving/v1beta1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
     "pkg/client/listers/serving/v1beta1",
+    "pkg/gc",
+    "pkg/network",
   ]
   pruneopts = "NUT"
-  revision = "53d92beda79619c817c098df1c5a5963c0f901be"
+  revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
 
 [[projects]]
   branch = "master"
@@ -601,13 +623,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:02273d049feabfd8cd7c1d82a32333569fcaa4295e72fe62ac5ea3ea8895e383"
+  digest = "1:49f31aa4035a0a1a1d13ade03c28d1d5b8c5f94f5c1c8c9bf9cd01c92f6ed885"
   name = "golang.org/x/net"
   packages = [
     "context",
     "context/ctxhttp",
     "http/httpguts",
     "http2",
+    "http2/h2c",
     "http2/hpack",
     "idna",
     "internal/timeseries",
@@ -1206,6 +1229,52 @@
   pruneopts = "T"
   revision = "e2418a08c195ff0acda037c11c21882ca5453d96"
 
+[[projects]]
+  digest = "1:5402c5f3e8d93c44a0da7c2a335a72afa4e2fbd4b2f46b6e8bd616e27353c2ae"
+  name = "knative.dev/serving"
+  packages = [
+    "pkg/apis/autoscaling",
+    "pkg/apis/autoscaling/v1alpha1",
+    "pkg/apis/config",
+    "pkg/apis/networking",
+    "pkg/apis/networking/v1alpha1",
+    "pkg/apis/serving",
+    "pkg/apis/serving/v1alpha1",
+    "pkg/apis/serving/v1beta1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1",
+    "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1",
+    "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1",
+    "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1",
+    "pkg/client/clientset/versioned/typed/serving/v1beta1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/autoscaling",
+    "pkg/client/informers/externalversions/autoscaling/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/networking",
+    "pkg/client/informers/externalversions/networking/v1alpha1",
+    "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1alpha1",
+    "pkg/client/informers/externalversions/serving/v1beta1",
+    "pkg/client/injection/client",
+    "pkg/client/injection/informers/serving/factory",
+    "pkg/client/injection/informers/serving/factory/fake",
+    "pkg/client/injection/informers/serving/v1beta1/service",
+    "pkg/client/listers/autoscaling/v1alpha1",
+    "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1alpha1",
+    "pkg/client/listers/serving/v1beta1",
+    "pkg/reconciler/route/config",
+  ]
+  pruneopts = "NUT"
+  revision = "ce4ce706afb5d9c323d1c073746d64562a722f8f"
+  version = "v0.7.1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1255,6 +1324,7 @@
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/util/validation",
+    "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
