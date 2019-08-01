@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/release.sh
+source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/release.sh
 
 # Yaml files to generate, and the source config dir for them.
 declare -A COMPONENTS
