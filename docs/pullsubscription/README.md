@@ -31,8 +31,8 @@ Pub/Sub topic, such as
    messages, but you can also create a separate service account for receiving
    messages if you want additional privilege separation.
 
-   1. Create a new service account named `cloudrunevents-pullsub` with
-      the following command:
+   1. Create a new service account named `cloudrunevents-pullsub` with the
+      following command:
       ```shell
       gcloud iam service-accounts create cloudrunevents-pullsub
       ```
@@ -71,8 +71,8 @@ Pub/Sub topic, such as
 1. Update `TOPIC_NAME` in the [`pullsubscription.yaml`](pullsubscription.yaml)
    and apply it.
 
-   If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and apply in
-   one command:
+   If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and
+   apply in one command:
 
    ```shell
    sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
@@ -179,8 +179,8 @@ the cluster.
 
 1. Delete the Pub/Sub PullSubscription:
 
-If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and delete in
-one command:
+If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and
+delete in one command:
 
 ```shell
  sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
