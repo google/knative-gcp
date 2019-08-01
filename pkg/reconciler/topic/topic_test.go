@@ -73,6 +73,13 @@ var (
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
+
+	secret = corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "testing-secret",
+		},
+		Key: "testing-key",
+	}
 )
 
 func init() {
@@ -115,6 +122,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
@@ -130,6 +138,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
@@ -148,6 +157,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 			),
 			newSink(),
@@ -163,6 +173,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				// Updates
 				WithInitTopicConditions,
@@ -183,6 +194,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -202,6 +214,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -221,6 +234,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -243,6 +257,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				// Updates
@@ -258,6 +273,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
@@ -279,6 +295,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -296,6 +313,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -316,6 +334,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -336,6 +355,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -475,6 +495,7 @@ func newPublisher(get, done bool) runtime.Object {
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
 			Project: testProject,
 			Topic:   testTopicID,
+			Secret:  &secret,
 		}))
 	args := &resources.PublisherArgs{
 		Image:  testImage,
@@ -506,6 +527,7 @@ func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
+		Secret:    secret,
 		Owner:     owner,
 	})
 }
@@ -516,6 +538,7 @@ func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) 
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
+		Secret:    secret,
 		Owner:     owner,
 	})
 
