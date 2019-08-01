@@ -38,3 +38,19 @@ spec:
     name: event-display
 
 ---
+
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: cloud-run-events-googleapis-ext
+  namespace: {{.namespace}}
+spec:
+  hosts:
+    - "*.googleapis.com"
+    - "accounts.google.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
+

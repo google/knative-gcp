@@ -27,7 +27,8 @@ import (
 	// Fake injection informers
 
 	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
-	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake"
+	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service/fake"
+	//_ "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake"
 
 	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 )

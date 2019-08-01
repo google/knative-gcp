@@ -1162,7 +1162,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:81c119829b0294ef6e39482f05a5ae087536fabc7e132ab9531b7eafc526a8da"
+  digest = "1:c0b128bb057e6686ae6547bf144b2cfbb5d22eb22d0d9458524d04fb45f2a250"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1198,8 +1198,7 @@
     "pkg/client/injection/informers/serving/factory",
     "pkg/client/injection/informers/serving/factory/fake",
     "pkg/client/injection/informers/serving/v1alpha1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
@@ -1326,8 +1325,7 @@
     "knative.dev/serving/pkg/client/injection/client",
     "knative.dev/serving/pkg/client/injection/client/fake",
     "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "knative.dev/serving/pkg/client/listers/serving/v1alpha1",
     "knative.dev/serving/pkg/client/listers/serving/v1beta1",
     "knative.dev/test-infra/scripts",

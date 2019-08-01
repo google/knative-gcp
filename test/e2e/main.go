@@ -180,7 +180,7 @@ func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
 
 const (
 	interval = 200 * time.Millisecond
-	timeout  = 2 * time.Minute
+	timeout  = 5 * time.Minute
 )
 
 // waitForServiceAccountExists waits until the ServiceAccount exists.

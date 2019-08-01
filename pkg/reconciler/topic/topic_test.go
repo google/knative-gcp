@@ -19,6 +19,7 @@ package topic
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/apis/duck/v1alpha1"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -377,10 +378,11 @@ func TestAllCases(t *testing.T) {
 			TopicOpsImage: testImage + "pub",
 		}
 		return &Reconciler{
-			PubSubBase:     pubsubBase,
-			topicLister:    listers.GetTopicLister(),
-			serviceLister:  listers.GetServiceLister(),
-			publisherImage: testImage,
+			PubSubBase:            pubsubBase,
+			topicLister:           listers.GetTopicLister(),
+			serviceV1alpha1Lister: listers.GetV1alpha1ServiceLister(),
+			serviceV1beta1Lister:  listers.GetV1beta1ServiceLister(),
+			publisherImage:        testImage,
 		}
 	}))
 
@@ -502,7 +504,7 @@ func newPublisher(get, done bool) runtime.Object {
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
-	pub := resources.MakePublisher(args)
+	pub := resources.MakePublisherV1alpha1(args)
 	if get {
 		if done {
 			pub.Status.Conditions = []apis.Condition{{
@@ -510,7 +512,9 @@ func newPublisher(get, done bool) runtime.Object {
 				Status: "True",
 			}}
 			uri, _ := apis.ParseURL(testTopicURI)
-			pub.Status.Address = &v1beta1.Addressable{URL: uri}
+			pub.Status.Address = &v1alpha1.Addressable{
+				Addressable: v1beta1.Addressable{URL: uri},
+			}
 		} else {
 			pub.Status.Conditions = []apis.Condition{{
 				Type:   apis.ConditionReady,
