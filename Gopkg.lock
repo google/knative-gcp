@@ -340,7 +340,7 @@
   name = "github.com/knative/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "f1d1ea898d91fd995f8ec01ccae8a73f1604f7e8"
+  revision = "4005ecf8042e491ff53c8c21005ea2d6cefc0892"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -397,6 +397,14 @@
   pruneopts = "NUT"
   revision = "0be1b92a6df0e4f5cb0a5d15fb7f643d0ad93ce6"
   version = "v3.0.0"
+
+[[projects]]
+  digest = "1:14715f705ff5dfe0ffd6571d7d201dd8e921030f8070321a79380d8ca4ec1a24"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:09fd8d3e830bac0a0e2d1f7009fe33a0c435ee14ae818be9cc9ceb5f77da18ae"
@@ -1130,6 +1138,13 @@
     "signals",
     "system",
     "system/testing",
+    "test",
+    "test/helpers",
+    "test/ingress",
+    "test/logging",
+    "test/monitoring",
+    "test/spoof",
+    "test/zipkin",
     "tracker",
     "version",
     "webhook",
@@ -1139,7 +1154,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5ac6c75b25bd7ebaf7e1f98c8e51af8dded65382c2c927cdb42ab0684bb3f2f3"
+  digest = "1:c0b128bb057e6686ae6547bf144b2cfbb5d22eb22d0d9458524d04fb45f2a250"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1174,8 +1189,8 @@
     "pkg/client/injection/client/fake",
     "pkg/client/injection/informers/serving/factory",
     "pkg/client/injection/informers/serving/factory/fake",
-    "pkg/client/injection/informers/serving/v1beta1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "pkg/client/injection/informers/serving/v1alpha1/service",
+    "pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
@@ -1185,7 +1200,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
+  revision = "c4a03285b40d6c2550b1317e30a697ff4237d072"
 
 [[projects]]
   branch = "master"
@@ -1210,6 +1225,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
     "go.opencensus.io/metric/metricexport",
@@ -1238,6 +1254,7 @@
     "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/util/sets/types",
     "k8s.io/apimachinery/pkg/util/validation",
+    "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",
@@ -1288,16 +1305,20 @@
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",
+    "knative.dev/pkg/test",
+    "knative.dev/pkg/test/helpers",
     "knative.dev/pkg/tracker",
     "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",
+    "knative.dev/serving/pkg/apis/serving/v1alpha1",
     "knative.dev/serving/pkg/apis/serving/v1beta1",
     "knative.dev/serving/pkg/client/clientset/versioned",
     "knative.dev/serving/pkg/client/clientset/versioned/fake",
     "knative.dev/serving/pkg/client/injection/client",
     "knative.dev/serving/pkg/client/injection/client/fake",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service/fake",
+    "knative.dev/serving/pkg/client/listers/serving/v1alpha1",
     "knative.dev/serving/pkg/client/listers/serving/v1beta1",
     "knative.dev/test-infra/scripts",
     "knative.dev/test-infra/tools/dep-collector",

@@ -37,11 +37,12 @@ type TopicArgs struct {
 	Action    string
 	ProjectID string
 	TopicID   string
+	Secret    corev1.SecretKeySelector
 	Owner     kmeta.OwnerRefable
 }
 
 func NewTopicOps(arg TopicArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, []corev1.EnvVar{{
+	podTemplate := makePodTemplate(arg.Image, arg.Secret, []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {

@@ -19,6 +19,7 @@ package topic
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/apis/duck/v1alpha1"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -73,6 +74,13 @@ var (
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
+
+	secret = corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "testing-secret",
+		},
+		Key: "testing-key",
+	}
 )
 
 func init() {
@@ -115,6 +123,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
@@ -130,6 +139,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
@@ -148,6 +158,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 			),
 			newSink(),
@@ -163,6 +174,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				// Updates
 				WithInitTopicConditions,
@@ -183,6 +195,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -202,6 +215,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -221,6 +235,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
@@ -243,6 +258,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitTopicConditions,
 				// Updates
@@ -258,6 +274,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
@@ -279,6 +296,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -296,6 +314,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -316,6 +335,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -336,6 +356,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
@@ -357,10 +378,11 @@ func TestAllCases(t *testing.T) {
 			TopicOpsImage: testImage + "pub",
 		}
 		return &Reconciler{
-			PubSubBase:     pubsubBase,
-			topicLister:    listers.GetTopicLister(),
-			serviceLister:  listers.GetServiceLister(),
-			publisherImage: testImage,
+			PubSubBase:            pubsubBase,
+			topicLister:           listers.GetTopicLister(),
+			serviceV1alpha1Lister: listers.GetV1alpha1ServiceLister(),
+			serviceV1beta1Lister:  listers.GetV1beta1ServiceLister(),
+			publisherImage:        testImage,
 		}
 	}))
 
@@ -475,13 +497,14 @@ func newPublisher(get, done bool) runtime.Object {
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
 			Project: testProject,
 			Topic:   testTopicID,
+			Secret:  &secret,
 		}))
 	args := &resources.PublisherArgs{
 		Image:  testImage,
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
-	pub := resources.MakePublisher(args)
+	pub := resources.MakePublisherV1alpha1(args)
 	if get {
 		if done {
 			pub.Status.Conditions = []apis.Condition{{
@@ -489,7 +512,9 @@ func newPublisher(get, done bool) runtime.Object {
 				Status: "True",
 			}}
 			uri, _ := apis.ParseURL(testTopicURI)
-			pub.Status.Address = &v1beta1.Addressable{URL: uri}
+			pub.Status.Address = &v1alpha1.Addressable{
+				Addressable: v1beta1.Addressable{URL: uri},
+			}
 		} else {
 			pub.Status.Conditions = []apis.Condition{{
 				Type:   apis.ConditionReady,
@@ -506,6 +531,7 @@ func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
+		Secret:    secret,
 		Owner:     owner,
 	})
 }
@@ -516,6 +542,7 @@ func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) 
 		Action:    action,
 		ProjectID: testProject,
 		TopicID:   testTopicID,
+		Secret:    secret,
 		Owner:     owner,
 	})
 

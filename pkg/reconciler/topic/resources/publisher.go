@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
+	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
@@ -51,9 +52,7 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-// MakePublisher generates (but does not insert into K8s) the Invoker Deployment for
-// Channels.
-func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
+func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 	secret := args.Topic.Spec.Secret
 	if secret == nil {
 		secret = DefaultSecretSelector()
@@ -89,13 +88,18 @@ func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 			},
 		}},
 	}
+	return podSpec
+}
+
+// MakePublisherV1beta1 generates (but does not insert into K8s) the Invoker Deployment for
+// Channels.
+func MakePublisherV1beta1(args *PublisherArgs) *servingv1beta1.Service {
+	podSpec := makePublisherPodSpec(args)
 
 	return &servingv1beta1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    args.Topic.Namespace,
-			GenerateName: fmt.Sprintf("pubsub-publisher-%s-", args.Topic.Name),
-			// TODO: not sure we should use labels like this. It depends on the
-			//  upstream caller to use the correct label creation method.
+			Namespace:       args.Topic.Namespace,
+			Name:            GeneratePublisherName(args.Topic),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
 		},
@@ -107,6 +111,35 @@ func MakePublisher(args *PublisherArgs) *servingv1beta1.Service {
 					},
 					Spec: servingv1beta1.RevisionSpec{
 						PodSpec: podSpec,
+					},
+				},
+			},
+		},
+	}
+}
+
+// MakePublisherV1beta1 generates (but does not insert into K8s) the Invoker Deployment for
+// Channels.
+func MakePublisherV1alpha1(args *PublisherArgs) *servingv1alpha1.Service {
+	podSpec := makePublisherPodSpec(args)
+
+	return &servingv1alpha1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       args.Topic.Namespace,
+			Name:            GeneratePublisherName(args.Topic),
+			Labels:          args.Labels,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
+		},
+		Spec: servingv1alpha1.ServiceSpec{
+			ConfigurationSpec: servingv1alpha1.ConfigurationSpec{
+				Template: &servingv1alpha1.RevisionTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: args.Labels,
+					},
+					Spec: servingv1alpha1.RevisionSpec{
+						RevisionSpec: servingv1beta1.RevisionSpec{
+							PodSpec: podSpec,
+						},
 					},
 				},
 			},
