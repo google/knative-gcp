@@ -1130,6 +1130,17 @@
   pruneopts = "NUT"
   revision = "33be087ad058f99c78e067996202b60230737e49"
 
+[[projects]]
+  branch = "master"
+  digest = "1:68050b4ce26531655bac0f6e109d04eb0a4550ead73e320119ed3c628ced4a0a"
+  name = "knative.dev/test-infra"
+  packages = [
+    "scripts",
+    "tools/dep-collector",
+  ]
+  pruneopts = "UT"
+  revision = "17f2331e80ad0d3e170ea2bae45c3922744f83af"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1235,6 +1246,8 @@
     "k8s.io/gengo/namer",
     "k8s.io/gengo/types",
     "k8s.io/klog",
+    "knative.dev/test-infra/scripts",
+    "knative.dev/test-infra/tools/dep-collector",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
