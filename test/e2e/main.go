@@ -211,6 +211,11 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 		obj.ResourceVersion = gvr.Version
 		obj.APIVersion = gvr.GroupVersion().String()
 
-		return obj.Status.GetCondition(apis.ConditionReady).IsTrue(), nil
+		ready := obj.Status.GetCondition(apis.ConditionReady)
+		if !ready.IsTrue() {
+			log.Printf("%s is not ready, %s: %s", name, ready.Reason, ready.Message)
+		}
+
+		return ready.IsTrue(), nil
 	})
 }
