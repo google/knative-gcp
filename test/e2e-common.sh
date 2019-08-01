@@ -54,6 +54,15 @@ function test_setup() {
   # $(dirname $0)/upload-test-images.sh e2e || fail_test "Error uploading test images"
 }
 
+# Tear down resources common to all eventing tests.
+function test_teardown() {
+  pubsub_teardown
+
+  ## hack hack hack need the controller logs.
+  kubectl logs -n cloud-run-events -l control-plane=cloud-run-events-controller
+  kubectl logs -n cloud-run-events -l app=webhook
+}
+
 # Create resources required for Pub/Sub Admin setup
 function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
@@ -91,9 +100,5 @@ function pubsub_teardown() {
 
   # Clean up the smoke test pub/sub topic.
   gcloud pubsub topics delete ${E2E_SMOKE_TEST_TOPIC}
-
-  ## hack hack hack need the controller logs.
-  kubectl logs -n cloud-run-events -l control-plane=cloud-run-events-controller
-  kubectl logs -n cloud-run-events -l app=webhook
 }
 
