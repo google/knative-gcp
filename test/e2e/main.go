@@ -179,13 +179,13 @@ func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
 }
 
 const (
-	interval = 100 * time.Millisecond
-	timeout  = 1 * time.Minute
+	interval = 200 * time.Millisecond
+	timeout  = 2 * time.Minute
 )
 
 // waitForServiceAccountExists waits until the ServiceAccount exists.
 func waitForServiceAccountExists(t *testing.T, client *Client, name, namespace string) error {
-	return wait.PollImmediate(100*time.Millisecond, 1*time.Minute, func() (bool, error) {
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 		sas := client.Kube.Kube.CoreV1().ServiceAccounts(namespace)
 		if _, err := sas.Get(name, metav1.GetOptions{}); err == nil {
 			return true, nil
@@ -196,7 +196,7 @@ func waitForServiceAccountExists(t *testing.T, client *Client, name, namespace s
 
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVersionResource) error {
-
+	lastMsg := ""
 	like := &duckv1beta1.KResource{}
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 
@@ -212,8 +212,12 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 		obj.APIVersion = gvr.GroupVersion().String()
 
 		ready := obj.Status.GetCondition(apis.ConditionReady)
-		if !ready.IsTrue() {
-			log.Printf("%s is not ready, %s: %s", name, ready.Reason, ready.Message)
+		if ready != nil && !ready.IsTrue() {
+			msg := fmt.Sprintf("%s is not ready, %s: %s", name, ready.Reason, ready.Message)
+			if msg != lastMsg {
+				log.Println(msg)
+				lastMsg = msg
+			}
 		}
 
 		return ready.IsTrue(), nil
