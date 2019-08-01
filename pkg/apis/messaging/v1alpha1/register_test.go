@@ -16,8 +16,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
