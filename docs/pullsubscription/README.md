@@ -110,7 +110,7 @@ Pub/Sub topic, such as
 1. Create a service that the Pub/Sub Subscription will sink into:
 
    ```shell
-   ko apply --filename event-display.yaml
+   kubectl apply --filename event-display.yaml
    ```
 
 ## Publish
