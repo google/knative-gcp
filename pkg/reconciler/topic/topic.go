@@ -19,6 +19,7 @@ package topic
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +38,8 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
-	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1beta1"
+	servingv1alpha1listers "knative.dev/serving/pkg/client/listers/serving/v1alpha1"
+	servingv1beta1listers "knative.dev/serving/pkg/client/listers/serving/v1beta1"
 
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
@@ -57,8 +59,11 @@ type Reconciler struct {
 	*pubsub.PubSubBase
 
 	// listers index properties about resources
-	topicLister   listers.TopicLister
-	serviceLister servinglisters.ServiceLister
+	topicLister listers.TopicLister
+
+	servingVersion        string
+	serviceV1alpha1Lister servingv1alpha1listers.ServiceLister
+	serviceV1beta1Lister  servingv1beta1listers.ServiceLister
 
 	publisherImage string
 }
@@ -144,7 +149,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			// Ensure the Topic is deleted.
-			state, err := c.EnsureTopicDeleted(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+			state, err := c.EnsureTopicDeleted(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 			switch state {
 			case pubsub.OpsJobGetFailed:
 				logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
@@ -188,7 +193,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	switch topic.Spec.PropagationPolicy {
 	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateNoDelete:
-		state, err := c.EnsureTopicCreated(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+		state, err := c.EnsureTopicCreated(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
 		case pubsub.OpsJobGetFailed:
@@ -227,7 +232,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		}
 
 	case v1alpha1.TopicPolicyNoCreateNoDelete:
-		state, err := c.EnsureTopicExists(ctx, topic, topic.Spec.Project, topic.Status.TopicID)
+		state, err := c.EnsureTopicExists(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
 		case pubsub.OpsJobGetFailed:
@@ -268,16 +273,21 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		return nil
 	}
 
-	publisher, err := c.createOrUpdatePublisher(ctx, topic)
-	if err != nil {
-		logger.Error("Unable to create the publisher", zap.Error(err))
-		return err
+	switch c.servingVersion {
+	case "", "v1alpha1":
+		if err := c.createOrUpdatePublisherV1alpha1(ctx, topic); err != nil {
+			logger.Error("Unable to create the publisher@v1alpha1", zap.Error(err))
+			return err
+		}
+	case "v1beta1":
+		if err := c.createOrUpdatePublisherV1beta1(ctx, topic); err != nil {
+			logger.Error("Unable to create the publisher@v1beta1", zap.Error(err))
+			return err
+		}
+	default:
+		logger.Error("unknown serving version selected: %q", c.servingVersion)
 	}
-	topic.Status.PropagatePublisherStatus(publisher.Status.GetCondition(apis.ConditionReady))
 
-	if publisher.Status.IsReady() {
-		topic.Status.SetAddress(publisher.Status.Address.URL)
-	}
 	return nil
 }
 
@@ -370,35 +380,92 @@ func removeFinalizer(s *v1alpha1.Topic) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha1.Topic) (*servingv1beta1.Service, error) {
-	existing, err := r.getPublisher(ctx, topic)
+func (r *Reconciler) createOrUpdatePublisherV1alpha1(ctx context.Context, topic *v1alpha1.Topic) error {
+	name := resources.GeneratePublisherName(topic)
+	existing, err := r.ServingClientSet.ServingV1alpha1().Services(topic.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
-		return nil, err
+		return err
+	}
+	if existing != nil && !metav1.IsControlledBy(existing, topic) {
+		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
-	desired := resources.MakePublisher(&resources.PublisherArgs{
+	desired := resources.MakePublisherV1alpha1(&resources.PublisherArgs{
 		Image:  r.publisherImage,
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topic.Name),
 	})
 
+	svc := existing
 	if existing == nil {
-		svc, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Create(desired)
+		svc, err = r.ServingClientSet.ServingV1alpha1().Services(topic.Namespace).Create(desired)
+		if err != nil {
+			return err
+		}
 		logging.FromContext(ctx).Desugar().Info("Publisher created.", zap.Error(err), zap.Any("publisher", svc))
-		return svc, err
-	}
-
-	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+	} else if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
 		existing.Spec = desired.Spec
-		svc, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Update(existing)
+		svc, err = r.ServingClientSet.ServingV1alpha1().Services(topic.Namespace).Update(existing)
+		if err != nil {
+			return err
+		}
 		logging.FromContext(ctx).Desugar().Info("Publisher updated.",
 			zap.Error(err), zap.Any("publisher", svc), zap.String("diff", diff))
-		return svc, err
+	} else {
+		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
 	}
 
-	logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
-	return existing, nil
+	// Update the topic.
+	topic.Status.PropagatePublisherStatus(svc.Status.GetCondition(apis.ConditionReady))
+	if svc.Status.IsReady() {
+		topic.Status.SetAddress(svc.Status.Address.URL)
+	}
+	return nil
+}
+
+func (r *Reconciler) createOrUpdatePublisherV1beta1(ctx context.Context, topic *v1alpha1.Topic) error {
+	name := resources.GeneratePublisherName(topic)
+	existing, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Get(name, metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
+		return err
+	}
+	if existing != nil && !metav1.IsControlledBy(existing, topic) {
+		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
+	}
+
+	desired := resources.MakePublisherV1beta1(&resources.PublisherArgs{
+		Image:  r.publisherImage,
+		Topic:  topic,
+		Labels: resources.GetLabels(controllerAgentName, topic.Name),
+	})
+
+	svc := existing
+	if existing == nil {
+		svc, err = r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Create(desired)
+		if err != nil {
+			return err
+		}
+		logging.FromContext(ctx).Desugar().Info("Publisher created.", zap.Error(err), zap.Any("publisher", svc))
+	} else if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+		existing.Spec = desired.Spec
+		svc, err = r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Update(existing)
+		if err != nil {
+			return err
+		}
+		logging.FromContext(ctx).Desugar().Info("Publisher updated.",
+			zap.Error(err), zap.Any("publisher", svc), zap.String("diff", diff))
+	} else {
+		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
+	}
+
+	// Update the topic.
+	topic.Status.PropagatePublisherStatus(svc.Status.GetCondition(apis.ConditionReady))
+	if svc.Status.IsReady() {
+		topic.Status.SetAddress(svc.Status.Address.URL)
+	}
+	return nil
 }
 
 func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*servingv1beta1.Service, error) {

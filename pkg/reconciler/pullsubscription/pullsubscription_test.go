@@ -73,6 +73,13 @@ var (
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
+
+	secret = corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "testing-secret",
+		},
+		Key: "testing-key",
+	}
 )
 
 func init() {
@@ -115,6 +122,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -133,6 +141,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
+					Secret:  &secret,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -297,6 +306,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -315,6 +325,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionReady(sinkURI),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -337,6 +348,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
@@ -357,6 +369,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionReady(sinkURI),
@@ -432,6 +445,7 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		AckDeadline:         secs30,
 		RetainAckedMessages: false,
 		RetentionDuration:   days7,
+		Secret:              secret,
 		Owner:               owner,
 	})
 }

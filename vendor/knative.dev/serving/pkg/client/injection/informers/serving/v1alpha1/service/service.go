@@ -24,7 +24,7 @@ import (
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
-	v1beta1 "knative.dev/serving/pkg/client/informers/externalversions/serving/v1beta1"
+	v1alpha1 "knative.dev/serving/pkg/client/informers/externalversions/serving/v1alpha1"
 	factory "knative.dev/serving/pkg/client/injection/informers/serving/factory"
 )
 
@@ -37,16 +37,16 @@ type Key struct{}
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := factory.Get(ctx)
-	inf := f.Serving().V1beta1().Services()
+	inf := f.Serving().V1alpha1().Services()
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context) v1beta1.ServiceInformer {
+func Get(ctx context.Context) v1alpha1.ServiceInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Fatalf(
-			"Unable to fetch %T from context.", (v1beta1.ServiceInformer)(nil))
+			"Unable to fetch %T from context.", (v1alpha1.ServiceInformer)(nil))
 	}
-	return untyped.(v1beta1.ServiceInformer)
+	return untyped.(v1alpha1.ServiceInformer)
 }

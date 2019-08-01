@@ -24,7 +24,7 @@ import (
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	fake "knative.dev/serving/pkg/client/injection/informers/serving/factory/fake"
-	service "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
+	service "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service"
 )
 
 var Get = service.Get
@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Serving().V1beta1().Services()
+	inf := f.Serving().V1alpha1().Services()
 	return context.WithValue(ctx, service.Key{}, inf), inf.Informer()
 }
