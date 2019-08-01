@@ -352,7 +352,7 @@
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
-  name = "github.com/markbates/inflect"
+  name = "  github.com/markbates/inflect"
   packages = ["."]
   pruneopts = "NUT"
   revision = "24b83195037b3bc61fcda2d28b7b0518bce293b6"
@@ -1208,7 +1208,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
+  revision = "c4a03285b40d6c2550b1317e30a697ff4237d072"
 
 [[projects]]
   branch = "master"
