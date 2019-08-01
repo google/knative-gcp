@@ -91,5 +91,9 @@ function pubsub_teardown() {
 
   # Clean up the smoke test pub/sub topic.
   gcloud pubsub topics delete ${E2E_SMOKE_TEST_TOPIC}
+
+  ## hack hack hack need the controller logs.
+  kubectl logs -n cloud-run-events -l control-plane=cloud-run-events-controller
+  kubectl logs -n cloud-run-events -l app=webhook
 }
 
