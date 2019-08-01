@@ -314,7 +314,7 @@
 [[projects]]
   branch = "master"
   digest = "1:68050b4ce26531655bac0f6e109d04eb0a4550ead73e320119ed3c628ced4a0a"
-  name = "github.com/knative/test-infra"
+  name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
@@ -1147,8 +1147,8 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
     "github.com/gorilla/websocket",
-    "github.com/knative/test-infra/scripts",
-    "github.com/knative/test-infra/tools/dep-collector",
+    "knative.dev/test-infra/scripts",
+    "knative.dev/test-infra/tools/dep-collector",
     "github.com/markbates/inflect",
     "github.com/mattbaird/jsonpatch",
     "github.com/openzipkin/zipkin-go",

@@ -287,8 +287,8 @@ function create_test_cluster_with_retries() {
       # Exit if test succeeded
       [[ "$(get_test_return_code)" == "0" ]] && return 0
       # Retry if cluster creation failed because of:
-      # - stockout (https://github.com/knative/test-infra/issues/592)
-      # - latest GKE not available in this region/zone yet (https://github.com/knative/test-infra/issues/694)
+      # - stockout (https://knative.dev/test-infra/issues/592)
+      # - latest GKE not available in this region/zone yet (https://knative.dev/test-infra/issues/694)
       [[ -z "$(grep -Fo 'does not have enough resources available to fulfill' ${cluster_creation_log})" \
           && -z "$(grep -Fo 'ResponseError: code=400, message=No valid versions with the prefix' ${cluster_creation_log})" \
           && -z "$(grep -Po 'ResponseError: code=400, message=Master version "[0-9a-z\-\.]+" is unsupported' ${cluster_creation_log})" ]] \
