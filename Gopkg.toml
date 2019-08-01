@@ -56,8 +56,8 @@ required = [
 # manifestival is a testing only dep.
 [[constraint]]
   name = "github.com/jcrossley3/manifestival"
-  # HEAD as of 2019-07-31
-  revision = "5c79a58cfe27e6a7781c2140bdd1ebb407396bbf"
+  # HEAD as of 2019-08-01
+  revision = "dbd2aec45641ad6a8f9834242f6ae5616cdb7bb1"
   source = "github.com/n3wscott/manifestival"
 
 [[override]]

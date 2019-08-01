@@ -18,7 +18,6 @@ package topic
 
 import (
 	"context"
-
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -30,10 +29,11 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
 
-	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 	v1alpha1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service"
-	v1beta1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
+
+	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	//v1beta1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
 )
 
 const (
@@ -62,7 +62,7 @@ func NewController(
 	topicInformer := topicinformer.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 	v1alpha1ServiceInformer := v1alpha1serviceinformer.Get(ctx)
-	v1beta1ServiceInformer := v1beta1serviceinformer.Get(ctx)
+	//v1beta1ServiceInformer := v1beta1serviceinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 
@@ -87,7 +87,8 @@ func NewController(
 	case "", "v1alpha1":
 		c.serviceV1alpha1Lister = v1alpha1ServiceInformer.Lister()
 	case "v1beta1":
-		c.serviceV1beta1Lister = v1beta1ServiceInformer.Lister()
+		logger.Error("v1beta1 serving version not supported until k8s 1.14")
+		//c.serviceV1beta1Lister = v1beta1ServiceInformer.Lister()
 	default:
 		logger.Error("unknown serving version selected: %q", c.servingVersion)
 	}
@@ -104,10 +105,11 @@ func NewController(
 			Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 		})
 	case "v1beta1":
-		v1beta1ServiceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-			FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
-			Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-		})
+		logger.Error("v1beta1 serving version not supported until k8s 1.14")
+		//v1beta1ServiceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		//	FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		//	Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		//})
 	default:
 		logger.Error("unknown serving version selected: %q", c.servingVersion)
 	}

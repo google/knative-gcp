@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -42,6 +43,8 @@ func Smoke(t *testing.T) {
 
 	// Delete deferred.
 	defer func() {
+		// Just chill for tick.
+		time.Sleep(20 * time.Second)
 		if err := installer.Do("delete"); err != nil {
 			t.Errorf("failed to create, %s", err)
 		}

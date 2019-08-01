@@ -29,8 +29,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/reconciler/testing"
+	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
-	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1beta1"
+	servingv1alpha1listers "knative.dev/serving/pkg/client/listers/serving/v1alpha1"
+	servingv1beta1listers "knative.dev/serving/pkg/client/listers/serving/v1beta1"
 
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
@@ -58,7 +60,7 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 
 type Listers struct {
 	sorter testing.ObjectSorter
-	servinglisters.ConfigurationLister
+	servingv1alpha1listers.ConfigurationLister
 }
 
 func NewListers(objs []runtime.Object) Listers {
@@ -128,8 +130,12 @@ func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
 }
 
-func (l *Listers) GetServiceLister() servinglisters.ServiceLister {
-	return servinglisters.NewServiceLister(l.indexerFor(&servingv1beta1.Service{}))
+func (l *Listers) GetV1alpha1ServiceLister() servingv1alpha1listers.ServiceLister {
+	return servingv1alpha1listers.NewServiceLister(l.indexerFor(&servingv1alpha1.Service{}))
+}
+
+func (l *Listers) GetV1beta1ServiceLister() servingv1beta1listers.ServiceLister {
+	return servingv1beta1listers.NewServiceLister(l.indexerFor(&servingv1beta1.Service{}))
 }
 
 func (l *Listers) GetNamespaceLister() corev1listers.NamespaceLister {

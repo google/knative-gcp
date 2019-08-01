@@ -28,6 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -180,7 +181,7 @@ func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
 
 const (
 	interval = 200 * time.Millisecond
-	timeout  = 2 * time.Minute
+	timeout  = 5 * time.Minute
 )
 
 // waitForServiceAccountExists waits until the ServiceAccount exists.
@@ -202,6 +203,11 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 
 		us, err := c.Dynamic.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Println(namespace, name, "not found", err)
+				// keep polling
+				return false, nil
+			}
 			return false, err
 		}
 		obj := like.DeepCopy()

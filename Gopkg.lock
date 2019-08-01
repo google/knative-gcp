@@ -305,11 +305,11 @@
   version = "v0.3.7"
 
 [[projects]]
-  digest = "1:aeb7728237d51655e65ce612acb933594e2e9cb53c55ead024a810538d4319ee"
+  digest = "1:b21d55dedeae51eb2af7d575d26cb280f97dc5187c81048445974bbb59dcf4bd"
   name = "github.com/jcrossley3/manifestival"
   packages = ["pkg/manifestival"]
   pruneopts = "NUT"
-  revision = "5c79a58cfe27e6a7781c2140bdd1ebb407396bbf"
+  revision = "dbd2aec45641ad6a8f9834242f6ae5616cdb7bb1"
   source = "github.com/n3wscott/manifestival"
 
 [[projects]]
@@ -1162,7 +1162,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:81c119829b0294ef6e39482f05a5ae087536fabc7e132ab9531b7eafc526a8da"
+  digest = "1:c0b128bb057e6686ae6547bf144b2cfbb5d22eb22d0d9458524d04fb45f2a250"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1198,8 +1198,7 @@
     "pkg/client/injection/informers/serving/factory",
     "pkg/client/injection/informers/serving/factory/fake",
     "pkg/client/injection/informers/serving/v1alpha1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service",
-    "pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
     "pkg/client/listers/serving/v1alpha1",
@@ -1251,6 +1250,7 @@
     "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/equality",
     "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/labels",
@@ -1326,8 +1326,7 @@
     "knative.dev/serving/pkg/client/injection/client",
     "knative.dev/serving/pkg/client/injection/client/fake",
     "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service",
-    "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
+    "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "knative.dev/serving/pkg/client/listers/serving/v1alpha1",
     "knative.dev/serving/pkg/client/listers/serving/v1beta1",
     "knative.dev/test-infra/scripts",
