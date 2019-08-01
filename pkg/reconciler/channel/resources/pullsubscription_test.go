@@ -17,8 +17,9 @@ limitations under the License.
 package resources
 
 import (
-	"knative.dev/pkg/apis"
 	"testing"
+
+	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"

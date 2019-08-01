@@ -351,17 +351,6 @@
   revision = "4005ecf8042e491ff53c8c21005ea2d6cefc0892"
 
 [[projects]]
-  branch = "master"
-  digest = "1:5197df8038ae4c7d05c2edda32a77d7f16faa635df3c560f01fb73fa42682f69"
-  name = "github.com/knative/test-infra"
-  packages = [
-    "scripts",
-    "tools/dep-collector",
-  ]
-  pruneopts = "UT"
-  revision = "81861c7c2060af68e3dbdc72bcd3a2f0584566d2"
-
-[[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
   name = "github.com/markbates/inflect"
   packages = ["."]
@@ -1221,6 +1210,17 @@
   pruneopts = "NUT"
   revision = "4aca617f14c9141b42ab1a6979b656c11f9d0278"
 
+[[projects]]
+  branch = "master"
+  digest = "1:68050b4ce26531655bac0f6e109d04eb0a4550ead73e320119ed3c628ced4a0a"
+  name = "knative.dev/test-infra"
+  packages = [
+    "scripts",
+    "tools/dep-collector",
+  ]
+  pruneopts = "UT"
+  revision = "a6aed31ed1097dbfaaf1d056b5d89499f64c7235"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -1236,8 +1236,6 @@
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
-    "github.com/knative/test-infra/scripts",
-    "github.com/knative/test-infra/tools/dep-collector",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
@@ -1328,6 +1326,8 @@
     "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service",
     "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake",
     "knative.dev/serving/pkg/client/listers/serving/v1beta1",
+    "knative.dev/test-infra/scripts",
+    "knative.dev/test-infra/tools/dep-collector",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
