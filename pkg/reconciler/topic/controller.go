@@ -32,7 +32,8 @@ import (
 
 	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
-	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
+	v1alpha1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service"
+	v1beta1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service"
 )
 
 const (
@@ -47,6 +48,9 @@ type envConfig struct {
 
 	// TopicOps is the image for operating on topics. Required.
 	TopicOps string `envconfig:"PUBSUB_TOPIC_IMAGE" required:"true"`
+
+	// TargetServingVersion is the version of Service.sering.knative.dev to use. Required.
+	TargetServingVersion string `envconfig:"KN_SERVING_VERSION" default:"v1alpha1" required:"true"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -57,7 +61,8 @@ func NewController(
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
-	serviceInformer := serviceinformer.Get(ctx)
+	v1alpha1ServiceInformer := v1alpha1serviceinformer.Get(ctx)
+	v1beta1ServiceInformer := v1beta1serviceinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 
@@ -74,18 +79,38 @@ func NewController(
 	c := &Reconciler{
 		PubSubBase:     pubsubBase,
 		topicLister:    topicInformer.Lister(),
-		serviceLister:  serviceInformer.Lister(),
+		servingVersion: env.TargetServingVersion,
 		publisherImage: env.Publisher,
 	}
+
+	switch c.servingVersion {
+	case "", "v1alpha1":
+		c.serviceV1alpha1Lister = v1alpha1ServiceInformer.Lister()
+	case "v1beta1":
+		c.serviceV1beta1Lister = v1beta1ServiceInformer.Lister()
+	default:
+		logger.Error("unknown serving version selected: %q", c.servingVersion)
+	}
+
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
+	switch c.servingVersion {
+	case "", "v1alpha1":
+		v1alpha1ServiceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+			Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		})
+	case "v1beta1":
+		v1beta1ServiceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+			FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+			Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		})
+	default:
+		logger.Error("unknown serving version selected: %q", c.servingVersion)
+	}
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),

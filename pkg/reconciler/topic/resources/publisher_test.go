@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 )
 
-func TestMakePublisher(t *testing.T) {
+func TestMakePublisherV1beta1(t *testing.T) {
 	topic := &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
@@ -45,7 +45,7 @@ func TestMakePublisher(t *testing.T) {
 		},
 	}
 
-	pub := MakePublisher(&PublisherArgs{
+	pub := MakePublisherV1beta1(&PublisherArgs{
 		Image:  "test-image",
 		Topic:  topic,
 		Labels: GetLabels("controller-name", "topic-name"),
@@ -56,7 +56,110 @@ func TestMakePublisher(t *testing.T) {
 
 	want := `{
   "metadata": {
-    "generateName": "pubsub-publisher-topic-name-",
+    "name": "cre-topic-name-publish",
+    "namespace": "topic-namespace",
+    "creationTimestamp": null,
+    "labels": {
+      "pubsub.cloud.run/controller": "controller-name",
+      "pubsub.cloud.run/topic": "topic-name"
+    },
+    "ownerReferences": [
+      {
+        "apiVersion": "pubsub.cloud.run/v1alpha1",
+        "kind": "Topic",
+        "name": "topic-name",
+        "uid": "",
+        "controller": true,
+        "blockOwnerDeletion": true
+      }
+    ]
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "creationTimestamp": null,
+        "labels": {
+          "pubsub.cloud.run/controller": "controller-name",
+          "pubsub.cloud.run/topic": "topic-name"
+        }
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "google-cloud-key",
+            "secret": {
+              "secretName": "eventing-secret-name"
+            }
+          }
+        ],
+        "containers": [
+          {
+            "name": "publisher",
+            "image": "test-image",
+            "env": [
+              {
+                "name": "GOOGLE_APPLICATION_CREDENTIALS",
+                "value": "/var/secrets/google/eventing-secret-key"
+              },
+              {
+                "name": "PROJECT_ID",
+                "value": "eventing-name"
+              },
+              {
+                "name": "PUBSUB_TOPIC_ID",
+                "value": "topic-name"
+              }
+            ],
+            "resources": {},
+            "volumeMounts": [
+              {
+                "name": "google-cloud-key",
+                "mountPath": "/var/secrets/google"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "status": {}
+}`
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+	}
+}
+
+func TestMakePublisherV1alpha1(t *testing.T) {
+	topic := &v1alpha1.Topic{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "topic-name",
+			Namespace: "topic-namespace",
+		},
+		Spec: v1alpha1.TopicSpec{
+			Project: "eventing-name",
+			Topic:   "topic-name",
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "eventing-secret-name",
+				},
+				Key: "eventing-secret-key",
+			},
+		},
+	}
+
+	pub := MakePublisherV1alpha1(&PublisherArgs{
+		Image:  "test-image",
+		Topic:  topic,
+		Labels: GetLabels("controller-name", "topic-name"),
+	})
+
+	gotb, _ := json.MarshalIndent(pub, "", "  ")
+	got := string(gotb)
+
+	want := `{
+  "metadata": {
+    "name": "cre-topic-name-publish",
     "namespace": "topic-namespace",
     "creationTimestamp": null,
     "labels": {
