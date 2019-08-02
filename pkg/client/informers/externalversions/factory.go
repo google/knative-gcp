@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	events "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events"
 	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
 	messaging "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/messaging"
 	pubsub "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/pubsub"
@@ -173,8 +174,13 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Events() events.Interface
 	Messaging() messaging.Interface
 	Pubsub() pubsub.Interface
+}
+
+func (f *sharedInformerFactory) Events() events.Interface {
+	return events.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Messaging() messaging.Interface {
