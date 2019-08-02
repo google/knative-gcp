@@ -21,7 +21,8 @@ package externalversions
 import (
 	"fmt"
 
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
+	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
+	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
@@ -53,8 +54,12 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=messaging.cloud.run, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("channels"):
+	// Group=events.cloud.run, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("gcss"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().GCSs().Informer()}, nil
+
+		// Group=messaging.cloud.run, Version=v1alpha1
+	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
 
 		// Group=pubsub.cloud.run, Version=v1alpha1

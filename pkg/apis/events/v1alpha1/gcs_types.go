@@ -27,20 +27,20 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// GCSSource is a specification for a GCSSource resource
-type GCSSource struct {
+// GCS is a specification for a GCS Source resource
+type GCS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GCSSourceSpec   `json:"spec"`
-	Status GCSSourceStatus `json:"status"`
+	Spec   GCSSpec   `json:"spec"`
+	Status GCSStatus `json:"status"`
 }
 
-// Check that GCSSource implements the Conditions duck type.
-var _ = duck.VerifyType(&GCSSource{}, &duckv1alpha1.Conditions{})
+// Check that GCS implements the Conditions duck type.
+var _ = duck.VerifyType(&GCS{}, &duckv1alpha1.Conditions{})
 
-// GCSSourceSpec is the spec for a GCSSource resource
-type GCSSourceSpec struct {
+// GCSSpec is the spec for a GCS resource
+type GCSSpec struct {
 	// GCSCredsSecret is the credential to use to create the Notification on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
@@ -57,7 +57,7 @@ type GCSSourceSpec struct {
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
 	// this will default to the "default" service account for the namespace
-	// in which the GCSSource exists.
+	// in which the GCS exists.
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
@@ -91,7 +91,7 @@ type GCSSourceSpec struct {
 }
 
 const (
-	// GCSConditionReady has status True when the GCSSource is ready to send events.
+	// GCSConditionReady has status True when the GCS is ready to send events.
 	GCSConditionReady = duckv1alpha1.ConditionReady
 
 	// PubSubSourceReady has status True when the underlying GCP PubSub Source is ready
@@ -109,8 +109,8 @@ var gcsSourceCondSet = duckv1alpha1.NewLivingConditionSet(
 	PubSubTopicReady,
 	GCSReady)
 
-// GCSSourceStatus is the status for a GCSSource resource
-type GCSSourceStatus struct {
+// GCSStatus is the status for a GCS resource
+type GCSStatus struct {
 	// Conditions holds the state of a source at a point in time.
 	// +optional
 	// +patchMergeKey=type
@@ -126,65 +126,65 @@ type GCSSourceStatus struct {
 	// +optional
 	Topic string `json:"topic,omitempty"`
 
-	// SinkURI is the current active sink URI that has been configured for the GCSSource.
+	// SinkURI is the current active sink URI that has been configured for the GCS.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
 }
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *GCSSourceStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
+func (s *GCSStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
 	return gcsSourceCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
-func (s *GCSSourceStatus) IsReady() bool {
+func (s *GCSStatus) IsReady() bool {
 	return gcsSourceCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (s *GCSSourceStatus) InitializeConditions() {
+func (s *GCSStatus) InitializeConditions() {
 	gcsSourceCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPubSubNotSourceReady sets the condition that the underlying PubSub source is not ready and why
-func (s *GCSSourceStatus) MarkPubSubSourceNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *GCSStatus) MarkPubSubSourceNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(PubSubSourceReady, reason, messageFormat, messageA...)
 }
 
 // MarkPubSubSourceReady sets the condition that the underlying PubSub source is ready
-func (s *GCSSourceStatus) MarkPubSubSourceReady() {
+func (s *GCSStatus) MarkPubSubSourceReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(PubSubSourceReady)
 }
 
 // MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why
-func (s *GCSSourceStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *GCSStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(PubSubTopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkPubSubTopicReady sets the condition that the underlying PubSub topic was created successfully
-func (s *GCSSourceStatus) MarkPubSubTopicReady() {
+func (s *GCSStatus) MarkPubSubTopicReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(PubSubTopicReady)
 }
 
 // MarkGCSNotReady sets the condition that the GCS has been configured to send Notifications
-func (s *GCSSourceStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *GCSStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(GCSReady, reason, messageFormat, messageA...)
 }
 
-func (s *GCSSourceStatus) MarkGCSReady() {
+func (s *GCSStatus) MarkGCSReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(GCSReady)
 }
 
-func (gcsSource *GCSSource) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("GCSSource")
+func (gcsSource *GCS) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("GCS")
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// GCSSourceList is a list of GCSSource resources
-type GCSSourceList struct {
+// GCSList is a list of GCS resources
+type GCSList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []GCSSource `json:"items"`
+	Items []GCS `json:"items"`
 }

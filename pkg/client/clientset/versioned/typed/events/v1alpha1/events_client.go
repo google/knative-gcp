@@ -27,7 +27,7 @@ import (
 
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	GCSSourcesGetter
+	GCSsGetter
 }
 
 // EventsV1alpha1Client is used to interact with features provided by the events.cloud.run group.
@@ -35,8 +35,8 @@ type EventsV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *EventsV1alpha1Client) GCSSources(namespace string) GCSSourceInterface {
-	return newGCSSources(c, namespace)
+func (c *EventsV1alpha1Client) GCSs(namespace string) GCSInterface {
+	return newGCSs(c, namespace)
 }
 
 // NewForConfig creates a new EventsV1alpha1Client for the given config.

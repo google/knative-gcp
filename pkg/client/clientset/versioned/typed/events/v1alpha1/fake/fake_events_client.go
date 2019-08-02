@@ -28,8 +28,8 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeEventsV1alpha1) GCSSources(namespace string) v1alpha1.GCSSourceInterface {
-	return &FakeGCSSources{c, namespace}
+func (c *FakeEventsV1alpha1) GCSs(namespace string) v1alpha1.GCSInterface {
+	return &FakeGCSs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
