@@ -20,11 +20,13 @@ package e2etest
 
 import (
 	"testing"
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"knative.dev/pkg/test/logstream"
 )
 
 // TestSmoke makes sure we can run tests.
 func TestSmoke(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
 	Smoke(t)
 }
