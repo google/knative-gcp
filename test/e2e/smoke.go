@@ -36,7 +36,7 @@ func Smoke(t *testing.T) {
 
 	_, filename, _, _ := runtime.Caller(0)
 
-	yamls := fmt.Sprintf("%s/config/smoketest/", filepath.Dir(filename))
+	yamls := fmt.Sprintf("%s/config/smoke_test/", filepath.Dir(filename))
 	installer := NewInstaller(client.Dynamic, map[string]string{
 		"namespace": client.Namespace,
 	}, yamls)

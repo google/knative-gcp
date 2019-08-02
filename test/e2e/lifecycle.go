@@ -102,7 +102,7 @@ type Client struct {
 	T         *testing.T
 }
 
-// NewClient instantiates and returns several clientsets required for making request to the
+// NewClient instantiates and returns clientsets required for making request to the
 // cluster specified by the combination of clusterName and configPath.
 func NewClient(configPath string, clusterName string, namespace string, t *testing.T) (*Client, error) {
 	client := &Client{}
