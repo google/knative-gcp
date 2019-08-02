@@ -27,7 +27,7 @@ SmokeTest uses `yaml` files in `config/smoke_test/*` like this:
 test/e2e
 ├── config
 │   └── smoke_test
-│       └── pull-smoke-test.yaml
+│       └── smoke-test.yaml
 ├── smoke.go
 └── smoke_test.go
 ```

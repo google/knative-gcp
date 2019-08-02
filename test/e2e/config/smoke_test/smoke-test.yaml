@@ -12,30 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: serving.knative.dev/v1alpha1
-kind: Service
-metadata:
-  name: event-display
-  namespace: {{.namespace}}
-spec:
-  template:
-    spec:
-      containers:
-        - image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display
-
----
-
-apiVersion: pubsub.cloud.run/v1alpha1
-kind: PullSubscription
+apiVersion: messaging.cloud.run/v1alpha1
+kind: Channel
 metadata:
   name: e2e-smoke-test
   namespace: {{.namespace}}
-spec:
-  topic: e2e-smoke-test
-  sink:
-    apiVersion: serving.knative.dev/v1alpha1
-    kind: Service
-    name: event-display
+spec: {}
 
 ---
 
