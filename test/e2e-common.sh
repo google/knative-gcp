@@ -18,6 +18,11 @@
 
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
+# random6 returns 6 random letters.
+function random6() {
+  go run github.com/GoogleCloudPlatform/cloud-run-events/test/cmd/randstr/ --length=6
+}
+
 # If gcloud is not available make it a no-op, not an error.
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
@@ -26,7 +31,7 @@ readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly E2E_TEST_NAMESPACE="default"
 
 # Constants used for creating ServiceAccount for Pub/Sub Admin if it's not running on Prow.
-readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test"
+readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
 
