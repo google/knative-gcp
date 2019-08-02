@@ -19,8 +19,9 @@ package topic
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/apis/duck/v1alpha1"
 	"testing"
+
+	"knative.dev/pkg/apis/duck/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
