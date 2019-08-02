@@ -40,6 +40,13 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   "pubsub:v1alpha1 messaging:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+# HACK HACK HACK
+# On linux the above codegen puts the typed clients into googlecloudproject instead of GoogleCloudProject
+# So, move them from there to the correct location
+if [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+  cp -R ../../googlecloudplatform/cloud-run-events/pkg/client/* ./pkg/client/
+fi
+
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/GoogleCloudPlatform/cloud-run-events/pkg/client github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis \
