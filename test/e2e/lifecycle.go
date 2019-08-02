@@ -19,7 +19,6 @@ package e2e
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,24 +40,11 @@ import (
 	"knative.dev/pkg/test/helpers"
 )
 
-var seededRand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
-
-const charset = "abcdefghijklmnopqrstuvwxyz"
-
-func RandomStringn(length int) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
-
 // Setup creates the client objects needed in the e2e tests,
 // and does other setups, like creating namespaces, set the test case to run in parallel, etc.
 func Setup(t *testing.T, runInParallel bool) *Client {
 	// Create a new namespace to run this test case.
-	baseName := fmt.Sprintf("%s-%s", helpers.GetBaseFuncName(t.Name()), RandomStringn(5))
+	baseName := helpers.AppendRandomString(helpers.GetBaseFuncName(t.Name()))
 	namespace := helpers.MakeK8sNamePrefix(baseName)
 	t.Logf("namespace is : %q", namespace)
 	client, err := NewClient(
