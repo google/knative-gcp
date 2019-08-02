@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-# Copyright 2019 The Knative Authors
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/e2e-common.sh
+apiVersion: messaging.cloud.run/v1alpha1
+kind: Channel
+metadata:
+  name: e2e-smoke-test
+  namespace: {{.namespace}}
+spec: {}
 
-# Script entry point.
+---
 
-initialize $@
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: cloud-run-events-googleapis-ext
+  namespace: {{.namespace}}
+spec:
+  hosts:
+    - "*.googleapis.com"
+    - "accounts.google.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
 
-go_test_e2e ./test/e2e || fail_test
-
-success

@@ -28,26 +28,6 @@ import (
 	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/adapter"
 )
 
-type envConfig struct {
-	// Environment variable containing project id.
-	Project string `envconfig:"PROJECT_ID"`
-
-	// Environment variable containing the sink URI.
-	Sink string `envconfig:"SINK_URI" required:"true"`
-
-	// Environment variable containing the transformer URI.
-	Transformer string `envconfig:"TRANSFORMER_URI"`
-
-	// Topic is the environment variable containing the PubSub Topic being
-	// subscribed to's name. In the form that is unique within the project.
-	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
-
-	// Subscription is the environment variable containing the name of the
-	// subscription to use.
-	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
-}
-
 func main() {
 	flag.Parse()
 
