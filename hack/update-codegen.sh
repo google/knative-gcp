@@ -18,6 +18,13 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# Let sed work on mac.
+if [ "$(uname)" == "Darwin" ]; then
+  sed=gsed
+elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+  sed=sed
+fi
+
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
 
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../../../k8s.io/code-generator)}
@@ -44,7 +51,7 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
 # The following will find all files (not directories, specified by -type f) under ${REPO_ROOT_DIR}/pkg/client, and
 # perform a sed command to replace "googlecloudplatform" with "GoogleCloudPlatform" on each file it finds.
 
-find ${REPO_ROOT_DIR}/pkg/client -type f -exec sed -i '' -e 's/googlecloudplatform/GoogleCloudPlatform/g' {} \;
+find ${REPO_ROOT_DIR}/pkg/client -type f -exec $sed -i 's/googlecloudplatform/GoogleCloudPlatform/g' {} \;
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
