@@ -383,11 +383,15 @@ func removeFinalizer(s *v1alpha1.Topic) {
 func (r *Reconciler) createOrUpdatePublisherV1alpha1(ctx context.Context, topic *v1alpha1.Topic) error {
 	name := resources.GeneratePublisherName(topic)
 	existing, err := r.ServingClientSet.ServingV1alpha1().Services(topic.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
-		return err
-	}
-	if existing != nil && !metav1.IsControlledBy(existing, topic) {
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
+			return err
+		}
+		existing = nil
+	} else if !metav1.IsControlledBy(existing, topic) {
+		p, _ := json.Marshal(existing)
+		logging.FromContext(ctx).Error("Got a preowned publisher", zap.Any("publisher", string(p)))
 		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
@@ -427,11 +431,13 @@ func (r *Reconciler) createOrUpdatePublisherV1alpha1(ctx context.Context, topic 
 func (r *Reconciler) createOrUpdatePublisherV1beta1(ctx context.Context, topic *v1alpha1.Topic) error {
 	name := resources.GeneratePublisherName(topic)
 	existing, err := r.ServingClientSet.ServingV1beta1().Services(topic.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
-		return err
-	}
-	if existing != nil && !metav1.IsControlledBy(existing, topic) {
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
+			return err
+		}
+		existing = nil
+	} else if !metav1.IsControlledBy(existing, topic) {
 		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
