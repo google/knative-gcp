@@ -29,9 +29,7 @@ dep ensure
 rm -rf $(find vendor/ -name 'BUILD')
 rm -rf $(find vendor/ -name 'BUILD.bazel')
 
-update_licenses third_party/VENDOR-LICENSE \
-  $(find . -name "*.go" | grep -v vendor | xargs grep "package main" | cut -d: -f1 | xargs -n1 dirname | uniq)
-
+update_licenses third_party/VENDOR-LICENSE "./cmd/*"
 
 # HACK HACK HACK
 # TODO(https://github.com/knative/eventing/issues/1065): remove when we can update top 1.13.0 k8s clients.
