@@ -27,7 +27,7 @@ import (
 )
 
 func TestPubSubEventSource(t *testing.T) {
-	want := "//pubsub.googleapis.com/PROJECT/topics/TOPIC"
+	want := "//pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
 
 	got := PubSubEventSource("PROJECT", "TOPIC")
 
