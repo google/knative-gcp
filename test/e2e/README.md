@@ -84,6 +84,6 @@ For example, to run TestPullSubscription:
 
 ```shell
 GOOGLE_APPLICATION_CREDENTIALS=<path to json creds file> \
-GCP_PROJECT=<project name> \
+E2E_PROJECT_ID=<project name> \
   go test --tags=e2e ./test/e2e/... -run TestPullSubscription
 ```

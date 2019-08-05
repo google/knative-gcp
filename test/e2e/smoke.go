@@ -30,7 +30,7 @@ import (
 )
 
 // SmokeTest makes sure we can run tests.
-func SmokeTest(t *testing.T) {
+func SmokeTestImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 

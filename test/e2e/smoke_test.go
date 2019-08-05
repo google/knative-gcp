@@ -28,5 +28,5 @@ import (
 func TestSmoke(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeTest(t)
+	SmokeTestImpl(t)
 }

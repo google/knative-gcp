@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	ProwProjectKey = "GCP_PROJECT"
+	ProwProjectKey = "E2E_PROJECT_ID" //"GCP_PROJECT"
 )
 
 func makeTopicOrDie(t *testing.T) string {
@@ -84,8 +84,8 @@ func deleteTopicOrDie(t *testing.T, topicName string) {
 	}
 }
 
-// SmokePullSubscriptionTest tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTest(t *testing.T) {
+// SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
+func SmokePullSubscriptionTestImpl(t *testing.T) {
 	topic := makeTopicOrDie(t)
 	psName := topic + "-sub"
 
