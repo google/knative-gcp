@@ -26,5 +26,3 @@ spec:
       name: https
       protocol: HTTPS
   location: MESH_EXTERNAL
-
----

@@ -19,25 +19,21 @@ package e2e
 import (
 	"cloud.google.com/go/pubsub"
 	"context"
-	"fmt"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/test/helpers"
 	"os"
-	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 const (
-	ProwProjectKey = "E2E_PROJECT_ID" //"GCP_PROJECT"
+	ProwProjectKey = "E2E_PROJECT_ID"
 )
 
-func makeTopicOrDie(t *testing.T) string {
+func makeTopicOrDie(t *testing.T) (string, func()) {
 	ctx := context.Background()
 	// Prow sticks teh project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -60,12 +56,14 @@ func makeTopicOrDie(t *testing.T) string {
 			t.Fatalf("failed to create topic, %s", err)
 		}
 	}
-	return topicName
+	return topicName, func() {
+		deleteTopicOrDie(t, topicName)
+	}
 }
 
 func deleteTopicOrDie(t *testing.T, topicName string) {
 	ctx := context.Background()
-	// Prow sticks teh project in this key
+	// Prow sticks the project in this key.
 	project := os.Getenv(ProwProjectKey)
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
@@ -86,41 +84,34 @@ func deleteTopicOrDie(t *testing.T, topicName string) {
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
 func SmokePullSubscriptionTestImpl(t *testing.T) {
-	topic := makeTopicOrDie(t)
+	topic, deleteTopic := makeTopicOrDie(t)
+	defer deleteTopic()
+
 	psName := topic + "-sub"
 
 	client := Setup(t, true)
 	defer TearDown(client)
 
-	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Dir(filename)
-
-	yamls := []string{
-		fmt.Sprintf("%s/config/pull_subscription_test/", dir),
-		fmt.Sprintf("%s/config/istio/", dir),
-		fmt.Sprintf("%s/config/event_display/", dir),
-	}
 	installer := NewInstaller(client.Dynamic, map[string]string{
 		"namespace":    client.Namespace,
 		"topic":        topic,
 		"subscription": psName,
-	}, yamls...)
-
-	// Delete deferred.
-	defer func() {
-		// Just chill for tick.
-		time.Sleep(20 * time.Second)
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		deleteTopicOrDie(t, topic)
-	}()
+	}, EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
 		t.Errorf("failed to create, %s", err)
 		return
 	}
+
+	// Delete deferred.
+	defer func() {
+		// Just chill for tick.
+		time.Sleep(10 * time.Second)
+		if err := installer.Do("delete"); err != nil {
+			t.Errorf("failed to create, %s", err)
+		}
+	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
 		Group:    "pubsub.cloud.run",

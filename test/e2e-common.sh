@@ -79,8 +79,6 @@ function pubsub_setup() {
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
-
-  export
 }
 
 # Delete resources that were used for Pub/Sub Admin setup

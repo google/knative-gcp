@@ -18,5 +18,3 @@ metadata:
   name: e2e-smoke-test
   namespace: {{.namespace}}
 spec: {}
-
----
