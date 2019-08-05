@@ -156,7 +156,7 @@ const (
 
 // PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
 func PubSubEventSource(googleCloudProject, topic string) string {
-	return fmt.Sprintf("//pubsub.googleapis.com/%s/topics/%s", googleCloudProject, topic)
+	return fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s", googleCloudProject, topic)
 }
 
 const (
