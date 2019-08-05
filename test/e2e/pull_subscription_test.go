@@ -24,9 +24,9 @@ import (
 	"knative.dev/pkg/test/logstream"
 )
 
-// TestSmoke makes sure we can run tests.
-func TestSmoke(t *testing.T) {
+// TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
+func TestSmokePullSubscription(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeTestImpl(t)
+	SmokePullSubscriptionTestImpl(t)
 }

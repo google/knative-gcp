@@ -73,3 +73,17 @@ And count is supported too:
 ```shell
 go test --tags=e2e ./test/e2e/... --count=3
 ```
+
+If you want to run a specific test:
+
+```shell
+go test --tags=e2e ./test/e2e/... -run NameOfTest
+```
+
+For example, to run TestPullSubscription:
+
+```shell
+GOOGLE_APPLICATION_CREDENTIALS=<path to json creds file> \
+E2E_PROJECT_ID=<project name> \
+  go test --tags=e2e ./test/e2e/... -run TestPullSubscription
+```

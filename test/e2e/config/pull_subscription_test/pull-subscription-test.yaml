@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: messaging.cloud.run/v1alpha1
-kind: Channel
+apiVersion: pubsub.cloud.run/v1alpha1
+kind: PullSubscription
 metadata:
-  name: e2e-smoke-test
+  name: {{.subscription}}
   namespace: {{.namespace}}
-spec: {}
+spec:
+  topic: {{.topic}}
+  sink:
+    apiVersion: v1
+    kind: Service
+    name: event-display

@@ -22,6 +22,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -47,6 +48,28 @@ func NewInstaller(dc dynamic.Interface, config map[string]string, paths ...strin
 	return &Installer{dc: dc, manifest: manifest}
 }
 
+// YamlPathsOptionFunc allows for bulk mutation of the yaml paths.
+type YamlPathsOptionFunc func([]string) []string
+
+// EndToEndConfigYaml assembles yaml from the local config directory.
+// Note: `config` dir is assumed to be relative to the caller path.
+func EndToEndConfigYaml(paths []string, options ...YamlPathsOptionFunc) []string {
+	// TODO: this could be smarter in the future, look for e2e or something.
+	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
+
+	yamls := make([]string, 0, len(paths))
+	for _, path := range paths {
+		yamls = append(yamls, fmt.Sprintf("%s/config/%s/", dir, path))
+	}
+
+	for _, o := range options {
+		yamls = o(yamls)
+	}
+
+	return yamls
+}
+
 func ParseTemplates(path string, config map[string]string) string {
 	dir, err := ioutil.TempDir("", "processed_yaml")
 	if err != nil {
@@ -54,8 +77,10 @@ func ParseTemplates(path string, config map[string]string) string {
 	}
 
 	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if info == nil || info.IsDir() {
+			return nil
+		}
 		if strings.HasSuffix(info.Name(), "yaml") {
-
 			t, err := template.ParseFiles(path)
 			if err != nil {
 				return err

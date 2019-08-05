@@ -17,29 +17,28 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
-	"path/filepath"
-	"runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
 	"time"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// Smoke makes sure we can run tests.
-func Smoke(t *testing.T) {
+// SmokeTestImpl makes sure we can run tests.
+func SmokeTestImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
-	_, filename, _, _ := runtime.Caller(0)
-
-	yamls := fmt.Sprintf("%s/config/smoke_test/", filepath.Dir(filename))
 	installer := NewInstaller(client.Dynamic, map[string]string{
 		"namespace": client.Namespace,
-	}, yamls)
+	}, EndToEndConfigYaml([]string{"smoke_test", "istio"})...)
+
+	// Create the resources for the test.
+	if err := installer.Do("create"); err != nil {
+		t.Errorf("failed to create, %s", err)
+		return
+	}
 
 	// Delete deferred.
 	defer func() {
@@ -49,11 +48,6 @@ func Smoke(t *testing.T) {
 			t.Errorf("failed to create, %s", err)
 		}
 	}()
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-	}
 
 	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{
 		Group:    "messaging.cloud.run",
