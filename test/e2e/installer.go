@@ -36,6 +36,7 @@ func NewInstaller(dc dynamic.Interface, config map[string]string, paths ...strin
 	}
 
 	for i, p := range paths {
+		log.Println("processing yaml folder", p)
 		paths[i] = ParseTemplates(p, config)
 	}
 	path := strings.Join(paths, ",")
@@ -54,8 +55,11 @@ func ParseTemplates(path string, config map[string]string) string {
 	}
 
 	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("looking at", info)
+		if info == nil || info.IsDir() {
+			return nil
+		}
 		if strings.HasSuffix(info.Name(), "yaml") {
-
 			t, err := template.ParseFiles(path)
 			if err != nil {
 				return err

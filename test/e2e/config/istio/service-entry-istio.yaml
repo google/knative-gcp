@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: messaging.cloud.run/v1alpha1
-kind: Channel
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
 metadata:
-  name: e2e-smoke-test
+  name: cloud-run-events-googleapis-ext
   namespace: {{.namespace}}
-spec: {}
+spec:
+  hosts:
+    - "*.googleapis.com"
+    - "accounts.google.com"
+  ports:
+    - number: 443
+      name: https
+      protocol: HTTPS
+  location: MESH_EXTERNAL
 
 ---

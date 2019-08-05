@@ -166,7 +166,7 @@ func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
 }
 
 const (
-	interval = 200 * time.Millisecond
+	interval = 1 * time.Second
 	timeout  = 5 * time.Minute
 )
 

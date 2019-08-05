@@ -29,17 +29,21 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// Smoke makes sure we can run tests.
-func Smoke(t *testing.T) {
+// SmokeTest makes sure we can run tests.
+func SmokeTest(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
 	_, filename, _, _ := runtime.Caller(0)
+	dir := filepath.Dir(filename)
 
-	yamls := fmt.Sprintf("%s/config/smoke_test/", filepath.Dir(filename))
+	yamls := []string{
+		fmt.Sprintf("%s/config/smoke_test/", dir),
+		fmt.Sprintf("%s/config/istio/", dir),
+	}
 	installer := NewInstaller(client.Dynamic, map[string]string{
 		"namespace": client.Namespace,
-	}, yamls)
+	}, yamls...)
 
 	// Delete deferred.
 	defer func() {
@@ -53,6 +57,7 @@ func Smoke(t *testing.T) {
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
 		t.Errorf("failed to create, %s", err)
+		return
 	}
 
 	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{
