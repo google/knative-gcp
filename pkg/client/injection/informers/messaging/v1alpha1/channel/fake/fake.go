@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/factory/fake"
-	channel "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/v1alpha1/channel"
+	fake "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/factory/fake"
+	channel "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

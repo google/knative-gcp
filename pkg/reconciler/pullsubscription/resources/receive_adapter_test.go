@@ -19,8 +19,8 @@ package resources
 import (
 	"testing"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

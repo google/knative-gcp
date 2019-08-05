@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging"
+	"github.com/google/knative-gcp/pkg/apis/messaging"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"

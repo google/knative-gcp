@@ -36,20 +36,13 @@ KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./ven
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
-  github.com/GoogleCloudPlatform/cloud-run-events/pkg/client github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis \
+  github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
-# HACK HACK HACK
-# On linux the above codegen puts the typed clients into googlecloudproject instead of GoogleCloudProject
-# So, move them from there to the correct location
-if [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-  cp -R ../../googlecloudplatform/cloud-run-events/pkg/client/* ./pkg/client/
-fi
-
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
-  github.com/GoogleCloudPlatform/cloud-run-events/pkg/client github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis \
+  github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 

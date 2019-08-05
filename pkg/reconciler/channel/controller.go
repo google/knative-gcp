@@ -25,12 +25,12 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 
-	channelinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/v1alpha1/channel"
-	subscriptioninformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	topicinformer "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
+	subscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
 const (

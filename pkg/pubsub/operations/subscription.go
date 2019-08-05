@@ -30,7 +30,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
+	"github.com/google/knative-gcp/pkg/pubsub"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"

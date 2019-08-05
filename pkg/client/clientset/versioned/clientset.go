@@ -19,9 +19,9 @@ limitations under the License.
 package versioned
 
 import (
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/events/v1alpha1"
-	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
+	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

@@ -21,7 +21,7 @@ package client
 import (
 	"context"
 
-	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
+	versioned "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	rest "k8s.io/client-go/rest"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

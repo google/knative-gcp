@@ -29,7 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
 
-	fakerunclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client/fake"
+	fakerunclient "github.com/google/knative-gcp/pkg/client/injection/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	fakekubeclient "knative.dev/pkg/injection/clients/kubeclient/fake"
 	fakeservingclient "knative.dev/serving/pkg/client/injection/client/fake"

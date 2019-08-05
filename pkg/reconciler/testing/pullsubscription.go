@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // PullSubscriptionOption enables further configuration of a PullSubscription.

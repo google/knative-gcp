@@ -27,14 +27,14 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	deploymentinformer "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment"
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 
-	pullsubscriptioninformers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 )
 
 const (

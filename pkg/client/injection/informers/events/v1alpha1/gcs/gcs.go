@@ -21,8 +21,8 @@ package gcs
 import (
 	"context"
 
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/events/v1alpha1"
-	factory "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/factory"
+	v1alpha1 "github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1"
+	factory "github.com/google/knative-gcp/pkg/client/injection/informers/events/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

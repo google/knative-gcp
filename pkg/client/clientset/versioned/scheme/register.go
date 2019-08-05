@@ -19,9 +19,9 @@ limitations under the License.
 package scheme
 
 import (
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	messagingv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

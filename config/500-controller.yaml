@@ -32,17 +32,17 @@ spec:
       serviceAccountName: controller
       containers:
       - name: controller
-        image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/controller
+        image: github.com/google/knative-gcp/cmd/controller
         imagePullPolicy: Always
         env:
         - name: PUBSUB_RA_IMAGE
-          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/receive_adapter
+          value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
         - name: PUBSUB_PUBLISHER_IMAGE
-          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/publisher
+          value: github.com/google/knative-gcp/cmd/pubsub/publisher
         - name: PUBSUB_TOPIC_IMAGE
-          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/topic
+          value: github.com/google/knative-gcp/cmd/pubsub/topic
         - name: PUBSUB_SUB_IMAGE
-          value: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/subscription
+          value: github.com/google/knative-gcp/cmd/pubsub/subscription
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

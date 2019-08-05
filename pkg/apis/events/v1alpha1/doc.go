@@ -17,7 +17,7 @@ limitations under the License.
 // Package v1alpha1 contains API Schema definitions for the events v1alpha1 API group
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events
+// +k8s:conversion-gen=github.com/google/knative-gcp/pkg/apis/events
 // +k8s:defaulter-gen=TypeMeta
 // +groupName=events.cloud.run
 package v1alpha1

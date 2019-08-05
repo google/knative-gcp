@@ -19,8 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	scheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	scheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"

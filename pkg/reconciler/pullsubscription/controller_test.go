@@ -26,7 +26,7 @@ import (
 
 	// Fake injection informers
 
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 	_ "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
 	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
 )

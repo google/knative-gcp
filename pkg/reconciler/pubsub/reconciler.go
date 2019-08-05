@@ -30,8 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub/operations"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/pubsub/operations"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (

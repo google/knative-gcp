@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func TestMakePublisherV1beta1(t *testing.T) {
