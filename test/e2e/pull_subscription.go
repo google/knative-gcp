@@ -17,13 +17,14 @@ limitations under the License.
 package e2e
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/test/helpers"
 	"os"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/pubsub"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/test/helpers"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
