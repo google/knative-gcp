@@ -27,8 +27,8 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/kncloudevents"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/kncloudevents"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a

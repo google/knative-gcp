@@ -21,8 +21,8 @@ package eventsfactory
 import (
 	"context"
 
-	externalversions "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions"
-	client "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
+	externalversions "github.com/google/knative-gcp/pkg/client/informers/externalversions"
+	client "github.com/google/knative-gcp/pkg/client/injection/client"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"

@@ -21,10 +21,10 @@ package v1alpha1
 import (
 	time "time"
 
-	eventsv1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events/v1alpha1"
-	versioned "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/events/v1alpha1"
+	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	versioned "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/google/knative-gcp/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

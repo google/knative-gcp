@@ -19,7 +19,7 @@ package resources
 import (
 	"fmt"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {

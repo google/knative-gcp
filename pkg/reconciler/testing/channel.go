@@ -27,7 +27,7 @@ import (
 
 	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
 // ChannelOption enables further configuration of a Channel.

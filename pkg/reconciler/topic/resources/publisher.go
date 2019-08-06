@@ -25,7 +25,7 @@ import (
 	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.

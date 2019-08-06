@@ -25,9 +25,9 @@ import (
 
 	// Fake injection informers
 
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/messaging/v1alpha1/channel/fake"
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
-	_ "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 )
 
 func TestNew(t *testing.T) {

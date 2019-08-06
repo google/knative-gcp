@@ -41,10 +41,10 @@ import (
 	servingv1alpha1listers "knative.dev/serving/pkg/client/listers/serving/v1alpha1"
 	servingv1beta1listers "knative.dev/serving/pkg/client/listers/serving/v1beta1"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
-	listers "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/pubsub"
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/reconciler/topic/resources"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
 )
 
 const (

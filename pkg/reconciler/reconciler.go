@@ -29,9 +29,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 
-	clientset "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned"
-	runScheme "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/scheme"
-	runclient "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
+	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	runScheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
+	runclient "github.com/google/knative-gcp/pkg/client/injection/client"
 	"go.uber.org/zap"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"

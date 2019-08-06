@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/apis/events"
 )
 
 // SchemeGroupVersion is group version used to register these objects

@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/clientset/versioned/fake"
-	client "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/client"
+	fake "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	client "github.com/google/knative-gcp/pkg/client/injection/client"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	injection "knative.dev/pkg/injection"

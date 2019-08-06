@@ -20,7 +20,7 @@ source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
 # random6 returns 6 random letters.
 function random6() {
-  go run github.com/GoogleCloudPlatform/cloud-run-events/test/cmd/randstr/ --length=6
+  go run github.com/google/knative-gcp/test/cmd/randstr/ --length=6
 }
 
 # If gcloud is not available make it a no-op, not an error.

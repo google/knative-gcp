@@ -6,4 +6,4 @@ spec:
   template:
     spec:
       containers:
-        - image: github.com/GoogleCloudPlatform/cloud-run-events/cmd/pubsub/push_transformer
+        - image: github.com/google/knative-gcp/cmd/pubsub/push_transformer

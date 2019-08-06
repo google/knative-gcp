@@ -17,7 +17,7 @@ Pub/Sub topic, such as
    project id, and also set your project ID as default using
    `gcloud config set project $PROJECT_ID`.
 
-1. [Install Cloud Run Events](../install).
+1. [Install Knative with GCP](../install).
 
 1. Enable the `Cloud Pub/Sub API` on your project:
 

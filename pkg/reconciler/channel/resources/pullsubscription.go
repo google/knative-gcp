@@ -25,7 +25,7 @@ import (
 	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // PullSubscriptionArgs are the arguments needed to create a Channel Subscriber.

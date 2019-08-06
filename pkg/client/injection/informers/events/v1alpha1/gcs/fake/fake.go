@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/factory/fake"
-	gcs "github.com/GoogleCloudPlatform/cloud-run-events/pkg/client/injection/informers/events/v1alpha1/gcs"
+	fake "github.com/google/knative-gcp/pkg/client/injection/informers/events/factory/fake"
+	gcs "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/gcs"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )

@@ -19,7 +19,7 @@ package test
 import (
 	"context"
 
-	"github.com/GoogleCloudPlatform/cloud-run-events/pkg/pubsub"
+	"github.com/google/knative-gcp/pkg/pubsub"
 )
 
 // Topic implements Client.Topic.

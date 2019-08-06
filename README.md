@@ -1,15 +1,17 @@
-# Cloud Run Events
+# Knative + Google Cloud Platform = 🚀
 
-Cloud Run Events builds on Kubernetes to enable easy consumption of events from
-Google Cloud services. It can be useful independently, or mixed with
-[Knative](https://knative.dev).
+[![GoDoc](https://godoc.org/github.com/google/knative-gcp?status.svg)](https://godoc.org/github.com/google/knative-gcp)
+[![Go Report Card](https://goreportcard.com/badge/google/knative-gcp)](https://goreportcard.com/report/google/knative-gcp)
+[![LICENSE](https://img.shields.io/github/license/google/knative-gcp.svg)](https://github.com/google/knative-gcp/blob/master/LICENSE)
 
-To get started, [install Cloud Run Events](./docs/install/README.md).
+Knative with GCP builds on Kubernetes to enable easy configuration and
+consumption of Google Cloud Platform events and services. It can be useful
+independently, but is best mixed with [Knative](https://knative.dev).
+
+To get started, [install Knative with GCP](./docs/install/README.md).
 
 Then use one of the implemented resources,
 
 - [PullSubscription (pubsub.cloud.run/v1alpha1)](docs/pullsubscription/README.md)
-
-The sources are implemented to bridge events from Google Cloud and translate
-that into an HTTP POST to a `service` or `addressable` of your choosing;
-outbound Event is in [CloudEvents](https://cloudevents.io) format.
+- [Topic (pubsub.cloud.run/v1alpha1)](docs/topic/README.md)
+- [Channel (messaging.cloud.run/v1alpha1)](docs/channel/README.md)
