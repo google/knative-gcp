@@ -36,7 +36,7 @@ const (
 
 func makeTopicOrDie(t *testing.T) (string, func()) {
 	ctx := context.Background()
-	// Prow sticks teh project in this key
+	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
