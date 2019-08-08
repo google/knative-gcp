@@ -345,7 +345,7 @@
 [[projects]]
   branch = "master"
   digest = "1:a9f64683b2be58b2b7b11972346940f60989363009e0366972544d92358e94e0"
-  name = "github.com/knative/eventing"
+  name = "knative.dev/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
   revision = "4005ecf8042e491ff53c8c21005ea2d6cefc0892"
@@ -1236,7 +1236,7 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
-    "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",

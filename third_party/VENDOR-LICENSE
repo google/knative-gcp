@@ -3309,7 +3309,7 @@ SOFTWARE.
 
 
 ===========================================================
-Import: github.com/google/knative-gcp/vendor/github.com/knative/eventing
+Import: github.com/google/knative-gcp/vendor/knative.dev/eventing
 
                                  Apache License
                            Version 2.0, January 2004
