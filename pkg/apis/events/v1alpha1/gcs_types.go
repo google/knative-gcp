@@ -87,8 +87,7 @@ type GCSSpec struct {
 
 	// Sink is a reference to an object that will resolve to a domain name to use
 	// as the sink.
-	// +optional
-	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+	Sink corev1.ObjectReference `json:"sink"`
 }
 
 const (
@@ -106,7 +105,7 @@ const (
 )
 
 var gcsSourceCondSet = apis.NewLivingConditionSet(
-	PubSubSourceReady,
+	PullSubscriptionReady,
 	PubSubTopicReady,
 	GCSReady)
 

@@ -21,7 +21,7 @@ import (
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *GCSStatus) GetCondition(t duckv1beta1.ConditionType) *duckv1beta1.Condition {
+func (s *GCSStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return gcsSourceCondSet.Manage(s).GetCondition(t)
 }
 
@@ -35,14 +35,15 @@ func (s *GCSStatus) InitializeConditions() {
 	gcsSourceCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPubSubNotSourceReady sets the condition that the underlying PubSub source is not ready and why
-func (s *GCSStatus) MarkPubSubSourceNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PubSubSourceReady, reason, messageFormat, messageA...)
+// MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
+// source is not ready and why
+func (s *GCSStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+	gcsSourceCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPubSubSourceReady sets the condition that the underlying PubSub source is ready
-func (s *GCSStatus) MarkPubSubSourceReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PubSubSourceReady)
+// MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready
+func (s *GCSStatus) MarkPullSubscriptionReady() {
+	gcsSourceCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
 }
 
 // MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why

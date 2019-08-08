@@ -107,11 +107,7 @@ func (in *GCSSpec) DeepCopyInto(out *GCSSpec) {
 			(*out)[key] = val
 		}
 	}
-	if in.Sink != nil {
-		in, out := &in.Sink, &out.Sink
-		*out = new(v1.ObjectReference)
-		**out = **in
-	}
+	out.Sink = in.Sink
 	return
 }
 

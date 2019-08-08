@@ -123,7 +123,7 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 	deletionTimestamp := csr.DeletionTimestamp
 
 	// First try to resolve the sink, and if not found mark as not resolved.
-	uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, csr.Spec.Sink, csr.Namespace)
+	uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, &csr.Spec.Sink, csr.Namespace)
 	if err != nil {
 		// TODO: Update status appropriately
 		//		csr.Status.MarkNoSink("NotFound", "%s", err)
@@ -167,12 +167,12 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 
 	csr.Status.SinkURI = uri
 
-	// Make sure PubSubSource is in the state we expect it to be in.
-	pubsub, err := c.reconcilePubSub(csr)
+	// Make sure PullSubscription is in the state we expect it to be in.
+	pubsub, err := c.reconcilePullSubscription(csr)
 	if err != nil {
 		// TODO: Update status appropriately
-		c.Logger.Infof("Failed to reconcile GCP PubSub Source: %s", err)
-		csr.Status.MarkPubSubSourceNotReady(fmt.Sprintf("Failed to create GCP PubSub Source: %s", err), "")
+		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
+		csr.Status.MarkPullSubscriptionNotReady(fmt.Sprintf("Failed to create GCP PullSubscription Source: %s", err), "")
 		return err
 	}
 	c.Logger.Infof("Reconciled pubsub source: %+v", pubsub)
@@ -180,10 +180,10 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 
 	// Check to see if pubsub source is ready
 	if !pubsub.Status.IsReady() {
-		c.Logger.Infof("GCP PubSub Source is not ready yet")
-		csr.Status.MarkPubSubSourceNotReady("underlying GCP PubSub Source is not ready", "")
+		c.Logger.Infof("GCP PullSubscription Source is not ready yet")
+		csr.Status.MarkPullSubscriptionNotReady("underlying GCP PullSubscription Source is not ready", "")
 	} else {
-		csr.Status.MarkPubSubSourceReady()
+		csr.Status.MarkPullSubscriptionReady()
 	}
 
 	notification, err := c.reconcileNotification(csr)
@@ -201,7 +201,7 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 	return nil
 }
 
-func (c *Reconciler) reconcilePubSub(csr *v1alpha1.GCS) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.GCS) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
