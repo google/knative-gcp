@@ -51,7 +51,7 @@ spec:
       properties:
         spec:
           properties:
-            additions:
+            extensions:
               type: object
               description: "Map of attributes that will be added to the event and forwarded."
             sink:

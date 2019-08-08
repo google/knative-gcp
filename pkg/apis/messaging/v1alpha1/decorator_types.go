@@ -52,13 +52,21 @@ var _ webhook.GenericCRD = (*Decorator)(nil)
 
 // DecoratorSpec
 type DecoratorSpec struct {
-	// Additions will specify what is added to an event.
-	Additions map[string]string `json:"additions,omitempty"`
+	// Extensions will specify what is added to an event as an extension.
+	// Each key-value pair is added independently.
+	Extensions map[string]string `json:"extensions,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use
 	// as the sink.
-	// +optional
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
 }
+
+// Save for later:
+//// EventOverrides EventOverrides `json:"ceOverrides,omitempty"`
+//type EventOverrides struct {
+//	// Extensions will specify what is added to an event as an extension.
+//	// Each key-value pair is added independently.
+//	Extensions map[string]string `json:"extensions,omitempty"`
+//}
 
 var decoratorCondSet = apis.NewLivingConditionSet(
 	DecoratorConditionAddressable,
@@ -77,6 +85,10 @@ const (
 	// DecoratorConditionServiceReady has status True when the Decorator has had a
 	// Pub/Sub topic created for it.
 	DecoratorConditionServiceReady apis.ConditionType = "ServiceReady"
+
+	// DecoratorConditionSinkProvided has status True when the Decorator
+	// has been configured with a sink target.
+	DecoratorConditionSinkProvided apis.ConditionType = "SinkProvided"
 )
 
 // DecoratorStatus represents the current state of a Decorator.
@@ -92,6 +104,11 @@ type DecoratorStatus struct {
 	//
 	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
 	duckv1beta1.AddressStatus `json:",inline"`
+
+	// SinkURI is the current active sink URI that has been configured for the
+	// Decorator.
+	// +optional
+	SinkURI string `json:"sinkUri,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

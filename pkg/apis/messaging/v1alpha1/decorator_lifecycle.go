@@ -37,6 +37,25 @@ func (ds *DecoratorStatus) InitializeConditions() {
 	decoratorCondSet.Manage(ds).InitializeConditions()
 }
 
+// MarkSink sets the condition that the source has a sink configured.
+func (s *DecoratorStatus) MarkSink(sink *apis.URL) {
+	var uri string
+	if sink != nil {
+		uri = sink.String()
+	}
+	s.SinkURI = uri
+	if len(uri) > 0 {
+		decoratorCondSet.Manage(s).MarkTrue(DecoratorConditionSinkProvided)
+	} else {
+		decoratorCondSet.Manage(s).MarkUnknown(DecoratorConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+	}
+}
+
+// MarkNoSink sets the condition that the source does not have a sink configured.
+func (s *DecoratorStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
+	decoratorCondSet.Manage(s).MarkFalse(DecoratorConditionSinkProvided, reason, messageFormat, messageA...)
+}
+
 // SetAddress updates the Addressable status of the Decorator and propagates a
 // url status to the Addressable status condition based on url.
 func (ds *DecoratorStatus) SetAddress(url *apis.URL) {
@@ -72,4 +91,15 @@ func (ds *DecoratorStatus) MarkNoService(reason, messageFormat string, messageA 
 // the expected service name for this decorator.
 func (ds *DecoratorStatus) MarkServiceNotOwned(messageFormat string, messageA ...interface{}) {
 	decoratorCondSet.Manage(ds).MarkFalse(DecoratorConditionServiceReady, "NotOwned", messageFormat, messageA...)
+}
+
+func (ds *DecoratorStatus) PropagateServiceStatus(ready *apis.Condition) {
+	switch {
+	case ready == nil:
+		ds.MarkServiceOperating("ServiceStatus", "Decorator Service has no Ready type status.")
+	case ready.IsTrue():
+		ds.MarkServiceReady()
+	case ready.IsFalse():
+		ds.MarkNoService(ready.Reason, ready.Message)
+	}
 }
