@@ -21,7 +21,7 @@ required = [
 
 [[override]]
   name = "knative.dev/pkg"
-  branch = "release-0.8"
+  branch = "master"
 
 # This is a preemptive override.
 [[override]]
