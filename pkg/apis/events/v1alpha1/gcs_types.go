@@ -20,8 +20,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
-	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // +genclient
@@ -37,7 +38,7 @@ type GCS struct {
 }
 
 // Check that GCS implements the Conditions duck type.
-var _ = duck.VerifyType(&GCS{}, &duckv1alpha1.Conditions{})
+var _ = duck.VerifyType(&GCS{}, &duckv1beta1.Conditions{})
 
 // GCSSpec is the spec for a GCS resource
 type GCSSpec struct {
@@ -92,30 +93,29 @@ type GCSSpec struct {
 
 const (
 	// GCSConditionReady has status True when the GCS is ready to send events.
-	GCSConditionReady = duckv1alpha1.ConditionReady
+	GCSConditionReady = apis.ConditionReady
 
-	// PubSubSourceReady has status True when the underlying GCP PubSub Source is ready
-	PubSubSourceReady duckv1alpha1.ConditionType = "PubSubSourceReady"
+	// PullSubscriptionReady has status True when the underlying PullSubscription is ready
+	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
 
 	// PubSubTopicReady has status True when the underlying GCP PubSub topic is ready
-	PubSubTopicReady duckv1alpha1.ConditionType = "PubSubTopicReady"
+	PubSubTopicReady apis.ConditionType = "PubSubTopicReady"
 
 	// GCSReady has status True when GCS has been configured properly to send Notification events
-	GCSReady duckv1alpha1.ConditionType = "GCSReady"
+	GCSReady apis.ConditionType = "GCSReady"
 )
 
-var gcsSourceCondSet = duckv1alpha1.NewLivingConditionSet(
+var gcsSourceCondSet = apis.NewLivingConditionSet(
 	PubSubSourceReady,
 	PubSubTopicReady,
 	GCSReady)
 
 // GCSStatus is the status for a GCS resource
 type GCSStatus struct {
-	// Conditions holds the state of a source at a point in time.
-	// +optional
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	Conditions duckv1alpha1.Conditions `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	// inherits duck/v1beta1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1beta1.Status `json:",inline"`
 
 	// TODO: add conditions and other stuff here...
 	// NotificationID is the ID that GCS identifies this notification as.
@@ -129,50 +129,6 @@ type GCSStatus struct {
 	// SinkURI is the current active sink URI that has been configured for the GCS.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
-}
-
-// GetCondition returns the condition currently associated with the given type, or nil.
-func (s *GCSStatus) GetCondition(t duckv1alpha1.ConditionType) *duckv1alpha1.Condition {
-	return gcsSourceCondSet.Manage(s).GetCondition(t)
-}
-
-// IsReady returns true if the resource is ready overall.
-func (s *GCSStatus) IsReady() bool {
-	return gcsSourceCondSet.Manage(s).IsHappy()
-}
-
-// InitializeConditions sets relevant unset conditions to Unknown state.
-func (s *GCSStatus) InitializeConditions() {
-	gcsSourceCondSet.Manage(s).InitializeConditions()
-}
-
-// MarkPubSubNotSourceReady sets the condition that the underlying PubSub source is not ready and why
-func (s *GCSStatus) MarkPubSubSourceNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PubSubSourceReady, reason, messageFormat, messageA...)
-}
-
-// MarkPubSubSourceReady sets the condition that the underlying PubSub source is ready
-func (s *GCSStatus) MarkPubSubSourceReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PubSubSourceReady)
-}
-
-// MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why
-func (s *GCSStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PubSubTopicReady, reason, messageFormat, messageA...)
-}
-
-// MarkPubSubTopicReady sets the condition that the underlying PubSub topic was created successfully
-func (s *GCSStatus) MarkPubSubTopicReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PubSubTopicReady)
-}
-
-// MarkGCSNotReady sets the condition that the GCS has been configured to send Notifications
-func (s *GCSStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(GCSReady, reason, messageFormat, messageA...)
-}
-
-func (s *GCSStatus) MarkGCSReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(GCSReady)
 }
 
 func (gcsSource *GCS) GetGroupVersionKind() schema.GroupVersionKind {

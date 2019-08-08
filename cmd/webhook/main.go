@@ -33,7 +33,8 @@ import (
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
 
-	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -142,7 +143,8 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD, factori
 
 func main() {
 	handlers := map[schema.GroupVersionKind]webhook.GenericCRD{
-		MessagingV1alpha1.SchemeGroupVersion.WithKind("Channel"):       &MessagingV1alpha1.Channel{},
+		messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"):       &messagingv1alpha1.Channel{},
+		events1alpha1.SchemeGroupVersion.WithKind("GCS"):               &eventsv1alpha1.GCS{},
 		pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
 		pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 	}

@@ -60,6 +60,21 @@ rules:
     - patch
 
 - apiGroups:
+    - events.cloud.run
+  resources:
+    - gcses
+  verbs: *everything
+
+- apiGroups:
+    - events.cloud.run
+  resources:
+    - gcses/status
+  verbs:
+    - get
+    - update
+    - patch
+
+- apiGroups:
     - admissionregistration.k8s.io
   resources:
     - mutatingwebhookconfigurations
