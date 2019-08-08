@@ -46,7 +46,7 @@ onBranchEnsure () { # 1=branch 2=import
 
 onBranchEnsure master knative.dev/pkg
 onBranchEnsure master knative.dev/serving
-onBranchEnsure master github.com/knative/eventing
+onBranchEnsure master knative.dev/eventing
 
 echo '🐎 ./hack/update-codegen.sh'
 ./hack/update-codegen.sh

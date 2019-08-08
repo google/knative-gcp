@@ -343,14 +343,6 @@
   version = "v1.4.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:a9f64683b2be58b2b7b11972346940f60989363009e0366972544d92358e94e0"
-  name = "github.com/knative/eventing"
-  packages = ["pkg/apis/duck/v1alpha1"]
-  pruneopts = "NUT"
-  revision = "4005ecf8042e491ff53c8c21005ea2d6cefc0892"
-
-[[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
   name = "github.com/markbates/inflect"
   packages = ["."]
@@ -1097,7 +1089,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5e2eff8a4b0de901e3183489bcfa0a303ff249e74939b2259578ea23a093b5b8"
+  digest = "1:4fc0f350823be75042352ef9e62238162886c2624161e08a029de2ea4f50b299"
+  name = "knative.dev/eventing"
+  packages = ["pkg/apis/duck/v1alpha1"]
+  pruneopts = "NUT"
+  revision = "ebe59f22c47c09881f723fb73fe21c7441528281"
+
+[[projects]]
+  branch = "master"
+  digest = "1:c375d4501b58273f93be7fb531b551406dc57247a865520e48e724cee9398ded"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1159,11 +1159,11 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "a6e24ef7e5b297969d6a87a45ac3ec6d7b3c5f0f"
+  revision = "4707aad818fed9883f7d5255dcbf67b9382260e2"
 
 [[projects]]
   branch = "master"
-  digest = "1:c0b128bb057e6686ae6547bf144b2cfbb5d22eb22d0d9458524d04fb45f2a250"
+  digest = "1:21550babcf96587d9587a3553704c0de11edce519876956eb3c32b22fb4050c6"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1209,7 +1209,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "c4a03285b40d6c2550b1317e30a697ff4237d072"
+  revision = "70bab11e5a394a4e09414ec520fde4fb755dd048"
 
 [[projects]]
   branch = "master"
@@ -1236,7 +1236,6 @@
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
-    "github.com/knative/eventing/pkg/apis/duck/v1alpha1",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
@@ -1288,6 +1287,7 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
+    "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
     "knative.dev/pkg/apis/duck/v1alpha1",

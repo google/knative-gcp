@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	duckv1alpha1 "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"

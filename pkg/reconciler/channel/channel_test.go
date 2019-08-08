@@ -34,7 +34,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/tracker"
 
-	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
