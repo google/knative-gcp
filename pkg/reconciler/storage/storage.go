@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gcs
+package storage
 
 import (
 	"context"
@@ -25,12 +25,9 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	//	"k8s.io/client-go/kubernetes"
-	//	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	//	"knative.dev/pkg/logging/logkey"
 
 	"cloud.google.com/go/pubsub"
 	storageClient "cloud.google.com/go/storage"
@@ -39,20 +36,17 @@ import (
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	"github.com/google/knative-gcp/pkg/duck"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	//	gcssourcescheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
-	//	informers "github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1"
 	pubsubsourceinformers "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/gcs/resources"
+	"github.com/google/knative-gcp/pkg/duck"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	//	"k8s.io/client-go/dynamic"
 )
 
 const (
