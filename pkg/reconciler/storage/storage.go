@@ -18,6 +18,7 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -34,7 +35,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	pubsubsourceinformers "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
@@ -46,12 +46,13 @@ import (
 	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "PullSubscriptions"
+	ReconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
 )
@@ -62,8 +63,7 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// gcssourceclientset is a clientset for our own API group
-	storageclientset clientset.Interface
-	storageLister    listers.StorageLister
+	storageLister listers.StorageLister
 
 	// For dealing with
 	pubsubClient           pubsubsourceclientset.Interface
@@ -96,23 +96,31 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Don't modify the informers copy
 	csr := original.DeepCopy()
 
-	err = c.reconcileStorageSource(ctx, csr)
+	reconcileErr := c.reconcile(ctx, csr)
 
 	if equality.Semantic.DeepEqual(original.Status, csr.Status) &&
 		equality.Semantic.DeepEqual(original.ObjectMeta, csr.ObjectMeta) {
-		// If we didn't change anything (status or finalizers) then don't
-		// call update.
+		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 	} else if _, err := c.updateStatus(ctx, csr); err != nil {
+		// TODO: record the event (c.Recorder.Eventf(...
 		c.Logger.Warn("Failed to update Storage Source status", zap.Error(err))
 		return err
 	}
-	return err
+
+	if reconcileErr != nil {
+		// TODO: record the event (c.Recorder.Eventf(...
+		return reconcileErr
+	}
+
+	return nil
 }
 
-func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.Storage) error {
+func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error {
+	csr.Status.InitializeConditions()
+
 	// See if the source has been deleted.
 	deletionTimestamp := csr.DeletionTimestamp
 
@@ -131,24 +139,34 @@ func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.S
 	c.Logger.Infof("Resolved Sink URI to %q", uri)
 
 	if deletionTimestamp != nil {
-		err := c.deleteNotification(csr)
+		err := c.deleteNotification(ctx, csr)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(csr.Spec.Project, csr.Status.Topic)
+		err = c.deleteTopic(ctx, csr.Spec.Project, csr.Status.Topic)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Topic: %s", err)
 			return err
 		}
 		csr.Status.Topic = ""
+		err = c.deletePullSubscription(ctx, csr)
+		if err != nil {
+			c.Logger.Infof("Unable to delete the PullSubscription: %s", err)
+			return err
+		}
 		c.removeFinalizer(csr)
 		return nil
 	}
 
-	csr.Status.InitializeConditions()
+	// Ensure that there's finalizer there, since we're about to attempt to
+	// change external state with the topic, so we need to clean it up.
+	err = c.ensureFinalizer(csr)
+	if err != nil {
+		return err
+	}
 
-	err = c.reconcileTopic(csr)
+	err = c.reconcileTopic(ctx, csr)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile topic %s", err)
 		csr.Status.MarkPubSubTopicNotReady(fmt.Sprintf("Failed to create GCP PubSub Topic: %s", err), "")
@@ -157,12 +175,10 @@ func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.S
 
 	csr.Status.MarkPubSubTopicReady()
 
-	c.addFinalizer(csr)
-
 	csr.Status.SinkURI = uri
 
 	// Make sure PullSubscription is in the state we expect it to be in.
-	pubsub, err := c.reconcilePullSubscription(csr)
+	pubsub, err := c.reconcilePullSubscription(ctx, csr)
 	if err != nil {
 		// TODO: Update status appropriately
 		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
@@ -180,7 +196,7 @@ func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.S
 		csr.Status.MarkPullSubscriptionReady()
 	}
 
-	notification, err := c.reconcileNotification(csr)
+	notification, err := c.reconcileNotification(ctx, csr)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
@@ -195,7 +211,7 @@ func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.S
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -211,8 +227,21 @@ func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.Storage) (*pubsubso
 	return nil, err
 }
 
-func (c *Reconciler) reconcileNotification(storage *v1alpha1.Storage) (*storageClient.Notification, error) {
-	ctx := context.Background()
+func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.Storage) error {
+	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
+	err := pubsubClient.Delete(csr.Name, nil)
+	if err == nil {
+		// TODO: Handle any updates...
+		c.Logger.Infof("Deleted PullSubscription: %+v", csr.Name)
+		return nil
+	}
+	if errors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (*storageClient.Notification, error) {
 	sc, err := storageClient.NewClient(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to create storage client: %s", err)
@@ -220,7 +249,6 @@ func (c *Reconciler) reconcileNotification(storage *v1alpha1.Storage) (*storageC
 	}
 
 	bucket := sc.Bucket(storage.Spec.Bucket)
-
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to fetch existing notifications: %s", err)
@@ -240,7 +268,7 @@ func (c *Reconciler) reconcileNotification(storage *v1alpha1.Storage) (*storageC
 	}
 
 	// Add our own event type here...
-	customAttributes["ce-type"] = "google.storage"
+	customAttributes["knative-gcp"] = "google.storage"
 
 	c.Logger.Infof("Creating a notification on bucket %s", storage.Spec.Bucket)
 	notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
@@ -261,14 +289,13 @@ func (c *Reconciler) reconcileNotification(storage *v1alpha1.Storage) (*storageC
 	return notification, nil
 }
 
-func (c *Reconciler) reconcileTopic(csr *v1alpha1.Storage) error {
+func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) error {
 	if csr.Status.Topic == "" {
 		c.Logger.Infof("No topic found in status, creating a unique one")
 		// Create a UUID for the topic. prefix with storage- to make it conformant.
 		csr.Status.Topic = fmt.Sprintf("storage-%s", uuid.New().String())
 	}
 
-	ctx := context.Background()
 	psc, err := pubsub.NewClient(ctx, csr.Spec.Project)
 	if err != nil {
 		return err
@@ -294,18 +321,18 @@ func (c *Reconciler) reconcileTopic(csr *v1alpha1.Storage) error {
 	return nil
 }
 
-func (c *Reconciler) deleteTopic(project string, topic string) error {
+func (c *Reconciler) deleteTopic(ctx context.Context, project string, topic string) error {
 	// No topic, no delete...
 	if topic == "" {
 		return nil
 	}
-	ctx := context.Background()
+
 	psc, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		return err
 	}
 	t := psc.Topic(topic)
-	err = t.Delete(context.Background())
+	err = t.Delete(ctx)
 	if err == nil {
 		c.Logger.Infof("Deleted topic %q", topic)
 		return nil
@@ -323,11 +350,11 @@ func (c *Reconciler) deleteTopic(project string, topic string) error {
 // deleteNotification looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
 // in the Storage, remove it.
-func (c *Reconciler) deleteNotification(storage *v1alpha1.Storage) error {
+func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.Storage) error {
 	if storage.Status.NotificationID == "" {
 		return nil
 	}
-	ctx := context.Background()
+
 	sc, err := storageClient.NewClient(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to create storage client: %s", err)
@@ -335,32 +362,78 @@ func (c *Reconciler) deleteNotification(storage *v1alpha1.Storage) error {
 	}
 
 	bucket := sc.Bucket(storage.Spec.Bucket)
-	c.Logger.Infof("Deleting notification as: %q", storage.Status.NotificationID)
-	err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
-	if err == nil {
-		c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
-		return nil
+	notifications, err := bucket.Notifications(ctx)
+	if err != nil {
+		c.Logger.Infof("Failed to fetch existing notifications: %s", err)
+		return err
 	}
 
-	if st, ok := gstatus.FromError(err); !ok {
-		c.Logger.Infof("Unknown error from the cloud storage client: %s", err)
-		return err
-	} else if st.Code() != codes.NotFound {
-		return err
+	// This is bit wonky because, we could always just try to delete, but figuring out
+	// if it's NotFound seems to not really work, so, we'll try checking first
+	// the list and only then deleting.
+	if storage.Status.NotificationID != "" {
+		if existing, ok := notifications[storage.Status.NotificationID]; ok {
+			c.Logger.Infof("Found existing notification: %+v", existing)
+			c.Logger.Infof("Deleting notification as: %q", storage.Status.NotificationID)
+			err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
+			if err == nil {
+				c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
+				return nil
+			}
+
+			if st, ok := gstatus.FromError(err); !ok {
+				c.Logger.Infof("error from the cloud storage client: %s", err)
+				return err
+			} else if st.Code() != codes.NotFound {
+				return err
+			}
+		}
 	}
+
+	// Clear the notification ID
+	storage.Status.NotificationID = ""
 	return nil
 }
 
-func (c *Reconciler) addFinalizer(csr *v1alpha1.Storage) {
+func (c *Reconciler) ensureFinalizer(csr *v1alpha1.Storage) error {
 	finalizers := sets.NewString(csr.Finalizers...)
-	finalizers.Insert(finalizerName)
-	csr.Finalizers = finalizers.List()
+	if finalizers.Has(finalizerName) {
+		return nil
+	}
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      append(csr.Finalizers, finalizerName),
+			"resourceVersion": csr.ResourceVersion,
+		},
+	}
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+	_, err = c.RunClientSet.EventsV1alpha1().Storages(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
+	return err
+
 }
 
-func (c *Reconciler) removeFinalizer(csr *v1alpha1.Storage) {
-	finalizers := sets.NewString(csr.Finalizers...)
-	finalizers.Delete(finalizerName)
-	csr.Finalizers = finalizers.List()
+func (c *Reconciler) removeFinalizer(csr *v1alpha1.Storage) error {
+	// Only remove our finalizer if it's the first one.
+	if len(csr.Finalizers) == 0 || csr.Finalizers[0] != finalizerName {
+		return nil
+	}
+
+	// For parity with merge patch for adding, also use patch for removing
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      csr.Finalizers[1:],
+			"resourceVersion": csr.ResourceVersion,
+		},
+	}
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+	_, err = c.RunClientSet.EventsV1alpha1().Storages(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
+	return err
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage) (*v1alpha1.Storage, error) {
