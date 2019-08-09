@@ -28,32 +28,32 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// GCS is a specification for a GCS Source resource
-type GCS struct {
+// Storage is a specification for a Google Cloud Storage Source resource
+type Storage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   GCSSpec   `json:"spec"`
-	Status GCSStatus `json:"status"`
+	Spec   StorageSpec   `json:"spec"`
+	Status StorageStatus `json:"status"`
 }
 
-// Check that GCS implements the Conditions duck type.
-var _ = duck.VerifyType(&GCS{}, &duckv1beta1.Conditions{})
+// Check that Storage implements the Conditions duck type.
+var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Conditions{})
 
-// GCSSpec is the spec for a GCS resource
-type GCSSpec struct {
+// StorageSpec is the spec for a Storage resource
+type StorageSpec struct {
 	// GCSCredsSecret is the credential to use to create the Notification on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	GCSCredsSecret corev1.SecretKeySelector `json:"gcsCredsSecret"`
+	GCSSecret corev1.SecretKeySelector `json:"gcsSecret"`
 
-	// GcpCredsSecret is the credential to use to poll the GCP PubSub Subscription. It is not used
-	// to create or delete the Subscription, only to poll it. The value of the secret entry must be
-	// a service account key in the JSON format (see
+	// PullSubsciptionSecret is the credential to use for the GCP PubSub Subscription.
+	// It is used for the PullSubscription that is used to deliver events from GCS.
+	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// If omitted, uses GCSCredsSecret from above
+	// If omitted, uses GCSSecret from above
 	// +optional
-	GcpCredsSecret *corev1.SecretKeySelector `json:"gcpCredsSecret,omitempty"`
+	PullSubscriptionSecret *corev1.SecretKeySelector `json:"pullSubscriptionSecret,omitempty"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
@@ -62,13 +62,14 @@ type GCSSpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// GoogleCloudProject is the ID of the Google Cloud Project that the PubSub Topic exists in.
-	GoogleCloudProject string `json:"googleCloudProject,omitempty"`
+	// Project is the ID of the Google Cloud Project that the Bucket being
+	// subscribed to exists in.
+	Project string `json:"Project,omitempty"`
 
-	// Bucket to subscribe to
+	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
 
-	// EventTypes to subscribe to
+	// EventTypes to subscribe to.
 	EventTypes []string `json:"eventTypes,omitempty"`
 
 	// ObjectNamePrefix limits the notifications to objects with this prefix
@@ -91,8 +92,8 @@ type GCSSpec struct {
 }
 
 const (
-	// GCSConditionReady has status True when the GCS is ready to send events.
-	GCSConditionReady = apis.ConditionReady
+	// StorageConditionReady has status True when the Storage is ready to send events.
+	StorageConditionReady = apis.ConditionReady
 
 	// PullSubscriptionReady has status True when the underlying PullSubscription is ready
 	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
@@ -109,8 +110,8 @@ var gcsSourceCondSet = apis.NewLivingConditionSet(
 	PubSubTopicReady,
 	GCSReady)
 
-// GCSStatus is the status for a GCS resource
-type GCSStatus struct {
+// StorageStatus is the status for a GCS resource
+type StorageStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
@@ -130,16 +131,16 @@ type GCSStatus struct {
 	SinkURI string `json:"sinkUri,omitempty"`
 }
 
-func (gcsSource *GCS) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("GCS")
+func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("Storage")
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// GCSList is a list of GCS resources
-type GCSList struct {
+// StorageList is a list of Storage resources
+type StorageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []GCS `json:"items"`
+	Items []Storage `json:"items"`
 }

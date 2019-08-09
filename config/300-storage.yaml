@@ -19,7 +19,7 @@ metadata:
     eventing.knative.dev/source: "true"
     events.cloud.run/release: devel
     events.cloud.run/crd-install: "true"
-  name: gcses.events.cloud.run
+  name: storages.events.cloud.run
 spec:
   group: events.cloud.run
   version: v1alpha1
@@ -27,9 +27,9 @@ spec:
     categories:
     - all
     - knative
-    - gcs
-    kind: GCS
-    plural: gcses
+    - storage
+    kind: Storage
+    plural: storages
   scope: Namespaced
   subresources:
     status: {}

@@ -20,10 +20,10 @@ import (
 	"context"
 )
 
-func (g *GCS) SetDefaults(ctx context.Context) {
+func (g *Storage) SetDefaults(ctx context.Context) {
 	g.Spec.SetDefaults(ctx)
 }
 
-func (gs *GCSSpec) SetDefaults(ctx context.Context) {
+func (gs *StorageSpec) SetDefaults(ctx context.Context) {
 	// TODO? What defaults?
 }

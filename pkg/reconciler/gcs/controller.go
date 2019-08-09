@@ -30,14 +30,14 @@ import (
 
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 
-	gcsinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/gcs"
+	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 )
 
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-gcs-source-controller"
+	controllerAgentName = "cloud-run-events-storage-source-controller"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -49,20 +49,20 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
-	gcsInformer := gcsinformers.Get(ctx)
+	storageInformer := storageinformers.Get(ctx)
 
 	c := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		gcsLister:              gcsInformer.Lister(),
+		storageLister:          storageInformer.Lister(),
 		pullSubscriptionLister: pullsubscriptionInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	gcsInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("GCS")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

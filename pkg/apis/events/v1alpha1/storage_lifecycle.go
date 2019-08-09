@@ -21,46 +21,46 @@ import (
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *GCSStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return gcsSourceCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
-func (s *GCSStatus) IsReady() bool {
+func (s *StorageStatus) IsReady() bool {
 	return gcsSourceCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (s *GCSStatus) InitializeConditions() {
+func (s *StorageStatus) InitializeConditions() {
 	gcsSourceCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
 // source is not ready and why
-func (s *GCSStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *StorageStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready
-func (s *GCSStatus) MarkPullSubscriptionReady() {
+func (s *StorageStatus) MarkPullSubscriptionReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
 }
 
 // MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why
-func (s *GCSStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *StorageStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(PubSubTopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkPubSubTopicReady sets the condition that the underlying PubSub topic was created successfully
-func (s *GCSStatus) MarkPubSubTopicReady() {
+func (s *StorageStatus) MarkPubSubTopicReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(PubSubTopicReady)
 }
 
-// MarkGCSNotReady sets the condition that the GCS has been configured to send Notifications
-func (s *GCSStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkStorageNotReady sets the condition that the GCS has been configured to send Notifications
+func (s *StorageStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
 	gcsSourceCondSet.Manage(s).MarkFalse(GCSReady, reason, messageFormat, messageA...)
 }
 
-func (s *GCSStatus) MarkGCSReady() {
+func (s *StorageStatus) MarkGCSReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(GCSReady)
 }

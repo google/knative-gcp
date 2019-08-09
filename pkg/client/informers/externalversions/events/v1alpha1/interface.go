@@ -24,8 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// GCSs returns a GCSInformer.
-	GCSs() GCSInformer
+	// Storages returns a StorageInformer.
+	Storages() StorageInformer
 }
 
 type version struct {
@@ -39,7 +39,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// GCSs returns a GCSInformer.
-func (v *version) GCSs() GCSInformer {
-	return &gCSInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Storages returns a StorageInformer.
+func (v *version) Storages() StorageInformer {
+	return &storageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

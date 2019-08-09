@@ -33,7 +33,7 @@ import (
 	//	"knative.dev/pkg/logging/logkey"
 
 	"cloud.google.com/go/pubsub"
-	"cloud.google.com/go/storage"
+	storageClient "cloud.google.com/go/storage"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -68,8 +68,8 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// gcssourceclientset is a clientset for our own API group
-	gcsclientset clientset.Interface
-	gcsLister    listers.GCSLister
+	storageclientset clientset.Interface
+	storageLister    listers.StorageLister
 
 	// For dealing with
 	pubsubClient           pubsubsourceclientset.Interface
@@ -89,11 +89,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the Gcs resource with this namespace/name
-	original, err := c.gcsLister.GCSs(namespace).Get(name)
+	// Get the Storage resource with this namespace/name
+	original, err := c.storageLister.Storages(namespace).Get(name)
 	if errors.IsNotFound(err) {
-		// The Gcs resource may no longer exist, in which case we stop processing.
-		runtime.HandleError(fmt.Errorf("gcs '%s' in work queue no longer exists", key))
+		// The Storage resource may no longer exist, in which case we stop processing.
+		runtime.HandleError(fmt.Errorf("storage '%s' in work queue no longer exists", key))
 		return nil
 	} else if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Don't modify the informers copy
 	csr := original.DeepCopy()
 
-	err = c.reconcileGCSSource(ctx, csr)
+	err = c.reconcileStorageSource(ctx, csr)
 
 	if equality.Semantic.DeepEqual(original.Status, csr.Status) &&
 		equality.Semantic.DeepEqual(original.ObjectMeta, csr.ObjectMeta) {
@@ -112,13 +112,13 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 	} else if _, err := c.updateStatus(ctx, csr); err != nil {
-		c.Logger.Warn("Failed to update GCS Source status", zap.Error(err))
+		c.Logger.Warn("Failed to update Storage Source status", zap.Error(err))
 		return err
 	}
 	return err
 }
 
-func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) error {
+func (c *Reconciler) reconcileStorageSource(ctx context.Context, csr *v1alpha1.Storage) error {
 	// See if the source has been deleted.
 	deletionTimestamp := csr.DeletionTimestamp
 
@@ -142,7 +142,7 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(csr.Spec.GoogleCloudProject, csr.Status.Topic)
+		err = c.deleteTopic(csr.Spec.Project, csr.Status.Topic)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Topic: %s", err)
 			return err
@@ -189,19 +189,19 @@ func (c *Reconciler) reconcileGCSSource(ctx context.Context, csr *v1alpha1.GCS) 
 	notification, err := c.reconcileNotification(csr)
 	if err != nil {
 		// TODO: Update status with this...
-		c.Logger.Infof("Failed to reconcile GCS Notification: %s", err)
-		csr.Status.MarkGCSNotReady(fmt.Sprintf("Failed to create GCS notification: %s", err), "")
+		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
+		csr.Status.MarkGCSNotReady(fmt.Sprintf("Failed to create Storage notification: %s", err), "")
 		return err
 	}
 
 	csr.Status.MarkGCSReady()
 
-	c.Logger.Infof("Reconciled GCS notification: %+v", notification)
+	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification.ID
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.GCS) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -217,15 +217,15 @@ func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.GCS) (*pubsubsource
 	return nil, err
 }
 
-func (c *Reconciler) reconcileNotification(gcs *v1alpha1.GCS) (*storage.Notification, error) {
+func (c *Reconciler) reconcileNotification(storage *v1alpha1.Storage) (*storageClient.Notification, error) {
 	ctx := context.Background()
-	gcsClient, err := storage.NewClient(ctx)
+	sc, err := storageClient.NewClient(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to create storage client: %s", err)
 		return nil, err
 	}
 
-	bucket := gcsClient.Bucket(gcs.Spec.Bucket)
+	bucket := sc.Bucket(storage.Spec.Bucket)
 
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
@@ -233,28 +233,28 @@ func (c *Reconciler) reconcileNotification(gcs *v1alpha1.GCS) (*storage.Notifica
 		return nil, err
 	}
 
-	if gcs.Status.NotificationID != "" {
-		if existing, ok := notifications[gcs.Status.NotificationID]; ok {
+	if storage.Status.NotificationID != "" {
+		if existing, ok := notifications[storage.Status.NotificationID]; ok {
 			c.Logger.Infof("Found existing notification: %+v", existing)
 			return existing, nil
 		}
 	}
 
 	customAttributes := make(map[string]string)
-	for k, v := range gcs.Spec.CustomAttributes {
+	for k, v := range storage.Spec.CustomAttributes {
 		customAttributes[k] = v
 	}
 
 	// Add our own event type here...
-	customAttributes["ce-type"] = "google.gcs"
+	customAttributes["ce-type"] = "google.storage"
 
-	c.Logger.Infof("Creating a notification on bucket %s", gcs.Spec.Bucket)
-	notification, err := bucket.AddNotification(ctx, &storage.Notification{
-		TopicProjectID:   gcs.Spec.GoogleCloudProject,
-		TopicID:          gcs.Status.Topic,
-		PayloadFormat:    storage.JSONPayload,
-		EventTypes:       gcs.Spec.EventTypes,
-		ObjectNamePrefix: gcs.Spec.ObjectNamePrefix,
+	c.Logger.Infof("Creating a notification on bucket %s", storage.Spec.Bucket)
+	notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
+		TopicProjectID:   storage.Spec.Project,
+		TopicID:          storage.Status.Topic,
+		PayloadFormat:    storageClient.JSONPayload,
+		EventTypes:       storage.Spec.EventTypes,
+		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
 		CustomAttributes: customAttributes,
 	})
 
@@ -267,15 +267,15 @@ func (c *Reconciler) reconcileNotification(gcs *v1alpha1.GCS) (*storage.Notifica
 	return notification, nil
 }
 
-func (c *Reconciler) reconcileTopic(csr *v1alpha1.GCS) error {
+func (c *Reconciler) reconcileTopic(csr *v1alpha1.Storage) error {
 	if csr.Status.Topic == "" {
 		c.Logger.Infof("No topic found in status, creating a unique one")
-		// Create a UUID for the topic. prefix with gcs- to make it conformant.
-		csr.Status.Topic = fmt.Sprintf("gcs-%s", uuid.New().String())
+		// Create a UUID for the topic. prefix with storage- to make it conformant.
+		csr.Status.Topic = fmt.Sprintf("storage-%s", uuid.New().String())
 	}
 
 	ctx := context.Background()
-	psc, err := pubsub.NewClient(ctx, csr.Spec.GoogleCloudProject)
+	psc, err := pubsub.NewClient(ctx, csr.Spec.Project)
 	if err != nil {
 		return err
 	}
@@ -328,23 +328,23 @@ func (c *Reconciler) deleteTopic(project string, topic string) error {
 
 // deleteNotification looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
-// in the GCS, remove it.
-func (c *Reconciler) deleteNotification(gcs *v1alpha1.GCS) error {
-	if gcs.Status.NotificationID == "" {
+// in the Storage, remove it.
+func (c *Reconciler) deleteNotification(storage *v1alpha1.Storage) error {
+	if storage.Status.NotificationID == "" {
 		return nil
 	}
 	ctx := context.Background()
-	gcsClient, err := storage.NewClient(ctx)
+	sc, err := storageClient.NewClient(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to create storage client: %s", err)
 		return err
 	}
 
-	bucket := gcsClient.Bucket(gcs.Spec.Bucket)
-	c.Logger.Infof("Deleting notification as: %q", gcs.Status.NotificationID)
-	err = bucket.DeleteNotification(ctx, gcs.Status.NotificationID)
+	bucket := sc.Bucket(storage.Spec.Bucket)
+	c.Logger.Infof("Deleting notification as: %q", storage.Status.NotificationID)
+	err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
 	if err == nil {
-		c.Logger.Infof("Deleted Notification: %q", gcs.Status.NotificationID)
+		c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
 		return nil
 	}
 
@@ -357,20 +357,20 @@ func (c *Reconciler) deleteNotification(gcs *v1alpha1.GCS) error {
 	return nil
 }
 
-func (c *Reconciler) addFinalizer(csr *v1alpha1.GCS) {
+func (c *Reconciler) addFinalizer(csr *v1alpha1.Storage) {
 	finalizers := sets.NewString(csr.Finalizers...)
 	finalizers.Insert(finalizerName)
 	csr.Finalizers = finalizers.List()
 }
 
-func (c *Reconciler) removeFinalizer(csr *v1alpha1.GCS) {
+func (c *Reconciler) removeFinalizer(csr *v1alpha1.Storage) {
 	finalizers := sets.NewString(csr.Finalizers...)
 	finalizers.Delete(finalizerName)
 	csr.Finalizers = finalizers.List()
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.GCS) (*v1alpha1.GCS, error) {
-	source, err := c.gcsLister.GCSs(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage) (*v1alpha1.Storage, error) {
+	source, err := c.storageLister.Storages(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -383,14 +383,14 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.GCS) (*
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := c.RunClientSet.EventsV1alpha1().GCSs(desired.Namespace).UpdateStatus(existing)
+	src, err := c.RunClientSet.EventsV1alpha1().Storages(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("GCS %q became ready after %v", source.Name, duration)
+		c.Logger.Infof("Storage %q became ready after %v", source.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("GCS", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for GCS, %v", err)
+		if err := c.StatsReporter.ReportReady("Storage", source.Namespace, source.Name, duration); err != nil {
+			logging.FromContext(ctx).Infof("failed to record ready for Storage, %v", err)
 		}
 	}
 

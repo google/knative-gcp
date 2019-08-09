@@ -62,13 +62,13 @@ rules:
 - apiGroups:
     - events.cloud.run
   resources:
-    - gcses
+    - storages
   verbs: *everything
 
 - apiGroups:
     - events.cloud.run
   resources:
-    - gcses/status
+    - storages/status
   verbs:
     - get
     - update

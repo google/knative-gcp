@@ -26,16 +26,15 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.GCS, topic string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
 		"receive-adapter": "gcssource",
 	}
-	/*
-		pubsubSecret := source.Spec.GCSCredsSecret
-		if source.Spec.GcpCredsSecret != nil {
-			pubsubSecret = *source.Spec.GcpCredsSecret
-		}
-	*/
+
+	pubsubSecret := source.Spec.GCSSecret
+	if source.Spec.PullSubscriptionSecret != nil {
+		pubsubSecret = *source.Spec.PullSubscriptionSecret
+	}
 
 	return &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
@@ -46,14 +45,13 @@ func MakePullSubscription(source *v1alpha1.GCS, topic string) *pubsubv1alpha1.Pu
 				*kmeta.NewControllerRef(source),
 			},
 		},
-		/*
-			Spec: pubsubv1alpha1.GcpPubSubSourceSpec{
-				GcpCredsSecret:     pubsubSecret,
-				GoogleCloudProject: source.Spec.GoogleCloudProject,
-				Topic:              source.Status.Topic,
-				Sink:               source.Spec.Sink,
-				ServiceAccountName: source.Spec.ServiceAccountName,
+		Spec: pubsubv1alpha1.PullSubscriptionSpec{
+			Secret:  &pubsubSecret,
+			Project: source.Spec.Project,
+			Topic:   source.Status.Topic,
+			Sink: pubsubv1alpha1.Destination{
+				ObjectReference: &source.Spec.Sink,
 			},
-		*/
+		},
 	}
 }
