@@ -28,6 +28,7 @@ import (
 
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 
+	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 )
@@ -52,6 +53,7 @@ func NewController(
 	c := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		storageLister:          storageInformer.Lister(),
+		pubsubClient:           pubsubClient.Get(ctx),
 		pullSubscriptionLister: pullsubscriptionInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
@@ -60,6 +62,11 @@ func NewController(
 	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

@@ -98,16 +98,16 @@ spec:
           type: object
         spec:
           properties:
-            gcsCredsSecret:
+            gcsSecret:
               type: object
               description: "Credential to use for creating a GCP notification. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
-            gcpCredsSecret:
+            pullSubscriptionSecret:
               type: object
               description: "Optional credential to use for subscribing to the GCP PubSub topic. If omitted, uses gcsCredsSecret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
             serviceAccountName:
               type: string
               description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
-            googleCloudProject:
+            project:
               type: string
               description: "Google Cloud Project ID to create the scheduler job in."
             bucket:
@@ -132,8 +132,8 @@ spec:
                   - metadataUpdate
                 type: string
           required:
-          - gcsCredsSecret
-          - googleCloudProject
+          - gcsSecret
+          - pullSubscriptionSecret
           - bucket
           - sink
         status:

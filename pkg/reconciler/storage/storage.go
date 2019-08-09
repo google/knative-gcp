@@ -200,12 +200,12 @@ func (c *Reconciler) reconcilePullSubscription(csr *v1alpha1.Storage) (*pubsubso
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
 		// TODO: Handle any updates...
-		c.Logger.Infof("Found existing pubsubsource: %+v", existing)
+		c.Logger.Infof("Found existing PullSubscription: %+v", existing)
 		return existing, nil
 	}
 	if errors.IsNotFound(err) {
 		pubsub := resources.MakePullSubscription(csr, "testing")
-		c.Logger.Infof("Creating service %+v", pubsub)
+		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
 	return nil, err
