@@ -119,7 +119,15 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error {
+	// If notification / topic has been already configured, stash them here
+	// since right below we remove them.
+	notificationID := csr.Status.NotificationID
+	topic := csr.Status.Topic
+
 	csr.Status.InitializeConditions()
+	// And restore them.
+	csr.Status.NotificationID = notificationID
+	csr.Status.Topic = topic
 
 	// See if the source has been deleted.
 	deletionTimestamp := csr.DeletionTimestamp
@@ -136,6 +144,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		// we don't care about the URI if we're deleting, so carry on...
 		uri = ""
 	}
+	csr.Status.SinkURI = uri
 	c.Logger.Infof("Resolved Sink URI to %q", uri)
 
 	if deletionTimestamp != nil {
@@ -174,8 +183,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	}
 
 	csr.Status.MarkPubSubTopicReady()
-
-	csr.Status.SinkURI = uri
 
 	// Make sure PullSubscription is in the state we expect it to be in.
 	pubsub, err := c.reconcilePullSubscription(ctx, csr)
