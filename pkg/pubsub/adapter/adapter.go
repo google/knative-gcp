@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -64,6 +65,14 @@ type Adapter struct {
 
 	// transformer is the cloudevents client to transform received events before sending.
 	transformer cloudevents.Client
+
+	// converters is the map for handling Source specific event
+	// conversions. For example, a GCS event will need to be
+	// converted differently from the PubSub. The key into
+	// this map will be "knative-gcp" CloudEvent attribute.
+	// If there's no such attribute, we assume it's a native
+	// PubSub message and a default one will be used.
+	converters map[string]cloudevents.ConvertFn
 }
 
 // ModeType is the type for mode enum.
@@ -100,6 +109,11 @@ func (a *Adapter) Start(ctx context.Context) error {
 		if a.outbound, err = a.newHTTPClient(a.Sink); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
+	}
+
+	// Add the converters...
+	a.converters = map[string]cloudevents.ConvertFn{
+		"google-storage": converters.ConvertStorage,
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
@@ -151,7 +165,17 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Converting event from transport.")
+
 	if msg, ok := m.(*cepubsub.Message); ok {
+		if a.converters != nil && msg.Attributes != nil {
+			if val, ok := msg.Attributes["knative-gcp"]; ok {
+				logger.Infof("Converting Knative-GCP event: %q", val)
+				if c, ok := a.converters[val]; ok {
+					return c(ctx, m, err)
+				}
+			}
+		}
+
 		tx := cepubsub.TransportContextFrom(ctx)
 		// Make a new event and convert the message payload.
 		event := cloudevents.NewEvent()
