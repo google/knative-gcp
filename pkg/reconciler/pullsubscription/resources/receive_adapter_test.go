@@ -118,6 +118,10 @@ func TestMakeReceiveAdapter(t *testing.T) {
 							Name:      credsVolume,
 							MountPath: credsMountPath,
 						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "metrics",
+							ContainerPort: 9090,
+						}},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: credsVolume,

@@ -85,6 +85,9 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						Name:  "receive-adapter",
 						Image: args.Image,
 						Env: []corev1.EnvVar{{
+							Name:  "METRICS_DOMAIN",
+							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: credsFile,
 						}, {
@@ -109,6 +112,10 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
 							MountPath: credsMountPath,
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "metrics",
+							ContainerPort: 9090,
 						}}},
 					},
 					Volumes: []corev1.Volume{{
