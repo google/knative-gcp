@@ -22,26 +22,19 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
-	if msg == nil {
-		return nil, fmt.Errorf("nill pubsub message")
-	}
+func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent()
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
-	if msg.Attributes != nil {
-		if val, ok := msg.Attributes["notificationConfig"]; ok {
-			event.SetSource(val)
-		} else {
-			return nil, fmt.Errorf("received event did not have notificationConfig")
-		}
-	}
-	event.SetType("google.storage")
+	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
+	event.SetType(v1alpha1.PubSubEventType)
+	event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", sendMode))
 	event.Data = msg.Data
 	event.DataEncoded = true
 	// Attributes are extensions.
@@ -50,5 +43,6 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 			event.SetExtension(k, v)
 		}
 	}
+
 	return &event, nil
 }

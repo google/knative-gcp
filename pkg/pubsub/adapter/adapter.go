@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 )
@@ -55,7 +54,7 @@ type Adapter struct {
 
 	// SendMode describes how the adapter sends events.
 	// One of [binary, structured, push]. Default: binary
-	SendMode ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
+	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -65,36 +64,14 @@ type Adapter struct {
 
 	// transformer is the cloudevents client to transform received events before sending.
 	transformer cloudevents.Client
-
-	// converters is the map for handling Source specific event
-	// conversions. For example, a GCS event will need to be
-	// converted differently from the PubSub. The key into
-	// this map will be "knative-gcp" CloudEvent attribute.
-	// If there's no such attribute, we assume it's a native
-	// PubSub message and a default one will be used.
-	converters map[string]cloudevents.ConvertFn
 }
-
-// ModeType is the type for mode enum.
-type ModeType string
-
-const (
-	// Binary mode is binary encoding.
-	Binary ModeType = "binary"
-	// Structured mode is structured encoding.
-	Structured ModeType = "structured"
-	// Push mode emulates Pub/Sub push encoding.
-	Push ModeType = "push"
-	// DefaultSendMode is the default choice.
-	DefaultSendMode = Binary
-)
 
 // Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
 
 	if a.SendMode == "" {
-		a.SendMode = DefaultSendMode
+		a.SendMode = converters.DefaultSendMode
 	}
 
 	// Receive Events on Pub/Sub.
@@ -109,11 +86,6 @@ func (a *Adapter) Start(ctx context.Context) error {
 		if a.outbound, err = a.newHTTPClient(a.Sink); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
-	}
-
-	// Add the converters...
-	a.converters = map[string]cloudevents.ConvertFn{
-		"google-storage": converters.ConvertStorage,
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
@@ -149,7 +121,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	}
 
 	// If send mode is Push, convert to Pub/Sub Push payload style.
-	if a.SendMode == Push {
+	if a.SendMode == converters.Push {
 		event = ConvertToPush(ctx, event)
 	}
 
@@ -167,34 +139,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 	logger.Debug("Converting event from transport.")
 
 	if msg, ok := m.(*cepubsub.Message); ok {
-		if a.converters != nil && msg.Attributes != nil {
-			if val, ok := msg.Attributes["knative-gcp"]; ok {
-				logger.Infof("Converting Knative-GCP event: %q", val)
-				if c, ok := a.converters[val]; ok {
-					return c(ctx, m, err)
-				}
-			}
-		}
-
-		tx := cepubsub.TransportContextFrom(ctx)
-		// Make a new event and convert the message payload.
-		event := cloudevents.NewEvent()
-		event.SetID(tx.ID)
-		event.SetTime(tx.PublishTime)
-		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
-		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-		event.SetType(v1alpha1.PubSubEventType)
-		event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", a.SendMode))
-		event.Data = msg.Data
-		event.DataEncoded = true
-		// Attributes are extensions.
-		if msg.Attributes != nil && len(msg.Attributes) > 0 {
-			for k, v := range msg.Attributes {
-				event.SetExtension(k, v)
-			}
-		}
-
-		return &event, nil
+		converters.Convert(ctx, msg, a.SendMode)
 	}
 	return nil, err
 }
@@ -224,9 +169,9 @@ func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
 	}
 
 	switch a.SendMode {
-	case Binary, Push:
+	case converters.Binary, converters.Push:
 		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
-	case Structured:
+	case converters.Structured:
 		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
 	}
 
