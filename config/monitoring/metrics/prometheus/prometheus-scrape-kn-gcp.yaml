@@ -1,0 +1,69 @@
+# Cloud Run Events Controller endpoint
+- job_name: cloud-run-events-controller
+  scrape_interval: 3s
+  scrape_timeout: 3s
+  kubernetes_sd_configs:
+  - role: pod
+  relabel_configs:
+  # Scrape only the the targets matching the following metadata
+  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name]
+    action: keep
+    regex: cloud-run-events;controller;metrics
+  # Rename metadata labels to be reader friendly
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: service
+# Cloud Run Events Webhook endpoint
+- job_name: cloud-run-events-webhook
+  scrape_interval: 3s
+  scrape_timeout: 3s
+  kubernetes_sd_configs:
+  - role: pod
+  relabel_configs:
+  # Scrape only the the targets matching the following metadata
+  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name]
+    action: keep
+    regex: cloud-run-events;webhook;metrics
+  # Rename metadata labels to be reader friendly
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+  - source_labels: [__meta_kubernetes_service_name]
+    target_label: service
+# PullSubscription ReceiveAdapter endpoint
+- job_name: pubsub-pull-subscription-receive-adapter
+  scrape_interval: 3s
+  scrape_timeout: 3s
+  kubernetes_sd_configs:
+  - role: pod
+  relabel_configs:
+  # Scrape only the the targets matching the following metadata
+  - source_labels: [__meta_kubernetes_pod_label_events_cloud_run_controller, __meta_kubernetes_pod_container_port_name]
+    action: keep
+    regex: cloud-run-events-pubsub-pullsubscription-controller;metrics
+  # Rename metadata labels to be reader friendly
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+# Topic Publisher endpoint
+- job_name: pubsub-topic-publisher
+  scrape_interval: 3s
+  scrape_timeout: 3s
+  kubernetes_sd_configs:
+  - role: pod
+  relabel_configs:
+  # Scrape only the the targets matching the following metadata
+  - source_labels: [__meta_kubernetes_pod_label_events_cloud_run_controller, __meta_kubernetes_pod_container_port_name]
+    action: keep
+    regex: cloud-run-events-pubsub-topic-controller;metrics
+  # Rename metadata labels to be reader friendly
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: namespace
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+

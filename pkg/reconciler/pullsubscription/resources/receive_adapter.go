@@ -66,7 +66,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Source.Namespace,
-			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
+			Name:            GenerateSubscriptionName(args.Source),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
 			Annotations:     map[string]string{},

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Knative Authors
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
-
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (t *Topic) SetDefaults(ctx context.Context) {
-	t.Spec.SetDefaults(ctx)
-}
+const (
+	defaultSecretName = "google-cloud-key"
+	defaultSecretKey  = "key.json"
+)
 
-func (ts *TopicSpec) SetDefaults(ctx context.Context) {
-	if ts.PropagationPolicy == "" {
-		ts.PropagationPolicy = TopicPolicyCreateNoDelete
-	}
-	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = defaultGoogleCloudSecretSelector()
+// defaultGoogleCloudSecretSelector is the default secret selector used to load
+// the creds for the objects that will auth with Google Cloud.
+func defaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
+	return &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: defaultSecretName,
+		},
+		Key: defaultSecretKey,
 	}
 }
