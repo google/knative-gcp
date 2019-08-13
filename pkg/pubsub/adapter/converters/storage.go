@@ -35,6 +35,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event.SetTime(tx.PublishTime)
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["notificationConfig"]; ok {
+			delete(msg.Attributes, "notificationConfig")
 			event.SetSource(val)
 		} else {
 			return nil, fmt.Errorf("received event did not have notificationConfig")

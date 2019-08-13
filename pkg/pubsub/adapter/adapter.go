@@ -139,7 +139,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 	logger.Debug("Converting event from transport.")
 
 	if msg, ok := m.(*cepubsub.Message); ok {
-		converters.Convert(ctx, msg, a.SendMode)
+		return converters.Convert(ctx, msg, a.SendMode)
 	}
 	return nil, err
 }
