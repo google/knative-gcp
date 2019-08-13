@@ -26,8 +26,9 @@ import (
 
 func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
-		return nil, fmt.Errorf("nill pubsub message")
+		return nil, fmt.Errorf("nil pubsub message")
 	}
+
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent()
