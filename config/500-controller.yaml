@@ -23,11 +23,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      control-plane: cloud-run-events-controller
+      app: cloud-run-events-controller
   template:
     metadata:
       labels:
-        control-plane: cloud-run-events-controller
+        app: cloud-run-events-controller
     spec:
       serviceAccountName: controller
       containers:

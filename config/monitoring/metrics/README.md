@@ -41,7 +41,7 @@
    And they will come back:
 
    ```shell
-   $  kubectl get pods -n knative-monitoring
+   $ kubectl get pods -n knative-monitoring
    NAME                                 READY   STATUS    RESTARTS   AGE
    grafana-d7478555c-8qgf7              1/1     Running   0          22h
    kube-state-metrics-765d876c6-z7dfn   4/4     Running   0          22h
