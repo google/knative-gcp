@@ -42,8 +42,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	}
 	event.SetType("google.storage")
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	event.Data = msg.Data
-	event.DataEncoded = true
+	event.SetData(msg.Data)
 	// Attributes are extensions.
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
