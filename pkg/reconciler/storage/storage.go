@@ -57,6 +57,16 @@ const (
 	finalizerName = controllerAgentName
 )
 
+var (
+	// Mapping of GCS eventTypes to GCS types.
+	storageEventTypes = map[string]string{
+		"finalize":       "OBJECT_FINALIZE",
+		"archive":        "OBJECT_ARCHIVE",
+		"delete":         "OBJECT_DELETE",
+		"metadataUpdate": "OBJECT_METADATA_UPDATE",
+	}
+)
+
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
 // notifications.
 type Reconciler struct {
@@ -282,7 +292,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		TopicProjectID:   storage.Spec.Project,
 		TopicID:          storage.Status.Topic,
 		PayloadFormat:    storageClient.JSONPayload,
-		EventTypes:       storage.Spec.EventTypes,
+		EventTypes:       c.toStorageEventTypes(storage.Spec.EventTypes),
 		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
 		CustomAttributes: customAttributes,
 	})
@@ -294,6 +304,14 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	c.Logger.Infof("Created Notification %q", notification.ID)
 
 	return notification, nil
+}
+
+func (c *Reconciler) toStorageEventTypes(eventTypes []string) []string {
+	storageTypes := make([]string, 0, len(eventTypes))
+	for _, eventType := range eventTypes {
+		storageTypes = append(storageTypes, storageEventTypes[eventType])
+	}
+	return storageTypes
 }
 
 func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) error {
