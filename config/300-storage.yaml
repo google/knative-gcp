@@ -89,13 +89,6 @@ spec:
                     schema:
                       type: string
                       pattern: "https://cloud.google.com/cloudevents/schemas/storage/metadataUpdate.json"   
-      properties:
-        apiVersion:
-          type: string
-        kind:
-          type: string
-        metadata:
-          type: object
         spec:
           properties:
             gcsSecret:
