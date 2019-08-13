@@ -58,7 +58,7 @@ const (
 )
 
 var (
-	// Mapping of GCS eventTypes to GCS types.
+	// Mapping of the storage importer eventTypes to google storage types.
 	storageEventTypes = map[string]string{
 		"finalize":       "OBJECT_FINALIZE",
 		"archive":        "OBJECT_ARCHIVE",
