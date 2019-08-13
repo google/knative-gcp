@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "object",
+      "properties": {
+        "attributes": {
+          "type": "object",
+          "properties": {
+            ".*": {
+              "type": "string"
+            }
+          }
+        },
+        "data": {},
+        "id": {
+          "type": "string"
+        },
+        "publish_time": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "subscription": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "subscription"
+  ]
+}
