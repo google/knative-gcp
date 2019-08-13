@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/kmeta"
 
+	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/pubsub/operations"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
@@ -61,7 +62,7 @@ const (
 func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:          c.SubscriptionOpsImage,
-		Action:         operations.ActionExists,
+		Action:         ops.ActionExists,
 		ProjectID:      project,
 		TopicID:        topic,
 		SubscriptionID: subscription,
@@ -73,7 +74,7 @@ func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.O
 func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string, ackDeadline time.Duration, retainAcked bool, retainDuration time.Duration) (OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:               c.SubscriptionOpsImage,
-		Action:              operations.ActionCreate,
+		Action:              ops.ActionCreate,
 		ProjectID:           project,
 		TopicID:             topic,
 		SubscriptionID:      subscription,
@@ -88,7 +89,7 @@ func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.
 func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:          c.SubscriptionOpsImage,
-		Action:         operations.ActionDelete,
+		Action:         ops.ActionDelete,
 		ProjectID:      project,
 		TopicID:        topic,
 		SubscriptionID: subscription,
@@ -100,7 +101,7 @@ func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.
 func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
-		Action:    operations.ActionExists,
+		Action:    ops.ActionExists,
 		ProjectID: project,
 		TopicID:   topic,
 		Secret:    secret,
@@ -111,7 +112,7 @@ func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRef
 func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
-		Action:    operations.ActionCreate,
+		Action:    ops.ActionCreate,
 		ProjectID: project,
 		TopicID:   topic,
 		Secret:    secret,
@@ -122,7 +123,7 @@ func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRe
 func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
-		Action:    operations.ActionDelete,
+		Action:    ops.ActionDelete,
 		ProjectID: project,
 		TopicID:   topic,
 		Secret:    secret,
@@ -151,12 +152,12 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicAr
 		return OpsJobGetFailed, err
 	}
 
-	if operations.IsJobComplete(job) {
+	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if operations.IsJobSucceeded(job) {
+		if ops.IsJobSucceeded(job) {
 			return OpsJobCompleteSuccessful, nil
-		} else if operations.IsJobFailed(job) {
-			return OpsJobCompleteFailed, errors.New(operations.JobFailedMessage(job))
+		} else if ops.IsJobFailed(job) {
+			return OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
@@ -186,12 +187,12 @@ func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.
 		return OpsJobGetFailed, err
 	}
 
-	if operations.IsJobComplete(job) {
+	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if operations.IsJobSucceeded(job) {
+		if ops.IsJobSucceeded(job) {
 			return OpsJobCompleteSuccessful, nil
-		} else if operations.IsJobFailed(job) {
-			return OpsJobCompleteFailed, errors.New(operations.JobFailedMessage(job))
+		} else if ops.IsJobFailed(job) {
+			return OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
