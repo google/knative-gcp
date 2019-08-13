@@ -14,8 +14,6 @@
     target_label: namespace
   - source_labels: [__meta_kubernetes_pod_name]
     target_label: pod
-  - source_labels: [__meta_kubernetes_service_name]
-    target_label: service
 # Cloud Run Events Webhook endpoint
 - job_name: cloud-run-events-webhook
   scrape_interval: 3s

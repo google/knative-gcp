@@ -19,6 +19,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
 
 	cloudevents "github.com/cloudevents/sdk-go"
