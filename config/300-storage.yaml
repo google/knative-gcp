@@ -1,0 +1,171 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    eventing.knative.dev/source: "true"
+    events.cloud.run/release: devel
+    events.cloud.run/crd-install: "true"
+  name: storages.events.cloud.run
+spec:
+  group: events.cloud.run
+  version: v1alpha1
+  names:
+    categories:
+    - all
+    - knative
+    - storage
+    kind: Storage
+    plural: storages
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
+  validation:
+    openAPIV3Schema:
+      properties:
+        registry:
+          type: object
+          description: "Internal information, users should not set this property"
+          properties:
+            eventTypes:
+              type: object
+              properties:
+                finalize:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      pattern: "google.storage.object.finalize"
+                    schema:
+                      type: string
+                      pattern: "https://cloud.google.com/cloudevents/schemas/storage/finalize.json"
+                delete:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      pattern: "google.storage.object.delete"
+                    schema:
+                      type: string
+                      pattern: "https://cloud.google.com/cloudevents/schemas/storage/delete.json"
+                archive:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      pattern: "google.storage.object.archive"
+                    schema:
+                      type: string
+                      pattern: "https://cloud.google.com/cloudevents/schemas/storage/archive.json"
+                metadataUpdate:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      pattern: "google.storage.object.metadataUpdate"
+                    schema:
+                      type: string
+                      pattern: "https://cloud.google.com/cloudevents/schemas/storage/metadataUpdate.json"   
+      properties:
+        apiVersion:
+          type: string
+        kind:
+          type: string
+        metadata:
+          type: object
+        spec:
+          properties:
+            gcsSecret:
+              type: object
+              description: "Credential to use for creating a GCP notification. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+            pullSubscriptionSecret:
+              type: object
+              description: "Optional credential to use for subscribing to the GCP PubSub topic. If omitted, uses gcsCredsSecret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+            serviceAccountName:
+              type: string
+              description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
+            project:
+              type: string
+              description: "Google Cloud Project ID to create the scheduler job in."
+            bucket:
+              type: string
+              description: "GCS bucket to subscribe to. For example my-test-bucket"
+            objectNamePrefix:
+              type: string
+              description: "Optional prefix to only notify when objects match this prefix."
+            payloadFormat:
+              type: string
+              description: "Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1."
+            sink:
+              type: object
+              description: "Where to sink the notifications to."
+            eventTypes:
+              type: array
+              items:
+                enum:
+                  - finalize
+                  - delete
+                  - archive
+                  - metadataUpdate
+                type: string
+          required:
+          - gcsSecret
+          - pullSubscriptionSecret
+          - bucket
+          - sink
+        status:
+          properties:
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    # we use a string in the stored object but a wrapper object
+                    # at runtime.
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                type: object
+              type: array
+            sinkUri:
+              type: string
+            topic:
+              type: string
+            notificationId:
+              type: string
+            subscriptionId:
+              type: string
+          type: object

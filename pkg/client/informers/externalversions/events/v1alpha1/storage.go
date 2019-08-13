@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// GCSInformer provides access to a shared informer and lister for
-// GCSs.
-type GCSInformer interface {
+// StorageInformer provides access to a shared informer and lister for
+// Storages.
+type StorageInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.GCSLister
+	Lister() v1alpha1.StorageLister
 }
 
-type gCSInformer struct {
+type storageInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewGCSInformer constructs a new informer for GCS type.
+// NewStorageInformer constructs a new informer for Storage type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewGCSInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredGCSInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewStorageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredStorageInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredGCSInformer constructs a new informer for GCS type.
+// NewFilteredStorageInformer constructs a new informer for Storage type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredGCSInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredStorageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().GCSs(namespace).List(options)
+				return client.EventsV1alpha1().Storages(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().GCSs(namespace).Watch(options)
+				return client.EventsV1alpha1().Storages(namespace).Watch(options)
 			},
 		},
-		&eventsv1alpha1.GCS{},
+		&eventsv1alpha1.Storage{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *gCSInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredGCSInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *storageInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredStorageInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *gCSInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventsv1alpha1.GCS{}, f.defaultInformer)
+func (f *storageInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&eventsv1alpha1.Storage{}, f.defaultInformer)
 }
 
-func (f *gCSInformer) Lister() v1alpha1.GCSLister {
-	return v1alpha1.NewGCSLister(f.Informer().GetIndexer())
+func (f *storageInformer) Lister() v1alpha1.StorageLister {
+	return v1alpha1.NewStorageLister(f.Informer().GetIndexer())
 }
