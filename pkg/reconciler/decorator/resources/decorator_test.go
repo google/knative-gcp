@@ -109,16 +109,16 @@ func TestMakePublisherV1alpha1(t *testing.T) {
 	}
 }
 
-func TestAdditions(t *testing.T) {
-	additions := map[string]string{
+func TestCEExtensions(t *testing.T) {
+	extensions := map[string]string{
 		"foo":   "bar",
 		"boosh": "kakow",
 	}
-	additionsString := MakeDecoratorExtensionsString(additions)
+	extensionsString := MakeDecoratorExtensionsString(extensions)
 	// Test the to string
 	{
 		want := "eyJib29zaCI6Imtha293IiwiZm9vIjoiYmFyIn0="
-		got := additionsString
+		got := extensionsString
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("unexpected (-want, +got) = %v", diff)
 			t.Log(got)
@@ -126,8 +126,8 @@ func TestAdditions(t *testing.T) {
 	}
 	// Test the to map
 	{
-		want := additions
-		got := MakeDecoratorExtensionsMap(additionsString)
+		want := extensions
+		got := MakeDecoratorExtensionsMap(extensionsString)
 
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("unexpected (-want, +got) = %v", diff)
