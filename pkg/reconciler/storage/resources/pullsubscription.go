@@ -18,6 +18,7 @@ package resources
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -49,7 +50,7 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 			Secret:  &pubsubSecret,
 			Project: source.Spec.Project,
 			Topic:   source.Status.Topic,
-			Sink: pubsubv1alpha1.Destination{
+			Sink: apisv1alpha1.Destination{
 				ObjectReference: &source.Spec.Sink,
 			},
 		},
