@@ -38,22 +38,22 @@ func (ds *DecoratorStatus) InitializeConditions() {
 }
 
 // MarkSink sets the condition that the source has a sink configured.
-func (s *DecoratorStatus) MarkSink(sink *apis.URL) {
+func (ds *DecoratorStatus) MarkSink(sink *apis.URL) {
 	var uri string
 	if sink != nil {
 		uri = sink.String()
 	}
-	s.SinkURI = uri
+	ds.SinkURI = uri
 	if len(uri) > 0 {
-		decoratorCondSet.Manage(s).MarkTrue(DecoratorConditionSinkProvided)
+		decoratorCondSet.Manage(ds).MarkTrue(DecoratorConditionSinkProvided)
 	} else {
-		decoratorCondSet.Manage(s).MarkUnknown(DecoratorConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+		decoratorCondSet.Manage(ds).MarkUnknown(DecoratorConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
 	}
 }
 
 // MarkNoSink sets the condition that the source does not have a sink configured.
-func (s *DecoratorStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
-	decoratorCondSet.Manage(s).MarkFalse(DecoratorConditionSinkProvided, reason, messageFormat, messageA...)
+func (ds *DecoratorStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
+	decoratorCondSet.Manage(ds).MarkFalse(DecoratorConditionSinkProvided, reason, messageFormat, messageA...)
 }
 
 // SetAddress updates the Addressable status of the Decorator and propagates a
