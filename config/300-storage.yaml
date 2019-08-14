@@ -126,7 +126,6 @@ spec:
                 type: string
           required:
           - gcsSecret
-          - pullSubscriptionSecret
           - bucket
           - sink
         status:
