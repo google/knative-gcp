@@ -43,6 +43,8 @@ spec:
           value: github.com/google/knative-gcp/cmd/pubsub/topic
         - name: PUBSUB_SUB_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/subscription
+        - name: DECORATOR_IMAGE
+          value: github.com/google/knative-gcp/cmd/decorator
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

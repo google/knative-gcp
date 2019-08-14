@@ -27,24 +27,15 @@ import (
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
-var condReady = apis.Condition{
-	Type:   ChannelConditionReady,
-	Status: corev1.ConditionTrue,
-}
-
-var ignoreAllButTypeAndStatus = cmpopts.IgnoreFields(
-	apis.Condition{},
-	"LastTransitionTime", "Message", "Reason", "Severity")
-
-func TestChannelGetCondition(t *testing.T) {
+func TestDecoratorGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		cs        *ChannelStatus
+		cs        *DecoratorStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name: "single condition",
-		cs: &ChannelStatus{
+		cs: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{
 					condReady,
@@ -64,77 +55,90 @@ func TestChannelGetCondition(t *testing.T) {
 	}
 }
 
-func TestChannelInitializeConditions(t *testing.T) {
+func TestDecoratorInitializeConditions(t *testing.T) {
 	tests := []struct {
 		name string
-		cs   *ChannelStatus
-		want *ChannelStatus
+		cs   *DecoratorStatus
+		want *DecoratorStatus
 	}{{
 		name: "empty",
-		cs:   &ChannelStatus{},
-		want: &ChannelStatus{
+		cs:   &DecoratorStatus{},
+		want: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
+					Type:   DecoratorConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   ChannelConditionReady,
+					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   ChannelConditionTopicReady,
+					Type:   DecoratorConditionSinkProvided,
+					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   DecoratorConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
 	}, {
 		name: "one false",
-		cs: &ChannelStatus{
+		cs: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
+					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionFalse,
 				}},
 			},
 		},
-		want: &ChannelStatus{
+		want: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionFalse,
-				}, {
-					Type:   ChannelConditionReady,
+					Type:   DecoratorConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   ChannelConditionTopicReady,
+					Type:   DecoratorConditionAddressable,
+					Status: corev1.ConditionFalse,
+				}, {
+					Type:   DecoratorConditionSinkProvided,
+					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   DecoratorConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
 	}, {
 		name: "one true",
-		cs: &ChannelStatus{
+		cs: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
+					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionTrue,
 				}},
 			},
 		},
-		want: &ChannelStatus{
+		want: &DecoratorStatus{
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionTrue,
-				}, {
-					Type:   ChannelConditionReady,
+					Type:   DecoratorConditionReady,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   ChannelConditionTopicReady,
+					Type:   DecoratorConditionAddressable,
+					Status: corev1.ConditionTrue,
+				}, {
+					Type:   DecoratorConditionSinkProvided,
+					Status: corev1.ConditionUnknown,
+				}, {
+					Type:   DecoratorConditionServiceReady,
 					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
 	}}
+
+	var ignoreAllButTypeAndStatus = cmpopts.IgnoreFields(
+		apis.Condition{},
+		"LastTransitionTime", "Message", "Reason", "Severity")
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -147,39 +151,54 @@ func TestChannelInitializeConditions(t *testing.T) {
 	}
 }
 
-func TestChannelIsReady(t *testing.T) {
+func TestDecoratorIsReady(t *testing.T) {
 	tests := []struct {
-		name       string
-		setAddress bool
-		markTopic  bool
-		wantReady  bool
+		name        string
+		setAddress  bool
+		markService bool
+		markSink    bool
+		wantReady   bool
 	}{{
-		name:       "all happy",
-		setAddress: true,
-		markTopic:  true,
-		wantReady:  true,
+		name:        "all happy",
+		setAddress:  true,
+		markService: true,
+		markSink:    true,
+		wantReady:   true,
 	}, {
-		name:       "address not set",
-		setAddress: false,
-		markTopic:  true,
-		wantReady:  false,
+		name:        "address not set",
+		setAddress:  false,
+		markService: true,
+		markSink:    true,
+		wantReady:   false,
 	}, {
-		name:       "topic not ready",
-		setAddress: true,
-		markTopic:  false,
-		wantReady:  false,
+		name:        "service not ready",
+		setAddress:  true,
+		markService: false,
+		markSink:    true,
+		wantReady:   false,
+	}, {
+		name:        "no sink",
+		setAddress:  true,
+		markService: false,
+		markSink:    true,
+		wantReady:   false,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			cs := &ChannelStatus{}
+			cs := &DecoratorStatus{}
 			cs.InitializeConditions()
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
 			}
-			if test.markTopic {
-				cs.MarkTopicReady()
+			if test.markService {
+				cs.MarkServiceReady()
 			} else {
-				cs.MarkNoTopic("NoTopic", "UnitTest")
+				cs.MarkNoService("NoService", "UnitTest")
+			}
+			if test.markSink {
+				cs.MarkSink(&apis.URL{Scheme: "http", Host: "foo.bar"})
+			} else {
+				cs.MarkNoSink("NoSink", "UnitTest")
 			}
 			got := cs.IsReady()
 			if test.wantReady != got {
@@ -189,23 +208,23 @@ func TestChannelIsReady(t *testing.T) {
 	}
 }
 
-func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
+func TestPubSubDecoratorStatus_SetAddressable(t *testing.T) {
 	testCases := map[string]struct {
 		url  *apis.URL
-		want *ChannelStatus
+		want *DecoratorStatus
 	}{
 		"empty string": {
-			want: &ChannelStatus{
+			want: &DecoratorStatus{
 				Status: duckv1beta1.Status{
 					Conditions: []apis.Condition{
 						{
-							Type:   ChannelConditionAddressable,
+							Type:   DecoratorConditionAddressable,
 							Status: corev1.ConditionFalse,
 						},
 						// Note that Ready is here because when the condition is marked False, duck
 						// automatically sets Ready to false.
 						{
-							Type:   ChannelConditionReady,
+							Type:   DecoratorConditionReady,
 							Status: corev1.ConditionFalse,
 						},
 					},
@@ -215,7 +234,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 		},
 		"has domain": {
 			url: &apis.URL{Scheme: "http", Host: "test-domain"},
-			want: &ChannelStatus{
+			want: &DecoratorStatus{
 				AddressStatus: duckv1beta1.AddressStatus{
 					Address: &duckv1beta1.Addressable{
 						URL: &apis.URL{
@@ -226,7 +245,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 				},
 				Status: duckv1beta1.Status{
 					Conditions: []apis.Condition{{
-						Type:   ChannelConditionAddressable,
+						Type:   DecoratorConditionAddressable,
 						Status: corev1.ConditionTrue,
 					}},
 				},
@@ -235,7 +254,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			cs := &ChannelStatus{}
+			cs := &DecoratorStatus{}
 			cs.SetAddress(tc.url)
 			if diff := cmp.Diff(tc.want, cs, ignoreAllButTypeAndStatus); diff != "" {
 				t.Errorf("unexpected conditions (-want, +got) = %v", diff)
