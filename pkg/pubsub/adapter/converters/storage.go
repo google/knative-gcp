@@ -39,7 +39,7 @@ var (
 const (
 	defaultEventType = "google.storage"
 	sourcePrefix     = "//storage.googleapis.com/buckets"
-	schemaUrl        = "https://github.com/google/knative-gcp/schemas/storage/schema.json"
+	schemaUrl        = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
 func storageSource(bucket string) string {

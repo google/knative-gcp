@@ -61,7 +61,7 @@ spec:
                       pattern: "google.storage.object.finalize"
                     schema:
                       type: string
-                      pattern: "https://github.com/google/knative-gcp/schemas/storage/schema.json"
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 delete:
                   type: object
                   properties:
@@ -70,7 +70,7 @@ spec:
                       pattern: "google.storage.object.delete"
                     schema:
                       type: string
-                      pattern: "https://github.com/google/knative-gcp/schemas/storage/schema.json"
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 archive:
                   type: object
                   properties:
@@ -79,7 +79,7 @@ spec:
                       pattern: "google.storage.object.archive"
                     schema:
                       type: string
-                      pattern: "https://github.com/google/knative-gcp/schemas/storage/schema.json"
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 metadataUpdate:
                   type: object
                   properties:
@@ -88,7 +88,7 @@ spec:
                       pattern: "google.storage.object.metadataUpdate"
                     schema:
                       type: string
-                      pattern: "https://github.com/google/knative-gcp/schemas/storage/schema.json"
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
         spec:
           properties:
             gcsSecret:
