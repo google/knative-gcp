@@ -85,14 +85,14 @@ func TearDown(client *Client) {
 	}
 }
 
-func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (map[string]string, error) {
+func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {
 	// Get all pods in this namespace.
 	pods, err := c.Kube.Kube.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	logs := map[string]string{}
+	logs := "" //map[string]string{}
 
 	// Look for a pod with the name that was passed in inside the pod name.
 	var pod *corev1.Pod
@@ -105,16 +105,14 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 
 	// Did we find a match like the given name?
 	if pod == nil {
-		return nil, fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
+		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
 	}
 
 	// Collect all the logs from all the containers for this pod.
-	for _, container := range pod.Spec.Containers {
-		if l, err := c.Kube.PodLogs(pod.Name, container.Name, namespace); err != nil {
-			logs[container.Name] = err.Error()
-		} else {
-			logs[container.Name] = string(l)
-		}
+	if l, err := c.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(); err != nil {
+		logs = err.Error()
+	} else {
+		logs = string(l)
 	}
 
 	return logs, nil

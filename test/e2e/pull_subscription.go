@@ -129,4 +129,18 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	} else {
 		t.Logf("%+v", logs)
 	}
+
+	t.Logf("Delay for (\n")
+	for i := 10; i > 0; i-- {
+		t.Logf("%d ", i)
+		time.Sleep(10 * time.Second)
+
+		if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			t.Error(err)
+		} else {
+			t.Logf("%s\n", logs)
+		}
+
+	}
+	t.Logf(") done.\n")
 }
