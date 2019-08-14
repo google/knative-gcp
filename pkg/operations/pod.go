@@ -28,8 +28,8 @@ const (
 	credsMountPath = "/var/secrets/google"
 )
 
-// makePodTemplate creates a pod template for a Job.
-func makePodTemplate(image string, secret corev1.SecretKeySelector, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+// MakePodTemplate creates a pod template for a Job.
+func MakePodTemplate(image string, secret corev1.SecretKeySelector, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	env := []corev1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",

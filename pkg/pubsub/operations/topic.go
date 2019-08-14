@@ -30,6 +30,8 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/google/knative-gcp/pkg/operations"
 )
 
 type TopicArgs struct {
@@ -42,7 +44,7 @@ type TopicArgs struct {
 }
 
 func NewTopicOps(arg TopicArgs) *batchv1.Job {
-	podTemplate := makePodTemplate(arg.Image, arg.Secret, []corev1.EnvVar{{
+	podTemplate := operations.MakePodTemplate(arg.Image, arg.Secret, []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {
@@ -116,14 +118,14 @@ func (t *TopicOps) Run(ctx context.Context) error {
 	}
 
 	switch t.Action {
-	case ActionExists:
+	case operations.ActionExists:
 		// If topic doesn't exist, that is an error.
 		if !exists {
 			return errors.New("topic does not exist")
 		}
 		logger.Info("Previously created.")
 
-	case ActionCreate:
+	case operations.ActionCreate:
 		// If topic doesn't exist, create it.
 		if !exists {
 			// Create a new topic with the given name.
@@ -137,7 +139,7 @@ func (t *TopicOps) Run(ctx context.Context) error {
 			logger.Info("Previously created.")
 		}
 
-	case ActionDelete:
+	case operations.ActionDelete:
 		if exists {
 			if err := topic.Delete(ctx); err != nil {
 				return fmt.Errorf("failed to delete topic, %s", err)
