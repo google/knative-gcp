@@ -29,7 +29,8 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Decorator TODO
+// Decorator represents an addressable resource that augments an event passed
+// through the decorator to the sink.
 type Decorator struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
@@ -52,21 +53,14 @@ var _ webhook.GenericCRD = (*Decorator)(nil)
 
 // DecoratorSpec
 type DecoratorSpec struct {
-	// Extensions will specify what is added to an event as an extension.
-	// Each key-value pair is added independently.
+	// Extensions specify what attribute are added or overridden on the
+	// outbound event. Each `Extensions` key-value pair are set on the event
+	// as an attribute extension independently."
 	Extensions map[string]string `json:"extensions,omitempty"`
 	// Sink is a reference to an object that will resolve to a domain name to use
 	// as the sink.
 	Sink *corev1.ObjectReference `json:"sink,omitempty"`
 }
-
-// Save for later:
-//// EventOverrides EventOverrides `json:"ceOverrides,omitempty"`
-//type EventOverrides struct {
-//	// Extensions will specify what is added to an event as an extension.
-//	// Each key-value pair is added independently.
-//	Extensions map[string]string `json:"extensions,omitempty"`
-//}
 
 var decoratorCondSet = apis.NewLivingConditionSet(
 	DecoratorConditionAddressable,
