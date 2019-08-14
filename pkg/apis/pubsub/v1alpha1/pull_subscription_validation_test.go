@@ -18,8 +18,9 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/apis/v1alpha1"
 	"testing"
+
+	"knative.dev/pkg/apis/v1alpha1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"

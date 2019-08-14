@@ -18,7 +18,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"knative.dev/pkg/apis/v1alpha1"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +27,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis/v1alpha1"
 )
 
 // +genclient

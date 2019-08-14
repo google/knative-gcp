@@ -18,8 +18,9 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/apis/v1alpha1"
 	"time"
+
+	"knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
