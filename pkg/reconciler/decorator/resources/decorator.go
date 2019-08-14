@@ -38,7 +38,6 @@ type DecoratorArgs struct {
 }
 
 func MakeDecoratorExtensionsMap(base64Extensions string) map[string]string {
-
 	quotedExtensions := strconv.Quote(string(base64Extensions))
 
 	var byteExtensions []byte
@@ -80,7 +79,6 @@ func MakeDecoratorExtensionsString(extensions map[string]string) string {
 }
 
 func makeDecoratorPodSpec(args *DecoratorArgs) corev1.PodSpec {
-
 	additions := MakeDecoratorExtensionsString(args.Decorator.Spec.Extensions)
 
 	podSpec := corev1.PodSpec{

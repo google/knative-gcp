@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -50,6 +51,8 @@ const (
 func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
+
+	additions := resources.MakeDecoratorExtensionsString(args.Source.Spec.Spec.Extensions)
 
 	var mode converters.ModeType
 	switch args.Source.PubSubMode() {

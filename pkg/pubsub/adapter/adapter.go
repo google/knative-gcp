@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -52,6 +53,14 @@ type Adapter struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
+	// ExtensionsBased64 is a based64 encoded josn string of a map of
+	// CloudEvents extensions (key-value pairs) override onto the outbound
+	// event.
+	ExtensionsBased64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+
+	// extensions is the converted ExtensionsBased64 value.
+	extensions map[string]string
+
 	// SendMode describes how the adapter sends events.
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
@@ -73,6 +82,10 @@ func (a *Adapter) Start(ctx context.Context) error {
 	if a.SendMode == "" {
 		a.SendMode = converters.DefaultSendMode
 	}
+
+	// Convert base64 encoded json map to extensions map.
+	// This implementation comes from the Decorator object.
+	a.extensions = resources.MakeDecoratorExtensionsMap(a.ExtensionsBased64)
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
@@ -125,6 +138,12 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		event = ConvertToPush(ctx, event)
 	}
 
+	// Apply CloudEvent override extensions to the outbound event.
+	for k, v := range a.extensions {
+		event.SetExtension(k, v)
+	}
+
+	// Send the event.
 	if r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
 	} else if r != nil {
