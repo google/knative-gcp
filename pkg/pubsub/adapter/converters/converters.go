@@ -63,6 +63,7 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cl
 	}
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["knative-gcp"]; ok {
+			delete(msg.Attributes, "knative-gcp")
 			if c, ok := converters[val]; ok {
 				return c(ctx, msg, sendMode)
 			}
