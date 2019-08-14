@@ -114,11 +114,19 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 		}
 	}()
 
-	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
+	gvr := schema.GroupVersionResource{
 		Group:    "pubsub.cloud.run",
 		Version:  "v1alpha1",
 		Resource: "pullsubscriptions",
-	}); err != nil {
+	}
+	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
 		t.Error(err)
+	}
+
+	// Log the output.
+	if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+		t.Error(err)
+	} else {
+		t.Logf("%+v", logs)
 	}
 }
