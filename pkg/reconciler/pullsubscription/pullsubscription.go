@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
@@ -264,7 +265,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination v1alpha1.Destination, namespace string) (*apis.URL, error) {
+func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1alpha1.Destination, namespace string) (*apis.URL, error) {
 	if destination.URI != nil {
 		return destination.URI, nil
 	} else {

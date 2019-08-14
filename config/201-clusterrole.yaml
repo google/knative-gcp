@@ -48,12 +48,14 @@ rules:
     - messaging.cloud.run
   resources:
     - channels
+    - decorators
   verbs: *everything
 
 - apiGroups:
     - messaging.cloud.run
   resources:
     - channels/status
+    - decorators/status
   verbs:
     - get
     - update

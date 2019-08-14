@@ -27,6 +27,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/apis/v1alpha1"
 )
 
 // +genclient
@@ -96,17 +97,32 @@ type PullSubscriptionSpec struct {
 
 	// Sink is a reference to an object that will resolve to a domain name or a
 	// URI directly to use as the sink.
-	Sink Destination `json:"sink"`
+	Sink v1alpha1.Destination `json:"sink"`
 
 	// Transformer is a reference to an object that will resolve to a domain
 	// name or a URI directly to use as the transformer or a URI directly.
 	// +optional
-	Transformer *Destination `json:"transformer,omitempty"`
+	Transformer *v1alpha1.Destination `json:"transformer,omitempty"`
 
 	// Mode defines the encoding and structure of the payload of when the
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
+
+	// CloudEventOverrides defines overrides to control modifications of the
+	// event sent to the sink.
+	// +optional
+	CloudEventOverrides *CloudEventOverrides `json:"ceOverrides,omitempty"`
+}
+
+// CloudEventOverrides defines arguments for a Source that control the output
+// format of the CloudEvents produced by the Source.
+type CloudEventOverrides struct {
+	// Extensions specify what attribute are added or overridden on the
+	// outbound event. Each `Extensions` key-value pair are set on the event as
+	// an attribute extension independently.
+	// +optional
+	Extensions map[string]string `json:"extensions,omitempty"`
 }
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
@@ -127,11 +143,6 @@ func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
 		}
 	}
 	return defaultRetentionDuration
-}
-
-type Destination struct {
-	*corev1.ObjectReference `json:",inline"`
-	URI                     *apis.URL `json:"uri,omitempty"`
 }
 
 type ModeType string
