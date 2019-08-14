@@ -53,12 +53,3 @@ func JobFailedMessage(job *batchv1.Job) string {
 	}
 	return ""
 }
-
-func GetFirstTerminationMessage(pod *corev1.Pod) string {
-	for _, cs := range pod.Status.ContainerStatuses {
-		if cs.State.Terminated != nil && cs.State.Terminated.Message != "" {
-			return cs.State.Terminated.Message
-		}
-	}
-	return ""
-}

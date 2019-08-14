@@ -47,6 +47,8 @@ spec:
           value: github.com/google/knative-gcp/cmd/operations/subscription
         - name: DECORATOR_IMAGE
           value: github.com/google/knative-gcp/cmd/decorator
+        - name: STORAGE_NOTIFICATION_IMAGE
+          value: github.com/google/knative-gcp/cmd/operations/notification
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

@@ -19,9 +19,12 @@ package storage
 import (
 	"context"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -39,6 +42,11 @@ const (
 	controllerAgentName = "cloud-run-events-storage-source-controller"
 )
 
+type envConfig struct {
+	// NotificationOps is the image for operating on notifications. Required.
+	NotificationOpsImage string `envconfig:"STORAGE_NOTIFICATION_IMAGE" required:"true"`
+}
+
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
 func NewController(
@@ -50,7 +58,14 @@ func NewController(
 	jobInformer := jobinformer.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
+	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
+	}
+
 	c := &Reconciler{
+		NotificationOpsImage:   env.NotificationOpsImage,
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		storageLister:          storageInformer.Lister(),
 		pubsubClient:           pubsubClient.Get(ctx),

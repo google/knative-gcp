@@ -19,15 +19,22 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/errors"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"cloud.google.com/go/pubsub"
@@ -40,6 +47,8 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
+	ops "github.com/google/knative-gcp/pkg/operations"
+	"github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
 	"google.golang.org/grpc/codes"
@@ -50,7 +59,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
+type OpsJobStatus string
+
 const (
+	OpsJobGetFailed          OpsJobStatus = "JOB_GET_FAILED"
+	OpsJobCreated            OpsJobStatus = "JOB_CREATED"
+	OpsJobCreateFailed       OpsJobStatus = "JOB_CREATE_FAILED"
+	OpsJobCompleteSuccessful OpsJobStatus = "JOB_SUCCESSFUL"
+	OpsJobCompleteFailed     OpsJobStatus = "JOB_FAILED"
+	OpsJobOngoing            OpsJobStatus = "JOB_ONGOING"
+
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "Storage"
 
@@ -71,6 +89,9 @@ var (
 // notifications.
 type Reconciler struct {
 	*reconciler.Base
+
+	// Image to use for launching jobs that operate on notifications
+	NotificationOpsImage string
 
 	// gcssourceclientset is a clientset for our own API group
 	storageLister listers.StorageLister
@@ -95,7 +116,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	// Get the Storage resource with this namespace/name
 	original, err := c.storageLister.Storages(namespace).Get(name)
-	if errors.IsNotFound(err) {
+	if apierrs.IsNotFound(err) {
 		// The Storage resource may no longer exist, in which case we stop processing.
 		runtime.HandleError(fmt.Errorf("storage '%s' in work queue no longer exists", key))
 		return nil
@@ -224,7 +245,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	csr.Status.MarkGCSReady()
 
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
-	csr.Status.NotificationID = notification.ID
+	csr.Status.NotificationID = notification
 	return nil
 }
 
@@ -236,7 +257,7 @@ func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha
 		c.Logger.Infof("Found existing PullSubscription: %+v", existing)
 		return existing, nil
 	}
-	if errors.IsNotFound(err) {
+	if apierrs.IsNotFound(err) {
 		pubsub := resources.MakePullSubscription(csr, "testing")
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
@@ -252,60 +273,76 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.S
 		c.Logger.Infof("Deleted PullSubscription: %+v", csr.Name)
 		return nil
 	}
-	if errors.IsNotFound(err) {
+	if apierrs.IsNotFound(err) {
 		return nil
 	}
 	return err
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (*storageClient.Notification, error) {
-	sc, err := storageClient.NewClient(ctx)
-	if err != nil {
-		c.Logger.Infof("Failed to create storage client: %s", err)
-		return nil, err
-	}
+func (c *Reconciler) EnsureNotificationExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, topic string) (OpsJobStatus, error) {
+	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+		Image:     c.NotificationOpsImage,
+		Action:    ops.ActionCreate,
+		ProjectID: project,
+		Bucket:    bucket,
+		TopicID:   topic,
+		Secret:    secret,
+		Owner:     owner,
+	})
+}
 
-	bucket := sc.Bucket(storage.Spec.Bucket)
-	notifications, err := bucket.Notifications(ctx)
-	if err != nil {
-		c.Logger.Infof("Failed to fetch existing notifications: %s", err)
-		return nil, err
-	}
-
-	if storage.Status.NotificationID != "" {
-		if existing, ok := notifications[storage.Status.NotificationID]; ok {
-			c.Logger.Infof("Found existing notification: %+v", existing)
-			return existing, nil
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
+	state, err := c.EnsureNotificationExists(ctx, storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.Topic)
+	c.Logger.Infof("STATE: %+v", state)
+	c.Logger.Infof("ERR: %+v", err)
+	return "MADE_UP_NOTIFICATION_ID", nil
+	/*
+		sc, err := storageClient.NewClient(ctx)
+		if err != nil {
+			c.Logger.Infof("Failed to create storage client: %s", err)
+			return nil, err
 		}
-	}
 
-	customAttributes := make(map[string]string)
-	if storage.Spec.CloudEventOverrides != nil {
-		for k, v := range storage.Spec.CloudEventOverrides.Extensions {
+		bucket := sc.Bucket(storage.Spec.Bucket)
+		notifications, err := bucket.Notifications(ctx)
+		if err != nil {
+			c.Logger.Infof("Failed to fetch existing notifications: %s", err)
+			return nil, err
+		}
+
+		if storage.Status.NotificationID != "" {
+			if existing, ok := notifications[storage.Status.NotificationID]; ok {
+				c.Logger.Infof("Found existing notification: %+v", existing)
+				return existing, nil
+			}
+		}
+
+		customAttributes := make(map[string]string)
+		for k, v := range storage.Spec.CustomAttributes {
 			customAttributes[k] = v
 		}
-	}
 
-	// Add our own event type here...
-	customAttributes["knative-gcp"] = "google.storage"
+		// Add our own event type here...
+		customAttributes["knative-gcp"] = "google.storage"
 
-	c.Logger.Infof("Creating a notification on bucket %s", storage.Spec.Bucket)
-	notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
-		TopicProjectID:   storage.Spec.Project,
-		TopicID:          storage.Status.Topic,
-		PayloadFormat:    storageClient.JSONPayload,
-		EventTypes:       c.toStorageEventTypes(storage.Spec.EventTypes),
-		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
-		CustomAttributes: customAttributes,
-	})
+		c.Logger.Infof("Creating a notification on bucket %s", storage.Spec.Bucket)
+		notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
+			TopicProjectID:   storage.Spec.Project,
+			TopicID:          storage.Status.Topic,
+			PayloadFormat:    storageClient.JSONPayload,
+			EventTypes:       c.toStorageEventTypes(storage.Spec.EventTypes),
+			ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
+			CustomAttributes: customAttributes,
+		})
 
-	if err != nil {
-		c.Logger.Infof("Failed to create Notification: %s", err)
-		return nil, err
-	}
-	c.Logger.Infof("Created Notification %q", notification.ID)
+		if err != nil {
+			c.Logger.Infof("Failed to create Notification: %s", err)
+			return nil, err
+		}
+		c.Logger.Infof("Created Notification %q", notification.ID)
 
-	return notification, nil
+		return notification, nil
+	*/
 }
 
 func (c *Reconciler) toStorageEventTypes(eventTypes []string) []string {
@@ -489,4 +526,56 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage
 	}
 
 	return src, err
+}
+
+func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.NotificationArgs) (OpsJobStatus, error) {
+	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.NotificationJobLabels(args.Owner, args.Action)))
+	// If the resource doesn't exist, we'll create it
+	if apierrs.IsNotFound(err) {
+		c.Logger.Debugw("Job not found, creating.")
+
+		args.Image = c.NotificationOpsImage
+
+		job = operations.NewNotificationOps(args)
+
+		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
+		if err != nil || job == nil {
+			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
+			return OpsJobCreateFailed, nil
+		}
+
+		c.Logger.Debugw("Created Job.")
+		return OpsJobCreated, nil
+	} else if err != nil {
+		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
+		return OpsJobGetFailed, err
+	}
+
+	if ops.IsJobComplete(job) {
+		c.Logger.Debugw("Job is complete.")
+		if ops.IsJobSucceeded(job) {
+			return OpsJobCompleteSuccessful, nil
+		} else if ops.IsJobFailed(job) {
+			return OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+		}
+	}
+	c.Logger.Debug("Job still active.", zap.Any("job", job))
+	return OpsJobOngoing, nil
+}
+
+func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*batchv1.Job, error) {
+	list, err := c.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
+		LabelSelector: ls.String(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, i := range list.Items {
+		if metav1.IsControlledBy(&i, owner) {
+			return &i, nil
+		}
+	}
+
+	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }
