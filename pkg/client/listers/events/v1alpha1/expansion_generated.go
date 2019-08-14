@@ -18,10 +18,10 @@ limitations under the License.
 
 package v1alpha1
 
-// GCSListerExpansion allows custom methods to be added to
-// GCSLister.
-type GCSListerExpansion interface{}
+// StorageListerExpansion allows custom methods to be added to
+// StorageLister.
+type StorageListerExpansion interface{}
 
-// GCSNamespaceListerExpansion allows custom methods to be added to
-// GCSNamespaceLister.
-type GCSNamespaceListerExpansion interface{}
+// StorageNamespaceListerExpansion allows custom methods to be added to
+// StorageNamespaceLister.
+type StorageNamespaceListerExpansion interface{}

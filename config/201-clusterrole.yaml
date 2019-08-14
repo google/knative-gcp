@@ -62,6 +62,21 @@ rules:
     - patch
 
 - apiGroups:
+    - events.cloud.run
+  resources:
+    - storages
+  verbs: *everything
+
+- apiGroups:
+    - events.cloud.run
+  resources:
+    - storages/status
+  verbs:
+    - get
+    - update
+    - patch
+
+- apiGroups:
     - admissionregistration.k8s.io
   resources:
     - mutatingwebhookconfigurations

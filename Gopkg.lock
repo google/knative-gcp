@@ -2,17 +2,20 @@
 
 
 [[projects]]
-  digest = "1:04a6834455a0a97cdd9bccc7394576ddc7a8a75f69fdc1431303c543df03bcac"
+  digest = "1:d88e41c121ba1fcb09937dfb75a01742a43e2e24836d5a9add6ead7cb0b148a2"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
     "iam",
+    "internal",
     "internal/optional",
+    "internal/trace",
     "internal/version",
     "monitoring/apiv3",
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "storage",
     "trace/apiv2",
   ]
   pruneopts = "NUT"
@@ -642,13 +645,17 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9403f312df79a1556f2529adff5718f2b29a0d806c7ab0637fd9e68e635a7f1b"
+  digest = "1:9c89a3b7383528050da687b4cf2947d8cdd2d20b1bc13d833dc4ed6a402a8f1c"
   name = "google.golang.org/api"
   packages = [
+    "gensupport",
+    "googleapi",
+    "googleapi/internal/uritemplates",
     "googleapi/transport",
     "internal",
     "iterator",
     "option",
+    "storage/v1",
     "support/bundler",
     "transport",
     "transport/grpc",
@@ -680,7 +687,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:b63ed8ba450a97a55ab982876c9e91ba6e5ba433ef236c475b675d25a89736d3"
+  digest = "1:f55b9c4e170e6c6f488843d76a8ab8ae4d9bdda0b4da8b29531c348f8e333f02"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -693,6 +700,7 @@
     "googleapis/iam/v1",
     "googleapis/monitoring/v3",
     "googleapis/pubsub/v1",
+    "googleapis/rpc/code",
     "googleapis/rpc/status",
     "protobuf/field_mask",
   ]
@@ -1097,7 +1105,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c375d4501b58273f93be7fb531b551406dc57247a865520e48e724cee9398ded"
+  digest = "1:7d668b9ed0ede5e4a99aaed9c9f7c786920de47b2c609a88bcff96c1cd54e7da"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1109,6 +1117,7 @@
     "apis/istio/authentication/v1alpha1",
     "apis/istio/common/v1alpha1",
     "apis/istio/v1alpha3",
+    "apis/v1alpha1",
     "changeset",
     "client/clientset/versioned",
     "client/clientset/versioned/fake",
@@ -1159,7 +1168,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "4707aad818fed9883f7d5255dcbf67b9382260e2"
+  revision = "057c0dfb8f56cec704b8d54c1f0517596df78a55"
 
 [[projects]]
   branch = "master"
@@ -1220,7 +1229,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "355f60d6216150f811afed7075d255e57f7f44c0"
+  revision = "7fa4059a538fb5547e50f036db4e9f8d4eb998aa"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1228,12 +1237,14 @@
   input-imports = [
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/pubsub",
+    "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/google/uuid",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "go.opencensus.io/metric/metricexport",
@@ -1244,6 +1255,8 @@
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/http2/h2c",
     "google.golang.org/api/option",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/status",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",

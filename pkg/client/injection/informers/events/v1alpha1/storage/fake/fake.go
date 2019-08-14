@@ -22,12 +22,12 @@ import (
 	"context"
 
 	fake "github.com/google/knative-gcp/pkg/client/injection/informers/events/factory/fake"
-	gcs "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/gcs"
+	storage "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
 
-var Get = gcs.Get
+var Get = storage.Get
 
 func init() {
 	injection.Fake.RegisterInformer(withInformer)
@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Events().V1alpha1().GCSs()
-	return context.WithValue(ctx, gcs.Key{}, inf), inf.Informer()
+	inf := f.Events().V1alpha1().Storages()
+	return context.WithValue(ctx, storage.Key{}, inf), inf.Informer()
 }
