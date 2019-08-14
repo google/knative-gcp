@@ -38,7 +38,7 @@ var (
 
 const (
 	defaultEventType = "google.storage"
-	sourcePrefix     = "//storage.googleapis.com/buckets/"
+	sourcePrefix     = "//storage.googleapis.com/buckets"
 )
 
 func storageSource(bucket string) string {
@@ -52,7 +52,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent()
+	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
 	if msg.Attributes != nil {
@@ -79,6 +79,12 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 			}
 		} else {
 			return nil, fmt.Errorf("received event did not have eventType")
+		}
+		if _, ok := msg.Attributes["eventTime"]; ok {
+			delete(msg.Attributes, "eventTime")
+		}
+		if _, ok := msg.Attributes["payloadFormat"]; ok {
+			delete(msg.Attributes, "payloadFormat")
 		}
 	}
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
