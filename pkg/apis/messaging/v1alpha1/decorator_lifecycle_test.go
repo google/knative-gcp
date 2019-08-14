@@ -17,9 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
@@ -70,7 +72,7 @@ func TestDecoratorInitializeConditions(t *testing.T) {
 					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionUnknown,
 				}, {
-					Type:   DecoratorConditionReady,
+					Type:   DecoratorConditionSinkProvided,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   DecoratorConditionServiceReady,
@@ -89,7 +91,6 @@ func TestDecoratorInitializeConditions(t *testing.T) {
 			},
 		},
 		want: &DecoratorStatus{
-
 			Status: duckv1beta1.Status{
 				Conditions: []apis.Condition{{
 					Type:   DecoratorConditionReady,
@@ -98,7 +99,7 @@ func TestDecoratorInitializeConditions(t *testing.T) {
 					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionFalse,
 				}, {
-					Type:   DecoratorConditionReady,
+					Type:   DecoratorConditionSinkProvided,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   DecoratorConditionServiceReady,
@@ -125,7 +126,7 @@ func TestDecoratorInitializeConditions(t *testing.T) {
 					Type:   DecoratorConditionAddressable,
 					Status: corev1.ConditionTrue,
 				}, {
-					Type:   DecoratorConditionReady,
+					Type:   DecoratorConditionSinkProvided,
 					Status: corev1.ConditionUnknown,
 				}, {
 					Type:   DecoratorConditionServiceReady,
@@ -135,8 +136,13 @@ func TestDecoratorInitializeConditions(t *testing.T) {
 		},
 	}}
 
+	var ignoreAllButTypeAndStatus = cmpopts.IgnoreFields(
+		apis.Condition{},
+		"LastTransitionTime", "Message", "Reason", "Severity")
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			sort.Slice(test.want.Conditions, func(i, j int) bool { return test.want.Conditions[i].Type < test.want.Conditions[j].Type })
 			test.cs.InitializeConditions()
 			if diff := cmp.Diff(test.want, test.cs, ignoreAllButTypeAndStatus); diff != "" {
 				t.Errorf("unexpected conditions (-want, +got) = %v", diff)
@@ -168,11 +174,13 @@ func TestDecoratorIsReady(t *testing.T) {
 		name:        "service not ready",
 		setAddress:  true,
 		markService: false,
+		markSink:    true,
 		wantReady:   false,
 	}, {
 		name:        "no sink",
 		setAddress:  true,
 		markService: false,
+		markSink:    true,
 		wantReady:   false,
 	}}
 	for _, test := range tests {

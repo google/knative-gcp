@@ -64,6 +64,7 @@ type DecoratorSpec struct {
 
 var decoratorCondSet = apis.NewLivingConditionSet(
 	DecoratorConditionAddressable,
+	DecoratorConditionSinkProvided,
 	DecoratorConditionServiceReady,
 )
 
