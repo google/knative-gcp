@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"knative.dev/pkg/apis/v1alpha1"
 	"testing"
 
 	"knative.dev/pkg/apis"
@@ -36,7 +37,7 @@ var (
 		},
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
-		Sink: Destination{
+		Sink: v1alpha1.Destination{
 			ObjectReference: &corev1.ObjectReference{
 				APIVersion: "foo",
 				Kind:       "bar",
@@ -44,7 +45,7 @@ var (
 				Name:       "qux",
 			},
 		},
-		Transformer: &Destination{
+		Transformer: &v1alpha1.Destination{
 			ObjectReference: &corev1.ObjectReference{
 				APIVersion: "foo",
 				Kind:       "bar",
@@ -124,7 +125,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, empty": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = Destination{}
+				obj.Sink = v1alpha1.Destination{}
 				return *obj
 			}(),
 			error: true,
@@ -132,7 +133,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri scheme": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = Destination{
+				obj.Sink = v1alpha1.Destination{
 					URI: &apis.URL{
 						Host: "example.com",
 					},
@@ -144,7 +145,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri host": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = Destination{
+				obj.Sink = v1alpha1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
 					},
@@ -156,7 +157,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri and ref": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = Destination{
+				obj.Sink = v1alpha1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
 						Host:   "example.com",
@@ -274,7 +275,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: Destination{
+				Sink: v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "some-other-api-version",
 						Kind:       pullSubscriptionSpec.Sink.Kind,
@@ -297,7 +298,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: Destination{
+				Sink: v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
 						Kind:       "some-other-kind",
@@ -320,7 +321,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: Destination{
+				Sink: v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
 						Kind:       pullSubscriptionSpec.Sink.Kind,
@@ -343,7 +344,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: Destination{
+				Sink: v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Sink.APIVersion,
 						Kind:       pullSubscriptionSpec.Sink.Kind,
@@ -366,7 +367,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Sink: Destination{
+				Sink: v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "some-other-api-version",
 						Kind:       pullSubscriptionSpec.Transformer.Kind,
@@ -389,7 +390,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &Destination{
+				Transformer: &v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
 						Kind:       "some-other-kind",
@@ -412,7 +413,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &Destination{
+				Transformer: &v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
 						Kind:       pullSubscriptionSpec.Transformer.Kind,
@@ -435,7 +436,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &Destination{
+				Transformer: &v1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: pullSubscriptionSpec.Transformer.APIVersion,
 						Kind:       pullSubscriptionSpec.Transformer.Kind,

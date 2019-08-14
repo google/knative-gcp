@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"knative.dev/pkg/apis/v1alpha1"
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -47,13 +48,13 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, Destination{}) {
+	if equality.Semantic.DeepEqual(current.Sink, v1alpha1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &Destination{}) {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &v1alpha1.Destination{}) {
 		if err := validateDestination(*current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
@@ -90,7 +91,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	return errs
 }
 
-func validateDestination(dest Destination) *apis.FieldError {
+func validateDestination(dest v1alpha1.Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.ObjectReference != nil {
 			return apis.ErrMultipleOneOf("uri", "name")
