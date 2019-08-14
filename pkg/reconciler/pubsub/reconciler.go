@@ -31,7 +31,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/pubsub/operations"
+	"github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
