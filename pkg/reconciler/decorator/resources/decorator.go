@@ -19,12 +19,13 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
-	"strconv"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
@@ -85,7 +86,6 @@ func makeDecoratorPodSpec(args *DecoratorArgs) corev1.PodSpec {
 
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{{
-			Name:  "publisher",
 			Image: args.Image,
 			Env: []corev1.EnvVar{{
 				Name:  "K_CE_EXTENSIONS",
