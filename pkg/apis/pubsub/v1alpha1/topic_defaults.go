@@ -32,6 +32,6 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
 	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = defaultGoogleCloudSecretSelector()
+		ts.Secret = DefaultGoogleCloudSecretSelector()
 	}
 }
