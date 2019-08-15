@@ -25,3 +25,11 @@ type ChannelListerExpansion interface{}
 // ChannelNamespaceListerExpansion allows custom methods to be added to
 // ChannelNamespaceLister.
 type ChannelNamespaceListerExpansion interface{}
+
+// DecoratorListerExpansion allows custom methods to be added to
+// DecoratorLister.
+type DecoratorListerExpansion interface{}
+
+// DecoratorNamespaceListerExpansion allows custom methods to be added to
+// DecoratorNamespaceLister.
+type DecoratorNamespaceListerExpansion interface{}

@@ -17,25 +17,16 @@ limitations under the License.
 package operations
 
 import (
-	"strings"
-
+	"github.com/google/knative-gcp/pkg/operations"
 	"knative.dev/pkg/kmeta"
 )
 
 // TopicJobLabels creates a label to find a job again.
 // keys is recommended to be (name, kind, action)
 func TopicJobLabels(owner kmeta.OwnerRefable, action string) map[string]string {
-	return jobLabels("topic", owner.GetObjectMeta().GetName(), owner.GetGroupVersionKind().Kind, action)
+	return operations.JobLabels("topic", owner.GetObjectMeta().GetName(), owner.GetGroupVersionKind().Kind, action)
 }
 
 func SubscriptionJobLabels(owner kmeta.OwnerRefable, action string) map[string]string {
-	return jobLabels("subscription", owner.GetObjectMeta().GetName(), owner.GetGroupVersionKind().Kind, action)
-}
-
-// SubscriptionJobLabels creates a label to find a job again.
-// keys is recommended to be (name, kind, action)
-func jobLabels(key string, parts ...string) map[string]string {
-	return map[string]string{
-		"pubsub.cloud.run/" + key: strings.Join(append([]string{"ops"}, parts...), "-"),
-	}
+	return operations.JobLabels("subscription", owner.GetObjectMeta().GetName(), owner.GetGroupVersionKind().Kind, action)
 }

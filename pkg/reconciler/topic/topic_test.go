@@ -42,6 +42,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/pubsub/operations"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -149,7 +150,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionExists),
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionExists),
 		},
 	}, {
 		Name: "create topic",
@@ -183,7 +184,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, true),
@@ -201,7 +202,7 @@ func TestAllCases(t *testing.T) {
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
 			),
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 		},
 		Key: testNS + "/" + topicName,
 		WithReactors: []clientgotesting.ReactionFunc{
@@ -241,7 +242,7 @@ func TestAllCases(t *testing.T) {
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
 			),
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionCreate),
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 			newPublisher(true, true),
 			NewService(topicName+"-topic", testNS,
 				WithServiceOwnerReferences(ownerReferences()),
@@ -326,7 +327,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionDelete),
+			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete),
 		},
 	}, {
 		Name: "deleting final stage - policy CreateDelete",
@@ -344,7 +345,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicDeleted,
 				WithTopicTopicDeleting(testTopicID),
 			),
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), operations.ActionDelete, true),
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{

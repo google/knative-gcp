@@ -29,8 +29,8 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -56,7 +56,7 @@ type Adapter struct {
 
 	// SendMode describes how the adapter sends events.
 	// One of [binary, structured, push]. Default: binary
-	SendMode ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
+	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
 	// MetricsDomain holds the metrics domain to use for surfacing metrics.
 	MetricsDomain string `envconfig:"METRICS_DOMAIN" required:"true"`
@@ -71,26 +71,12 @@ type Adapter struct {
 	transformer cloudevents.Client
 }
 
-// ModeType is the type for mode enum.
-type ModeType string
-
-const (
-	// Binary mode is binary encoding.
-	Binary ModeType = "binary"
-	// Structured mode is structured encoding.
-	Structured ModeType = "structured"
-	// Push mode emulates Pub/Sub push encoding.
-	Push ModeType = "push"
-	// DefaultSendMode is the default choice.
-	DefaultSendMode = Binary
-)
-
 // Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
 
 	if a.SendMode == "" {
-		a.SendMode = DefaultSendMode
+		a.SendMode = converters.DefaultSendMode
 	}
 
 	// Receive Events on Pub/Sub.
@@ -151,7 +137,7 @@ func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp 
 	}
 
 	// If send mode is Push, convert to Pub/Sub Push payload style.
-	if a.SendMode == Push {
+	if a.SendMode == converters.Push {
 		event = ConvertToPush(ctx, event)
 	}
 
@@ -178,26 +164,9 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 func (a *Adapter) obsConvert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Converting event from transport.")
-	if msg, ok := m.(*cepubsub.Message); ok {
-		tx := cepubsub.TransportContextFrom(ctx)
-		// Make a new event and convert the message payload.
-		event := cloudevents.NewEvent()
-		event.SetID(tx.ID)
-		event.SetTime(tx.PublishTime)
-		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
-		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-		event.SetType(v1alpha1.PubSubEventType)
-		event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", a.SendMode))
-		event.Data = msg.Data
-		event.DataEncoded = true
-		// Attributes are extensions.
-		if msg.Attributes != nil && len(msg.Attributes) > 0 {
-			for k, v := range msg.Attributes {
-				event.SetExtension(k, v)
-			}
-		}
 
-		return &event, nil
+	if msg, ok := m.(*cepubsub.Message); ok {
+		return converters.Convert(ctx, msg, a.SendMode)
 	}
 	return nil, err
 }
@@ -249,9 +218,9 @@ func (a *Adapter) obsNewHTTPClient(ctx context.Context, target string) (cloudeve
 	}
 
 	switch a.SendMode {
-	case Binary, Push:
+	case converters.Binary, converters.Push:
 		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
-	case Structured:
+	case converters.Structured:
 		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
 	}
 

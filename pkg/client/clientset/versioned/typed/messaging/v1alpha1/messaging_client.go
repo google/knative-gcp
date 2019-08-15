@@ -28,6 +28,7 @@ import (
 type MessagingV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ChannelsGetter
+	DecoratorsGetter
 }
 
 // MessagingV1alpha1Client is used to interact with features provided by the messaging.cloud.run group.
@@ -37,6 +38,10 @@ type MessagingV1alpha1Client struct {
 
 func (c *MessagingV1alpha1Client) Channels(namespace string) ChannelInterface {
 	return newChannels(c, namespace)
+}
+
+func (c *MessagingV1alpha1Client) Decorators(namespace string) DecoratorInterface {
+	return newDecorators(c, namespace)
 }
 
 // NewForConfig creates a new MessagingV1alpha1Client for the given config.

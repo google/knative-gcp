@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,14 +51,14 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
 
-	var mode adapter.ModeType
+	var mode converters.ModeType
 	switch args.Source.PubSubMode() {
 	case "", v1alpha1.ModeCloudEventsBinary:
-		mode = adapter.Binary
+		mode = converters.Binary
 	case v1alpha1.ModeCloudEventsStructured:
-		mode = adapter.Structured
+		mode = converters.Structured
 	case v1alpha1.ModePushCompatible:
-		mode = adapter.Push
+		mode = converters.Push
 	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
