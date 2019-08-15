@@ -16,7 +16,12 @@ limitations under the License.
 
 package v1alpha1
 
-import "context"
+import (
+	"context"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+)
 
 func (t *Topic) SetDefaults(ctx context.Context) {
 	t.Spec.SetDefaults(ctx)
@@ -25,5 +30,8 @@ func (t *Topic) SetDefaults(ctx context.Context) {
 func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
+	}
+	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
+		ts.Secret = defaultGoogleCloudSecretSelector()
 	}
 }

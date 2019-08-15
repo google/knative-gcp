@@ -21,11 +21,18 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestTopicDefaults(t *testing.T) {
 	want := &Topic{Spec: TopicSpec{
 		PropagationPolicy: TopicPolicyCreateNoDelete,
+		Secret: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: "google-cloud-key",
+			},
+			Key: "key.json",
+		},
 	}}
 
 	got := &Topic{Spec: TopicSpec{}}

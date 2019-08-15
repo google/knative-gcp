@@ -19,10 +19,10 @@ metadata:
   namespace: cloud-run-events
   labels:
     events.cloud.run/release: devel
-    control-plane: cloud-run-events-controller
+    app: cloud-run-events-controller
 spec:
   selector:
-    control-plane: cloud-run-events-controller
+    app: cloud-run-events-controller
   ports:
     - name: metrics
       port: 9090

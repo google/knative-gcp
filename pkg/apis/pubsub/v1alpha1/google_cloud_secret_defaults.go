@@ -14,19 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func GetLabelSelector(controller, source string) labels.Selector {
-	return labels.SelectorFromSet(GetLabels(controller, source))
-}
+const (
+	defaultSecretName = "google-cloud-key"
+	defaultSecretKey  = "key.json"
+)
 
-func GetLabels(controller, source string) map[string]string {
-	return map[string]string{
-		"events.cloud.run/controller":       controller,
-		"pubsub.cloud.run/pullsubscription": source,
+// defaultGoogleCloudSecretSelector is the default secret selector used to load
+// the creds for the objects that will auth with Google Cloud.
+func defaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
+	return &corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: defaultSecretName,
+		},
+		Key: defaultSecretKey,
 	}
 }

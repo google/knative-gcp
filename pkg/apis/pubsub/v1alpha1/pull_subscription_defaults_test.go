@@ -77,7 +77,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModePushCompatible,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            defaultSecretSelector(),
+				Secret:            defaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -92,7 +92,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            defaultSecretSelector(),
+				Secret:            defaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -106,7 +106,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            defaultSecretSelector(),
+				Secret:            defaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -120,7 +120,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            defaultSecretSelector(),
+				Secret:            defaultGoogleCloudSecretSelector(),
 			},
 		},
 	}}
