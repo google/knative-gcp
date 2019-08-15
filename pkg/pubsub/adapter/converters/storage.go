@@ -39,7 +39,8 @@ var (
 const (
 	defaultEventType = "google.storage"
 	sourcePrefix     = "//storage.googleapis.com/buckets"
-	schemaUrl        = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+	// TODO generate the schema from a proto instead of observed outputs.
+	schemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
 func storageSource(bucket string) string {
