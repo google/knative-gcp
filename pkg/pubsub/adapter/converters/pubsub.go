@@ -25,6 +25,14 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
+const (
+	pubSubSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/schema.json"
+)
+
+func pubsubSchemaURL(sendMode ModeType) string {
+	return fmt.Sprintf("%s#%s", pubSubSchemaUrl, sendMode)
+}
+
 func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
@@ -34,7 +42,7 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	event.SetType(v1alpha1.PubSubEventType)
-	event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", sendMode))
+	event.SetSchemaURL(pubsubSchemaURL(sendMode))
 	event.Data = msg.Data
 	event.DataEncoded = true
 	// Attributes are extensions.

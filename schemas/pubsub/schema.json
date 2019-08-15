@@ -1,93 +1,103 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/schema.json",
-  "$ref": "#/definitions/payloadDef",
   "title": "The PubSub Schema",
   "definitions": {
-    "payloadDef" : {
-      "$id": "#/definitions/payloadDef",
-      "anyOf" : [
-        {
-          "$id": "#push",
+    "push": {
+      "$id": "#push",
+      "type": "object",
+      "required": [
+        "subscription",
+        "message"
+      ],
+      "properties": {
+        "subscription": {
+          "type": "string",
+          "title": "The Subscription Schema",
+          "default": "",
+          "examples": [
+            "cre-pull-176e54ba-bf7b-11e9-ae05-42010a8a00e1"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "message": {
           "type": "object",
+          "title": "The Message Schema",
           "required": [
-            "subscription",
-            "message"
+            "id",
+            "data",
+            "publish_time"
           ],
           "properties": {
-            "subscription": {
+            "id": {
               "type": "string",
-              "title": "The Subscription Schema",
+              "title": "The Id Schema",
               "default": "",
               "examples": [
-                "cre-pull-176e54ba-bf7b-11e9-ae05-42010a8a00e1"
+                "684198665501459"
               ],
               "pattern": "^(.*)$"
             },
-            "message": {
-              "type": "object",
-              "title": "The Message Schema",
-              "required": [
-                "id",
-                "data",
-                "publish_time"
-              ],
-              "properties": {
-                "id": {
+            "data": {
+              "title": "The Data Schema",
+              "oneOf": [
+                {
                   "type": "string",
-                  "title": "The Id Schema",
                   "default": "",
                   "examples": [
-                    "684198665501459"
+                    "hello world",
+                    "aGVsbG8gd29ybGQ="
                   ],
                   "pattern": "^(.*)$"
                 },
-                "data": {
-                  "title": "The Data Schema",
-                  "oneOf": [
-                    {
-                      "type": "string",
-                      "default": "",
-                      "examples": [
-                        "hello world",
-                        "aGVsbG8gd29ybGQ="
-                      ],
-                      "pattern": "^(.*)$"
-                    },
-                    {
-                      "type": "object"
-                    }
-                  ]
-                },
-                "publish_time": {
-                  "type": "string",
-                  "title": "The Publish_time Schema",
-                  "default": "",
-                  "examples": [
-                    "2019-08-15T16:40:09.932Z"
-                  ],
-                  "pattern": "^(.*)$"
+                {
+                  "type": "object"
                 }
-              }
+              ]
+            },
+            "publish_time": {
+              "type": "string",
+              "title": "The Publish_time Schema",
+              "default": "",
+              "examples": [
+                "2019-08-15T16:40:09.932Z"
+              ],
+              "pattern": "^(.*)$"
             }
-          },
-          "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "binary": {
+      "$id": "#binary",
+      "oneOf": [
+        {
+          "type": "string",
+          "default": "",
+          "examples": [
+            "hello world"
+          ],
+          "pattern": "^(.*)$"
         },
         {
-          "$id": "#pull",
-          "oneOf": [
-            {
-              "type": "string",
-              "default": "",
-              "examples": [
-                "hello world"
-              ],
-              "pattern": "^(.*)$"
-            },
-            {
-              "type": "object"
-            }
-          ]
+          "type": "object"
+        }
+      ]
+    },
+    "structured": {
+      "$id": "#structured",
+      "oneOf": [
+        {
+          "type": "string",
+          "default": "",
+          "examples": [
+            "hello world"
+          ],
+          "pattern": "^(.*)$"
+        },
+        {
+          "type": "object"
         }
       ]
     }

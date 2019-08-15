@@ -61,9 +61,8 @@ spec:
                       type: string
                       pattern: "google.pubsub.topic.publish"
                     schema:
-                      # TODO: set the schema. This might change based on the transformer configured?
                       type: string
-                      pattern: ""
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/schema.json"
         spec:
           # TODO: update the OpenAPI to be much more robust.
           required:
