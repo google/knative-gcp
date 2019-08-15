@@ -50,7 +50,7 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
-		"google-storage": convertStorage,
+		"google.storage": convertStorage,
 	}
 }
 
@@ -63,6 +63,7 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cl
 	}
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["knative-gcp"]; ok {
+			delete(msg.Attributes, "knative-gcp")
 			if c, ok := converters[val]; ok {
 				return c(ctx, msg, sendMode)
 			}

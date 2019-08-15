@@ -24,6 +24,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -78,7 +80,7 @@ func WithInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
 
 func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Spec.Sink = v1alpha1.Destination{
+		s.Spec.Sink = apisv1alpha1.Destination{
 			ObjectReference: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,

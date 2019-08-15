@@ -19,29 +19,77 @@ package converters
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 )
 
+var (
+	// Mapping of GCS eventTypes to CloudEvent types.
+	storageEventTypes = map[string]string{
+		"OBJECT_FINALIZE":        "google.storage.object.finalize",
+		"OBJECT_ARCHIVE":         "google.storage.object.archive",
+		"OBJECT_DELETE":          "google.storage.object.delete",
+		"OBJECT_METADATA_UPDATE": "google.storage.object.metadataUpdate",
+	}
+)
+
+const (
+	defaultEventType = "google.storage"
+	sourcePrefix     = "//storage.googleapis.com/buckets"
+	// TODO generate the schema from a proto instead of observed outputs.
+	schemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+)
+
+func storageSource(bucket string) string {
+	return fmt.Sprintf("%s/%s", sourcePrefix, bucket)
+}
+
 func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
-		return nil, fmt.Errorf("nill pubsub message")
+		return nil, fmt.Errorf("nil pubsub message")
 	}
+
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent()
+	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
+	event.SetSchemaURL(schemaUrl)
 	if msg.Attributes != nil {
-		if val, ok := msg.Attributes["notificationConfig"]; ok {
-			delete(msg.Attributes, "notificationConfig")
-			event.SetSource(val)
+		if val, ok := msg.Attributes["bucketId"]; ok {
+			delete(msg.Attributes, "bucketId")
+			event.SetSource(storageSource(val))
 		} else {
-			return nil, fmt.Errorf("received event did not have notificationConfig")
+			return nil, fmt.Errorf("received event did not have bucketId")
+		}
+		if val, ok := msg.Attributes["objectId"]; ok {
+			delete(msg.Attributes, "objectId")
+			event.SetSubject(val)
+		} else {
+			// Not setting subject, as it's optional
+			logging.FromContext(ctx).Desugar().Debug("received event did not have objectId")
+		}
+		if val, ok := msg.Attributes["eventType"]; ok {
+			delete(msg.Attributes, "eventType")
+			if eventType, ok := storageEventTypes[val]; ok {
+				event.SetType(eventType)
+			} else {
+				logging.FromContext(ctx).Desugar().Debug("Unknown eventType, using default", zap.String("eventType", eventType), zap.String("default", defaultEventType))
+				event.SetType(defaultEventType)
+			}
+		} else {
+			return nil, fmt.Errorf("received event did not have eventType")
+		}
+		if _, ok := msg.Attributes["eventTime"]; ok {
+			delete(msg.Attributes, "eventTime")
+		}
+		if _, ok := msg.Attributes["payloadFormat"]; ok {
+			delete(msg.Attributes, "payloadFormat")
 		}
 	}
-	event.SetType("google.storage")
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	event.SetData(msg.Data)
 	// Attributes are extensions.

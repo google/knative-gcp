@@ -30,6 +30,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/pubsub"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -68,7 +69,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 	}}
 
 	switch arg.Action {
-	case ActionCreate:
+	case operations.ActionCreate:
 		env = append(env, []corev1.EnvVar{{
 			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD",
 			Value: arg.AckDeadline.String(),
@@ -81,7 +82,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 		}}...)
 	}
 
-	podTemplate := makePodTemplate(arg.Image, arg.Secret, env...)
+	podTemplate := operations.MakePodTemplate(arg.Image, arg.Secret, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
@@ -166,14 +167,14 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	}
 
 	switch s.Action {
-	case ActionExists:
+	case operations.ActionExists:
 		// If subscription doesn't exist, that is an error.
 		if !exists {
 			return errors.New("subscription does not exist")
 		}
 		logger.Info("Previously created.")
 
-	case ActionCreate:
+	case operations.ActionCreate:
 		// Load the topic.
 		topic, err := s.getTopic(ctx)
 		if err != nil {
@@ -219,7 +220,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 			}
 		}
 
-	case ActionDelete:
+	case operations.ActionDelete:
 		if exists {
 			if err := sub.Delete(ctx); err != nil {
 				return fmt.Errorf("failed to delete subscription, %s", err)
