@@ -3,7 +3,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json",
   "type": "object",
-  "title": "The Root Schema",
+  "title": "The Storage Schema",
   "required": [
     "kind",
     "id",
