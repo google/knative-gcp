@@ -20,23 +20,24 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func GetLabelSelector(controller, channel string) labels.Selector {
-	return labels.SelectorFromSet(GetLabels(controller, channel))
+func GetLabelSelector(controller, channel, uid string) labels.Selector {
+	return labels.SelectorFromSet(GetLabels(controller, channel, uid))
 }
 
-func GetLabels(controller, channel string) map[string]string {
+func GetLabels(controller, channel, uid string) map[string]string {
 	return map[string]string{
-		"cloud-run-events-channel":      controller,
-		"cloud-run-events-channel-name": channel,
+		"cloud-run-events-channel":        controller,
+		"cloud-run-events-channel-name":   channel,
+		"cloud-run-events-controller-uid": uid,
 	}
 }
 
-func GetPullSubscriptionLabelSelector(controller, source, subscriber string) labels.Selector {
-	return labels.SelectorFromSet(GetPullSubscriptionLabels(controller, source, subscriber))
+func GetPullSubscriptionLabelSelector(controller, source, subscriber, uid string) labels.Selector {
+	return labels.SelectorFromSet(GetPullSubscriptionLabels(controller, source, subscriber, uid))
 }
 
-func GetPullSubscriptionLabels(controller, channel, subscriber string) map[string]string {
-	l := GetLabels(controller, channel)
+func GetPullSubscriptionLabels(controller, channel, subscriber, uid string) map[string]string {
+	l := GetLabels(controller, channel, uid)
 	l["cloud-run-events-channel-subscriber"] = subscriber
 	return l
 }

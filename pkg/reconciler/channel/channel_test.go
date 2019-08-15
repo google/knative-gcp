@@ -295,25 +295,6 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			//Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
-		//WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//	Object: NewChannel(channelName, testNS,
-		//		WithChannelUID(channelUID),
-		//		WithChannelSpec(v1alpha1.ChannelSpec{
-		//			Project: testProject,
-		//		}),
-		//		WithInitChannelConditions,
-		//		WithChannelDefaults,
-		//		WithChannelTopic(testTopicID),
-		//		WithChannelAddress(topicURI),
-		//		WithChannelSubscribers([]eventingduck.SubscriberSpec{
-		//			{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-		//		}),
-		//		WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-		//			{UID: subscriptionUID, ObservedGeneration: 1},
-		//		}),
-		//	),
-		//}
-		//},
 		WantCreates: []runtime.Object{
 			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		},
@@ -390,11 +371,11 @@ func newTopic() *pubsubv1alpha1.Topic {
 
 	return resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
-		Name:    resources.GenerateTopicName(channel.UID),
+		Name:    resources.GeneratePublisherName(channel),
 		Project: channel.Spec.Project,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
-		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
+		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 	})
 }
 
@@ -423,7 +404,7 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 		Project:    channel.Spec.Project,
 		Topic:      channel.Status.TopicID,
 		Secret:     channel.Spec.Secret,
-		Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID)),
+		Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
 		Subscriber: subscriber,
 	})
 }

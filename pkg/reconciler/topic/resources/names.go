@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	. "strings"
 
 	"knative.dev/pkg/kmeta"
 
@@ -25,5 +26,8 @@ import (
 )
 
 func GeneratePublisherName(topic *v1alpha1.Topic) string {
+	if HasPrefix(topic.Name, "cre-") {
+		return kmeta.ChildName(topic.Name, "-publish")
+	}
 	return kmeta.ChildName(fmt.Sprintf("cre-%s", topic.Name), "-publish")
 }

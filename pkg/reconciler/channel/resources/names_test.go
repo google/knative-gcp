@@ -17,14 +17,43 @@ limitations under the License.
 package resources
 
 import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
-func TestGenerateTopicName(t *testing.T) {
+func TestGenerateTopicID(t *testing.T) {
 	want := "cre-chan-a-uid"
-	got := GenerateTopicName("a-uid")
+	got := GenerateTopicID("a-uid")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGeneratePublisherName(t *testing.T) {
+	want := "cre-foo-chan"
+	got := GeneratePublisherName(&v1alpha1.Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "foo",
+		},
+	})
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGeneratePublisherNameFromChannel(t *testing.T) {
+	want := "cre-foo-chan"
+	got := GeneratePublisherName(&v1alpha1.Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "cre-foo",
+		},
+	})
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
