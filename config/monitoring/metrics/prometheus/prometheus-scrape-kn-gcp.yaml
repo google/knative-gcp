@@ -8,9 +8,9 @@
   - role: pod
   relabel_configs:
   # Scrape only the the targets matching the following metadata
-  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name]
+  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_label_role, __meta_kubernetes_pod_container_port_name]
     action: keep
-    regex: cloud-run-events;controller;metrics
+    regex: cloud-run-events;cloud-run-events;controller;metrics
   # Rename metadata labels to be reader friendly
   - source_labels: [__meta_kubernetes_namespace]
     target_label: namespace
@@ -24,9 +24,9 @@
   - role: pod
   relabel_configs:
   # Scrape only the the targets matching the following metadata
-  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name]
+  - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_label_app, __meta_kubernetes_pod_label_role, __meta_kubernetes_pod_container_port_name]
     action: keep
-    regex: cloud-run-events;webhook;metrics
+    regex: cloud-run-events;cloud-run-events;webhook;metrics
   # Rename metadata labels to be reader friendly
   - source_labels: [__meta_kubernetes_namespace]
     target_label: namespace

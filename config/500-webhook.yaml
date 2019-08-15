@@ -23,12 +23,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: webhook
+      app: cloud-run-events
       role: webhook
   template:
     metadata:
       labels:
-        app: webhook
+        app: cloud-run-events
         role: webhook
         events.cloud.run/release: devel
     spec:
