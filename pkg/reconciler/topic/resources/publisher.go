@@ -62,7 +62,6 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{{
-			Name:  "publisher",
 			Image: args.Image,
 			Env: []corev1.EnvVar{{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",

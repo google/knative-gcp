@@ -94,7 +94,7 @@ func TestMakePublisherV1beta1(t *testing.T) {
         ],
         "containers": [
           {
-            "name": "publisher",
+            "name": "",
             "image": "test-image",
             "env": [
               {
@@ -197,7 +197,7 @@ func TestMakePublisherV1alpha1(t *testing.T) {
         ],
         "containers": [
           {
-            "name": "publisher",
+            "name": "",
             "image": "test-image",
             "env": [
               {
