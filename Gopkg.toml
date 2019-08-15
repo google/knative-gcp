@@ -39,19 +39,19 @@ required = [
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.12.9"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.12.9"
 
 [[override]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.12.9"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.6"
+  version = "kubernetes-1.12.9"
 
 # manifestival is a testing only dep.
 [[constraint]]
@@ -64,20 +64,6 @@ required = [
   name = "github.com/cloudevents/sdk-go"
   # HEAD as of 2019-06-04
   revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
-
-[[override]]
-  name = "contrib.go.opencensus.io/exporter/stackdriver"
-  # HEAD as of 2019-02-11
-  # Needed because this includes a fix to support Stackdriver built-in metrics
-  revision = "c06c82c832edca4eaf7b0241bd655560a1be0346"
-
-[[override]]
-  name = "google.golang.org/genproto"
-  revision = "e7d98fc518a78c9f8b5ee77be7b0b317475d89e1"
-
-[[override]]
-  name = "github.com/census-instrumentation/opencensus-proto"
-  version = "0.1.0"
 
 [prune]
   go-tests = true
@@ -101,3 +87,17 @@ required = [
 [[constraint]]
   branch = "master"
   name = "golang.org/x/net"
+
+# Required for opencensus.
+[[override]]
+  name = "contrib.go.opencensus.io/exporter/stackdriver"
+  version = "0.12.2"
+
+# Required for opencensus.
+[[override]]
+  name = "github.com/census-instrumentation/opencensus-proto"
+  version = "0.2.0"
+
+[[override]]
+  name = "cloud.google.com/go"
+  version = "0.44.3"
