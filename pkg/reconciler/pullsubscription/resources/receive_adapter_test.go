@@ -59,9 +59,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "source-namespace",
-			GenerateName: "pubsub-source-name-",
-			Annotations:  map[string]string{},
+			Namespace:   "source-namespace",
+			Name:        "cre-pull-",
+			Annotations: map[string]string{},
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -94,6 +94,9 @@ func TestMakeReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
+							Name:  "METRICS_DOMAIN",
+							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
