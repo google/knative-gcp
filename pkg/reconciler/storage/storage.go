@@ -280,8 +280,10 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	}
 
 	customAttributes := make(map[string]string)
-	for k, v := range storage.Spec.CustomAttributes {
-		customAttributes[k] = v
+	if storage.Spec.CloudEventOverrides != nil {
+		for k, v := range storage.Spec.CloudEventOverrides.Extensions {
+			customAttributes[k] = v
+		}
 	}
 
 	// Add our own event type here...
