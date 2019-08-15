@@ -59,9 +59,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "source-namespace",
-			GenerateName: "pubsub-source-name-",
-			Annotations:  map[string]string{},
+			Namespace:   "source-namespace",
+			Name:        "cre-pull-",
+			Annotations: map[string]string{},
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -94,6 +94,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
+							Name:  "METRICS_DOMAIN",
+							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -120,6 +123,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Name:      credsVolume,
 							MountPath: credsMountPath,
 						}},
+						Ports: []corev1.ContainerPort{{Name: "metrics", ContainerPort: 9090}},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: credsVolume,
@@ -177,9 +181,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    "source-namespace",
-			GenerateName: "pubsub-source-name-",
-			Annotations:  map[string]string{},
+			Namespace:   "source-namespace",
+			Name:        "cre-pull-",
+			Annotations: map[string]string{},
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -212,6 +216,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
+							Name:  "METRICS_DOMAIN",
+							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -239,6 +246,10 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
 							MountPath: credsMountPath,
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "metrics",
+							ContainerPort: 9090,
 						}},
 					}},
 					Volumes: []corev1.Volume{{

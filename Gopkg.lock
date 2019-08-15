@@ -1094,7 +1094,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7d668b9ed0ede5e4a99aaed9c9f7c786920de47b2c609a88bcff96c1cd54e7da"
+  digest = "1:4ad65001bd7667eebd1c0e32c4c166cad0ddbc71015195887f9942458ff19012"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1157,7 +1157,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "057c0dfb8f56cec704b8d54c1f0517596df78a55"
+  revision = "d3c17af1d97a4dd7f0167628df312f1e9889f444"
 
 [[projects]]
   branch = "master"
@@ -1218,7 +1218,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "7fa4059a538fb5547e50f036db4e9f8d4eb998aa"
+  revision = "aa17edaa3b0d03edfb5c9cba8422e8151d759fad"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1228,6 +1228,11 @@
     "cloud.google.com/go/pubsub",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/observability",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",

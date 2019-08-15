@@ -38,7 +38,9 @@ var (
 
 const (
 	defaultEventType = "google.storage"
-	sourcePrefix     = "//storage.googleapis.com/buckets/"
+	sourcePrefix     = "//storage.googleapis.com/buckets"
+	// TODO generate the schema from a proto instead of observed outputs.
+	schemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
 func storageSource(bucket string) string {
@@ -55,6 +57,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
+	event.SetSchemaURL(schemaUrl)
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["bucketId"]; ok {
 			delete(msg.Attributes, "bucketId")
@@ -79,6 +82,12 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 			}
 		} else {
 			return nil, fmt.Errorf("received event did not have eventType")
+		}
+		if _, ok := msg.Attributes["eventTime"]; ok {
+			delete(msg.Attributes, "eventTime")
+		}
+		if _, ok := msg.Attributes["payloadFormat"]; ok {
+			delete(msg.Attributes, "payloadFormat")
 		}
 	}
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())

@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
@@ -65,6 +67,9 @@ type Adapter struct {
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
+	// MetricsDomain holds the metrics domain to use for surfacing metrics.
+	MetricsDomain string `envconfig:"METRICS_DOMAIN" required:"true"`
+
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
 
@@ -96,7 +101,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Send events on HTTP.
 	if a.outbound == nil {
-		if a.outbound, err = a.newHTTPClient(a.Sink); err != nil {
+		if a.outbound, err = a.newHTTPClient(ctx, a.Sink); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}
@@ -114,6 +119,17 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
+	err := a.obsReceive(ctx, event, resp)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return err
+}
+
+func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
 	// If a transformer has been configured, then transform the message.
@@ -154,6 +170,17 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 }
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
+	event, cerr := a.obsConvert(ctx, m, err)
+	if cerr != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return event, cerr
+}
+
+func (a *Adapter) obsConvert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Converting event from transport.")
 
@@ -164,6 +191,17 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 }
 
 func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportNewPubSubClient})
+	c, err := a.obsNewPubSubClient(ctx)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return c, err
+}
+
+func (a *Adapter) obsNewPubSubClient(ctx context.Context) (cloudevents.Client, error) {
 	tOpts := []cepubsub.Option{
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
@@ -182,7 +220,18 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 	)
 }
 
-func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
+func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
+	_, r := observability.NewReporter(ctx, CodecObserved{o: reportNewHTTPClient})
+	c, err := a.obsNewHTTPClient(ctx, target)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return c, err
+}
+
+func (a *Adapter) obsNewHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
 		cloudevents.WithTarget(target),
 	}

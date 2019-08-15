@@ -17,13 +17,16 @@ limitations under the License.
 package operations
 
 import (
+	"knative.dev/pkg/kmeta"
 	"strings"
 )
 
 // JobLabels creates a label to find a job again.
 // keys is recommended to be (name, kind, action)
 func JobLabels(key string, parts ...string) map[string]string {
+	value := strings.Join(append(parts), "-")
+	value = kmeta.ChildName(value, "ops")
 	return map[string]string{
-		"pubsub.cloud.run/" + key: strings.Join(append([]string{"ops"}, parts...), "-"),
+		"events.cloud.run/" + key: value,
 	}
 }
