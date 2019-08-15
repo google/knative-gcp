@@ -62,7 +62,6 @@ spec:
                       pattern: "google.pubsub.topic.publish"
                     schema:
                       type: string
-                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/schema.json"
         spec:
           # TODO: update the OpenAPI to be much more robust.
           required:
