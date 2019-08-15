@@ -47,7 +47,7 @@ func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	}
 
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = defaultGoogleCloudSecretSelector()
+		ss.Secret = DefaultGoogleCloudSecretSelector()
 	}
 
 	switch ss.Mode {

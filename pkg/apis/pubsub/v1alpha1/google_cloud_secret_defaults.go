@@ -25,9 +25,9 @@ const (
 	defaultSecretKey  = "key.json"
 )
 
-// defaultGoogleCloudSecretSelector is the default secret selector used to load
+// DefaultGoogleCloudSecretSelector is the default secret selector used to load
 // the creds for the objects that will auth with Google Cloud.
-func defaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
+func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 	return &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
 			Name: defaultSecretName,
