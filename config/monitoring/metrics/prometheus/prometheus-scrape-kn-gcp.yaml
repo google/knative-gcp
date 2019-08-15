@@ -1,3 +1,5 @@
+#############################################
+### The following is for Cloud Run Events ###
 # Cloud Run Events Controller endpoint
 - job_name: cloud-run-events-controller
   scrape_interval: 3s
@@ -64,4 +66,5 @@
     target_label: namespace
   - source_labels: [__meta_kubernetes_pod_name]
     target_label: pod
-
+### End config for Cloud Run Events ###
+#######################################

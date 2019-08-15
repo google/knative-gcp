@@ -1,5 +1,7 @@
 # Knative with GCP Metrics
 
+_All commands assume root of repo._ 
+
 ## Prometheus Collection
 
 1. Enable Knatives install of Prometheus to scrape Knative with GCP, run the
@@ -58,24 +60,44 @@
    rm tmp.prometheus-scrape-config.yaml
    ```
 
+#### Remove Scrape Config
+
+Remove the text related to Cloud Run Events from `prometheus-scrape-config`, 
+
+```shell
+kubectl edit configmap -n  knative-monitoring prometheus-scrape-config
+```
+
+And then restart Prometheus.
+
+
 ## Grafana Dashboard
 
 To enable the Knative with GCP dashboard in Grafana, run the following:
 
 ```shell
 kubectl patch  configmap grafana-dashboard-definition-knative -n knative-monitoring \
-  --patch "$(cat grafana/100-grafana-dash-kn-gcp.yaml)"
+  --patch "$(cat config/monitoring/metrics/grafana/100-grafana-dash-kn-gcp.yaml)"
 ```
 
 ## Accessing Prometheus and Grafana
 
-kubectl port-forward --namespace knative-monitoring \
- \$(kubectl get pods --namespace knative-monitoring --selector=app=grafana
---output=jsonpath="{.items..metadata.name}") \
- 3000
+#### Prometheus port forwarding:
 
 ```shell
 kubectl port-forward -n knative-monitoring \
   $(kubectl get pods -n knative-monitoring --selector=app=prometheus --output=jsonpath="{.items[0].metadata.name}") \
   9090
 ```
+
+Then, access the [Prometheus Dashboard](http://localhost:9090)
+
+####  Grafana port forwarding:
+
+```shell
+kubectl port-forward --namespace knative-monitoring \
+  $(kubectl get pods --namespace knative-monitoring --selector=app=grafana --output=jsonpath="{.items..metadata.name}") \
+  3000
+```
+
+Then, access the [Grafana Dashboard](http://localhost:3000)
