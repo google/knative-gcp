@@ -1,7 +1,0 @@
-{
-  "definitions": {},
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/pull.json",
-  "type": "string",
-  "title": "The PubSub Pull Schema"
-}

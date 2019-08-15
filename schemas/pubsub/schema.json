@@ -6,6 +6,7 @@
           "type": "string",
           "default": "",
           "examples": [
+            "hello world",
             "aGVsbG8gd29ybGQ="
           ],
           "pattern": "^(.*)$"
@@ -14,63 +15,68 @@
           "type": "object"
         }
       ]
+    },
+    "payloadDef" : {
+      "oneOf" : [
+        {
+          "$ref": "#/definitions/dataDef"
+        },
+        {
+          "type": "object",
+          "required": [
+            "subscription",
+            "message"
+          ],
+          "properties": {
+            "subscription": {
+              "type": "string",
+              "title": "The Subscription Schema",
+              "default": "",
+              "examples": [
+                "cre-pull-176e54ba-bf7b-11e9-ae05-42010a8a00e1"
+              ],
+              "pattern": "^(.*)$"
+            },
+            "message": {
+              "type": "object",
+              "title": "The Message Schema",
+              "required": [
+                "id",
+                "data",
+                "publish_time"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "title": "The Id Schema",
+                  "default": "",
+                  "examples": [
+                    "684198665501459"
+                  ],
+                  "pattern": "^(.*)$"
+                },
+                "data": {
+                  "$ref": "#/definitions/dataDef",
+                  "title": "The Data Schema"
+                },
+                "publish_time": {
+                  "type": "string",
+                  "title": "The Publish_time Schema",
+                  "default": "",
+                  "examples": [
+                    "2019-08-15T16:40:09.932Z"
+                  ],
+                  "pattern": "^(.*)$"
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/pubsub/schema.json",
-  "type": "object",
-  "title": "The PubSub Schema",
-  "required": [
-    "subscription",
-    "message"
-  ],
-  "properties": {
-    "subscription": {
-      "$id": "#/properties/subscription",
-      "type": "string",
-      "title": "The Subscription Schema",
-      "default": "",
-      "examples": [
-        "cre-pull-176e54ba-bf7b-11e9-ae05-42010a8a00e1"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "message": {
-      "$id": "#/properties/message",
-      "type": "object",
-      "title": "The Message Schema",
-      "required": [
-        "id",
-        "data",
-        "publish_time"
-      ],
-      "properties": {
-        "id": {
-          "$id": "#/properties/message/properties/id",
-          "type": "string",
-          "title": "The Id Schema",
-          "default": "",
-          "examples": [
-            "684198665501459"
-          ],
-          "pattern": "^(.*)$"
-        },
-        "data": {
-          "$id": "#/properties/message/properties/data",
-          "$ref": "#/definitions/dataDef",
-          "title": "The Data Schema"
-        },
-        "publish_time": {
-          "$id": "#/properties/message/properties/publish_time",
-          "type": "string",
-          "title": "The Publish_time Schema",
-          "default": "",
-          "examples": [
-            "2019-08-15T16:40:09.932Z"
-          ],
-          "pattern": "^(.*)$"
-        }
-      }
-    }
-  }
+  "$ref": "#/definitions/payloadDef",
+  "title": "The PubSub Schema"
 }
