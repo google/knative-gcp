@@ -634,17 +634,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2c57a52b1792fad8b668be56c76a9a4959f7b665b8474cfa188c652ef1a2b82d"
-  name = "golang.org/x/tools"
-  packages = [
-    "go/ast/astutil",
-    "imports",
-  ]
-  pruneopts = "NUT"
-  revision = "fbec762f837dc349b73d1eaa820552e2ad177942"
-
-[[projects]]
-  branch = "master"
   digest = "1:9c89a3b7383528050da687b4cf2947d8cdd2d20b1bc13d833dc4ed6a402a8f1c"
   name = "google.golang.org/api"
   packages = [
