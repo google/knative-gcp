@@ -17,8 +17,9 @@ limitations under the License.
 package resources
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/go-cmp/cmp"
 

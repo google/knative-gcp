@@ -17,8 +17,9 @@ limitations under the License.
 package operations
 
 import (
-	"knative.dev/pkg/kmeta"
 	"strings"
+
+	"knative.dev/pkg/kmeta"
 )
 
 // JobLabels creates a label to find a job again.
