@@ -394,7 +394,7 @@ func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*
 	}
 	if !metav1.IsControlledBy(topic, channel) {
 		channel.Status.MarkTopicNotOwned("Topic %q is owned by another resource.", name)
-		return nil, fmt.Errorf("channel: %s does not own Topic: %s", channel.Name, name)
+		return nil, fmt.Errorf("Channel: %s does not own Topic: %s", channel.Name, name)
 	}
 	return topic, nil
 }
