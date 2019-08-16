@@ -287,7 +287,10 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", ps.Name)
 		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
-			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Update(ps)
+			// Don't modify the informers copy.
+			desired := existingPs.DeepCopy()
+			desired.Spec = ps.Spec
+			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Update(desired)
 			if err != nil {
 				c.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateSubscriberFailed", "Updating Subscriber %q failed", genName)
 				return err
