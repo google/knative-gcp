@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
