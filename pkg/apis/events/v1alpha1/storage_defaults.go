@@ -18,6 +18,10 @@ package v1alpha1
 
 import (
 	"context"
+
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (g *Storage) SetDefaults(ctx context.Context) {
@@ -26,4 +30,8 @@ func (g *Storage) SetDefaults(ctx context.Context) {
 
 func (gs *StorageSpec) SetDefaults(ctx context.Context) {
 	// TODO? What defaults?
+
+	if equality.Semantic.DeepEqual(gs.GCSSecret, &corev1.SecretKeySelector{}) {
+		gs.GCSSecret = *v1alpha1.DefaultGoogleCloudSecretSelector()
+	}
 }

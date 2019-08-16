@@ -45,7 +45,7 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -280,8 +280,10 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	}
 
 	customAttributes := make(map[string]string)
-	for k, v := range storage.Spec.CustomAttributes {
-		customAttributes[k] = v
+	if storage.Spec.CloudEventOverrides != nil {
+		for k, v := range storage.Spec.CloudEventOverrides.Extensions {
+			customAttributes[k] = v
+		}
 	}
 
 	// Add our own event type here...

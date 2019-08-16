@@ -1,6 +1,6 @@
 # Knative with GCP Metrics
 
-_All commands assume root of repo._ 
+_All commands assume root of repo._
 
 ## Prometheus Collection
 
@@ -62,14 +62,13 @@ _All commands assume root of repo._
 
 #### Remove Scrape Config
 
-Remove the text related to Cloud Run Events from `prometheus-scrape-config`, 
+Remove the text related to Cloud Run Events from `prometheus-scrape-config`,
 
 ```shell
 kubectl edit configmap -n  knative-monitoring prometheus-scrape-config
 ```
 
 And then restart Prometheus.
-
 
 ## Grafana Dashboard
 
@@ -92,7 +91,7 @@ kubectl port-forward -n knative-monitoring \
 
 Then, access the [Prometheus Dashboard](http://localhost:9090)
 
-####  Grafana port forwarding:
+#### Grafana port forwarding:
 
 ```shell
 kubectl port-forward --namespace knative-monitoring \

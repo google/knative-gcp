@@ -82,7 +82,7 @@ func TestMakePublisherV1alpha1(t *testing.T) {
       "spec": {
         "containers": [
           {
-            "name": "publisher",
+            "name": "",
             "image": "test-image",
             "env": [
               {

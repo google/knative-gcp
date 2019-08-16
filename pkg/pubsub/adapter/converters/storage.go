@@ -19,6 +19,7 @@ package converters
 import (
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
@@ -37,14 +38,14 @@ var (
 )
 
 const (
-	defaultEventType = "google.storage"
-	sourcePrefix     = "//storage.googleapis.com/buckets"
+	storageDefaultEventType = "google.storage"
+	storageSourcePrefix     = "//storage.googleapis.com/buckets"
 	// TODO generate the schema from a proto instead of observed outputs.
-	schemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+	storageSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
 func storageSource(bucket string) string {
-	return fmt.Sprintf("%s/%s", sourcePrefix, bucket)
+	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
 func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
@@ -57,7 +58,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
-	event.SetSchemaURL(schemaUrl)
+	event.SetSchemaURL(storageSchemaUrl)
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["bucketId"]; ok {
 			delete(msg.Attributes, "bucketId")
@@ -77,8 +78,8 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 			if eventType, ok := storageEventTypes[val]; ok {
 				event.SetType(eventType)
 			} else {
-				logging.FromContext(ctx).Desugar().Debug("Unknown eventType, using default", zap.String("eventType", eventType), zap.String("default", defaultEventType))
-				event.SetType(defaultEventType)
+				logging.FromContext(ctx).Desugar().Debug("Unknown eventType, using default", zap.String("eventType", eventType), zap.String("default", storageDefaultEventType))
+				event.SetType(storageDefaultEventType)
 			}
 		} else {
 			return nil, fmt.Errorf("received event did not have eventType")

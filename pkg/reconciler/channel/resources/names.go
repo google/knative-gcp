@@ -18,12 +18,24 @@ package resources
 
 import (
 	"fmt"
+	"strings"
+
+	"knative.dev/pkg/kmeta"
 
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
-func GenerateTopicName(UID types.UID) string {
+func GenerateTopicID(UID types.UID) string {
 	return fmt.Sprintf("cre-chan-%s", string(UID))
+}
+
+func GeneratePublisherName(channel *v1alpha1.Channel) string {
+	if strings.HasPrefix(channel.Name, "cre-") {
+		return kmeta.ChildName(channel.Name, "-chan")
+	}
+	return kmeta.ChildName(fmt.Sprintf("cre-%s", channel.Name), "-chan")
 }
 
 func GenerateSubscriptionName(UID types.UID) string {

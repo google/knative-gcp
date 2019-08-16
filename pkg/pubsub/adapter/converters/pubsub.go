@@ -18,7 +18,6 @@ package converters
 
 import (
 	"context"
-	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
@@ -34,7 +33,13 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	event.SetType(v1alpha1.PubSubEventType)
-	event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", sendMode))
+	// Set the schema if it comes as an attribute.
+	if val, ok := msg.Attributes["schema"]; ok {
+		delete(msg.Attributes, "schema")
+		event.SetSchemaURL(val)
+	}
+	// Set the mode to be an extension attribute.
+	event.SetExtension("knativecemode", sendMode)
 	event.Data = msg.Data
 	event.DataEncoded = true
 	// Attributes are extensions.
@@ -43,6 +48,5 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 			event.SetExtension(k, v)
 		}
 	}
-
 	return &event, nil
 }

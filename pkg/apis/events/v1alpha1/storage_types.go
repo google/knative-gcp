@@ -79,7 +79,7 @@ type StorageSpec struct {
 	// CustomAttributes is the optional list of additional attributes to attach to each Cloud PubSub
 	// message published for this notification subscription.
 	// +optional
-	CustomAttributes map[string]string `json:"customAttributes,omitempty"`
+	CloudEventOverrides *duckv1beta1.CloudEventOverrides `json:"ceOverrides,omitempty"`
 
 	// PayloadFormat specifies the contents of the message payload.
 	// See https://cloud.google.com/storage/docs/pubsub-notifications#payload.

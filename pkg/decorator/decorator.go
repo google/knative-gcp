@@ -19,6 +19,7 @@ package decorator
 import (
 	"context"
 	"fmt"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"

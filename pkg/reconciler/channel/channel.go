@@ -128,7 +128,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	channel.Status.InitializeConditions()
 
 	if channel.Status.TopicID == "" {
-		channel.Status.TopicID = resources.GenerateTopicName(channel.UID)
+		channel.Status.TopicID = resources.GenerateTopicID(channel.UID)
 	}
 
 	// 1. Create the Topic.
@@ -240,7 +240,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
 			Subscriber: s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -267,7 +267,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
 			Subscriber: s,
 		})
 
@@ -336,11 +336,11 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 	}
 	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
-		Name:    resources.GenerateTopicName(channel.UID),
+		Name:    resources.GeneratePublisherName(channel),
 		Project: channel.Spec.Project,
 		Secret:  channel.Spec.Secret,
 		Topic:   channel.Status.TopicID,
-		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
+		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 	}))
 	if err != nil {
 		logging.FromContext(ctx).Info("Topic created.", zap.Error(err), zap.Any("topic", topic))
@@ -350,7 +350,7 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 }
 
 func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
-	name := resources.GenerateTopicName(channel.UID)
+	name := resources.GeneratePublisherName(channel)
 	topic, err := r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -365,7 +365,7 @@ func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*
 func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1alpha1.Channel) ([]pubsubv1alpha1.PullSubscription, error) {
 	sl, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).List(metav1.ListOptions{
 		// Use GetLabelSelector to select all PullSubscriptions related to this channel.
-		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name).String(),
+		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name, string(channel.UID)).String(),
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Channel",
