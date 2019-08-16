@@ -2,6 +2,8 @@ apiVersion: serving.knative.dev/v1alpha1
 kind: Service
 metadata:
   name: pubsub-push
+  labels:
+    events.cloud.run/release: devel
 spec:
   template:
     spec:
