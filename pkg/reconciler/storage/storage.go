@@ -22,17 +22,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
-
+	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
 	storageClient "cloud.google.com/go/storage"
-
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -42,12 +34,19 @@ import (
 	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -129,6 +128,17 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error {
+	// spec.project is optional, so if it is not specified, find the correct value and use it,
+	// rather than spec.project for the entire reconciliation.
+	project := csr.Spec.Project
+	if project == "" {
+		var err error
+		project, err = metadata.ProjectID()
+		if err != nil {
+			return fmt.Errorf("getting metadata.ProjectID(): %v", err)
+		}
+	}
+
 	// If notification / topic has been already configured, stash them here
 	// since right below we remove them.
 	notificationID := csr.Status.NotificationID
@@ -163,7 +173,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(ctx, csr.Spec.Project, csr.Status.Topic)
+		err = c.deleteTopic(ctx, project, csr.Status.Topic)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Topic: %s", err)
 			return err
@@ -185,7 +195,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	err = c.reconcileTopic(ctx, csr)
+	err = c.reconcileTopic(ctx, csr, project)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile topic %s", err)
 		csr.Status.MarkPubSubTopicNotReady(fmt.Sprintf("Failed to create GCP PubSub Topic: %s", err), "")
@@ -195,7 +205,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	csr.Status.MarkPubSubTopicReady()
 
 	// Make sure PullSubscription is in the state we expect it to be in.
-	pubsub, err := c.reconcilePullSubscription(ctx, csr)
+	pubsub, err := c.reconcilePullSubscription(ctx, csr, project)
 	if err != nil {
 		// TODO: Update status appropriately
 		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
@@ -213,7 +223,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		csr.Status.MarkPullSubscriptionReady()
 	}
 
-	notification, err := c.reconcileNotification(ctx, csr)
+	notification, err := c.reconcileNotification(ctx, csr, project)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
@@ -228,7 +238,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage, project string) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -237,7 +247,7 @@ func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha
 		return existing, nil
 	}
 	if errors.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr, "testing")
+		pubsub := resources.MakePullSubscription(csr, project)
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
@@ -258,7 +268,7 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.S
 	return err
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (*storageClient.Notification, error) {
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage, project string) (*storageClient.Notification, error) {
 	sc, err := storageClient.NewClient(ctx)
 	if err != nil {
 		c.Logger.Infof("Failed to create storage client: %s", err)
@@ -291,7 +301,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 
 	c.Logger.Infof("Creating a notification on bucket %s", storage.Spec.Bucket)
 	notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
-		TopicProjectID:   storage.Spec.Project,
+		TopicProjectID:   project,
 		TopicID:          storage.Status.Topic,
 		PayloadFormat:    storageClient.JSONPayload,
 		EventTypes:       c.toStorageEventTypes(storage.Spec.EventTypes),
@@ -316,14 +326,14 @@ func (c *Reconciler) toStorageEventTypes(eventTypes []string) []string {
 	return storageTypes
 }
 
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) error {
+func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage, project string) error {
 	if csr.Status.Topic == "" {
 		c.Logger.Infof("No topic found in status, creating a unique one")
 		// Create a UUID for the topic. prefix with storage- to make it conformant.
 		csr.Status.Topic = fmt.Sprintf("storage-%s", uuid.New().String())
 	}
 
-	psc, err := pubsub.NewClient(ctx, csr.Spec.Project)
+	psc, err := pubsub.NewClient(ctx, project)
 	if err != nil {
 		return err
 	}

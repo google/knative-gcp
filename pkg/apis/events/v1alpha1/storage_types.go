@@ -65,6 +65,7 @@ type StorageSpec struct {
 
 	// Project is the ID of the Google Cloud Project that the Bucket being
 	// subscribed to exists in.
+	// +optional
 	Project string `json:"Project,omitempty"`
 
 	// Bucket to subscribe to.

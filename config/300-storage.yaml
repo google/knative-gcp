@@ -125,7 +125,6 @@ spec:
                   - metadataUpdate
                 type: string
           required:
-          - gcsSecret
           - bucket
           - sink
         status:
