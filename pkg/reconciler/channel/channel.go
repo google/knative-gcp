@@ -216,13 +216,9 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				ps, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
-				wantReady := corev1.ConditionTrue
-				if !ps.Status.IsReady() {
-					wantReady = corev1.ConditionFalse
-				}
-				// If did not find or the PS has updated generation or updated readiness, update it.
-				if !found || got.ObservedGeneration != want.Generation || got.Ready != wantReady {
+				_, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
+				// If did not find or the PS has updated generation, update it.
+				if !found || got.ObservedGeneration != want.Generation {
 					subUpdates = append(subUpdates, want)
 				}
 			}
