@@ -39,7 +39,6 @@ type DecoratorArgs struct {
 }
 
 func MakeDecoratorExtensionsMap(base64Extensions string) map[string]string {
-
 	quotedExtensions := strconv.Quote(string(base64Extensions))
 
 	var byteExtensions []byte
@@ -81,15 +80,14 @@ func MakeDecoratorExtensionsString(extensions map[string]string) string {
 }
 
 func makeDecoratorPodSpec(args *DecoratorArgs) corev1.PodSpec {
-
-	additions := MakeDecoratorExtensionsString(args.Decorator.Spec.Extensions)
+	ceExtensions := MakeDecoratorExtensionsString(args.Decorator.Spec.Extensions)
 
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{{
 			Image: args.Image,
 			Env: []corev1.EnvVar{{
 				Name:  "K_CE_EXTENSIONS",
-				Value: additions,
+				Value: ceExtensions,
 			}, {
 				Name:  "K_SINK",
 				Value: args.Decorator.Status.SinkURI,
