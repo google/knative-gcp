@@ -42,16 +42,17 @@ var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Conditions{})
 
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
-	// GCSCredsSecret is the credential to use to create the Notification on the GCS bucket.
+	// GCSSecret is the credential to use to create the Notification on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+	// +optional
 	GCSSecret corev1.SecretKeySelector `json:"gcsSecret"`
 
-	// PullSubsciptionSecret is the credential to use for the GCP PubSub Subscription.
+	// PullSubscriptionSecret is the credential to use for the GCP PubSub Subscription.
 	// It is used for the PullSubscription that is used to deliver events from GCS.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// If omitted, uses GCSSecret from above
+	// If omitted, uses GCSSecret from above.
 	// +optional
 	PullSubscriptionSecret *corev1.SecretKeySelector `json:"pullSubscriptionSecret,omitempty"`
 
@@ -69,7 +70,8 @@ type StorageSpec struct {
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
 
-	// EventTypes to subscribe to.
+	// EventTypes to subscribe to. If unspecified, then subscribe to all events.
+	// +optional
 	EventTypes []string `json:"eventTypes,omitempty"`
 
 	// ObjectNamePrefix limits the notifications to objects with this prefix
