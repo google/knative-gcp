@@ -154,6 +154,11 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		return err
 	}
 
+	// 3. Sync all subscriptions statuses.
+	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -255,8 +260,6 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
-			// TODO read the condition from PullSubscription, and add a message if it's not ready for channel subscribers.
-			Ready: corev1.ConditionTrue,
 		})
 		return nil // Signal a re-reconcile.
 	}
@@ -290,14 +293,10 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				return err
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", ps.Name)
-		} else {
-			ps = &existingPs
 		}
 		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
 				channel.Status.SubscribableStatus.Subscribers[i].ObservedGeneration = s.Generation
-				// TODO read the condition from PullSubscription, and add a message if it's not ready for channel subscribers.
-				channel.Status.SubscribableStatus.Subscribers[i].Ready = corev1.ConditionTrue
 				break
 			}
 		}
@@ -323,6 +322,35 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			}
 		}
 		return nil // Signal a re-reconcile.
+	}
+
+	return nil
+}
+
+func (c *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha1.Channel) error {
+	if channel.Status.SubscribableStatus == nil {
+		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
+			Subscribers: []eventingduck.SubscriberStatus(nil),
+		}
+	}
+
+	// Make a map of subscriber name to PullSubscription for lookup.
+	pullsubs := make(map[string]pubsubv1alpha1.PullSubscription)
+	if subs, err := c.getPullSubscriptions(ctx, channel); err != nil {
+		c.Logger.Errorf("Failed to list PullSubscriptions, %s", err)
+	} else {
+		for _, s := range subs {
+			pullsubs[resources.ExtractUIDFromSubscriptionName(s.Name)] = s
+		}
+	}
+
+	for i, ss := range channel.Status.SubscribableStatus.Subscribers {
+		if ps, ok := pullsubs[string(ss.UID)]; ok {
+			ready, msg := c.getPullSubscriptionStatus(&ps)
+			channel.Status.SubscribableStatus.Subscribers[i].Ready = ready
+			channel.Status.SubscribableStatus.Subscribers[i].Message = msg
+			break
+		}
 	}
 
 	return nil
@@ -366,7 +394,7 @@ func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*
 	}
 	if !metav1.IsControlledBy(topic, channel) {
 		channel.Status.MarkTopicNotOwned("Topic %q is owned by another resource.", name)
-		return nil, fmt.Errorf("Channel: %s does not own Topic: %s", channel.Name, name)
+		return nil, fmt.Errorf("channel: %s does not own Topic: %s", channel.Name, name)
 	}
 	return topic, nil
 }
@@ -392,4 +420,14 @@ func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1alpha1
 		}
 	}
 	return subs, nil
+}
+
+func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription) (corev1.ConditionStatus, string) {
+	ready := corev1.ConditionTrue
+	message := ""
+	if !ps.Status.IsReady() {
+		ready = corev1.ConditionFalse
+		message = fmt.Sprintf("PullSubscription %s is not ready", ps.Name)
+	}
+	return ready, message
 }

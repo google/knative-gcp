@@ -215,7 +215,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, Ready: corev1.ConditionTrue},
+					{UID: subscriptionUID, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 				}),
 			),
 		}},
@@ -264,7 +264,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionTrue},
+					{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 				}),
 			),
 		}},
@@ -287,7 +287,7 @@ func TestAllCases(t *testing.T) {
 					{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 				}),
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionTrue},
+					{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 				}),
 			),
 			newReadyTopic(),
