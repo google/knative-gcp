@@ -118,7 +118,7 @@ func (in *ChannelStatus) DeepCopyInto(out *ChannelStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
 	in.AddressStatus.DeepCopyInto(&out.AddressStatus)
-	in.SubscribableStatus.DeepCopyInto(&out.SubscribableStatus)
+	in.SubscribableTypeStatus.DeepCopyInto(&out.SubscribableTypeStatus)
 	return
 }
 

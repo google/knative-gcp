@@ -139,6 +139,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithInitChannelConditions,
 				WithChannelMarkTopicCreating(testTopicID),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -173,6 +174,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
 			),
 		}},
 	}, {
@@ -213,7 +215,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID},
+					{UID: subscriptionUID, Ready: corev1.ConditionTrue},
 				}),
 			),
 		}},
@@ -262,7 +264,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 2},
+					{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionTrue},
 				}),
 			),
 		}},
@@ -285,7 +287,7 @@ func TestAllCases(t *testing.T) {
 					{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 				}),
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 1},
+					{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionTrue},
 				}),
 			),
 			newReadyTopic(),

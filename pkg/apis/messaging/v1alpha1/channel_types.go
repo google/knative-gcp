@@ -105,8 +105,8 @@ type ChannelStatus struct {
 	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
 	duckv1beta1.AddressStatus `json:",inline"`
 
-	// Subscribers is populated with the statuses of each of the Channelable's subscribers.
-	eventingduck.SubscribableStatus `json:",inline"`
+	// SubscribableTypeStatus is populated with the statuses of each of the Channelable's subscribers.
+	eventingduck.SubscribableTypeStatus `json:",inline"`
 
 	// ProjectID is the resolved project ID in use by the Channel.
 	// +optional
