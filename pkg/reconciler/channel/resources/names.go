@@ -27,6 +27,10 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
+const (
+	subscriptionNamePrefix = "cre-sub-"
+)
+
 func GenerateTopicID(UID types.UID) string {
 	return fmt.Sprintf("cre-chan-%s", string(UID))
 }
@@ -39,5 +43,9 @@ func GeneratePublisherName(channel *v1alpha1.Channel) string {
 }
 
 func GenerateSubscriptionName(UID types.UID) string {
-	return fmt.Sprintf("cre-sub-%s", string(UID))
+	return fmt.Sprintf("%s%s", subscriptionNamePrefix, string(UID))
+}
+
+func ExtractUIDFromSubscriptionName(name string) string {
+	return strings.TrimPrefix(name, subscriptionNamePrefix)
 }
