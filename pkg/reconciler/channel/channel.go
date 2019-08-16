@@ -255,7 +255,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
-			// TODO read the condition from PullSubscription, and add a message if it's not ready.
+			// TODO read the condition from PullSubscription, and add a message if it's not ready for channel subscribers.
 			Ready: corev1.ConditionTrue,
 		})
 		return nil // Signal a re-reconcile.
@@ -296,7 +296,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
 				channel.Status.SubscribableStatus.Subscribers[i].ObservedGeneration = s.Generation
-				// TODO read the condition from PullSubscription, and add a message if it's not ready.
+				// TODO read the condition from PullSubscription, and add a message if it's not ready for channel subscribers.
 				channel.Status.SubscribableStatus.Subscribers[i].Ready = corev1.ConditionTrue
 				break
 			}
