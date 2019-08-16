@@ -128,7 +128,9 @@ func WithChannelSubscribers(subscribers []duckv1alpha1.SubscriberSpec) ChannelOp
 
 func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) ChannelOption {
 	return func(c *v1alpha1.Channel) {
-		c.Status.Subscribers = subscribers
+		c.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{
+			Subscribers: subscribers,
+		}
 	}
 }
 

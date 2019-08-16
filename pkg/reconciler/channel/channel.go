@@ -185,8 +185,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 }
 
 func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
-	if channel.Status.Subscribers == nil {
-		channel.Status.Subscribers = []eventingduck.SubscriberStatus(nil)
+	if channel.Status.SubscribableStatus == nil {
+		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
+			Subscribers: []eventingduck.SubscriberStatus(nil),
+		}
 	}
 
 	subCreates := []eventingduck.SubscriberSpec(nil)
@@ -204,7 +206,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 	}
 
 	exists := make(map[types.UID]eventingduck.SubscriberStatus)
-	for _, s := range channel.Status.Subscribers {
+	for _, s := range channel.Status.SubscribableStatus.Subscribers {
 		exists[s.UID] = s
 	}
 
@@ -214,9 +216,13 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				_, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
-				// If did not find or the PS has updated generation, update it.
-				if !found || got.ObservedGeneration != want.Generation {
+				ps, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
+				wantReady := corev1.ConditionTrue
+				if !ps.Status.IsReady() {
+					wantReady = corev1.ConditionFalse
+				}
+				// If did not find or the PS has updated generation or updated readiness, update it.
+				if !found || got.ObservedGeneration != want.Generation || got.Ready != wantReady {
 					subUpdates = append(subUpdates, want)
 				}
 			}
@@ -250,10 +256,15 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", genName)
 
-		channel.Status.Subscribers = append(channel.Status.Subscribers, eventingduck.SubscriberStatus{
+		ready := corev1.ConditionTrue
+		if !ps.Status.IsReady() {
+			ready = corev1.ConditionFalse
+		}
+		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
-			// TODO: do I need the other fields?
+			Ready:              ready,
+			// TODO add message
 		})
 		return nil // Signal a re-reconcile.
 	}
@@ -287,10 +298,19 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				return err
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", ps.Name)
+		} else {
+			ps = &existingPs
 		}
-		for i, ss := range channel.Status.Subscribers {
+		ready := corev1.ConditionTrue
+		if !ps.Status.IsReady() {
+			ready = corev1.ConditionFalse
+		}
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
-				channel.Status.Subscribers[i].ObservedGeneration = s.Generation
+				channel.Status.SubscribableStatus.Subscribers[i].ObservedGeneration = s.Generation
+				channel.Status.SubscribableStatus.Subscribers[i].Ready = ready
+				// TODO add message
+				break
 			}
 		}
 		return nil
@@ -306,11 +326,12 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", genName)
 
-		for i, ss := range channel.Status.Subscribers {
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
 				// Swap len-1 with i and then pop len-1 off the slice.
-				channel.Status.Subscribers[i] = channel.Status.Subscribers[len(channel.Status.Subscribers)-1]
-				channel.Status.Subscribers = channel.Status.Subscribers[:len(channel.Status.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers[i] = channel.Status.SubscribableStatus.Subscribers[len(channel.Status.SubscribableStatus.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers = channel.Status.SubscribableStatus.Subscribers[:len(channel.Status.SubscribableStatus.Subscribers)-1]
+				break
 			}
 		}
 		return nil // Signal a re-reconcile.
