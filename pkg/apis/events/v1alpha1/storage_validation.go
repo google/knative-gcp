@@ -36,6 +36,11 @@ func (current *StorageSpec) Validate(ctx context.Context) *apis.FieldError {
 	if err := validateRef(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
+
+	// Bucket is required.
+	if current.Bucket == "" {
+		errs = errs.Also(apis.ErrMissingField("bucket"))
+	}
 	return errs
 }
 
