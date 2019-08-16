@@ -19,6 +19,7 @@ package converters
 import (
 	"context"
 	"fmt"
+
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
