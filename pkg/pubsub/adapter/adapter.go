@@ -55,7 +55,7 @@ type Adapter struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
-	// ExtensionsBased64 is a based64 encoded josn string of a map of
+	// ExtensionsBased64 is a based64 encoded json string of a map of
 	// CloudEvents extensions (key-value pairs) override onto the outbound
 	// event.
 	ExtensionsBased64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`

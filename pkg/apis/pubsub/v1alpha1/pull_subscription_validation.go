@@ -136,7 +136,7 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 		return nil
 	}
 
-	// Modification of Sink and Transform allowed. Everything else is immutable.
+	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(PullSubscriptionSpec{},
 			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
