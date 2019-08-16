@@ -27,7 +27,7 @@
     "kind": {
       "$id": "#/properties/kind",
       "type": "string",
-      "title": "The Kind Schema",
+      "description": "The kind of entity that triggered the notification.",
       "default": "",
       "examples": [
         "storage#object"
@@ -37,7 +37,7 @@
     "id": {
       "$id": "#/properties/id",
       "type": "string",
-      "title": "The Id Schema",
+      "description": "The id of the changed object.",
       "default": "",
       "examples": [
         "knative-demo/example.png/1565812362659132"
@@ -47,7 +47,7 @@
     "selfLink": {
       "$id": "#/properties/selfLink",
       "type": "string",
-      "title": "The Selflink Schema",
+      "description": "The link to the changed object.",
       "default": "",
       "examples": [
         "https://www.googleapis.com/storage/v1/b/knative-demo/o/example.png"
@@ -57,7 +57,7 @@
     "name": {
       "$id": "#/properties/name",
       "type": "string",
-      "title": "The Name Schema",
+      "description": "The name of the changed object.",
       "default": "",
       "examples": [
         "example.png"
@@ -67,7 +67,7 @@
     "bucket": {
       "$id": "#/properties/bucket",
       "type": "string",
-      "title": "The Bucket Schema",
+      "description": "The name of the bucket that contains the changed object.",
       "default": "",
       "examples": [
         "knative-demo"
@@ -77,7 +77,7 @@
     "generation": {
       "$id": "#/properties/generation",
       "type": "string",
-      "title": "The Generation Schema",
+      "description": "The generation of the changed object.",
       "default": "",
       "examples": [
         "1565812362659132"
@@ -87,7 +87,7 @@
     "metageneration": {
       "$id": "#/properties/metageneration",
       "type": "string",
-      "title": "The Metageneration Schema",
+      "description": "The meta-generation of the changed object.",
       "default": "",
       "examples": [
         "1"
@@ -97,7 +97,7 @@
     "contentType": {
       "$id": "#/properties/contentType",
       "type": "string",
-      "title": "The Contenttype Schema",
+      "description": "The content of the changed object.",
       "default": "",
       "examples": [
         "image/png"
@@ -107,7 +107,7 @@
     "timeCreated": {
       "$id": "#/properties/timeCreated",
       "type": "string",
-      "title": "The Timecreated Schema",
+      "description": "The creation time of the changed object.",
       "default": "",
       "examples": [
         "2019-08-14T19:52:42.658Z"
@@ -117,7 +117,7 @@
     "updated": {
       "$id": "#/properties/updated",
       "type": "string",
-      "title": "The Updated Schema",
+      "description": "The updated time of the changed object.",
       "default": "",
       "examples": [
         "2019-08-14T19:52:42.658Z"
@@ -127,7 +127,7 @@
     "storageClass": {
       "$id": "#/properties/storageClass",
       "type": "string",
-      "title": "The Storageclass Schema",
+      "description": "The storage class of the changed object.",
       "default": "",
       "examples": [
         "MULTI_REGIONAL"
@@ -137,7 +137,7 @@
     "timeStorageClassUpdated": {
       "$id": "#/properties/timeStorageClassUpdated",
       "type": "string",
-      "title": "The Timestorageclassupdated Schema",
+      "description": "The updated time of the changed object's storage class.",
       "default": "",
       "examples": [
         "2019-08-14T19:52:42.658Z"
@@ -147,7 +147,7 @@
     "size": {
       "$id": "#/properties/size",
       "type": "string",
-      "title": "The Size Schema",
+      "description": "The size of the changed object.",
       "default": "",
       "examples": [
         "199035"
@@ -157,7 +157,7 @@
     "md5Hash": {
       "$id": "#/properties/md5Hash",
       "type": "string",
-      "title": "The Md5hash Schema",
+      "description": "The md5 has of the changed object.",
       "default": "",
       "examples": [
         "c9Jp63Gqxjb/4POdZn8igw=="
@@ -167,7 +167,7 @@
     "mediaLink": {
       "$id": "#/properties/mediaLink",
       "type": "string",
-      "title": "The Medialink Schema",
+      "description": "The media link of the changed object.",
       "default": "",
       "examples": [
         "https://www.googleapis.com/download/storage/v1/b/knative-demo/o/example.png?generation=1565812362659132&alt=media"
@@ -177,7 +177,7 @@
     "crc32c": {
       "$id": "#/properties/crc32c",
       "type": "string",
-      "title": "The Crc32c Schema",
+      "description": "The crc32c of the changed object.",
       "default": "",
       "examples": [
         "y9Umew=="
@@ -187,7 +187,7 @@
     "etag": {
       "$id": "#/properties/etag",
       "type": "string",
-      "title": "The Etag Schema",
+      "description": "The etag of the changed object.",
       "default": "",
       "examples": [
         "CLyKpc2Rg+QCEAE="
