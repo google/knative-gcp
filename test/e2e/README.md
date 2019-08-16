@@ -65,22 +65,19 @@ clients if you wish.
 ## To run manually using `go test` and an existing cluster
 
 ```shell
-E2E_PROJECT_ID=<project name> \
-  go test --tags=e2e ./test/e2e/...
+go test --tags=e2e ./test/e2e/...
 ```
 
 And count is supported too:
 
 ```shell
-E2E_PROJECT_ID=<project name> \
-  go test --tags=e2e ./test/e2e/... --count=3
+go test --tags=e2e ./test/e2e/... --count=3
 ```
 
 If you want to run a specific test:
 
 ```shell
-E2E_PROJECT_ID=<project name> \
-  go test --tags=e2e ./test/e2e/... -run NameOfTest
+go test --tags=e2e ./test/e2e/... -run NameOfTest
 ```
 
 For example, to run TestPullSubscription:
@@ -88,5 +85,5 @@ For example, to run TestPullSubscription:
 ```shell
 GOOGLE_APPLICATION_CREDENTIALS=<path to json creds file> \
 E2E_PROJECT_ID=<project name> \
-  go test --tags=e2e ./test/e2e/... -run TestSmokePullSubscription
+  go test --tags=e2e ./test/e2e/... -run TestPullSubscription
 ```

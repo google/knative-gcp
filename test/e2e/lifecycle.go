@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -83,39 +82,6 @@ func TearDown(client *Client) {
 	if err := DeleteNameSpace(client); err != nil {
 		client.T.Logf("Could not delete the namespace %q: %v", client.Namespace, err)
 	}
-}
-
-func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {
-	// Get all pods in this namespace.
-	pods, err := c.Kube.Kube.CoreV1().Pods(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	logs := "" //map[string]string{}
-
-	// Look for a pod with the name that was passed in inside the pod name.
-	var pod *corev1.Pod
-	for _, p := range pods.Items {
-		if strings.Contains(p.Name, name) {
-			pod = &p
-			break
-		}
-	}
-
-	// Did we find a match like the given name?
-	if pod == nil {
-		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
-	}
-
-	// Collect all the logs from all the containers for this pod.
-	if l, err := c.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(); err != nil {
-		logs = err.Error()
-	} else {
-		logs = string(l)
-	}
-
-	return logs, nil
 }
 
 // DeleteNameSpace deletes the namespace that has the given name.
