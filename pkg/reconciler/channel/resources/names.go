@@ -18,8 +18,9 @@ package resources
 
 import (
 	"fmt"
-	"knative.dev/pkg/kmeta"
 	"strings"
+
+	"knative.dev/pkg/kmeta"
 
 	"k8s.io/apimachinery/pkg/types"
 

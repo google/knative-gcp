@@ -18,7 +18,8 @@ package converters
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go"
+
+	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
