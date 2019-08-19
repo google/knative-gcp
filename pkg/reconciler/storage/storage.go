@@ -38,7 +38,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	"cloud.google.com/go/pubsub"
-	storageClient "cloud.google.com/go/storage"
+	//	storageClient "cloud.google.com/go/storage"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -279,8 +279,9 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.S
 	return err
 }
 
-func (c *Reconciler) EnsureNotificationExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, topic string) (OpsJobStatus, error) {
+func (c *Reconciler) EnsureNotificationExists(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, topic string) (OpsJobStatus, error) {
 	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+		UID:       UID,
 		Image:     c.NotificationOpsImage,
 		Action:    ops.ActionCreate,
 		ProjectID: project,
@@ -292,10 +293,24 @@ func (c *Reconciler) EnsureNotificationExists(ctx context.Context, owner kmeta.O
 }
 
 func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotificationExists(ctx, storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.Topic)
+	state, err := c.EnsureNotificationExists(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.Topic)
 	c.Logger.Infof("STATE: %+v", state)
 	c.Logger.Infof("ERR: %+v", err)
-	return "MADE_UP_NOTIFICATION_ID", nil
+
+	// See if the pod exists or not...
+	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, storage.Namespace, string(storage.UID), "create")
+	if err != nil {
+		return "", err
+	}
+
+	c.Logger.Infof("FOUND POD: %+v", pod)
+	notificationId := ops.GetFirstTerminationMessage(pod)
+	if notificationId != "" {
+		return notificationId, nil
+	} else {
+		return "", fmt.Errorf("did not find termination message for pod %q", pod.Name)
+	}
+
 	/*
 		sc, err := storageClient.NewClient(ctx)
 		if err != nil {
@@ -411,6 +426,19 @@ func (c *Reconciler) deleteTopic(ctx context.Context, project string, topic stri
 	return nil
 }
 
+func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (OpsJobStatus, error) {
+	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+		UID:            UID,
+		Image:          c.NotificationOpsImage,
+		Action:         ops.ActionDelete,
+		ProjectID:      project,
+		Bucket:         bucket,
+		NotificationId: notificationId,
+		Secret:         secret,
+		Owner:          owner,
+	})
+}
+
 // deleteNotification looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
 // in the Storage, remove it.
@@ -419,44 +447,69 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	sc, err := storageClient.NewClient(ctx)
+	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
+
+	c.Logger.Infof("STATE: %+v", state)
+	c.Logger.Infof("ERR: %+v", err)
+	// See if the pod exists or not...
+	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, storage.Namespace, string(storage.UID), "delete")
 	if err != nil {
-		c.Logger.Infof("Failed to create storage client: %s", err)
 		return err
 	}
 
-	bucket := sc.Bucket(storage.Spec.Bucket)
-	notifications, err := bucket.Notifications(ctx)
-	if err != nil {
-		c.Logger.Infof("Failed to fetch existing notifications: %s", err)
-		return err
+	c.Logger.Infof("FOUND POD: %+v", pod)
+	deleteMsg := ops.GetFirstTerminationMessage(pod)
+	if deleteMsg != "" {
+		if deleteMsg == "SUCCESS" {
+			return nil
+		} else {
+			return fmt.Errorf("Job failed with: %q", deleteMsg)
+		}
+	} else {
+		return fmt.Errorf("did not find termination message for pod %q", pod.Name)
 	}
 
-	// This is bit wonky because, we could always just try to delete, but figuring out
-	// if it's NotFound seems to not really work, so, we'll try checking first
-	// the list and only then deleting.
-	if storage.Status.NotificationID != "" {
-		if existing, ok := notifications[storage.Status.NotificationID]; ok {
-			c.Logger.Infof("Found existing notification: %+v", existing)
-			c.Logger.Infof("Deleting notification as: %q", storage.Status.NotificationID)
-			err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
-			if err == nil {
-				c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
-				return nil
-			}
+	return nil
+	/*
+		sc, err := storageClient.NewClient(ctx)
+		if err != nil {
+			c.Logger.Infof("Failed to create storage client: %s", err)
+			return err
+		}
 
-			if st, ok := gstatus.FromError(err); !ok {
-				c.Logger.Infof("error from the cloud storage client: %s", err)
-				return err
-			} else if st.Code() != codes.NotFound {
-				return err
+		bucket := sc.Bucket(storage.Spec.Bucket)
+		notifications, err := bucket.Notifications(ctx)
+		if err != nil {
+			c.Logger.Infof("Failed to fetch existing notifications: %s", err)
+			return err
+		}
+
+		// This is bit wonky because, we could always just try to delete, but figuring out
+		// if it's NotFound seems to not really work, so, we'll try checking first
+		// the list and only then deleting.
+		if storage.Status.NotificationID != "" {
+			if existing, ok := notifications[storage.Status.NotificationID]; ok {
+				c.Logger.Infof("Found existing notification: %+v", existing)
+				c.Logger.Infof("Deleting notification as: %q", storage.Status.NotificationID)
+				err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
+				if err == nil {
+					c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
+					return nil
+				}
+
+				if st, ok := gstatus.FromError(err); !ok {
+					c.Logger.Infof("error from the cloud storage client: %s", err)
+					return err
+				} else if st.Code() != codes.NotFound {
+					return err
+				}
 			}
 		}
-	}
 
-	// Clear the notification ID
-	storage.Status.NotificationID = ""
-	return nil
+		// Clear the notification ID
+		storage.Status.NotificationID = ""
+		return nil
+	*/
 }
 
 func (c *Reconciler) ensureFinalizer(csr *v1alpha1.Storage) error {

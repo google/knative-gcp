@@ -40,6 +40,11 @@ import (
 
 // SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
+	// UID is the UID of the resource that caused this action to be
+	// taken. It will be added to the pod template as a label as
+	// "resource-uid"
+	UID string
+
 	Image               string
 	Action              string
 	ProjectID           string
@@ -82,7 +87,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 		}}...)
 	}
 
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.Secret, env...)
+	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)

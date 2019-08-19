@@ -35,6 +35,7 @@ import (
 )
 
 type TopicArgs struct {
+	UID       string
 	Image     string
 	Action    string
 	ProjectID string
@@ -44,7 +45,7 @@ type TopicArgs struct {
 }
 
 func NewTopicOps(arg TopicArgs) *batchv1.Job {
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.Secret, []corev1.EnvVar{{
+	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {

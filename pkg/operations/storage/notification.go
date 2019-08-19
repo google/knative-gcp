@@ -33,6 +33,8 @@ import (
 
 	storageClient "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/operations"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,6 +53,9 @@ var (
 
 // NotificationArgs are the configuration required to make a NewNotificationOps.
 type NotificationArgs struct {
+	// UID of the resource that caused the action to be taken. Will
+	// be added as a label to the podtemplate.
+	UID string
 	// Image is the actual binary that we'll run to operate on the
 	// notification.
 	Image string
@@ -94,13 +99,22 @@ func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
 
 	switch arg.Action {
 	case operations.ActionCreate:
+		env = append(env, []corev1.EnvVar{
+			{
+				Name:  "EVENT_TYPES",
+				Value: strings.Join(arg.EventTypes, ":"),
+			}, {
+				Name:  "PUBSUB_TOPIC_ID",
+				Value: arg.TopicID,
+			}}...)
+	case operations.ActionDelete:
 		env = append(env, []corev1.EnvVar{{
-			Name:  "EVENT_TYPES",
-			Value: strings.Join(arg.EventTypes, ":"),
+			Name:  "NOTIFICATION_ID",
+			Value: arg.NotificationId,
 		}}...)
 	}
 
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.Secret, env...)
+	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
 
 	backoffLimit := int32(3)
 	parallelism := int32(1)
@@ -138,9 +152,9 @@ type NotificationOps struct {
 	// Bucket to operate on
 	Bucket string `envconfig:"BUCKET" required:"true"`
 
-	// Notification is the environment variable containing the name of the
+	// NotificationId is the environment variable containing the name of the
 	// subscription to use.
-	Notification string `envconfig:"NOTIFICATION_ID" required:"false" default:""`
+	NotificationId string `envconfig:"NOTIFICATION_ID" required:"false" default:""`
 
 	// EventTypes is a : separated eventtypes, if omitted all will be used.
 	EventTypes string `envconfig:"EVENT_TYPES" required:"false" default:""`
@@ -164,7 +178,7 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		zap.String("action", n.Action),
 		zap.String("project", n.Project),
 		zap.String("topic", n.Topic),
-		zap.String("subscription", n.Notification),
+		zap.String("subscription", n.NotificationId),
 	)
 
 	logger.Info("Storage Notification Job.")
@@ -214,17 +228,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 		logger.Info("NOTIFIcATION IS: %+v", nc)
 		notification, err := bucket.AddNotification(ctx, &nc)
-
-		/*
-			notification, err := bucket.AddNotification(ctx, &storageClient.Notification{
-				TopicProjectID:   n.Project,
-				TopicID:          n.Topic,
-				PayloadFormat:    storageClient.JSONPayload,
-				EventTypes:       n.toStorageEventTypes(eventTypes),
-				ObjectNamePrefix: n.ObjectNamePrefix,
-				CustomAttributes: customAttributes,
-			})
-		*/
 		if err != nil {
 			logger.Infof("Failed to create Notification: %s", err)
 			return err
@@ -278,7 +281,49 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		*/
 
 	case operations.ActionDelete:
-		logger.Info("Deleting")
+		notifications, err := bucket.Notifications(ctx)
+		if err != nil {
+			logger.Infof("Failed to fetch existing notifications: %s", err)
+			return err
+		}
+
+		// This is bit wonky because, we could always just try to delete, but figuring out
+		// if it's NotFound seems to not really work, so, we'll try checking first
+		// the list and only then deleting.
+		notificationId := n.NotificationId
+		if notificationId != "" {
+			if existing, ok := notifications[notificationId]; ok {
+				logger.Infof("Found existing notification: %+v", existing)
+				logger.Infof("Deleting notification as: %q", notificationId)
+				err = bucket.DeleteNotification(ctx, notificationId)
+				if err == nil {
+					logger.Infof("Deleted Notification: %q", notificationId)
+					err = n.writeTerminationMessage([]byte("SUCCESS"))
+					if err != nil {
+						logger.Infof("Failed to write termination message: %s", err)
+						return err
+					}
+					return nil
+				}
+
+				if st, ok := gstatus.FromError(err); !ok {
+					logger.Infof("error from the cloud storage client: %s", err)
+					writeErr := n.writeTerminationMessage([]byte(fmt.Sprintf("%s", err)))
+					if writeErr != nil {
+						logger.Infof("Failed to write termination message: %s", writeErr)
+						return err
+					}
+					return err
+				} else if st.Code() != codes.NotFound {
+					writeErr := n.writeTerminationMessage([]byte(fmt.Sprintf("%s", err)))
+					if writeErr != nil {
+						logger.Infof("Failed to write termination message: %s", writeErr)
+						return err
+					}
+					return err
+				}
+			}
+		}
 	default:
 		return fmt.Errorf("unknown action value %v", n.Action)
 	}

@@ -29,7 +29,7 @@ const (
 )
 
 // MakePodTemplate creates a pod template for a Job.
-func MakePodTemplate(image string, secret corev1.SecretKeySelector, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
+func MakePodTemplate(image string, UID, action string, secret corev1.SecretKeySelector, extEnv ...corev1.EnvVar) *corev1.PodTemplateSpec {
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	env := []corev1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
@@ -43,6 +43,10 @@ func MakePodTemplate(image string, secret corev1.SecretKeySelector, extEnv ...co
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				"sidecar.istio.io/inject": "false",
+			},
+			Labels: map[string]string{
+				"resource-uid": UID,
+				"action":       action,
 			},
 		},
 		Spec: corev1.PodSpec{
