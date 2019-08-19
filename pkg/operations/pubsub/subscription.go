@@ -94,7 +94,7 @@ func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    SubscriptionJobName(arg.Owner, arg.Action),
+			Name:            SubscriptionJobName(arg.Owner, arg.Action),
 			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
 			Labels:          SubscriptionJobLabels(arg.Owner, arg.Action),
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
