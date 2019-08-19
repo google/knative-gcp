@@ -48,6 +48,7 @@ var (
 	}
 )
 
+// TODO: the job could output the resolved projectID.
 type NotificationActionResult struct {
 	// Result is the result the operation attempted.
 	Result bool `json:"result,omitempty"`
@@ -141,8 +142,6 @@ func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
 	}
 }
 
-// TODO: the job could output the resolved projectID.
-
 // NotificationOps defines the configuration to use for this operation.
 type NotificationOps struct {
 	StorageOps
@@ -174,10 +173,6 @@ type NotificationOps struct {
 	// necessary encoding / decoding.
 }
 
-//var (
-//	ignoreNotificationConfig = cmpopts.IgnoreFields(pubsub.NotificationConfig{}, "Topic", "Labels")
-//)
-
 // Run will perform the action configured upon a subscription.
 func (n *NotificationOps) Run(ctx context.Context) error {
 	if n.Client == nil {
@@ -204,6 +199,8 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 	case operations.ActionCreate:
 		customAttributes := make(map[string]string)
+		// TODO: figure out how this works with envconfig esp. with encoding
+		// values there.
 		// for k, v := range n.CustomAttributes {
 		//			customAttributes[k] = v
 		//		}
@@ -244,40 +241,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 			logger.Infof("Failed to write termination message: %s", err)
 			return err
 		}
-		/*
-			// If topic doesn't exist, create it.
-			if !exists {
-				// Create a new subscription to the previous topic with the given name.
-				sub, err = s.Client.CreateNotification(ctx, s.Notification, subConfig)
-				if err != nil {
-					return fmt.Errorf("failed to create subscription, %s", err)
-				}
-				logger.Info("Successfully created.")
-			} else {
-				// TODO: here is where we could update config.
-				logger.Info("Previously created.")
-				// Get current config.
-				currentConfig, err := sub.Config(ctx)
-				if err != nil {
-					return fmt.Errorf("failed to get subscription config, %s", err)
-				}
-				// Compare the current config to the expected config. Update if different.
-				if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
-					_, err := sub.Update(ctx, pubsub.NotificationConfig{
-						AckDeadline:         s.AckDeadline,
-						RetainAckedMessages: s.RetainAckedMessages,
-						RetentionDuration:   s.RetentionDuration,
-						Labels:              currentConfig.Labels,
-					})
-					if err != nil {
-						return fmt.Errorf("failed to update subscription config, %s", err)
-					}
-					logger.Info("Updated subscription config.", zap.String("diff", diff))
-
-				}
-			}
-		*/
-
 	case operations.ActionDelete:
 		notifications, err := bucket.Notifications(ctx)
 		if err != nil {
@@ -342,7 +305,6 @@ func (n *NotificationOps) toStorageEventTypes(eventTypes []string) []string {
 	return storageTypes
 }
 
-//func
 func (n *NotificationOps) writeTerminationMessage(result *NotificationActionResult) error {
 	m, err := json.Marshal(result)
 	if err != nil {
