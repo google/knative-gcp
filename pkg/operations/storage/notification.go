@@ -21,12 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	//	"strconv"
 	"io/ioutil"
 	"strings"
-
-	//	"github.com/google/go-cmp/cmp"
-	//	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/kmeta"
@@ -168,10 +164,14 @@ type NotificationOps struct {
 	NotificationId string `envconfig:"NOTIFICATION_ID" required:"false" default:""`
 
 	// EventTypes is a : separated eventtypes, if omitted all will be used.
+	// TODO: Look at native envconfig list support
 	EventTypes string `envconfig:"EVENT_TYPES" required:"false" default:""`
 
 	// ObjectNamePrefix is an optional filter for the GCS
 	ObjectNamePrefix string `envconfig:"OBJECT_NAME_PREFIX" required:"false" default:""`
+
+	// TODO; Add support for custom attributes. Look at using envconfig Map with
+	// necessary encoding / decoding.
 }
 
 //var (
@@ -197,19 +197,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 	// Load the Bucket.
 	bucket := n.Client.Bucket(n.Bucket)
 
-	/*
-		notifications, err := bucket.Notifications(ctx)
-		if err != nil {
-			logger.Infof("Failed to fetch existing notifications: %s", err)
-			return err
-		}
-		sub := s.Client.Notification(s.Notification)
-		exists, err := sub.Exists(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to verify notification exists: %s", err)
-		}
-	*/
-
 	switch n.Action {
 	case operations.ActionExists:
 		// If notification doesn't exist, that is an error.
@@ -217,7 +204,7 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 	case operations.ActionCreate:
 		customAttributes := make(map[string]string)
-		//		for k, v := range storage.Spec.CustomAttributes {
+		// for k, v := range n.CustomAttributes {
 		//			customAttributes[k] = v
 		//		}
 

@@ -59,16 +59,6 @@ const (
 	finalizerName = controllerAgentName
 )
 
-var (
-	// Mapping of the storage importer eventTypes to google storage types.
-	storageEventTypes = map[string]string{
-		"finalize":       "OBJECT_FINALIZE",
-		"archive":        "OBJECT_ARCHIVE",
-		"delete":         "OBJECT_DELETE",
-		"metadataUpdate": "OBJECT_METADATA_UPDATE",
-	}
-)
-
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
 // notifications.
 type Reconciler struct {

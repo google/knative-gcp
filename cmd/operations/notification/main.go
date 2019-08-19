@@ -41,9 +41,9 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 	if err := ops.CreateClient(ctx); err != nil {
-		logger.Fatal("Failed to create Pub/Sub Client.", zap.Error(err))
+		logger.Fatal("Failed to create storage Client.", zap.Error(err))
 	}
 	if err := ops.Run(ctx); err != nil {
-		logger.Fatal("Failed to run Topic Operation.", zap.Error(err))
+		logger.Fatal("Failed to run storage Operation.", zap.Error(err))
 	}
 }
