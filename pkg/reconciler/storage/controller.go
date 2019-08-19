@@ -19,9 +19,12 @@ package storage
 import (
 	"context"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -31,6 +34,7 @@ import (
 	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
 const (
@@ -38,6 +42,11 @@ const (
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-storage-source-controller"
 )
+
+type envConfig struct {
+	// NotificationOps is the image for operating on notifications. Required.
+	NotificationOpsImage string `envconfig:"STORAGE_NOTIFICATION_IMAGE" required:"true"`
+}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -47,14 +56,22 @@ func NewController(
 ) *controller.Impl {
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
+	topicInformer := topicinformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
+	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
+	}
+
 	c := &Reconciler{
-		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		storageLister:          storageInformer.Lister(),
-		pubsubClient:           pubsubClient.Get(ctx),
-		pullSubscriptionLister: pullsubscriptionInformer.Lister(),
+		NotificationOpsImage: env.NotificationOpsImage,
+		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		storageLister:        storageInformer.Lister(),
+		pubsubClient:         pubsubClient.Get(ctx),
+		jobLister:            jobInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -62,6 +79,11 @@ func NewController(
 	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

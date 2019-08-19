@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
-	"github.com/google/knative-gcp/pkg/pubsub/operations"
+	"github.com/google/knative-gcp/pkg/operations/storage"
 )
 
 func main() {
@@ -36,14 +36,14 @@ func main() {
 
 	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
-	ops := operations.SubscriptionOps{}
+	ops := operations.NotificationOps{}
 	if err := envconfig.Process("", &ops); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 	if err := ops.CreateClient(ctx); err != nil {
-		logger.Fatal("Failed to create Pub/Sub Client.", zap.Error(err))
+		logger.Fatal("Failed to create storage Client.", zap.Error(err))
 	}
 	if err := ops.Run(ctx); err != nil {
-		logger.Fatal("Failed to run Subscription Operation.", zap.Error(err))
+		logger.Fatal("Failed to run storage Operation.", zap.Error(err))
 	}
 }
