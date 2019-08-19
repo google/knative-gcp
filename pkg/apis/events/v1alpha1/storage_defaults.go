@@ -31,7 +31,7 @@ func (g *Storage) SetDefaults(ctx context.Context) {
 func (gs *StorageSpec) SetDefaults(ctx context.Context) {
 	// TODO? What defaults?
 
-	if equality.Semantic.DeepEqual(gs.GCSSecret, &corev1.SecretKeySelector{}) {
+	if equality.Semantic.DeepEqual(gs.GCSSecret, corev1.SecretKeySelector{}) {
 		gs.GCSSecret = *v1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }
