@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -49,6 +49,11 @@ func TestMakePullSubscription(t *testing.T) {
 				APIVersion: "v1",
 				Kind:       "Kitchen",
 				Name:       "sink",
+			},
+			CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
+				Extensions: map[string]string{
+					"foo": "bar",
+				},
 			},
 		},
 		Status: v1alpha1.StorageStatus{
@@ -91,6 +96,11 @@ func TestMakePullSubscription(t *testing.T) {
 					APIVersion: "v1",
 					Kind:       "Kitchen",
 					Name:       "sink",
+				},
+			},
+			CloudEventOverrides: &pubsubv1alpha1.CloudEventOverrides{
+				Extensions: map[string]string{
+					"foo": "bar",
 				},
 			},
 		},
