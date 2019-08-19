@@ -43,6 +43,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
 )
@@ -151,11 +152,11 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			// Ensure the Topic is deleted.
 			state, err := c.EnsureTopicDeleted(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 			switch state {
-			case pubsub.OpsJobGetFailed:
+			case ops.OpsJobGetFailed:
 				logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
 				return err
 
-			case pubsub.OpsJobCreated:
+			case ops.OpsJobCreated:
 				// If we created a job to delete a topic, update the status.
 				topic.Status.MarkTopicOperating(
 					"Deleting",
@@ -163,12 +164,12 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 					topic.Status.TopicID)
 				return nil
 
-			case pubsub.OpsJobCompleteSuccessful:
+			case ops.OpsJobCompleteSuccessful:
 				topic.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topic.Status.TopicID)
 				topic.Status.TopicID = ""
 				removeFinalizer(topic)
 
-			case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
+			case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 				logger.Error("Failed to delete topic.", zap.Any("state", state), zap.Error(err))
 
 				msg := "unknown"
@@ -196,14 +197,14 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		state, err := c.EnsureTopicCreated(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
-		case pubsub.OpsJobGetFailed:
+		case ops.OpsJobGetFailed:
 			logger.Error("Failed to get topic ops job.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),
 				zap.Error(err))
 			return err
 
-		case pubsub.OpsJobCreated:
+		case ops.OpsJobCreated:
 			// If we created a job to make a topic, then add the finalizer and update the status.
 			addFinalizer(topic)
 			topic.Status.MarkTopicOperating("Creating",
@@ -211,10 +212,10 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				topic.Status.TopicID)
 			return nil
 
-		case pubsub.OpsJobCompleteSuccessful:
+		case ops.OpsJobCompleteSuccessful:
 			topic.Status.MarkTopicReady()
 
-		case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
+		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to create topic.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),
@@ -235,24 +236,24 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		state, err := c.EnsureTopicExists(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 		// Check state.
 		switch state {
-		case pubsub.OpsJobGetFailed:
+		case ops.OpsJobGetFailed:
 			logger.Error("Failed to get topic ops job.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),
 				zap.Error(err))
 			return err
 
-		case pubsub.OpsJobCreated:
+		case ops.OpsJobCreated:
 			// If we created a job to verify a topic, then update the status.
 			topic.Status.MarkTopicOperating("Verifying",
 				"Created Job to verify topic %q.",
 				topic.Status.TopicID)
 			return nil
 
-		case pubsub.OpsJobCompleteSuccessful:
+		case ops.OpsJobCompleteSuccessful:
 			topic.Status.MarkTopicReady()
 
-		case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
+		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to verify topic.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),

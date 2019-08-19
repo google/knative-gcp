@@ -18,16 +18,15 @@ package resources
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-// MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
+// MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
+func MakeTopic(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.Topic {
 	labels := map[string]string{
 		"receive-adapter": "gcssource",
 	}
@@ -37,7 +36,7 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 		pubsubSecret = *source.Spec.PullSubscriptionSecret
 	}
 
-	return &pubsubv1alpha1.PullSubscription{
+	return &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      source.Name,
 			Namespace: source.Namespace,
@@ -46,13 +45,11 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 				*kmeta.NewControllerRef(source),
 			},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret:  &pubsubSecret,
-			Project: source.Spec.Project,
-			Topic:   topic,
-			Sink: apisv1alpha1.Destination{
-				ObjectReference: &source.Spec.Sink,
-			},
+		Spec: pubsubv1alpha1.TopicSpec{
+			Secret:            &pubsubSecret,
+			Project:           source.Spec.Project,
+			Topic:             topic,
+			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 }

@@ -7,11 +7,11 @@ jobs that operate on configuring notifications on GCS.
 
 ### Directly
 
-There are two Jobs that can be made:
+The Job that can be made:
 
 - `NewNotificationOps` - Operations related to notifications.
 
-Each Job accepts an Action, supported Actions are:
+Job accepts an Action, supported Actions are:
 
 - `create`, will attempt to create the GCS notification
 - `delete`, will attempt to delete the GCS notification

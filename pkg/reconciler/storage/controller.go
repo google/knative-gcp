@@ -34,6 +34,7 @@ import (
 	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
 const (
@@ -55,6 +56,7 @@ func NewController(
 ) *controller.Impl {
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
+	topicInformer := topicinformers.Get(ctx)
 	jobInformer := jobinformer.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
@@ -65,11 +67,11 @@ func NewController(
 	}
 
 	c := &Reconciler{
-		NotificationOpsImage:   env.NotificationOpsImage,
-		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		storageLister:          storageInformer.Lister(),
-		pubsubClient:           pubsubClient.Get(ctx),
-		pullSubscriptionLister: pullsubscriptionInformer.Lister(),
+		NotificationOpsImage: env.NotificationOpsImage,
+		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		storageLister:        storageInformer.Lister(),
+		pubsubClient:         pubsubClient.Get(ctx),
+		jobLister:            jobInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -77,6 +79,11 @@ func NewController(
 	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

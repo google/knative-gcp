@@ -31,6 +31,6 @@ func NotificationJobName(owner kmeta.OwnerRefable, action string) string {
 			owner.GetObjectMeta().GetName(),
 			owner.GetGroupVersionKind().Kind,
 			action}),
-			"-") + "-",
+			"-"),
 	)
 }

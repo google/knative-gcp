@@ -28,6 +28,17 @@ import (
 	"knative.dev/pkg/logging"
 )
 
+type OpsJobStatus string
+
+const (
+	OpsJobGetFailed          OpsJobStatus = "JOB_GET_FAILED"
+	OpsJobCreated            OpsJobStatus = "JOB_CREATED"
+	OpsJobCreateFailed       OpsJobStatus = "JOB_CREATE_FAILED"
+	OpsJobCompleteSuccessful OpsJobStatus = "JOB_SUCCESSFUL"
+	OpsJobCompleteFailed     OpsJobStatus = "JOB_FAILED"
+	OpsJobOngoing            OpsJobStatus = "JOB_ONGOING"
+)
+
 func IsJobComplete(job *batchv1.Job) bool {
 	for _, c := range job.Status.Conditions {
 		if c.Type == batchv1.JobComplete && c.Status == corev1.ConditionTrue {

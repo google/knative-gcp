@@ -48,18 +48,7 @@ type PubSubBase struct {
 	SubscriptionOpsImage string
 }
 
-type OpsJobStatus string
-
-const (
-	OpsJobGetFailed          OpsJobStatus = "JOB_GET_FAILED"
-	OpsJobCreated            OpsJobStatus = "JOB_CREATED"
-	OpsJobCreateFailed       OpsJobStatus = "JOB_CREATE_FAILED"
-	OpsJobCompleteSuccessful OpsJobStatus = "JOB_SUCCESSFUL"
-	OpsJobCompleteFailed     OpsJobStatus = "JOB_FAILED"
-	OpsJobOngoing            OpsJobStatus = "JOB_ONGOING"
-)
-
-func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (ops.OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:          c.SubscriptionOpsImage,
 		Action:         ops.ActionExists,
@@ -71,7 +60,7 @@ func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.O
 	})
 }
 
-func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string, ackDeadline time.Duration, retainAcked bool, retainDuration time.Duration) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string, ackDeadline time.Duration, retainAcked bool, retainDuration time.Duration) (ops.OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:               c.SubscriptionOpsImage,
 		Action:              ops.ActionCreate,
@@ -86,7 +75,7 @@ func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.
 	})
 }
 
-func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (ops.OpsJobStatus, error) {
 	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
 		Image:          c.SubscriptionOpsImage,
 		Action:         ops.ActionDelete,
@@ -98,7 +87,7 @@ func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.
 	})
 }
 
-func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
 		Action:    ops.ActionExists,
@@ -109,7 +98,7 @@ func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRef
 	})
 }
 
-func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
 		Action:    ops.ActionCreate,
@@ -120,7 +109,7 @@ func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRe
 	})
 }
 
-func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (OpsJobStatus, error) {
+func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
 	return c.ensureTopicJob(ctx, operations.TopicArgs{
 		Image:     c.TopicOpsImage,
 		Action:    ops.ActionDelete,
@@ -131,7 +120,7 @@ func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRe
 	})
 }
 
-func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicArgs) (OpsJobStatus, error) {
+func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicArgs) (ops.OpsJobStatus, error) {
 	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.TopicJobLabels(args.Owner, args.Action)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
@@ -142,29 +131,29 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicAr
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
 			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return OpsJobCreateFailed, nil
+			return ops.OpsJobCreateFailed, nil
 		}
 
 		c.Logger.Debugw("Created Job.")
-		return OpsJobCreated, nil
+		return ops.OpsJobCreated, nil
 	} else if err != nil {
 		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return OpsJobGetFailed, err
+		return ops.OpsJobGetFailed, err
 	}
 
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
 		if ops.IsJobSucceeded(job) {
-			return OpsJobCompleteSuccessful, nil
+			return ops.OpsJobCompleteSuccessful, nil
 		} else if ops.IsJobFailed(job) {
-			return OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return OpsJobOngoing, nil
+	return ops.OpsJobOngoing, nil
 }
 
-func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.SubArgs) (OpsJobStatus, error) {
+func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.SubArgs) (ops.OpsJobStatus, error) {
 	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.SubscriptionJobLabels(args.Owner, args.Action)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
@@ -177,26 +166,26 @@ func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
 			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return OpsJobCreateFailed, nil
+			return ops.OpsJobCreateFailed, nil
 		}
 
 		c.Logger.Debugw("Created Job.")
-		return OpsJobCreated, nil
+		return ops.OpsJobCreated, nil
 	} else if err != nil {
 		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return OpsJobGetFailed, err
+		return ops.OpsJobGetFailed, err
 	}
 
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
 		if ops.IsJobSucceeded(job) {
-			return OpsJobCompleteSuccessful, nil
+			return ops.OpsJobCompleteSuccessful, nil
 		} else if ops.IsJobFailed(job) {
-			return OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return OpsJobOngoing, nil
+	return ops.OpsJobOngoing, nil
 }
 
 func (r *PubSubBase) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*v1.Job, error) {

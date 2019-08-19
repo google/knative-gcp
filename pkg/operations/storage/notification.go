@@ -18,6 +18,7 @@ package operations
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	//	"strconv"
@@ -50,6 +51,16 @@ var (
 		"metadataUpdate": "OBJECT_METADATA_UPDATE",
 	}
 )
+
+type NotificationActionResult struct {
+	// Result is the result the operation attempted.
+	Result bool `json:"result,omitempty"`
+	// Error is the error string if failure occurred
+	Error string `json:"error,omitempty"`
+	// NotificationId holds the notification ID for GCS
+	// and is filled in during create operation.
+	NotificationId string `json:"notificationId,omitempty"`
+}
 
 // NotificationArgs are the configuration required to make a NewNotificationOps.
 type NotificationArgs struct {
@@ -121,7 +132,7 @@ func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    NotificationJobName(arg.Owner, arg.Action),
+			Name:            NotificationJobName(arg.Owner, arg.Action),
 			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
 			Labels:          NotificationJobLabels(arg.Owner, arg.Action),
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
@@ -212,7 +223,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 		// Add our own event type here...
 		customAttributes["knative-gcp"] = "google.storage"
-		customAttributes["fromtemplate"] = "vaikas-was-here"
 
 		eventTypes := strings.Split(n.EventTypes, ":")
 		logger.Infof("Creating a notification on bucket %s", n.Bucket)
@@ -229,24 +239,25 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		logger.Info("NOTIFIcATION IS: %+v", nc)
 		notification, err := bucket.AddNotification(ctx, &nc)
 		if err != nil {
+			result := &NotificationActionResult{
+				Result: false,
+				Error:  err.Error(),
+			}
 			logger.Infof("Failed to create Notification: %s", err)
+			err = n.writeTerminationMessage(result)
 			return err
 		}
 		logger.Infof("Created Notification %q", notification.ID)
-		err = n.writeTerminationMessage([]byte(notification.ID))
+		result := &NotificationActionResult{
+			Result:         true,
+			NotificationId: notification.ID,
+		}
+		err = n.writeTerminationMessage(result)
 		if err != nil {
 			logger.Infof("Failed to write termination message: %s", err)
 			return err
 		}
 		/*
-			// subConfig is the wanted config based on settings.
-			subConfig := pubsub.NotificationConfig{
-				Topic:               topic,
-				AckDeadline:         s.AckDeadline,
-				RetainAckedMessages: s.RetainAckedMessages,
-				RetentionDuration:   s.RetentionDuration,
-			}
-
 			// If topic doesn't exist, create it.
 			if !exists {
 				// Create a new subscription to the previous topic with the given name.
@@ -288,8 +299,8 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		}
 
 		// This is bit wonky because, we could always just try to delete, but figuring out
-		// if it's NotFound seems to not really work, so, we'll try checking first
-		// the list and only then deleting.
+		// if an error returned is NotFound seems to not really work, so, we'll try
+		// checking first the list and only then deleting.
 		notificationId := n.NotificationId
 		if notificationId != "" {
 			if existing, ok := notifications[notificationId]; ok {
@@ -298,7 +309,7 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 				err = bucket.DeleteNotification(ctx, notificationId)
 				if err == nil {
 					logger.Infof("Deleted Notification: %q", notificationId)
-					err = n.writeTerminationMessage([]byte("SUCCESS"))
+					err = n.writeTerminationMessage(&NotificationActionResult{Result: true})
 					if err != nil {
 						logger.Infof("Failed to write termination message: %s", err)
 						return err
@@ -308,14 +319,14 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 				if st, ok := gstatus.FromError(err); !ok {
 					logger.Infof("error from the cloud storage client: %s", err)
-					writeErr := n.writeTerminationMessage([]byte(fmt.Sprintf("%s", err)))
+					writeErr := n.writeTerminationMessage(&NotificationActionResult{Result: false, Error: err.Error()})
 					if writeErr != nil {
 						logger.Infof("Failed to write termination message: %s", writeErr)
 						return err
 					}
 					return err
 				} else if st.Code() != codes.NotFound {
-					writeErr := n.writeTerminationMessage([]byte(fmt.Sprintf("%s", err)))
+					writeErr := n.writeTerminationMessage(&NotificationActionResult{Result: false, Error: err.Error()})
 					if writeErr != nil {
 						logger.Infof("Failed to write termination message: %s", writeErr)
 						return err
@@ -344,6 +355,11 @@ func (n *NotificationOps) toStorageEventTypes(eventTypes []string) []string {
 	return storageTypes
 }
 
-func (n *NotificationOps) writeTerminationMessage(msg []byte) error {
-	return ioutil.WriteFile("/dev/termination-log", msg, 0644)
+//func
+func (n *NotificationOps) writeTerminationMessage(result *NotificationActionResult) error {
+	m, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile("/dev/termination-log", m, 0644)
 }
