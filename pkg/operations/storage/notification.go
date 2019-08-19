@@ -72,7 +72,7 @@ type NotificationArgs struct {
 	ProjectID string
 	// Bucket
 	Bucket string
-	// Topic we'll use for pubsub target.
+	// TopicID we'll use for pubsub target.
 	TopicID string
 	// NotificationId is the notifification ID that GCS gives
 	// back to us. We need that to delete it.
@@ -199,11 +199,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 
 	case operations.ActionCreate:
 		customAttributes := make(map[string]string)
-		// TODO: figure out how this works with envconfig esp. with encoding
-		// values there.
-		// for k, v := range n.CustomAttributes {
-		//			customAttributes[k] = v
-		//		}
 
 		// Add our own event type here...
 		customAttributes["knative-gcp"] = "google.storage"
@@ -220,7 +215,6 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 			CustomAttributes: customAttributes,
 		}
 
-		logger.Info("NOTIFIcATION IS: %+v", nc)
 		notification, err := bucket.AddNotification(ctx, &nc)
 		if err != nil {
 			result := &NotificationActionResult{

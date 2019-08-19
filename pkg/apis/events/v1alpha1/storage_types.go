@@ -65,7 +65,7 @@ type StorageSpec struct {
 
 	// Project is the ID of the Google Cloud Project that the Bucket being
 	// subscribed to exists in.
-	Project string `json:"Project,omitempty"`
+	Project string `json:"project,omitempty"`
 
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
@@ -122,11 +122,19 @@ type StorageStatus struct {
 	// TODO: add conditions and other stuff here...
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
-	NotificationID string `json:"notificationID,omitempty"`
+	NotificationID string `json:"notificationId,omitempty"`
 
-	// Topic where the notifications are sent to.
+	// ProjectID is the resolved project ID in use by Storage.
 	// +optional
-	Topic string `json:"topic,omitempty"`
+	ProjectID string `json:"projectId,omitempty"`
+
+	// TopicID where the notifications are sent to.
+	// +optional
+	TopicID string `json:"topicId,omitempty"`
+
+	// SubscriptionID is the created subscription ID used by Storage.
+	// +optional
+	SubscriptionID string `json:"subscriptionId,omitempty"`
 
 	// SinkURI is the current active sink URI that has been configured for the GCS.
 	// +optional
