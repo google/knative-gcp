@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// Channels returns a ChannelInformer.
 	Channels() ChannelInformer
+	// Decorators returns a DecoratorInformer.
+	Decorators() DecoratorInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Channels returns a ChannelInformer.
 func (v *version) Channels() ChannelInformer {
 	return &channelInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Decorators returns a DecoratorInformer.
+func (v *version) Decorators() DecoratorInformer {
+	return &decoratorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

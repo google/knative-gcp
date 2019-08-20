@@ -40,7 +40,7 @@ import (
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-pubsub-source-controller"
+	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
 )
 
 type envConfig struct {

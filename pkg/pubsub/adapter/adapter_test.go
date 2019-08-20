@@ -61,7 +61,7 @@ func TestHTTPClient(t *testing.T) {
 		SendMode:     "binary",
 	}
 
-	_, _ = a.newHTTPClient("http://localhost:8080")
+	_, _ = a.newHTTPClient(context.TODO(), "http://localhost:8080")
 }
 
 // TODO: test this more.

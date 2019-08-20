@@ -55,12 +55,14 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=events.cloud.run, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("gcss"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().GCSs().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("storages"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().Storages().Informer()}, nil
 
 		// Group=messaging.cloud.run, Version=v1alpha1
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
+	case messagingv1alpha1.SchemeGroupVersion.WithResource("decorators"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Decorators().Informer()}, nil
 
 		// Group=pubsub.cloud.run, Version=v1alpha1
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):

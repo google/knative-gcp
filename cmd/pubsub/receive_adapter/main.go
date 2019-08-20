@@ -18,14 +18,26 @@ package main
 
 import (
 	"flag"
+	"log"
+	"time"
 
 	"cloud.google.com/go/compute/metadata"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml"
+	transporthttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/kelseyhightower/envconfig"
+	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+)
 
-	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+const (
+	component = "PullSubscription::ReceiveAdapter"
 )
 
 func main() {
@@ -42,6 +54,8 @@ func main() {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
+	mainMetrics(sl)
+
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
@@ -56,4 +70,32 @@ func main() {
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
+}
+
+func mainMetrics(logger *zap.SugaredLogger) {
+	cfg := map[string]string{
+		"metrics.backend-destination": "prometheus", // TODO: hard code for now while we test.
+	}
+
+	if err := metrics.UpdateExporter(
+		metrics.ExporterOptions{
+			Domain:    metrics.Domain(),
+			Component: component,
+			ConfigMap: cfg,
+		}, logger); err != nil {
+		log.Fatalf("Failed to create the metrics exporter: %v", err)
+	}
+
+	// Register the views
+	if err := view.Register(
+		client.LatencyView,
+		transporthttp.LatencyView,
+		json.LatencyView,
+		xml.LatencyView,
+		datacodec.LatencyView,
+	); err != nil {
+		log.Fatalf("Failed to register views: %v", err)
+	}
+
+	view.SetReportingPeriod(2 * time.Second)
 }

@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
@@ -27,8 +29,9 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -52,9 +55,20 @@ type Adapter struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
+	// ExtensionsBased64 is a based64 encoded json string of a map of
+	// CloudEvents extensions (key-value pairs) override onto the outbound
+	// event.
+	ExtensionsBased64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+
+	// extensions is the converted ExtensionsBased64 value.
+	extensions map[string]string
+
 	// SendMode describes how the adapter sends events.
 	// One of [binary, structured, push]. Default: binary
-	SendMode ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
+	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
+
+	// MetricsDomain holds the metrics domain to use for surfacing metrics.
+	MetricsDomain string `envconfig:"METRICS_DOMAIN" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -66,27 +80,17 @@ type Adapter struct {
 	transformer cloudevents.Client
 }
 
-// ModeType is the type for mode enum.
-type ModeType string
-
-const (
-	// Binary mode is binary encoding.
-	Binary ModeType = "binary"
-	// Structured mode is structured encoding.
-	Structured ModeType = "structured"
-	// Push mode emulates Pub/Sub push encoding.
-	Push ModeType = "push"
-	// DefaultSendMode is the default choice.
-	DefaultSendMode = Binary
-)
-
 // Start starts the adapter. Note: Only call once, not thread safe.
 func (a *Adapter) Start(ctx context.Context) error {
 	var err error
 
 	if a.SendMode == "" {
-		a.SendMode = DefaultSendMode
+		a.SendMode = converters.DefaultSendMode
 	}
+
+	// Convert base64 encoded json map to extensions map.
+	// This implementation comes from the Decorator object.
+	a.extensions = resources.MakeDecoratorExtensionsMap(a.ExtensionsBased64)
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
@@ -97,7 +101,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Send events on HTTP.
 	if a.outbound == nil {
-		if a.outbound, err = a.newHTTPClient(a.Sink); err != nil {
+		if a.outbound, err = a.newHTTPClient(ctx, a.Sink); err != nil {
 			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
 		}
 	}
@@ -115,6 +119,17 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
+	err := a.obsReceive(ctx, event, resp)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return err
+}
+
+func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
 	// If a transformer has been configured, then transform the message.
@@ -135,10 +150,16 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	}
 
 	// If send mode is Push, convert to Pub/Sub Push payload style.
-	if a.SendMode == Push {
+	if a.SendMode == converters.Push {
 		event = ConvertToPush(ctx, event)
 	}
 
+	// Apply CloudEvent override extensions to the outbound event.
+	for k, v := range a.extensions {
+		event.SetExtension(k, v)
+	}
+
+	// Send the event.
 	if r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
 	} else if r != nil {
@@ -149,33 +170,38 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 }
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
+	event, cerr := a.obsConvert(ctx, m, err)
+	if cerr != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return event, cerr
+}
+
+func (a *Adapter) obsConvert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Converting event from transport.")
-	if msg, ok := m.(*cepubsub.Message); ok {
-		tx := cepubsub.TransportContextFrom(ctx)
-		// Make a new event and convert the message payload.
-		event := cloudevents.NewEvent()
-		event.SetID(tx.ID)
-		event.SetTime(tx.PublishTime)
-		event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
-		event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-		event.SetType(v1alpha1.PubSubEventType)
-		event.SetSchemaURL(fmt.Sprintf("//pubsub.cloud.run/schema.json?mode=%s", a.SendMode))
-		event.Data = msg.Data
-		event.DataEncoded = true
-		// Attributes are extensions.
-		if msg.Attributes != nil && len(msg.Attributes) > 0 {
-			for k, v := range msg.Attributes {
-				event.SetExtension(k, v)
-			}
-		}
 
-		return &event, nil
+	if msg, ok := m.(*cepubsub.Message); ok {
+		return converters.Convert(ctx, msg, a.SendMode)
 	}
 	return nil, err
 }
 
 func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
+	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportNewPubSubClient})
+	c, err := a.obsNewPubSubClient(ctx)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return c, err
+}
+
+func (a *Adapter) obsNewPubSubClient(ctx context.Context) (cloudevents.Client, error) {
 	tOpts := []cepubsub.Option{
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
@@ -194,15 +220,26 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 	)
 }
 
-func (a *Adapter) newHTTPClient(target string) (cloudevents.Client, error) {
+func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
+	_, r := observability.NewReporter(ctx, CodecObserved{o: reportNewHTTPClient})
+	c, err := a.obsNewHTTPClient(ctx, target)
+	if err != nil {
+		r.Error()
+	} else {
+		r.OK()
+	}
+	return c, err
+}
+
+func (a *Adapter) obsNewHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
 		cloudevents.WithTarget(target),
 	}
 
 	switch a.SendMode {
-	case Binary, Push:
+	case converters.Binary, converters.Push:
 		tOpts = append(tOpts, cloudevents.WithBinaryEncoding())
-	case Structured:
+	case converters.Structured:
 		tOpts = append(tOpts, cloudevents.WithStructuredEncoding())
 	}
 

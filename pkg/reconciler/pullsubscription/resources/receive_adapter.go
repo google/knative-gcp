@@ -22,7 +22,8 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -51,14 +52,20 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
 
-	var mode adapter.ModeType
+	// Convert CloudEvent Overrides to pod embeddable properties.
+	ceExtensions := ""
+	if args.Source.Spec.CloudEventOverrides != nil && args.Source.Spec.CloudEventOverrides.Extensions != nil {
+		ceExtensions = resources.MakeDecoratorExtensionsString(args.Source.Spec.CloudEventOverrides.Extensions)
+	}
+
+	var mode converters.ModeType
 	switch args.Source.PubSubMode() {
 	case "", v1alpha1.ModeCloudEventsBinary:
-		mode = adapter.Binary
+		mode = converters.Binary
 	case v1alpha1.ModeCloudEventsStructured:
-		mode = adapter.Structured
+		mode = converters.Structured
 	case v1alpha1.ModePushCompatible:
-		mode = adapter.Push
+		mode = converters.Push
 	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
@@ -66,7 +73,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Source.Namespace,
-			GenerateName:    fmt.Sprintf("pubsub-%s-", args.Source.Name),
+			Name:            GenerateSubscriptionName(args.Source),
 			Labels:          args.Labels, // TODO: not sure we should use labels like this.
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
 			Annotations:     map[string]string{},
@@ -85,6 +92,9 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						Name:  "receive-adapter",
 						Image: args.Image,
 						Env: []corev1.EnvVar{{
+							Name:  "METRICS_DOMAIN",
+							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
+						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: credsFile,
 						}, {
@@ -105,10 +115,17 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						}, {
 							Name:  "SEND_MODE",
 							Value: string(mode),
+						}, {
+							Name:  "K_CE_EXTENSIONS",
+							Value: ceExtensions,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
 							MountPath: credsMountPath,
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "metrics",
+							ContainerPort: 9090,
 						}}},
 					},
 					Volumes: []corev1.Volume{{

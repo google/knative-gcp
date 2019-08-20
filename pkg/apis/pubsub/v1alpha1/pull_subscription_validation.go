@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"knative.dev/pkg/apis/v1alpha1"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -47,13 +49,13 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, Destination{}) {
+	if equality.Semantic.DeepEqual(current.Sink, v1alpha1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &Destination{}) {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &v1alpha1.Destination{}) {
 		if err := validateDestination(*current.Transformer); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
@@ -90,7 +92,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	return errs
 }
 
-func validateDestination(dest Destination) *apis.FieldError {
+func validateDestination(dest v1alpha1.Destination) *apis.FieldError {
 	if dest.URI != nil {
 		if dest.ObjectReference != nil {
 			return apis.ErrMultipleOneOf("uri", "name")
@@ -134,10 +136,10 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og ap
 		return nil
 	}
 
-	// Modification of Sink and Transform allowed. Everything else is immutable.
+	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(PullSubscriptionSpec{},
-			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration")); diff != "" {
+			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

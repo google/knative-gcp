@@ -1,0 +1,198 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json",
+  "type": "object",
+  "title": "The Storage Schema",
+  "required": [
+    "kind",
+    "id",
+    "selfLink",
+    "name",
+    "bucket",
+    "generation",
+    "metageneration",
+    "contentType",
+    "timeCreated",
+    "updated",
+    "storageClass",
+    "timeStorageClassUpdated",
+    "size",
+    "md5Hash",
+    "mediaLink",
+    "crc32c",
+    "etag"
+  ],
+  "properties": {
+    "kind": {
+      "$id": "#/properties/kind",
+      "type": "string",
+      "description": "The kind of entity that triggered the notification.",
+      "default": "",
+      "examples": [
+        "storage#object"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "id": {
+      "$id": "#/properties/id",
+      "type": "string",
+      "description": "The id of the changed object.",
+      "default": "",
+      "examples": [
+        "knative-demo/example.png/1565812362659132"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "selfLink": {
+      "$id": "#/properties/selfLink",
+      "type": "string",
+      "description": "The link to the changed object.",
+      "default": "",
+      "examples": [
+        "https://www.googleapis.com/storage/v1/b/knative-demo/o/example.png"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "name": {
+      "$id": "#/properties/name",
+      "type": "string",
+      "description": "The name of the changed object.",
+      "default": "",
+      "examples": [
+        "example.png"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "bucket": {
+      "$id": "#/properties/bucket",
+      "type": "string",
+      "description": "The name of the bucket that contains the changed object.",
+      "default": "",
+      "examples": [
+        "knative-demo"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "generation": {
+      "$id": "#/properties/generation",
+      "type": "string",
+      "description": "The generation of the changed object.",
+      "default": "",
+      "examples": [
+        "1565812362659132"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "metageneration": {
+      "$id": "#/properties/metageneration",
+      "type": "string",
+      "description": "The meta-generation of the changed object.",
+      "default": "",
+      "examples": [
+        "1"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "contentType": {
+      "$id": "#/properties/contentType",
+      "type": "string",
+      "description": "The content of the changed object.",
+      "default": "",
+      "examples": [
+        "image/png"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "timeCreated": {
+      "$id": "#/properties/timeCreated",
+      "type": "string",
+      "description": "The creation time of the changed object.",
+      "default": "",
+      "examples": [
+        "2019-08-14T19:52:42.658Z"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "updated": {
+      "$id": "#/properties/updated",
+      "type": "string",
+      "description": "The updated time of the changed object.",
+      "default": "",
+      "examples": [
+        "2019-08-14T19:52:42.658Z"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "storageClass": {
+      "$id": "#/properties/storageClass",
+      "type": "string",
+      "description": "The storage class of the changed object.",
+      "default": "",
+      "examples": [
+        "MULTI_REGIONAL"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "timeStorageClassUpdated": {
+      "$id": "#/properties/timeStorageClassUpdated",
+      "type": "string",
+      "description": "The updated time of the changed object's storage class.",
+      "default": "",
+      "examples": [
+        "2019-08-14T19:52:42.658Z"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "size": {
+      "$id": "#/properties/size",
+      "type": "string",
+      "description": "The size of the changed object.",
+      "default": "",
+      "examples": [
+        "199035"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "md5Hash": {
+      "$id": "#/properties/md5Hash",
+      "type": "string",
+      "description": "The md5 has of the changed object.",
+      "default": "",
+      "examples": [
+        "c9Jp63Gqxjb/4POdZn8igw=="
+      ],
+      "pattern": "^(.*)$"
+    },
+    "mediaLink": {
+      "$id": "#/properties/mediaLink",
+      "type": "string",
+      "description": "The media link of the changed object.",
+      "default": "",
+      "examples": [
+        "https://www.googleapis.com/download/storage/v1/b/knative-demo/o/example.png?generation=1565812362659132&alt=media"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "crc32c": {
+      "$id": "#/properties/crc32c",
+      "type": "string",
+      "description": "The crc32c of the changed object.",
+      "default": "",
+      "examples": [
+        "y9Umew=="
+      ],
+      "pattern": "^(.*)$"
+    },
+    "etag": {
+      "$id": "#/properties/etag",
+      "type": "string",
+      "description": "The etag of the changed object.",
+      "default": "",
+      "examples": [
+        "CLyKpc2Rg+QCEAE="
+      ],
+      "pattern": "^(.*)$"
+    }
+  }
+}

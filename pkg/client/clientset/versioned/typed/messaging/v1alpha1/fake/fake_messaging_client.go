@@ -32,6 +32,10 @@ func (c *FakeMessagingV1alpha1) Channels(namespace string) v1alpha1.ChannelInter
 	return &FakeChannels{c, namespace}
 }
 
+func (c *FakeMessagingV1alpha1) Decorators(namespace string) v1alpha1.DecoratorInterface {
+	return &FakeDecorators{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeMessagingV1alpha1) RESTClient() rest.Interface {

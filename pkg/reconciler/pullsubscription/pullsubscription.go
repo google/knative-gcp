@@ -36,6 +36,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
@@ -43,6 +44,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
+	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 )
@@ -153,11 +155,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 		state, err := c.EnsureSubscriptionDeleted(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
 		switch state {
-		case pubsub.OpsJobGetFailed:
+		case ops.OpsJobGetFailed:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 			return err
 
-		case pubsub.OpsJobCreated:
+		case ops.OpsJobCreated:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
 			source.Status.MarkSubscriptionOperation(
 				"Deleting",
@@ -165,7 +167,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				source.Status.SubscriptionID)
 			return nil
 
-		case pubsub.OpsJobCompleteSuccessful:
+		case ops.OpsJobCompleteSuccessful:
 			source.Status.MarkNoSubscription(
 				"Deleted",
 				"Successfully deleted Subscription %q.",
@@ -173,7 +175,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
 
-		case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
+		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
 
 			msg := "unknown"
@@ -214,11 +216,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	state, err := c.EnsureSubscriptionCreated(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic,
 		source.Status.SubscriptionID, source.Spec.GetAckDeadline(), source.Spec.RetainAckedMessages, source.Spec.GetRetentionDuration())
 	switch state {
-	case pubsub.OpsJobGetFailed:
+	case ops.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
 		return err
 
-	case pubsub.OpsJobCreated:
+	case ops.OpsJobCreated:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
 		addFinalizer(source)
 		source.Status.MarkSubscriptionOperation("Creating",
@@ -226,10 +228,10 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			source.Status.SubscriptionID)
 		return nil
 
-	case pubsub.OpsJobCompleteSuccessful:
+	case ops.OpsJobCompleteSuccessful:
 		source.Status.MarkSubscribed()
 
-	case pubsub.OpsJobCreateFailed, pubsub.OpsJobCompleteFailed:
+	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
 
 		msg := "unknown"
@@ -264,7 +266,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination v1alpha1.Destination, namespace string) (*apis.URL, error) {
+func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1alpha1.Destination, namespace string) (*apis.URL, error) {
 	if destination.URI != nil {
 		return destination.URI, nil
 	} else {

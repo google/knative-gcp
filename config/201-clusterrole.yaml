@@ -48,12 +48,29 @@ rules:
     - messaging.cloud.run
   resources:
     - channels
+    - decorators
   verbs: *everything
 
 - apiGroups:
     - messaging.cloud.run
   resources:
     - channels/status
+    - decorators/status
+  verbs:
+    - get
+    - update
+    - patch
+
+- apiGroups:
+    - events.cloud.run
+  resources:
+    - storages
+  verbs: *everything
+
+- apiGroups:
+    - events.cloud.run
+  resources:
+    - storages/status
   verbs:
     - get
     - update
@@ -95,6 +112,7 @@ rules:
   resources:
     - secrets # TODO: Does it really need global secrets access?
     - configmaps
+    - pods # For reading termination messages
   verbs: &readOnly
     - get
     - list

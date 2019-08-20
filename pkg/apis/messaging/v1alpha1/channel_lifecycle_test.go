@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -137,6 +138,7 @@ func TestChannelInitializeConditions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			sort.Slice(test.want.Conditions, func(i, j int) bool { return test.want.Conditions[i].Type < test.want.Conditions[j].Type })
 			test.cs.InitializeConditions()
 			if diff := cmp.Diff(test.want, test.cs, ignoreAllButTypeAndStatus); diff != "" {
 				t.Errorf("unexpected conditions (-want, +got) = %v", diff)

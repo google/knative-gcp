@@ -23,12 +23,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: webhook
+      app: cloud-run-events
       role: webhook
   template:
     metadata:
       labels:
-        app: webhook
+        app: cloud-run-events
         role: webhook
         events.cloud.run/release: devel
     spec:
@@ -38,6 +38,9 @@ spec:
           # This is the Go import path for the binary that is containerized
           # and substituted here.
           image: github.com/google/knative-gcp/cmd/webhook
+          ports:
+          - name: metrics
+            containerPort: 9090
           imagePullPolicy: Always
           resources:
             requests:

@@ -35,7 +35,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
 
-	eventingduck "github.com/knative/eventing/pkg/apis/duck/v1alpha1"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -128,7 +128,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	channel.Status.InitializeConditions()
 
 	if channel.Status.TopicID == "" {
-		channel.Status.TopicID = resources.GenerateTopicName(channel.UID)
+		channel.Status.TopicID = resources.GenerateTopicID(channel.UID)
 	}
 
 	// 1. Create the Topic.
@@ -151,6 +151,11 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, channel); err != nil {
+		return err
+	}
+
+	// 3. Sync all subscriptions statuses.
+	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
 		return err
 	}
 
@@ -185,8 +190,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 }
 
 func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
-	if channel.Status.Subscribers == nil {
-		channel.Status.Subscribers = []eventingduck.SubscriberStatus(nil)
+	if channel.Status.SubscribableStatus == nil {
+		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
+			Subscribers: []eventingduck.SubscriberStatus(nil),
+		}
 	}
 
 	subCreates := []eventingduck.SubscriberSpec(nil)
@@ -204,7 +211,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 	}
 
 	exists := make(map[types.UID]eventingduck.SubscriberStatus)
-	for _, s := range channel.Status.Subscribers {
+	for _, s := range channel.Status.SubscribableStatus.Subscribers {
 		exists[s.UID] = s
 	}
 
@@ -240,7 +247,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
 			Subscriber: s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -250,10 +257,9 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", genName)
 
-		channel.Status.Subscribers = append(channel.Status.Subscribers, eventingduck.SubscriberStatus{
+		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
-			// TODO: do I need the other fields?
 		})
 		return nil // Signal a re-reconcile.
 	}
@@ -267,7 +273,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Project:    channel.Spec.Project,
 			Topic:      channel.Status.TopicID,
 			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName),
+			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
 			Subscriber: s,
 		})
 
@@ -281,16 +287,20 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", ps.Name)
 		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
-			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Update(ps)
+			// Don't modify the informers copy.
+			desired := existingPs.DeepCopy()
+			desired.Spec = ps.Spec
+			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Update(desired)
 			if err != nil {
 				c.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateSubscriberFailed", "Updating Subscriber %q failed", genName)
 				return err
 			}
 			c.Recorder.Eventf(channel, corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", ps.Name)
 		}
-		for i, ss := range channel.Status.Subscribers {
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
-				channel.Status.Subscribers[i].ObservedGeneration = s.Generation
+				channel.Status.SubscribableStatus.Subscribers[i].ObservedGeneration = s.Generation
+				break
 			}
 		}
 		return nil
@@ -306,14 +316,44 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		c.Recorder.Eventf(channel, corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", genName)
 
-		for i, ss := range channel.Status.Subscribers {
+		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
 				// Swap len-1 with i and then pop len-1 off the slice.
-				channel.Status.Subscribers[i] = channel.Status.Subscribers[len(channel.Status.Subscribers)-1]
-				channel.Status.Subscribers = channel.Status.Subscribers[:len(channel.Status.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers[i] = channel.Status.SubscribableStatus.Subscribers[len(channel.Status.SubscribableStatus.Subscribers)-1]
+				channel.Status.SubscribableStatus.Subscribers = channel.Status.SubscribableStatus.Subscribers[:len(channel.Status.SubscribableStatus.Subscribers)-1]
+				break
 			}
 		}
 		return nil // Signal a re-reconcile.
+	}
+
+	return nil
+}
+
+func (c *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha1.Channel) error {
+	if channel.Status.SubscribableStatus == nil {
+		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
+			Subscribers: []eventingduck.SubscriberStatus(nil),
+		}
+	}
+
+	// Make a map of subscriber name to PullSubscription for lookup.
+	pullsubs := make(map[string]pubsubv1alpha1.PullSubscription)
+	if subs, err := c.getPullSubscriptions(ctx, channel); err != nil {
+		c.Logger.Errorf("Failed to list PullSubscriptions, %s", err)
+	} else {
+		for _, s := range subs {
+			pullsubs[resources.ExtractUIDFromSubscriptionName(s.Name)] = s
+		}
+	}
+
+	for i, ss := range channel.Status.SubscribableStatus.Subscribers {
+		if ps, ok := pullsubs[string(ss.UID)]; ok {
+			ready, msg := c.getPullSubscriptionStatus(&ps)
+			channel.Status.SubscribableStatus.Subscribers[i].Ready = ready
+			channel.Status.SubscribableStatus.Subscribers[i].Message = msg
+			break
+		}
 	}
 
 	return nil
@@ -336,11 +376,11 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 	}
 	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
-		Name:    resources.GenerateTopicName(channel.UID),
+		Name:    resources.GeneratePublisherName(channel),
 		Project: channel.Spec.Project,
 		Secret:  channel.Spec.Secret,
 		Topic:   channel.Status.TopicID,
-		Labels:  resources.GetLabels(controllerAgentName, channel.Name),
+		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 	}))
 	if err != nil {
 		logging.FromContext(ctx).Info("Topic created.", zap.Error(err), zap.Any("topic", topic))
@@ -350,7 +390,7 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 }
 
 func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
-	name := resources.GenerateTopicName(channel.UID)
+	name := resources.GeneratePublisherName(channel)
 	topic, err := r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -365,7 +405,7 @@ func (r *Reconciler) getTopic(ctx context.Context, channel *v1alpha1.Channel) (*
 func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1alpha1.Channel) ([]pubsubv1alpha1.PullSubscription, error) {
 	sl, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).List(metav1.ListOptions{
 		// Use GetLabelSelector to select all PullSubscriptions related to this channel.
-		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name).String(),
+		LabelSelector: resources.GetLabelSelector(controllerAgentName, channel.Name, string(channel.UID)).String(),
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Channel",
@@ -383,4 +423,14 @@ func (r *Reconciler) getPullSubscriptions(ctx context.Context, channel *v1alpha1
 		}
 	}
 	return subs, nil
+}
+
+func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription) (corev1.ConditionStatus, string) {
+	ready := corev1.ConditionTrue
+	message := ""
+	if !ps.Status.IsReady() {
+		ready = corev1.ConditionFalse
+		message = fmt.Sprintf("PullSubscription %s is not ready", ps.Name)
+	}
+	return ready, message
 }

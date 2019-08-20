@@ -27,25 +27,12 @@ import (
 )
 
 const (
-	defaultSecretName        = "google-cloud-key"
-	defaultSecretKey         = "key.json"
 	defaultRetentionDuration = 7 * 24 * time.Hour
 	defaultAckDeadline       = 30 * time.Second
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
-}
-
-// defaultSecretSelector is the default secret selector used to load the creds
-// for the receive adapter to auth with Google Cloud.
-func defaultSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: defaultSecretName,
-		},
-		Key: defaultSecretKey,
-	}
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
@@ -60,7 +47,7 @@ func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	}
 
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = defaultSecretSelector()
+		ss.Secret = DefaultGoogleCloudSecretSelector()
 	}
 
 	switch ss.Mode {

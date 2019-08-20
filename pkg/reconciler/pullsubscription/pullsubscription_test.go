@@ -40,13 +40,15 @@ import (
 	"knative.dev/pkg/tracker"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/pubsub/operations"
+	ops "github.com/google/knative-gcp/pkg/operations"
+	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 
-	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
+
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
 const (
@@ -151,7 +153,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -170,7 +172,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -207,7 +209,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 				newReceiveAdapter(testImage),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -241,7 +243,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 				newReceiveAdapter("old" + testImage),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionCreate),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -337,7 +339,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete),
 			},
 		},
 		{
@@ -356,7 +358,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					WithPullSubscriptionFinalizers(finalizerName),
 				),
-				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), operations.ActionDelete, true),
+				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{

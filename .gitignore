@@ -6,6 +6,7 @@ tmp/
 .idea
 .vscode/
 *.iml
+*~
 
 # Temporary output of build tools
 bazel-*
