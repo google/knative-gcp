@@ -222,7 +222,13 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		csr.Status.MarkPullSubscriptionReady()
 	}
 
-	notification, err := c.reconcileNotification(ctx, csr)
+	projectId := csr.Spec.Project
+	if t.Status.ProjectID != "" {
+		projectId = t.Status.ProjectID
+		c.Logger.Infof("Project topic resolved was: %q using it in the notification", projectId)
+	}
+
+	notification, err := c.reconcileNotification(ctx, csr, projectId)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
@@ -280,8 +286,8 @@ func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner k
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.TopicID)
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage, projectId string) (string, error) {
+	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, projectId, storage.Spec.Bucket, storage.Status.TopicID)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return "", fmt.Errorf("Job %q has not completed yet", storage.Name)
@@ -305,6 +311,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	if nar.Result == false {
 		return "", errors.New(nar.Error)
 	}
+	storage.Status.ProjectID = nar.ProjectId
 	return nar.NotificationId, nil
 }
 
