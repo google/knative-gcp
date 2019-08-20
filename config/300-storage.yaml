@@ -154,7 +154,9 @@ spec:
               type: array
             sinkUri:
               type: string
-            topic:
+            projectId:
+              type: string
+            topicId:
               type: string
             notificationId:
               type: string
