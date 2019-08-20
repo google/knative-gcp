@@ -18,8 +18,10 @@ package operations
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
@@ -33,6 +35,16 @@ import (
 
 	"github.com/google/knative-gcp/pkg/operations"
 )
+
+// TODO: This is currently only used on success to communicate the
+// project status. If there's something else that could be useful
+// to communicate to the controller, add them here.
+type TopicActionResult struct {
+	// Project is the project id that we used (this might have
+	// been defaulted, so we'll expose it so that controller can
+	// reflect this in the Status).
+	ProjectId string `json:"projectId,omitempty"`
+}
 
 type TopicArgs struct {
 	UID       string
@@ -61,7 +73,7 @@ func NewTopicOps(arg TopicArgs) *batchv1.Job {
 
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName:    TopicJobName(arg.Owner, arg.Action),
+			Name:            TopicJobName(arg.Owner, arg.Action),
 			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
 			Labels:          TopicJobLabels(arg.Owner, arg.Action),
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
@@ -139,7 +151,6 @@ func (t *TopicOps) Run(ctx context.Context) error {
 			// TODO: here is where we could update topic config.
 			logger.Info("Previously created.")
 		}
-
 	case operations.ActionDelete:
 		if exists {
 			if err := topic.Delete(ctx); err != nil {
@@ -154,6 +165,17 @@ func (t *TopicOps) Run(ctx context.Context) error {
 		return fmt.Errorf("unknown action value %s", t.Action)
 	}
 
+	t.writeTerminationMessage(&TopicActionResult{})
 	logger.Info("Done.")
 	return nil
+}
+
+func (t *TopicOps) writeTerminationMessage(result *TopicActionResult) error {
+	// Always add the project regardless of what we did.
+	result.ProjectId = t.Project
+	m, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile("/dev/termination-log", m, 0644)
 }

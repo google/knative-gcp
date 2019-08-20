@@ -97,3 +97,26 @@ func GetJobPod(ctx context.Context, kubeClientset kubernetes.Interface, namespac
 	}
 	return nil, fmt.Errorf("Pod not found")
 }
+
+// GetJobPodByJobName will find the Pods that belong to that job. Each pod
+// for a given job will have label called: "job-name" set to the job that
+// it belongs to, so just filter by that.
+func GetJobPodByJobName(ctx context.Context, kubeClientset kubernetes.Interface, namespace, jobName string) (*corev1.Pod, error) {
+	logger := logging.FromContext(ctx)
+	logger.Infof("Looking for Pod with jobname: %q", jobName)
+	matchLabels := map[string]string{
+		"job-name": jobName,
+	}
+	labelSelector := &metav1.LabelSelector{
+		MatchLabels: matchLabels,
+	}
+	pods, err := kubeClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: labels.Set(labelSelector.MatchLabels).String()})
+	if err != nil {
+		return nil, err
+	}
+	for _, pod := range pods.Items {
+		logger.Infof("Found pod: %q", pod.Name)
+		return &pod, nil
+	}
+	return nil, fmt.Errorf("Pod not found")
+}

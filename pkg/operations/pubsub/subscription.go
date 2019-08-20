@@ -18,8 +18,10 @@ package operations
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strconv"
 	"time"
 
@@ -37,6 +39,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// TODO: This is currently only used on success to communicate the
+// project status. If there's something else that could be useful
+// to communicate to the controller, add them here.
+type SubActionResult struct {
+	// Project is the project id that we used (this might have
+	// been defaulted, so we'll expose it so that controller can
+	// reflect this in the Status).
+	ProjectId string `json:"projectId,omitempty"`
+}
 
 // SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
@@ -239,6 +251,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		return fmt.Errorf("unknown action value %v", s.Action)
 	}
 
+	s.writeTerminationMessage(&SubActionResult{})
 	logger.Info("Done.")
 	return nil
 }
@@ -254,4 +267,14 @@ func (s *SubscriptionOps) getTopic(ctx context.Context) (pubsub.Topic, error) {
 		return topic, err
 	}
 	return nil, errors.New("topic does not exist")
+}
+
+func (s *SubscriptionOps) writeTerminationMessage(result *SubActionResult) error {
+	// Always add the project regardless of what we did.
+	result.ProjectId = s.Project
+	m, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile("/dev/termination-log", m, 0644)
 }
