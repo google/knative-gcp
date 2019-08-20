@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/google/uuid"
 	"os"
 	"testing"
@@ -138,6 +139,10 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	}
 }
 
+type TargetOutput struct {
+	Success bool `json:"success"`
+}
+
 // PullSubscriptionWithTargetTestImpl todo
 func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	topicName, deleteTopic := makeTopicOrDie(t)
@@ -207,34 +212,31 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		t.Logf("%s", err)
 	}
 
-	if err := client.WaitUntilJobDone(client.Namespace, targetName); err != nil {
+	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	if err != nil {
 		t.Error(err)
 	}
+	t.Logf("Last term message => %s", msg)
 
-	// Log the output.
-	if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
-		t.Error(err)
-	} else {
-		t.Logf("%+v", logs)
-	}
-
-	t.Logf("Delay for (\n")
-	for i := 3; i > 0; i-- {
-		t.Logf("%d ", i)
-		time.Sleep(3 * time.Second)
-
-		if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+	if msg != "" {
+		out := &TargetOutput{}
+		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
-		} else {
-			t.Logf("job: %s\n", logs)
 		}
-
-		if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
-			t.Error(err)
-		} else {
-			t.Logf("ps: %s\n", logs)
+		if !out.Success {
+			// Log the output pull subscription pods.
+			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("pullsubscription: %+v", logs)
+			}
+			// Log the output of the target job pods.
+			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("job: %s\n", logs)
+			}
+			t.Fail()
 		}
-
 	}
-	t.Logf(") done.\n")
 }

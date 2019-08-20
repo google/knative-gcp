@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -220,8 +221,8 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 }
 
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
-func (c *Client) WaitUntilJobDone(namespace, name string) error {
-	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
+	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		job, err := c.Kube.Kube.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {
@@ -233,6 +234,39 @@ func (c *Client) WaitUntilJobDone(namespace, name string) error {
 		}
 		return operations.IsJobComplete(job), nil
 	})
+	if err != nil {
+		return "", err
+	}
+
+	// poll until the pod is terminated.
+	err = wait.PollImmediate(interval, timeout, func() (bool, error) {
+		pod, err := operations.GetJobPodByJobName(context.TODO(), c.Kube.Kube, namespace, name)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Println(namespace, name, "not found", err)
+				// keep polling
+				return false, nil
+			}
+			return false, err
+		}
+		if pod != nil {
+			for _, cs := range pod.Status.ContainerStatuses {
+				if cs.State.Terminated != nil {
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+	pod, err := operations.GetJobPodByJobName(context.TODO(), c.Kube.Kube, namespace, name)
+	if err != nil {
+		return "", err
+	}
+	return operations.GetFirstTerminationMessage(pod), nil
 }
 
 func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {

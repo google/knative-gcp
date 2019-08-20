@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -39,10 +41,27 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 		fmt.Println("failed to get target from extensions:", err)
 		return
 	}
+	var success bool
 	if strings.HasPrefix(r.Target, target) {
 		fmt.Printf("Target prefix matched, %q.\n", r.Target)
-		os.Exit(0)
+		success = true
 	} else {
 		fmt.Printf("Target prefix did not match, %q != %q.\n", target, r.Target)
+		success = false
 	}
+	// Write the termination message.
+	if err := r.writeTerminationMessage(map[string]interface{}{
+		"success": success,
+	}); err != nil {
+		fmt.Printf("failed to write termination message, %s.\n", err)
+	}
+	os.Exit(0)
+}
+
+func (r *Receiver) writeTerminationMessage(result interface{}) error {
+	b, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile("/dev/termination-log", b, 0644)
 }
