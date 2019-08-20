@@ -305,6 +305,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	if nar.Result == false {
 		return "", errors.New(nar.Error)
 	}
+	storage.Status.ProjectID = nar.ProjectId
 	return nar.NotificationId, nil
 }
 

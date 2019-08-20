@@ -57,6 +57,9 @@ type NotificationActionResult struct {
 	// NotificationId holds the notification ID for GCS
 	// and is filled in during create operation.
 	NotificationId string `json:"notificationId,omitempty"`
+	// Project is the project id that we used (this might have
+	// been defaulted, to we'll expose it).
+	ProjectId string `json:"projectId,omitempty"`
 }
 
 // NotificationArgs are the configuration required to make a NewNotificationOps.
@@ -300,6 +303,8 @@ func (n *NotificationOps) toStorageEventTypes(eventTypes []string) []string {
 }
 
 func (n *NotificationOps) writeTerminationMessage(result *NotificationActionResult) error {
+	// Always add the project regardless of what we did.
+	result.ProjectId = n.Project
 	m, err := json.Marshal(result)
 	if err != nil {
 		return err
