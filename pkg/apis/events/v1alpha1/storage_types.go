@@ -63,8 +63,10 @@ type StorageSpec struct {
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 
-	// Project is the ID of the Google Cloud Project that the Bucket being
-	// subscribed to exists in.
+	// Project is the ID of the Google Cloud Project that the Topic where
+	// the notifications are sent to will be created in. If omitted, Topic
+	// will use metadata service to determine the project.
+	// +optional
 	Project string `json:"project,omitempty"`
 
 	// Bucket to subscribe to.
