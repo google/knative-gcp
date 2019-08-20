@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"os"
 	"testing"
 	"time"
@@ -60,6 +61,20 @@ func makeTopicOrDie(t *testing.T) (string, func()) {
 	return topicName, func() {
 		deleteTopicOrDie(t, topicName)
 	}
+}
+
+func getTopic(t *testing.T, topicName string) *pubsub.Topic {
+	ctx := context.Background()
+	// Prow sticks the project in this key
+	project := os.Getenv(ProwProjectKey)
+	if project == "" {
+		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+	}
+	client, err := pubsub.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create pubsub client, %s", err.Error())
+	}
+	return client.Topic(topicName)
 }
 
 func deleteTopicOrDie(t *testing.T, topicName string) {
@@ -107,11 +122,11 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 
 	// Delete deferred.
 	defer func() {
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
 		if err := installer.Do("delete"); err != nil {
 			t.Errorf("failed to create, %s", err)
 		}
+		// Just chill for tick.
+		time.Sleep(10 * time.Second)
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
@@ -121,4 +136,105 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	}); err != nil {
 		t.Error(err)
 	}
+}
+
+// PullSubscriptionWithTargetTestImpl todo
+func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
+	topicName, deleteTopic := makeTopicOrDie(t)
+	defer deleteTopic()
+
+	psName := topicName + "-sub"
+	targetName := topicName + "-target"
+
+	client := Setup(t, true)
+	defer TearDown(client)
+
+	config := map[string]string{
+		"namespace":    client.Namespace,
+		"topic":        topicName,
+		"subscription": psName,
+		"targetName":   targetName,
+		"targetUID":    uuid.New().String(),
+	}
+	for k, v := range packages {
+		config[k] = v
+	}
+
+	installer := NewInstaller(client.Dynamic, config,
+		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+
+	// Create the resources for the test.
+	if err := installer.Do("create"); err != nil {
+		t.Errorf("failed to create, %s", err)
+		return
+	}
+
+	// Delete deferred.
+	defer func() {
+		if err := installer.Do("delete"); err != nil {
+			t.Errorf("failed to create, %s", err)
+		}
+		// Just chill for tick.
+		time.Sleep(10 * time.Second)
+	}()
+
+	gvr := schema.GroupVersionResource{
+		Group:    "pubsub.cloud.run",
+		Version:  "v1alpha1",
+		Resource: "pullsubscriptions",
+	}
+
+	jobGVR := schema.GroupVersionResource{
+		Group:    "batch",
+		Version:  "v1",
+		Resource: "jobs",
+	}
+
+	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
+		t.Error(err)
+	}
+
+	topic := getTopic(t, topicName)
+
+	r := topic.Publish(context.TODO(), &pubsub.Message{
+		Attributes: map[string]string{
+			"target": "falldown",
+		},
+		Data: []byte(`{"foo":bar}`),
+	})
+	_, err := r.Get(context.TODO())
+	if err != nil {
+		t.Logf("%s", err)
+	}
+
+	if err := client.WaitUntilJobDone(client.Namespace, targetName); err != nil {
+		t.Error(err)
+	}
+
+	// Log the output.
+	if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+		t.Error(err)
+	} else {
+		t.Logf("%+v", logs)
+	}
+
+	t.Logf("Delay for (\n")
+	for i := 3; i > 0; i-- {
+		t.Logf("%d ", i)
+		time.Sleep(3 * time.Second)
+
+		if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			t.Error(err)
+		} else {
+			t.Logf("job: %s\n", logs)
+		}
+
+		if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			t.Error(err)
+		} else {
+			t.Logf("ps: %s\n", logs)
+		}
+
+	}
+	t.Logf(") done.\n")
 }

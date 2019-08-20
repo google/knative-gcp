@@ -22,6 +22,8 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Printf("Target prefix to match: %q.\n", r.Target)
+
 	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
 		log.Fatal(err)
 	}

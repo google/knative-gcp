@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -38,6 +39,8 @@ import (
 	"knative.dev/pkg/test"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/pkg/operations"
 )
 
 // Setup creates the client objects needed in the e2e tests,
@@ -214,4 +217,49 @@ func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVe
 
 		return ready.IsTrue(), nil
 	})
+}
+
+// WaitForResourceReady waits until the specified resource in the given namespace are ready.
+func (c *Client) WaitUntilJobDone(namespace, name string) error {
+	return wait.PollImmediate(interval, timeout, func() (bool, error) {
+		job, err := c.Kube.Kube.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				log.Println(namespace, name, "not found", err)
+				// keep polling
+				return false, nil
+			}
+			return false, err
+		}
+		return operations.IsJobComplete(job), nil
+	})
+}
+
+func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {
+	// Get all pods in this namespace.
+	pods, err := c.Kube.Kube.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	logs := make([]string, 0)
+
+	// Look for a pod with the name that was passed in inside the pod name.
+	for _, pod := range pods.Items {
+		if strings.Contains(pod.Name, name) {
+			// Collect all the logs from all the containers for this pod.
+			if l, err := c.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(); err != nil {
+				logs = append(logs, err.Error())
+			} else {
+				logs = append(logs, string(l))
+			}
+		}
+	}
+
+	// Did we find a match like the given name?
+	if len(logs) == 0 {
+		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
+	}
+
+	return strings.Join(logs, "\n"), nil
 }

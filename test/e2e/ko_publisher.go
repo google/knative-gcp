@@ -1,5 +1,3 @@
-// +build e2e
-
 /*
 Copyright 2019 Google LLC
 
@@ -19,21 +17,29 @@ limitations under the License.
 package e2e
 
 import (
-	"testing"
-
-	"knative.dev/pkg/test/logstream"
+	"fmt"
+	"os/exec"
+	"strings"
 )
 
-// TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
-func TestSmokePullSubscription(t *testing.T) {
-	cancel := logstream.Start(t)
-	defer cancel()
-	SmokePullSubscriptionTestImpl(t)
+func cmd(cmdLine string) *exec.Cmd {
+	cmdSplit := strings.Split(cmdLine, " ")
+	cmd := cmdSplit[0]
+	args := cmdSplit[1:]
+	return exec.Command(cmd, args...)
 }
 
-// TestPullSubscriptionWithTarget tests we can knock down a target.
-func TestPullSubscriptionWithTarget(t *testing.T) {
-	cancel := logstream.Start(t)
-	defer cancel()
-	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
+func runCmd(cmdLine string) (string, error) {
+	cmd := cmd(cmdLine)
+
+	cmdOut, err := cmd.Output()
+	return string(cmdOut), err
+}
+
+func KoPublish(pack string) (string, error) {
+	out, err := runCmd(fmt.Sprintf("ko publish %s", pack))
+	if err != nil {
+		return "", err
+	}
+	return out, nil
 }

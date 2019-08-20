@@ -1,26 +1,22 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: hack-hack-hack
-  namespace: default
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
 spec:
   backoffLimit: 0
   parallelism: 1
-  #selector:
-#$    matchLabels:
-#      controller-uid: ba69f03f-b3ec-11e9-9bc5-42010a8a0043
   template:
-#    metadata:
-#      labels:
-#        controller-uid: ba69f03f-b3ec-11e9-9bc5-42010a8a0043
-#        job-name: pubsub-s-myruntopic-pullsubscription-create-pbr8g
+    metadata:
+      labels:
+        targetUID: {{ .targetUID }}
     spec:
       containers:
       - name: target
         env:
         - name: TARGET
           value: falldown
-        image: github.com/google/knative-gcp/test/e2e/config/target
+        image: {{ .targetImage }}
         imagePullPolicy: Always
       restartPolicy: Never
 
@@ -29,9 +25,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: hackhackhack
-  namespace: {{.namespace}}
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
 spec:
+  selector:
+    targetUID: {{ .targetUID }}
   ports:
     - name: http
       port: 80
