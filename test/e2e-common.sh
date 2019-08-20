@@ -18,6 +18,8 @@
 
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
+source $(dirname $0)/lib.sh
+
 # random6 returns 6 random letters.
 function random6() {
   go run github.com/google/knative-gcp/test/cmd/randstr/ --length=6
@@ -46,6 +48,7 @@ function cloud_run_events_setup() {
 
 function knative_setup() {
   start_latest_knative_serving
+  start_latest_knative_eventing
   cloud_run_events_setup
 }
 
