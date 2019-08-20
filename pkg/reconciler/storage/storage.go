@@ -43,7 +43,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
 	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/storage"
+	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
 	"k8s.io/apimachinery/pkg/api/equality"

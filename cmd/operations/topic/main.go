@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
-	"github.com/google/knative-gcp/pkg/operations/pubsub"
+	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
 )
 
 // TODO: the job could output the resolved projectID.
