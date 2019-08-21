@@ -24,6 +24,44 @@ import (
 	"knative.dev/pkg/test/logstream"
 )
 
+var packages = []string{
+	"github.com/google/knative-gcp/test/cmd/target",
+}
+
+var packageToImageConfig = map[string]string{}
+var packageToImageConfigDone bool
+
+func TestMain(m *testing.M) {
+	for _, pack := range packages {
+		image, err := KoPublish(pack)
+		if err != nil {
+			fmt.Printf("error attempting to ko publish: %s\n", err)
+			panic(err)
+		}
+		i := strings.Split(pack, "/")
+		packageToImageConfig[i[len(i)-1]+"Image"] = image
+	}
+	packageToImageConfigDone = true
+
+	os.Exit(m.Run())
+}
+
+// This test is more for debugging the ko publish process.
+func TestKoPublish(t *testing.T) {
+	for k, v := range packageToImageConfig {
+		t.Log(k, "-->", v)
+	}
+}
+
+// Rest of e2e tests go below:
+
+// TestSmoke makes sure we can run tests.
+func TestSmokeChannel(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeTestChannelImpl(t)
+}
+
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
 func TestSmokePullSubscription(t *testing.T) {
 	cancel := logstream.Start(t)

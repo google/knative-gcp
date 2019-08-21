@@ -26,8 +26,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeTestImpl makes sure we can run tests.
-func SmokeTestImpl(t *testing.T) {
+// SmokeTestChannelImpl makes sure we can run tests.
+func SmokeTestChannelImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
