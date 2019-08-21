@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 		packageToImageConfig[i[len(i)-1]+"Image"] = image
 	}
 	packageToImageConfigDone = true
-
+	adsdasdas
 	os.Exit(m.Run())
 }
 
