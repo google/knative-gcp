@@ -23,6 +23,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	//	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 // +genclient
@@ -39,14 +40,25 @@ type Storage struct {
 
 // Check that Storage implements the Conditions duck type.
 var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Conditions{})
+var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Source{})
 
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
+	duckv1beta1.SourceSpec
+	// CustomAttributes is the optional list of additional attributes to attach to each Cloud PubSub
+	// message published for this notification subscription.
+	// +optional
+	//	CloudEventOverrides *duckv1beta1.CloudEventOverrides `json:"ceOverrides,omitempty"`
+
+	// Sink is a reference to an object that will resolve to a domain name or a
+	// URI directly to use as the sink.
+	//	Sink apisv1alpha1.Destination `json:"sink,omitempty"`
+
 	// GCSSecret is the credential to use to create the Notification on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	// +optional
-	GCSSecret corev1.SecretKeySelector `json:"gcsSecret"`
+	GCSSecret corev1.SecretKeySelector `json:"gcsSecret,omitempty"`
 
 	// PullSubscriptionSecret is the credential to use for the GCP PubSub Subscription.
 	// It is used for the PullSubscription that is used to deliver events from GCS.
@@ -80,19 +92,10 @@ type StorageSpec struct {
 	// +optional
 	ObjectNamePrefix string `json:"objectNamePrefix,omitempty"`
 
-	// CustomAttributes is the optional list of additional attributes to attach to each Cloud PubSub
-	// message published for this notification subscription.
-	// +optional
-	CloudEventOverrides *duckv1beta1.CloudEventOverrides `json:"ceOverrides,omitempty"`
-
 	// PayloadFormat specifies the contents of the message payload.
 	// See https://cloud.google.com/storage/docs/pubsub-notifications#payload.
 	// +optional
 	PayloadFormat string `json:"payloadFormat,omitempty"`
-
-	// Sink is a reference to an object that will resolve to a domain name to use
-	// as the sink.
-	Sink corev1.ObjectReference `json:"sink"`
 }
 
 const (
@@ -116,10 +119,11 @@ var gcsSourceCondSet = apis.NewLivingConditionSet(
 
 // StorageStatus is the status for a GCS resource
 type StorageStatus struct {
+	duckv1beta1.SourceStatus
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
-	duckv1beta1.Status `json:",inline"`
+	//	duckv1beta1.Status `json:",inline"`
 
 	// TODO: add conditions and other stuff here...
 	// NotificationID is the ID that GCS identifies this notification as.
@@ -138,9 +142,10 @@ type StorageStatus struct {
 	// +optional
 	SubscriptionID string `json:"subscriptionId,omitempty"`
 
-	// SinkURI is the current active sink URI that has been configured for the GCS.
+	// SinkURI is the current active sink URI that has been configured for the
+	// Source.
 	// +optional
-	SinkURI string `json:"sinkUri,omitempty"`
+	//	SinkURI *apis.URL `json:"sinkUri,omitempty"`
 }
 
 func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
