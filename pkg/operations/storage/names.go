@@ -24,13 +24,13 @@ import (
 
 // NotificationJobName creates the name of a notification ops job.
 func NotificationJobName(owner kmeta.OwnerRefable, action string) string {
-	return strings.ToLower(
+	base := strings.ToLower(
 		strings.Join(append([]string{
-			"notification",
+			"storage",
 			"n",
 			owner.GetObjectMeta().GetName(),
-			owner.GetGroupVersionKind().Kind,
-			action}),
+			owner.GetGroupVersionKind().Kind}),
 			"-"),
 	)
+	return kmeta.ChildName(base, "-"+action)
 }

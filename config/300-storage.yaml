@@ -93,16 +93,16 @@ spec:
           properties:
             gcsSecret:
               type: object
-              description: "Credential to use for creating a GCP notification. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+              description: "Credential to use for creating a GCS notification. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'"
             pullSubscriptionSecret:
               type: object
-              description: "Optional credential to use for subscribing to the GCP PubSub topic. If omitted, uses gcsCredsSecret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+              description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses gcsSecret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
             serviceAccountName:
               type: string
               description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
             project:
               type: string
-              description: "Google Cloud Project ID to create the scheduler job in."
+              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
             bucket:
               type: string
               description: "GCS bucket to subscribe to. For example my-test-bucket"
@@ -114,7 +114,7 @@ spec:
               description: "Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1."
             sink:
               type: object
-              description: "Where to sink the notifications to."
+              description: "Sink which receives the notifications."
             eventTypes:
               type: array
               items:
@@ -154,7 +154,9 @@ spec:
               type: array
             sinkUri:
               type: string
-            topic:
+            projectId:
+              type: string
+            topicId:
               type: string
             notificationId:
               type: string

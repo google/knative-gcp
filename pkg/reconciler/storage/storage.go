@@ -43,7 +43,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
 	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/storage"
+	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -128,15 +128,15 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// If notification / topic has been already configured, stash them here
 	// since right below we remove them.
 	notificationID := csr.Status.NotificationID
-	topic := csr.Status.Topic
+	topic := csr.Status.TopicID
 
 	csr.Status.InitializeConditions()
 	// And restore them.
 	csr.Status.NotificationID = notificationID
-	csr.Status.Topic = topic
+	csr.Status.TopicID = topic
 
-	if csr.Status.Topic == "" {
-		csr.Status.Topic = fmt.Sprintf("storage-%s", string(csr.UID))
+	if csr.Status.TopicID == "" {
+		csr.Status.TopicID = fmt.Sprintf("storage-%s", string(csr.UID))
 	}
 
 	// See if the source has been deleted.
@@ -168,7 +168,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 			c.Logger.Infof("Unable to delete the Topic: %s", err)
 			return err
 		}
-		csr.Status.Topic = ""
+		csr.Status.TopicID = ""
 		err = c.deletePullSubscription(ctx, csr)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the PullSubscription: %s", err)
@@ -222,7 +222,13 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		csr.Status.MarkPullSubscriptionReady()
 	}
 
-	notification, err := c.reconcileNotification(ctx, csr)
+	projectId := csr.Spec.Project
+	if t.Status.ProjectID != "" {
+		projectId = t.Status.ProjectID
+		c.Logger.Infof("Project topic resolved was: %q using it in the notification", projectId)
+	}
+
+	notification, err := c.reconcileNotification(ctx, csr, projectId)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
@@ -246,7 +252,7 @@ func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr, csr.Status.Topic)
+		pubsub := resources.MakePullSubscription(csr)
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
@@ -280,8 +286,8 @@ func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner k
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.Topic)
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage, projectId string) (string, error) {
+	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, projectId, storage.Spec.Bucket, storage.Status.TopicID)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return "", fmt.Errorf("Job %q has not completed yet", storage.Name)
@@ -305,6 +311,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	if nar.Result == false {
 		return "", errors.New(nar.Error)
 	}
+	storage.Status.ProjectID = nar.ProjectId
 	return nar.NotificationId, nil
 }
 
@@ -317,7 +324,7 @@ func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) 
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr, csr.Status.Topic)
+		topic := resources.MakeTopic(csr)
 		c.Logger.Infof("Creating topic %+v", topic)
 		return pubsubClient.Create(topic)
 	}

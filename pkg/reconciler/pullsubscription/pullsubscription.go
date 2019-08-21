@@ -45,6 +45,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
 	ops "github.com/google/knative-gcp/pkg/operations"
+	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 )
@@ -230,6 +231,28 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	case ops.OpsJobCompleteSuccessful:
 		source.Status.MarkSubscribed()
+
+		// Now that the job completed, grab the pod status for it.
+		// Note that since it's not yet currently relied upon, don't hard
+		// fail this if we can't fetch it. Just warn
+		jobName := pubsubOps.SubscriptionJobName(source, "create")
+		logger.Info("Finding job pods for", zap.String("jobName", jobName))
+		jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, source.Namespace, jobName)
+		if err != nil {
+			logger.Error("Failed to fetch job pods, can not fetch projectid",
+				zap.Error(err))
+		}
+		if jobPod != nil {
+			terminationMessage := ops.GetFirstTerminationMessage(jobPod)
+			if terminationMessage != "" {
+				var sar pubsubOps.SubActionResult
+				err = json.Unmarshal([]byte(terminationMessage), &sar)
+				if err == nil {
+					c.Logger.Infof("Topic project: %q", sar.ProjectId)
+					source.Status.ProjectID = sar.ProjectId
+				}
+			}
+		}
 
 	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))

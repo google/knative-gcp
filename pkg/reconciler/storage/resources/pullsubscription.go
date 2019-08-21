@@ -27,9 +27,9 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(source *v1alpha1.Storage) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
-		"receive-adapter": "gcssource",
+		"receive-adapter": "storage.events.cloud.run",
 	}
 
 	pubsubSecret := source.Spec.GCSSecret
@@ -37,7 +37,7 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 		pubsubSecret = *source.Spec.PullSubscriptionSecret
 	}
 
-	return &pubsubv1alpha1.PullSubscription{
+	ps := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      source.Name,
 			Namespace: source.Namespace,
@@ -49,10 +49,16 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
 			Secret:  &pubsubSecret,
 			Project: source.Spec.Project,
-			Topic:   topic,
+			Topic:   source.Status.TopicID,
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &source.Spec.Sink,
 			},
 		},
 	}
+	if source.Spec.CloudEventOverrides != nil && source.Spec.CloudEventOverrides.Extensions != nil {
+		ps.Spec.CloudEventOverrides = &pubsubv1alpha1.CloudEventOverrides{
+			Extensions: source.Spec.CloudEventOverrides.Extensions,
+		}
+	}
+	return ps
 }

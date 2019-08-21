@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 
-	"github.com/google/knative-gcp/pkg/operations/storage"
+	operations "github.com/google/knative-gcp/pkg/operations/storage"
 )
 
 func main() {

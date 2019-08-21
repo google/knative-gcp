@@ -44,6 +44,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
+	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
 )
@@ -215,6 +216,27 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		case ops.OpsJobCompleteSuccessful:
 			topic.Status.MarkTopicReady()
 
+			// Now that the job completed, grab the pod status for it.
+			// Note that since it's not yet currently relied upon, don't hard
+			// fail this if we can't fetch it. Just warn
+			jobName := pubsubOps.TopicJobName(topic, "create")
+			logger.Info("Finding job pods for", zap.String("jobName", jobName))
+			jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, topic.Namespace, jobName)
+			if err != nil {
+				logger.Error("Failed to fetch job pods, can not fetch projectid",
+					zap.Error(err))
+			}
+			if jobPod != nil {
+				terminationMessage := ops.GetFirstTerminationMessage(jobPod)
+				if terminationMessage != "" {
+					var tar pubsubOps.TopicActionResult
+					err = json.Unmarshal([]byte(terminationMessage), &tar)
+					if err == nil {
+						c.Logger.Infof("Topic project: %q", tar.ProjectId)
+						topic.Status.ProjectID = tar.ProjectId
+					}
+				}
+			}
 		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to create topic.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
