@@ -24,7 +24,7 @@ import (
 )
 
 var packages = []string{
-	"github.com/google/knative-gcp/test/e2e/cmd/target", // TODO: could look in ./cmd/... to build each dir.
+	"github.com/google/knative-gcp/test/cmd/target",
 }
 
 var packageToImageConfig = map[string]string{}
