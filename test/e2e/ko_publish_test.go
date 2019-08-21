@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -34,6 +35,7 @@ func init() {
 	for _, pack := range packages {
 		image, err := KoPublish(pack)
 		if err != nil {
+			fmt.Printf("error attempting to ko publish: %s\n", err)
 			panic(err)
 		}
 		i := strings.Split(pack, "/")
