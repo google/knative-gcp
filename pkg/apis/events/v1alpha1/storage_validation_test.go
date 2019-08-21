@@ -23,7 +23,6 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-	//	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"

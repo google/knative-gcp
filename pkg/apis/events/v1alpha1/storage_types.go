@@ -19,11 +19,14 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	//	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/webhook"
 )
 
 // +genclient
@@ -37,6 +40,14 @@ type Storage struct {
 	Spec   StorageSpec   `json:"spec"`
 	Status StorageStatus `json:"status"`
 }
+
+var (
+	_ apis.Validatable   = (*Storage)(nil)
+	_ apis.Defaultable   = (*Storage)(nil)
+	_ runtime.Object     = (*Storage)(nil)
+	_ kmeta.OwnerRefable = (*Storage)(nil)
+	_ webhook.GenericCRD = (*Storage)(nil)
+)
 
 // Check that Storage implements the Conditions duck type.
 var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Conditions{})
