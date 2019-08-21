@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook"
@@ -48,10 +47,6 @@ var (
 	_ kmeta.OwnerRefable = (*Storage)(nil)
 	_ webhook.GenericCRD = (*Storage)(nil)
 )
-
-// Check that Storage implements the Conditions duck type.
-var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Conditions{})
-var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Source{})
 
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
