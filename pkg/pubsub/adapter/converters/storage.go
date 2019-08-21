@@ -40,7 +40,7 @@ var (
 const (
 	storageDefaultEventType = "google.storage"
 	storageSourcePrefix     = "//storage.googleapis.com/buckets"
-	// TODO generate the schema from a proto instead of observed outputs.
+	// Schema manually created from https://cloud.google.com/storage/docs/json_api/v1/objects#resource-representations
 	storageSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
 )
 
@@ -86,9 +86,6 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 		}
 		if _, ok := msg.Attributes["eventTime"]; ok {
 			delete(msg.Attributes, "eventTime")
-		}
-		if _, ok := msg.Attributes["payloadFormat"]; ok {
-			delete(msg.Attributes, "payloadFormat")
 		}
 	}
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
