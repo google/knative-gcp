@@ -25,6 +25,8 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakeTopic(t *testing.T) {
@@ -43,16 +45,19 @@ func TestMakeTopic(t *testing.T) {
 				},
 				Key: "eventing-secret-key",
 			},
-			Sink: corev1.ObjectReference{
-				APIVersion: "v1",
-				Kind:       "Kitchen",
-				Name:       "sink",
+			SourceSpec: duckv1beta1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Kitchen",
+						Name:       "sink",
+					},
+				},
 			},
 		},
 		Status: v1alpha1.StorageStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
-			SinkURI:   "http://sink/",
 		},
 	}
 

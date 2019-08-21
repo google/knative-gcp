@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func (current *Storage) Validate(ctx context.Context) *apis.FieldError {
@@ -29,36 +30,44 @@ func (current *Storage) Validate(ctx context.Context) *apis.FieldError {
 }
 
 func (current *StorageSpec) Validate(ctx context.Context) *apis.FieldError {
-	// TODO
 	var errs *apis.FieldError
 
 	// Sink [required]
-	if err := validateRef(current.Sink); err != nil {
+	if equality.Semantic.DeepEqual(current.Sink, apisv1alpha1.Destination{}) {
+		errs = errs.Also(apis.ErrMissingField("sink"))
+	} else if err := current.Sink.Validate(ctx); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 
-	// Bucket is required.
+	// Bucket [required]
 	if current.Bucket == "" {
 		errs = errs.Also(apis.ErrMissingField("bucket"))
 	}
+
+	if !equality.Semantic.DeepEqual(&current.GCSSecret, &corev1.SecretKeySelector{}) {
+		err := validateSecret(&current.GCSSecret)
+		if err != nil {
+			errs = errs.Also(err.ViaField("gcsSecret"))
+		}
+	}
+
+	if current.PullSubscriptionSecret != nil {
+		err := validateSecret(current.PullSubscriptionSecret)
+		if err != nil {
+			errs = errs.Also(err.ViaField("pullSubscriptionSecret"))
+		}
+	}
+
 	return errs
 }
 
-func validateRef(ref corev1.ObjectReference) *apis.FieldError {
+func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 	var errs *apis.FieldError
-
-	if equality.Semantic.DeepEqual(ref, corev1.ObjectReference{}) {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
-
-	if ref.Name == "" {
+	if secret.Name == "" {
 		errs = errs.Also(apis.ErrMissingField("name"))
 	}
-	if ref.APIVersion == "" {
-		errs = errs.Also(apis.ErrMissingField("apiVersion"))
-	}
-	if ref.Kind == "" {
-		errs = errs.Also(apis.ErrMissingField("kind"))
+	if secret.Key == "" {
+		errs = errs.Also(apis.ErrMissingField("key"))
 	}
 	return errs
 }

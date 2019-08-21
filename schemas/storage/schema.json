@@ -1,198 +1,311 @@
 {
-  "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json",
   "type": "object",
   "title": "The Storage Schema",
-  "required": [
-    "kind",
-    "id",
-    "selfLink",
-    "name",
-    "bucket",
-    "generation",
-    "metageneration",
-    "contentType",
-    "timeCreated",
-    "updated",
-    "storageClass",
-    "timeStorageClassUpdated",
-    "size",
-    "md5Hash",
-    "mediaLink",
-    "crc32c",
-    "etag"
-  ],
   "properties": {
     "kind": {
       "$id": "#/properties/kind",
       "type": "string",
-      "description": "The kind of entity that triggered the notification.",
-      "default": "",
-      "examples": [
-        "storage#object"
-      ],
-      "pattern": "^(.*)$"
+      "description": "The kind of item this is. For objects, this is always storage#object."
     },
     "id": {
       "$id": "#/properties/id",
       "type": "string",
-      "description": "The id of the changed object.",
-      "default": "",
+      "description": "The ID of the object, including the bucket name, object name, and generation number.",
       "examples": [
         "knative-demo/example.png/1565812362659132"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "selfLink": {
       "$id": "#/properties/selfLink",
       "type": "string",
-      "description": "The link to the changed object.",
-      "default": "",
+      "description": "The link to this object.",
       "examples": [
         "https://www.googleapis.com/storage/v1/b/knative-demo/o/example.png"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "name": {
       "$id": "#/properties/name",
       "type": "string",
-      "description": "The name of the changed object.",
-      "default": "",
+      "description": "The name of the object. Required if not specified by URL parameter.",
       "examples": [
         "example.png"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "bucket": {
       "$id": "#/properties/bucket",
       "type": "string",
-      "description": "The name of the bucket that contains the changed object.",
-      "default": "",
+      "description": "The name of the bucket containing this object.",
       "examples": [
         "knative-demo"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "generation": {
       "$id": "#/properties/generation",
-      "type": "string",
-      "description": "The generation of the changed object.",
-      "default": "",
+      "type": "number",
+      "description": "The content generation of this object. Used for object versioning.",
       "examples": [
-        "1565812362659132"
-      ],
-      "pattern": "^(.*)$"
+        1565812362659132
+      ]
     },
     "metageneration": {
       "$id": "#/properties/metageneration",
-      "type": "string",
-      "description": "The meta-generation of the changed object.",
-      "default": "",
+      "type": "number",
+      "description": "The version of the metadata for this object at this generation. Used for preconditions and for detecting changes in metadata. A metageneration number is only meaningful in the context of a particular generation of a particular object.",
       "examples": [
-        "1"
-      ],
-      "pattern": "^(.*)$"
+        1
+      ]
     },
     "contentType": {
       "$id": "#/properties/contentType",
       "type": "string",
-      "description": "The content of the changed object.",
-      "default": "",
+      "description": "Content-Type of the object data. If an object is stored without a Content-Type, it is served as application/octet-stream.",
       "examples": [
         "image/png"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "timeCreated": {
       "$id": "#/properties/timeCreated",
-      "type": "string",
-      "description": "The creation time of the changed object.",
-      "default": "",
-      "examples": [
-        "2019-08-14T19:52:42.658Z"
-      ],
-      "pattern": "^(.*)$"
+      "type": "date-time",
+      "description": "The creation time of the object in RFC 3339 format."
     },
     "updated": {
       "$id": "#/properties/updated",
-      "type": "string",
-      "description": "The updated time of the changed object.",
-      "default": "",
+      "type": "date-time",
+      "description": "The modification time of the object metadata in RFC 3339 format."
+    },
+    "timeDeleted": {
+      "$id": "#/properties/timeDeleted",
+      "type": "date-time",
+      "description": "The deletion time of the object in RFC 3339 format. Returned if and only if this version of the object is no longer a live version, but remains in the bucket as an archived object."
+    },
+    "temporaryHold": {
+      "$id": "#/properties/temporaryHold",
+      "type": "boolean",
+      "description": "Whether or not the object is subject to a temporary hold.",
       "examples": [
-        "2019-08-14T19:52:42.658Z"
-      ],
-      "pattern": "^(.*)$"
+        true
+      ]
+    },
+    "eventBasedHold": {
+      "$id": "#/properties/eventBasedHold",
+      "type": "boolean",
+      "description": "Whether or not the object is subject to an event-based hold.",
+      "examples": [
+        true
+      ]
+    },
+    "retentionExpirationTime": {
+      "$id": "#/properties/retentionExpirationTime",
+      "type": "date-time",
+      "description": "The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format."
     },
     "storageClass": {
       "$id": "#/properties/storageClass",
       "type": "string",
-      "description": "The storage class of the changed object.",
-      "default": "",
+      "description": "Storage class of the object.",
       "examples": [
         "MULTI_REGIONAL"
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "timeStorageClassUpdated": {
       "$id": "#/properties/timeStorageClassUpdated",
-      "type": "string",
-      "description": "The updated time of the changed object's storage class.",
-      "default": "",
-      "examples": [
-        "2019-08-14T19:52:42.658Z"
-      ],
-      "pattern": "^(.*)$"
+      "type": "date-time",
+      "description": "The time at which the object's storage class was last changed. When the object is initially created, it will be set to timeCreated."
     },
     "size": {
       "$id": "#/properties/size",
-      "type": "string",
+      "type": "number",
       "description": "The size of the changed object.",
-      "default": "",
       "examples": [
-        "199035"
-      ],
-      "pattern": "^(.*)$"
+        199035
+      ]
     },
     "md5Hash": {
       "$id": "#/properties/md5Hash",
       "type": "string",
-      "description": "The md5 has of the changed object.",
-      "default": "",
+      "description": "MD5 hash of the data; encoded using base64.",
       "examples": [
         "c9Jp63Gqxjb/4POdZn8igw=="
-      ],
-      "pattern": "^(.*)$"
+      ]
     },
     "mediaLink": {
       "$id": "#/properties/mediaLink",
       "type": "string",
-      "description": "The media link of the changed object.",
-      "default": "",
+      "description": "Media download link.",
       "examples": [
         "https://www.googleapis.com/download/storage/v1/b/knative-demo/o/example.png?generation=1565812362659132&alt=media"
-      ],
-      "pattern": "^(.*)$"
+      ]
+    },
+    "contentEncoding": {
+      "$id": "#/properties/contentEncoding",
+      "type": "string",
+      "description": "Content-Encoding of the object data."
+    },
+    "contentDisposition": {
+      "$id": "#/properties/contentDisposition",
+      "type": "string",
+      "description": "Content-Disposition of the object data."
+    },
+    "contentLanguage": {
+      "$id": "#/properties/contentLanguage",
+      "type": "string",
+      "description": "Content-Language of the object data."
+    },
+    "cacheControl": {
+      "$id": "#/properties/cacheControl",
+      "type": "string",
+      "description": "Cache-Control directive for the object data. If omitted, and the object is accessible to all anonymous users, the default will be public, max-age=3600."
+    },
+    "metadata": {
+      "$id": "#/properties/metadata",
+      "type": "object",
+      "description": "User-provided metadata, in key/value pairs."
+    },
+    "acl": {
+      "$id": "#/properties/acl",
+      "type": "array",
+      "description": "Access controls on the object, containing one or more objectAccessControls Resources.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$id": "#/properties/acl/kind",
+            "type": "string",
+            "description": "The kind of item this is. For object access control entries, this is always storage#objectAccessControl."
+          },
+          "id": {
+            "$id": "#/properties/acl/id",
+            "type": "string",
+            "description": "The ID of the access-control entry."
+          },
+          "selfLink": {
+            "$id": "#/properties/acl/selfLink",
+            "type": "string",
+            "description": "The link to this access-control entry."
+          },
+          "bucket": {
+            "$id": "#/properties/acl/bucket",
+            "type": "string",
+            "description": "The name of the bucket."
+          },
+          "object": {
+            "$id": "#/properties/acl/object",
+            "type": "string",
+            "description": "The name of the object, if applied to an object."
+          },
+          "generation": {
+            "$id": "#/properties/acl/generation",
+            "type": "number",
+            "description": "The content generation of the object, if applied to an object."
+          },
+          "entity": {
+            "$id": "#/properties/acl/entity",
+            "type": "string",
+            "description": "The entity holding the permission, in one of the following forms: user-userId, user-<email>, group-<groupId>, group-<email>, domain-<domain>, project-<team>-<projectId>, allUsers, allAuthenticatedUsers.",
+            "examples": [
+              "user-liz@example.com", "group-example@googlegroups.com"
+            ]
+          },
+          "role": {
+            "$id": "#/properties/acl/role",
+            "type": "string",
+            "description": "The access permission for the entity. Acceptable values are: OWNER, READER."
+          },
+          "email": {
+            "$id": "#/properties/acl/email",
+            "type": "string",
+            "description": "The email address associated with the entity, if any."
+          },
+          "entityId": {
+            "$id": "#/properties/acl/entityId",
+            "type": "string",
+            "description": "The ID for the entity, if any."
+          },
+          "domain": {
+            "$id": "#/properties/acl/domain",
+            "type": "string",
+            "description": "The domain associated with the entity, if any."
+          },
+          "projectTeam": {
+            "$id": "#/properties/acl/projectTeam",
+            "type": "object",
+            "description": "The project team associated with the entity, if any.",
+            "properties": {
+              "projectNumber": {
+                "$id": "#/properties/acl/projectTeam/projectNumber",
+                "type": "string",
+                "description": "The project number."
+              },
+              "team": {
+                "$id": "#/properties/acl/projectTeam/team",
+                "type": "string",
+                "description": "The team. Acceptable values are: editors, owners, viewers."
+              }
+            }
+          },
+          "etag": {
+            "$id": "#/properties/acl/etag",
+            "type": "string",
+            "description": "HTTP 1.1 Entity tag for the access-control entry."
+          }
+        }
+      }
+    },
+    "owner": {
+      "$id": "#/properties/owner",
+      "type": "object",
+      "description": "The owner of the object. This will always be the uploader of the object.",
+      "properties": {
+        "entity": {
+          "$id": "#/properties/owner/entity",
+          "type": "string",
+          "description": "The entity, in the form user-<userId>."
+        },
+        "entityId": {
+          "$id": "#/properties/owner/entityId",
+          "type": "string",
+          "description": "The ID for the entity."
+        }
+      }
     },
     "crc32c": {
       "$id": "#/properties/crc32c",
       "type": "string",
-      "description": "The crc32c of the changed object.",
-      "default": "",
-      "examples": [
-        "y9Umew=="
-      ],
-      "pattern": "^(.*)$"
+      "description": "CRC32c checksum, as described in RFC 4960, Appendix B; encoded using base64 in big-endian byte order."
+    },
+    "componentCount": {
+      "$id": "#/properties/componentCount",
+      "type": "string",
+      "description": "Number of underlying components that make up this object. Components are accumulated by compose operations, counting 1 for each non-composite source object and componentCount for each composite source object. Note: componentCount is included in the metadata for composite objects only."
     },
     "etag": {
       "$id": "#/properties/etag",
       "type": "string",
-      "description": "The etag of the changed object.",
-      "default": "",
-      "examples": [
-        "CLyKpc2Rg+QCEAE="
-      ],
-      "pattern": "^(.*)$"
+      "description": "HTTP 1.1 Entity tag for the object.",
+    },
+    "customerEncryption": {
+      "$id": "#/properties/customerEncryption",
+      "type": "string",
+      "description": "Metadata of customer-supplied encryption key, if the object is encrypted by such a key.",
+      "properties": {
+        "encryptionAlgorithm": {
+          "$id": "#/properties/customerEncryption/encryptionAlgorithm",
+          "type": "string",
+          "description": "The encryption algorithm."
+        },
+        "keySha256": {
+          "$id": "#/properties/customerEncryption/keySha256",
+          "type": "string",
+          "description": "SHA256 hash value of the encryption key."
+        }
+      }
+    },
+    "kmsKeyName": {
+      "$id": "#/properties/kmsKeyName",
+      "type": "string",
+      "description": "Cloud KMS Key used to encrypt this object, if the object is encrypted by such a key."
     }
   }
 }

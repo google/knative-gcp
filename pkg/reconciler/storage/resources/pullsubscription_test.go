@@ -45,21 +45,24 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 				Key: "eventing-secret-key",
 			},
-			Sink: corev1.ObjectReference{
-				APIVersion: "v1",
-				Kind:       "Kitchen",
-				Name:       "sink",
-			},
-			CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
-				Extensions: map[string]string{
-					"foo": "bar",
+			SourceSpec: duckv1beta1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Kitchen",
+						Name:       "sink",
+					},
+				},
+				CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo": "bar",
+					},
 				},
 			},
 		},
 		Status: v1alpha1.StorageStatus{
 			ProjectID: "project-123",
 			TopicID:   "topic-abc",
-			SinkURI:   "http://sink/",
 		},
 	}
 
