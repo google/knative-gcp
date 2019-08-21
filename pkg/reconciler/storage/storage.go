@@ -35,7 +35,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
@@ -44,7 +43,6 @@ import (
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/duck"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
