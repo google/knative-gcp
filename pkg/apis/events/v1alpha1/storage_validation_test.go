@@ -91,36 +91,6 @@ var (
 			Key: "pullsubscription-secret-key",
 		},
 	}
-
-/*
-	storageSpec = StorageSpec{
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "secret-name",
-			},
-			Key: "secret-key",
-		},
-		Project: "my-eventing-project",
-		Topic:   "pubsub-topic",
-		Sink: v1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
-				APIVersion: "foo",
-				Kind:       "bar",
-				Namespace:  "baz",
-				Name:       "qux",
-			},
-		},
-		Transformer: &v1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
-				APIVersion: "foo",
-				Kind:       "bar",
-				Namespace:  "baz",
-				Name:       "qux",
-			},
-		},
-		Mode: ModeCloudEventsStructured,
-	}
-*/
 )
 
 func TestValidationFields(t *testing.T) {
