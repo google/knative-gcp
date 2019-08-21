@@ -33,6 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
+
+	"knative.dev/pkg/apis"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
@@ -142,21 +145,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// See if the source has been deleted.
 	deletionTimestamp := csr.DeletionTimestamp
 
-	// First try to resolve the sink, and if not found mark as not resolved.
-	uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, &csr.Spec.Sink, csr.Namespace)
-	if err != nil {
-		// TODO: Update status appropriately
-		//csr.Status.MarkNoSink("NotFound", "%s", err)
-		c.Logger.Infof("Couldn't resolve Sink URI: %s", err)
-		if deletionTimestamp == nil {
-			return err
-		}
-		// we don't care about the URI if we're deleting, so carry on...
-		uri = ""
-	}
-	csr.Status.SinkURI = uri
-	c.Logger.Infof("Resolved Sink URI to %q", uri)
-
 	if deletionTimestamp != nil {
 		err := c.deleteNotification(ctx, csr)
 		if err != nil {
@@ -180,7 +168,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 
 	// Ensure that there's finalizer there, since we're about to attempt to
 	// change external state with the topic, so we need to clean it up.
-	err = c.ensureFinalizer(csr)
+	err := c.ensureFinalizer(csr)
 	if err != nil {
 		return err
 	}
@@ -201,6 +189,12 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 
 	csr.Status.MarkPubSubTopicReady()
 
+	projectId := csr.Spec.Project
+	if t.Status.ProjectID != "" {
+		projectId = t.Status.ProjectID
+		c.Logger.Infof("Project topic resolved was: %q using it in the notification", projectId)
+	}
+
 	// Make sure PullSubscription is in the state we expect it to be in.
 	ps, err := c.reconcilePullSubscription(ctx, csr)
 	if err != nil {
@@ -211,7 +205,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	}
 
 	c.Logger.Infof("Reconciled pullsubscription source: %+v", ps)
-	c.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
 
 	// Check to see if Pullsubscription source is ready
 	if !ps.Status.IsReady() {
@@ -221,12 +214,12 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	} else {
 		csr.Status.MarkPullSubscriptionReady()
 	}
-
-	projectId := csr.Spec.Project
-	if t.Status.ProjectID != "" {
-		projectId = t.Status.ProjectID
-		c.Logger.Infof("Project topic resolved was: %q using it in the notification", projectId)
+	c.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
+	uri, err := apis.ParseURL(ps.Status.SinkURI)
+	if err != nil {
+		return errors.New(fmt.Sprintf("failed to parse url %q : %q", ps.Status.SinkURI, err))
 	}
+	csr.Status.SinkURI = uri
 
 	notification, err := c.reconcileNotification(ctx, csr, projectId)
 	if err != nil {
@@ -521,4 +514,20 @@ func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.
 	}
 
 	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1alpha1.Destination, namespace string) (*apis.URL, error) {
+	if destination.URI != nil {
+		return destination.URI, nil
+	} else {
+		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+			return nil, err
+		} else {
+			if destURI, err := apis.ParseURL(uri); err != nil {
+				return nil, err
+			} else {
+				return destURI, nil
+			}
+		}
+	}
 }

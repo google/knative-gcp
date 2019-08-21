@@ -44,15 +44,8 @@ var _ = duck.VerifyType(&Storage{}, &duckv1beta1.Source{})
 
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
+	// This brings in CloudEventOverrides and Sink
 	duckv1beta1.SourceSpec
-	// CustomAttributes is the optional list of additional attributes to attach to each Cloud PubSub
-	// message published for this notification subscription.
-	// +optional
-	//	CloudEventOverrides *duckv1beta1.CloudEventOverrides `json:"ceOverrides,omitempty"`
-
-	// Sink is a reference to an object that will resolve to a domain name or a
-	// URI directly to use as the sink.
-	//	Sink apisv1alpha1.Destination `json:"sink,omitempty"`
 
 	// GCSSecret is the credential to use to create the Notification on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
@@ -119,18 +112,14 @@ var gcsSourceCondSet = apis.NewLivingConditionSet(
 
 // StorageStatus is the status for a GCS resource
 type StorageStatus struct {
+	// This brings in duck/v1beta1 Status as well as SinkURI
 	duckv1beta1.SourceStatus
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	//	duckv1beta1.Status `json:",inline"`
 
-	// TODO: add conditions and other stuff here...
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
 	NotificationID string `json:"notificationId,omitempty"`
 
-	// ProjectID is the resolved project ID in use by Storage.
+	// ProjectID is the project ID of the Topic, might have been resolved.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 
@@ -141,11 +130,6 @@ type StorageStatus struct {
 	// SubscriptionID is the created subscription ID used by Storage.
 	// +optional
 	SubscriptionID string `json:"subscriptionId,omitempty"`
-
-	// SinkURI is the current active sink URI that has been configured for the
-	// Source.
-	// +optional
-	//	SinkURI *apis.URL `json:"sinkUri,omitempty"`
 }
 
 func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
