@@ -67,17 +67,20 @@
     },
     "timeCreated": {
       "$id": "#/properties/timeCreated",
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The creation time of the object in RFC 3339 format."
     },
     "updated": {
       "$id": "#/properties/updated",
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The modification time of the object metadata in RFC 3339 format."
     },
     "timeDeleted": {
       "$id": "#/properties/timeDeleted",
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The deletion time of the object in RFC 3339 format. Returned if and only if this version of the object is no longer a live version, but remains in the bucket as an archived object."
     },
     "temporaryHold": {
@@ -98,7 +101,8 @@
     },
     "retentionExpirationTime": {
       "$id": "#/properties/retentionExpirationTime",
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The earliest time that the object can be deleted, based on a bucket's retention policy, in RFC 3339 format."
     },
     "storageClass": {
@@ -111,7 +115,8 @@
     },
     "timeStorageClassUpdated": {
       "$id": "#/properties/timeStorageClassUpdated",
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The time at which the object's storage class was last changed. When the object is initially created, it will be set to timeCreated."
     },
     "size": {
