@@ -515,19 +515,3 @@ func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.
 
 	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }
-
-func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1alpha1.Destination, namespace string) (*apis.URL, error) {
-	if destination.URI != nil {
-		return destination.URI, nil
-	} else {
-		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
-			return nil, err
-		} else {
-			if destURI, err := apis.ParseURL(uri); err != nil {
-				return nil, err
-			} else {
-				return destURI, nil
-			}
-		}
-	}
-}
