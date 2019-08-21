@@ -1287,6 +1287,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/google/uuid",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "go.opencensus.io/metric/metricexport",
