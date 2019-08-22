@@ -55,13 +55,9 @@ func TestMakeTopic(t *testing.T) {
 				},
 			},
 		},
-		Status: v1alpha1.StorageStatus{
-			ProjectID: "project-123",
-			TopicID:   "topic-abc",
-		},
 	}
 
-	got := MakeTopic(source)
+	got := MakeTopic(source, "topic-abc")
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{

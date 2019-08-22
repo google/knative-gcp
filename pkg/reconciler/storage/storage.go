@@ -134,10 +134,9 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	csr.Status.InitializeConditions()
 	// And restore them.
 	csr.Status.NotificationID = notificationID
-	csr.Status.TopicID = topic
 
-	if csr.Status.TopicID == "" {
-		csr.Status.TopicID = fmt.Sprintf("storage-%s", string(csr.UID))
+	if topic == "" {
+		topic = fmt.Sprintf("storage-%s", string(csr.UID))
 	}
 
 	// See if the source has been deleted.
@@ -173,19 +172,19 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 
 	// Make sure Topic is in the state we expect it to be in. There's no point
 	// in continuing if it's not Ready.
-	t, err := c.reconcileTopic(ctx, csr)
+	t, err := c.reconcileTopic(ctx, csr, topic)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile topic %s", err)
-		csr.Status.MarkPubSubTopicNotReady("TopicNotReady", "Failed to reconcile PubSub Topic: %s", err.Error())
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 
 	if !t.Status.IsReady() {
-		csr.Status.MarkPubSubTopicNotReady("TopicNotReady", "PubSub Topic %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("PubSub topic not ready")
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
+		return errors.New("topic not ready")
 	}
 
-	csr.Status.MarkPubSubTopicReady()
+	csr.Status.MarkTopicReady()
 
 	projectId := csr.Spec.Project
 	if t.Status.ProjectID != "" {
@@ -194,11 +193,11 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	}
 
 	// Make sure PullSubscription is in the state we expect it to be in.
-	ps, err := c.reconcilePullSubscription(ctx, csr)
+	ps, err := c.reconcilePullSubscription(ctx, csr, topic)
 	if err != nil {
 		// TODO: Update status appropriately
 		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		csr.Status.MarkPullSubscriptionNotReady("PullsubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
+		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
 		return err
 	}
 
@@ -207,8 +206,8 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// Check to see if Pullsubscription source is ready
 	if !ps.Status.IsReady() {
 		c.Logger.Infof("PullSubscription is not ready yet")
-		csr.Status.MarkPullSubscriptionNotReady("PullsubscriptionNotReady", "Pullsubscription Source is not ready")
-		return errors.New("PubSub topic not ready")
+		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
+		return errors.New("PullSubscription not ready")
 	} else {
 		csr.Status.MarkPullSubscriptionReady()
 	}
@@ -234,7 +233,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -243,7 +242,7 @@ func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr)
+		pubsub := resources.MakePullSubscription(csr, topic)
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
@@ -306,7 +305,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	return nar.NotificationId, nil
 }
 
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.Topic, error) {
+func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.Topic, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -315,7 +314,7 @@ func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) 
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr)
+		topic := resources.MakeTopic(csr, topic)
 		c.Logger.Infof("Creating topic %+v", topic)
 		return pubsubClient.Create(topic)
 	}
