@@ -83,9 +83,9 @@ var (
 
 	secret = corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "testing-secret",
+			Name: "google-cloud-key",
 		},
-		Key: "testing-key",
+		Key: "key.json",
 	}
 
 	// Message for when the topic and pullsubscription with the above variables is not ready.
@@ -220,8 +220,8 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key: testNS + "/" + storageName,
-		//		WantErr: true,
+		Key:     testNS + "/" + storageName,
+		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
 				WithStorageBucket(bucket),
@@ -234,8 +234,10 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(storageName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic: topicName,
+					Topic:  topicName,
+					Secret: &secret,
 				}),
+				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": "storage.events.cloud.run",
 				}),
