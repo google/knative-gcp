@@ -161,7 +161,7 @@ func TestSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "invalid gcs secret, missing name",
+		name: "invalid secret, missing name",
 		spec: &StorageSpec{
 			Bucket: "my-test-bucket",
 			SourceSpec: duckv1beta1.SourceSpec{

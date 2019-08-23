@@ -198,6 +198,14 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		logger.Info("Previously created.")
 
 	case operations.ActionCreate:
+		if n.Topic == "" {
+			result := &NotificationActionResult{
+				Result: false,
+				Error:  "Topic not specified, need it for create",
+			}
+			writeErr := n.writeTerminationMessage(result)
+			return fmt.Errorf("Topic not specified, need it for create")
+		}
 		customAttributes := make(map[string]string)
 
 		// Add our own event type here...

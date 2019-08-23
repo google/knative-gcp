@@ -231,7 +231,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
-		csr.Status.MarkNotificationNotReady("GCSNotReady", "Failed to create Storage notification: %s", err)
+		csr.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to create Storage notification: %s", err)
 		return err
 	}
 

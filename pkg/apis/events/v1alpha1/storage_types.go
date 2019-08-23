@@ -57,7 +57,7 @@ type StorageSpec struct {
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	// +optional
-	Secret *corev1.SecretKeySelector `json:"Secret,omitempty"`
+	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// PubSubSecret is the credential to use for the GCP PubSub Subscription.
 	// It is used for the PullSubscription that is used to deliver events from GCS.

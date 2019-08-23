@@ -105,14 +105,14 @@ func WithStoragePullSubscriptionReady() StorageOption {
 
 // WithStorageNotificationNotReady marks the condition that the
 // GCS Notification is not ready.
-func WithStorageGCSNotReady(reason, message string) StorageOption {
+func WithStorageNotificationNotReady(reason, message string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Status.MarkNotificationNotReady(reason, message)
 	}
 }
 
 // WithStorageNotificationReady marks the condition that the GCS
-// notification is ready.
+// Notification is ready.
 func WithStorageNotificationReady() StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Status.MarkNotificationReady()
