@@ -56,7 +56,7 @@ func (current *StorageSpec) Validate(ctx context.Context) *apis.FieldError {
 	if current.PubSubSecret != nil {
 		err := validateSecret(current.PubSubSecret)
 		if err != nil {
-			errs = errs.Also(err.ViaField("pullSubscriptionSecret"))
+			errs = errs.Also(err.ViaField("pubSubSecret"))
 		}
 	}
 

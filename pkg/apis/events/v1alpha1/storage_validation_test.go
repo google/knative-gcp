@@ -225,7 +225,7 @@ func TestSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pullSubscriptionSecret.name")
+			fe := apis.ErrMissingField("pubSubSecret.name")
 			return fe
 		}(),
 	}, {
@@ -247,7 +247,7 @@ func TestSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pullSubscriptionSecret.key")
+			fe := apis.ErrMissingField("pubSubSecret.key")
 			return fe
 		}(),
 	}}

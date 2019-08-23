@@ -65,7 +65,7 @@ type StorageSpec struct {
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	// If omitted, uses Secret from above.
 	// +optional
-	PubSubSecret *corev1.SecretKeySelector `json:"pullSubscriptionSecret,omitempty"`
+	PubSubSecret *corev1.SecretKeySelector `json:"pubSubSecret,omitempty"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
