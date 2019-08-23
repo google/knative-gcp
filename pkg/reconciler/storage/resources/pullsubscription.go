@@ -31,9 +31,9 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 		"receive-adapter": "storage.events.cloud.run",
 	}
 
-	pubsubSecret := source.Spec.GCSSecret
-	if source.Spec.PullSubscriptionSecret != nil {
-		pubsubSecret = *source.Spec.PullSubscriptionSecret
+	pubsubSecret := source.Spec.Secret
+	if source.Spec.PubSubSecret != nil {
+		pubsubSecret = source.Spec.PubSubSecret
 	}
 
 	ps := &pubsubv1alpha1.PullSubscription{
@@ -46,7 +46,7 @@ func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha
 			},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret:  &pubsubSecret,
+			Secret:  pubsubSecret,
 			Project: source.Spec.Project,
 			Topic:   topic,
 			Sink:    source.Spec.Sink,

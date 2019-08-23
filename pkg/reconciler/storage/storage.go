@@ -231,11 +231,11 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
-		csr.Status.MarkGCSNotReady("GCSNotReady", "Failed to create Storage notification: %s", err)
+		csr.Status.MarkNotificationNotReady("GCSNotReady", "Failed to create Storage notification: %s", err)
 		return err
 	}
 
-	csr.Status.MarkGCSReady()
+	csr.Status.MarkNotificationReady()
 
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification
@@ -286,7 +286,7 @@ func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner k
 }
 
 func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.TopicID)
+	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.TopicID)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", storage.Name)
@@ -368,7 +368,7 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
+	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return fmt.Errorf("Job %q has not completed yet", storage.Name)

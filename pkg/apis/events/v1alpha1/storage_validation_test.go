@@ -44,8 +44,8 @@ var (
 		},
 	}
 
-	// Bucket, Sink and GCSSecret
-	withGCSSecret = StorageSpec{
+	// Bucket, Sink and Secret
+	withSecret = StorageSpec{
 		Bucket: "my-test-bucket",
 		SourceSpec: duckv1beta1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
@@ -57,7 +57,7 @@ var (
 				},
 			},
 		},
-		GCSSecret: corev1.SecretKeySelector{
+		Secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "secret-name",
 			},
@@ -65,8 +65,8 @@ var (
 		},
 	}
 
-	// Bucket, Sink, GCSSecret, and PullSubscriptionSecret
-	withPullSubscriptionSecret = StorageSpec{
+	// Bucket, Sink, Secret, and PubSubSecret
+	withPubSubSecret = StorageSpec{
 		Bucket: "my-test-bucket",
 		SourceSpec: duckv1beta1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
@@ -78,13 +78,13 @@ var (
 				},
 			},
 		},
-		GCSSecret: corev1.SecretKeySelector{
+		Secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "gcs-secret-name",
 			},
 			Key: "gcs-secret-key",
 		},
-		PullSubscriptionSecret: &corev1.SecretKeySelector{
+		PubSubSecret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "pullsubscription-secret-name",
 			},
@@ -174,13 +174,13 @@ func TestSpecValidationFields(t *testing.T) {
 					},
 				},
 			},
-			GCSSecret: corev1.SecretKeySelector{
+			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{},
 				Key:                  "secret-test-key",
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("gcsSecret.name")
+			fe := apis.ErrMissingField("secret.name")
 			return fe
 		}(),
 	}, {
@@ -197,12 +197,12 @@ func TestSpecValidationFields(t *testing.T) {
 					},
 				},
 			},
-			GCSSecret: corev1.SecretKeySelector{
+			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("gcsSecret.key")
+			fe := apis.ErrMissingField("secret.key")
 			return fe
 		}(),
 	}, {
@@ -219,7 +219,7 @@ func TestSpecValidationFields(t *testing.T) {
 					},
 				},
 			},
-			PullSubscriptionSecret: &corev1.SecretKeySelector{
+			PubSubSecret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{},
 				Key:                  "secret-test-key",
 			},
@@ -242,7 +242,7 @@ func TestSpecValidationFields(t *testing.T) {
 					},
 				},
 			},
-			PullSubscriptionSecret: &corev1.SecretKeySelector{
+			PubSubSecret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
 			},
 		},

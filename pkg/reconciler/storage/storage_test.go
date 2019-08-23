@@ -670,7 +670,7 @@ func TestAllCases(t *testing.T) {
 				WithInitStorageConditions,
 				WithStorageTopicReady(testTopicID),
 				WithStoragePullSubscriptionReady(),
-				WithStorageGCSReady(),
+				WithStorageNotificationReady(),
 				WithStorageSinkURI(storageSinkURL),
 				WithStorageNotificationID(notificationId),
 				WithStorageProjectID(testProject),

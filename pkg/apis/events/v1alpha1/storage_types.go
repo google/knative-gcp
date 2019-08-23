@@ -53,19 +53,19 @@ type StorageSpec struct {
 	// This brings in CloudEventOverrides and Sink
 	duckv1beta1.SourceSpec
 
-	// GCSSecret is the credential to use to create the Notification on the GCS bucket.
+	// Secret is the credential used to manage Notifications on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
 	// +optional
-	GCSSecret corev1.SecretKeySelector `json:"gcsSecret,omitempty"`
+	Secret *corev1.SecretKeySelector `json:"Secret,omitempty"`
 
-	// PullSubscriptionSecret is the credential to use for the GCP PubSub Subscription.
+	// PubSubSecret is the credential to use for the GCP PubSub Subscription.
 	// It is used for the PullSubscription that is used to deliver events from GCS.
 	// The value of the secret entry must be a service account key in the JSON format (see
 	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// If omitted, uses GCSSecret from above.
+	// If omitted, uses Secret from above.
 	// +optional
-	PullSubscriptionSecret *corev1.SecretKeySelector `json:"pullSubscriptionSecret,omitempty"`
+	PubSubSecret *corev1.SecretKeySelector `json:"pullSubscriptionSecret,omitempty"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
@@ -107,14 +107,15 @@ const (
 	// TopicReady has status True when the underlying GCP PubSub topic is ready
 	TopicReady apis.ConditionType = "TopicReady"
 
-	// GCSReady has status True when GCS has been configured properly to send Notification events
-	GCSReady apis.ConditionType = "GCSReady"
+	// StorageNotificationReady has status True when GCS has been configured properly to
+	// send Notification events
+	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
-var gcsSourceCondSet = apis.NewLivingConditionSet(
+var storageCondSet = apis.NewLivingConditionSet(
 	PullSubscriptionReady,
 	TopicReady,
-	GCSReady)
+	NotificationReady)
 
 // StorageStatus is the status for a GCS resource
 type StorageStatus struct {

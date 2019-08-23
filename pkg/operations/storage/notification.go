@@ -153,7 +153,7 @@ type NotificationOps struct {
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"false"`
 
 	// Bucket to operate on
 	Bucket string `envconfig:"BUCKET" required:"true"`

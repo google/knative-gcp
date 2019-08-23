@@ -24,14 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (g *Storage) SetDefaults(ctx context.Context) {
-	g.Spec.SetDefaults(ctx)
+func (s *Storage) SetDefaults(ctx context.Context) {
+	s.Spec.SetDefaults(ctx)
 }
 
-func (gs *StorageSpec) SetDefaults(ctx context.Context) {
-	// TODO? What defaults?
-
-	if equality.Semantic.DeepEqual(gs.GCSSecret, corev1.SecretKeySelector{}) {
-		gs.GCSSecret = *v1alpha1.DefaultGoogleCloudSecretSelector()
+func (ss *StorageSpec) SetDefaults(ctx context.Context) {
+	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
+		ss.Secret = v1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }
