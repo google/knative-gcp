@@ -19,21 +19,25 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/webhook"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Scheculer is a specification for a Scheculer resource
-type Scheculer struct {
+// Scheduler is a specification for a Scheduler resource
+type Scheduler struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ScheculerSpec   `json:"spec"`
-	Status ScheculerStatus `json:"status"`
+	Spec   SchedulerSpec   `json:"spec"`
+	Status SchedulerStatus `json:"status"`
 }
 
 var (
@@ -44,8 +48,8 @@ var (
 	_ webhook.GenericCRD = (*Storage)(nil)
 )
 
-// ScheculerSpec is the spec for a Scheculer resource
-type ScheculerSpec struct {
+// SchedulerSpec is the spec for a Scheduler resource
+type SchedulerSpec struct {
 	// This brings in CloudEventOverrides and Sink
 	duckv1beta1.SourceSpec
 
@@ -77,8 +81,21 @@ type ScheculerSpec struct {
 	Data string `json:"data,omitempty"`
 }
 
-// ScheculerStatus is the status for a Scheculer resource
-type ScheculerStatus struct {
+const (
+	// StorageConditionReady has status True when the Storage is ready to send events.
+	SchedulerConditionReady = apis.ConditionReady
+
+	// SchedulerJobReady has status True when Scheduler Job has been successfully created.
+	SchedulerJobReady apis.ConditionType = "SchedulerJobReady"
+)
+
+var schedulerCondSet = apis.NewLivingConditionSet(
+	PullSubscriptionReady,
+	TopicReady,
+	SchedulerJobReady)
+
+// SchedulerStatus is the status for a Scheduler resource
+type SchedulerStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
 	duckv1beta1.SourceStatus
 
@@ -93,10 +110,10 @@ func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ScheculerList is a list of Scheculer resources
-type ScheculerList struct {
+// SchedulerList is a list of Scheduler resources
+type SchedulerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Scheculer `json:"items"`
+	Items []Scheduler `json:"items"`
 }

@@ -18,13 +18,13 @@ limitations under the License.
 
 package v1alpha1
 
-// ScheculerListerExpansion allows custom methods to be added to
-// ScheculerLister.
-type ScheculerListerExpansion interface{}
+// SchedulerListerExpansion allows custom methods to be added to
+// SchedulerLister.
+type SchedulerListerExpansion interface{}
 
-// ScheculerNamespaceListerExpansion allows custom methods to be added to
-// ScheculerNamespaceLister.
-type ScheculerNamespaceListerExpansion interface{}
+// SchedulerNamespaceListerExpansion allows custom methods to be added to
+// SchedulerNamespaceLister.
+type SchedulerNamespaceListerExpansion interface{}
 
 // StorageListerExpansion allows custom methods to be added to
 // StorageLister.
