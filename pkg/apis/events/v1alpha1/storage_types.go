@@ -104,8 +104,8 @@ const (
 	// PullSubscriptionReady has status True when the underlying PullSubscription is ready
 	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
 
-	// PubSubTopicReady has status True when the underlying GCP PubSub topic is ready
-	PubSubTopicReady apis.ConditionType = "PubSubTopicReady"
+	// TopicReady has status True when the underlying GCP PubSub topic is ready
+	TopicReady apis.ConditionType = "TopicReady"
 
 	// GCSReady has status True when GCS has been configured properly to send Notification events
 	GCSReady apis.ConditionType = "GCSReady"
@@ -113,7 +113,7 @@ const (
 
 var gcsSourceCondSet = apis.NewLivingConditionSet(
 	PullSubscriptionReady,
-	PubSubTopicReady,
+	TopicReady,
 	GCSReady)
 
 // StorageStatus is the status for a GCS resource

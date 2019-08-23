@@ -26,7 +26,7 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.Storage) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
 		"receive-adapter": "storage.events.cloud.run",
 	}
@@ -48,7 +48,7 @@ func MakePullSubscription(source *v1alpha1.Storage) *pubsubv1alpha1.PullSubscrip
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
 			Secret:  &pubsubSecret,
 			Project: source.Spec.Project,
-			Topic:   source.Status.TopicID,
+			Topic:   topic,
 			Sink:    source.Spec.Sink,
 		},
 	}

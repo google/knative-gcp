@@ -47,6 +47,21 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 	return s
 }
 
+// NewPullSubscriptionWithNoDefaults creates a PullSubscription with
+// PullSubscriptionOptions but does not set defaults.
+func NewPullSubscriptionWithNoDefaults(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
+	s := &v1alpha1.PullSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+	for _, opt := range so {
+		opt(s)
+	}
+	return s
+}
+
 // NewPullSubscriptionWithoutNamespace creates a PullSubscription with PullSubscriptionOptions but without a specific namespace
 func NewPullSubscriptionWithoutNamespace(name string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
 	s := &v1alpha1.PullSubscription{
@@ -127,6 +142,13 @@ func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscripti
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
 		s.Spec.SetDefaults(context.Background())
+	}
+}
+
+// Same as withPullSubscriptionSpec but does not set defaults
+func WithPullSubscriptionSpecWithNoDefaults(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec = spec
 	}
 }
 

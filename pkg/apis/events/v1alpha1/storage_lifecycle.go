@@ -46,14 +46,14 @@ func (s *StorageStatus) MarkPullSubscriptionReady() {
 	gcsSourceCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
 }
 
-// MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why
-func (s *StorageStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PubSubTopicReady, reason, messageFormat, messageA...)
+// MarkTopicNotReady sets the condition that the PubSub topic was not created and why
+func (s *StorageStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+	gcsSourceCondSet.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
 }
 
-// MarkPubSubTopicReady sets the condition that the underlying PubSub topic was created successfully
-func (s *StorageStatus) MarkPubSubTopicReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PubSubTopicReady)
+// MarkTopicReady sets the condition that the underlying PubSub topic was created successfully
+func (s *StorageStatus) MarkTopicReady() {
+	gcsSourceCondSet.Manage(s).MarkTrue(TopicReady)
 }
 
 // MarkStorageNotReady sets the condition that the GCS has been configured to send Notifications

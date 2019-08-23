@@ -60,13 +60,9 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 			},
 		},
-		Status: v1alpha1.StorageStatus{
-			ProjectID: "project-123",
-			TopicID:   "topic-abc",
-		},
 	}
 
-	got := MakePullSubscription(source)
+	got := MakePullSubscription(source, "topic-abc")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
