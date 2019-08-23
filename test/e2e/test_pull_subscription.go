@@ -19,10 +19,11 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"cloud.google.com/go/pubsub"
 	"k8s.io/apimachinery/pkg/runtime/schema"
