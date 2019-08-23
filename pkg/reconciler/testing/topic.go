@@ -119,6 +119,12 @@ func WithTopicDeployed(s *v1alpha1.Topic) {
 	s.Status.MarkDeployed()
 }
 
+func WithTopicProjectID(projectID string) TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.ProjectID = projectID
+	}
+}
+
 func WithTopicReady(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()

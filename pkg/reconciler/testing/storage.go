@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//	"k8s.io/apimachinery/pkg/types"
 
+	"knative.dev/pkg/apis"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -81,9 +82,10 @@ func WithStorageTopicNotReady(reason, message string) StorageOption {
 
 // WithStorageTopicNotReady marks the condition that the
 // topic is not ready
-func WithStorageTopicReady() StorageOption {
+func WithStorageTopicReady(topicID string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Status.MarkTopicReady()
+		s.Status.TopicID = topicID
 	}
 }
 
@@ -100,6 +102,43 @@ func WithStoragePullSubscriptionNotReady(reason, message string) StorageOption {
 func WithStoragePullSubscriptionReady() StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Status.MarkPullSubscriptionReady()
+	}
+}
+
+// WithStorageGCSNotReady marks the condition that the
+// topic is not ready
+func WithStorageGCSNotReady(reason, message string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.MarkGCSNotReady(reason, message)
+	}
+}
+
+// WithStorageGCSNotReady marks the condition that the
+// topic is not ready
+func WithStorageGCSReady() StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.MarkGCSReady()
+	}
+}
+
+// WithStorageSinkURI sets the status for sink URI
+func WithStorageSinkURI(url *apis.URL) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.SinkURI = url
+	}
+}
+
+// WithStorageNotificationId sets the status for Notification ID
+func WithStorageNotificationID(notificationID string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.NotificationID = notificationID
+	}
+}
+
+// WithStorageProjectId sets the status for Project ID
+func WithStorageProjectID(notificationID string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.ProjectID = notificationID
 	}
 }
 

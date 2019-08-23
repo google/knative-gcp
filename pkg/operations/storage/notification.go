@@ -103,9 +103,6 @@ func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
 	}, {
 		Name:  "BUCKET",
 		Value: arg.Bucket,
-	}, {
-		Name:  "PUBSUB_TOPIC_ID",
-		Value: arg.TopicID,
 	}}
 
 	switch arg.Action {
