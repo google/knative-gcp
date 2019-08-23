@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// Scheculers returns a ScheculerInformer.
+	Scheculers() ScheculerInformer
 	// Storages returns a StorageInformer.
 	Storages() StorageInformer
 }
@@ -37,6 +39,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// Scheculers returns a ScheculerInformer.
+func (v *version) Scheculers() ScheculerInformer {
+	return &scheculerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Storages returns a StorageInformer.

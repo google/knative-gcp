@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// ScheculerListerExpansion allows custom methods to be added to
+// ScheculerLister.
+type ScheculerListerExpansion interface{}
+
+// ScheculerNamespaceListerExpansion allows custom methods to be added to
+// ScheculerNamespaceLister.
+type ScheculerNamespaceListerExpansion interface{}
+
 // StorageListerExpansion allows custom methods to be added to
 // StorageLister.
 type StorageListerExpansion interface{}

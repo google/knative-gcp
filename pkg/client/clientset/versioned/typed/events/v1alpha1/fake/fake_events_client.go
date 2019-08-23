@@ -28,6 +28,10 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeEventsV1alpha1) Scheculers(namespace string) v1alpha1.ScheculerInterface {
+	return &FakeScheculers{c, namespace}
+}
+
 func (c *FakeEventsV1alpha1) Storages(namespace string) v1alpha1.StorageInterface {
 	return &FakeStorages{c, namespace}
 }
