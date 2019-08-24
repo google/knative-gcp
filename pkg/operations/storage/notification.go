@@ -204,6 +204,7 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 				Error:  "Topic not specified, need it for create",
 			}
 			writeErr := n.writeTerminationMessage(result)
+			logger.Errorf("Failed to write termination message: %", writeErr)
 			return fmt.Errorf("Topic not specified, need it for create")
 		}
 		customAttributes := make(map[string]string)
