@@ -101,7 +101,7 @@ type SchedulerStatus struct {
 
 	// Job is the created scheduler Job on success
 	// +optional
-	Job string `json:"job,omitempty"`
+	JobName string `json:"jobName,omitempty"`
 }
 
 func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {

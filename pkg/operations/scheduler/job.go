@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/kmeta"
@@ -38,25 +37,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	// Mapping of the storage importer eventTypes to google storage types.
-	storageEventTypes = map[string]string{
-		"finalize":       "OBJECT_FINALIZE",
-		"archive":        "OBJECT_ARCHIVE",
-		"delete":         "OBJECT_DELETE",
-		"metadataUpdate": "OBJECT_METADATA_UPDATE",
-	}
-)
-
 // TODO: the job could output the resolved projectID.
 type JobActionResult struct {
 	// Result is the result the operation attempted.
 	Result bool `json:"result,omitempty"`
 	// Error is the error string if failure occurred
 	Error string `json:"error,omitempty"`
-	// JobId holds the notification ID for GCS
+	// JobName holds the name of the created job
 	// and is filled in during create operation.
-	JobId string `json:"notificationId,omitempty"`
+	JobName string `json:"jobName,omitempty"`
 	// Project is the project id that we used (this might have
 	// been defaulted, to we'll expose it).
 	ProjectId string `json:"projectId,omitempty"`
@@ -67,29 +56,26 @@ type JobArgs struct {
 	// UID of the resource that caused the action to be taken. Will
 	// be added as a label to the podtemplate.
 	UID string
+
 	// Image is the actual binary that we'll run to operate on the
 	// notification.
 	Image string
+
 	// Action is what the binary should do
-	Action    string
-	ProjectID string
-	// Bucket
-	Bucket string
+	Action string
+
 	// TopicID we'll use for pubsub target.
 	TopicID string
-	// JobId is the notifification ID that GCS gives
-	// back to us. We need that to delete it.
-	JobId string
-	// EventTypes is an array of strings specifying which
-	// event types we want the notification to fire on.
-	EventTypes []string
-	// ObjectNamePrefix is an optional filter
-	ObjectNamePrefix string
-	// CustomAttributes is the list of additional attributes to have
-	// GCS supply back to us when it sends a notification.
-	CustomAttributes map[string]string
-	Secret           corev1.SecretKeySelector
-	Owner            kmeta.OwnerRefable
+
+	// JobName is the name of the Scheduler Job that we're
+	// operating on.
+	JobName string
+
+	// Schedule for the Job
+	Schedule string
+
+	Secret corev1.SecretKeySelector
+	Owner  kmeta.OwnerRefable
 }
 
 // NewJobOps returns a new batch Job resource.
@@ -98,28 +84,20 @@ func NewJobOps(arg JobArgs) *batchv1.Job {
 		Name:  "ACTION",
 		Value: arg.Action,
 	}, {
-		Name:  "PROJECT_ID",
-		Value: arg.ProjectID,
-	}, {
-		Name:  "BUCKET",
-		Value: arg.Bucket,
+		Name:  "JOB_NAME",
+		Value: arg.JobName,
 	}}
 
 	switch arg.Action {
 	case operations.ActionCreate:
 		env = append(env, []corev1.EnvVar{
 			{
-				Name:  "EVENT_TYPES",
-				Value: strings.Join(arg.EventTypes, ":"),
-			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: arg.TopicID,
+			}, {
+				Name:  "SCHEDULE",
+				Value: arg.Schedule,
 			}}...)
-	case operations.ActionDelete:
-		env = append(env, []corev1.EnvVar{{
-			Name:  "NOTIFICATION_ID",
-			Value: arg.JobId,
-		}}...)
 	}
 
 	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
@@ -155,22 +133,12 @@ type JobOps struct {
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
 	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
 
-	// Bucket to operate on
-	Bucket string `envconfig:"BUCKET" required:"true"`
+	// Schedule specification
+	Schedule string `envconfig:"SCHEDULE" required:"false"`
 
-	// JobId is the environment variable containing the name of the
-	// subscription to use.
-	JobId string `envconfig:"NOTIFICATION_ID" required:"false" default:""`
-
-	// EventTypes is a : separated eventtypes, if omitted all will be used.
-	// TODO: Look at native envconfig list support
-	EventTypes string `envconfig:"EVENT_TYPES" required:"false" default:""`
-
-	// ObjectNamePrefix is an optional filter for the GCS
-	ObjectNamePrefix string `envconfig:"OBJECT_NAME_PREFIX" required:"false" default:""`
-
-	// TODO; Add support for custom attributes. Look at using envconfig Map with
-	// necessary encoding / decoding.
+	// JobName is the environment variable containing the name of the
+	// job to operate on. F
+	JobName string `envconfig:"JOB_NAME" required:"false" default:""`
 }
 
 // Run will perform the action configured upon a subscription.
@@ -184,7 +152,7 @@ func (n *JobOps) Run(ctx context.Context) error {
 		zap.String("action", n.Action),
 		zap.String("project", n.Project),
 		zap.String("topic", n.Topic),
-		zap.String("subscription", n.JobId),
+		zap.String("subscription", n.JobName),
 	)
 
 	logger.Info("Storage Job Job.")
@@ -291,18 +259,6 @@ func (n *JobOps) Run(ctx context.Context) error {
 
 	logger.Info("Done.")
 	return nil
-}
-
-func (n *JobOps) toStorageEventTypes(eventTypes []string) []string {
-	storageTypes := make([]string, 0, len(eventTypes))
-	for _, eventType := range eventTypes {
-		storageTypes = append(storageTypes, storageEventTypes[eventType])
-	}
-
-	if len(storageTypes) == 0 {
-		return append(storageTypes, "OBJECT_FINALIZE")
-	}
-	return storageTypes
 }
 
 func (n *JobOps) writeTerminationMessage(result *JobActionResult) error {

@@ -26,35 +26,35 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(s *v1alpha1.Scheduler, topic string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
 		"receive-adapter": "storage.events.cloud.run",
 	}
 
-	pubsubSecret := source.Spec.GCSSecret
-	if source.Spec.PullSubscriptionSecret != nil {
-		pubsubSecret = *source.Spec.PullSubscriptionSecret
+	pubsubSecret := s.Spec.Secret
+	if s.Spec.PubSubSecret != nil {
+		pubsubSecret = s.Spec.PubSubSecret
 	}
 
 	ps := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      source.Name,
-			Namespace: source.Namespace,
+			Name:      s.Name,
+			Namespace: s.Namespace,
 			Labels:    labels,
 			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(source),
+				*kmeta.NewControllerRef(s),
 			},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret:  &pubsubSecret,
-			Project: source.Spec.Project,
+			Secret:  pubsubSecret,
+			Project: s.Spec.Project,
 			Topic:   topic,
-			Sink:    source.Spec.Sink,
+			Sink:    s.Spec.Sink,
 		},
 	}
-	if source.Spec.CloudEventOverrides != nil && source.Spec.CloudEventOverrides.Extensions != nil {
+	if s.Spec.CloudEventOverrides != nil && s.Spec.CloudEventOverrides.Extensions != nil {
 		ps.Spec.CloudEventOverrides = &pubsubv1alpha1.CloudEventOverrides{
-			Extensions: source.Spec.CloudEventOverrides.Extensions,
+			Extensions: s.Spec.CloudEventOverrides.Extensions,
 		}
 	}
 	return ps

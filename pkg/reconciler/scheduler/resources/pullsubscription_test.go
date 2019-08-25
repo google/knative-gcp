@@ -30,13 +30,13 @@ import (
 )
 
 func TestMakePullSubscription(t *testing.T) {
-	source := &v1alpha1.Storage{
+	source := &v1alpha1.Scheduler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bucket-name",
 			Namespace: "bucket-namespace",
 			UID:       "bucket-uid",
 		},
-		Spec: v1alpha1.StorageSpec{
+		Spec: v1alpha1.SchedulerSpec{
 			Bucket:  "this-bucket",
 			Project: "project-123",
 			GCSSecret: corev1.SecretKeySelector{
@@ -70,11 +70,11 @@ func TestMakePullSubscription(t *testing.T) {
 			Namespace: "bucket-namespace",
 			Name:      "bucket-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.run",
+				"receive-adapter": "scheduler.events.cloud.run",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",
-				Kind:               "Storage",
+				Kind:               "Scheduler",
 				Name:               "bucket-name",
 				UID:                "bucket-uid",
 				Controller:         &yes,

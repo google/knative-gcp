@@ -125,88 +125,76 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Scheduler) error {
-	// If notification / topic has been already configured, stash them here
-	// since right below we remove them.
-	notificationID := csr.Status.NotificationID
-	topic := csr.Status.TopicID
+func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error {
+	s.Status.InitializeConditions()
 
-	csr.Status.InitializeConditions()
-	// And restore them.
-	csr.Status.NotificationID = notificationID
-
-	if topic == "" {
-		topic = fmt.Sprintf("scheduler-%s", string(csr.UID))
-	}
+	topic := fmt.Sprintf("scheduler-%s", string(s.UID))
 
 	// See if the source has been deleted.
-	deletionTimestamp := csr.DeletionTimestamp
+	deletionTimestamp := s.DeletionTimestamp
 
 	if deletionTimestamp != nil {
-		err := c.deleteNotification(ctx, csr)
+		err := c.deleteSchedulerJob(ctx, s)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(ctx, csr.Namespace, csr.Name)
+		err = c.deleteTopic(ctx, s.Namespace, s.Name)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the Topic: %s", err)
 			return err
 		}
-		csr.Status.TopicID = ""
-		err = c.deletePullSubscription(ctx, csr)
+		err = c.deletePullSubscription(ctx, s)
 		if err != nil {
 			c.Logger.Infof("Unable to delete the PullSubscription: %s", err)
 			return err
 		}
-		c.removeFinalizer(csr)
+		c.removeFinalizer(s)
 		return nil
 	}
 
 	// Ensure that there's finalizer there, since we're about to attempt to
 	// change external state with the topic, so we need to clean it up.
-	err := c.ensureFinalizer(csr)
+	err := c.ensureFinalizer(s)
 	if err != nil {
 		return err
 	}
 
 	// Make sure Topic is in the state we expect it to be in. There's no point
 	// in continuing if it's not Ready.
-	t, err := c.reconcileTopic(ctx, csr, topic)
+	t, err := c.reconcileTopic(ctx, s, topic)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile topic %s", err)
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
+		s.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 
 	if !t.Status.IsReady() {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
+		s.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
 		return errors.New("topic not ready")
 	}
 
 	if t.Status.ProjectID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
+		s.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
 		return errors.New("topic did not expose projectid")
 	}
 	if t.Status.TopicID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
+		s.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
 		return errors.New("topic did not expose topicid")
 	}
 	if t.Status.TopicID != topic {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
+		s.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
 		return errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
 	}
 
-	csr.Status.TopicID = t.Status.TopicID
-	csr.Status.ProjectID = t.Status.ProjectID
-	csr.Status.MarkTopicReady()
+	s.Status.MarkTopicReady()
 
 	// Make sure PullSubscription is in the state we expect it to be in.
-	ps, err := c.reconcilePullSubscription(ctx, csr, topic)
+	ps, err := c.reconcilePullSubscription(ctx, s, topic)
 	if err != nil {
 		// TODO: Update status appropriately
 		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
+		s.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
 		return err
 	}
 
@@ -215,55 +203,58 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Scheduler) err
 	// Check to see if Pullsubscription source is ready
 	if !ps.Status.IsReady() {
 		c.Logger.Infof("PullSubscription is not ready yet")
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
+		s.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
 		return errors.New("PullSubscription not ready")
 	} else {
-		csr.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady()
 	}
 	c.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
 	uri, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to parse url %q : %q", ps.Status.SinkURI, err))
 	}
-	csr.Status.SinkURI = uri
+	s.Status.SinkURI = uri
 
-	notification, err := c.reconcileNotification(ctx, csr)
+	jobParent := fmt.Sprintf("projects/%s/locations/%s", t.Status.ProjectID, s.Spec.Location)
+	jobName := fmt.Sprintf("cre-scheduler-%s", string(s.UID))
+
+	retJobName, err := c.reconcileNotification(ctx, s, jobParent, jobName)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Scheduler Notification: %s", err)
-		csr.Status.MarkGCSNotReady("GCSNotReady", "Failed to create Scheduler notification: %s", err)
+		s.Status.MarkSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler job: %s", err)
 		return err
 	}
 
-	csr.Status.MarkGCSReady()
+	s.Status.MarkSchedulerJobReady()
 
 	c.Logger.Infof("Reconciled Scheduler notification: %+v", notification)
-	csr.Status.NotificationID = notification
+	s.Status.JobName = retJobName
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
+	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(s.Namespace)
+	existing, err := pubsubClient.Get(s.Name, v1.GetOptions{})
 	if err == nil {
 		// TODO: Handle any updates...
 		c.Logger.Infof("Found existing PullSubscription: %+v", existing)
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr, topic)
+		pubsub := resources.MakePullSubscription(s, topic)
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
 	return nil, err
 }
 
-func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.Scheduler) error {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	err := pubsubClient.Delete(csr.Name, nil)
+func (c *Reconciler) deletePullSubscription(ctx context.Context, s *v1alpha1.Scheduler) error {
+	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(s.Namespace)
+	err := pubsubClient.Delete(s.Name, nil)
 	if err == nil {
 		// TODO: Handle any updates...
-		c.Logger.Infof("Deleted PullSubscription: %+v", csr.Name)
+		c.Logger.Infof("Deleted PullSubscription: %+v", s.Name)
 		return nil
 	}
 	if apierrs.IsNotFound(err) {
@@ -285,7 +276,7 @@ func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner k
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler) (string, error) {
+func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, jobParent, jobName string) (string, error) {
 	state, err := c.EnsureNotification(ctx, string(scheduler.UID), scheduler, scheduler.Spec.GCSSecret, scheduler.Status.ProjectID, scheduler.Spec.Bucket, scheduler.Status.TopicID)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
@@ -317,16 +308,16 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 	return nar.NotificationId, nil
 }
 
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.Topic, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
+func (c *Reconciler) reconcileTopic(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.Topic, error) {
+	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(s.Namespace)
+	existing, err := pubsubClient.Get(s.Name, v1.GetOptions{})
 	if err == nil {
 		// TODO: Handle any updates...
 		c.Logger.Infof("Found existing Topic: %+v", existing)
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr, topic)
+		topic := resources.MakeTopic(s, topic)
 		c.Logger.Infof("Creating topic %+v", topic)
 		return pubsubClient.Create(topic)
 	}
@@ -360,10 +351,10 @@ func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, 
 	})
 }
 
-// deleteNotification looks at the status.NotificationID and if non-empty
+// deleteSchedulerJob looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
 // in the Scheduler, remove it.
-func (c *Reconciler) deleteNotification(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
+func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
 	if scheduler.Status.NotificationID == "" {
 		return nil
 	}
@@ -398,44 +389,44 @@ func (c *Reconciler) deleteNotification(ctx context.Context, scheduler *v1alpha1
 	return nil
 }
 
-func (c *Reconciler) ensureFinalizer(csr *v1alpha1.Scheduler) error {
-	finalizers := sets.NewString(csr.Finalizers...)
+func (c *Reconciler) ensureFinalizer(s *v1alpha1.Scheduler) error {
+	finalizers := sets.NewString(s.Finalizers...)
 	if finalizers.Has(finalizerName) {
 		return nil
 	}
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"finalizers":      append(csr.Finalizers, finalizerName),
-			"resourceVersion": csr.ResourceVersion,
+			"finalizers":      append(s.Finalizers, finalizerName),
+			"resourceVersion": s.ResourceVersion,
 		},
 	}
 	patch, err := json.Marshal(mergePatch)
 	if err != nil {
 		return err
 	}
-	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
+	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(s.Namespace).Patch(s.Name, types.MergePatchType, patch)
 	return err
 
 }
 
-func (c *Reconciler) removeFinalizer(csr *v1alpha1.Scheduler) error {
+func (c *Reconciler) removeFinalizer(s *v1alpha1.Scheduler) error {
 	// Only remove our finalizer if it's the first one.
-	if len(csr.Finalizers) == 0 || csr.Finalizers[0] != finalizerName {
+	if len(s.Finalizers) == 0 || s.Finalizers[0] != finalizerName {
 		return nil
 	}
 
 	// For parity with merge patch for adding, also use patch for removing
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"finalizers":      csr.Finalizers[1:],
-			"resourceVersion": csr.ResourceVersion,
+			"finalizers":      s.Finalizers[1:],
+			"resourceVersion": s.ResourceVersion,
 		},
 	}
 	patch, err := json.Marshal(mergePatch)
 	if err != nil {
 		return err
 	}
-	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
+	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(s.Namespace).Patch(s.Name, types.MergePatchType, patch)
 	return err
 }
 
