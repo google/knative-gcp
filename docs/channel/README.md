@@ -10,6 +10,19 @@ solution.
 
 1. [Install Knative with GCP](../install).
 
+1. Install Knative Eventing,
+
+    1. To install Knative Eventing, first install the CRDs by running the kubectl apply command once with the -l knative.dev/crd-install=true flag. This prevents race conditions during the install, which cause intermittent errors:
+
+    ```shell
+       kubectl apply --selector knative.dev/crd-install=true \
+       --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
+    ```
+    
+    ```shell
+       kubectl apply  --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
+    ```
+
 ## Deployment
 
 1. Create a `Channel`.

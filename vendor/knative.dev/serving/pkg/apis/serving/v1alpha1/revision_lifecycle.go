@@ -26,6 +26,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	av1alpha1 "knative.dev/serving/pkg/apis/autoscaling/v1alpha1"
+	"knative.dev/serving/pkg/apis/config"
 	net "knative.dev/serving/pkg/apis/networking"
 	"knative.dev/serving/pkg/apis/serving"
 )
@@ -78,6 +80,20 @@ func (rs *RevisionSpec) GetContainer() *corev1.Container {
 	}
 	// Should be unreachable post-validation, but here to ease testing.
 	return &corev1.Container{}
+}
+
+// GetContainerConcurrency returns the container concurrency. If
+// container concurrency is not set, the default value will be returned.
+// We use the original default (0) here for backwards compatibility.
+// Previous versions of Knative equated unspecified and zero, so to avoid
+// changing the value used by Revisions with unspecified values when a different
+// default is configured, we use the original default instead of the configured
+// default to remain safe across upgrades.
+func (rs *RevisionSpec) GetContainerConcurrency() int64 {
+	if rs.ContainerConcurrency == nil {
+		return config.DefaultContainerConcurrency
+	}
+	return *rs.ContainerConcurrency
 }
 
 func (r *Revision) DeprecatedBuildRef() *corev1.ObjectReference {
@@ -196,6 +212,33 @@ func (rs *RevisionStatus) MarkContainerMissing(message string) {
 	revCondSet.Manage(rs).MarkFalse(RevisionConditionContainerHealthy, "ContainerMissing", message)
 }
 
+// PropagateAutoscalerStatus propagates autoscaler's status to the revision's status.
+func (rs *RevisionStatus) PropagateAutoscalerStatus(ps *av1alpha1.PodAutoscalerStatus) {
+	// Propagate the service name from the PA.
+	rs.ServiceName = ps.ServiceName
+
+	// Reflect the PA status in our own.
+	cond := ps.GetCondition(av1alpha1.PodAutoscalerConditionReady)
+	if cond == nil {
+		rs.MarkActivating("Deploying", "")
+		return
+	}
+
+	switch cond.Status {
+	case corev1.ConditionUnknown:
+		rs.MarkActivating(cond.Reason, cond.Message)
+	case corev1.ConditionFalse:
+		rs.MarkInactive(cond.Reason, cond.Message)
+	case corev1.ConditionTrue:
+		rs.MarkActive()
+
+		// Precondition for PA being active is SKS being active and
+		// that entices that |service.endpoints| > 0.
+		rs.MarkResourcesAvailable()
+		rs.MarkContainerHealthy()
+	}
+}
+
 // RevisionContainerMissingMessage constructs the status message if a given image
 // cannot be pulled correctly.
 func RevisionContainerMissingMessage(image string, message string) string {
@@ -266,6 +309,11 @@ func (r *Revision) GetLastPinned() (time.Time, error) {
 	}
 
 	return time.Unix(secs, 0), nil
+}
+
+// IsReachable returns whether or not the revision can be reached by a route.
+func (r *Revision) IsReachable() bool {
+	return r.ObjectMeta.Labels[serving.RouteLabelKey] != ""
 }
 
 func (rs *RevisionStatus) duck() *duckv1beta1.Status {
