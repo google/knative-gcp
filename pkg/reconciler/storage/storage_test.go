@@ -22,19 +22,20 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
+	"github.com/google/go-cmp/cmp"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -169,19 +170,6 @@ func TestAllCases(t *testing.T) {
 	failureMsg, err := json.Marshal(narFailure)
 	if err != nil {
 		t.Fatalf("Failed to marshal failure NotificationActionResult: %s", err)
-	}
-
-	type NotificationActionResult struct {
-		// Result is the result the operation attempted.
-		Result bool `json:"result,omitempty"`
-		// Error is the error string if failure occurred
-		Error string `json:"error,omitempty"`
-		// NotificationId holds the notification ID for GCS
-		// and is filled in during create operation.
-		NotificationId string `json:"notificationId,omitempty"`
-		// Project is the project id that we used (this might have
-		// been defaulted, to we'll expose it).
-		ProjectId string `json:"projectId,omitempty"`
 	}
 
 	table := TableTest{{
@@ -689,6 +677,73 @@ func TestAllCases(t *testing.T) {
 		}
 	}))
 
+}
+
+func TestGetNotificationActionResult(t *testing.T) {
+	narSuccess := operations.NotificationActionResult{
+		Result:         true,
+		NotificationId: notificationId,
+		ProjectId:      testProject,
+	}
+	narFailure := operations.NotificationActionResult{
+		Result:    false,
+		Error:     "test induced failure",
+		ProjectId: testProject,
+	}
+
+	successMsg, err := json.Marshal(narSuccess)
+	if err != nil {
+		t.Fatalf("Failed to marshal success NotificationActionResult: %s", err)
+	}
+
+	failureMsg, err := json.Marshal(narFailure)
+	if err != nil {
+		t.Fatalf("Failed to marshal failure NotificationActionResult: %s", err)
+	}
+
+	testCases := []struct {
+		name           string
+		pod            *corev1.Pod
+		expectedResult *operations.NotificationActionResult
+		expectedErr    string
+	}{{
+		name:           "nil pod",
+		pod:            nil,
+		expectedResult: nil,
+		expectedErr:    "pod was nil",
+	}, {
+		name:           "no termination message",
+		pod:            newPod("").(*corev1.Pod),
+		expectedResult: nil,
+		expectedErr:    `did not find termination message for pod "test-pod"`,
+	}, {
+		name:           "garbage termination message",
+		pod:            newPod("garbage").(*corev1.Pod),
+		expectedResult: nil,
+		expectedErr:    `failed to unmarshal terminationmessage: "invalid character 'g' looking for beginning of value"`,
+	}, {
+		name:           "action failed",
+		pod:            newPod(string(failureMsg)).(*corev1.Pod),
+		expectedResult: nil,
+		expectedErr:    `test induced failure`,
+	}, {
+		name:           "action succeeded",
+		pod:            newPod(string(successMsg)).(*corev1.Pod),
+		expectedResult: &narSuccess,
+		expectedErr:    "",
+	}}
+
+	for _, tc := range testCases {
+		result, err := getNotificationActionResult(context.TODO(), tc.pod)
+		if (tc.expectedErr != "" && err == nil) ||
+			(tc.expectedErr == "" && err != nil) ||
+			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
+			t.Errorf("Error mismatch, want: %q got: %q", tc.expectedErr, err)
+		}
+		if diff := cmp.Diff(tc.expectedResult, result); diff != "" {
+			t.Errorf("unexpected action result (-want, +got) = %v", diff)
+		}
+	}
 }
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
