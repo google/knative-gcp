@@ -29,14 +29,81 @@ func TestStorage_SetDefaults(t *testing.T) {
 		orig     *StorageSpec
 		expected *StorageSpec
 	}{
-		"gcsSecret": {
+		"missing defaults": {
 			orig: &StorageSpec{},
 			expected: &StorageSpec{
-				GCSSecret: corev1.SecretKeySelector{
+				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "google-cloud-key",
 					},
 					Key: "key.json",
+				},
+			},
+		},
+		"empty defaults": {
+			orig: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{},
+			},
+			expected: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				},
+			},
+		},
+		"secret exists same key": {
+			orig: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "different-name",
+					},
+					Key: "key.json",
+				},
+			},
+			expected: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "different-name",
+					},
+					Key: "key.json",
+				},
+			},
+		},
+		"secret exists same name": {
+			orig: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "different-key.json",
+				},
+			},
+			expected: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "different-key.json",
+				},
+			},
+		},
+		"secret exists all different": {
+			orig: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "different-name",
+					},
+					Key: "different-key.json",
+				},
+			},
+			expected: &StorageSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "different-name",
+					},
+					Key: "different-key.json",
 				},
 			},
 		},

@@ -18,12 +18,14 @@ package testing
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
@@ -38,9 +40,11 @@ import (
 	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
+	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	storagelisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 )
@@ -120,6 +124,14 @@ func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
 
 func (l *Listers) GetChannelLister() eventslisters.ChannelLister {
 	return eventslisters.NewChannelLister(l.indexerFor(&MessagingV1alpha1.Channel{}))
+}
+
+func (l *Listers) GetJobLister() batchv1listers.JobLister {
+	return batchv1listers.NewJobLister(l.indexerFor(&batchv1.Job{}))
+}
+
+func (l *Listers) GetStorageLister() storagelisters.StorageLister {
+	return storagelisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

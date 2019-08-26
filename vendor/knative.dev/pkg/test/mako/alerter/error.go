@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+// error.go helps with error handling
+
+package alerter
 
 import (
-	"context"
-
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"errors"
+	"strings"
 )
 
-func (s *Storage) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
-}
-
-func (ss *StorageSpec) SetDefaults(ctx context.Context) {
-	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = v1alpha1.DefaultGoogleCloudSecretSelector()
+// CombineErrors combines slice of errors and return a single error
+func CombineErrors(errs []error) error {
+	if len(errs) == 0 {
+		return nil
 	}
+	var sb strings.Builder
+	for _, err := range errs {
+		sb.WriteString(err.Error())
+		sb.WriteString("\n")
+	}
+	return errors.New(strings.Trim(sb.String(), "\n"))
 }

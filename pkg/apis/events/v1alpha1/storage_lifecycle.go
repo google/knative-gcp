@@ -22,45 +22,46 @@ import (
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return gcsSourceCondSet.Manage(s).GetCondition(t)
+	return storageCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
 func (s *StorageStatus) IsReady() bool {
-	return gcsSourceCondSet.Manage(s).IsHappy()
+	return storageCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (s *StorageStatus) InitializeConditions() {
-	gcsSourceCondSet.Manage(s).InitializeConditions()
+	storageCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
-// source is not ready and why
+// source is not ready and why.
 func (s *StorageStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
+	storageCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready
+// MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
 func (s *StorageStatus) MarkPullSubscriptionReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
+	storageCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
 }
 
-// MarkPubSubTopicNotReady sets the condition that the PubSub topic was not created and why
-func (s *StorageStatus) MarkPubSubTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(PubSubTopicReady, reason, messageFormat, messageA...)
+// MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
+func (s *StorageStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+	storageCondSet.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
 }
 
-// MarkPubSubTopicReady sets the condition that the underlying PubSub topic was created successfully
-func (s *StorageStatus) MarkPubSubTopicReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(PubSubTopicReady)
+// MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
+func (s *StorageStatus) MarkTopicReady() {
+	storageCondSet.Manage(s).MarkTrue(TopicReady)
 }
 
-// MarkStorageNotReady sets the condition that the GCS has been configured to send Notifications
-func (s *StorageStatus) MarkGCSNotReady(reason, messageFormat string, messageA ...interface{}) {
-	gcsSourceCondSet.Manage(s).MarkFalse(GCSReady, reason, messageFormat, messageA...)
+// MarkNotificationNotReady sets the condition that the GCS has not been configured
+// to send Notifications and why.
+func (s *StorageStatus) MarkNotificationNotReady(reason, messageFormat string, messageA ...interface{}) {
+	storageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
 }
 
-func (s *StorageStatus) MarkGCSReady() {
-	gcsSourceCondSet.Manage(s).MarkTrue(GCSReady)
+func (s *StorageStatus) MarkNotificationReady() {
+	storageCondSet.Manage(s).MarkTrue(NotificationReady)
 }

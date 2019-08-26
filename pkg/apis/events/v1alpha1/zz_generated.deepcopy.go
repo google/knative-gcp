@@ -90,9 +90,13 @@ func (in *StorageList) DeepCopyObject() runtime.Object {
 func (in *StorageSpec) DeepCopyInto(out *StorageSpec) {
 	*out = *in
 	in.SourceSpec.DeepCopyInto(&out.SourceSpec)
-	in.GCSSecret.DeepCopyInto(&out.GCSSecret)
-	if in.PullSubscriptionSecret != nil {
-		in, out := &in.PullSubscriptionSecret, &out.PullSubscriptionSecret
+	if in.Secret != nil {
+		in, out := &in.Secret, &out.Secret
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.PubSubSecret != nil {
+		in, out := &in.PubSubSecret, &out.PubSubSecret
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}

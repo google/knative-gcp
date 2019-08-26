@@ -14,22 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package e2e
 
 import (
-	"context"
-
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"fmt"
+	"os/exec"
+	"strings"
 )
 
-func (s *Storage) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
+func cmd(cmdLine string) *exec.Cmd {
+	cmdSplit := strings.Split(cmdLine, " ")
+	cmd := cmdSplit[0]
+	args := cmdSplit[1:]
+	return exec.Command(cmd, args...)
 }
 
-func (ss *StorageSpec) SetDefaults(ctx context.Context) {
-	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = v1alpha1.DefaultGoogleCloudSecretSelector()
+func runCmd(cmdLine string) (string, error) {
+	cmd := cmd(cmdLine)
+
+	cmdOut, err := cmd.Output()
+	return string(cmdOut), err
+}
+
+func KoPublish(pack string) (string, error) {
+	out, err := runCmd(fmt.Sprintf("ko publish %s", pack))
+	if err != nil {
+		return "", err
 	}
+	return out, nil
 }

@@ -26,14 +26,14 @@ import (
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(source *v1alpha1.Storage) *pubsubv1alpha1.Topic {
+func MakeTopic(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.Topic {
 	labels := map[string]string{
 		"receive-adapter": "storage.events.cloud.run",
 	}
 
-	pubsubSecret := source.Spec.GCSSecret
-	if source.Spec.PullSubscriptionSecret != nil {
-		pubsubSecret = *source.Spec.PullSubscriptionSecret
+	pubsubSecret := source.Spec.Secret
+	if source.Spec.PubSubSecret != nil {
+		pubsubSecret = source.Spec.PubSubSecret
 	}
 
 	return &pubsubv1alpha1.Topic{
@@ -46,9 +46,9 @@ func MakeTopic(source *v1alpha1.Storage) *pubsubv1alpha1.Topic {
 			},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
-			Secret:            &pubsubSecret,
+			Secret:            pubsubSecret,
 			Project:           source.Spec.Project,
-			Topic:             source.Status.TopicID,
+			Topic:             topic,
 			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
 		},
 	}

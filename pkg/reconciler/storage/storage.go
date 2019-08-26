@@ -134,10 +134,9 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	csr.Status.InitializeConditions()
 	// And restore them.
 	csr.Status.NotificationID = notificationID
-	csr.Status.TopicID = topic
 
-	if csr.Status.TopicID == "" {
-		csr.Status.TopicID = fmt.Sprintf("storage-%s", string(csr.UID))
+	if topic == "" {
+		topic = fmt.Sprintf("storage-%s", string(csr.UID))
 	}
 
 	// See if the source has been deleted.
@@ -173,32 +172,41 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 
 	// Make sure Topic is in the state we expect it to be in. There's no point
 	// in continuing if it's not Ready.
-	t, err := c.reconcileTopic(ctx, csr)
+	t, err := c.reconcileTopic(ctx, csr, topic)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile topic %s", err)
-		csr.Status.MarkPubSubTopicNotReady("TopicNotReady", "Failed to reconcile PubSub Topic: %s", err.Error())
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 
 	if !t.Status.IsReady() {
-		csr.Status.MarkPubSubTopicNotReady("TopicNotReady", "PubSub Topic %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("PubSub topic not ready")
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
+		return errors.New("topic not ready")
 	}
 
-	csr.Status.MarkPubSubTopicReady()
-
-	projectId := csr.Spec.Project
-	if t.Status.ProjectID != "" {
-		projectId = t.Status.ProjectID
-		c.Logger.Infof("Project topic resolved was: %q using it in the notification", projectId)
+	if t.Status.ProjectID == "" {
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
+		return errors.New("topic did not expose projectid")
 	}
+	if t.Status.TopicID == "" {
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
+		return errors.New("topic did not expose topicid")
+	}
+	if t.Status.TopicID != topic {
+		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
+		return errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
+	}
+
+	csr.Status.TopicID = t.Status.TopicID
+	csr.Status.ProjectID = t.Status.ProjectID
+	csr.Status.MarkTopicReady()
 
 	// Make sure PullSubscription is in the state we expect it to be in.
-	ps, err := c.reconcilePullSubscription(ctx, csr)
+	ps, err := c.reconcilePullSubscription(ctx, csr, topic)
 	if err != nil {
 		// TODO: Update status appropriately
 		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		csr.Status.MarkPullSubscriptionNotReady("PullsubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
+		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
 		return err
 	}
 
@@ -207,8 +215,8 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// Check to see if Pullsubscription source is ready
 	if !ps.Status.IsReady() {
 		c.Logger.Infof("PullSubscription is not ready yet")
-		csr.Status.MarkPullSubscriptionNotReady("PullsubscriptionNotReady", "Pullsubscription Source is not ready")
-		return errors.New("PubSub topic not ready")
+		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
+		return errors.New("PullSubscription not ready")
 	} else {
 		csr.Status.MarkPullSubscriptionReady()
 	}
@@ -219,22 +227,22 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	}
 	csr.Status.SinkURI = uri
 
-	notification, err := c.reconcileNotification(ctx, csr, projectId)
+	notification, err := c.reconcileNotification(ctx, csr)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
-		csr.Status.MarkGCSNotReady(fmt.Sprintf("Failed to create Storage notification: %s", err), "")
+		csr.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to create Storage notification: %s", err)
 		return err
 	}
 
-	csr.Status.MarkGCSReady()
+	csr.Status.MarkNotificationReady()
 
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -243,7 +251,7 @@ func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr)
+		pubsub := resources.MakePullSubscription(csr, topic)
 		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
 		return pubsubClient.Create(pubsub)
 	}
@@ -277,8 +285,12 @@ func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner k
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage, projectId string) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, projectId, storage.Spec.Bucket, storage.Status.TopicID)
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
+	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.TopicID)
+
+	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
+		return "", fmt.Errorf("Job %q failed to create or job failed", storage.Name)
+	}
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return "", fmt.Errorf("Job %q has not completed yet", storage.Name)
@@ -302,11 +314,10 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	if nar.Result == false {
 		return "", errors.New(nar.Error)
 	}
-	storage.Status.ProjectID = nar.ProjectId
 	return nar.NotificationId, nil
 }
 
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) (*pubsubsourcev1alpha1.Topic, error) {
+func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.Topic, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(csr.Namespace)
 	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
 	if err == nil {
@@ -315,7 +326,7 @@ func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage) 
 		return existing, nil
 	}
 	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr)
+		topic := resources.MakeTopic(csr, topic)
 		c.Logger.Infof("Creating topic %+v", topic)
 		return pubsubClient.Create(topic)
 	}
@@ -357,7 +368,7 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, storage.Spec.GCSSecret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
+	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return fmt.Errorf("Job %q has not completed yet", storage.Name)
@@ -460,10 +471,9 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 	jobName := operations.NotificationJobName(args.Owner, args.Action)
 	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
 
-	//	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.NotificationJobLabels(args.Owner, args.Action)))
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
-		c.Logger.Debugw("Job not found, creating.")
+		c.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
 
 		args.Image = c.NotificationOpsImage
 

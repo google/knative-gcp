@@ -39,7 +39,7 @@ func TestMakePullSubscription(t *testing.T) {
 		Spec: v1alpha1.StorageSpec{
 			Bucket:  "this-bucket",
 			Project: "project-123",
-			GCSSecret: corev1.SecretKeySelector{
+			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
 				},
@@ -60,13 +60,9 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 			},
 		},
-		Status: v1alpha1.StorageStatus{
-			ProjectID: "project-123",
-			TopicID:   "topic-abc",
-		},
 	}
 
-	got := MakePullSubscription(source)
+	got := MakePullSubscription(source, "topic-abc")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{

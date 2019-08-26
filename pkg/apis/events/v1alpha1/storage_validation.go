@@ -44,17 +44,19 @@ func (current *StorageSpec) Validate(ctx context.Context) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("bucket"))
 	}
 
-	if !equality.Semantic.DeepEqual(&current.GCSSecret, &corev1.SecretKeySelector{}) {
-		err := validateSecret(&current.GCSSecret)
-		if err != nil {
-			errs = errs.Also(err.ViaField("gcsSecret"))
+	if current.Secret != nil {
+		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.Secret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("secret"))
+			}
 		}
 	}
 
-	if current.PullSubscriptionSecret != nil {
-		err := validateSecret(current.PullSubscriptionSecret)
+	if current.PubSubSecret != nil {
+		err := validateSecret(current.PubSubSecret)
 		if err != nil {
-			errs = errs.Also(err.ViaField("pullSubscriptionSecret"))
+			errs = errs.Also(err.ViaField("pubSubSecret"))
 		}
 	}
 

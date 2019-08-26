@@ -91,12 +91,12 @@ spec:
                       pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
         spec:
           properties:
-            gcsSecret:
+            secret:
               type: object
-              description: "Credential to use for creating a GCS notification. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'"
-            pullSubscriptionSecret:
+              description: "Credential to use for managing GCS notifications. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'"
+            pubSubSecret:
               type: object
-              description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses gcsSecret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+              description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses secret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
             serviceAccountName:
               type: string
               description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
@@ -125,7 +125,6 @@ spec:
                   - metadataUpdate
                 type: string
           required:
-          - gcsSecret
           - bucket
           - sink
         status:

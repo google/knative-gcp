@@ -26,8 +26,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokeTestImpl makes sure we can run tests.
-func SmokeTestImpl(t *testing.T) {
+// SmokeTestChannelImpl makes sure we can run tests.
+func SmokeTestChannelImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
@@ -43,11 +43,11 @@ func SmokeTestImpl(t *testing.T) {
 
 	// Delete deferred.
 	defer func() {
-		// Just chill for tick.
-		time.Sleep(20 * time.Second)
 		if err := installer.Do("delete"); err != nil {
 			t.Errorf("failed to create, %s", err)
 		}
+		// Just chill for tick.
+		time.Sleep(10 * time.Second)
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{

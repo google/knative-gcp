@@ -1,7 +1,5 @@
-// +build e2e
-
 /*
-Copyright 2019 Google LLC
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,17 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package alerter
 
 import (
-	"testing"
-
-	"knative.dev/pkg/test/logstream"
+	"log"
 )
 
-// TestSmoke makes sure we can run tests.
-func TestSmoke(t *testing.T) {
-	cancel := logstream.Start(t)
-	defer cancel()
-	SmokeTestImpl(t)
+// Run can run functions that needs dryrun support.
+func Run(message string, call func() error, dryrun bool) error {
+	if dryrun {
+		log.Printf("[dry run] %s", message)
+		return nil
+	}
+	log.Printf(message)
+
+	return call()
 }
