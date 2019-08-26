@@ -32,14 +32,13 @@ import (
 func TestMakePullSubscription(t *testing.T) {
 	source := &v1alpha1.Scheduler{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "bucket-name",
-			Namespace: "bucket-namespace",
-			UID:       "bucket-uid",
+			Name:      "scheduler-name",
+			Namespace: "scheduler-namespace",
+			UID:       "scheduler-uid",
 		},
 		Spec: v1alpha1.SchedulerSpec{
-			Bucket:  "this-bucket",
 			Project: "project-123",
-			GCSSecret: corev1.SecretKeySelector{
+			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
 				},
@@ -67,16 +66,16 @@ func TestMakePullSubscription(t *testing.T) {
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "bucket-namespace",
-			Name:      "bucket-name",
+			Namespace: "scheduler-namespace",
+			Name:      "scheduler-name",
 			Labels: map[string]string{
 				"receive-adapter": "scheduler.events.cloud.run",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",
 				Kind:               "Scheduler",
-				Name:               "bucket-name",
-				UID:                "bucket-uid",
+				Name:               "scheduler-name",
+				UID:                "scheduler-uid",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -87,6 +86,92 @@ func TestMakePullSubscription(t *testing.T) {
 					Name: "eventing-secret-name",
 				},
 				Key: "eventing-secret-key",
+			},
+			Project: "project-123",
+			Topic:   "topic-abc",
+			Sink: apisv1alpha1.Destination{
+				ObjectReference: &corev1.ObjectReference{
+					APIVersion: "v1",
+					Kind:       "Kitchen",
+					Name:       "sink",
+				},
+			},
+			CloudEventOverrides: &pubsubv1alpha1.CloudEventOverrides{
+				Extensions: map[string]string{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestMakePullSubscriptionWithPubSubSecret(t *testing.T) {
+	source := &v1alpha1.Scheduler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "scheduler-name",
+			Namespace: "scheduler-namespace",
+			UID:       "scheduler-uid",
+		},
+		Spec: v1alpha1.SchedulerSpec{
+			Project: "project-123",
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "eventing-secret-name",
+				},
+				Key: "eventing-secret-key",
+			},
+			PubSubSecret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pubsub-secret-name",
+				},
+				Key: "pubsub-secret-key",
+			},
+			SourceSpec: duckv1beta1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Kitchen",
+						Name:       "sink",
+					},
+				},
+				CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo": "bar",
+					},
+				},
+			},
+		},
+	}
+
+	got := MakePullSubscription(source, "topic-abc")
+
+	yes := true
+	want := &pubsubv1alpha1.PullSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "scheduler-namespace",
+			Name:      "scheduler-name",
+			Labels: map[string]string{
+				"receive-adapter": "scheduler.events.cloud.run",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "events.cloud.run/v1alpha1",
+				Kind:               "Scheduler",
+				Name:               "scheduler-name",
+				UID:                "scheduler-uid",
+				Controller:         &yes,
+				BlockOwnerDeletion: &yes,
+			}},
+		},
+		Spec: pubsubv1alpha1.PullSubscriptionSpec{
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pubsub-secret-name",
+				},
+				Key: "pubsub-secret-key",
 			},
 			Project: "project-123",
 			Topic:   "topic-abc",

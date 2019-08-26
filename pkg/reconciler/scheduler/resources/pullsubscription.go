@@ -25,10 +25,10 @@ import (
 )
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
-// for a given GCS.
+// for a given Scheduler Job.
 func MakePullSubscription(s *v1alpha1.Scheduler, topic string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
-		"receive-adapter": "storage.events.cloud.run",
+		"receive-adapter": "scheduler.events.cloud.run",
 	}
 
 	pubsubSecret := s.Spec.Secret

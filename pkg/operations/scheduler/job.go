@@ -67,6 +67,8 @@ type JobArgs struct {
 	// TopicID we'll use for pubsub target.
 	TopicID string
 
+	// Parent is the
+
 	// JobName is the name of the Scheduler Job that we're
 	// operating on.
 	JobName string

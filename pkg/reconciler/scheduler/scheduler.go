@@ -40,8 +40,8 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pubsubclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
@@ -72,7 +72,7 @@ type Reconciler struct {
 	schedulerLister listers.SchedulerLister
 
 	// For dealing with Topics and Pullsubscriptions
-	pubsubClient pubsubsourceclientset.Interface
+	pubsubClient pubsubclientset.Interface
 
 	// For readling with jobs
 	jobLister batchv1listers.JobLister
@@ -113,7 +113,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 	} else if _, err := c.updateStatus(ctx, csr); err != nil {
 		// TODO: record the event (c.Recorder.Eventf(...
-		c.Logger.Warn("Failed to update Scheduler Source status", zap.Error(err))
+		c.Logger.Warn("Failed to update Scheduler status", zap.Error(err))
 		return err
 	}
 
@@ -130,7 +130,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 
 	topic := fmt.Sprintf("scheduler-%s", string(s.UID))
 
-	// See if the source has been deleted.
+	// See if the Scheduler has been deleted.
 	deletionTimestamp := s.DeletionTimestamp
 
 	if deletionTimestamp != nil {
@@ -193,14 +193,14 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	ps, err := c.reconcilePullSubscription(ctx, s, topic)
 	if err != nil {
 		// TODO: Update status appropriately
-		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		s.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
+		c.Logger.Infof("Failed to reconcile PullSubscription: %s", err)
+		s.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription: %s", err)
 		return err
 	}
 
-	c.Logger.Infof("Reconciled pullsubscription source: %+v", ps)
+	c.Logger.Infof("Reconciled pullsubscription: %+v", ps)
 
-	// Check to see if Pullsubscription source is ready
+	// Check to see if Pullsubscription is ready
 	if !ps.Status.IsReady() {
 		c.Logger.Infof("PullSubscription is not ready yet")
 		s.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
@@ -218,7 +218,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	jobParent := fmt.Sprintf("projects/%s/locations/%s", t.Status.ProjectID, s.Spec.Location)
 	jobName := fmt.Sprintf("cre-scheduler-%s", string(s.UID))
 
-	retJobName, err := c.reconcileNotification(ctx, s, jobParent, jobName)
+	retJobName, err := c.reconcileNotification(ctx, s, jobParent, topic, jobName)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Scheduler Notification: %s", err)
@@ -228,12 +228,12 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 
 	s.Status.MarkSchedulerJobReady()
 
-	c.Logger.Infof("Reconciled Scheduler notification: %+v", notification)
+	c.Logger.Infof("Reconciled Scheduler notification: %q", retJobName)
 	s.Status.JobName = retJobName
 	return nil
 }
 
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
+func (c *Reconciler) reconcilePullSubscription(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubv1alpha1.PullSubscription, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(s.Namespace)
 	existing, err := pubsubClient.Get(s.Name, v1.GetOptions{})
 	if err == nil {
@@ -263,21 +263,20 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, s *v1alpha1.Sch
 	return err
 }
 
-func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, topic string) (ops.OpsJobStatus, error) {
-	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:       UID,
-		Image:     c.NotificationOpsImage,
-		Action:    ops.ActionCreate,
-		ProjectID: project,
-		Bucket:    bucket,
-		TopicID:   topic,
-		Secret:    secret,
-		Owner:     owner,
+func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName string) (ops.OpsJobStatus, error) {
+	return c.ensureSchedulerJob(ctx, operations.JobArgs{
+		UID:     UID,
+		Image:   c.SchedulerOpsImage,
+		Action:  ops.ActionCreate,
+		TopicID: topic,
+		JobName: jobName,
+		Secret:  secret,
+		Owner:   owner,
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, jobParent, jobName string) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(scheduler.UID), scheduler, scheduler.Spec.GCSSecret, scheduler.Status.ProjectID, scheduler.Spec.Bucket, scheduler.Status.TopicID)
+func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, jobParent, topic, jobName string) (string, error) {
+	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Spec.Bucket, scheduler.Status.TopicID, jobName)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
@@ -308,7 +307,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 	return nar.NotificationId, nil
 }
 
-func (c *Reconciler) reconcileTopic(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubsourcev1alpha1.Topic, error) {
+func (c *Reconciler) reconcileTopic(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubv1alpha1.Topic, error) {
 	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(s.Namespace)
 	existing, err := pubsubClient.Get(s.Name, v1.GetOptions{})
 	if err == nil {
@@ -338,10 +337,10 @@ func (c *Reconciler) deleteTopic(ctx context.Context, namespace, name string) er
 	return err
 }
 
-func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
-	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
+	return c.ensureSchedulerJob(ctx, operations.JobArgs{
 		UID:            UID,
-		Image:          c.NotificationOpsImage,
+		Image:          c.SchedulerOpsImage,
 		Action:         ops.ActionDelete,
 		ProjectID:      project,
 		Bucket:         bucket,
@@ -458,7 +457,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	return src, err
 }
 
-func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.NotificationArgs) (ops.OpsJobStatus, error) {
+func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.JobArgs) (ops.OpsJobStatus, error) {
 	jobName := operations.NotificationJobName(args.Owner, args.Action)
 	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
 

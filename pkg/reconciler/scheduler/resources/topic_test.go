@@ -32,14 +32,13 @@ import (
 func TestMakeTopic(t *testing.T) {
 	source := &v1alpha1.Storage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "bucket-name",
-			Namespace: "bucket-namespace",
-			UID:       "bucket-uid",
+			Name:      "scheduler-name",
+			Namespace: "scheduler-namespace",
+			UID:       "scheduler-uid",
 		},
 		Spec: v1alpha1.StorageSpec{
-			Bucket:  "this-bucket",
 			Project: "project-123",
-			GCSSecret: corev1.SecretKeySelector{
+			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
 				},
@@ -62,16 +61,16 @@ func TestMakeTopic(t *testing.T) {
 	yes := true
 	want := &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "bucket-namespace",
-			Name:      "bucket-name",
+			Namespace: "scheduler-namespace",
+			Name:      "scheduler-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.run",
+				"receive-adapter": "scheduler.events.cloud.run",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",
 				Kind:               "Storage",
-				Name:               "bucket-name",
-				UID:                "bucket-uid",
+				Name:               "scheduler-name",
+				UID:                "scheduler-uid",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -82,6 +81,76 @@ func TestMakeTopic(t *testing.T) {
 					Name: "eventing-secret-name",
 				},
 				Key: "eventing-secret-key",
+			},
+			Project:           "project-123",
+			Topic:             "topic-abc",
+			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestMakeTopicWithPubSUbSecret(t *testing.T) {
+	source := &v1alpha1.Storage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "scheduler-name",
+			Namespace: "scheduler-namespace",
+			UID:       "scheduler-uid",
+		},
+		Spec: v1alpha1.StorageSpec{
+			Project: "project-123",
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "eventing-secret-name",
+				},
+				Key: "eventing-secret-key",
+			},
+			PubSubSecret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pubsub-secret-name",
+				},
+				Key: "pubsub-secret-key",
+			},
+			SourceSpec: duckv1beta1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Kitchen",
+						Name:       "sink",
+					},
+				},
+			},
+		},
+	}
+
+	got := MakeTopic(source, "topic-abc")
+
+	yes := true
+	want := &pubsubv1alpha1.Topic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "scheduler-namespace",
+			Name:      "scheduler-name",
+			Labels: map[string]string{
+				"receive-adapter": "scheduler.events.cloud.run",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "events.cloud.run/v1alpha1",
+				Kind:               "Storage",
+				Name:               "scheduler-name",
+				UID:                "scheduler-uid",
+				Controller:         &yes,
+				BlockOwnerDeletion: &yes,
+			}},
+		},
+		Spec: pubsubv1alpha1.TopicSpec{
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pubsub-secret-name",
+				},
+				Key: "pubsub-secret-key",
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
