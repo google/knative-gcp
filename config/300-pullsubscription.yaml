@@ -106,6 +106,9 @@ spec:
           type: object
         status:
           properties:
+            observedGeneration:
+              type: integer
+              format: int64
             conditions:
               items:
                 properties:

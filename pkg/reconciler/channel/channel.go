@@ -192,8 +192,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: []eventingduck.SubscriberStatus(nil),
+			Subscribers: make([]eventingduck.SubscriberStatus, 0),
 		}
+	} else if channel.Status.SubscribableStatus.Subscribers == nil {
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
 	}
 
 	subCreates := []eventingduck.SubscriberSpec(nil)
@@ -333,14 +335,16 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 func (c *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: []eventingduck.SubscriberStatus(nil),
+			Subscribers: make([]eventingduck.SubscriberStatus, 0),
 		}
+	} else if channel.Status.SubscribableStatus.Subscribers == nil {
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
 	}
 
 	// Make a map of subscriber name to PullSubscription for lookup.
 	pullsubs := make(map[string]pubsubv1alpha1.PullSubscription)
 	if subs, err := c.getPullSubscriptions(ctx, channel); err != nil {
-		c.Logger.Errorf("Failed to list PullSubscriptions, %s", err)
+		c.Logger.Errorf("failed to list PullSubscriptions, %s", err)
 	} else {
 		for _, s := range subs {
 			pullsubs[resources.ExtractUIDFromSubscriptionName(s.Name)] = s
@@ -352,7 +356,8 @@ func (c *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha
 			ready, msg := c.getPullSubscriptionStatus(&ps)
 			channel.Status.SubscribableStatus.Subscribers[i].Ready = ready
 			channel.Status.SubscribableStatus.Subscribers[i].Message = msg
-			break
+		} else {
+			c.Logger.Errorw("failed to find status for subscriber", zap.String("uid", string(ss.UID)))
 		}
 	}
 

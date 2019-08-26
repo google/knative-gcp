@@ -1,8 +1,9 @@
 # Cloud Pub/Sub Channel
 
 This sample shows how to configure a Channel backed by Cloud Pub/Sub. This is an
-implementation of a [Knative Channel](TODO) intended to provide durable a messaging
-solution.
+implementation of a
+[Knative Channel](https://github.com/knative/eventing/blob/master/docs/spec/channel.md)
+intended to provide durable a messaging solution.
 
 ## Prerequisites
 
@@ -12,16 +13,19 @@ solution.
 
 1. Install Knative Eventing,
 
-    1. To install Knative Eventing, first install the CRDs by running the kubectl apply command once with the -l knative.dev/crd-install=true flag. This prevents race conditions during the install, which cause intermittent errors:
+   1. To install Knative Eventing, first install the CRDs by running the kubectl
+      apply command once with the -l knative.dev/crd-install=true flag. This
+      prevents race conditions during the install, which cause intermittent
+      errors:
 
-    ```shell
-       kubectl apply --selector knative.dev/crd-install=true \
-       --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
-    ```
-    
-    ```shell
-       kubectl apply  --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
-    ```
+   ```shell
+      kubectl apply --selector knative.dev/crd-install=true \
+      --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
+   ```
+
+   ```shell
+      kubectl apply  --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
+   ```
 
 ## Deployment
 
@@ -33,37 +37,45 @@ solution.
    kubectl apply --filename channel.yaml
    ```
 
-1. Validate that the Create a service that the Pub/Sub Subscription will sink into:
+   After a moment, the demo channel should become ready.
+
+   ```shell
+   kubectl get pschan demo
+   ```
+
+1. Create a subscriber, `event-display`.
 
    ```shell
    kubectl apply --filename event-display.yaml
    ```
 
-## Publish
+1. Create a `Subscription`.
 
-Publish messages to your Cloud Pub/Sub Topic:
+   ```shell
+   kubectl apply --filename subscription.yaml
+   ```
 
-```shell
-gcloud pubsub topics publish testing --message='{"Hello": "world"}'
-```
+   After a moment, the subscription will become ready.
+
+   ```shell
+   kubectl get Subscription demo
+   ```
+
+1. Create an event source.
+
+   ```shell
+   kubectl get Subscription demo
+   ```
 
 ## Verify
 
-We will verify that the published message was sent by looking at the logs of the
-service that this PullSubscription sinks to.
+This results in the following:
 
-1. We need to wait for the downstream pods to get started and receive our event,
-   wait 60 seconds.
+```
+[hello-world] --> [demo channel] -> [event-display]
+```
 
-   - You can check the status of the downstream pods with:
-
-     ```shell
-     kubectl get pods --selector app=event-display
-     ```
-
-     You should see at least one.
-
-1. Inspect the logs of the service:
+1. Inspect the logs of the `hello-world` pod:
 
    ```shell
    kubectl logs --selector app=event-display -c user-container
@@ -72,56 +84,36 @@ service that this PullSubscription sinks to.
 You should see log lines similar to:
 
 ```shell
-☁️ cloudevents.Event
+☁️  cloudevents.Event
 Validation: valid
- Context Attributes,
-   specversion: 0.2
-   type: google.pubsub.topic.publish
-   source: //pubsub.googleapis.com/PROJECT_ID/topics/TOPIC_NAME
-   id: 9f9b0968-a15f-4e74-ac58-e8a1c4fa587d
-   time: 2019-06-10T17:52:36.73Z
-   contenttype: application/json
- Data,
-   {
-     "Hello": "world"
-   }
+Context Attributes,
+  specversion: 0.3
+  type: dev.knative.cronjob.event
+  source: /apis/v1/namespaces/default/cronjobsources/hello-world
+  id: 37a8a186-acc0-4c63-b1ad-a8dac9caf288
+  time: 2019-08-26T20:48:00.000475893Z
+  datacontenttype: application/json
+Data,
+  {
+    "hello": "world"
+  }
 ```
-
-For more information about the format of the `Data,` second of the message, see
-the `data` field of
-[PubsubMessage documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage).
-
-For more information about CloudEvents, see the
-[HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## What's Next
 
-The Pub/Sub PullSubscription implements what Knative Eventing considers to be a
-`source`. This component can work alone, but it also works well when
+The `Channel` implements what Knative Eventing considers to be a `channelable`.
+This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
 
 ## Cleaning Up
 
-1. Delete the Pub/Sub PullSubscription:
-
-If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and
-delete in one command:
+1. Delete the resources:
 
 ```shell
- sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
-     kubectl delete --filename -
-```
-
-If you are replaced `TOPIC_NAME` manually, then make sure you delete the
-resulting YAML:
-
-```shell
-kubectl apply --filename pullsubscription.yaml
-```
-
-1. Delete the service used as the sink:
-
-```shell
-kubectl delete --filename event-display.yaml
+kubectl delete \
+  --filename channel.yaml \
+  --filename event-display.yaml \
+  --filename subscription.yaml \
+  --filename source.yaml
 ```

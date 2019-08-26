@@ -118,21 +118,25 @@ spec:
             eventTypes:
               type: array
               items:
+                type: string
                 enum:
                   - finalize
                   - delete
                   - archive
                   - metadataUpdate
-                type: string
           required:
           - bucket
           - sink
         status:
+          type: object
           properties:
             observedGeneration:
-              type: int
+              type: integer
+              format: int64
             conditions:
+              type: array
               items:
+                type: object
                 properties:
                   lastTransitionTime:
                     # we use a string in the stored object but a wrapper object
@@ -151,8 +155,6 @@ spec:
                 required:
                 - type
                 - status
-                type: object
-              type: array
             sinkUri:
               type: string
             projectId:
@@ -163,4 +165,3 @@ spec:
               type: string
             subscriptionId:
               type: string
-          type: object

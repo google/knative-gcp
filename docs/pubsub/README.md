@@ -49,4 +49,5 @@ The following are prerequisites for `Channel`, `Topic` and `PullSubscrition`.
           kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cloudrunevents-pullsub.json
       ```
 
-      `google-cloud-key` and `key.json` are default values expected by `Channel`, `Topic` and `PullSubscrition`.
+      `google-cloud-key` and `key.json` are default values expected by
+      `Channel`, `Topic` and `PullSubscrition`.

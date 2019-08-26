@@ -32,6 +32,8 @@ spec:
     - pubsub
     - messaging
     - channel
+    shortNames:
+      - pschan
   scope: Namespaced
   subresources:
     status: {}
@@ -102,7 +104,8 @@ spec:
         status:
           properties:
             observedGeneration:
-              type: int
+              type: integer
+              format: int64
             conditions:
               type: array
               items:
@@ -125,19 +128,25 @@ spec:
                 required:
                   - type
                   - status
+            subscribablestatus: # deprecated
+              type: object
             subscribableStatus:
-              type: array
-              items:
-                type: object
-                properties:
-                  uid:
-                    type: string
-                  observedGeneration:
-                    type: int
-                  ready:
-                    type: string
-                  message:
-                    type: string
+              type: object
+              properties:
+                subscribers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                      observedGeneration:
+                        type: integer
+                        format: int64
+                      ready:
+                        type: string
+                      message:
+                        type: string
             address:
               type: object
               properties:

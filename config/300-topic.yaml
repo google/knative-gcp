@@ -68,11 +68,15 @@ spec:
               enum: [CreateDelete, CreateNoDelete, NoCreateNoDelete]
               description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
         status:
+          type: object
           properties:
             observedGeneration:
-              type: int
+              type: integer
+              format: int64
             conditions:
+              type: array
               items:
+                type: object
                 properties:
                   lastTransitionTime:
                     # we use a string in the stored object but a wrapper object
@@ -91,8 +95,6 @@ spec:
                 required:
                   - type
                   - status
-                type: object
-              type: array
             projectId:
               type: string
             topicId:
@@ -102,5 +104,3 @@ spec:
               properties:
                 url:
                   type: string
-          type: object
-
