@@ -3,7 +3,7 @@
 This sample shows how to configure a Channel backed by Cloud Pub/Sub. This is an
 implementation of a
 [Knative Channel](https://github.com/knative/eventing/blob/master/docs/spec/channel.md)
-intended to provide durable a messaging solution.
+intended to provide a durable messaging solution.
 
 ## Prerequisites
 
