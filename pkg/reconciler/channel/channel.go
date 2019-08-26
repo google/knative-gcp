@@ -159,6 +159,11 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		return err
 	}
 
+	// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
+	// component to work with Eventing pre-v0.9.
+	// TODO: delete this when DeprecatedSubscribableStatus goes away.
+	channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
+
 	return nil
 }
 
