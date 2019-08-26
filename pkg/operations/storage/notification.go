@@ -153,7 +153,7 @@ type NotificationOps struct {
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"false"`
 
 	// Bucket to operate on
 	Bucket string `envconfig:"BUCKET" required:"true"`
@@ -198,6 +198,15 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		logger.Info("Previously created.")
 
 	case operations.ActionCreate:
+		if n.Topic == "" {
+			result := &NotificationActionResult{
+				Result: false,
+				Error:  "Topic not specified, need it for create",
+			}
+			writeErr := n.writeTerminationMessage(result)
+			logger.Errorf("Failed to write termination message: %", writeErr)
+			return fmt.Errorf("Topic not specified, need it for create")
+		}
 		customAttributes := make(map[string]string)
 
 		// Add our own event type here...
