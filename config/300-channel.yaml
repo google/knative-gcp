@@ -32,6 +32,8 @@ spec:
     - pubsub
     - messaging
     - channel
+    shortNames:
+      - pschan
   scope: Namespaced
   subresources:
     status: {}
@@ -101,8 +103,13 @@ spec:
                         minLength: 1
         status:
           properties:
+            observedGeneration:
+              type: integer
+              format: int64
             conditions:
+              type: array
               items:
+                type: object
                 properties:
                   lastTransitionTime:
                     # we use a string in the stored object but a wrapper object
@@ -121,6 +128,33 @@ spec:
                 required:
                   - type
                   - status
-                type: object
-              type: array
+            subscribablestatus: # deprecated
+              type: object
+            subscribableStatus:
+              type: object
+              properties:
+                subscribers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      uid:
+                        type: string
+                      observedGeneration:
+                        type: integer
+                        format: int64
+                      ready:
+                        type: string
+                      message:
+                        type: string
+            address:
+              type: object
+              properties:
+                url:
+                  type: string
+            projectId:
+              type: string
+            subscriptionId:
+              type: string
+
           type: object

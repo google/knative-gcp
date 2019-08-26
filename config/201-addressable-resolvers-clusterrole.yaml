@@ -41,6 +41,7 @@ rules:
   - ""
   resources:
   - services
+  - services/status
   verbs:
   - get
   - list
@@ -61,7 +62,9 @@ rules:
       - serving.knative.dev
     resources:
       - services
+      - services/status
       - routes
+      - routes/status
     verbs:
       - get
       - list
@@ -82,6 +85,7 @@ rules:
       - pubsub.cloud.run
     resources:
       - topics
+      - topics/status
     verbs:
       - get
       - list
@@ -102,7 +106,9 @@ rules:
       - messaging.cloud.run
     resources:
       - channels
+      - channels/status
       - decorators
+      - decorators/status
     verbs:
       - get
       - list
