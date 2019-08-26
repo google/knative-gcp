@@ -64,8 +64,11 @@ intended to provide durable a messaging solution.
 1. Create an event source.
 
    ```shell
-   kubectl get Subscription demo
+   kubectl apply --filename source.yaml
    ```
+
+   This will send an event through the `demo` channel every minute on the
+   minute.
 
 ## Verify
 
@@ -101,7 +104,7 @@ Data,
 
 These events are generated from the `hello-world` CronJobSource, sent through
 the `demo` Channel and delivered to the `event-display` via the `demo`
-Subscription.  
+Subscription.
 
 ## What's Next
 

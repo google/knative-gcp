@@ -1,6 +1,6 @@
 # Enable Cloud Pub/Sub
 
-The following are prerequisites for `Channel`, `Topic` and `PullSubscrition`.
+The following are prerequisites for `Channel`, `Topic` and `PullSubscription`.
 
 ## Installing Pub/Sub Enabled Service Account
 
@@ -50,4 +50,4 @@ The following are prerequisites for `Channel`, `Topic` and `PullSubscrition`.
       ```
 
       `google-cloud-key` and `key.json` are default values expected by
-      `Channel`, `Topic` and `PullSubscrition`.
+      `Channel`, `Topic` and `PullSubscription`.
