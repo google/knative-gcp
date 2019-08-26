@@ -69,6 +69,8 @@ spec:
               description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
         status:
           properties:
+            observedGeneration:
+              type: int
             conditions:
               items:
                 properties:
@@ -95,6 +97,10 @@ spec:
               type: string
             topicId:
               type: string
-            # TODO: add addressable OpenAPI
+            address:
+              type: object
+              properties:
+                url:
+                  type: string
           type: object
 

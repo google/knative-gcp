@@ -129,6 +129,8 @@ spec:
           - sink
         status:
           properties:
+            observedGeneration:
+              type: int
             conditions:
               items:
                 properties:
