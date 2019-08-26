@@ -75,7 +75,7 @@ This results in the following:
 [hello-world] --> [demo channel] -> [event-display]
 ```
 
-1. Inspect the logs of the `hello-world` pod:
+1. Inspect the logs of the `event-display` pod:
 
    ```shell
    kubectl logs --selector app=event-display -c user-container
@@ -98,6 +98,10 @@ Data,
     "hello": "world"
   }
 ```
+
+These events are generated from the `hello-world` CronJobSource, sent through
+the `demo` Channel and delivered to the `event-display` via the `demo`
+Subscription.  
 
 ## What's Next
 
