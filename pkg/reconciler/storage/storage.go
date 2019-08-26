@@ -302,17 +302,9 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return "", fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	var nar operations.NotificationActionResult
-	err = json.Unmarshal([]byte(terminationMessage), &nar)
+	nar, err := getNotificationActionResult(ctx, pod)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
-	}
-	if nar.Result == false {
-		return "", errors.New(nar.Error)
+		return "", err
 	}
 	return nar.NotificationId, nil
 }
@@ -379,20 +371,13 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 	if err != nil {
 		return err
 	}
-
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	var nar operations.NotificationActionResult
-	err = json.Unmarshal([]byte(terminationMessage), &nar)
+	// We just care if the NotificationActionResult was valid and result true, so
+	// do not need the actual object back.
+	_, err = getNotificationActionResult(ctx, pod)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
+		return err
 	}
 
-	if nar.Result == false {
-		return errors.New(nar.Error)
-	}
 	c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
 	storage.Status.NotificationID = ""
 	return nil
@@ -522,4 +507,25 @@ func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.
 	}
 
 	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
+}
+
+func getNotificationActionResult(ctx context.Context, pod *corev1.Pod) (*operations.NotificationActionResult, error) {
+	if pod == nil {
+		return nil, fmt.Errorf("pod was nil")
+	}
+	terminationMessage := ops.GetFirstTerminationMessage(pod)
+	if terminationMessage == "" {
+		return nil, fmt.Errorf("did not find termination message for pod %q", pod.Name)
+	}
+	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
+	var nar operations.NotificationActionResult
+	err := json.Unmarshal([]byte(terminationMessage), &nar)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
+	}
+
+	if nar.Result == false {
+		return nil, errors.New(nar.Error)
+	}
+	return &nar, nil
 }
