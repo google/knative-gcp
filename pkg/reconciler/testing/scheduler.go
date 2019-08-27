@@ -47,12 +47,6 @@ func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Sched
 	return s
 }
 
-func WithSchedulerBucket(bucket string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
-		s.Spec.Bucket = bucket
-	}
-}
-
 func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Sink = apisv1alpha1.Destination{
@@ -80,10 +74,9 @@ func WithSchedulerTopicNotReady(reason, message string) SchedulerOption {
 
 // WithSchedulerTopicNotReady marks the condition that the
 // topic is not ready
-func WithSchedulerTopicReady(topicID string) SchedulerOption {
+func WithSchedulerTopicReady(topicID, projectID string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkTopicReady()
-		s.Status.TopicID = topicID
+		s.Status.MarkTopicReady(topicID, projectID)
 	}
 }
 
@@ -103,19 +96,19 @@ func WithSchedulerPullSubscriptionReady() SchedulerOption {
 	}
 }
 
-// WithSchedulerNotificationNotReady marks the condition that the
-// GCS Notification is not ready.
-func WithSchedulerNotificationNotReady(reason, message string) SchedulerOption {
+// WithSchedulerJobNotReady marks the condition that the
+// Scheduler Job is not ready.
+func WithSchedulerJobNotReady(reason, message string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkNotificationNotReady(reason, message)
+		s.Status.MarkJobNotReady(reason, message)
 	}
 }
 
-// WithSchedulerNotificationReady marks the condition that the GCS
-// Notification is ready.
-func WithSchedulerNotificationReady() SchedulerOption {
+// WithSchedulerJobReady marks the condition that the
+// Scheduler Job is ready and sets Status.JobName to jobName.
+func WithSchedulerJobReady(jobName string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkNotificationReady()
+		s.Status.MarkJobReady(jobName)
 	}
 }
 
@@ -123,20 +116,6 @@ func WithSchedulerNotificationReady() SchedulerOption {
 func WithSchedulerSinkURI(url *apis.URL) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Status.SinkURI = url
-	}
-}
-
-// WithSchedulerNotificationId sets the status for Notification ID
-func WithSchedulerNotificationID(notificationID string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
-		s.Status.NotificationID = notificationID
-	}
-}
-
-// WithSchedulerProjectId sets the status for Project ID
-func WithSchedulerProjectID(notificationID string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
-		s.Status.ProjectID = notificationID
 	}
 }
 

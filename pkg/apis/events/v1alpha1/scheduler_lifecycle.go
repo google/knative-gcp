@@ -51,16 +51,24 @@ func (s *SchedulerStatus) MarkTopicNotReady(reason, messageFormat string, messag
 	schedulerCondSet.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
 }
 
-// MarkTopicReady sets the condition that the underlying Topic was created successfully
-func (s *SchedulerStatus) MarkTopicReady() {
+// MarkTopicReady sets the condition that the underlying Topic was created
+// successfully and sets the Status.TopicID to the specified topic
+// and Status.ProjectID to the specified project.
+func (s *SchedulerStatus) MarkTopicReady(topicID, projectID string) {
 	schedulerCondSet.Manage(s).MarkTrue(TopicReady)
+	s.TopicID = topicID
+	s.ProjectID = projectID
 }
 
-// MarkSchedulerNotReady sets the condition that the GCS has been configured to send Notifications
-func (s *SchedulerStatus) MarkSchedulerJobNotReady(reason, messageFormat string, messageA ...interface{}) {
-	schedulerCondSet.Manage(s).MarkFalse(SchedulerJobReady, reason, messageFormat, messageA...)
+// MarkJobNotReady sets the condition that the Scheduler Job has not been
+// successfully created.
+func (s *SchedulerStatus) MarkJobNotReady(reason, messageFormat string, messageA ...interface{}) {
+	schedulerCondSet.Manage(s).MarkFalse(JobReady, reason, messageFormat, messageA...)
 }
 
-func (s *SchedulerStatus) MarkSchedulerJobReady() {
-	schedulerCondSet.Manage(s).MarkTrue(SchedulerJobReady)
+// MarkJobReady sets the condition for Scheduler Job as Read and sets the
+// Status.JobName to jobName
+func (s *SchedulerStatus) MarkJobReady(jobName string) {
+	schedulerCondSet.Manage(s).MarkTrue(JobReady)
+	s.JobName = jobName
 }

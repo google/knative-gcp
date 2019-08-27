@@ -82,26 +82,35 @@ type SchedulerSpec struct {
 }
 
 const (
-	// StorageConditionReady has status True when the Storage is ready to send events.
+	// SchedulerConditionReady has status True when Scheduler is ready to send events.
 	SchedulerConditionReady = apis.ConditionReady
 
-	// SchedulerJobReady has status True when Scheduler Job has been successfully created.
-	SchedulerJobReady apis.ConditionType = "SchedulerJobReady"
+	// JobReady has status True when Scheduler Job has been successfully created.
+	JobReady apis.ConditionType = "JobReady"
 )
 
 var schedulerCondSet = apis.NewLivingConditionSet(
 	PullSubscriptionReady,
 	TopicReady,
-	SchedulerJobReady)
+	JobReady)
 
 // SchedulerStatus is the status for a Scheduler resource
 type SchedulerStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
 	duckv1beta1.SourceStatus
 
-	// Job is the created scheduler Job on success
+	// JobName is the name of the created scheduler Job on success.
 	// +optional
 	JobName string `json:"jobName,omitempty"`
+
+	// TopicID is the Topic used to deliver Scheduler events.
+	// +optional
+	TopicID string `json:"topicId,omitempty"`
+
+	// ProjectID is the Project ID of the Topic used to deliver
+	// Scheduler events.
+	// +optional
+	ProjectID string `json:"projectId,omitempty"`
 }
 
 func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {

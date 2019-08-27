@@ -187,7 +187,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 		return errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
 	}
 
-	s.Status.MarkTopicReady()
+	s.Status.MarkTopicReady(t.Status.TopicID, t.Status.ProjectID)
 
 	// Make sure PullSubscription is in the state we expect it to be in.
 	ps, err := c.reconcilePullSubscription(ctx, s, topic)
@@ -222,14 +222,12 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Scheduler Notification: %s", err)
-		s.Status.MarkSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler job: %s", err)
+		s.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler job: %s", err)
 		return err
 	}
 
-	s.Status.MarkSchedulerJobReady()
-
+	s.Status.MarkJobReady(retJobName)
 	c.Logger.Infof("Reconciled Scheduler notification: %q", retJobName)
-	s.Status.JobName = retJobName
 	return nil
 }
 

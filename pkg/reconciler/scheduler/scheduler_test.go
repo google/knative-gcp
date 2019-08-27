@@ -49,11 +49,10 @@ import (
 )
 
 const (
-	schedulerName  = "my-test-scheduler"
-	schedulerUID   = "test-scheduler-uid"
-	bucket         = "my-test-bucket"
-	sinkName       = "sink"
-	notificationId = "135"
+	schedulerName = "my-test-scheduler"
+	schedulerUID  = "test-scheduler-uid"
+	sinkName      = "sink"
+	jobName       = "135"
 
 	testNS       = "testnamespace"
 	testImage    = "notification-ops-image"
@@ -153,7 +152,7 @@ func TestAllCases(t *testing.T) {
 	narSuccess := operations.JobActionResult{
 		Result:    true,
 		ProjectId: testProject,
-		JobName:   "scheducerJobName",
+		JobName:   jobName,
 	}
 	narFailure := operations.JobActionResult{
 		Result:    false,
@@ -171,19 +170,6 @@ func TestAllCases(t *testing.T) {
 		t.Fatalf("Failed to marshal failure NotificationActionResult: %s", err)
 	}
 
-	type NotificationActionResult struct {
-		// Result is the result the operation attempted.
-		Result bool `json:"result,omitempty"`
-		// Error is the error string if failure occurred
-		Error string `json:"error,omitempty"`
-		// NotificationId holds the notification ID for GCS
-		// and is filled in during create operation.
-		NotificationId string `json:"notificationId,omitempty"`
-		// Project is the project id that we used (this might have
-		// been defaulted, to we'll expose it).
-		ProjectId string `json:"projectId,omitempty"`
-	}
-
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -196,7 +182,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 			),
 			newSink(),
@@ -205,7 +190,6 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicNotReady("TopicNotReady", topicNotReadyMsg),
@@ -230,7 +214,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists, topic not ready",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -243,7 +226,6 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
@@ -254,7 +236,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -268,7 +249,6 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-scheduler did not expose projectid"),
@@ -279,7 +259,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -294,7 +273,6 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-scheduler did not expose topicid"),
@@ -305,7 +283,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -320,7 +297,6 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicNotReady("TopicNotReady", `Topic testnamespace/my-test-scheduler topic mismatch expected "scheduler-test-scheduler-uid" got "garbaaaaage"`),
@@ -331,7 +307,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, pullsubscription created",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -346,11 +321,9 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerFinalizers(finalizerName),
 				WithSchedulerPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
 			),
@@ -372,7 +345,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and ready, pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -388,12 +360,10 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
 			),
 		}},
@@ -401,7 +371,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job created",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -419,14 +388,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", jobNotCompletedMsg),
+				WithSchedulerJobNotReady("JobNotReady", jobNotCompletedMsg),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -437,7 +404,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job not finished",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -456,14 +422,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", jobNotCompletedMsg),
+				WithSchedulerJobNotReady("JobNotReady", jobNotCompletedMsg),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -471,7 +435,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job failed",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -490,14 +453,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", jobFailedMsg),
+				WithSchedulerJobNotReady("JobNotReady", jobFailedMsg),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -505,7 +466,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, no pods found",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -524,14 +484,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", jobPodNotFoundMsg),
+				WithSchedulerJobNotReady("JobNotReady", jobPodNotFoundMsg),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -539,7 +497,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, no termination msg on pod",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -559,14 +516,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", `Failed to create Scheduler notification: did not find termination message for pod "test-pod"`),
+				WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler notification: did not find termination message for pod "test-pod"`),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -574,7 +529,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, invalid termination msg on pod",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -594,14 +548,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", `Failed to create Scheduler notification: failed to unmarshal terminationmessage: "invalid character 'i' looking for beginning of value"`),
+				WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler notification: failed to unmarshal terminationmessage: "invalid character 'i' looking for beginning of value"`),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -609,7 +561,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, notification creation failed",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -629,14 +580,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
-				WithSchedulerProjectID(testProject),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSNotReady("GCSNotReady", "Failed to create Scheduler notification: test induced failure"),
+				WithSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler notification: test induced failure"),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -644,7 +593,6 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, notification created successfully",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 			),
@@ -664,16 +612,13 @@ func TestAllCases(t *testing.T) {
 		WantErr: false,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewScheduler(schedulerName, testNS,
-				WithSchedulerBucket(bucket),
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerFinalizers(finalizerName),
 				WithInitSchedulerConditions,
-				WithSchedulerTopicReady(testTopicID),
+				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerGCSReady(),
+				WithSchedulerJobReady(jobName),
 				WithSchedulerSinkURI(schedulerSinkURL),
-				WithSchedulerNotificationID(notificationId),
-				WithSchedulerProjectID(testProject),
 			),
 		}},
 	}}
@@ -681,11 +626,11 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			NotificationOpsImage: testImage,
-			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-			schedulerLister:      listers.GetSchedulerLister(),
-			pubsubClient:         pubsubClient.Get(ctx),
-			jobLister:            listers.GetJobLister(),
+			SchedulerOpsImage: testImage,
+			Base:              reconciler.NewBase(ctx, controllerAgentName, cmw),
+			schedulerLister:   listers.GetSchedulerLister(),
+			pubsubClient:      pubsubClient.Get(ctx),
+			jobLister:         listers.GetJobLister(),
 		}
 	}))
 
@@ -693,52 +638,42 @@ func TestAllCases(t *testing.T) {
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	if action == "create" {
-		return operations.NewNotificationOps(operations.NotificationArgs{
-			UID:       schedulerUID,
-			Image:     testImage,
-			Action:    ops.ActionCreate,
-			ProjectID: testProject,
-			Bucket:    bucket,
-			TopicID:   testTopicID,
-			Secret:    secret,
-			Owner:     owner,
+		return operations.NewJobOps(operations.JobArgs{
+			UID:     schedulerUID,
+			Image:   testImage,
+			Action:  ops.ActionCreate,
+			TopicID: testTopicID,
+			Secret:  secret,
+			Owner:   owner,
 		})
 	}
-	return operations.NewNotificationOps(operations.NotificationArgs{
-		UID:            schedulerUID,
-		Image:          testImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      testProject,
-		Bucket:         bucket,
-		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
+	return operations.NewJobOps(operations.JobArgs{
+		UID:    schedulerUID,
+		Image:  testImage,
+		Action: ops.ActionDelete,
+		Secret: secret,
+		Owner:  owner,
 	})
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	var job *batchv1.Job
 	if action == "create" {
-		job = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:       schedulerUID,
-			Image:     testImage,
-			Action:    ops.ActionCreate,
-			ProjectID: testProject,
-			Bucket:    bucket,
-			TopicID:   testTopicID,
-			Secret:    secret,
-			Owner:     owner,
+		job = operations.NewJobOps(operations.JobArgs{
+			UID:     schedulerUID,
+			Image:   testImage,
+			Action:  ops.ActionCreate,
+			TopicID: testTopicID,
+			Secret:  secret,
+			Owner:   owner,
 		})
 	} else {
-		job = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:            schedulerUID,
-			Image:          testImage,
-			Action:         ops.ActionDelete,
-			ProjectID:      testProject,
-			Bucket:         bucket,
-			NotificationId: notificationId,
-			Secret:         secret,
-			Owner:          owner,
+		job = operations.NewJobOps(operations.JobArgs{
+			UID:    schedulerUID,
+			Image:  testImage,
+			Action: ops.ActionDelete,
+			Secret: secret,
+			Owner:  owner,
 		})
 	}
 
