@@ -215,14 +215,13 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	}
 	s.Status.SinkURI = uri
 
-	jobParent := fmt.Sprintf("projects/%s/locations/%s", t.Status.ProjectID, s.Spec.Location)
-	jobName := fmt.Sprintf("cre-scheduler-%s", string(s.UID))
+	jobName := fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", t.Status.ProjectID, s.Spec.Location, string(s.UID))
 
-	retJobName, err := c.reconcileNotification(ctx, s, jobParent, topic, jobName)
+	retJobName, err := c.reconcileNotification(ctx, s, topic, jobName)
 	if err != nil {
 		// TODO: Update status with this...
 		c.Logger.Infof("Failed to reconcile Scheduler Notification: %s", err)
-		s.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler job: %s", err)
+		s.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler Job: %s", err)
 		return err
 	}
 
@@ -261,21 +260,20 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, s *v1alpha1.Sch
 	return err
 }
 
-func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, parentName, topic, jobName string) (ops.OpsJobStatus, error) {
+func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName string) (ops.OpsJobStatus, error) {
 	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:       UID,
-		Image:     c.SchedulerOpsImage,
-		Action:    ops.ActionCreate,
-		TopicID:   topic,
-		JobParent: parentName,
-		JobName:   jobName,
-		Secret:    secret,
-		Owner:     owner,
+		UID:     UID,
+		Image:   c.SchedulerOpsImage,
+		Action:  ops.ActionCreate,
+		TopicID: topic,
+		JobName: jobName,
+		Secret:  secret,
+		Owner:   owner,
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, jobParent, topic, jobName string) (string, error) {
-	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, jobParent, topic, jobName)
+func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
+	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)

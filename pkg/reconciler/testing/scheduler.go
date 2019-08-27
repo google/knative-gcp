@@ -37,7 +37,7 @@ func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Sched
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-storage-uid",
+			UID:       "test-scheduler-uid",
 		},
 	}
 	for _, opt := range so {
@@ -56,6 +56,12 @@ func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption
 				Name:       name,
 			},
 		}
+	}
+}
+
+func WithSchedulerLocation(location string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Location = location
 	}
 }
 

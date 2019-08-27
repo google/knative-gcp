@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/kmeta"
@@ -67,13 +68,9 @@ type JobArgs struct {
 	// TopicID we'll use for pubsub target.
 	TopicID string
 
-	// Parent is the parent for the Job. Form:
-	// projects/PROJECT_ID/locations/LOCATION_ID
-	JobParent string
-
 	// JobName is the name of the Scheduler Job that we're
-	// operating on. This will basically take on
-	// <JobParent>/jobs/JobName
+	// operating on. The format is like so:
+	// projects/PROJECT_ID/locations/LOCATION_ID/jobs/JobId
 	JobName string
 
 	// Schedule for the Job
@@ -95,8 +92,19 @@ func NewJobOps(arg JobArgs) *batchv1.Job {
 
 	switch arg.Action {
 	case operations.ActionCreate:
+		jobName := arg.JobName
+		// JobName is like this:
+		// projects/PROJECT_ID/locations/LOCATION_ID/jobs/JobId
+		// For create we need a Parent, which (in the above is):
+		// projects/PROJECT_ID/locations/LOCATION_ID
+		// so construct it.
+		fmt.Printf("JOBNAME: %q\n", jobName)
+		parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
 		env = append(env, []corev1.EnvVar{
 			{
+				Name:  "JOB_PARENT",
+				Value: parent,
+			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: arg.TopicID,
 			}, {
