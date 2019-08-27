@@ -263,20 +263,21 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, s *v1alpha1.Sch
 	return err
 }
 
-func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName string) (ops.OpsJobStatus, error) {
+func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, parentName, topic, jobName string) (ops.OpsJobStatus, error) {
 	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:     UID,
-		Image:   c.SchedulerOpsImage,
-		Action:  ops.ActionCreate,
-		TopicID: topic,
-		JobName: jobName,
-		Secret:  secret,
-		Owner:   owner,
+		UID:       UID,
+		Image:     c.SchedulerOpsImage,
+		Action:    ops.ActionCreate,
+		TopicID:   topic,
+		JobParent: parentName,
+		JobName:   jobName,
+		Secret:    secret,
+		Owner:     owner,
 	})
 }
 
 func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, jobParent, topic, jobName string) (string, error) {
-	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Spec.Bucket, scheduler.Status.TopicID, jobName)
+	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, jobParent, topic, jobName)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
@@ -292,19 +293,13 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 		return "", err
 	}
 
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return "", fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	var nar operations.NotificationActionResult
-	err = json.Unmarshal([]byte(terminationMessage), &nar)
+	// We just care if the NotificationActionResult was valid and result true, so
+	// do not need the actual object back.
+	jar, err := getNotificationActionResult(ctx, pod)
 	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
+		return "", err
 	}
-	if nar.Result == false {
-		return "", errors.New(nar.Error)
-	}
-	return nar.NotificationId, nil
+	return jar.JobName, nil
 }
 
 func (c *Reconciler) reconcileTopic(ctx context.Context, s *v1alpha1.Scheduler, topic string) (*pubsubv1alpha1.Topic, error) {
@@ -337,16 +332,14 @@ func (c *Reconciler) deleteTopic(ctx context.Context, namespace, name string) er
 	return err
 }
 
-func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
+func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, jobName string) (ops.OpsJobStatus, error) {
 	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:            UID,
-		Image:          c.SchedulerOpsImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      project,
-		Bucket:         bucket,
-		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
+		UID:     UID,
+		Image:   c.SchedulerOpsImage,
+		Action:  ops.ActionDelete,
+		JobName: jobName,
+		Secret:  secret,
+		Owner:   owner,
 	})
 }
 
@@ -354,11 +347,11 @@ func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, 
 // hence indicating that we have created a notification successfully
 // in the Scheduler, remove it.
 func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
-	if scheduler.Status.NotificationID == "" {
+	if scheduler.Status.JobName == "" {
 		return nil
 	}
 
-	state, err := c.EnsureNotificationDeleted(ctx, string(scheduler.UID), scheduler, scheduler.Spec.GCSSecret, scheduler.Spec.Project, scheduler.Spec.Bucket, scheduler.Status.NotificationID)
+	state, err := c.EnsureSchedulerJobDeleted(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Status.JobName)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return fmt.Errorf("Job %q has not completed yet", scheduler.Name)
@@ -370,21 +363,15 @@ func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 		return err
 	}
 
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	var nar operations.NotificationActionResult
-	err = json.Unmarshal([]byte(terminationMessage), &nar)
+	// We just care if the NotificationActionResult was valid and result true, so
+	// do not need the actual object back.
+	_, err = getNotificationActionResult(ctx, pod)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
+		return err
 	}
 
-	if nar.Result == false {
-		return errors.New(nar.Error)
-	}
-	c.Logger.Infof("Deleted Notification: %q", scheduler.Status.NotificationID)
-	scheduler.Status.NotificationID = ""
+	c.Logger.Infof("Deleted Notification: %q", scheduler.Status.JobName)
+	scheduler.Status.JobName = ""
 	return nil
 }
 
@@ -458,16 +445,16 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 }
 
 func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.JobArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.NotificationJobName(args.Owner, args.Action)
+	jobName := operations.SchedulerJobName(args.Owner, args.Action)
 	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
 
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
 		c.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
 
-		args.Image = c.NotificationOpsImage
+		args.Image = c.SchedulerOpsImage
 
-		job = operations.NewNotificationOps(args)
+		job = operations.NewJobOps(args)
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
@@ -512,4 +499,27 @@ func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.
 	}
 
 	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
+}
+
+// TODO: Hoist this into the job itself, but figure out a way to still check the
+// Result field for success.
+func getNotificationActionResult(ctx context.Context, pod *corev1.Pod) (*operations.JobActionResult, error) {
+	if pod == nil {
+		return nil, fmt.Errorf("pod was nil")
+	}
+	terminationMessage := ops.GetFirstTerminationMessage(pod)
+	if terminationMessage == "" {
+		return nil, fmt.Errorf("did not find termination message for pod %q", pod.Name)
+	}
+	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
+	var jar operations.JobActionResult
+	err := json.Unmarshal([]byte(terminationMessage), &jar)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
+	}
+
+	if jar.Result == false {
+		return nil, errors.New(jar.Error)
+	}
+	return &jar, nil
 }

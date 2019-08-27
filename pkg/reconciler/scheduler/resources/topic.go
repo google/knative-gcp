@@ -26,7 +26,7 @@ import (
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given Scheduler Job.
-func MakeTopic(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.Topic {
+func MakeTopic(source *v1alpha1.Scheduler, topic string) *pubsubv1alpha1.Topic {
 	labels := map[string]string{
 		"receive-adapter": "scheduler.events.cloud.run",
 	}

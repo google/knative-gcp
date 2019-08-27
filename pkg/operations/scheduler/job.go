@@ -67,10 +67,13 @@ type JobArgs struct {
 	// TopicID we'll use for pubsub target.
 	TopicID string
 
-	// Parent is the
+	// Parent is the parent for the Job. Form:
+	// projects/PROJECT_ID/locations/LOCATION_ID
+	JobParent string
 
 	// JobName is the name of the Scheduler Job that we're
-	// operating on.
+	// operating on. This will basically take on
+	// <JobParent>/jobs/JobName
 	JobName string
 
 	// Schedule for the Job

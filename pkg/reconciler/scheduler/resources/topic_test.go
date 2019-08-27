@@ -30,13 +30,13 @@ import (
 )
 
 func TestMakeTopic(t *testing.T) {
-	source := &v1alpha1.Storage{
+	source := &v1alpha1.Scheduler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
 		},
-		Spec: v1alpha1.StorageSpec{
+		Spec: v1alpha1.SchedulerSpec{
 			Project: "project-123",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -68,7 +68,7 @@ func TestMakeTopic(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",
-				Kind:               "Storage",
+				Kind:               "Scheduler",
 				Name:               "scheduler-name",
 				UID:                "scheduler-uid",
 				Controller:         &yes,
@@ -94,13 +94,13 @@ func TestMakeTopic(t *testing.T) {
 }
 
 func TestMakeTopicWithPubSUbSecret(t *testing.T) {
-	source := &v1alpha1.Storage{
+	source := &v1alpha1.Scheduler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
 		},
-		Spec: v1alpha1.StorageSpec{
+		Spec: v1alpha1.SchedulerSpec{
 			Project: "project-123",
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -138,7 +138,7 @@ func TestMakeTopicWithPubSUbSecret(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",
-				Kind:               "Storage",
+				Kind:               "Scheduler",
 				Name:               "scheduler-name",
 				UID:                "scheduler-uid",
 				Controller:         &yes,

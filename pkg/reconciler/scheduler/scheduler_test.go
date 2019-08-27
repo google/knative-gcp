@@ -150,12 +150,12 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 func TestAllCases(t *testing.T) {
 	schedulerSinkURL := sinkURL(t, sinkURI)
 
-	narSuccess := operations.NotificationActionResult{
-		Result:         true,
-		NotificationId: notificationId,
-		ProjectId:      testProject,
+	narSuccess := operations.JobActionResult{
+		Result:    true,
+		ProjectId: testProject,
+		JobName:   "scheducerJobName",
 	}
-	narFailure := operations.NotificationActionResult{
+	narFailure := operations.JobActionResult{
 		Result:    false,
 		Error:     "test induced failure",
 		ProjectId: testProject,
