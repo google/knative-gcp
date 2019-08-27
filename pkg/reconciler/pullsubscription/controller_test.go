@@ -17,18 +17,26 @@ limitations under the License.
 package pullsubscription
 
 import (
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"os"
 	"testing"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+	"knative.dev/pkg/system"
+
+	_ "knative.dev/pkg/metrics/testing"
 
 	// Fake injection informers
-
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 	_ "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
 	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
+
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 )
 
 func TestNew(t *testing.T) {
@@ -38,7 +46,22 @@ func TestNew(t *testing.T) {
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
 	_ = os.Setenv("PUBSUB_SUB_IMAGE", "PUBSUB_SUB_IMAGE")
 
-	c := NewController(ctx, configmap.NewFixedWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher(
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      logging.ConfigMapName(),
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      metrics.ConfigMapName(),
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+	))
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

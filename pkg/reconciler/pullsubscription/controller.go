@@ -18,6 +18,7 @@ package pullsubscription
 
 import (
 	"context"
+	"knative.dev/pkg/metrics"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -96,6 +97,9 @@ func NewController(
 	})
 
 	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
+
+	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
+	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
 
 	return impl
 }
