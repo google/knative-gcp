@@ -53,6 +53,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		},
 		SubscriptionID: "sub-id",
 		SinkURI:        "sink-uri",
+		LoggingConfig:  "LoggingConfig-ABC123",
+		MetricsConfig:  "MetricsConfig-ABC123",
 	})
 
 	one := int32(1)
@@ -94,9 +96,6 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
-							Name:  "METRICS_DOMAIN",
-							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
-						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -118,6 +117,12 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "binary",
 						}, {
 							Name: "K_CE_EXTENSIONS",
+						}, {
+							Name:  "K_METRICS_CONFIG",
+							Value: "MetricsConfig-ABC123",
+						}, {
+							Name:  "K_LOGGING_CONFIG",
+							Value: "LoggingConfig-ABC123",
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -175,6 +180,8 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		SubscriptionID: "sub-id",
 		SinkURI:        "sink-uri",
 		TransformerURI: "transformer-uri",
+		LoggingConfig:  "LoggingConfig-ABC123",
+		MetricsConfig:  "MetricsConfig-ABC123",
 	})
 
 	one := int32(1)
@@ -216,9 +223,6 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
-							Name:  "METRICS_DOMAIN",
-							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
-						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
@@ -242,6 +246,12 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "K_CE_EXTENSIONS",
 							Value: "eyJmb28iOiJiYXIifQ==",
+						}, {
+							Name:  "K_METRICS_CONFIG",
+							Value: "MetricsConfig-ABC123",
+						}, {
+							Name:  "K_LOGGING_CONFIG",
+							Value: "LoggingConfig-ABC123",
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

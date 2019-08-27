@@ -19,6 +19,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/metrics"
 
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
 
@@ -31,7 +32,12 @@ import (
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	decoderresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
+)
+
+var (
+	component = "pullsubscriptions"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -55,10 +61,10 @@ type Adapter struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
-	// ExtensionsBased64 is a based64 encoded json string of a map of
+	// ExtensionsBase64 is a based64 encoded json string of a map of
 	// CloudEvents extensions (key-value pairs) override onto the outbound
 	// event.
-	ExtensionsBased64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+	ExtensionsBase64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
 
 	// extensions is the converted ExtensionsBased64 value.
 	extensions map[string]string
@@ -67,8 +73,17 @@ type Adapter struct {
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
-	// MetricsDomain holds the metrics domain to use for surfacing metrics.
-	MetricsDomain string `envconfig:"METRICS_DOMAIN" required:"true"`
+	// TODO
+	MetricsConfigBase64 string `envconfig:"K_METRICS_CONFIG" required:"true"`
+
+	// metricsConfig is the converted MetricsConfigBase64 value.
+	metricsConfig *metrics.ExporterOptions
+
+	// TODO
+	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
+
+	// loggingConfig is the converted LoggingConfigBase64 value.
+	loggingConfig *logging.Config
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -90,7 +105,13 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Convert base64 encoded json map to extensions map.
 	// This implementation comes from the Decorator object.
-	a.extensions = resources.MakeDecoratorExtensionsMap(a.ExtensionsBased64)
+	a.extensions = decoderresources.MakeDecoratorExtensionsMap(a.ExtensionsBase64)
+
+	// Convert base64 encoded json logging.Config to logging.Config.
+	a.loggingConfig = psresources.Base64ToLoggingConfig(a.LoggingConfigBase64)
+
+	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
+	a.metricsConfig = psresources.Base64ToMetricsOptions(a.MetricsConfigBase64)
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
@@ -113,6 +134,14 @@ func (a *Adapter) Start(ctx context.Context) error {
 				return fmt.Errorf("failed to create transformer cloudevent client: %s", err.Error())
 			}
 		}
+	}
+
+	logger, _ := logging.NewLoggerFromConfig(a.loggingConfig, component)
+	defer flush(logger)
+	ctx = logging.WithLogger(ctx, logger)
+
+	if err := metrics.UpdateExporter(*a.metricsConfig, logger); err != nil {
+		return fmt.Errorf("failed to update metrics exporter: %s", err.Error())
 	}
 
 	return a.inbound.StartReceiver(ctx, a.receive)
@@ -251,4 +280,9 @@ func (a *Adapter) obsNewHTTPClient(ctx context.Context, target string) (cloudeve
 
 	// Use the transport to make a new CloudEvents client.
 	return cloudevents.NewClient(t)
+}
+
+func flush(logger *zap.SugaredLogger) {
+	_ = logger.Sync()
+	metrics.FlushExporter()
 }
