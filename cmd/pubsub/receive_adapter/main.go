@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml"
 	transporthttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 	"github.com/kelseyhightower/envconfig"
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
@@ -43,18 +45,22 @@ const (
 func main() {
 	flag.Parse()
 
-	sl, _ := logging.NewLogger("", "INFO") // TODO: use logging config map.
-	logger := sl.Desugar()
-	defer logger.Sync()
-
-	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
-
 	startable := adapter.Adapter{}
 	if err := envconfig.Process("", &startable); err != nil {
-		logger.Fatal("Failed to process env var", zap.Error(err))
+		panic(fmt.Sprintf("Failed to process env var: %s", err))
 	}
 
-	mainMetrics(sl)
+	// Convert base64 encoded json logging.Config to logging.Config.
+	loggingConfig := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+
+	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
+	metricsConfig := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+
+	logger, _ := logging.NewLoggerFromConfig(loggingConfig, component)
+	defer flush(logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger)
+
+	mainMetrics(logger, metricsConfig)
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
@@ -72,17 +78,8 @@ func main() {
 	}
 }
 
-func mainMetrics(logger *zap.SugaredLogger) {
-	cfg := map[string]string{
-		"metrics.backend-destination": "prometheus", // TODO: hard code for now while we test.
-	}
-
-	if err := metrics.UpdateExporter(
-		metrics.ExporterOptions{
-			Domain:    metrics.Domain(),
-			Component: component,
-			ConfigMap: cfg,
-		}, logger); err != nil {
+func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
+	if err := metrics.UpdateExporter(*opts, logger); err != nil {
 		log.Fatalf("Failed to create the metrics exporter: %v", err)
 	}
 
@@ -93,9 +90,15 @@ func mainMetrics(logger *zap.SugaredLogger) {
 		json.LatencyView,
 		xml.LatencyView,
 		datacodec.LatencyView,
+		adapter.LatencyView,
 	); err != nil {
 		log.Fatalf("Failed to register views: %v", err)
 	}
 
 	view.SetReportingPeriod(2 * time.Second)
+}
+
+func flush(logger *zap.SugaredLogger) {
+	_ = logger.Sync()
+	metrics.FlushExporter()
 }
