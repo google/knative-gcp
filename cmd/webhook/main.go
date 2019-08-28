@@ -66,7 +66,7 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 	defer logger.Sync()
 	logger = logger.With(zap.String(logkey.ControllerType, component))
 
-	logger.Info("Starting the Configuration Webhook")
+	logger.Info("Starting the Cloud Run Events Webhook")
 
 	// Set up signals so we handle the first shutdown signal gracefully.
 	ctx := signals.NewContext()
@@ -109,7 +109,7 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 		Namespace:      system.Namespace(),
 		Port:           8443,
 		SecretName:     "webhook-certs",
-		WebhookName:    fmt.Sprintf("webhook.%s.knative.dev", system.Namespace()),
+		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
 	}
 
 	// Decorate contexts with the current state of the config.
