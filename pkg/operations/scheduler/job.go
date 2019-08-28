@@ -30,11 +30,10 @@ import (
 	"knative.dev/pkg/logging"
 
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 
-	//	schedulerv1 "cloud.google.com/go/scheduler/apiv1"
 	"github.com/google/knative-gcp/pkg/operations"
-	//	"google.golang.org/grpc/codes"
-	//	gstatus "google.golang.org/grpc/status"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -199,7 +198,7 @@ func (n *JobOps) Run(ctx context.Context) error {
 		logger.Info("Previously created.")
 
 	case operations.ActionCreate:
-		logger.Info("CREATING")
+		logger.Info("Creating job %q", n.JobName)
 
 		j, err := n.client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 			Parent: n.Parent,
@@ -215,96 +214,65 @@ func (n *JobOps) Run(ctx context.Context) error {
 			},
 		})
 		if err != nil {
-			logger.Infof("Failed to create Job: %s", err)
+			logger.Infof("Failed to create Job %q: %s", n.JobName, err)
+			result := &JobActionResult{
+				Result: false,
+				Error:  err.Error(),
+			}
+			writeErr := n.writeTerminationMessage(result)
+			if writeErr != nil {
+				logger.Infof("Failed to write termination message: %s", writeErr)
+			}
 			return err
 		}
+		result := &JobActionResult{
+			Result:  true,
+			JobName: n.JobName,
+		}
+		writeErr := n.writeTerminationMessage(result)
+		if writeErr != nil {
+			logger.Infof("Failed to write termination message: %s", writeErr)
+		}
 		logger.Infof("Created Job: %+v", j)
-		/*
-			customAttributes := make(map[string]string)
-
-			// Add our own event type here...
-			customAttributes["knative-gcp"] = "google.storage"
-
-			eventTypes := strings.Split(n.EventTypes, ":")
-			logger.Infof("Creating a notification on bucket %s", n.Bucket)
-
-			nc := n.client.job{
-				TopicProjectID:   n.Project,
-				TopicID:          n.Topic,
-				PayloadFormat:    storageClient.JSONPayload,
-				EventTypes:       n.toStorageEventTypes(eventTypes),
-				ObjectNamePrefix: n.ObjectNamePrefix,
-				CustomAttributes: customAttributes,
-			}
-
-			notification, err := bucket.AddJob(ctx, &nc)
-			if err != nil {
-				result := &JobActionResult{
-					Result: false,
-					Error:  err.Error(),
-				}
-				logger.Infof("Failed to create Job: %s", err)
-				err = n.writeTerminationMessage(result)
-				return err
-			}
-			logger.Infof("Created Job %q", notification.ID)
-			result := &JobActionResult{
-				Result: true,
-				JobId:  notification.ID,
-			}
-			err = n.writeTerminationMessage(result)
-			if err != nil {
-				logger.Infof("Failed to write termination message: %s", err)
-				return err
-			}
-		*/
 	case operations.ActionDelete:
-		logger.Infof("DELETE")
-		/*
-			notifications, err := bucket.Jobs(ctx)
-			if err != nil {
-				logger.Infof("Failed to fetch existing notifications: %s", err)
+		logger.Info("Deleting job %q", n.JobName)
+		err := n.client.DeleteJob(ctx, &schedulerpb.DeleteJobRequest{Name: n.JobName})
+		if err == nil {
+			result := &JobActionResult{
+				Result:  true,
+				JobName: n.JobName,
+			}
+			writeErr := n.writeTerminationMessage(result)
+			if writeErr != nil {
+				logger.Infof("Failed to write termination message: %s", writeErr)
+			}
+			logger.Infof("Deleted Job: %q", n.JobName)
+			logger.Info("Done.")
+			return nil
+		}
+
+		if st, ok := gstatus.FromError(err); !ok {
+			logger.Infof("error from the cloud scheduler client: %s", err)
+			writeErr := n.writeTerminationMessage(&JobActionResult{Result: false, Error: err.Error()})
+			if writeErr != nil {
+				logger.Infof("Failed to write termination message: %s", writeErr)
 				return err
 			}
-
-			// This is bit wonky because, we could always just try to delete, but figuring out
-			// if an error returned is NotFound seems to not really work, so, we'll try
-			// checking first the list and only then deleting.
-			notificationId := n.JobId
-			if notificationId != "" {
-				if existing, ok := notifications[notificationId]; ok {
-					logger.Infof("Found existing notification: %+v", existing)
-					logger.Infof("Deleting notification as: %q", notificationId)
-					err = bucket.DeleteJob(ctx, notificationId)
-					if err == nil {
-						logger.Infof("Deleted Job: %q", notificationId)
-						err = n.writeTerminationMessage(&JobActionResult{Result: true})
-						if err != nil {
-							logger.Infof("Failed to write termination message: %s", err)
-							return err
-						}
-						return nil
-					}
-
-					if st, ok := gstatus.FromError(err); !ok {
-						logger.Infof("error from the cloud storage client: %s", err)
-						writeErr := n.writeTerminationMessage(&JobActionResult{Result: false, Error: err.Error()})
-						if writeErr != nil {
-							logger.Infof("Failed to write termination message: %s", writeErr)
-							return err
-						}
-						return err
-					} else if st.Code() != codes.NotFound {
-						writeErr := n.writeTerminationMessage(&JobActionResult{Result: false, Error: err.Error()})
-						if writeErr != nil {
-							logger.Infof("Failed to write termination message: %s", writeErr)
-							return err
-						}
-						return err
-					}
-				}
+			return err
+		} else if st.Code() != codes.NotFound {
+			writeErr := n.writeTerminationMessage(&JobActionResult{Result: false, Error: err.Error()})
+			if writeErr != nil {
+				logger.Infof("Failed to write termination message: %s", writeErr)
+				return err
 			}
-		*/
+			return err
+		}
+		logger.Infof("The job %q does not exist, calling it good...", n.JobName)
+		writeErr := n.writeTerminationMessage(&JobActionResult{Result: true, JobName: n.JobName})
+		if writeErr != nil {
+			logger.Infof("Failed to write termination message: %s", writeErr)
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown action value %v", n.Action)
 	}

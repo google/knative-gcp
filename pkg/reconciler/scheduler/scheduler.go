@@ -60,12 +60,11 @@ const (
 	finalizerName = controllerAgentName
 )
 
-// Reconciler is the controller implementation for Google Cloud Scheduler (GCS) event
-// notifications.
+// Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
 type Reconciler struct {
 	*reconciler.Base
 
-	// Image to use for launching jobs that operate on notifications
+	// Image to use for launching jobs that operate on Scheduler resources.
 	SchedulerOpsImage string
 
 	// gcssourceclientset is a clientset for our own API group
@@ -136,7 +135,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	if deletionTimestamp != nil {
 		err := c.deleteSchedulerJob(ctx, s)
 		if err != nil {
-			c.Logger.Infof("Unable to delete the Notification: %s", err)
+			c.Logger.Infof("Unable to delete the scheduler job: %s", err)
 			return err
 		}
 		err = c.deleteTopic(ctx, s.Namespace, s.Name)
@@ -220,7 +219,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	retJobName, err := c.reconcileNotification(ctx, s, topic, jobName)
 	if err != nil {
 		// TODO: Update status with this...
-		c.Logger.Infof("Failed to reconcile Scheduler Notification: %s", err)
+		c.Logger.Infof("Failed to reconcile Scheduler Job: %s", err)
 		s.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler Job: %s", err)
 		return err
 	}
@@ -293,7 +292,7 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 
 	// We just care if the NotificationActionResult was valid and result true, so
 	// do not need the actual object back.
-	jar, err := getNotificationActionResult(ctx, pod)
+	jar, err := getJobActionResult(ctx, pod)
 	if err != nil {
 		return "", err
 	}
@@ -363,7 +362,7 @@ func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 
 	// We just care if the NotificationActionResult was valid and result true, so
 	// do not need the actual object back.
-	_, err = getNotificationActionResult(ctx, pod)
+	_, err = getJobActionResult(ctx, pod)
 	if err != nil {
 		return err
 	}
@@ -504,7 +503,7 @@ func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.
 
 // TODO: Hoist this into the job itself, but figure out a way to still check the
 // Result field for success.
-func getNotificationActionResult(ctx context.Context, pod *corev1.Pod) (*operations.JobActionResult, error) {
+func getJobActionResult(ctx context.Context, pod *corev1.Pod) (*operations.JobActionResult, error) {
 	if pod == nil {
 		return nil, fmt.Errorf("pod was nil")
 	}
