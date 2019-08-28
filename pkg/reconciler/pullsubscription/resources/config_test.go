@@ -60,7 +60,7 @@ func TestMetricsOptions(t *testing.T) {
 				}
 			}
 			// Test to options.
-			{
+			if tc.opts != nil {
 				want := tc.opts
 				got := Base64ToMetricsOptions(base64)
 

@@ -32,7 +32,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	decoderresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	psresources "github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 )
 
@@ -73,13 +73,17 @@ type Adapter struct {
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
-	// TODO
+	// MetricsConfigBase64 is a base64 encoded json string of metrics.ExporterOptions.
+	// This is used to configure the metrics exporter options, the config is
+	// stored in a config map inside the controllers namespace and copied here.
 	MetricsConfigBase64 string `envconfig:"K_METRICS_CONFIG" required:"true"`
 
 	// metricsConfig is the converted MetricsConfigBase64 value.
 	metricsConfig *metrics.ExporterOptions
 
-	// TODO
+	// LoggingConfigBase64 is a base64 encoded json string of logging.Config.
+	// This is used to configure the logging config, the config is stored in
+	// a config map inside the controllers namespace and copied here.
 	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
 
 	// loggingConfig is the converted LoggingConfigBase64 value.
@@ -105,7 +109,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Convert base64 encoded json map to extensions map.
 	// This implementation comes from the Decorator object.
-	a.extensions = decoderresources.MakeDecoratorExtensionsMap(a.ExtensionsBase64)
+	a.extensions = decoratorresources.MakeDecoratorExtensionsMap(a.ExtensionsBase64)
 
 	// Convert base64 encoded json logging.Config to logging.Config.
 	a.loggingConfig = psresources.Base64ToLoggingConfig(a.LoggingConfigBase64)
