@@ -53,39 +53,12 @@ spec:
             eventTypes:
               type: object
               properties:
-                finalize:
+                publish:
                   type: object
                   properties:
                     type:
                       type: string
-                      pattern: "google.storage.object.finalize"
-                    schema:
-                      type: string
-                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-                delete:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                      pattern: "google.storage.object.delete"
-                    schema:
-                      type: string
-                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-                archive:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                      pattern: "google.storage.object.archive"
-                    schema:
-                      type: string
-                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-                metadataUpdate:
-                  type: object
-                  properties:
-                    type:
-                      type: string
-                      pattern: "google.storage.object.metadataUpdate"
+                      pattern: "google.pubsub.topic.publish"
                     schema:
                       type: string
                       pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
