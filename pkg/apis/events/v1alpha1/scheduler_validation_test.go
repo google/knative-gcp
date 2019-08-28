@@ -112,8 +112,22 @@ func TestSchedulerValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "missing sink",
+		name: "missing data, schedule, and sink",
 		s:    &Scheduler{Spec: SchedulerSpec{Location: "location"}},
+		want: func() *apis.FieldError {
+			fe := apis.ErrMissingField("spec.data", "spec.schedule", "spec.sink")
+			return fe
+		}(),
+	}, {
+		name: "missing schedule, and sink",
+		s:    &Scheduler{Spec: SchedulerSpec{Location: "location", Data: "data"}},
+		want: func() *apis.FieldError {
+			fe := apis.ErrMissingField("spec.schedule", "spec.sink")
+			return fe
+		}(),
+	}, {
+		name: "missing sink",
+		s:    &Scheduler{Spec: SchedulerSpec{Location: "location", Data: "data", Schedule: "* * * * *"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.sink")
 			return fe
@@ -138,19 +152,20 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		name: "empty",
 		spec: &SchedulerSpec{},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("Location", "location")
+			fe := apis.ErrMissingField("data", "location", "schedule", "sink")
 			return fe
 		}(),
 	}, {
-		name: "missing sink",
+		name: "missing data, schedule, and sink",
 		spec: &SchedulerSpec{Location: "location"},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("sink")
+			fe := apis.ErrMissingField("data", "schedule", "sink")
 			return fe
 		}(),
 	}, {
-		name: "missing location",
+		name: "missing schedule and data",
 		spec: &SchedulerSpec{
+			Location: "location",
 			SourceSpec: duckv1beta1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
@@ -163,13 +178,35 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("location")
+			fe := apis.ErrMissingField("data", "schedule")
+			return fe
+		}(),
+	}, {
+		name: "missing data",
+		spec: &SchedulerSpec{
+			Location: "location",
+			Schedule: "* * * * *",
+			SourceSpec: duckv1beta1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+		},
+		want: func() *apis.FieldError {
+			fe := apis.ErrMissingField("data")
 			return fe
 		}(),
 	}, {
 		name: "invalid secret, missing name",
 		spec: &SchedulerSpec{
 			Location: "my-test-location",
+			Schedule: "* * * * *",
+			Data:     "data",
 			SourceSpec: duckv1beta1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
@@ -193,6 +230,8 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		name: "invalid gcs secret, missing key",
 		spec: &SchedulerSpec{
 			Location: "my-test-location",
+			Schedule: "* * * * *",
+			Data:     "data",
 			SourceSpec: duckv1beta1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
@@ -212,9 +251,11 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "invalid pullsubscription secret, missing name",
+		name: "invalid pubsub secret, missing name",
 		spec: &SchedulerSpec{
 			Location: "my-test-location",
+			Schedule: "* * * * *",
+			Data:     "data",
 			SourceSpec: duckv1beta1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
@@ -231,13 +272,15 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubSubSecret.name")
+			fe := apis.ErrMissingField("pubsubSecret.name")
 			return fe
 		}(),
 	}, {
-		name: "invalid gcs secret, missing key",
+		name: "invalid secret, missing key",
 		spec: &SchedulerSpec{
 			Location: "my-test-location",
+			Schedule: "* * * * *",
+			Data:     "data",
 			SourceSpec: duckv1beta1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
@@ -253,7 +296,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubSubSecret.key")
+			fe := apis.ErrMissingField("pubsubSecret.key")
 			return fe
 		}(),
 	}}

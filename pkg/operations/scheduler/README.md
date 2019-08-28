@@ -1,7 +1,7 @@
-# Storage Operations
+# Scheduler Operations
 
-Operations holds helper functions for creating and understanding GCS related
-jobs that operate on configuring notifications on GCS.
+Operations holds helper functions for creating and understanding Google
+Cloud Scheduler related jobs that operate on managing Scheduler Jobs.
 
 ## Usage
 
@@ -9,7 +9,7 @@ jobs that operate on configuring notifications on GCS.
 
 The Job that can be made:
 
-- `NewNotificationOps` - Operations related to notifications.
+- `NewJobOps` - Operations related to scheduler jobs.
 
 Job accepts an Action, supported Actions are:
 
@@ -20,15 +20,15 @@ Job accepts an Action, supported Actions are:
 
 These jobs are used with Storage reconciler and provides the following methods:
 
-- `EnsureNotification` - Confirm or Create notification.
-- `EnsureNotificationDeleted` - Delete notification.
+- `EnsureSchedulerJob` - Confirm or Create SchedulerJob.
+- `EnsureSchedulerJobDeleted` - Delete Scheduler Job.
 
 ## Why Jobs?
 
-The `Jobs` are designed to be run in the namespace in which the `Storage` exists
+The `Jobs` are designed to be run in the namespace in which the `Scheduler` exists
 with the auth provided. The `Job` has to run local to the resource to avoid
 copying service accounts or secrets into the `cloud-run-events` namespace.
 
 The controller will re-reconcile the resource if the create job is deleted, this
-could be used as a healing operation by the operator if the GCS notification is
-deleted using `gsutil` or the Cloud Console by mistake.
+could be used as a healing operation by the operator if the Scheduler Job is
+deleted using `gcloud` or the Cloud Console by mistake.
