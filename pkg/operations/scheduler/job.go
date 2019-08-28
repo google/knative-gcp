@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strings"
 
 	"go.uber.org/zap"
@@ -36,6 +37,11 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	// TODO: Tighten up the matching here
+	jobNameFormat = "projects/.*/locations/.*/jobs/.*"
 )
 
 // TODO: the job could output the resolved projectID.
@@ -81,7 +87,11 @@ type JobArgs struct {
 }
 
 // NewJobOps returns a new batch Job resource.
-func NewJobOps(arg JobArgs) *batchv1.Job {
+func NewJobOps(arg JobArgs) (*batchv1.Job, error) {
+	if err := validateArgs(arg); err != nil {
+		return nil, err
+	}
+
 	env := []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
@@ -98,8 +108,8 @@ func NewJobOps(arg JobArgs) *batchv1.Job {
 		// For create we need a Parent, which (in the above is):
 		// projects/PROJECT_ID/locations/LOCATION_ID
 		// so construct it.
-		fmt.Printf("JOBNAME: %q\n", jobName)
 		parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
+
 		env = append(env, []corev1.EnvVar{
 			{
 				Name:  "JOB_PARENT",
@@ -130,7 +140,7 @@ func NewJobOps(arg JobArgs) *batchv1.Job {
 			Parallelism:  &parallelism,
 			Template:     *podTemplate,
 		},
-	}
+	}, nil
 }
 
 // JobOps defines the configuration to use for this operation.
@@ -282,4 +292,44 @@ func (n *JobOps) writeTerminationMessage(result *JobActionResult) error {
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", m, 0644)
+}
+
+func validateArgs(arg JobArgs) error {
+	if arg.UID == "" {
+		return fmt.Errorf("missing UID")
+	}
+	if arg.Image == "" {
+		return fmt.Errorf("missing Image")
+	}
+	if arg.Action == "" {
+		return fmt.Errorf("missing Action")
+	}
+	if arg.JobName == "" {
+		return fmt.Errorf("missing JobName")
+	}
+	match, err := regexp.Match(jobNameFormat, []byte(arg.JobName))
+	if err != nil {
+		return err
+	}
+	if !match {
+		return fmt.Errorf("JobName format is wrong")
+	}
+	if arg.Secret.Name == "" || arg.Secret.Key == "" {
+		return fmt.Errorf("invalid secret missing name or key")
+	}
+	if arg.Owner == nil {
+		return fmt.Errorf("missing owner")
+	}
+
+	switch arg.Action {
+	case operations.ActionCreate:
+		if arg.TopicID == "" {
+			return fmt.Errorf("missing TopicID")
+		}
+		if arg.Schedule == "" {
+			return fmt.Errorf("missing Schedule")
+		}
+
+	}
+	return nil
 }
