@@ -51,10 +51,16 @@ func main() {
 	}
 
 	// Convert base64 encoded json logging.Config to logging.Config.
-	loggingConfig := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+	loggingConfig, err := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+	if err != nil {
+		panic(err)
+	}
 
 	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	if err != nil {
+		panic(err)
+	}
 
 	logger, _ := logging.NewLoggerFromConfig(loggingConfig, component)
 	defer flush(logger)

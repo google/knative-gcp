@@ -19,6 +19,7 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"strconv"
@@ -28,22 +29,26 @@ var zapLoggerConfig = "zap-logger-config"
 
 // Base64ToMetricsOptions converts a json+base64 string of a
 // metrics.ExporterOptions. Returns a non-nil metrics.ExporterOptions always.
-func Base64ToMetricsOptions(base64 string) *metrics.ExporterOptions {
+func Base64ToMetricsOptions(base64 string) (*metrics.ExporterOptions, error) {
 	var opts metrics.ExporterOptions
 	if base64 == "" {
-		return &opts
+		return nil, errors.New("base64 metrics string is empty")
 	}
 
 	quoted64 := strconv.Quote(string(base64))
 
 	var bytes []byte
 	// Do not care about the unmarshal error.
-	_ = json.Unmarshal([]byte(quoted64), &bytes)
+	if err := json.Unmarshal([]byte(quoted64), &bytes); err != nil {
+		return nil, err
+	}
 
 	// Do not care about the unmarshal error.
-	_ = json.Unmarshal(bytes, &opts)
+	if err := json.Unmarshal(bytes, &opts); err != nil {
+		return nil, err
+	}
 
-	return &opts
+	return &opts, nil
 }
 
 // MetricsOptionsToBase64 converts a metrics.ExporterOptions to a json+base64
@@ -73,27 +78,33 @@ func MetricsOptionsToBase64(opts *metrics.ExporterOptions) string {
 
 // Base64ToLoggingConfig converts a json+base64 string of a logging.Config.
 // Returns a non-nil logging.Config always.
-func Base64ToLoggingConfig(base64 string) *logging.Config {
+func Base64ToLoggingConfig(base64 string) (*logging.Config, error) {
 	if base64 == "" {
-		return &logging.Config{}
+		return nil, errors.New("base64 logging string is empty")
 	}
 
 	quoted64 := strconv.Quote(string(base64))
 
 	var bytes []byte
 	// Do not care about the unmarshal error.
-	_ = json.Unmarshal([]byte(quoted64), &bytes)
+	if err := json.Unmarshal([]byte(quoted64), &bytes); err != nil {
+		return nil, err
+	}
 
 	var configMap map[string]string
 	// Do not care about the unmarshal error.
-	_ = json.Unmarshal(bytes, &configMap)
+	if err := json.Unmarshal(bytes, &configMap); err != nil {
+		return nil, err
+	}
 
 	cfg, err := logging.NewConfigFromMap(configMap)
 	if err != nil {
 		// Get the default config from logging package.
-		cfg, _ = logging.NewConfigFromMap(map[string]string{})
+		if cfg, err = logging.NewConfigFromMap(map[string]string{}); err != nil {
+			return nil, err
+		}
 	}
-	return cfg
+	return cfg, nil
 }
 
 // LoggingConfigToBase64 converts a logging.Config to a json+base64 string.

@@ -27,12 +27,14 @@ import (
 
 func TestMetricsOptions(t *testing.T) {
 	testCases := map[string]struct {
-		opts *metrics.ExporterOptions
-		want string
+		opts    *metrics.ExporterOptions
+		want    string
+		wantErr string
 	}{
 		"nil": {
-			opts: nil,
-			want: "",
+			opts:    nil,
+			want:    "",
+			wantErr: "base64 metrics string is empty",
 		},
 		"happy": {
 			opts: &metrics.ExporterOptions{
@@ -60,9 +62,17 @@ func TestMetricsOptions(t *testing.T) {
 				}
 			}
 			// Test to options.
-			if tc.opts != nil {
+			{
 				want := tc.opts
-				got := Base64ToMetricsOptions(base64)
+				got, gotErr := Base64ToMetricsOptions(base64)
+
+				if gotErr != nil {
+					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+						t.Errorf("unexpected err (-want, +got) = %v", diff)
+					}
+				} else if tc.wantErr != "" {
+					t.Errorf("expected err %v", tc.wantErr)
+				}
 
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("unexpected (-want, +got) = %v", diff)
@@ -75,12 +85,14 @@ func TestMetricsOptions(t *testing.T) {
 
 func TestLoggingConfig(t *testing.T) {
 	testCases := map[string]struct {
-		cfg  *logging.Config
-		want string
+		cfg     *logging.Config
+		want    string
+		wantErr string
 	}{
 		"nil": {
-			cfg:  nil,
-			want: "",
+			cfg:     nil,
+			want:    "",
+			wantErr: "base64 logging string is empty",
 		},
 		"happy": {
 			cfg: &logging.Config{
@@ -105,7 +117,15 @@ func TestLoggingConfig(t *testing.T) {
 			// Test to config.
 			if tc.cfg != nil {
 				want := tc.cfg
-				got := Base64ToLoggingConfig(base64)
+				got, gotErr := Base64ToLoggingConfig(base64)
+
+				if gotErr != nil {
+					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+						t.Errorf("unexpected err (-want, +got) = %v", diff)
+					}
+				} else if tc.wantErr != "" {
+					t.Errorf("expected err %v", tc.wantErr)
+				}
 
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("unexpected (-want, +got) = %v", diff)
