@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/logging/logkey"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
@@ -64,7 +63,7 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 	}
 	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
 	defer logger.Sync()
-	logger = logger.With(zap.String(logkey.ControllerType, component))
+	logger = logger.With(zap.String("cloud.run/events", component))
 
 	logger.Info("Starting the Cloud Run Events Webhook")
 
