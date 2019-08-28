@@ -19,7 +19,12 @@ package operations
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+
+	"knative.dev/pkg/kmeta"
+
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -31,11 +36,22 @@ var (
 )
 
 const (
-	validParent   = "projects/foo/locations/us-central1"
-	validJobName  = validParent + "/jobs/myjobname"
-	schedulerUID  = "schedulerUID"
-	schedulerName = "schedulerName"
-	testNS        = "testns"
+	validParent    = "projects/foo/locations/us-central1"
+	validJobName   = validParent + "/jobs/myjobname"
+	schedulerUID   = "schedulerUID"
+	schedulerName  = "schedulerName"
+	testNS         = "testns"
+	testImage      = "testImage"
+	secretName     = "google-cloud-key"
+	credsMountPath = "/var/secrets/google"
+	credsVolume    = "google-cloud-key"
+	credsFile      = "/var/secrets/google/key.json"
+	topicID        = "topicId"
+)
+
+var (
+	backoffLimit = int32(3)
+	parallelism  = int32(1)
 )
 
 // Returns an ownerref for the test Scheduler object
@@ -67,7 +83,7 @@ func TestValidateArgs(t *testing.T) {
 		name: "missing JobName",
 		args: JobArgs{
 			UID:    "uid",
-			Image:  "image",
+			Image:  testImage,
 			Action: "create",
 		},
 		expectedErr: "missing JobName",
@@ -75,7 +91,7 @@ func TestValidateArgs(t *testing.T) {
 		name: "invalid JobName format",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: "projects/foo",
 		},
@@ -84,7 +100,7 @@ func TestValidateArgs(t *testing.T) {
 		name: "missing secret",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: validJobName,
 		},
@@ -93,11 +109,11 @@ func TestValidateArgs(t *testing.T) {
 		name: "missing owner",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: validJobName,
 			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
 			},
 		},
@@ -106,11 +122,11 @@ func TestValidateArgs(t *testing.T) {
 		name: "missing topicId",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: validJobName,
 			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
 			},
 			Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
@@ -120,30 +136,30 @@ func TestValidateArgs(t *testing.T) {
 		name: "missing Schedule",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: validJobName,
 			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
 			},
 			Owner:   reconcilertesting.NewScheduler(schedulerName, testNS),
-			TopicID: "topic",
+			TopicID: topicID,
 		},
 		expectedErr: "missing Schedule",
 	}, {
-		name: "valid",
+		name: "valid create",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "create",
 			JobName: validJobName,
 			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
 			},
 			Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
-			TopicID:  "topic",
+			TopicID:  topicID,
 			Schedule: "foo",
 		},
 		expectedErr: "",
@@ -151,11 +167,11 @@ func TestValidateArgs(t *testing.T) {
 		name: "valid delete",
 		args: JobArgs{
 			UID:     "uid",
-			Image:   "image",
+			Image:   testImage,
 			Action:  "delete",
 			JobName: validJobName,
 			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "google-cloud-key"},
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
 			},
 			Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
@@ -172,5 +188,178 @@ func TestValidateArgs(t *testing.T) {
 				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, got)
 			}
 		})
+	}
+}
+
+func TestNewJobOps(t *testing.T) {
+	tests := []struct {
+		name        string
+		args        JobArgs
+		expectedErr string
+		expected    *batchv1.Job
+	}{{
+		name:        "empty",
+		args:        JobArgs{},
+		expectedErr: "missing UID",
+		expected:    nil,
+	}, {
+		name:        "valid create",
+		args:        validCreateArgs(),
+		expectedErr: "",
+		expected:    validCreateJob(),
+	}, {
+		name:        "valid delete",
+		args:        validDeleteArgs(),
+		expectedErr: "",
+		expected:    validDeleteJob(),
+	}}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := NewJobOps(test.args)
+
+			if (test.expectedErr != "" && err == nil) ||
+				(test.expectedErr == "" && err != nil) ||
+				(test.expectedErr != "" && err != nil && test.expectedErr != err.Error()) {
+				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, err)
+			}
+			if diff := cmp.Diff(test.expected, got); diff != "" {
+				t.Errorf("unexpected condition (-want, +got) = %v", diff)
+			}
+
+		})
+	}
+}
+
+func validCreateArgs() JobArgs {
+	return JobArgs{
+		UID:     schedulerUID,
+		Image:   testImage,
+		Action:  "create",
+		JobName: validJobName,
+		Secret: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			Key:                  "key.json",
+		},
+		Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
+		TopicID:  topicID,
+		Schedule: "foo",
+	}
+}
+
+func validCreateJob() *batchv1.Job {
+	owner := reconcilertesting.NewScheduler(schedulerName, testNS)
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            SchedulerJobName(owner, "create"),
+			Namespace:       testNS,
+			Labels:          SchedulerJobLabels(owner, "create"),
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoffLimit,
+			Parallelism:  &parallelism,
+			Template:     podTemplate("create"),
+		},
+	}
+}
+
+func validDeleteArgs() JobArgs {
+	return JobArgs{
+		UID:     schedulerUID,
+		Image:   testImage,
+		Action:  "delete",
+		JobName: validJobName,
+		Secret: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			Key:                  "key.json",
+		},
+		Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
+	}
+}
+
+func validDeleteJob() *batchv1.Job {
+	owner := reconcilertesting.NewScheduler(schedulerName, testNS)
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            SchedulerJobName(owner, "delete"),
+			Namespace:       testNS,
+			Labels:          SchedulerJobLabels(owner, "delete"),
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoffLimit,
+			Parallelism:  &parallelism,
+			Template:     podTemplate("delete"),
+		},
+	}
+}
+
+func podTemplate(action string) corev1.PodTemplateSpec {
+	/*
+		labels := map[string]string{
+			"action":       "create",
+			"resource-uid": schedulerUID,
+		}
+	*/
+	env := []corev1.EnvVar{
+		{
+			Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+			Value: credsFile,
+		}, {
+			Name:  "ACTION",
+			Value: action,
+		}, {
+			Name:  "JOB_NAME",
+			Value: validJobName,
+		},
+	}
+	if action == "create" {
+		createEnv := []corev1.EnvVar{
+			{
+				Name:  "JOB_PARENT",
+				Value: validParent,
+			}, {
+				Name:  "PUBSUB_TOPIC_ID",
+				Value: topicID,
+			}, {
+				Name:  "SCHEDULE",
+				Value: "foo",
+			},
+		}
+		env = append(env, createEnv...)
+	}
+
+	return corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject": "false",
+			},
+			Labels: map[string]string{
+				"resource-uid": schedulerUID,
+				"action":       action,
+			},
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyNever,
+			Containers: []corev1.Container{{
+				Name:            "job",
+				Image:           testImage,
+				ImagePullPolicy: "Always",
+				Env:             env,
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      secretName,
+					MountPath: credsMountPath,
+				}},
+			}},
+			Volumes: []corev1.Volume{{
+				Name: credsVolume,
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: secretName,
+					},
+				},
+			}},
+		},
 	}
 }
