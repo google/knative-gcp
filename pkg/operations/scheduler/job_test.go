@@ -36,17 +36,19 @@ var (
 )
 
 const (
-	validParent    = "projects/foo/locations/us-central1"
-	validJobName   = validParent + "/jobs/myjobname"
-	schedulerUID   = "schedulerUID"
-	schedulerName  = "schedulerName"
-	testNS         = "testns"
-	testImage      = "testImage"
-	secretName     = "google-cloud-key"
-	credsMountPath = "/var/secrets/google"
-	credsVolume    = "google-cloud-key"
-	credsFile      = "/var/secrets/google/key.json"
-	topicID        = "topicId"
+	validParent         = "projects/foo/locations/us-central1"
+	validJobName        = validParent + "/jobs/myjobname"
+	schedulerUID        = "schedulerUID"
+	schedulerName       = "schedulerName"
+	testNS              = "testns"
+	testImage           = "testImage"
+	secretName          = "google-cloud-key"
+	credsMountPath      = "/var/secrets/google"
+	credsVolume         = "google-cloud-key"
+	credsFile           = "/var/secrets/google/key.json"
+	topicID             = "topicId"
+	onceAMinuteSchedule = "* * * * *"
+	testData            = "mytest data goes here"
 )
 
 var (
@@ -148,6 +150,22 @@ func TestValidateArgs(t *testing.T) {
 		},
 		expectedErr: "missing Schedule",
 	}, {
+		name: "missing data",
+		args: JobArgs{
+			UID:     "uid",
+			Image:   testImage,
+			Action:  "create",
+			JobName: validJobName,
+			Secret: corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+				Key:                  "key.json",
+			},
+			Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
+			TopicID:  topicID,
+			Schedule: onceAMinuteSchedule,
+		},
+		expectedErr: "missing Data",
+	}, {
 		name: "valid create",
 		args: JobArgs{
 			UID:     "uid",
@@ -160,7 +178,8 @@ func TestValidateArgs(t *testing.T) {
 			},
 			Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
 			TopicID:  topicID,
-			Schedule: "foo",
+			Schedule: onceAMinuteSchedule,
+			Data:     testData,
 		},
 		expectedErr: "",
 	}, {
@@ -243,7 +262,8 @@ func validCreateArgs() JobArgs {
 		},
 		Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
 		TopicID:  topicID,
-		Schedule: "foo",
+		Schedule: onceAMinuteSchedule,
+		Data:     testData,
 	}
 }
 
@@ -296,12 +316,6 @@ func validDeleteJob() *batchv1.Job {
 }
 
 func podTemplate(action string) corev1.PodTemplateSpec {
-	/*
-		labels := map[string]string{
-			"action":       "create",
-			"resource-uid": schedulerUID,
-		}
-	*/
 	env := []corev1.EnvVar{
 		{
 			Name:  "GOOGLE_APPLICATION_CREDENTIALS",
@@ -324,7 +338,10 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 				Value: topicID,
 			}, {
 				Name:  "SCHEDULE",
-				Value: "foo",
+				Value: onceAMinuteSchedule,
+			}, {
+				Name:  "DATA",
+				Value: testData,
 			},
 		}
 		env = append(env, createEnv...)

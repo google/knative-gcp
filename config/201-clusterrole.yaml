@@ -65,12 +65,14 @@ rules:
     - events.cloud.run
   resources:
     - storages
+    - schedulers
   verbs: *everything
 
 - apiGroups:
     - events.cloud.run
   resources:
     - storages/status
+    - schedulers/status
   verbs:
     - get
     - update

@@ -53,15 +53,17 @@ const (
 	schedulerUID  = "test-scheduler-uid"
 	sinkName      = "sink"
 
-	testNS       = "testnamespace"
-	testImage    = "scheduler-ops-image"
-	topicUID     = schedulerName + "-abc-123"
-	testProject  = "test-project-id"
-	testTopicID  = "scheduler-" + schedulerUID
-	testTopicURI = "http://" + schedulerName + "-topic." + testNS + ".svc.cluster.local"
-	location     = "us-central1"
-	parentName   = "projects/" + testProject + "/locations/" + location
-	jobName      = parentName + "/jobs/cre-scheduler-" + schedulerUID
+	testNS              = "testnamespace"
+	testImage           = "scheduler-ops-image"
+	topicUID            = schedulerName + "-abc-123"
+	testProject         = "test-project-id"
+	testTopicID         = "scheduler-" + schedulerUID
+	testTopicURI        = "http://" + schedulerName + "-topic." + testNS + ".svc.cluster.local"
+	location            = "us-central1"
+	parentName          = "projects/" + testProject + "/locations/" + location
+	jobName             = parentName + "/jobs/cre-scheduler-" + schedulerUID
+	testData            = "mytestdata"
+	onceAMinuteSchedule = "* * * * *"
 )
 
 var (
@@ -390,6 +392,8 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerLocation(location),
 				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicReady(testTopicID),
@@ -408,6 +412,8 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerLocation(location),
 				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
@@ -625,6 +631,8 @@ func TestAllCases(t *testing.T) {
 			NewScheduler(schedulerName, testNS,
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerLocation(location),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
 				WithSchedulerFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
@@ -646,6 +654,8 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSink(sinkGVK, sinkName),
 				WithSchedulerLocation(location),
 				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
@@ -670,17 +680,20 @@ func TestAllCases(t *testing.T) {
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	if action == "create" {
-		return operations.NewJobOps(operations.JobArgs{
-			UID:     schedulerUID,
-			JobName: jobName,
-			Image:   testImage,
-			Action:  ops.ActionCreate,
-			TopicID: testTopicID,
-			Secret:  secret,
-			Owner:   owner,
+		j, _ := operations.NewJobOps(operations.JobArgs{
+			UID:      schedulerUID,
+			JobName:  jobName,
+			Image:    testImage,
+			Action:   ops.ActionCreate,
+			TopicID:  testTopicID,
+			Secret:   secret,
+			Owner:    owner,
+			Data:     testData,
+			Schedule: onceAMinuteSchedule,
 		})
+		return j
 	}
-	return operations.NewJobOps(operations.JobArgs{
+	j, _ := operations.NewJobOps(operations.JobArgs{
 		UID:     schedulerUID,
 		Image:   testImage,
 		JobName: jobName,
@@ -688,22 +701,25 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		Secret:  secret,
 		Owner:   owner,
 	})
+	return j
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	var job *batchv1.Job
 	if action == "create" {
-		job = operations.NewJobOps(operations.JobArgs{
-			UID:     schedulerUID,
-			JobName: jobName,
-			Image:   testImage,
-			Action:  ops.ActionCreate,
-			TopicID: testTopicID,
-			Secret:  secret,
-			Owner:   owner,
+		job, _ = operations.NewJobOps(operations.JobArgs{
+			UID:      schedulerUID,
+			JobName:  jobName,
+			Image:    testImage,
+			Action:   ops.ActionCreate,
+			TopicID:  testTopicID,
+			Secret:   secret,
+			Data:     testData,
+			Owner:    owner,
+			Schedule: onceAMinuteSchedule,
 		})
 	} else {
-		job = operations.NewJobOps(operations.JobArgs{
+		job, _ = operations.NewJobOps(operations.JobArgs{
 			UID:    schedulerUID,
 			Image:  testImage,
 			Action: ops.ActionDelete,

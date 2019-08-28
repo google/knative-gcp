@@ -77,8 +77,7 @@ type SchedulerSpec struct {
 	Schedule string `json:"schedule"`
 
 	// What data to send
-	// +optional
-	Data string `json:"data,omitempty"`
+	Data string `json:"data"`
 }
 
 const (

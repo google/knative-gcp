@@ -29,6 +29,8 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+
 	//	schedulerv1 "cloud.google.com/go/scheduler/apiv1"
 	"github.com/google/knative-gcp/pkg/operations"
 	//	"google.golang.org/grpc/codes"
@@ -82,6 +84,9 @@ type JobArgs struct {
 	// Schedule for the Job
 	Schedule string
 
+	// Data to send in the payload
+	Data string
+
 	Secret corev1.SecretKeySelector
 	Owner  kmeta.OwnerRefable
 }
@@ -120,6 +125,9 @@ func NewJobOps(arg JobArgs) (*batchv1.Job, error) {
 			}, {
 				Name:  "SCHEDULE",
 				Value: arg.Schedule,
+			}, {
+				Name:  "DATA",
+				Value: arg.Data,
 			}}...)
 	}
 
@@ -154,7 +162,7 @@ type JobOps struct {
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
-	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"false"`
 
 	// Schedule specification
 	Schedule string `envconfig:"SCHEDULE" required:"false"`
@@ -162,6 +170,12 @@ type JobOps struct {
 	// JobName is the environment variable containing the name of the
 	// job to operate on. F
 	JobName string `envconfig:"JOB_NAME" required:"false" default:""`
+
+	// Parent is the parent of the job.
+	Parent string `envconfig:"JOB_PARENT" required:"false" default:""`
+
+	// Data is the data to send in the payload.
+	Data string `envconfig:"DATA" required:"false" default:""`
 }
 
 // Run will perform the action configured upon a subscription.
@@ -174,14 +188,10 @@ func (n *JobOps) Run(ctx context.Context) error {
 	logger = logger.With(
 		zap.String("action", n.Action),
 		zap.String("project", n.Project),
-		zap.String("topic", n.Topic),
-		zap.String("subscription", n.JobName),
+		zap.String("jobName", n.JobName),
 	)
 
-	logger.Info("Storage Job Job.")
-
-	// Load the Bucket.
-	//	bucket := n.Client.Bucket(n.Bucket)
+	logger.Info("Scheduler Job Job.")
 
 	switch n.Action {
 	case operations.ActionExists:
@@ -189,7 +199,26 @@ func (n *JobOps) Run(ctx context.Context) error {
 		logger.Info("Previously created.")
 
 	case operations.ActionCreate:
-		// logger.Info("CREATING")
+		logger.Info("CREATING")
+
+		j, err := n.client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
+			Parent: n.Parent,
+			Job: &schedulerpb.Job{
+				Name: n.JobName,
+				Target: &schedulerpb.Job_PubsubTarget{
+					PubsubTarget: &schedulerpb.PubsubTarget{
+						TopicName: fmt.Sprintf("projects/%s/topics/%s", n.Project, n.Topic),
+						Data:      []byte(n.Data),
+					},
+				},
+				Schedule: n.Schedule,
+			},
+		})
+		if err != nil {
+			logger.Infof("Failed to create Job: %s", err)
+			return err
+		}
+		logger.Infof("Created Job: %+v", j)
 		/*
 			customAttributes := make(map[string]string)
 
@@ -328,6 +357,9 @@ func validateArgs(arg JobArgs) error {
 		}
 		if arg.Schedule == "" {
 			return fmt.Errorf("missing Schedule")
+		}
+		if arg.Data == "" {
+			return fmt.Errorf("missing Data")
 		}
 
 	}

@@ -260,20 +260,22 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, s *v1alpha1.Sch
 	return err
 }
 
-func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName string) (ops.OpsJobStatus, error) {
+func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName, schedule, data string) (ops.OpsJobStatus, error) {
 	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:     UID,
-		Image:   c.SchedulerOpsImage,
-		Action:  ops.ActionCreate,
-		TopicID: topic,
-		JobName: jobName,
-		Secret:  secret,
-		Owner:   owner,
+		UID:      UID,
+		Image:    c.SchedulerOpsImage,
+		Action:   ops.ActionCreate,
+		TopicID:  topic,
+		JobName:  jobName,
+		Secret:   secret,
+		Owner:    owner,
+		Schedule: schedule,
+		Data:     data,
 	})
 }
 
 func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
-	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName)
+	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName, scheduler.Spec.Schedule, scheduler.Spec.Data)
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
@@ -450,7 +452,10 @@ func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.Job
 
 		args.Image = c.SchedulerOpsImage
 
-		job = operations.NewJobOps(args)
+		job, err = operations.NewJobOps(args)
+		if err != nil {
+			return ops.OpsJobCreateFailed, err
+		}
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {

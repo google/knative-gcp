@@ -49,6 +49,8 @@ spec:
           value: github.com/google/knative-gcp/cmd/decorator
         - name: STORAGE_NOTIFICATION_IMAGE
           value: github.com/google/knative-gcp/cmd/operations/notification
+        - name: SCHEDULER_JOB_IMAGE
+          value: github.com/google/knative-gcp/cmd/operations/scheduler
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

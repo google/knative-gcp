@@ -65,6 +65,18 @@ func WithSchedulerLocation(location string) SchedulerOption {
 	}
 }
 
+func WithSchedulerSchedule(schedule string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Schedule = schedule
+	}
+}
+
+func WithSchedulerData(data string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Data = data
+	}
+}
+
 // WithInitSchedulerConditions initializes the Schedulers's conditions.
 func WithInitSchedulerConditions(s *v1alpha1.Scheduler) {
 	s.Status.InitializeConditions()
