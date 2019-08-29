@@ -2,10 +2,10 @@
 
 ## Overview
 
-This sample shows how to Configure `Storage` resource for receiving
+This sample shows how to Configure a `Storage` resource to deliver
 Object Notifications for when a new object is added to
 Google Cloud Storage (GCS). This is a simple example that uses
-a single Service Account for manipulating both Pub/Sub resources
+a single Google Service Account for manipulating both Pub/Sub resources
 as well as GCS resources.
 
 ## Prerequisites
@@ -22,7 +22,7 @@ as well as GCS resources.
    --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
    --role roles/storage.admin
    ```
-1. Have an existing GCS Bucket exist, or create one. You can create a
+1. Use an existing GCS Bucket, or create a new one. You can create a
    bucket either from the [Cloud Console](https://cloud.google/com/console) or by
    using [gsutil](https://cloud.google.com/storage/docs/gsutil/commands/mb)
 
@@ -30,9 +30,9 @@ as well as GCS resources.
    export BUCKET=<your bucket name>
    ```
 
-1. Give Google Cloud Storage permissions to publish to GCP Pub Sub.
+1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
 
-   1. First find the Service Account that GCS uses to publish to Pub Sub
+   1. First find the Service Account that GCS uses to publish to Pub/Sub
       (Either using UI or using curl as shown below)
 
       1. Use the steps outlined in 
@@ -47,7 +47,7 @@ as well as GCS resources.
       export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cloudrunevents-pullsub.json gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount" | grep email_address | cut -d '"' -f 4`
          ```
 
-      1. Then grant rights to that Service Account to publish to GCP PubSub.
+      1. Then grant rights to that Service Account to publish to GCP Pub/Sub.
 
          ```shell
          gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -114,10 +114,10 @@ gsutil cp storage.yaml gs://$BUCKET/testfilehere'
 
 ## Verify
 
-We will verify that the published message was sent by looking at the logs of the
+Verify that the published message was sent by looking at the logs of the
 service that this Storage notification sinks to.
 
-1. We need to wait for the downstream pods to get started and receive our event,
+1. To ensure the downstream pods to get started and receive our event,
    wait 60 seconds.
 
    - You can check the status of the downstream pods with:
@@ -177,8 +177,8 @@ Data,
 
 ## What's Next
 
-The Storage implements what Knative Eventing considers to be an
-`importer`. This component can work alone, but it also works well when
+The Storage object implements what Knative Eventing considers to be an
+"importer". This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
 
