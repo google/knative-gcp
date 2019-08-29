@@ -44,8 +44,8 @@ import (
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
-	storagelisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	eventslisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
+	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 )
 
@@ -122,16 +122,20 @@ func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
 	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
-func (l *Listers) GetChannelLister() eventslisters.ChannelLister {
-	return eventslisters.NewChannelLister(l.indexerFor(&MessagingV1alpha1.Channel{}))
+func (l *Listers) GetChannelLister() messaginglisters.ChannelLister {
+	return messaginglisters.NewChannelLister(l.indexerFor(&MessagingV1alpha1.Channel{}))
 }
 
 func (l *Listers) GetJobLister() batchv1listers.JobLister {
 	return batchv1listers.NewJobLister(l.indexerFor(&batchv1.Job{}))
 }
 
-func (l *Listers) GetStorageLister() storagelisters.StorageLister {
-	return storagelisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
+func (l *Listers) GetStorageLister() eventslisters.StorageLister {
+	return eventslisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
+}
+
+func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
+	return eventslisters.NewSchedulerLister(l.indexerFor(&EventsV1alpha1.Scheduler{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

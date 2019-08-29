@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// SchedulerListerExpansion allows custom methods to be added to
+// SchedulerLister.
+type SchedulerListerExpansion interface{}
+
+// SchedulerNamespaceListerExpansion allows custom methods to be added to
+// SchedulerNamespaceLister.
+type SchedulerNamespaceListerExpansion interface{}
+
 // StorageListerExpansion allows custom methods to be added to
 // StorageLister.
 type StorageListerExpansion interface{}

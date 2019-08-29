@@ -1,0 +1,136 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    eventing.knative.dev/source: "true"
+    events.cloud.run/release: devel
+    events.cloud.run/crd-install: "true"
+  name: schedulers.events.cloud.run
+spec:
+  group: events.cloud.run
+  version: v1alpha1
+  names:
+    categories:
+    - all
+    - knative
+    - scheduler
+    kind: Scheduler
+    plural: schedulers
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
+  validation:
+    openAPIV3Schema:
+      properties:
+        registry:
+          type: object
+          description: "Internal information, users should not set this property"
+          properties:
+            eventTypes:
+              type: object
+              properties:
+                publish:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      pattern: "google.pubsub.topic.publish"
+                    schema:
+                      type: string
+                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+        spec:
+          properties:
+            secret:
+              type: object
+              description: "Credential to use for managing Scheduler Jobs. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."
+            pubSubSecret:
+              type: object
+              description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses secret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+            project:
+              type: string
+              description: "Google Cloud Project ID of the project into which the Scheduler job should be created. If omitted uses the Project ID from the GKE cluster metadata service."
+            location:
+              type: string
+              description: "Location to create the Scheduler job in."
+            schedule:
+              type: string
+              description: "Frequency using the unix-cron format. Or App Engine Cron format."
+            data:
+              type: string
+              description: "Data to send in the payload of the Event."
+            sink:
+              type: object
+              description: "Sink which receives the notifications."
+            eventTypes:
+              type: array
+              items:
+                enum:
+                  - finalize
+                  - delete
+                  - archive
+                  - metadataUpdate
+                type: string
+          required:
+          - location
+          - schedule
+          - sink
+          - data
+        status:
+          properties:
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    # we use a string in the stored object but a wrapper object
+                    # at runtime.
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                type: object
+              type: array
+            sinkUri:
+              type: string
+            projectId:
+              type: string
+            topicId:
+              type: string
+            notificationId:
+              type: string
+            subscriptionId:
+              type: string
+          type: object

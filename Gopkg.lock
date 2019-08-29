@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:d81dcc0701bc1d9a9082c7ce4c82c611e3ad9f8a77f50285ba79bf2067260a32"
+  digest = "1:52023b5403caa5774bf498748515cdbb74f300b2cb2bd7fc0ac6332b0fe4f942"
   name = "cloud.google.com/go"
   packages = [
     "compute/metadata",
@@ -16,6 +16,7 @@
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "scheduler/apiv1",
     "storage",
     "trace/apiv2",
   ]
@@ -706,7 +707,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:31344167586516473f16ed75d54425eddab8229340424ec8b96f990b3cbf189f"
+  digest = "1:30de2444553ccbdefb6fde4d8165d9789d2bc49546eb0f0b73459c814106a713"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -715,6 +716,7 @@
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
+    "googleapis/cloud/scheduler/v1",
     "googleapis/container/v1",
     "googleapis/devtools/cloudtrace/v2",
     "googleapis/iam/v1",
@@ -1276,6 +1278,7 @@
   input-imports = [
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/pubsub",
+    "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
@@ -1300,6 +1303,7 @@
     "golang.org/x/net/http2/h2c",
     "golang.org/x/sync/errgroup",
     "google.golang.org/api/option",
+    "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
     "k8s.io/api/apps/v1",
