@@ -53,18 +53,23 @@ func main() {
 	// Convert base64 encoded json logging.Config to logging.Config.
 	loggingConfig, err := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
 	if err != nil {
-		panic(err)
-	}
-
-	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
-	if err != nil {
-		panic(err)
+		fmt.Printf("[ERROR] filed to process logging config: %s", err.Error())
+		// Use default logging config.
+		if loggingConfig, err = logging.NewConfigFromMap(map[string]string{}); err != nil {
+			// If this fails, there is no recovering.
+			panic(err)
+		}
 	}
 
 	logger, _ := logging.NewLoggerFromConfig(loggingConfig, component)
 	defer flush(logger)
 	ctx := logging.WithLogger(signals.NewContext(), logger)
+
+	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
+	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	if err != nil {
+		logger.Errorf("failed to process metrics options: %s", err.Error())
+	}
 
 	mainMetrics(logger, metricsConfig)
 
@@ -85,6 +90,11 @@ func main() {
 }
 
 func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
+	if opts == nil {
+		logger.Info("metrics disabled")
+		return
+	}
+
 	if err := metrics.UpdateExporter(*opts, logger); err != nil {
 		log.Fatalf("Failed to create the metrics exporter: %v", err)
 	}
