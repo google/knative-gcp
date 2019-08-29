@@ -23,7 +23,7 @@ as well as GCS resources.
    --role roles/storage.admin
    ```
 1. Use an existing GCS Bucket, or create a new one. You can create a
-   bucket either from the [Cloud Console](https://cloud.google/com/console) or by
+   bucket either from the [Cloud Console](https://cloud.google.com/console) or by
    using [gsutil](https://cloud.google.com/storage/docs/gsutil/commands/mb)
 
    ```shell
