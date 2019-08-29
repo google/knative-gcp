@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
+var allEventTypes = []string{"finalize", "delete", "archive", "metadataUpdate"}
+
 func (s *Storage) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
 }
@@ -31,5 +33,8 @@ func (s *Storage) SetDefaults(ctx context.Context) {
 func (ss *StorageSpec) SetDefaults(ctx context.Context) {
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
 		ss.Secret = v1alpha1.DefaultGoogleCloudSecretSelector()
+	}
+	if len(ss.EventTypes) == 0 {
+		ss.EventTypes = allEventTypes
 	}
 }

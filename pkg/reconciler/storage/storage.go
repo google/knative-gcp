@@ -272,21 +272,25 @@ func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.S
 	return err
 }
 
-func (c *Reconciler) EnsureNotification(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, topic string) (ops.OpsJobStatus, error) {
+func (c *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
 	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:       UID,
-		Image:     c.NotificationOpsImage,
-		Action:    ops.ActionCreate,
-		ProjectID: project,
-		Bucket:    bucket,
-		TopicID:   topic,
-		Secret:    secret,
-		Owner:     owner,
+		UID:        string(storage.UID),
+		Image:      c.NotificationOpsImage,
+		Action:     ops.ActionCreate,
+		ProjectID:  storage.Status.ProjectID,
+		Bucket:     storage.Spec.Bucket,
+		TopicID:    storage.Status.TopicID,
+		EventTypes: storage.Spec.EventTypes,
+		Secret:     *storage.Spec.Secret,
+		Owner:      storage,
 	})
 }
 
 func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotification(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.TopicID)
+	state, err := c.EnsureNotification(ctx, storage)
+	if err != nil {
+		c.Logger.Infof("EnsureNotification failed: %s", err)
+	}
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
 		return "", fmt.Errorf("Job %q failed to create or job failed", storage.Name)
@@ -462,12 +466,15 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 
 		args.Image = c.NotificationOpsImage
 
-		job = operations.NewNotificationOps(args)
+		job, err = operations.NewNotificationOps(args)
+		if err != nil {
+			return ops.OpsJobCreateFailed, err
+		}
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
 			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
+			return ops.OpsJobCreateFailed, err
 		}
 
 		c.Logger.Debugw("Created Job.")

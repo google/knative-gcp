@@ -53,6 +53,12 @@ func WithStorageBucket(bucket string) StorageOption {
 	}
 }
 
+func WithStorageEventTypes(eventTypes []string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Spec.EventTypes = eventTypes
+	}
+}
+
 func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Spec.Sink = apisv1alpha1.Destination{

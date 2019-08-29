@@ -32,6 +32,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		"missing defaults": {
 			orig: &StorageSpec{},
 			expected: &StorageSpec{
+				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "google-cloud-key",
@@ -45,6 +46,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				Secret: &corev1.SecretKeySelector{},
 			},
 			expected: &StorageSpec{
+				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "google-cloud-key",
@@ -63,6 +65,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
+				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "different-name",
@@ -73,6 +76,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		},
 		"secret exists same name": {
 			orig: &StorageSpec{
+				EventTypes: []string{"finalize"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "google-cloud-key",
@@ -81,6 +85,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
+				EventTypes: []string{"finalize"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "google-cloud-key",
@@ -91,6 +96,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		},
 		"secret exists all different": {
 			orig: &StorageSpec{
+				EventTypes: []string{"finalize", "delete"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "different-name",
@@ -99,6 +105,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
+				EventTypes: []string{"finalize", "delete"},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "different-name",
