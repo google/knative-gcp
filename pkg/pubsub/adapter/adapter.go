@@ -19,10 +19,8 @@ package adapter
 import (
 	"context"
 	"fmt"
-
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
-
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
@@ -31,7 +29,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -55,10 +53,10 @@ type Adapter struct {
 	// subscription to use.
 	Subscription string `envconfig:"PUBSUB_SUBSCRIPTION_ID" required:"true"`
 
-	// ExtensionsBased64 is a based64 encoded json string of a map of
+	// ExtensionsBase64 is a based64 encoded json string of a map of
 	// CloudEvents extensions (key-value pairs) override onto the outbound
 	// event.
-	ExtensionsBased64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
+	ExtensionsBase64 string `envconfig:"K_CE_EXTENSIONS" required:"true"`
 
 	// extensions is the converted ExtensionsBased64 value.
 	extensions map[string]string
@@ -67,8 +65,15 @@ type Adapter struct {
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
-	// MetricsDomain holds the metrics domain to use for surfacing metrics.
-	MetricsDomain string `envconfig:"METRICS_DOMAIN" required:"true"`
+	// MetricsConfigBase64 is a base64 encoded json string of metrics.ExporterOptions.
+	// This is used to configure the metrics exporter options, the config is
+	// stored in a config map inside the controllers namespace and copied here.
+	MetricsConfigBase64 string `envconfig:"K_METRICS_CONFIG" required:"true"`
+
+	// LoggingConfigBase64 is a base64 encoded json string of logging.Config.
+	// This is used to configure the logging config, the config is stored in
+	// a config map inside the controllers namespace and copied here.
+	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -90,7 +95,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Convert base64 encoded json map to extensions map.
 	// This implementation comes from the Decorator object.
-	a.extensions = resources.MakeDecoratorExtensionsMap(a.ExtensionsBased64)
+	a.extensions = decoratorresources.MakeDecoratorExtensionsMap(a.ExtensionsBase64)
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {

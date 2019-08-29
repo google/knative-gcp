@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
+	"knative.dev/pkg/metrics"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -54,6 +55,8 @@ const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "PullSubscriptions"
 
+	component = "pullsubscriptions"
+
 	finalizerName = controllerAgentName
 )
 
@@ -69,6 +72,9 @@ type Reconciler struct {
 	tracker tracker.Interface // TODO: use tracker for sink.
 
 	receiveAdapterImage string
+
+	loggingConfig *logging.Config
+	metricsConfig *metrics.ExporterOptions
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 
@@ -408,6 +414,8 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		SubscriptionID: src.Status.SubscriptionID,
 		SinkURI:        src.Status.SinkURI,
 		TransformerURI: src.Status.TransformerURI,
+		LoggingConfig:  resources.LoggingConfigToBase64(r.loggingConfig),
+		MetricsConfig:  resources.MetricsOptionsToBase64(r.metricsConfig),
 	})
 
 	if existing == nil {
@@ -445,6 +453,35 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSu
 		}
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
+	if cfg != nil {
+		delete(cfg.Data, "_example")
+	}
+
+	logcfg, err := logging.NewConfigFromConfigMap(cfg)
+	if err != nil {
+		r.Logger.Warn("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
+	}
+	r.loggingConfig = logcfg
+	r.Logger.Infow("Update from logging ConfigMap", zap.Any("ConfigMap", cfg))
+	// TODO: requeue all pullsubscriptions
+}
+
+func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
+	if cfg != nil {
+		delete(cfg.Data, "_example")
+	}
+
+	r.metricsConfig = &metrics.ExporterOptions{
+		Domain:    metrics.Domain(),
+		Component: component,
+		ConfigMap: cfg.Data,
+	}
+	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
+	// TODO: requeue all pullsubscriptions
 }
 
 // TODO: Registry

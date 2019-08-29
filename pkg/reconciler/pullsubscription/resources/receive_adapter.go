@@ -39,6 +39,8 @@ type ReceiveAdapterArgs struct {
 	SubscriptionID string
 	SinkURI        string
 	TransformerURI string
+	MetricsConfig  string
+	LoggingConfig  string
 }
 
 const (
@@ -74,7 +76,7 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Source.Namespace,
 			Name:            GenerateSubscriptionName(args.Source),
-			Labels:          args.Labels, // TODO: not sure we should use labels like this.
+			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
 			Annotations:     map[string]string{},
 		},
@@ -92,9 +94,6 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						Name:  "receive-adapter",
 						Image: args.Image,
 						Env: []corev1.EnvVar{{
-							Name:  "METRICS_DOMAIN",
-							Value: "pubsub.cloud.run/pullsubscriptions/adapter",
-						}, {
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: credsFile,
 						}, {
@@ -118,6 +117,12 @@ func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
 						}, {
 							Name:  "K_CE_EXTENSIONS",
 							Value: ceExtensions,
+						}, {
+							Name:  "K_METRICS_CONFIG",
+							Value: args.MetricsConfig,
+						}, {
+							Name:  "K_LOGGING_CONFIG",
+							Value: args.LoggingConfig,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
