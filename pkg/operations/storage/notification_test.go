@@ -28,8 +28,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	//	. "knative.dev/pkg/reconciler/testing"
 )
 
 var (
@@ -37,21 +35,18 @@ var (
 )
 
 const (
-	validParent         = "projects/foo/locations/us-central1"
-	notificationId      = "124"
-	projectId           = "test-project-here"
-	storageUID          = "storageUID"
-	bucket              = "testbucket"
-	storageName         = "storageName"
-	testNS              = "testns"
-	testImage           = "testImage"
-	secretName          = "google-cloud-key"
-	credsMountPath      = "/var/secrets/google"
-	credsVolume         = "google-cloud-key"
-	credsFile           = "/var/secrets/google/key.json"
-	topicID             = "topicId"
-	onceAMinuteSchedule = "* * * * *"
-	testData            = "mytest data goes here"
+	notificationId = "124"
+	projectId      = "test-project-here"
+	storageUID     = "storageUID"
+	bucket         = "testbucket"
+	storageName    = "storageName"
+	testNS         = "testns"
+	testImage      = "testImage"
+	secretName     = "google-cloud-key"
+	credsMountPath = "/var/secrets/google"
+	credsVolume    = "google-cloud-key"
+	credsFile      = "/var/secrets/google/key.json"
+	topicID        = "topicId"
 )
 
 var (
