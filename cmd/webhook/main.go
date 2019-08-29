@@ -20,10 +20,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"golang.org/x/sync/errgroup"
-	"knative.dev/pkg/profiling"
 	"log"
 	"net/http"
+
+	"golang.org/x/sync/errgroup"
+	"knative.dev/pkg/profiling"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
