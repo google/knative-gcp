@@ -48,7 +48,6 @@ var (
 	}
 )
 
-// TODO: the job could output the resolved projectID.
 type NotificationActionResult struct {
 	// Result is the result the operation attempted.
 	Result bool `json:"result,omitempty"`
@@ -93,7 +92,11 @@ type NotificationArgs struct {
 }
 
 // NewNotificationOps returns a new batch Job resource.
-func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
+func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
+	if err := validateArgs(arg); err != nil {
+		return nil, err
+	}
+
 	env := []corev1.EnvVar{{
 		Name:  "ACTION",
 		Value: arg.Action,
@@ -139,7 +142,7 @@ func NewNotificationOps(arg NotificationArgs) *batchv1.Job {
 			Parallelism:  &parallelism,
 			Template:     *podTemplate,
 		},
-	}
+	}, nil
 }
 
 // NotificationOps defines the configuration to use for this operation.
@@ -168,9 +171,6 @@ type NotificationOps struct {
 
 	// ObjectNamePrefix is an optional filter for the GCS
 	ObjectNamePrefix string `envconfig:"OBJECT_NAME_PREFIX" required:"false" default:""`
-
-	// TODO; Add support for custom attributes. Look at using envconfig Map with
-	// necessary encoding / decoding.
 }
 
 // Run will perform the action configured upon a subscription.
@@ -301,10 +301,6 @@ func (n *NotificationOps) toStorageEventTypes(eventTypes []string) []string {
 	for _, eventType := range eventTypes {
 		storageTypes = append(storageTypes, storageEventTypes[eventType])
 	}
-
-	if len(storageTypes) == 0 {
-		return append(storageTypes, "OBJECT_FINALIZE")
-	}
 	return storageTypes
 }
 
@@ -316,4 +312,45 @@ func (n *NotificationOps) writeTerminationMessage(result *NotificationActionResu
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", m, 0644)
+}
+
+func validateArgs(arg NotificationArgs) error {
+	if arg.UID == "" {
+		return fmt.Errorf("missing UID")
+	}
+	if arg.Image == "" {
+		return fmt.Errorf("missing Image")
+	}
+	if arg.Action == "" {
+		return fmt.Errorf("missing Action")
+	}
+	if arg.ProjectID == "" {
+		return fmt.Errorf("missing ProjectID")
+	}
+	if arg.Bucket == "" {
+		return fmt.Errorf("missing Bucket")
+	}
+	if arg.Secret.Name == "" || arg.Secret.Key == "" {
+		return fmt.Errorf("invalid secret missing name or key")
+	}
+	if arg.Owner == nil {
+		return fmt.Errorf("missing owner")
+	}
+
+	switch arg.Action {
+	case operations.ActionCreate:
+		if arg.TopicID == "" {
+			return fmt.Errorf("missing TopicID")
+		}
+		if len(arg.EventTypes) == 0 {
+			return fmt.Errorf("missing EventTypes")
+		}
+
+	case operations.ActionDelete:
+		if arg.NotificationId == "" {
+			return fmt.Errorf("missing NotificationId")
+		}
+
+	}
+	return nil
 }

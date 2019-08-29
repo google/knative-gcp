@@ -391,6 +391,7 @@ func TestAllCases(t *testing.T) {
 			NewStorage(storageName, testNS,
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{"finalize"}),
 				WithStorageFinalizers(finalizerName),
 			),
 			NewTopic(storageName, testNS,
@@ -409,6 +410,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewStorage(storageName, testNS,
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{"finalize"}),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
 				WithStorageTopicReady(testTopicID),
@@ -748,18 +750,20 @@ func TestGetNotificationActionResult(t *testing.T) {
 
 func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	if action == "create" {
-		return operations.NewNotificationOps(operations.NotificationArgs{
-			UID:       storageUID,
-			Image:     testImage,
-			Action:    ops.ActionCreate,
-			ProjectID: testProject,
-			Bucket:    bucket,
-			TopicID:   testTopicID,
-			Secret:    secret,
-			Owner:     owner,
+		j, _ := operations.NewNotificationOps(operations.NotificationArgs{
+			UID:        storageUID,
+			Image:      testImage,
+			Action:     ops.ActionCreate,
+			ProjectID:  testProject,
+			Bucket:     bucket,
+			TopicID:    testTopicID,
+			EventTypes: []string{"finalize"},
+			Secret:     secret,
+			Owner:      owner,
 		})
+		return j
 	}
-	return operations.NewNotificationOps(operations.NotificationArgs{
+	j, _ := operations.NewNotificationOps(operations.NotificationArgs{
 		UID:            storageUID,
 		Image:          testImage,
 		Action:         ops.ActionDelete,
@@ -769,23 +773,25 @@ func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 		Secret:         secret,
 		Owner:          owner,
 	})
+	return j
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
 	var job *batchv1.Job
 	if action == "create" {
-		job = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:       storageUID,
-			Image:     testImage,
-			Action:    ops.ActionCreate,
-			ProjectID: testProject,
-			Bucket:    bucket,
-			TopicID:   testTopicID,
-			Secret:    secret,
-			Owner:     owner,
+		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
+			UID:        storageUID,
+			Image:      testImage,
+			Action:     ops.ActionCreate,
+			ProjectID:  testProject,
+			Bucket:     bucket,
+			TopicID:    testTopicID,
+			EventTypes: []string{"finalize"},
+			Secret:     secret,
+			Owner:      owner,
 		})
 	} else {
-		job = operations.NewNotificationOps(operations.NotificationArgs{
+		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
 			UID:            storageUID,
 			Image:          testImage,
 			Action:         ops.ActionDelete,
