@@ -105,7 +105,7 @@ as well as GCS resources.
 ## Publish
 
 Upload a file to your `Bucket`, either using the
-[Cloud Console](https://cloud.google/com/console) or
+[Cloud Console](https://cloud.google.com/console) or
 gsutil:
 
 ```shell
