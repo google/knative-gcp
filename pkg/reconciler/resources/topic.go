@@ -20,34 +20,32 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
-// for a given Scheduler Job.
-func MakeTopic(source *v1alpha1.Scheduler, topic string) *pubsubv1alpha1.Topic {
+// for a given GCS.
+func MakeTopic(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.Topic {
 	labels := map[string]string{
-		"receive-adapter": "scheduler.events.cloud.run",
+		"receive-adapter": receiveAdapterName,
 	}
 
-	pubsubSecret := source.Spec.Secret
-	if source.Spec.PubSubSecret != nil {
-		pubsubSecret = source.Spec.PubSubSecret
+	pubsubSecret := spec.Secret
+	if spec.PubSubSecret != nil {
+		pubsubSecret = spec.PubSubSecret
 	}
 
 	return &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      source.Name,
-			Namespace: source.Namespace,
-			Labels:    labels,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(source),
-			},
+			Name:            name,
+			Namespace:       namespace,
+			Labels:          labels,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
 			Secret:            pubsubSecret,
-			Project:           source.Spec.Project,
+			Project:           spec.Project,
 			Topic:             topic,
 			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
 		},

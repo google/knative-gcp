@@ -24,31 +24,22 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -63,16 +54,13 @@ const (
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
 // notifications.
 type Reconciler struct {
-	*reconciler.Base
+	*reconciler.PubSubBase
 
 	// Image to use for launching jobs that operate on notifications
 	NotificationOpsImage string
 
 	// gcssourceclientset is a clientset for our own API group
 	storageLister listers.StorageLister
-
-	// For dealing with Topics and Pullsubscriptions
-	pubsubClient pubsubsourceclientset.Interface
 
 	// For readling with jobs
 	jobLister batchv1listers.JobLister
@@ -148,16 +136,10 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(ctx, csr.Namespace, csr.Name)
+		err = c.PubSubBase.DeletePubSub(ctx, csr.Namespace, csr.Name)
 		if err != nil {
-			c.Logger.Infof("Unable to delete the Topic: %s", err)
-			return err
-		}
-		csr.Status.TopicID = ""
-		err = c.deletePullSubscription(ctx, csr)
-		if err != nil {
-			c.Logger.Infof("Unable to delete the PullSubscription: %s", err)
-			return err
+			c.Logger.Infof("Unable to delete pubsub resources : %s", err)
+			return fmt.Errorf("failed to delete pubsub resources: %s", err)
 		}
 		c.removeFinalizer(csr)
 		return nil
@@ -170,62 +152,13 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	// Make sure Topic is in the state we expect it to be in. There's no point
-	// in continuing if it's not Ready.
-	t, err := c.reconcileTopic(ctx, csr, topic)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic)
 	if err != nil {
-		c.Logger.Infof("Failed to reconcile topic %s", err)
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
+		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
 	}
 
-	if !t.Status.IsReady() {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("topic not ready")
-	}
-
-	if t.Status.ProjectID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
-		return errors.New("topic did not expose projectid")
-	}
-	if t.Status.TopicID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
-		return errors.New("topic did not expose topicid")
-	}
-	if t.Status.TopicID != topic {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
-		return errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
-	}
-
-	csr.Status.TopicID = t.Status.TopicID
-	csr.Status.ProjectID = t.Status.ProjectID
-	csr.Status.MarkTopicReady()
-
-	// Make sure PullSubscription is in the state we expect it to be in.
-	ps, err := c.reconcilePullSubscription(ctx, csr, topic)
-	if err != nil {
-		// TODO: Update status appropriately
-		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
-		return err
-	}
-
-	c.Logger.Infof("Reconciled pullsubscription source: %+v", ps)
-
-	// Check to see if Pullsubscription source is ready
-	if !ps.Status.IsReady() {
-		c.Logger.Infof("PullSubscription is not ready yet")
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("PullSubscription not ready")
-	} else {
-		csr.Status.MarkPullSubscriptionReady()
-	}
-	c.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
-	uri, err := apis.ParseURL(ps.Status.SinkURI)
-	if err != nil {
-		return errors.New(fmt.Sprintf("failed to parse url %q : %q", ps.Status.SinkURI, err))
-	}
-	csr.Status.SinkURI = uri
+	c.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
 
 	notification, err := c.reconcileNotification(ctx, csr)
 	if err != nil {
@@ -240,36 +173,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification
 	return nil
-}
-
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Found existing PullSubscription: %+v", existing)
-		return existing, nil
-	}
-	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr, topic)
-		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
-		return pubsubClient.Create(pubsub)
-	}
-	return nil, err
-}
-
-func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.Storage) error {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	err := pubsubClient.Delete(csr.Name, nil)
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Deleted PullSubscription: %+v", csr.Name)
-		return nil
-	}
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
 
 func (c *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
@@ -306,41 +209,14 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 
-	nar, err := getNotificationActionResult(ctx, pod)
-	if err != nil {
+	var result operations.NotificationActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return "", err
 	}
-	return nar.NotificationId, nil
-}
-
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.Topic, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Found existing Topic: %+v", existing)
-		return existing, nil
+	if result.Result {
+		return result.NotificationId, nil
 	}
-	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr, topic)
-		c.Logger.Infof("Creating topic %+v", topic)
-		return pubsubClient.Create(topic)
-	}
-	return nil, err
-}
-
-func (c *Reconciler) deleteTopic(ctx context.Context, namespace, name string) error {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(namespace)
-	err := pubsubClient.Delete(name, nil)
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Deleted PullSubscription: %s/%s", namespace, name)
-		return nil
-	}
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
+	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
 func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
@@ -375,11 +251,13 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 	if err != nil {
 		return err
 	}
-	// We just care if the NotificationActionResult was valid and result true, so
-	// do not need the actual object back.
-	_, err = getNotificationActionResult(ctx, pod)
-	if err != nil {
+	// Check to see if the operation worked.
+	var result operations.NotificationActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return err
+	}
+	if !result.Result {
+		return fmt.Errorf("operation failed: %s", result.Error)
 	}
 
 	c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
@@ -497,42 +375,4 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
-}
-
-func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*batchv1.Job, error) {
-	list, err := c.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
-		LabelSelector: ls.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, owner) {
-			return &i, nil
-		}
-	}
-
-	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
-}
-
-func getNotificationActionResult(ctx context.Context, pod *corev1.Pod) (*operations.NotificationActionResult, error) {
-	if pod == nil {
-		return nil, fmt.Errorf("pod was nil")
-	}
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return nil, fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
-	var nar operations.NotificationActionResult
-	err := json.Unmarshal([]byte(terminationMessage), &nar)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
-	}
-
-	if nar.Result == false {
-		return nil, errors.New(nar.Error)
-	}
-	return &nar, nil
 }

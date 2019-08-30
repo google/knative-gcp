@@ -31,7 +31,6 @@ import (
 
 	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
 
-	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
@@ -68,9 +67,8 @@ func NewController(
 
 	c := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
-		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.run", cmw),
 		storageLister:        storageInformer.Lister(),
-		pubsubClient:         pubsubClient.Get(ctx),
 		jobLister:            jobInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)

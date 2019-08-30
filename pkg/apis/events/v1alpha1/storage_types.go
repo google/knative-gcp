@@ -17,13 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	//	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook"
 )
@@ -50,22 +50,9 @@ var (
 
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
-	// This brings in CloudEventOverrides and Sink
-	duckv1beta1.SourceSpec
-
-	// Secret is the credential used to manage Notifications on the GCS bucket.
-	// The value of the secret entry must be a service account key in the JSON format (see
-	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// +optional
-	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
-
-	// PubSubSecret is the credential to use for the GCP PubSub Subscription.
-	// It is used for the PullSubscription that is used to deliver events from GCS.
-	// The value of the secret entry must be a service account key in the JSON format (see
-	// https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// If omitted, uses Secret from above.
-	// +optional
-	PubSubSecret *corev1.SecretKeySelector `json:"pubSubSecret,omitempty"`
+	// This brings in the PubSub based Source Specs. Includes:
+	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	duckv1alpha1.PubSubSpec
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
@@ -73,12 +60,6 @@ type StorageSpec struct {
 	// in which the GCS exists.
 	// +optional
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
-	// Project is the ID of the Google Cloud Project that the Topic where
-	// the notifications are sent to will be created in. If omitted, Topic
-	// will use metadata service to determine the project.
-	// +optional
-	Project string `json:"project,omitempty"`
 
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
@@ -101,42 +82,25 @@ const (
 	// StorageConditionReady has status True when the Storage is ready to send events.
 	StorageConditionReady = apis.ConditionReady
 
-	// PullSubscriptionReady has status True when the underlying PullSubscription is ready
-	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
-
-	// TopicReady has status True when the underlying GCP PubSub topic is ready
-	TopicReady apis.ConditionType = "TopicReady"
-
 	// StorageNotificationReady has status True when GCS has been configured properly to
 	// send Notification events
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
-var storageCondSet = apis.NewLivingConditionSet(
-	PullSubscriptionReady,
-	TopicReady,
+var StorageCondSet = apis.NewLivingConditionSet(
+	duckv1alpha1.PullSubscriptionReady,
+	duckv1alpha1.TopicReady,
 	NotificationReady)
 
 // StorageStatus is the status for a GCS resource
 type StorageStatus struct {
-	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1beta1.SourceStatus
+	// This brings in our GCP PubSub based events importers
+	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
+	duckv1alpha1.PubSubStatus
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
 	NotificationID string `json:"notificationId,omitempty"`
-
-	// ProjectID is the project ID of the Topic, might have been resolved.
-	// +optional
-	ProjectID string `json:"projectId,omitempty"`
-
-	// TopicID where the notifications are sent to.
-	// +optional
-	TopicID string `json:"topicId,omitempty"`
-
-	// SubscriptionID is the created subscription ID used by Storage.
-	// +optional
-	SubscriptionID string `json:"subscriptionId,omitempty"`
 }
 
 func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {

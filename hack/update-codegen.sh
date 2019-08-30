@@ -24,6 +24,12 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-
 
 KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
+# Only deepcopy the Duck types, as they are not real resources.
+${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
+  github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
+  "duck:v1alpha1" \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
@@ -32,6 +38,7 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \

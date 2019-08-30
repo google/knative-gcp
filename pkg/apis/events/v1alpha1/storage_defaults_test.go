@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -33,84 +34,102 @@ func TestStorage_SetDefaults(t *testing.T) {
 			orig: &StorageSpec{},
 			expected: &StorageSpec{
 				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 		},
 		"empty defaults": {
 			orig: &StorageSpec{
-				Secret: &corev1.SecretKeySelector{},
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{},
+				},
 			},
 			expected: &StorageSpec{
 				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 		},
 		"secret exists same key": {
 			orig: &StorageSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 			expected: &StorageSpec{
 				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 		},
 		"secret exists same name": {
 			orig: &StorageSpec{
 				EventTypes: []string{"finalize"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 			expected: &StorageSpec{
 				EventTypes: []string{"finalize"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 		},
 		"secret exists all different": {
 			orig: &StorageSpec{
 				EventTypes: []string{"finalize", "delete"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 			expected: &StorageSpec{
 				EventTypes: []string{"finalize", "delete"},
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 		},
