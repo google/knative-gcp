@@ -2,11 +2,10 @@
 
 ## Overview
 
-This sample shows how to Configure a `Storage` resource to deliver
-Object Notifications for when a new object is added to
-Google Cloud Storage (GCS). This is a simple example that uses
-a single Google Service Account for manipulating both Pub/Sub resources
-as well as GCS resources.
+This sample shows how to Configure a `Storage` resource to deliver Object
+Notifications for when a new object is added to Google Cloud Storage (GCS). This
+is a simple example that uses a single Google Service Account for manipulating
+both Pub/Sub resources as well as GCS resources.
 
 ## Prerequisites
 
@@ -22,9 +21,10 @@ as well as GCS resources.
    --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
    --role roles/storage.admin
    ```
-1. Use an existing GCS Bucket, or create a new one. You can create a
-   bucket either from the [Cloud Console](https://cloud.google.com/console) or by
-   using [gsutil](https://cloud.google.com/storage/docs/gsutil/commands/mb)
+
+1. Use an existing GCS Bucket, or create a new one. You can create a bucket
+   either from the [Cloud Console](https://cloud.google.com/console) or by using
+   [gsutil](https://cloud.google.com/storage/docs/gsutil/commands/mb)
 
    ```shell
    export BUCKET=<your bucket name>
@@ -32,10 +32,10 @@ as well as GCS resources.
 
 1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
 
-   1. First find the Service Account that GCS uses to publish to Pub/Sub
-      (Either using UI or using curl as shown below)
+   1. First find the Service Account that GCS uses to publish to Pub/Sub (Either
+      using UI or using curl as shown below)
 
-      1. Use the steps outlined in 
+      1. Use the steps outlined in
          [Cloud Console or the JSON API](https://cloud.google.com/storage/docs/getting-service-account)
          Assume the service account you found from above was
          `service-XYZ@gs-project-accounts.iam.gserviceaccount.com`, you'd do:
@@ -45,7 +45,7 @@ as well as GCS resources.
 
       ```shell
       export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cloudrunevents-pullsub.json gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount" | grep email_address | cut -d '"' -f 4`
-         ```
+      ```
 
       1. Then grant rights to that Service Account to publish to GCP Pub/Sub.
 
@@ -57,11 +57,10 @@ as well as GCS resources.
 
 ## Deployment
 
-1. Update `BUCKET` in the [`storage.yaml`](storage.yaml)
-   and apply it.
+1. Update `BUCKET` in the [`storage.yaml`](storage.yaml) and apply it.
 
-   If you're in the storage directory, you can replace `BUCKET` and
-   apply in one command:
+   If you're in the storage directory, you can replace `BUCKET` and apply in one
+   command:
 
    ```shell
    sed "s/\BUCKET/$BUCKET/g" storage.yaml | \
@@ -80,8 +79,8 @@ as well as GCS resources.
    [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    in [`storage.yaml`](storage.yaml) and apply it.
 
-   If you're in the storage directory, you can replace `MY_PROJECT` and
-   `BUCKET` and then apply in one command:
+   If you're in the storage directory, you can replace `MY_PROJECT` and `BUCKET`
+   and then apply in one command:
 
    ```shell
    sed "s/\BUCKET/$BUCKET/g" pullsubscription.yaml | \
@@ -105,8 +104,7 @@ as well as GCS resources.
 ## Publish
 
 Upload a file to your `Bucket`, either using the
-[Cloud Console](https://cloud.google.com/console) or
-gsutil:
+[Cloud Console](https://cloud.google.com/console) or gsutil:
 
 ```shell
 gsutil cp storage.yaml gs://$BUCKET/testfilehere'
@@ -114,11 +112,11 @@ gsutil cp storage.yaml gs://$BUCKET/testfilehere'
 
 ## Verify
 
-Verify that the published message was sent by looking at the logs of the
-service that this Storage notification sinks to.
+Verify that the published message was sent by looking at the logs of the service
+that this Storage notification sinks to.
 
-1. To ensure the downstream pods to get started and receive our event,
-   wait 60 seconds.
+1. To ensure the downstream pods to get started and receive our event, wait 60
+   seconds.
 
    - You can check the status of the downstream pods with:
 
@@ -194,4 +192,3 @@ gcloud projects remove-iam-policy-binding $PROJECT_ID \
   --member=serviceAccount:$GCS_SERVICE_ACCOUNT \
   --role roles/pubsub.publisher
 ```
-
