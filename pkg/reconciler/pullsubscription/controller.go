@@ -18,6 +18,7 @@ package pullsubscription
 
 import (
 	"context"
+
 	"knative.dev/pkg/metrics"
 
 	"github.com/kelseyhightower/envconfig"
