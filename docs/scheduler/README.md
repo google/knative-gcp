@@ -2,11 +2,10 @@
 
 ## Overview
 
-This sample shows how to Configure `Scheduler` resource for receiving
-scheduled events from
-[Google Cloud Scheduler](https://cloud.google.com/scheduler/)
-This is a simple example that uses a single Service Account for
-manipulating both Pub/Sub resources as well as Scheduler resources.
+This sample shows how to Configure `Scheduler` resource for receiving scheduled
+events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/) This
+is a simple example that uses a single Service Account for manipulating both
+Pub/Sub resources as well as Scheduler resources.
 
 ## Prerequisites
 
@@ -14,8 +13,8 @@ manipulating both Pub/Sub resources as well as Scheduler resources.
 
 1. [Install Knative with GCP](../install).
 
-1. Give that Service Account the `Cloud Scheduler Admin` role on your Google Cloud
-   project:
+1. Give that Service Account the `Cloud Scheduler Admin` role on your Google
+   Cloud project:
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -25,9 +24,9 @@ manipulating both Pub/Sub resources as well as Scheduler resources.
 
 ## Deployment
 
-   ```shell
-   kubectl apply --filename scheduler.yaml
-   ```
+```shell
+kubectl apply --filename scheduler.yaml
+```
 
 1. Create a service that the Scheduler notifications will sink into:
 
@@ -78,8 +77,8 @@ Data,
 
 ## What's Next
 
-The Scheduler implements what Knative Eventing considers to be an
-`importer`. This component can work alone, but it also works well when
+The Scheduler implements what Knative Eventing considers to be an `importer`.
+This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
 
