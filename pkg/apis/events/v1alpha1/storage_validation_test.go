@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
@@ -32,7 +32,7 @@ var (
 	// Bare minimum is Bucket and Sink
 	minimalStorageSpec = StorageSpec{
 		Bucket: "my-test-bucket",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -47,7 +47,7 @@ var (
 	// Bucket, Sink and Secret
 	withSecret = StorageSpec{
 		Bucket: "my-test-bucket",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -68,7 +68,7 @@ var (
 	// Bucket, Sink, Secret, and PubSubSecret
 	withPubSubSecret = StorageSpec{
 		Bucket: "my-test-bucket",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -145,7 +145,7 @@ func TestSpecValidationFields(t *testing.T) {
 	}, {
 		name: "missing bucket",
 		spec: &StorageSpec{
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -164,7 +164,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid secret, missing name",
 		spec: &StorageSpec{
 			Bucket: "my-test-bucket",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -187,7 +187,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid gcs secret, missing key",
 		spec: &StorageSpec{
 			Bucket: "my-test-bucket",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -209,7 +209,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid pullsubscription secret, missing name",
 		spec: &StorageSpec{
 			Bucket: "my-test-bucket",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -232,7 +232,7 @@ func TestSpecValidationFields(t *testing.T) {
 		name: "invalid gcs secret, missing key",
 		spec: &StorageSpec{
 			Bucket: "my-test-bucket",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",

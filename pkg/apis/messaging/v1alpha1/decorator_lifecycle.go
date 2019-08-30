@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // GetCondition returns the condition currently associated with the given type,
@@ -60,7 +60,7 @@ func (ds *DecoratorStatus) MarkNoSink(reason, messageFormat string, messageA ...
 // url status to the Addressable status condition based on url.
 func (ds *DecoratorStatus) SetAddress(url *apis.URL) {
 	if ds.Address == nil {
-		ds.Address = &v1beta1.Addressable{}
+		ds.Address = &duckv1.Addressable{}
 	}
 	if url != nil {
 		ds.Address.URL = url

@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook"
 )
@@ -51,7 +51,7 @@ var (
 // SchedulerSpec is the spec for a Scheduler resource
 type SchedulerSpec struct {
 	// This brings in CloudEventOverrides and Sink
-	duckv1beta1.SourceSpec
+	duckv1.SourceSpec
 
 	// Secret is the credential to use to create the Scheduler Job.
 	// If not specified, defaults to:
@@ -96,7 +96,7 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 // SchedulerStatus is the status for a Scheduler resource
 type SchedulerStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1beta1.SourceStatus
+	duckv1.SourceStatus
 
 	// JobName is the name of the created scheduler Job on success.
 	// +optional

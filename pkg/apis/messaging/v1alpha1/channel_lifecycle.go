@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // GetCondition returns the condition currently associated with the given type,
@@ -41,7 +41,7 @@ func (cs *ChannelStatus) InitializeConditions() {
 // url status to the Addressable status condition based on url.
 func (cs *ChannelStatus) SetAddress(url *apis.URL) {
 	if cs.Address == nil {
-		cs.Address = &v1beta1.Addressable{}
+		cs.Address = &duckv1.Addressable{}
 	}
 	if url != nil {
 		cs.Address.URL = url

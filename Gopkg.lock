@@ -1150,6 +1150,7 @@
   packages = [
     "apis",
     "apis/duck",
+    "apis/duck/v1",
     "apis/duck/v1alpha1",
     "apis/duck/v1beta1",
     "apis/istio",
@@ -1355,6 +1356,7 @@
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
+    "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/apis/v1alpha1",

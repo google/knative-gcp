@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook"
 )
@@ -51,7 +51,7 @@ var (
 // StorageSpec is the spec for a Storage resource
 type StorageSpec struct {
 	// This brings in CloudEventOverrides and Sink
-	duckv1beta1.SourceSpec
+	duckv1.SourceSpec
 
 	// Secret is the credential used to manage Notifications on the GCS bucket.
 	// The value of the secret entry must be a service account key in the JSON format (see
@@ -120,7 +120,7 @@ var storageCondSet = apis.NewLivingConditionSet(
 // StorageStatus is the status for a GCS resource
 type StorageStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1beta1.SourceStatus
+	duckv1.SourceStatus
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional

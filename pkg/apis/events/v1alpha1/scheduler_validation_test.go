@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,7 +34,7 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -51,7 +51,7 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -74,7 +74,7 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1beta1.SourceSpec{
+		SourceSpec: duckv1.SourceSpec{
 			Sink: apisv1alpha1.Destination{
 				ObjectReference: &corev1.ObjectReference{
 					APIVersion: "foo",
@@ -166,7 +166,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		name: "missing schedule and data",
 		spec: &SchedulerSpec{
 			Location: "location",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -186,7 +186,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		spec: &SchedulerSpec{
 			Location: "location",
 			Schedule: "* * * * *",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -207,7 +207,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -232,7 +232,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -256,7 +256,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
@@ -281,7 +281,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1beta1.SourceSpec{
+			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
 					ObjectReference: &corev1.ObjectReference{
 						APIVersion: "foo",
