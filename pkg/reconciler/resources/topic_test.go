@@ -60,7 +60,7 @@ func TestMakeTopicWithStorage(t *testing.T) {
 		},
 	}
 
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc")
+	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.run")
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -126,7 +126,7 @@ func TestMakeTopicWithScheduler(t *testing.T) {
 		},
 	}
 
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc")
+	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.run")
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -198,7 +198,7 @@ func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
 		},
 	}
 
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc")
+	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "scheduler.events.cloud.run")
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -206,7 +206,7 @@ func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
 			Namespace: "scheduler-namespace",
 			Name:      "scheduler-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.run",
+				"receive-adapter": "scheduler.events.cloud.run",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.run/v1alpha1",

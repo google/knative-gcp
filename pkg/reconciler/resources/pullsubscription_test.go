@@ -65,7 +65,7 @@ func TestMakePullSubscription(t *testing.T) {
 		},
 	}
 
-	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc")
+	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.run")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{

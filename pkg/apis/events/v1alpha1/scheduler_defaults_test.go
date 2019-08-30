@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -32,65 +33,79 @@ func TestScheduler_SetDefaults(t *testing.T) {
 		"missing defaults": {
 			orig: &SchedulerSpec{},
 			expected: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 		},
 		"secret exists same key": {
 			orig: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 			expected: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "key.json",
 					},
-					Key: "key.json",
 				},
 			},
 		},
 		"secret exists same name": {
 			orig: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 			expected: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 		},
 		"secret exists all different": {
 			orig: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 			expected: &SchedulerSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "different-name",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "different-name",
+						},
+						Key: "different-key.json",
 					},
-					Key: "different-key.json",
 				},
 			},
 		},

@@ -24,12 +24,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
@@ -213,11 +209,14 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 
-	nar, err := getNotificationActionResult(ctx, pod)
-	if err != nil {
+	var result operations.NotificationActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return "", err
 	}
-	return nar.NotificationId, nil
+	if result.Result {
+		return result.NotificationId, nil
+	}
+	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
 func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
@@ -252,11 +251,13 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 	if err != nil {
 		return err
 	}
-	// We just care if the NotificationActionResult was valid and result true, so
-	// do not need the actual object back.
-	_, err = getNotificationActionResult(ctx, pod)
-	if err != nil {
+	// Check to see if the operation worked.
+	var result operations.NotificationActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return err
+	}
+	if !result.Result {
+		return fmt.Errorf("operation failed: %s", result.Error)
 	}
 
 	c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
@@ -374,42 +375,4 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
-}
-
-func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*batchv1.Job, error) {
-	list, err := c.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
-		LabelSelector: ls.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, owner) {
-			return &i, nil
-		}
-	}
-
-	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
-}
-
-func getNotificationActionResult(ctx context.Context, pod *corev1.Pod) (*operations.NotificationActionResult, error) {
-	if pod == nil {
-		return nil, fmt.Errorf("pod was nil")
-	}
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return nil, fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
-	var nar operations.NotificationActionResult
-	err := json.Unmarshal([]byte(terminationMessage), &nar)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
-	}
-
-	if nar.Result == false {
-		return nil, errors.New(nar.Error)
-	}
-	return &nar, nil
 }

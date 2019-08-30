@@ -24,17 +24,12 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
-	//	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
@@ -201,13 +196,14 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 		return "", err
 	}
 
-	// We just care if the NotificationActionResult was valid and result true, so
-	// do not need the actual object back.
-	jar, err := getJobActionResult(ctx, pod)
-	if err != nil {
+	var result operations.JobActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return "", err
 	}
-	return jar.JobName, nil
+	if result.Result {
+		return result.JobName, nil
+	}
+	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
 func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, jobName string) (ops.OpsJobStatus, error) {
@@ -241,11 +237,13 @@ func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 		return err
 	}
 
-	// We just care if the NotificationActionResult was valid and result true, so
-	// do not need the actual object back.
-	_, err = getJobActionResult(ctx, pod)
-	if err != nil {
+	// Check to see if the operation worked.
+	var result operations.JobActionResult
+	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return err
+	}
+	if !result.Result {
+		return fmt.Errorf("operation failed: %s", result.Error)
 	}
 
 	c.Logger.Infof("Deleted Notification: %q", scheduler.Status.JobName)
@@ -363,44 +361,4 @@ func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.Job
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
-}
-
-func (c *Reconciler) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*batchv1.Job, error) {
-	list, err := c.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
-		LabelSelector: ls.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, owner) {
-			return &i, nil
-		}
-	}
-
-	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
-}
-
-// TODO: Hoist this into the job itself, but figure out a way to still check the
-// Result field for success.
-func getJobActionResult(ctx context.Context, pod *corev1.Pod) (*operations.JobActionResult, error) {
-	if pod == nil {
-		return nil, fmt.Errorf("pod was nil")
-	}
-	terminationMessage := ops.GetFirstTerminationMessage(pod)
-	if terminationMessage == "" {
-		return nil, fmt.Errorf("did not find termination message for pod %q", pod.Name)
-	}
-	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
-	var jar operations.JobActionResult
-	err := json.Unmarshal([]byte(terminationMessage), &jar)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal terminationmessage: %q", err)
-	}
-
-	if jar.Result == false {
-		return nil, errors.New(jar.Error)
-	}
-	return &jar, nil
 }
