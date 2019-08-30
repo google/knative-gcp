@@ -38,19 +38,21 @@ type PubSubBase struct {
 
 	// For dealing with Topics and Pullsubscriptions
 	pubsubClient pubsubsourceclientset.Interface
+
+	// What do we tag receive adapter as.
+	receiveAdapterName string
 }
 
-func NewPubSubBase(ctx context.Context, controllerAgentName string, cmw configmap.Watcher) *PubSubBase {
+func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *PubSubBase {
 	return &PubSubBase{
-		Base:         NewBase(ctx, controllerAgentName, cmw),
-		pubsubClient: pubsubClient.Get(ctx),
+		Base:               NewBase(ctx, controllerAgentName, cmw),
+		pubsubClient:       pubsubClient.Get(ctx),
+		receiveAdapterName: receiveAdapterName,
 	}
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
 func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name string, spec *duckv1alpha1.PubSubSpec, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, owner kmeta.OwnerRefable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
-	status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s not ready", namespace, name)
-
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	t, err := topics.Get(name, v1.GetOptions{})
 
@@ -59,7 +61,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 			psb.Logger.Infof("Failed to get Topics: %s", err)
 			return nil, nil, fmt.Errorf("failed to get topics: %s", err)
 		}
-		newTopic := resources.MakeTopic(namespace, name, spec, owner, topic)
+		newTopic := resources.MakeTopic(namespace, name, spec, owner, topic, psb.receiveAdapterName)
 		psb.Logger.Infof("Creating topic %+v", newTopic)
 		t, err = topics.Create(newTopic)
 		if err != nil {
@@ -92,8 +94,6 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 	status.ProjectID = t.Status.ProjectID
 	status.MarkTopicReady(cs)
 
-	status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %s/%s not ready", namespace, name)
-
 	// Ok, so the Topic is ready, let's reconcile PullSubscription.
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
@@ -102,7 +102,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 			psb.Logger.Infof("Failed to get PullSubscriptions: %s", err)
 			return t, nil, fmt.Errorf("failed to get pullsubscriptions: %s", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, owner, topic)
+		newPS := resources.MakePullSubscription(namespace, name, spec, owner, topic, psb.receiveAdapterName)
 		psb.Logger.Infof("Creating pullsubscription %+v", newPS)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
@@ -125,4 +125,21 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 	}
 	status.SinkURI = uri
 	return t, ps, nil
+}
+
+func (psb *PubSubBase) DeletePubSub(ctx context.Context, namespace, name string) error {
+	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
+	err := topics.Delete(name, nil)
+	if err != nil && !apierrs.IsNotFound(err) {
+		psb.Logger.Infof("Failed to delete Topic: %s/%s : %s", namespace, name, err)
+		return fmt.Errorf("failed to delete topic: %s", err)
+	}
+
+	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
+	err = pullSubscriptions.Delete(name, nil)
+	if err != nil && !apierrs.IsNotFound(err) {
+		psb.Logger.Infof("Failed to delete pullsubscription: %s/%s : %s", namespace, name, err)
+		return fmt.Errorf("failed to delete pullsubscription: %s", err)
+	}
+	return nil
 }

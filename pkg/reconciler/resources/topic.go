@@ -26,9 +26,9 @@ import (
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic string) *pubsubv1alpha1.Topic {
+func MakeTopic(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.Topic {
 	labels := map[string]string{
-		"receive-adapter": "storage.events.cloud.run",
+		"receive-adapter": receiveAdapterName,
 	}
 
 	pubsubSecret := spec.Secret

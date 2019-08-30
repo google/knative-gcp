@@ -26,9 +26,9 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
-		"receive-adapter": "storage.events.cloud.run",
+		"receive-adapter": receiveAdapterName,
 	}
 
 	pubsubSecret := spec.Secret

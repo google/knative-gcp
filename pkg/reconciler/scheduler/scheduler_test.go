@@ -669,7 +669,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
 			SchedulerOpsImage: testImage,
-			Base:              reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.run", cmw),
 			schedulerLister:   listers.GetSchedulerLister(),
 			pubsubClient:      pubsubClient.Get(ctx),
 			jobLister:         listers.GetJobLister(),

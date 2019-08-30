@@ -148,16 +148,10 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.deleteTopic(ctx, csr.Namespace, csr.Name)
+		err = c.PubSubBase.DeletePubSub(ctx, csr.Namespace, csr.Name)
 		if err != nil {
-			c.Logger.Infof("Unable to delete the Topic: %s", err)
-			return err
-		}
-		csr.Status.TopicID = ""
-		err = c.deletePullSubscription(ctx, csr)
-		if err != nil {
-			c.Logger.Infof("Unable to delete the PullSubscription: %s", err)
-			return err
+			c.Logger.Infof("Unable to delete pubsub resources : %s", err)
+			return fmt.Errorf("failed to delete pubsub resources: %s", err)
 		}
 		c.removeFinalizer(csr)
 		return nil
@@ -191,20 +185,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification
 	return nil
-}
-
-func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.Storage) error {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	err := pubsubClient.Delete(csr.Name, nil)
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Deleted PullSubscription: %+v", csr.Name)
-		return nil
-	}
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
 
 func (c *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
@@ -246,20 +226,6 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 	return nar.NotificationId, nil
-}
-
-func (c *Reconciler) deleteTopic(ctx context.Context, namespace, name string) error {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(namespace)
-	err := pubsubClient.Delete(name, nil)
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Deleted PullSubscription: %s/%s", namespace, name)
-		return nil
-	}
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return err
 }
 
 func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
