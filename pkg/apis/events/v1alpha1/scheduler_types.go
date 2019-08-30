@@ -17,14 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	//	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	//	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook"
 )
@@ -75,15 +75,15 @@ const (
 )
 
 var schedulerCondSet = apis.NewLivingConditionSet(
-	PullSubscriptionReady,
-	TopicReady,
+	duckv1alpha1.PullSubscriptionReady,
+	duckv1alpha1.TopicReady,
 	JobReady)
 
 // SchedulerStatus is the status for a Scheduler resource
 type SchedulerStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubStatus
 
 	// JobName is the name of the created scheduler Job on success.
 	// +optional

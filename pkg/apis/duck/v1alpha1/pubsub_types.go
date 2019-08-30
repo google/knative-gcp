@@ -87,6 +87,14 @@ type PubSubStatus struct {
 	SubscriptionID string `json:"subscriptionId,omitempty"`
 }
 
+const (
+	// TopicReady has status True when the PubSub Topic is ready.
+	TopicReady apis.ConditionType = "TopicReady"
+
+	// PullSubscriptionReay has status True when the PullSubscription is ready.
+	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
+)
+
 // IsReady returns true if the resource is ready overall.
 func (ss *PubSubStatus) IsReady() bool {
 	for _, c := range ss.Conditions {
@@ -147,14 +155,6 @@ func (s *PubSub) Populate() {
 	s.Status.TopicID = "topicid"
 	s.Status.SubscriptionID = "subscriptionid"
 }
-
-const (
-	// PullSubscriptionReady has status True when the underlying PullSubscription is ready
-	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
-
-	// TopicReady has status True when the underlying GCP PubSub topic is ready
-	TopicReady apis.ConditionType = "TopicReady"
-)
 
 // GetListType implements apis.Listable
 func (*PubSub) GetListType() runtime.Object {

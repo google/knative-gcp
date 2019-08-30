@@ -68,7 +68,7 @@ func NewController(
 
 	c := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
-		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, cmw),
 		storageLister:        storageInformer.Lister(),
 		pubsubClient:         pubsubClient.Get(ctx),
 		jobLister:            jobInformer.Lister(),

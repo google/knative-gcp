@@ -18,6 +18,8 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -38,24 +40,24 @@ func (s *SchedulerStatus) InitializeConditions() {
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
 // is not ready and why
 func (s *SchedulerStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
-	schedulerCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
+	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready
 func (s *SchedulerStatus) MarkPullSubscriptionReady() {
-	schedulerCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
+	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkTopicNotReady sets the condition that the Topic was not created and why
 func (s *SchedulerStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	schedulerCondSet.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
+	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying Topic was created
 // successfully and sets the Status.TopicID to the specified topic
 // and Status.ProjectID to the specified project.
 func (s *SchedulerStatus) MarkTopicReady(topicID, projectID string) {
-	schedulerCondSet.Manage(s).MarkTrue(TopicReady)
+	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 	s.TopicID = topicID
 	s.ProjectID = projectID
 }

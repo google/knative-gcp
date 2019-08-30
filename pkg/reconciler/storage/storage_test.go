@@ -672,7 +672,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
 			NotificationOpsImage: testImage,
-			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, cmw),
 			storageLister:        listers.GetStorageLister(),
 			pubsubClient:         pubsubClient.Get(ctx),
 			jobLister:            listers.GetJobLister(),

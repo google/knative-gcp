@@ -34,21 +34,21 @@ import (
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"knative.dev/pkg/apis"
+	//	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	//	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/storage/resources"
+	//	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -63,7 +63,7 @@ const (
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
 // notifications.
 type Reconciler struct {
-	*reconciler.Base
+	*reconciler.PubSubBase
 
 	// Image to use for launching jobs that operate on notifications
 	NotificationOpsImage string
@@ -170,62 +170,13 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	// Make sure Topic is in the state we expect it to be in. There's no point
-	// in continuing if it's not Ready.
-	t, err := c.reconcileTopic(ctx, csr, topic)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic)
 	if err != nil {
-		c.Logger.Infof("Failed to reconcile topic %s", err)
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Failed to reconcile Topic: %s", err.Error())
+		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
 	}
 
-	if !t.Status.IsReady() {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("topic not ready")
-	}
-
-	if t.Status.ProjectID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
-		return errors.New("topic did not expose projectid")
-	}
-	if t.Status.TopicID == "" {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
-		return errors.New("topic did not expose topicid")
-	}
-	if t.Status.TopicID != topic {
-		csr.Status.MarkTopicNotReady("TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
-		return errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
-	}
-
-	csr.Status.TopicID = t.Status.TopicID
-	csr.Status.ProjectID = t.Status.ProjectID
-	csr.Status.MarkTopicReady()
-
-	// Make sure PullSubscription is in the state we expect it to be in.
-	ps, err := c.reconcilePullSubscription(ctx, csr, topic)
-	if err != nil {
-		// TODO: Update status appropriately
-		c.Logger.Infof("Failed to reconcile PullSubscription Source: %s", err)
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "Failed to reconcile PullSubscription Source: %s", err)
-		return err
-	}
-
-	c.Logger.Infof("Reconciled pullsubscription source: %+v", ps)
-
-	// Check to see if Pullsubscription source is ready
-	if !ps.Status.IsReady() {
-		c.Logger.Infof("PullSubscription is not ready yet")
-		csr.Status.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription %s/%s not ready", t.Namespace, t.Name)
-		return errors.New("PullSubscription not ready")
-	} else {
-		csr.Status.MarkPullSubscriptionReady()
-	}
-	c.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
-	uri, err := apis.ParseURL(ps.Status.SinkURI)
-	if err != nil {
-		return errors.New(fmt.Sprintf("failed to parse url %q : %q", ps.Status.SinkURI, err))
-	}
-	csr.Status.SinkURI = uri
+	c.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
 
 	notification, err := c.reconcileNotification(ctx, csr)
 	if err != nil {
@@ -240,22 +191,6 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	csr.Status.NotificationID = notification
 	return nil
-}
-
-func (c *Reconciler) reconcilePullSubscription(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.PullSubscription, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().PullSubscriptions(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Found existing PullSubscription: %+v", existing)
-		return existing, nil
-	}
-	if apierrs.IsNotFound(err) {
-		pubsub := resources.MakePullSubscription(csr, topic)
-		c.Logger.Infof("Creating pullsubscription %+v", pubsub)
-		return pubsubClient.Create(pubsub)
-	}
-	return nil, err
 }
 
 func (c *Reconciler) deletePullSubscription(ctx context.Context, csr *v1alpha1.Storage) error {
@@ -311,22 +246,6 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 	return nar.NotificationId, nil
-}
-
-func (c *Reconciler) reconcileTopic(ctx context.Context, csr *v1alpha1.Storage, topic string) (*pubsubsourcev1alpha1.Topic, error) {
-	pubsubClient := c.pubsubClient.PubsubV1alpha1().Topics(csr.Namespace)
-	existing, err := pubsubClient.Get(csr.Name, v1.GetOptions{})
-	if err == nil {
-		// TODO: Handle any updates...
-		c.Logger.Infof("Found existing Topic: %+v", existing)
-		return existing, nil
-	}
-	if apierrs.IsNotFound(err) {
-		topic := resources.MakeTopic(csr, topic)
-		c.Logger.Infof("Creating topic %+v", topic)
-		return pubsubClient.Create(topic)
-	}
-	return nil, err
 }
 
 func (c *Reconciler) deleteTopic(ctx context.Context, namespace, name string) error {

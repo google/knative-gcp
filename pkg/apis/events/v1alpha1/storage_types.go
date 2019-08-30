@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	//	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -87,7 +87,7 @@ const (
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
-var storageCondSet = apis.NewLivingConditionSet(
+var StorageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 	duckv1alpha1.TopicReady,
 	NotificationReady)
@@ -96,7 +96,7 @@ var storageCondSet = apis.NewLivingConditionSet(
 type StorageStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubStatus
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
