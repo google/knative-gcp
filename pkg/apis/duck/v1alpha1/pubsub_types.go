@@ -120,19 +120,19 @@ func (s *PubSub) Populate() {
 			RawQuery: "flip=mattmoor",
 		},
 	}
-	s.Spec.CloudEventOverrides = &CloudEventOverrides{
+	s.Spec.CloudEventOverrides = &duckv1beta1.CloudEventOverrides{
 		Extensions: map[string]string{"boosh": "kakow"},
 	}
 	s.Spec.Secret = &corev1.SecretKeySelector{
-		LocalObjectReference: LocalObjectReference{Name: "secret"},
+		LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
 		Key:                  "secretkey",
 	}
 	s.Spec.PubSubSecret = &corev1.SecretKeySelector{
-		LocalObjectReference: LocalObjectReference{Name: "pubsubsecret"},
+		LocalObjectReference: corev1.LocalObjectReference{Name: "pubsubsecret"},
 		Key:                  "pubsubkey",
 	}
 	s.Status.ObservedGeneration = 42
-	s.Status.Conditions = Conditions{{
+	s.Status.Conditions = duckv1beta1.Conditions{{
 		// Populate ALL fields
 		Type:               duckv1beta1.SourceConditionSinkProvided,
 		Status:             corev1.ConditionTrue,
@@ -161,6 +161,7 @@ func (*PubSub) GetListType() runtime.Object {
 	return &PubSubList{}
 }
 
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PubSubList is a list of PubSub resources

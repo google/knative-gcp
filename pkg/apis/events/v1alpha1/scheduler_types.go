@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
@@ -50,24 +51,9 @@ var (
 
 // SchedulerSpec is the spec for a Scheduler resource
 type SchedulerSpec struct {
-	// This brings in CloudEventOverrides and Sink
-	duckv1beta1.SourceSpec
-
-	// Secret is the credential to use to create the Scheduler Job.
-	// If not specified, defaults to:
-	// Name: google-cloud-key
-	// Key: key.json
-	// +optional
-	Secret *corev1.SecretKeySelector `json:"Secret,omitempty"`
-
-	// PubSubSecret is the credential to use to create
-	// Topic / PullSubscription resources. If omitted, uses Secret
-	PubSubSecret *corev1.SecretKeySelector `json:"pubsubSecret,omitempty"`
-
-	// Project is the ID of the Google Cloud Project that the PubSub Topic exists in.
-	// If omitted, defaults to same as the cluster.
-	// +optional
-	Project string `json:"project,omitempty"`
+	// This brings in the PubSub based Source Specs. Includes:
+	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	duckv1alpha1.PubSubSpec
 
 	// Location where to create the Job in.
 	Location string `json:"location"`
@@ -95,21 +81,13 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 
 // SchedulerStatus is the status for a Scheduler resource
 type SchedulerStatus struct {
-	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1beta1.SourceStatus
+	// This brings in our GCP PubSub based events importers
+	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
+	duckv1alpha1.PubSubSpec
 
 	// JobName is the name of the created scheduler Job on success.
 	// +optional
 	JobName string `json:"jobName,omitempty"`
-
-	// TopicID is the Topic used to deliver Scheduler events.
-	// +optional
-	TopicID string `json:"topicId,omitempty"`
-
-	// ProjectID is the Project ID of the Topic used to deliver
-	// Scheduler events.
-	// +optional
-	ProjectID string `json:"projectId,omitempty"`
 }
 
 func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {
