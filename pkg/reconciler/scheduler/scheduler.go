@@ -40,15 +40,11 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	//	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	//	"github.com/google/knative-gcp/pkg/reconciler/scheduler/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
-	//	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -69,9 +65,6 @@ type Reconciler struct {
 
 	// gcssourceclientset is a clientset for our own API group
 	schedulerLister listers.SchedulerLister
-
-	// For dealing with Topics and Pullsubscriptions
-	pubsubClient pubsubclientset.Interface
 
 	// For readling with jobs
 	jobLister batchv1listers.JobLister

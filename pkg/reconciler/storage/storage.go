@@ -34,21 +34,16 @@ import (
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
-	//	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	//	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	//	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
-	//	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -70,9 +65,6 @@ type Reconciler struct {
 
 	// gcssourceclientset is a clientset for our own API group
 	storageLister listers.StorageLister
-
-	// For dealing with Topics and Pullsubscriptions
-	pubsubClient pubsubsourceclientset.Interface
 
 	// For readling with jobs
 	jobLister batchv1listers.JobLister
