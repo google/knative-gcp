@@ -19,10 +19,11 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/pkg/errors"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
-	"strconv"
 )
 
 var zapLoggerConfig = "zap-logger-config"

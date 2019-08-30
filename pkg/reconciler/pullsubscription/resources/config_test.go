@@ -17,10 +17,11 @@ limitations under the License.
 package resources
 
 import (
+	"testing"
+
 	"go.uber.org/zap/zapcore"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
-	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
