@@ -18,50 +18,52 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return storageCondSet.Manage(s).GetCondition(t)
+	return StorageCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
 func (s *StorageStatus) IsReady() bool {
-	return storageCondSet.Manage(s).IsHappy()
+	return StorageCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (s *StorageStatus) InitializeConditions() {
-	storageCondSet.Manage(s).InitializeConditions()
+	StorageCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
 // source is not ready and why.
 func (s *StorageStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
+	StorageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
 func (s *StorageStatus) MarkPullSubscriptionReady() {
-	storageCondSet.Manage(s).MarkTrue(PullSubscriptionReady)
+	StorageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
 func (s *StorageStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
+	StorageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
 func (s *StorageStatus) MarkTopicReady() {
-	storageCondSet.Manage(s).MarkTrue(TopicReady)
+	StorageCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 }
 
 // MarkNotificationNotReady sets the condition that the GCS has not been configured
 // to send Notifications and why.
 func (s *StorageStatus) MarkNotificationNotReady(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
+	StorageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
 }
 
 func (s *StorageStatus) MarkNotificationReady() {
-	storageCondSet.Manage(s).MarkTrue(NotificationReady)
+	StorageCondSet.Manage(s).MarkTrue(NotificationReady)
 }

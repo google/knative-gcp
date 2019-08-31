@@ -20,12 +20,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-
-	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -34,13 +34,15 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1.SourceSpec{
-			Sink: apisv1alpha1.Destination{
-				ObjectReference: &corev1.ObjectReference{
-					APIVersion: "foo",
-					Kind:       "bar",
-					Namespace:  "baz",
-					Name:       "qux",
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
 				},
 			},
 		},
@@ -51,21 +53,23 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1.SourceSpec{
-			Sink: apisv1alpha1.Destination{
-				ObjectReference: &corev1.ObjectReference{
-					APIVersion: "foo",
-					Kind:       "bar",
-					Namespace:  "baz",
-					Name:       "qux",
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
 				},
 			},
-		},
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "secret-name",
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "secret-name",
+				},
+				Key: "secret-key",
 			},
-			Key: "secret-key",
 		},
 	}
 
@@ -74,27 +78,29 @@ var (
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
-		SourceSpec: duckv1.SourceSpec{
-			Sink: apisv1alpha1.Destination{
-				ObjectReference: &corev1.ObjectReference{
-					APIVersion: "foo",
-					Kind:       "bar",
-					Namespace:  "baz",
-					Name:       "qux",
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					ObjectReference: &corev1.ObjectReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
 				},
 			},
-		},
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "gcs-secret-name",
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "gcs-secret-name",
+				},
+				Key: "gcs-secret-key",
 			},
-			Key: "gcs-secret-key",
-		},
-		PubSubSecret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "pullsubscription-secret-name",
+			PubSubSecret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pullsubscription-secret-name",
+				},
+				Key: "pullsubscription-secret-key",
 			},
-			Key: "pullsubscription-secret-key",
 		},
 	}
 )
@@ -166,13 +172,15 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		name: "missing schedule and data",
 		spec: &SchedulerSpec{
 			Location: "location",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
 			},
@@ -186,13 +194,15 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		spec: &SchedulerSpec{
 			Location: "location",
 			Schedule: "* * * * *",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
 			},
@@ -207,19 +217,21 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
-			},
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{},
-				Key:                  "secret-test-key",
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{},
+					Key:                  "secret-test-key",
+				},
 			},
 		},
 		want: func() *apis.FieldError {
@@ -232,18 +244,20 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
-			},
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
+				},
 			},
 		},
 		want: func() *apis.FieldError {
@@ -256,19 +270,21 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
-			},
-			PubSubSecret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{},
-				Key:                  "secret-test-key",
+				PubSubSecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{},
+					Key:                  "secret-test-key",
+				},
 			},
 		},
 		want: func() *apis.FieldError {
@@ -281,18 +297,20 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
 					},
 				},
-			},
-			PubSubSecret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
+				PubSubSecret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
+				},
 			},
 		},
 		want: func() *apis.FieldError {

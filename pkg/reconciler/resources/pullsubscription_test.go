@@ -20,13 +20,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
@@ -37,32 +37,34 @@ func TestMakePullSubscription(t *testing.T) {
 			UID:       "bucket-uid",
 		},
 		Spec: v1alpha1.StorageSpec{
-			Bucket:  "this-bucket",
-			Project: "project-123",
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
-				},
-				Key: "eventing-secret-key",
-			},
-			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
-						APIVersion: "v1",
-						Kind:       "Kitchen",
-						Name:       "sink",
+			Bucket: "this-bucket",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Project: "project-123",
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
 					},
+					Key: "eventing-secret-key",
 				},
-				CloudEventOverrides: &duckv1.CloudEventOverrides{
-					Extensions: map[string]string{
-						"foo": "bar",
+				SourceSpec: duckv1beta1.SourceSpec{
+					Sink: apisv1alpha1.Destination{
+						ObjectReference: &corev1.ObjectReference{
+							APIVersion: "v1",
+							Kind:       "Kitchen",
+							Name:       "sink",
+						},
+					},
+					CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
+						Extensions: map[string]string{
+							"foo": "bar",
+						},
 					},
 				},
 			},
 		},
 	}
 
-	got := MakePullSubscription(source, "topic-abc")
+	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.run")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{

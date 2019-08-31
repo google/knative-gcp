@@ -39,7 +39,6 @@ import (
 
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -587,7 +586,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler Job: failed to unmarshal terminationmessage: "invalid character 'i' looking for beginning of value"`),
+				WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler Job: failed to unmarshal terminationmessage: "invalid msg" : "invalid character 'i' looking for beginning of value"`),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -621,7 +620,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler Job: test induced failure"),
+				WithSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler Job: operation failed: test induced failure"),
 				WithSchedulerSinkURI(schedulerSinkURL),
 			),
 		}},
@@ -669,9 +668,8 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
 			SchedulerOpsImage: testImage,
-			Base:              reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.run", cmw),
 			schedulerLister:   listers.GetSchedulerLister(),
-			pubsubClient:      pubsubClient.Get(ctx),
 			jobLister:         listers.GetJobLister(),
 		}
 	}))

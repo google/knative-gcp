@@ -20,41 +20,39 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
 // for a given GCS.
-func MakePullSubscription(source *v1alpha1.Storage, topic string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
-		"receive-adapter": "storage.events.cloud.run",
+		"receive-adapter": receiveAdapterName,
 	}
 
-	pubsubSecret := source.Spec.Secret
-	if source.Spec.PubSubSecret != nil {
-		pubsubSecret = source.Spec.PubSubSecret
+	pubsubSecret := spec.Secret
+	if spec.PubSubSecret != nil {
+		pubsubSecret = spec.PubSubSecret
 	}
 
 	ps := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      source.Name,
-			Namespace: source.Namespace,
-			Labels:    labels,
-			OwnerReferences: []metav1.OwnerReference{
-				*kmeta.NewControllerRef(source),
-			},
+			Name:            name,
+			Namespace:       namespace,
+			Labels:          labels,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
 			Secret:  pubsubSecret,
-			Project: source.Spec.Project,
+			Project: spec.Project,
 			Topic:   topic,
-			Sink:    source.Spec.Sink,
+			Sink:    spec.Sink,
 		},
 	}
-	if source.Spec.CloudEventOverrides != nil && source.Spec.CloudEventOverrides.Extensions != nil {
+	if spec.CloudEventOverrides != nil && spec.CloudEventOverrides.Extensions != nil {
 		ps.Spec.CloudEventOverrides = &pubsubv1alpha1.CloudEventOverrides{
-			Extensions: source.Spec.CloudEventOverrides.Extensions,
+			Extensions: spec.CloudEventOverrides.Extensions,
 		}
 	}
 	return ps

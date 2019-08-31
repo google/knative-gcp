@@ -17,7 +17,11 @@ limitations under the License.
 package operations
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+
+	"knative.dev/pkg/logging"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,4 +86,20 @@ func GetFirstTerminationMessage(pod *corev1.Pod) string {
 		}
 	}
 	return ""
+}
+
+func GetOperationsResult(ctx context.Context, pod *corev1.Pod, result interface{}) error {
+	if pod == nil {
+		return fmt.Errorf("pod was nil")
+	}
+	terminationMessage := GetFirstTerminationMessage(pod)
+	if terminationMessage == "" {
+		return fmt.Errorf("did not find termination message for pod %q", pod.Name)
+	}
+	logging.FromContext(ctx).Infof("Found termination message as: %q", terminationMessage)
+	err := json.Unmarshal([]byte(terminationMessage), &result)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal terminationmessage: %q : %q", terminationMessage, err)
+	}
+	return nil
 }
