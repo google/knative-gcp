@@ -36,7 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/test"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
@@ -188,7 +188,7 @@ func waitForServiceAccountExists(t *testing.T, client *Client, name, namespace s
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVersionResource) error {
 	lastMsg := ""
-	like := &duckv1beta1.KResource{}
+	like := &duckv1.KResource{}
 	return wait.PollImmediate(interval, timeout, func() (bool, error) {
 
 		us, err := c.Dynamic.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})

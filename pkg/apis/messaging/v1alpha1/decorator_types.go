@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook"
 )
 
@@ -91,14 +91,14 @@ type DecoratorStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
-	duckv1beta1.Status `json:",inline"`
+	duckv1.Status `json:",inline"`
 
 	// Channel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
 	// provided targets from inside the cluster.
 	//
 	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
-	duckv1beta1.AddressStatus `json:",inline"`
+	duckv1.AddressStatus `json:",inline"`
 
 	// SinkURI is the current active sink URI that has been configured for the
 	// Decorator.

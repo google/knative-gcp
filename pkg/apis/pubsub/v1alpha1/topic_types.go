@@ -23,8 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/webhook"
 )
 
@@ -51,7 +51,7 @@ var _ runtime.Object = (*Topic)(nil)
 var _ webhook.GenericCRD = (*Topic)(nil)
 
 // Check that Topic implements the Conditions duck type.
-var _ = duck.VerifyType(&Topic{}, &duckv1beta1.Conditions{})
+var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})
 
 // TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
 // Topic depending on the PropagationPolicy.
@@ -123,7 +123,7 @@ type TopicStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
-	duckv1beta1.Status `json:",inline"`
+	duckv1.Status `json:",inline"`
 
 	// Topic is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the

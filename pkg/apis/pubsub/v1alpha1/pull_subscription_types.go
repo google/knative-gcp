@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/apis/v1alpha1"
 )
 
@@ -55,7 +55,7 @@ var _ runtime.Object = (*PullSubscription)(nil)
 var _ apis.Immutable = (*PullSubscription)(nil)
 
 // Check that PullSubscription implements the Conditions duck type.
-var _ = duck.VerifyType(&PullSubscription{}, &duckv1beta1.Conditions{})
+var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
@@ -208,7 +208,7 @@ type PullSubscriptionStatus struct {
 	// inherits duck/v1beta1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
-	duckv1beta1.Status `json:",inline"`
+	duckv1.Status `json:",inline"`
 
 	// SinkURI is the current active sink URI that has been configured for the
 	// PullSubscription.

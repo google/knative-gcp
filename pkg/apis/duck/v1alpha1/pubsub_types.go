@@ -25,7 +25,7 @@ import (
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
@@ -49,7 +49,7 @@ type PubSub struct {
 
 type PubSubSpec struct {
 	// This brings in CloudEventOverrides and Sink
-	duckv1beta1.SourceSpec
+	duckv1.SourceSpec
 
 	// Secret is the credential to use to create the Scheduler Job.
 	// If not specified, defaults to:
@@ -72,7 +72,7 @@ type PubSubSpec struct {
 // their Status field.
 type PubSubStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1beta1.SourceStatus
+	duckv1.SourceStatus
 
 	// ProjectID is the project ID of the Topic, might have been resolved.
 	// +optional
@@ -128,7 +128,7 @@ func (s *PubSub) Populate() {
 			RawQuery: "flip=mattmoor",
 		},
 	}
-	s.Spec.CloudEventOverrides = &duckv1beta1.CloudEventOverrides{
+	s.Spec.CloudEventOverrides = &duckv1.CloudEventOverrides{
 		Extensions: map[string]string{"boosh": "kakow"},
 	}
 	s.Spec.Secret = &corev1.SecretKeySelector{
@@ -140,9 +140,9 @@ func (s *PubSub) Populate() {
 		Key:                  "pubsubkey",
 	}
 	s.Status.ObservedGeneration = 42
-	s.Status.Conditions = duckv1beta1.Conditions{{
+	s.Status.Conditions = duckv1.Conditions{{
 		// Populate ALL fields
-		Type:               duckv1beta1.SourceConditionSinkProvided,
+		Type:               duckv1.SourceConditionSinkProvided,
 		Status:             corev1.ConditionTrue,
 		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Date(1984, 02, 28, 18, 52, 00, 00, time.UTC))},
 	}}

@@ -21,11 +21,10 @@ import (
 	"fmt"
 	"testing"
 
-	"knative.dev/pkg/apis/duck/v1alpha1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/kmeta"
 

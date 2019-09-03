@@ -20,14 +20,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
@@ -47,7 +46,7 @@ func TestMakePullSubscription(t *testing.T) {
 					},
 					Key: "eventing-secret-key",
 				},
-				SourceSpec: duckv1beta1.SourceSpec{
+				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
 						ObjectReference: &corev1.ObjectReference{
 							APIVersion: "v1",
@@ -55,7 +54,7 @@ func TestMakePullSubscription(t *testing.T) {
 							Name:       "sink",
 						},
 					},
-					CloudEventOverrides: &duckv1beta1.CloudEventOverrides{
+					CloudEventOverrides: &duckv1.CloudEventOverrides{
 						Extensions: map[string]string{
 							"foo": "bar",
 						},
