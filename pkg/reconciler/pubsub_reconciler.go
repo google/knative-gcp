@@ -21,12 +21,9 @@ import (
 	"errors"
 	"fmt"
 
-	"knative.dev/pkg/configmap"
-
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
 	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,14 +39,6 @@ type PubSubBase struct {
 
 	// What do we tag receive adapter as.
 	receiveAdapterName string
-}
-
-func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *PubSubBase {
-	return &PubSubBase{
-		Base:               NewBase(ctx, controllerAgentName, cmw),
-		pubsubClient:       pubsubClient.Get(ctx),
-		receiveAdapterName: receiveAdapterName,
-	}
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
@@ -115,7 +104,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 	if !ps.Status.IsReady() {
 		psb.Logger.Infof("PullSubscription is not ready yet")
 		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %s/%s not ready", ps.Namespace, ps.Name)
-		return t, nil, errors.New("pullsubscription not ready")
+		return t, ps, errors.New("pullsubscription not ready")
 	} else {
 		status.MarkPullSubscriptionReady(cs)
 	}
