@@ -18,36 +18,23 @@ package reconciler
 
 import (
 	"context"
-	//	"encoding/json"
-	//	"fmt"
+	"strings"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/pkg/apis"
-	//	"knative.dev/pkg/kmeta"
-
-	"github.com/google/go-cmp/cmp"
-	//	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	//	clientgotesting "k8s.io/client-go/testing"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	//	"knative.dev/pkg/configmap"
-	//	"knative.dev/pkg/controller"
+	"knative.dev/pkg/apis"
 	logtesting "knative.dev/pkg/logging/testing"
-
-	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	//	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	//	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	//fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
-	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
-	//	ops "github.com/google/knative-gcp/pkg/operations"
-	//	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
-	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
+
+	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
 const (
@@ -57,7 +44,9 @@ const (
 	testVersion        = "v1alpha17"
 	testKind           = "Testkind"
 	testTopicID        = "topic"
+	testProjectID      = "project"
 	receiveAdapterName = "test-receive-adapter"
+	sinkName           = "sink"
 )
 
 var (
@@ -75,6 +64,10 @@ var (
 		Secret: &secret,
 	}
 	status = &duckv1alpha1.PubSubStatus{}
+
+	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
+		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
+	}, cmp.Ignore())
 )
 
 type testOwnerRefable struct {
@@ -134,7 +127,34 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 	}, {
-		name: "topic exists and is ready, pull subscription created",
+		name: "topic exists but is not ready",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS:  nil,
+		expectedErr: "topic not ready",
+	}, {
+		name: "topic exists and is ready but no projectid",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -159,19 +179,217 @@ func TestAllCases(t *testing.T) {
 				"receive-adapter": receiveAdapterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: "topic not ready",
-		wantCreates: []runtime.Object{
-			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS),
+		expectedErr: "topic did not expose projectid",
+	}, {
+		name: "topic exists and is ready but no topicid",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(""),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
 		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(""),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS:  nil,
+		expectedErr: "topic did not expose topicid",
+	}, {
+		name: "topic exists and is ready, pullsubscription created",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+				Topic:  testTopicID,
+				Secret: &secret,
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedErr: "pullsubscription not ready",
+		wantCreates: []runtime.Object{
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+					Topic:  testTopicID,
+					Secret: &secret,
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		},
+	}, {
+		name: "topic exists and is ready, pullsubscription exists, not ready",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+					Topic:  testTopicID,
+					Secret: &secret,
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+				Topic:  testTopicID,
+				Secret: &secret,
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+
+		expectedErr: "pullsubscription not ready",
+	}, {
+		name: "topic exists and is ready, pullsubscription exists and is ready",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+					Topic:  testTopicID,
+					Secret: &secret,
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithPullSubscriptionReady("http://example.com"),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+				Topic:  testTopicID,
+				Secret: &secret,
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithPullSubscriptionReady("http://example.com"),
+		),
+
+		expectedErr: "",
 	}}
 
 	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
 		cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
-		//		_ = rectesting.NewListers(tc.objects)
 
 		psBase := &PubSubBase{
 			Base:               &Base{},
@@ -189,10 +407,10 @@ func TestAllCases(t *testing.T) {
 			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
 			t.Errorf("Error mismatch, want: %q got: %q", tc.expectedErr, err)
 		}
-		if diff := cmp.Diff(tc.expectedTopic, topic); diff != "" {
+		if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
 			t.Errorf("unexpected topic (-want, +got) = %v", diff)
 		}
-		if diff := cmp.Diff(tc.expectedPS, ps); diff != "" {
+		if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
 			t.Errorf("unexpected pullsubscription (-want, +got) = %v", diff)
 		}
 

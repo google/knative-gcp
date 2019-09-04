@@ -104,7 +104,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 	if !ps.Status.IsReady() {
 		psb.Logger.Infof("PullSubscription is not ready yet")
 		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %s/%s not ready", ps.Namespace, ps.Name)
-		return t, nil, errors.New("pullsubscription not ready")
+		return t, ps, errors.New("pullsubscription not ready")
 	} else {
 		status.MarkPullSubscriptionReady(cs)
 	}
