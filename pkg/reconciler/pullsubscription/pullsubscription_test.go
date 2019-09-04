@@ -193,7 +193,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newReceiveAdapter(context.TODO(), testImage),
+				newReceiveAdapter(context.Background(), testImage),
 			},
 		}, {
 			Name: "successful create - reuse existing receive adapter - match",
