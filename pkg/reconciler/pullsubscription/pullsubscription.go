@@ -408,7 +408,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		return nil, err
 	}
 
-	desired := resources.MakeReceiveAdapter(&resources.ReceiveAdapterArgs{
+	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
 		Image:          r.receiveAdapterImage,
 		Source:         src,
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),

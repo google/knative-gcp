@@ -184,7 +184,7 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 		return fmt.Errorf("Decorator: %s does not own Service: %s", decorator.Name, name)
 	}
 
-	desired := resources.MakeDecoratorV1alpha1(&resources.DecoratorArgs{
+	desired := resources.MakeDecoratorV1alpha1(ctx, &resources.DecoratorArgs{
 		Image:     r.decoratorImage,
 		Decorator: decorator,
 		Labels:    resources.GetLabels(controllerAgentName),

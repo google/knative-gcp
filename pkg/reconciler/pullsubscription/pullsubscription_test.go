@@ -193,7 +193,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newReceiveAdapter(testImage),
+				newReceiveAdapter(context.Background(), testImage),
 			},
 		}, {
 			Name: "successful create - reuse existing receive adapter - match",
@@ -208,7 +208,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newReceiveAdapter(testImage),
+				newReceiveAdapter(context.Background(), testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
@@ -242,7 +242,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newReceiveAdapter("old" + testImage),
+				newReceiveAdapter(context.Background(), "old"+testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
@@ -255,7 +255,7 @@ func TestAllCases(t *testing.T) {
 					Verb:      "update",
 					Resource:  receiveAdapterGVR(),
 				},
-				Object: newReceiveAdapter(testImage),
+				Object: newReceiveAdapter(context.Background(), testImage),
 			}},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -410,7 +410,7 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newReceiveAdapter(image string) runtime.Object {
+func newReceiveAdapter(ctx context.Context, image string) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -424,7 +424,7 @@ func newReceiveAdapter(image string) runtime.Object {
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
 	}
-	return resources.MakeReceiveAdapter(args)
+	return resources.MakeReceiveAdapter(ctx, args)
 }
 
 func receiveAdapterGVR() schema.GroupVersionResource {

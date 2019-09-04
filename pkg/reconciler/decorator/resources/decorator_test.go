@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestMakePublisherV1alpha1(t *testing.T) {
 		},
 	}
 
-	pub := MakeDecoratorV1alpha1(&DecoratorArgs{
+	pub := MakeDecoratorV1alpha1(context.Background(), &DecoratorArgs{
 		Image:     "test-image",
 		Decorator: decorator,
 		Labels:    GetLabels("controller-name"),
@@ -114,7 +115,7 @@ func TestCEExtensions(t *testing.T) {
 		"foo":   "bar",
 		"boosh": "kakow",
 	}
-	extensionsString := MakeDecoratorExtensionsString(extensions)
+	extensionsString, _ := MapToBase64(extensions)
 	// Test the to string
 	{
 		want := "eyJib29zaCI6Imtha293IiwiZm9vIjoiYmFyIn0="
@@ -127,7 +128,7 @@ func TestCEExtensions(t *testing.T) {
 	// Test the to map
 	{
 		want := extensions
-		got := MakeDecoratorExtensionsMap(extensionsString)
+		got, _ := Base64ToMap(extensionsString)
 
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("unexpected (-want, +got) = %v", diff)
