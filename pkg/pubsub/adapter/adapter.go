@@ -98,7 +98,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	// This implementation comes from the Decorator object.
 	a.extensions, err = decoratorresources.Base64ToMap(a.ExtensionsBase64)
 	if err != nil {
-		fmt.Printf("[warn] failed to convert base64 extensions to map , %s", err.Error())
+		fmt.Printf("[warn] failed to convert base64 extensions to map: %v", err)
 	}
 
 	// Receive Events on Pub/Sub.
