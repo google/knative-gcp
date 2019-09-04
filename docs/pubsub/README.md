@@ -12,7 +12,7 @@ The following are prerequisites for `Channel`, `Topic` and `PullSubscription`.
    project id, and also set your project ID as default using
    `gcloud config set project $PROJECT_ID`.
 
-1. Enable the `Cloud Pub/Sub API` on your project:
+1. [Enable](https://cloud.google.com/endpoints/docs/openapi/enable-api) the `Cloud Pub/Sub API` on your project:
 
    ```shell
    gcloud services enable pubsub.googleapis.com

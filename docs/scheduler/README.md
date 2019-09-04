@@ -13,13 +13,19 @@ Pub/Sub resources as well as Scheduler resources.
 
 1. [Install Knative with GCP](../install).
 
+1. [Enable](https://cloud.google.com/endpoints/docs/openapi/enable-api) the `Cloud Scheduler API` on your project:
+
+   ```shell
+   gcloud services enable cloudscheduler.googleapis.com
+   ```
+
 1. Give that Service Account the `Cloud Scheduler Admin` role on your Google
    Cloud project:
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
    --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/roles/cloudscheduler.admin
+   --role roles/cloudscheduler.admin
    ```
 
 ## Deployment
