@@ -255,7 +255,7 @@ func TestAllCases(t *testing.T) {
 					Verb:      "update",
 					Resource:  receiveAdapterGVR(),
 				},
-				Object: newReceiveAdapter(context.TODO(), testImage),
+				Object: newReceiveAdapter(context.Background(), testImage),
 			}},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
