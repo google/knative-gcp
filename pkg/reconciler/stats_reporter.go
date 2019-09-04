@@ -39,6 +39,11 @@ const (
 	PullSubscriptionReadyCountN = "pullsubscription_ready_count"
 	// PullSubscriptionReadyLatencyN is the time it takes for a pull subscription to become ready since the resource is created.
 	PullSubscriptionReadyLatencyN = "pullsubscription_ready_latency"
+
+	// StorageReadyCountN is the number of storages that have become ready.
+	StorageReadyCountN = "storage_ready_count"
+	// StorageReadyLatencyN is the time it takes for a storage to become ready since the resource is created.
+	StorageReadyLatencyN = "storage_ready_latency"
 )
 
 var (
@@ -50,6 +55,10 @@ var (
 		"PullSubscription": {
 			ReadyCountKey:   PullSubscriptionReadyCountN,
 			ReadyLatencyKey: PullSubscriptionReadyLatencyN,
+		},
+		"Storage": {
+			ReadyCountKey:   StorageReadyCountN,
+			ReadyLatencyKey: StorageReadyLatencyN,
 		},
 	}
 
