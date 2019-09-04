@@ -58,7 +58,7 @@ func (a *Decorator) Start(ctx context.Context) error {
 
 	a.extensions, err = resources.Base64ToMap(a.ExtensionsBased64)
 	if err != nil {
-		fmt.Printf("[warn] failed to convert base64 extensions to map , %s", err.Error())
+		fmt.Printf("[warn] failed to convert base64 extensions to map: %v", err)
 	}
 
 	return a.inbound.StartReceiver(ctx, a.receive)
