@@ -19,10 +19,11 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"strconv"
+
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
-	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
