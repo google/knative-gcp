@@ -208,7 +208,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
-				newReceiveAdapter(context.TODO(), testImage),
+				newReceiveAdapter(context.Background(), testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
