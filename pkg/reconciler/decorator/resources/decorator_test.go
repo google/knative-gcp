@@ -44,7 +44,7 @@ func TestMakePublisherV1alpha1(t *testing.T) {
 		},
 	}
 
-	pub := MakeDecoratorV1alpha1(context.TODO(), &DecoratorArgs{
+	pub := MakeDecoratorV1alpha1(context.Background(), &DecoratorArgs{
 		Image:     "test-image",
 		Decorator: decorator,
 		Labels:    GetLabels("controller-name"),
