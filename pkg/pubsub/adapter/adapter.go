@@ -96,7 +96,10 @@ func (a *Adapter) Start(ctx context.Context) error {
 
 	// Convert base64 encoded json map to extensions map.
 	// This implementation comes from the Decorator object.
-	a.extensions = decoratorresources.MakeDecoratorExtensionsMap(a.ExtensionsBase64)
+	a.extensions, err = decoratorresources.Base64ToMap(a.ExtensionsBase64)
+	if err != nil {
+		fmt.Printf("[warn] failed to convert base64 extensions to map , %s", err.Error())
+	}
 
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {

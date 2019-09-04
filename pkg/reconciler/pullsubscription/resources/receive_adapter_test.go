@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -44,7 +45,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		},
 	}
 
-	got := MakeReceiveAdapter(&ReceiveAdapterArgs{
+	got := MakeReceiveAdapter(context.TODO(), &ReceiveAdapterArgs{
 		Image:  "test-image",
 		Source: src,
 		Labels: map[string]string{
@@ -170,7 +171,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		},
 	}
 
-	got := MakeReceiveAdapter(&ReceiveAdapterArgs{
+	got := MakeReceiveAdapter(context.TODO(), &ReceiveAdapterArgs{
 		Image:  "test-image",
 		Source: src,
 		Labels: map[string]string{

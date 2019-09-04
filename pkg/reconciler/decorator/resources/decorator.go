@@ -17,8 +17,11 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,49 +41,58 @@ type DecoratorArgs struct {
 	Labels    map[string]string
 }
 
-func MakeDecoratorExtensionsMap(base64Extensions string) map[string]string {
-	quotedExtensions := strconv.Quote(string(base64Extensions))
+func Base64ToMap(base64 string) (map[string]string, error) {
+	if base64 == "" {
+		return nil, errors.New("base64 map string is empty")
+	}
+
+	quotedBase64 := strconv.Quote(string(base64))
 
 	var byteExtensions []byte
-	err := json.Unmarshal([]byte(quotedExtensions), &byteExtensions)
+	err := json.Unmarshal([]byte(quotedBase64), &byteExtensions)
 	if err != nil {
-		return map[string]string{
-			"error": err.Error(),
-		}
+		return nil, err
 	}
 
 	var extensions map[string]string
 	err = json.Unmarshal(byteExtensions, &extensions)
 	if err != nil {
-		return map[string]string{
-			"error": err.Error(),
-		}
+		return nil, err
 	}
 
-	return extensions
+	return extensions, err
 }
 
-func MakeDecoratorExtensionsString(extensions map[string]string) string {
+func MapToBase64(extensions map[string]string) (string, error) {
+	if extensions == nil {
+		return "", errors.New("map is nil")
+	}
+
 	jsonExtensions, err := json.Marshal(extensions)
 	if err != nil {
-		return fmt.Sprintf(`{"error":"%s}`, err.Error())
+		return "", err
 	}
 	// if we json.Marshal a []byte, we will get back a base64 encoded quoted string.
 	base64Extensions, err := json.Marshal(jsonExtensions)
 	if err != nil {
-		return fmt.Sprintf(`{"error":"%s}`, err.Error())
+		return "", err
 	}
 
 	extensionsString, err := strconv.Unquote(string(base64Extensions))
 	if err != nil {
-		return fmt.Sprintf(`{"error":"%s}`, err.Error())
+		return "", err
 	}
 	// Turn the base64 encoded []byte back into a string.
-	return extensionsString
+	return extensionsString, nil
 }
 
-func makeDecoratorPodSpec(args *DecoratorArgs) corev1.PodSpec {
-	ceExtensions := MakeDecoratorExtensionsString(args.Decorator.Spec.Extensions)
+func makeDecoratorPodSpec(ctx context.Context, args *DecoratorArgs) corev1.PodSpec {
+	ceExtensions, err := MapToBase64(args.Decorator.Spec.Extensions)
+	if err != nil {
+		logging.FromContext(ctx).Warnw("failed to make decorator extensions",
+			zap.Error(err),
+			zap.Any("extensions", args.Decorator.Spec.Extensions))
+	}
 
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{{
@@ -98,8 +110,8 @@ func makeDecoratorPodSpec(args *DecoratorArgs) corev1.PodSpec {
 }
 
 // MakeDecorator generates (but does not insert into K8s) the Decorator.
-func MakeDecoratorV1alpha1(args *DecoratorArgs) *servingv1alpha1.Service {
-	podSpec := makeDecoratorPodSpec(args)
+func MakeDecoratorV1alpha1(ctx context.Context, args *DecoratorArgs) *servingv1alpha1.Service {
+	podSpec := makeDecoratorPodSpec(ctx, args)
 
 	return &servingv1alpha1.Service{
 		ObjectMeta: metav1.ObjectMeta{

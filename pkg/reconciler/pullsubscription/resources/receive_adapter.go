@@ -17,13 +17,15 @@ limitations under the License.
 package resources
 
 import (
+	"context"
 	"fmt"
-
-	"knative.dev/pkg/kmeta"
+	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -50,14 +52,20 @@ const (
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
 // PullSubscriptions.
-func MakeReceiveAdapter(args *ReceiveAdapterArgs) *v1.Deployment {
+func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deployment {
 
 	secret := args.Source.Spec.Secret
 
 	// Convert CloudEvent Overrides to pod embeddable properties.
 	ceExtensions := ""
 	if args.Source.Spec.CloudEventOverrides != nil && args.Source.Spec.CloudEventOverrides.Extensions != nil {
-		ceExtensions = resources.MakeDecoratorExtensionsString(args.Source.Spec.CloudEventOverrides.Extensions)
+		var err error
+		ceExtensions, err = resources.MapToBase64(args.Source.Spec.CloudEventOverrides.Extensions)
+		if err != nil {
+			logging.FromContext(ctx).Warnw("failed to make cloudevents overrides extensions",
+				zap.Error(err),
+				zap.Any("extensions", args.Source.Spec.CloudEventOverrides.Extensions))
+		}
 	}
 
 	var mode converters.ModeType
