@@ -36,6 +36,16 @@ const (
 
 	testNS      = "testnamespace"
 	testProject = "test-project-id"
+	testImage   = "testimage"
+)
+
+var (
+	secret = corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "google-cloud-key",
+		},
+		Key: "key.json",
+	}
 )
 
 type NotificationActionResult struct {
@@ -116,6 +126,53 @@ func TestGetNotificationActionResult(t *testing.T) {
 		if diff := cmp.Diff(tc.expectedResult, nc); diff != "" {
 			t.Errorf("unexpected action result (-want, +got) = %v", diff)
 		}
+	}
+}
+
+func TestMakePodTemplate(t *testing.T) {
+	got := MakePodTemplate(testImage, storageUID, "create", secret, corev1.EnvVar{Name: "foo", Value: "bar"})
+	want := &corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				"sidecar.istio.io/inject": "false",
+			},
+			Labels: map[string]string{
+				"resource-uid": storageUID,
+				"action":       "create",
+			},
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy: corev1.RestartPolicyNever,
+			Containers: []corev1.Container{{
+				Name:            "job",
+				Image:           testImage,
+				ImagePullPolicy: "Always",
+				Env: []corev1.EnvVar{
+					{
+						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+						Value: "/var/secrets/google/key.json",
+					}, {
+						Name:  "foo",
+						Value: "bar",
+					},
+				},
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      "google-cloud-key",
+					MountPath: "/var/secrets/google",
+				}},
+			}},
+			Volumes: []corev1.Volume{{
+				Name: "google-cloud-key",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "google-cloud-key",
+					},
+				},
+			}},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected result (-want, +got) = %v", diff)
 	}
 }
 
