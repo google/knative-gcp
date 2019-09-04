@@ -13,7 +13,8 @@ Pub/Sub resources as well as Scheduler resources.
 
 1. [Install Knative with GCP](../install).
 
-1. [Enable](https://cloud.google.com/endpoints/docs/openapi/enable-api) the `Cloud Scheduler API` on your project:
+1. [Enable](https://cloud.google.com/endpoints/docs/openapi/enable-api) the
+   `Cloud Scheduler API` on your project:
 
    ```shell
    gcloud services enable cloudscheduler.googleapis.com
