@@ -13,8 +13,7 @@ both Pub/Sub resources as well as GCS resources.
 
 1. [Install Knative with GCP](../install).
 
-1. [Enable](https://cloud.google.com/endpoints/docs/openapi/enable-api) the
-   `Cloud Storage API` on your project:
+1. Enable the `Cloud Storage API` on your project:
 
    ```shell
    gcloud services enable storage-component.googleapis.com
