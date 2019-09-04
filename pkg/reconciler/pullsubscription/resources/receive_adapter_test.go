@@ -171,7 +171,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		},
 	}
 
-	got := MakeReceiveAdapter(context.TODO(), &ReceiveAdapterArgs{
+	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
 		Image:  "test-image",
 		Source: src,
 		Labels: map[string]string{
