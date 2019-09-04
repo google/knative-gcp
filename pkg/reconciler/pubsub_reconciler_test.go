@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	clientgotesting "k8s.io/client-go/testing"
 
 	"knative.dev/pkg/apis"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -90,8 +91,7 @@ func ownerRef() metav1.OwnerReference {
 	}
 }
 
-func TestAllCases(t *testing.T) {
-
+func TestCreates(t *testing.T) {
 	testCases := []struct {
 		name          string
 		objects       []runtime.Object
@@ -436,5 +436,78 @@ func TestAllCases(t *testing.T) {
 			}
 		}
 	}
+}
 
+func TestDeletes(t *testing.T) {
+	testCases := []struct {
+		name        string
+		wantDeletes []clientgotesting.DeleteActionImpl
+		expectedErr string
+	}{{
+		name:        "topic and pullsubscription deleeted",
+		expectedErr: "",
+		wantDeletes: []clientgotesting.DeleteActionImpl{
+			{
+				ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS,
+					Verb:      "delete",
+					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "topics"},
+				},
+				Name: name,
+			}, {
+				ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS,
+					Verb:      "delete",
+					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "pullsubscriptions"},
+				},
+				Name: name,
+			},
+		},
+	}}
+
+	defer logtesting.ClearAll()
+
+	for _, tc := range testCases {
+		cs := fakePubsubClient.NewSimpleClientset()
+
+		psBase := &PubSubBase{
+			Base:               &Base{},
+			pubsubClient:       cs,
+			receiveAdapterName: receiveAdapterName,
+		}
+		psBase.Logger = logtesting.TestLogger(t)
+
+		arl := pkgtesting.ActionRecorderList{cs}
+		err := psBase.DeletePubSub(context.Background(), testNS, name)
+
+		if (tc.expectedErr != "" && err == nil) ||
+			(tc.expectedErr == "" && err != nil) ||
+			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
+			t.Errorf("Error mismatch, want: %q got: %q", tc.expectedErr, err)
+		}
+
+		// validate deletes
+		actions, err := arl.ActionsByVerb()
+		if err != nil {
+			t.Errorf("Error capturing actions by verb: %q", err)
+		}
+		for i, want := range tc.wantDeletes {
+			if i >= len(actions.Deletes) {
+				t.Errorf("Missing delete: %#v", want)
+				continue
+			}
+			got := actions.Deletes[i]
+			if got.GetName() != want.GetName() {
+				t.Errorf("Unexpected delete[%d]: %#v", i, got)
+			}
+			if got.GetResource() != want.GetResource() {
+				t.Errorf("Unexpected delete[%d]: %#v wanted: %#v", i, got, want)
+			}
+		}
+		if got, want := len(actions.Deletes), len(tc.wantDeletes); got > want {
+			for _, extra := range actions.Deletes[want:] {
+				t.Errorf("Extra delete: %s/%s", extra.GetNamespace(), extra.GetName())
+			}
+		}
+	}
 }
