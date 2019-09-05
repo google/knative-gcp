@@ -60,7 +60,7 @@ spec:
         - name: CONFIG_OBSERVABILITY_NAME
           value: config-observability
         - name: METRICS_DOMAIN
-          value: cloud.run/events
+          value: knative.dev/eventing
         volumeMounts:
         - name: config-logging
           mountPath: /etc/config-logging

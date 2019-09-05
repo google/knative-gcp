@@ -17,29 +17,21 @@ limitations under the License.
 package main
 
 import (
+	"cloud.google.com/go/compute/metadata"
 	"flag"
 	"fmt"
-	"log"
-	"time"
-
-	"cloud.google.com/go/compute/metadata"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml"
-	transporthttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+	"log"
 )
 
 const (
-	component = "PullSubscription::ReceiveAdapter"
+	component = "pullsubscription"
 )
 
 func main() {
@@ -71,7 +63,13 @@ func main() {
 		logger.Errorf("failed to process metrics options: %s", err.Error())
 	}
 
-	mainMetrics(logger, metricsConfig)
+	if metricsConfig == nil {
+		logger.Fatal("invalid metric options: nil")
+	}
+
+	if err := metrics.UpdateExporter(*metricsConfig, logger); err != nil {
+		log.Fatalf("Failed to create the metrics exporter: %v", err)
+	}
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
@@ -87,31 +85,6 @@ func main() {
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
-}
-
-func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
-	if opts == nil {
-		logger.Info("metrics disabled")
-		return
-	}
-
-	if err := metrics.UpdateExporter(*opts, logger); err != nil {
-		log.Fatalf("Failed to create the metrics exporter: %v", err)
-	}
-
-	// Register the views
-	if err := view.Register(
-		client.LatencyView,
-		transporthttp.LatencyView,
-		json.LatencyView,
-		xml.LatencyView,
-		datacodec.LatencyView,
-		adapter.LatencyView,
-	); err != nil {
-		log.Fatalf("Failed to register views: %v", err)
-	}
-
-	view.SetReportingPeriod(2 * time.Second)
 }
 
 func flush(logger *zap.SugaredLogger) {

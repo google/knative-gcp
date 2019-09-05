@@ -21,7 +21,8 @@ required = [
 
 [[override]]
   name = "knative.dev/pkg"
-  branch = "master"
+  branch = "source_stats"
+  source = "github.com/nachocano/pkg"
 
 # This is a preemptive override.
 [[override]]
