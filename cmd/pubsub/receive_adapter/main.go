@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	component = "pullsubscription"
+	component = "PullSubscription::ReceiveAdapter"
 )
 
 func main() {
