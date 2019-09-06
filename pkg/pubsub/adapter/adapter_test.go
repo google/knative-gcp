@@ -2,13 +2,21 @@ package adapter
 
 import (
 	"context"
+	"knative.dev/pkg/metrics"
 	"testing"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-
 	"cloud.google.com/go/pubsub"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"github.com/cloudevents/sdk-go"
+	. "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
+
+type mockStatsReporter struct{}
+
+// TODO: test this more.
+func (r *mockStatsReporter) ReportEventCount(args *metrics.ReportArgs, responseCode int) error {
+	return nil
+}
 
 // TODO: test this more.
 func TestAdapter(t *testing.T) {
@@ -43,7 +51,7 @@ func TestConvert(t *testing.T) {
 		},
 	))
 
-	msg := &cepubsub.Message{}
+	msg := &Message{}
 	var err error
 	event, gotErr := a.convert(ctx, msg, err)
 
@@ -67,6 +75,7 @@ func TestHTTPClient(t *testing.T) {
 // TODO: test this more.
 func TestReceive(t *testing.T) {
 	c, _ := cloudevents.NewDefaultClient()
+	r := &mockStatsReporter{}
 	a := Adapter{
 		Project:      "proj",
 		Topic:        "top",
@@ -74,6 +83,7 @@ func TestReceive(t *testing.T) {
 		SendMode:     "binary",
 
 		outbound: c,
+		reporter: r,
 	}
 
 	ctx := context.Background()

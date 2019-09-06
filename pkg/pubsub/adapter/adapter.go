@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 	"knative.dev/pkg/metrics"
+	nethttp "net/http"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
+	"github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
@@ -77,7 +77,14 @@ type Adapter struct {
 	// a config map inside the controllers namespace and copied here.
 	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
 
-	Reporter metrics.StatsReporter
+	// Environment variable containing the namespace.
+	Namespace string `envconfig:"NAMESPACE" required:"true"`
+
+	// Environment variable containing the name.
+	Name string `envconfig:"NAME" required:"true"`
+
+	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
+	ResourceGroup string `envconfig:"NAMESPACE" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -87,6 +94,9 @@ type Adapter struct {
 
 	// transformer is the cloudevents client to transform received events before sending.
 	transformer cloudevents.Client
+
+	// reporter reports metrics to the configured backend.
+	reporter metrics.StatsReporter
 }
 
 // Start starts the adapter. Note: Only call once, not thread safe.
@@ -118,6 +128,12 @@ func (a *Adapter) Start(ctx context.Context) error {
 		}
 	}
 
+	if a.reporter == nil {
+		if a.reporter, err = metrics.NewStatsReporter(); err != nil {
+			return fmt.Errorf("failed to create stats reporter: %s", err.Error())
+		}
+	}
+
 	// Make the transformer client in case the TransformerURI has been set.
 	if a.Transformer != "" {
 		if a.transformer == nil {
@@ -131,30 +147,29 @@ func (a *Adapter) Start(ctx context.Context) error {
 }
 
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
-	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
-	err := a.obsReceive(ctx, event, resp)
-	if err != nil {
-		r.Error()
-	} else {
-		r.OK()
-	}
-	return err
-}
-
-func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
+
+	args := &metrics.ReportArgs{
+		Name:          a.Name,
+		Namespace:     a.Namespace,
+		EventType:     event.Type(),
+		EventSource:   event.Source(),
+		ResourceGroup: a.ResourceGroup,
+	}
 
 	// If a transformer has been configured, then transform the message.
 	if a.transformer != nil {
 		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
 		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
-		transformedEvent, err := a.transformer.Send(ctx, event)
+		_, transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
+			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
 			return err
 		}
 		if transformedEvent == nil {
 			logger.Warnf("cloud event %q was not transformed", event.ID())
+			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
 			return nil
 		}
 		// Update the event with the transformed one.
@@ -171,28 +186,19 @@ func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp 
 		event.SetExtension(k, v)
 	}
 
-	// Send the event.
-	if r, err := a.outbound.Send(ctx, event); err != nil {
+	// Send the event and report the count.
+	rctx, r, err := a.outbound.Send(ctx, event)
+	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
+	a.reporter.ReportEventCount(args, rtctx.StatusCode)
+	if err != nil {
 		return err
 	} else if r != nil {
 		resp.RespondWith(200, r)
 	}
-
 	return nil
 }
 
 func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
-	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportReceive})
-	event, cerr := a.obsConvert(ctx, m, err)
-	if cerr != nil {
-		r.Error()
-	} else {
-		r.OK()
-	}
-	return event, cerr
-}
-
-func (a *Adapter) obsConvert(ctx context.Context, m transport.Message, err error) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Converting event from transport.")
 
@@ -203,17 +209,6 @@ func (a *Adapter) obsConvert(ctx context.Context, m transport.Message, err error
 }
 
 func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, error) {
-	ctx, r := observability.NewReporter(ctx, CodecObserved{o: reportNewPubSubClient})
-	c, err := a.obsNewPubSubClient(ctx)
-	if err != nil {
-		r.Error()
-	} else {
-		r.OK()
-	}
-	return c, err
-}
-
-func (a *Adapter) obsNewPubSubClient(ctx context.Context) (cloudevents.Client, error) {
 	tOpts := []cepubsub.Option{
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
@@ -233,17 +228,6 @@ func (a *Adapter) obsNewPubSubClient(ctx context.Context) (cloudevents.Client, e
 }
 
 func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
-	_, r := observability.NewReporter(ctx, CodecObserved{o: reportNewHTTPClient})
-	c, err := a.obsNewHTTPClient(ctx, target)
-	if err != nil {
-		r.Error()
-	} else {
-		r.OK()
-	}
-	return c, err
-}
-
-func (a *Adapter) obsNewHTTPClient(ctx context.Context, target string) (cloudevents.Client, error) {
 	tOpts := []http.Option{
 		cloudevents.WithTarget(target),
 	}

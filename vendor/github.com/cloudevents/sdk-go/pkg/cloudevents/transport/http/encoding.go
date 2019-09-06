@@ -1,11 +1,16 @@
 package http
 
-import "github.com/cloudevents/sdk-go/pkg/cloudevents"
+import (
+	"context"
+
+	"github.com/cloudevents/sdk-go/pkg/cloudevents"
+	cecontext "github.com/cloudevents/sdk-go/pkg/cloudevents/context"
+)
 
 // Encoding to use for HTTP transport.
 type Encoding int32
 
-type EncodingSelector func(e cloudevents.Event) Encoding
+type EncodingSelector func(context.Context, cloudevents.Event) Encoding
 
 const (
 	// Default
@@ -26,11 +31,30 @@ const (
 	BatchedV03
 	// Unknown is unknown.
 	Unknown
+
+	// Binary is used for Context Based Encoding Selections to use the
+	// DefaultBinaryEncodingSelectionStrategy
+	Binary = "binary"
+
+	// Structured is used for Context Based Encoding Selections to use the
+	// DefaultStructuredEncodingSelectionStrategy
+	Structured = "structured"
 )
+
+func ContextBasedEncodingSelectionStrategy(ctx context.Context, e cloudevents.Event) Encoding {
+	encoding := cecontext.EncodingFrom(ctx)
+	switch encoding {
+	case "", Binary:
+		return DefaultBinaryEncodingSelectionStrategy(ctx, e)
+	case Structured:
+		return DefaultStructuredEncodingSelectionStrategy(ctx, e)
+	}
+	return Default
+}
 
 // DefaultBinaryEncodingSelectionStrategy implements a selection process for
 // which binary encoding to use based on spec version of the event.
-func DefaultBinaryEncodingSelectionStrategy(e cloudevents.Event) Encoding {
+func DefaultBinaryEncodingSelectionStrategy(ctx context.Context, e cloudevents.Event) Encoding {
 	switch e.SpecVersion() {
 	case cloudevents.CloudEventsVersionV01:
 		return BinaryV01
@@ -45,7 +69,7 @@ func DefaultBinaryEncodingSelectionStrategy(e cloudevents.Event) Encoding {
 
 // DefaultStructuredEncodingSelectionStrategy implements a selection process
 // for which structured encoding to use based on spec version of the event.
-func DefaultStructuredEncodingSelectionStrategy(e cloudevents.Event) Encoding {
+func DefaultStructuredEncodingSelectionStrategy(ctx context.Context, e cloudevents.Event) Encoding {
 	switch e.SpecVersion() {
 	case cloudevents.CloudEventsVersionV01:
 		return StructuredV01
@@ -135,7 +159,7 @@ func (e Encoding) Codec() string {
 
 	// Version 0.2
 	case BinaryV02:
-		return "binary/v0.3"
+		return "binary/v0.2"
 	case StructuredV02:
 		return "structured/v0.2"
 

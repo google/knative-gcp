@@ -56,7 +56,8 @@ const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "PullSubscriptions"
 
-	component = "pullsubscriptions"
+	// TODO change to importer once StackDriver MonitorResources are approved.
+	component = "pullsubscription"
 
 	finalizerName = controllerAgentName
 )

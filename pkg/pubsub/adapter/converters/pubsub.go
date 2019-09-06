@@ -19,12 +19,13 @@ package converters
 import (
 	"context"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertPubsub(ctx context.Context, msg *pubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := cepubsub.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV03)

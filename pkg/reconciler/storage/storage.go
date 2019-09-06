@@ -50,6 +50,9 @@ const (
 	ReconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
+
+	// TODO change to importer once StackDriver MonitorResources are approved.
+	component = "storage"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event

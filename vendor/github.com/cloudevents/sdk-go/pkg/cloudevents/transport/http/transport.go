@@ -1,12 +1,13 @@
 package http
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -69,7 +70,17 @@ type Transport struct {
 	// http server. If nil, the Transport will create a one.
 	Handler *http.ServeMux
 
-	realPort          int
+	// LongPollClient is the http client that will be used to long poll.
+	// If nil and LongPollReq is set, the Transport will create a one.
+	LongPollClient *http.Client
+	// LongPollReq is the base http request that is used for long poll.
+	// Only .Method, .URL, .Close, and .Header is considered.
+	// If not set, LongPollReq.Method defaults to GET.
+	// LongPollReq.URL or context.WithLongPollTarget(url) are required to long
+	// poll on StartReceiver.
+	LongPollReq *http.Request
+
+	listener          net.Listener
 	server            *http.Server
 	handlerRegistered bool
 	codec             transport.Codec
@@ -134,19 +145,29 @@ func copyHeaders(from, to http.Header) {
 	}
 }
 
+// Ensure to is a non-nil map before copying
+func copyHeadersEnsure(from http.Header, to *http.Header) {
+	if len(from) > 0 {
+		if *to == nil {
+			*to = http.Header{}
+		}
+		copyHeaders(from, *to)
+	}
+}
+
 // Send implements Transport.Send
-func (t *Transport) Send(ctx context.Context, event cloudevents.Event) (*cloudevents.Event, error) {
+func (t *Transport) Send(ctx context.Context, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
 	ctx, r := observability.NewReporter(ctx, reportSend)
-	resp, err := t.obsSend(ctx, event)
+	rctx, resp, err := t.obsSend(ctx, event)
 	if err != nil {
 		r.Error()
 	} else {
 		r.OK()
 	}
-	return resp, err
+	return rctx, resp, err
 }
 
-func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (*cloudevents.Event, error) {
+func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
 	if t.Client == nil {
 		t.crMu.Lock()
 		t.Client = &http.Client{}
@@ -160,7 +181,7 @@ func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (*clou
 		req.Method = t.Req.Method
 		req.URL = t.Req.URL
 		req.Close = t.Req.Close
-		copyHeaders(t.Req.Header, req.Header)
+		copyHeadersEnsure(t.Req.Header, &req.Header)
 	}
 
 	// Override the default request with target from context.
@@ -169,60 +190,77 @@ func (t *Transport) obsSend(ctx context.Context, event cloudevents.Event) (*clou
 	}
 
 	if ok := t.loadCodec(ctx); !ok {
-		return nil, fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
+		return WithTransportContext(ctx, NewTransportContextFromResponse(nil)), nil, fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
 	}
 
-	msg, err := t.codec.Encode(event)
+	msg, err := t.codec.Encode(ctx, event)
 	if err != nil {
-		return nil, err
+		return WithTransportContext(ctx, NewTransportContextFromResponse(nil)), nil, err
 	}
 
 	if m, ok := msg.(*Message); ok {
-		copyHeaders(m.Header, req.Header)
-
-		if m.Body != nil {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(m.Body))
-			req.ContentLength = int64(len(m.Body))
-		} else {
-			req.ContentLength = 0
-		}
-
-		return httpDo(ctx, t.Client, &req, func(resp *http.Response, err error) (*cloudevents.Event, error) {
-			logger := cecontext.LoggerFrom(ctx)
+		m.ToRequest(&req)
+		return httpDo(ctx, t.Client, &req, func(resp *http.Response, err error) (context.Context, *cloudevents.Event, error) {
+			rctx := WithTransportContext(ctx, NewTransportContextFromResponse(resp))
 			if err != nil {
-				return nil, err
+				return rctx, nil, err
 			}
 			defer resp.Body.Close()
 
 			body, _ := ioutil.ReadAll(resp.Body)
-			msg := &Message{
+			respEvent, err := t.MessageToEvent(ctx, &Message{
 				Header: resp.Header,
 				Body:   body,
-			}
-
-			var respEvent *cloudevents.Event
-			if msg.CloudEventsVersion() != "" {
-				if ok := t.loadCodec(ctx); !ok {
-					err := fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
-					logger.Error("failed to load codec", zap.Error(err))
+			})
+			if err != nil {
+				isErr := true
+				if txerr, ok := err.(*transport.ErrTransportMessageConversion); ok {
+					if !txerr.IsFatal() {
+						isErr = false
+					}
 				}
-				respEvent, err = t.codec.Decode(msg)
-				// If codec returns and error, try with the converter if it is set.
-				if err != nil && t.HasConverter() {
-					respEvent, err = t.Converter.Convert(ctx, msg, err)
-				}
-				if err != nil {
-					logger.Error("failed to decode message", zap.Error(err))
+				if isErr {
+					return rctx, nil, err
 				}
 			}
-
 			if accepted(resp) {
-				return respEvent, nil
+				return rctx, respEvent, nil
 			}
-			return respEvent, fmt.Errorf("error sending cloudevent: %s", resp.Status)
+			return rctx, respEvent, fmt.Errorf("error sending cloudevent: %s", resp.Status)
 		})
 	}
-	return nil, fmt.Errorf("failed to encode Event into a Message")
+	return WithTransportContext(ctx, NewTransportContextFromResponse(nil)), nil, fmt.Errorf("failed to encode Event into a Message")
+}
+
+func (t *Transport) MessageToEvent(ctx context.Context, msg *Message) (*cloudevents.Event, error) {
+	logger := cecontext.LoggerFrom(ctx)
+	var event *cloudevents.Event
+	var err error
+
+	if msg.CloudEventsVersion() != "" {
+		// This is likely a cloudevents encoded message, try to decode it.
+		if ok := t.loadCodec(ctx); !ok {
+			err = transport.NewErrTransportMessageConversion("http", fmt.Sprintf("unknown encoding set on transport: %d", t.Encoding), true)
+			logger.Error("failed to load codec", zap.Error(err))
+		} else {
+			event, err = t.codec.Decode(ctx, msg)
+		}
+	} else {
+		err = transport.NewErrTransportMessageConversion("http", "cloudevents version unknown", false)
+	}
+
+	// If codec returns and error, or could not load the correct codec, try
+	// with the converter if it is set.
+	if err != nil && t.HasConverter() {
+		event, err = t.Converter.Convert(ctx, msg, err)
+	}
+	// If err is still set, it means that there was no converter, or the
+	// converter failed to convert.
+	if err != nil {
+		logger.Debug("failed to decode message", zap.Error(err))
+	}
+
+	return event, err
 }
 
 // SetReceiver implements Transport.SetReceiver
@@ -246,6 +284,10 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 	t.reMu.Lock()
 	defer t.reMu.Unlock()
 
+	if t.LongPollReq != nil {
+		go func() { _ = t.longPollStart(ctx) }()
+	}
+
 	if t.Handler == nil {
 		t.Handler = http.NewServeMux()
 	}
@@ -255,28 +297,25 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 		t.handlerRegistered = true
 	}
 
-	addr := fmt.Sprintf(":%d", t.GetPort())
-	t.server = &http.Server{
-		Addr:    addr,
-		Handler: attachMiddleware(t.Handler, t.middleware),
-	}
-
-	listener, err := net.Listen("tcp", addr)
+	addr, err := t.listen()
 	if err != nil {
 		return err
 	}
-	t.realPort = listener.Addr().(*net.TCPAddr).Port
+
+	t.server = &http.Server{
+		Addr:    addr.String(),
+		Handler: attachMiddleware(t.Handler, t.middleware),
+	}
 
 	// Shutdown
 	defer func() {
-		t.realPort = 0
 		t.server.Close()
 		t.server = nil
 	}()
 
 	errChan := make(chan error, 1)
 	go func() {
-		errChan <- t.server.Serve(listener)
+		errChan <- t.server.Serve(t.listener)
 	}()
 
 	// wait for the server to return or ctx.Done().
@@ -289,9 +328,100 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		return t.server.Shutdown(ctx)
+		err := t.server.Shutdown(ctx)
+		<-errChan // Wait for server goroutine to exit
+		return err
 	case err := <-errChan:
 		return err
+	}
+}
+
+func (t *Transport) longPollStart(ctx context.Context) error {
+	logger := cecontext.LoggerFrom(ctx)
+	logger.Info("starting long poll receiver")
+
+	if t.LongPollClient == nil {
+		t.crMu.Lock()
+		t.LongPollClient = &http.Client{}
+		t.crMu.Unlock()
+	}
+	req := &http.Request{
+		// TODO: decide if it is ok to use HeaderFrom context here.
+		Header: HeaderFrom(ctx),
+	}
+	if t.LongPollReq != nil {
+		req.Method = t.LongPollReq.Method
+		req.URL = t.LongPollReq.URL
+		req.Close = t.LongPollReq.Close
+		copyHeaders(t.LongPollReq.Header, req.Header)
+	}
+
+	// Override the default request with target from context.
+	if target := LongPollTargetFrom(ctx); target != nil {
+		req.URL = target
+	}
+
+	if req.URL == nil {
+		return errors.New("no long poll target found")
+	}
+
+	req = req.WithContext(ctx)
+	msgCh := make(chan Message)
+	defer close(msgCh)
+
+	go func(ch chan<- Message) {
+		for {
+			if resp, err := t.LongPollClient.Do(req); err != nil {
+				logger.Errorw("long poll request returned error", err)
+				uErr := err.(*url.Error)
+				if uErr.Temporary() || uErr.Timeout() {
+					continue
+				}
+				// TODO: if the transport is throwing errors, we might want to try again. Maybe with a back-off sleep.
+				// But this error also might be that there was a done on the context.
+			} else if resp.StatusCode == http.StatusNotModified {
+				// Keep polling.
+				continue
+			} else if resp.StatusCode == http.StatusOK {
+				body, _ := ioutil.ReadAll(resp.Body)
+				if err := resp.Body.Close(); err != nil {
+					logger.Warnw("error closing long poll response body", zap.Error(err))
+				}
+				msg := Message{
+					Header: resp.Header,
+					Body:   body,
+				}
+				msgCh <- msg
+			} else {
+				// TODO: not sure what to do with upstream errors yet.
+				logger.Errorw("unhandled long poll response", zap.Any("resp", resp))
+			}
+		}
+	}(msgCh)
+
+	// Attach the long poll request context to the context.
+	ctx = WithTransportContext(ctx, TransportContext{
+		URI:    req.URL.RequestURI(),
+		Host:   req.URL.Host,
+		Method: req.Method,
+	})
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case msg := <-msgCh:
+			logger.Debug("got a message", zap.Any("msg", msg))
+			if event, err := t.MessageToEvent(ctx, &msg); err != nil {
+				logger.Errorw("could not convert http message to event", zap.Error(err))
+			} else {
+				logger.Debugw("got an event", zap.Any("event", event))
+				// TODO: deliver event.
+				if _, err := t.invokeReceiver(ctx, *event); err != nil {
+					logger.Errorw("could not invoke receiver event", zap.Error(err))
+				}
+			}
+		}
 	}
 }
 
@@ -304,23 +434,24 @@ func attachMiddleware(h http.Handler, middleware []Middleware) http.Handler {
 }
 
 type eventError struct {
+	ctx   context.Context
 	event *cloudevents.Event
 	err   error
 }
 
-func httpDo(ctx context.Context, client *http.Client, req *http.Request, fn func(*http.Response, error) (*cloudevents.Event, error)) (*cloudevents.Event, error) {
+func httpDo(ctx context.Context, client *http.Client, req *http.Request, fn func(*http.Response, error) (context.Context, *cloudevents.Event, error)) (context.Context, *cloudevents.Event, error) {
 	// Run the HTTP request in a goroutine and pass the response to fn.
 	c := make(chan eventError, 1)
 	req = req.WithContext(ctx)
 	go func() {
-		event, err := fn(client.Do(req))
-		c <- eventError{event: event, err: err}
+		rctx, event, err := fn(client.Do(req))
+		c <- eventError{ctx: rctx, event: event, err: err}
 	}()
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return ctx, nil, ctx.Err()
 	case ee := <-c:
-		return ee.event, ee.err
+		return ee.ctx, ee.event, ee.err
 	}
 }
 
@@ -353,18 +484,17 @@ func (t *Transport) obsInvokeReceiver(ctx context.Context, event cloudevents.Eve
 
 		err := t.Receiver.Receive(ctx, event, &eventResp)
 		if err != nil {
-			logger.Warnw("got an error from receiver fn: %s", zap.Error(err))
+			logger.Warnw("got an error from receiver fn", zap.Error(err))
 			resp.StatusCode = http.StatusInternalServerError
 			return &resp, err
 		}
 
 		if eventResp.Event != nil {
 			if t.loadCodec(ctx) {
-				if m, err := t.codec.Encode(*eventResp.Event); err != nil {
+				if m, err := t.codec.Encode(ctx, *eventResp.Event); err != nil {
 					logger.Errorw("failed to encode response from receiver fn", zap.Error(err))
 				} else if msg, ok := m.(*Message); ok {
-					resp.Header = msg.Header
-					resp.Body = msg.Body
+					resp.Message = *msg
 				}
 			} else {
 				logger.Error("failed to load codec")
@@ -382,7 +512,7 @@ func (t *Transport) obsInvokeReceiver(ctx context.Context, event cloudevents.Eve
 			}
 			// If we found a TransportResponseContext, use it.
 			if trx != nil && trx.Header != nil && len(trx.Header) > 0 {
-				copyHeaders(trx.Header, resp.Header)
+				copyHeadersEnsure(trx.Header, &resp.Message.Header)
 			}
 		}
 
@@ -407,41 +537,34 @@ func (t *Transport) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		logger.Errorw("failed to handle request", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"Invalid request"}`))
+		_, _ = w.Write([]byte(`{"error":"Invalid request"}`))
 		r.Error()
 		return
-	}
-	msg := &Message{
-		Header: req.Header,
-		Body:   body,
 	}
 
-	if ok := t.loadCodec(ctx); !ok {
-		err := fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
-		logger.Errorw("failed to load codec", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(`{"error":%q}`, err.Error())))
-		r.Error()
-		return
-	}
-	event, err := t.codec.Decode(msg)
-	// If codec returns and error, try with the converter if it is set.
-	if err != nil && t.HasConverter() {
-		event, err = t.Converter.Convert(ctx, msg, err)
-	}
+	event, err := t.MessageToEvent(ctx, &Message{
+		Header: req.Header,
+		Body:   body,
+	})
 	if err != nil {
-		logger.Errorw("failed to decode message", zap.Error(err))
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(`{"error":%q}`, err.Error())))
-		r.Error()
-		return
+		isFatal := true
+		if txerr, ok := err.(*transport.ErrTransportMessageConversion); ok {
+			isFatal = txerr.IsFatal()
+		}
+		if isFatal || event == nil {
+			logger.Errorw("failed to convert http message to event", zap.Error(err))
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(fmt.Sprintf(`{"error":%q}`, err.Error())))
+			r.Error()
+			return
+		}
 	}
 
 	resp, err := t.invokeReceiver(ctx, *event)
 	if err != nil {
 		logger.Warnw("error returned from invokeReceiver", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf(`{"error":%q}`, err.Error())))
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"error":%q}`, err.Error())))
 		r.Error()
 		return
 	}
@@ -450,12 +573,12 @@ func (t *Transport) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if t.Req != nil {
 			copyHeaders(t.Req.Header, w.Header())
 		}
-		if len(resp.Header) > 0 {
-			copyHeaders(resp.Header, w.Header())
+		if len(resp.Message.Header) > 0 {
+			copyHeaders(resp.Message.Header, w.Header())
 		}
-		w.Header().Add("Content-Length", strconv.Itoa(len(resp.Body)))
-		if len(resp.Body) > 0 {
-			if _, err := w.Write(resp.Body); err != nil {
+		w.Header().Add("Content-Length", strconv.Itoa(len(resp.Message.Body)))
+		if len(resp.Message.Body) > 0 {
+			if _, err := w.Write(resp.Message.Body); err != nil {
 				r.Error()
 				return
 			}
@@ -474,18 +597,41 @@ func (t *Transport) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.OK()
 }
 
-// GetPort returns the port the transport is active on.
-// .Port can be set to 0, which means the transport selects a port, GetPort
-// allows the transport to report back the selected port.
+// GetPort returns the listening port.
+// Returns -1 if there is a listening error.
+// Note this will call net.Listen() if  the listener is not already started.
 func (t *Transport) GetPort() int {
-	if t.Port != nil && *t.Port == 0 && t.realPort != 0 {
-		return t.realPort
-	}
-
-	if t.Port != nil && *t.Port >= 0 { // 0 means next open port
+	// Ensure we have a listener and therefore a port.
+	if _, err := t.listen(); err == nil || t.Port != nil {
 		return *t.Port
 	}
-	return 8080 // default
+	return -1
+}
+
+func (t *Transport) setPort(port int) {
+	if t.Port == nil {
+		t.Port = new(int)
+	}
+	*t.Port = port
+}
+
+// listen if not already listening, update t.Port
+func (t *Transport) listen() (net.Addr, error) {
+	if t.listener == nil {
+		port := 8080
+		if t.Port != nil {
+			port = *t.Port
+		}
+		var err error
+		if t.listener, err = net.Listen("tcp", fmt.Sprintf(":%d", port)); err != nil {
+			return nil, err
+		}
+	}
+	addr := t.listener.Addr()
+	if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+		t.setPort(tcpAddr.Port)
+	}
+	return addr, nil
 }
 
 // GetPath returns the path the transport is hosted on. If the path is '/',

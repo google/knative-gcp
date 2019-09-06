@@ -117,7 +117,12 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 		return ctx
 	}
 
-	controller, err := webhook.NewAdmissionController(kubeClient, options, handlers, logger, ctxFunc, true)
+	resourceAdmissionController := webhook.NewResourceAdmissionController(handlers, options, true)
+	admissionControllers := map[string]webhook.AdmissionController{
+		options.ResourceAdmissionControllerPath: resourceAdmissionController,
+	}
+
+	controller, err := webhook.New(kubeClient, options, admissionControllers, logger, ctxFunc)
 
 	if err != nil {
 		logger.Fatalw("Failed to create admission controller", zap.Error(err))

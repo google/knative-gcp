@@ -23,8 +23,9 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	"github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 var (
@@ -50,7 +51,7 @@ func storageSource(bucket string) string {
 	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
-func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertStorage(ctx context.Context, msg *pubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}

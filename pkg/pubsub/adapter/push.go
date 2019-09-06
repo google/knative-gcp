@@ -6,7 +6,7 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 )

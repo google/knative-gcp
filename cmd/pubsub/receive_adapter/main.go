@@ -71,12 +71,6 @@ func main() {
 		log.Fatalf("Failed to create the metrics exporter: %s", err.Error())
 	}
 
-	reporter, err := metrics.NewStatsReporter()
-	if err != nil {
-		log.Fatalf("Failed to create metrics reporter: %s", err.Error())
-	}
-	startable.Reporter = reporter
-
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {

@@ -17,11 +17,17 @@ limitations under the License.
 package storage
 
 import (
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/system"
 	"os"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
+	_ "knative.dev/pkg/metrics/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
 	// Fake injection informers
@@ -40,7 +46,22 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("STORAGE_NOTIFICATION_IMAGE", "STORAGE_NOTIFICATION_IMAGE")
 
-	c := NewController(ctx, configmap.NewFixedWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher(
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      logging.ConfigMapName(),
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      metrics.ConfigMapName(),
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+	))
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
