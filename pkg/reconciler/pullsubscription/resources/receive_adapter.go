@@ -28,7 +28,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -49,6 +49,8 @@ type ReceiveAdapterArgs struct {
 const (
 	credsVolume    = "google-cloud-key"
 	credsMountPath = "/var/secrets/google"
+	resourceGroup  = "pullsubscriptions.pubsub.cloud.run"
+	metricsDomain  = "knative.dev/eventing"
 )
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
@@ -132,6 +134,18 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: args.LoggingConfig,
+						}, {
+							Name:  "NAME",
+							Value: args.Source.Name,
+						}, {
+							Name:  "NAMESPACE",
+							Value: args.Source.Namespace,
+						}, {
+							Name:  "RESOURCE_GROUP",
+							Value: resourceGroup,
+						}, {
+							Name:  "METRICS_DOMAIN",
+							Value: metricsDomain,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
