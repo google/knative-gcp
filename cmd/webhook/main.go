@@ -20,11 +20,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
-	"net/http"
-
 	"golang.org/x/sync/errgroup"
 	"knative.dev/pkg/profiling"
+	"log"
+	"net/http"
 
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -103,13 +102,20 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
+	stats, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("failed to initialize the stats reporter", zap.Error(err))
+	}
+
 	options := webhook.ControllerOptions{
-		ServiceName:    "webhook",
-		DeploymentName: "webhook",
-		Namespace:      system.Namespace(),
-		Port:           8443,
-		SecretName:     "webhook-certs",
-		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		ServiceName:                     "webhook",
+		DeploymentName:                  "webhook",
+		Namespace:                       system.Namespace(),
+		Port:                            8443,
+		SecretName:                      "webhook-certs",
+		WebhookName:                     fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		StatsReporter:                   stats,
+		ResourceAdmissionControllerPath: "/",
 	}
 
 	// Decorate contexts with the current state of the config.
