@@ -60,7 +60,7 @@ func main() {
 	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
 	if err != nil {
-		logger.Errorf("failed to process metrics options: %s", err.Error())
+		logger.Fatalf("failed to process metrics options: %s", err.Error())
 	}
 
 	if metricsConfig == nil {
@@ -68,8 +68,14 @@ func main() {
 	}
 
 	if err := metrics.UpdateExporter(*metricsConfig, logger); err != nil {
-		log.Fatalf("Failed to create the metrics exporter: %v", err)
+		log.Fatalf("Failed to create the metrics exporter: %s", err.Error())
 	}
+
+	reporter, err := metrics.NewStatsReporter()
+	if err != nil {
+		log.Fatalf("Failed to create metrics reporter: %s", err.Error())
+	}
+	startable.Reporter = reporter
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()

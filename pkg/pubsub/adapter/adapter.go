@@ -19,6 +19,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"knative.dev/pkg/metrics"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
@@ -75,6 +76,8 @@ type Adapter struct {
 	// This is used to configure the logging config, the config is stored in
 	// a config map inside the controllers namespace and copied here.
 	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
+
+	Reporter metrics.StatsReporter
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client

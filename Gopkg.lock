@@ -1137,15 +1137,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3ca8155ee844e0b5295940f3acfb8e663f765f546c52b58ed81ee0b7ba9c83ab"
+  digest = "1:6511d17f44454dfe4b42bd4a6f3c258680c5b8492b29d7996f38e9f5170c698b"
   name = "knative.dev/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "9014140a6b7df139bc08c91c3a1ae0628d842665"
+  revision = "8679b4ef150dc92fef25345d62cd36ffea7b4b15"
 
 [[projects]]
-  branch = "master"
-  digest = "1:80ebfb8d1bf38f2d1e3bf52eaa074a62e04c6b506ea5f00dc39596425e00ee5a"
+  branch = "source_stats"
+  digest = "1:8724af21e264cf2c18ae23e7662c38f745cabd13f77837da7faa782a8187fb9b"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1211,7 +1211,8 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "e9c7aefce07abe1e9b7246a2f73537a68726f244"
+  revision = "b0fb2118364283ef0aa069f44b467e1297cdd610"
+  source = "github.com/nachocano/pkg"
 
 [[projects]]
   branch = "master"
@@ -1283,10 +1284,6 @@
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/observability",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
