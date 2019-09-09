@@ -45,6 +45,7 @@ const (
 	testVersion        = "v1alpha17"
 	testKind           = "Testkind"
 	testTopicID        = "topic"
+	testResourceGroup  = "testResourceGroup"
 	testProjectID      = "project"
 	receiveAdapterName = "test-receive-adapter"
 	sinkName           = "sink"
@@ -259,6 +260,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
 			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group": testResourceGroup,
+			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedErr: "pullsubscription not ready",
@@ -270,6 +274,9 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": testResourceGroup,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -298,6 +305,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
 				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": testResourceGroup,
+				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
@@ -323,6 +333,9 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group": testResourceGroup,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -352,6 +365,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
 				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": testResourceGroup,
+				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithPullSubscriptionReady("http://example.com"),
 			),
@@ -379,6 +395,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
 			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group": testResourceGroup,
+			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionReady("http://example.com"),
 		),
@@ -400,7 +419,7 @@ func TestCreates(t *testing.T) {
 
 		arl := pkgtesting.ActionRecorderList{cs}
 		condSet := &apis.ConditionSet{}
-		topic, ps, err := psBase.ReconcilePubSub(context.Background(), testNS, name, spec, status, condSet, &testOwnerRefable{metav1.ObjectMeta{Namespace: testNS, Name: name}}, testTopicID)
+		topic, ps, err := psBase.ReconcilePubSub(context.Background(), testNS, name, spec, status, condSet, &testOwnerRefable{metav1.ObjectMeta{Namespace: testNS, Name: name}}, testTopicID, testResourceGroup)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||

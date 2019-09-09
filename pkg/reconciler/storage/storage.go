@@ -53,6 +53,8 @@ const (
 
 	// TODO change to importer once StackDriver MonitorResources are approved.
 	component = "storage"
+
+	resourceGroup = "storages.events.cloud.run"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -159,7 +161,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic, resourceGroup)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
