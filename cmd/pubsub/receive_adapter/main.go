@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
-	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -43,7 +42,7 @@ func main() {
 	}
 
 	// Convert base64 encoded json logging.Config to logging.Config.
-	loggingConfig, err := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+	loggingConfig, err := logging.Base64ToLoggingConfig(startable.LoggingConfigBase64)
 	if err != nil {
 		fmt.Printf("[ERROR] filed to process logging config: %s", err.Error())
 		// Use default logging config.
@@ -58,7 +57,7 @@ func main() {
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
 	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	metricsConfig, err := metrics.Base64ToMetricsOptions(startable.MetricsConfigBase64)
 	if err != nil {
 		logger.Errorf("failed to process metrics options: %s", err.Error())
 	}
@@ -92,14 +91,15 @@ func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
 	}
 
 	// TODO metrics are API surface, so make sure we need to expose this before doing so.
-	// Register the views
+	//  They seem to be private ones and more profiling related ones.
+	// Register the views.
 	//if err := view.Register(
 	//	client.LatencyView,
 	//	transporthttp.LatencyView,
 	//	json.LatencyView,
 	//	xml.LatencyView,
 	//	datacodec.LatencyView,
-	//	adapter.LatencyView,
+	//  adapter.LatencyView,
 	//); err != nil {
 	//	log.Fatalf("Failed to register views: %v", err)
 	//}

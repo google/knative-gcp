@@ -1146,7 +1146,8 @@
   revision = "8679b4ef150dc92fef25345d62cd36ffea7b4b15"
 
 [[projects]]
-  digest = "1:9ddf2ad6e2a07c52542436ad5da87a96dfb67431d37e8324ca8d98a29f5e1789"
+  branch = "source_stats"
+  digest = "1:5f6f5b13f51f04653a16a708c4a8ca6e0e5a7d0c3848f32a18de92e7d5ff65bf"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1212,7 +1213,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "982a361009a61a8fee03a687ea10e0bc0a949b62"
+  revision = "9078080e704851daa2c72b8ed11a701845f1bfe3"
   source = "github.com/nachocano/pkg"
 
 [[projects]]
@@ -1288,6 +1289,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
