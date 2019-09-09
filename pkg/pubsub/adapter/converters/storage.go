@@ -31,10 +31,10 @@ import (
 var (
 	// Mapping of GCS eventTypes to CloudEvent types.
 	storageEventTypes = map[string]string{
-		"OBJECT_FINALIZE":        "google.storage.object.finalize",
-		"OBJECT_ARCHIVE":         "google.storage.object.archive",
-		"OBJECT_DELETE":          "google.storage.object.delete",
-		"OBJECT_METADATA_UPDATE": "google.storage.object.metadataUpdate",
+		"OBJECT_FINALIZE":        Finalize,
+		"OBJECT_ARCHIVE":         Archive,
+		"OBJECT_DELETE":          Delete,
+		"OBJECT_METADATA_UPDATE": MetadataUpdate,
 	}
 )
 
@@ -45,6 +45,13 @@ const (
 	// TODO find the public google endpoint we should use to point to the schema and avoid hosting it ourselves.
 	//  The link above is tied to the go-client, and it seems not to be a valid json schema.
 	storageSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+
+	Finalize       = "google.storage.object.finalize"
+	Archive        = "google.storage.object.archive"
+	Delete         = "google.storage.object.delete"
+	MetadataUpdate = "google.storage.object.metadataUpdate"
+
+	StorageResourceGroup = "storages.events.cloud.run"
 )
 
 func storageSource(bucket string) string {

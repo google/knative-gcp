@@ -83,9 +83,6 @@ type Adapter struct {
 	// Environment variable containing the name.
 	Name string `envconfig:"NAME" required:"true"`
 
-	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
-	ResourceGroup string `envconfig:"RESOURCE_GROUP" required:"true"`
-
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
 
@@ -154,7 +151,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		Namespace:     a.Namespace,
 		EventType:     event.Type(),
 		EventSource:   event.Source(),
-		ResourceGroup: a.ResourceGroup,
+		ResourceGroup: a.resourceGroupFromEventType(event.Type()),
 	}
 
 	// If a transformer has been configured, then transform the message.
@@ -247,4 +244,16 @@ func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents
 
 	// Use the transport to make a new CloudEvents client.
 	return cloudevents.NewClient(t)
+}
+
+// resourceGroupFromEventType returns the resource group for the given eventType.
+func (a *Adapter) resourceGroupFromEventType(eventType string) string {
+	switch eventType {
+	case converters.Finalize, converters.Delete, converters.Archive, converters.MetadataUpdate:
+		return converters.StorageResourceGroup
+	case converters.Publish:
+		return converters.PubSubResourceGroup
+	default:
+		return converters.PubSubResourceGroup
+	}
 }
