@@ -57,9 +57,7 @@ const (
 	ReconcilerName = "PullSubscriptions"
 
 	// TODO change to importer once StackDriver MonitorResources are approved.
-	//  Is pullsubscription the underlying construct for importers? Or also channels. If the latter, then
-	//  we need to make this configurable.
-	component = "googleimporter"
+	component = "gcpimporter"
 
 	finalizerName = controllerAgentName
 )
