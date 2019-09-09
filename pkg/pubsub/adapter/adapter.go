@@ -146,6 +146,8 @@ func (a *Adapter) Start(ctx context.Context) error {
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
+	// TODO Name might cause problems in the near future, as we might use a single receive-adapter for multiple
+	//  source/importer objects. Same with Namespace, when doing multi-tenancy.
 	args := &metrics.ReportArgs{
 		Name:          a.Name,
 		Namespace:     a.Namespace,
