@@ -51,9 +51,6 @@ const (
 
 	finalizerName = controllerAgentName
 
-	// TODO change to importer once StackDriver MonitorResources are approved.
-	component = "storage"
-
 	resourceGroup = "storages.events.cloud.run"
 )
 
