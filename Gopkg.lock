@@ -104,8 +104,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9c96d933b3feddba9a823f6f6ae6ba903bd0e8d8e0490d9ec62d3e03deeac737"
+  digest = "1:b4a7e9b3c23391690a61723d022552decf5aa722e15e513580cd64d32a7079f5"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -124,7 +123,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "a1c7a759c034d9289981dd8ca42ff3663842a8a6"
+  revision = "5088975a189005f96a59d4e375b9e88ead0ebe5c"
+  version = "v0.9.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1147,7 +1147,7 @@
 
 [[projects]]
   branch = "source_stats"
-  digest = "1:5f6f5b13f51f04653a16a708c4a8ca6e0e5a7d0c3848f32a18de92e7d5ff65bf"
+  digest = "1:e0966f21f7caffbac222428b68660fc62d4dfef5ec5a2319178c5043ba57dc5b"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1213,7 +1213,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "9078080e704851daa2c72b8ed11a701845f1bfe3"
+  revision = "095955c106ff58cb4805e658dbc4301bf6ca7732"
   source = "github.com/nachocano/pkg"
 
 [[projects]]
