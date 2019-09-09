@@ -18,8 +18,6 @@ package storage
 
 import (
 	"context"
-	"knative.dev/pkg/metrics"
-
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -91,9 +89,6 @@ func NewController(
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
-
-	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
-	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
 
 	return impl
 }

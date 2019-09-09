@@ -385,32 +385,3 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }
-
-func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
-	if cfg != nil {
-		delete(cfg.Data, "_example")
-	}
-
-	logcfg, err := logging.NewConfigFromConfigMap(cfg)
-	if err != nil {
-		r.Logger.Warn("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
-		return
-	}
-	r.loggingConfig = logcfg
-	r.Logger.Infow("Update from logging ConfigMap", zap.Any("ConfigMap", cfg))
-	// TODO: requeue all storages
-}
-
-func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
-	if cfg != nil {
-		delete(cfg.Data, "_example")
-	}
-
-	r.metricsConfig = &metrics.ExporterOptions{
-		Domain:    metrics.Domain(),
-		Component: component,
-		ConfigMap: cfg.Data,
-	}
-	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
-	// TODO: requeue all storages
-}
