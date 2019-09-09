@@ -92,6 +92,7 @@ func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
 
 	// TODO metrics are API surface, so make sure we need to expose this before doing so.
 	//  They seem to be private ones and more profiling related ones.
+	//  Commenting them for now, as we will use pkg stats_reporter.
 	// Register the views.
 	//if err := view.Register(
 	//	client.LatencyView,

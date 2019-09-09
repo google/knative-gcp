@@ -84,7 +84,7 @@ type Adapter struct {
 	Name string `envconfig:"NAME" required:"true"`
 
 	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
-	ResourceGroup string `envconfig:"NAMESPACE" required:"true"`
+	ResourceGroup string `envconfig:"RESOURCE_GROUP" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
