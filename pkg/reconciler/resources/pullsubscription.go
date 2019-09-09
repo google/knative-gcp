@@ -26,13 +26,11 @@ import (
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
-func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName, resourceGroup string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
 		"receive-adapter": receiveAdapterName,
 	}
-	annotations := map[string]string{
-		"metrics-resource-group": resourceGroup,
-	}
+
 	pubsubSecret := spec.Secret
 	if spec.PubSubSecret != nil {
 		pubsubSecret = spec.PubSubSecret
@@ -43,7 +41,6 @@ func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec,
 			Name:            name,
 			Namespace:       namespace,
 			Labels:          labels,
-			Annotations:     annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{

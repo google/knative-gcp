@@ -190,12 +190,6 @@ func WithPullSubscriptionLabels(labels map[string]string) PullSubscriptionOption
 	}
 }
 
-func WithPullSubscriptionAnnotations(annotations map[string]string) PullSubscriptionOption {
-	return func(c *v1alpha1.PullSubscription) {
-		c.ObjectMeta.Annotations = annotations
-	}
-}
-
 func WithPullSubscriptionFinalizers(finalizers ...string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Finalizers = finalizers

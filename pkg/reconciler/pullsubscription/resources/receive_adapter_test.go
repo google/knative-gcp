@@ -131,9 +131,6 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Name:  "NAMESPACE",
 							Value: "source-namespace",
 						}, {
-							Name:  "RESOURCE_GROUP",
-							Value: defaultResourceGroup,
-						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
 						}},
@@ -166,9 +163,6 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "source-name",
 			Namespace: "source-namespace",
-			Annotations: map[string]string{
-				"metrics-resource-group": "test-resource-group",
-			},
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
 			Project: "eventing-name",
@@ -274,9 +268,6 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "NAMESPACE",
 							Value: "source-namespace",
-						}, {
-							Name:  "RESOURCE_GROUP",
-							Value: "test-resource-group",
 						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,

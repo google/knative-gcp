@@ -42,7 +42,7 @@ type PubSubBase struct {
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name string, spec *duckv1alpha1.PubSubSpec, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, owner kmeta.OwnerRefable, topic, resourceGroup string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name string, spec *duckv1alpha1.PubSubSpec, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, owner kmeta.OwnerRefable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	t, err := topics.Get(name, v1.GetOptions{})
 
@@ -92,7 +92,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 			psb.Logger.Infof("Failed to get PullSubscriptions: %s", err)
 			return t, nil, fmt.Errorf("failed to get pullsubscriptions: %s", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, owner, topic, psb.receiveAdapterName, resourceGroup)
+		newPS := resources.MakePullSubscription(namespace, name, spec, owner, topic, psb.receiveAdapterName)
 		psb.Logger.Infof("Creating pullsubscription %+v", newPS)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {

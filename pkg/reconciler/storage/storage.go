@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"knative.dev/pkg/metrics"
 	"time"
 
 	"go.uber.org/zap"
@@ -50,8 +49,6 @@ const (
 	ReconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
-
-	resourceGroup = "storages.events.cloud.run"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -67,9 +64,6 @@ type Reconciler struct {
 
 	// For readling with jobs
 	jobLister batchv1listers.JobLister
-
-	loggingConfig *logging.Config
-	metricsConfig *metrics.ExporterOptions
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -158,7 +152,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic, resourceGroup)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr.Namespace, csr.Name, &csr.Spec.PubSubSpec, &csr.Status.PubSubStatus, &v1alpha1.StorageCondSet, csr, topic)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
