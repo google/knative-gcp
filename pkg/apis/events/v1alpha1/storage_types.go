@@ -106,6 +106,17 @@ func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Storage")
 }
 
+// Methods for pubsubable interface
+func (s *Storage) PubSubSpec() *duckv1alpha1.PubSubSpec {
+	return &s.Spec.PubSubSpec
+}
+func (s *Storage) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &s.Status.PubSubStatus
+}
+func (s *Storage) ConditionSet() *apis.ConditionSet {
+	return &StorageCondSet
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // StorageList is a list of Storage resources

@@ -142,7 +142,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 		return err
 	}
 
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s.Namespace, s.Name, &s.Spec.PubSubSpec, &s.Status.PubSubStatus, &v1alpha1.StorageCondSet, s, topic)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err

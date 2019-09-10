@@ -21,14 +21,13 @@ import (
 	"errors"
 	"fmt"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	duck "github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
 )
 
 type PubSubBase struct {
@@ -42,7 +41,15 @@ type PubSubBase struct {
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name string, spec *duckv1alpha1.PubSubSpec, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, owner kmeta.OwnerRefable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+	if pubsubable == nil {
+		return nil, nil, fmt.Errorf("nil pubsubable passed in")
+	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	spec := pubsubable.PubSubSpec()
+	status := pubsubable.PubSubStatus()
+
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	t, err := topics.Get(name, v1.GetOptions{})
 
@@ -51,7 +58,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 			psb.Logger.Infof("Failed to get Topics: %s", err)
 			return nil, nil, fmt.Errorf("failed to get topics: %s", err)
 		}
-		newTopic := resources.MakeTopic(namespace, name, spec, owner, topic, psb.receiveAdapterName)
+		newTopic := resources.MakeTopic(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
 		psb.Logger.Infof("Creating topic %+v", newTopic)
 		t, err = topics.Create(newTopic)
 		if err != nil {
@@ -60,6 +67,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 		}
 	}
 
+	cs := pubsubable.ConditionSet()
 	if !t.Status.IsReady() {
 		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
 		return t, nil, errors.New("topic not ready")
@@ -92,7 +100,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, namespace, name stri
 			psb.Logger.Infof("Failed to get PullSubscriptions: %s", err)
 			return t, nil, fmt.Errorf("failed to get pullsubscriptions: %s", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, owner, topic, psb.receiveAdapterName)
+		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
 		psb.Logger.Infof("Creating pullsubscription %+v", newPS)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
