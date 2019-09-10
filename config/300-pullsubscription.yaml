@@ -56,6 +56,7 @@ spec:
               properties:
                 publish:
                   type: object
+                  description: "This event is sent when a message is published to a Cloud Pub/Sub topic."
                   properties:
                     type:
                       type: string

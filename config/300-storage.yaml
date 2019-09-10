@@ -55,6 +55,7 @@ spec:
               properties:
                 finalize:
                   type: object
+                  description: "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event."
                   properties:
                     type:
                       type: string
@@ -64,6 +65,7 @@ spec:
                       pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 delete:
                   type: object
+                  description: "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."
                   properties:
                     type:
                       type: string
@@ -73,6 +75,7 @@ spec:
                       pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 archive:
                   type: object
+                  description: "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."
                   properties:
                     type:
                       type: string
@@ -82,6 +85,7 @@ spec:
                       pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
                 metadataUpdate:
                   type: object
+                  description: "Sent when the metadata of an existing object changes."
                   properties:
                     type:
                       type: string
