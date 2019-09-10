@@ -26,9 +26,9 @@ import (
 )
 
 const (
-	Publish = "google.pubsub.topic.publish"
+	pubSubPublish = "google.pubsub.topic.publish"
 
-	PubSubResourceGroup = "pullsubscriptions.pubsub.cloud.run"
+	pubSubResourceGroup = "pullsubscriptions.pubsub.cloud.run"
 )
 
 func convertPubsub(ctx context.Context, msg *pubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
@@ -39,7 +39,7 @@ func convertPubsub(ctx context.Context, msg *pubsub.Message, sendMode ModeType) 
 	event.SetTime(tx.PublishTime)
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	event.SetType(Publish)
+	event.SetType(pubSubPublish)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")
