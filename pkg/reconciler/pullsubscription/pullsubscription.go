@@ -57,7 +57,7 @@ const (
 	ReconcilerName = "PullSubscriptions"
 
 	// TODO change to importer once StackDriver MonitorResources are approved.
-	component = "gcpimporter"
+	component = "gcpsource"
 
 	finalizerName = controllerAgentName
 )

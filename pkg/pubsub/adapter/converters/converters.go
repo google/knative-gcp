@@ -73,3 +73,16 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cl
 	// pubsub is the default one.
 	return convertPubsub(ctx, msg, sendMode)
 }
+
+// TODO move it to a better place and refactor.
+// ResourceGroupFrom returns the resource group for the given eventType.
+func ResourceGroupFrom(eventType string) string {
+	switch eventType {
+	case storageFinalize, storageDelete, storageArchive, storageMetadataUpdate:
+		return storageResourceGroup
+	case pubSubPublish:
+		return pubSubResourceGroup
+	default:
+		return pubSubResourceGroup
+	}
+}
