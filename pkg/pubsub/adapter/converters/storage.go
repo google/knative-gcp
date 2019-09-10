@@ -24,8 +24,8 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/cloudevents/sdk-go"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 var (
@@ -58,12 +58,12 @@ func storageSource(bucket string) string {
 	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
-func convertStorage(ctx context.Context, msg *pubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}
 
-	tx := cepubsub.TransportContextFrom(ctx)
+	tx := cepubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)

@@ -23,8 +23,8 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/cloudevents/sdk-go"
-	. "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	cepubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 type mockStatsReporter struct{}
@@ -54,7 +54,7 @@ func TestConvert(t *testing.T) {
 		Subscription: "sub",
 	}
 
-	ctx := cepubsub.WithTransportContext(context.TODO(), cepubsub.NewTransportContext(
+	ctx := cepubsubcontext.WithTransportContext(context.TODO(), cepubsubcontext.NewTransportContext(
 		"proj",
 		"top",
 		"sub",
@@ -67,7 +67,7 @@ func TestConvert(t *testing.T) {
 		},
 	))
 
-	msg := &Message{}
+	msg := &cepubsub.Message{}
 	var err error
 	event, gotErr := a.convert(ctx, msg, err)
 

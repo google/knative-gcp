@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	cepubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 func TestConvertToPush_noattrs(t *testing.T) {
@@ -53,7 +53,7 @@ Data,
 	event.SetDataContentType("application/json")
 	_ = event.SetData("testing")
 
-	ctx := cepubsub.WithTransportContext(context.TODO(), cepubsub.NewTransportContext(
+	ctx := cepubsubcontext.WithTransportContext(context.TODO(), cepubsubcontext.NewTransportContext(
 		"proj",
 		"top",
 		"sub",
@@ -101,7 +101,7 @@ Data,
 	event.SetDataContentType("application/json")
 	_ = event.SetData("testing")
 
-	ctx := cepubsub.WithTransportContext(context.TODO(), cepubsub.NewTransportContext(
+	ctx := cepubsubcontext.WithTransportContext(context.TODO(), cepubsubcontext.NewTransportContext(
 		"proj",
 		"top",
 		"sub",
