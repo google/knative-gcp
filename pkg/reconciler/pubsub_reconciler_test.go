@@ -27,12 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"knative.dev/pkg/apis"
 	logtesting "knative.dev/pkg/logging/testing"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -41,9 +39,6 @@ import (
 const (
 	testNS             = "test-namespace"
 	name               = "obj-name"
-	testGroup          = "testgroup"
-	testVersion        = "v1alpha17"
-	testKind           = "Testkind"
 	testTopicID        = "topic"
 	testProjectID      = "project"
 	receiveAdapterName = "test-receive-adapter"
@@ -61,31 +56,20 @@ var (
 		},
 		Key: "key.json",
 	}
-	spec = &duckv1alpha1.PubSubSpec{
-		Secret: &secret,
-	}
-	status = &duckv1alpha1.PubSubStatus{}
+	pubsubable = rectesting.NewStorage(name, testNS)
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
 	}, cmp.Ignore())
 )
 
-type testOwnerRefable struct {
-	metav1.ObjectMeta
-}
-
-func (tor *testOwnerRefable) GetGroupVersionKind() schema.GroupVersionKind {
-	return schema.GroupVersionKind{Group: testGroup, Version: testVersion, Kind: testKind}
-}
-
 // Returns an ownerref for the test object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion: "testgroup/v1alpha17",
-		Kind:       testKind,
-		Name:       name,
-		//		UID:                schedulerUID,
+		APIVersion:         "events.cloud.run/v1alpha1",
+		Kind:               "Storage",
+		Name:               name,
+		UID:                "test-storage-uid",
 		Controller:         &trueVal,
 		BlockOwnerDeletion: &trueVal,
 	}
@@ -399,8 +383,7 @@ func TestCreates(t *testing.T) {
 		psBase.Logger = logtesting.TestLogger(t)
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		condSet := &apis.ConditionSet{}
-		topic, ps, err := psBase.ReconcilePubSub(context.Background(), testNS, name, spec, status, condSet, &testOwnerRefable{metav1.ObjectMeta{Namespace: testNS, Name: name}}, testTopicID)
+		topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||

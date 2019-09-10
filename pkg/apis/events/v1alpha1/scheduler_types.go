@@ -92,6 +92,22 @@ func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Scheduler")
 }
 
+// Methods for pubsubable interface
+// PubSubSpec returns the PubSubSpec portion of the Spec.
+func (s *Scheduler) PubSubSpec() *duckv1alpha1.PubSubSpec {
+	return &s.Spec.PubSubSpec
+}
+
+// PubSubStatus returns the PubSubStatus portion of the Status.
+func (s *Scheduler) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &s.Status.PubSubStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *Scheduler) ConditionSet() *apis.ConditionSet {
+	return &StorageCondSet
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // SchedulerList is a list of Scheduler resources
