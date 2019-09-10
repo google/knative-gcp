@@ -41,6 +41,10 @@ type PubSubBase struct {
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
+// Sets the following Conditions in the Status field appropriately:
+// "TopicReady", and "PullSubscriptionReady"
+// Also sets the following fields in the pubsubable.Status upon success
+// TopicID, ProjectID, and SinkURI
 func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
 	if pubsubable == nil {
 		return nil, nil, fmt.Errorf("nil pubsubable passed in")

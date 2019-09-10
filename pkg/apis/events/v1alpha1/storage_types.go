@@ -81,7 +81,7 @@ const (
 	// StorageConditionReady has status True when the Storage is ready to send events.
 	StorageConditionReady = apis.ConditionReady
 
-	// StorageNotificationReady has status True when GCS has been configured properly to
+	// NotificationReady has status True when GCS has been configured properly to
 	// send Notification events
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
@@ -107,12 +107,18 @@ func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
 }
 
 // Methods for pubsubable interface
+
+// PubSubSpec returns the PubSubSpec portion of the Spec.
 func (s *Storage) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &s.Spec.PubSubSpec
 }
+
+// PubSubStatus returns the PubSubStatus portion of the Status.
 func (s *Storage) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Storage) ConditionSet() *apis.ConditionSet {
 	return &StorageCondSet
 }

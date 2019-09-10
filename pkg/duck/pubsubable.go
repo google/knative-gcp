@@ -23,9 +23,18 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
+// PubSubable is an interface that each duckv1alpha1.PubSub duck type must
+// support in order to get reconciled properly in a generic way.
 type PubSubable interface {
 	kmeta.OwnerRefable
+	// PubSubSpec returns the PubSubSpec portion of the Spec.
 	PubSubSpec() *duckv1alpha1.PubSubSpec
+	// PubSubStatus returns the PubSubStatus portion of the Status.
 	PubSubStatus() *duckv1alpha1.PubSubStatus
+	// ConditionSet returns the apis.ConditionSet of the embedding object
+	// This Set must have the following Conditions defined in it.
+	// "TopicReady",
+	// "PullSubscriptionReady",
+	// Which will be set appropriately automagically by the pubsub_reconciler.go
 	ConditionSet() *apis.ConditionSet
 }
