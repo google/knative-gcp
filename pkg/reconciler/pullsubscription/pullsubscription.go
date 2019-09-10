@@ -408,11 +408,11 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		return nil, err
 	}
 
-	loggingConfig, err := logging.LoggingConfigToBase64(r.loggingConfig)
+	loggingConfig, err := logging.LoggingConfigToJson(r.loggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing existing logging config", zap.Error(err))
 	}
-	metricsConfig, err := metrics.MetricsOptionsToBase64(r.metricsConfig)
+	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
 	}

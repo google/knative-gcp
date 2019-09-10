@@ -67,15 +67,15 @@ type Adapter struct {
 	// One of [binary, structured, push]. Default: binary
 	SendMode converters.ModeType `envconfig:"SEND_MODE" default:"binary" required:"true"`
 
-	// MetricsConfigBase64 is a base64 encoded json string of metrics.ExporterOptions.
+	// MetricsConfigJson is a json string of metrics.ExporterOptions.
 	// This is used to configure the metrics exporter options, the config is
 	// stored in a config map inside the controllers namespace and copied here.
-	MetricsConfigBase64 string `envconfig:"K_METRICS_CONFIG" required:"true"`
+	MetricsConfigJson string `envconfig:"K_METRICS_CONFIG" required:"true"`
 
-	// LoggingConfigBase64 is a base64 encoded json string of logging.Config.
+	// LoggingConfigJson is a json string of logging.Config.
 	// This is used to configure the logging config, the config is stored in
 	// a config map inside the controllers namespace and copied here.
-	LoggingConfigBase64 string `envconfig:"K_LOGGING_CONFIG" required:"true"`
+	LoggingConfigJson string `envconfig:"K_LOGGING_CONFIG" required:"true"`
 
 	// Environment variable containing the namespace.
 	Namespace string `envconfig:"NAMESPACE" required:"true"`

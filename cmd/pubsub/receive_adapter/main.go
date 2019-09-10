@@ -41,8 +41,8 @@ func main() {
 		panic(fmt.Sprintf("Failed to process env var: %s", err))
 	}
 
-	// Convert base64 encoded json logging.Config to logging.Config.
-	loggingConfig, err := logging.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+	// Convert json logging.Config to logging.Config.
+	loggingConfig, err := logging.JsonToLoggingConfig(startable.LoggingConfigJson)
 	if err != nil {
 		fmt.Printf("[ERROR] filed to process logging config: %s", err.Error())
 		// Use default logging config.
@@ -56,8 +56,8 @@ func main() {
 	defer flush(logger)
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
-	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := metrics.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
+	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
 	if err != nil {
 		logger.Errorf("failed to process metrics options: %s", err.Error())
 	}
