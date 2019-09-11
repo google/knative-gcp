@@ -29,18 +29,19 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 
-	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	runScheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
-	runclient "github.com/google/knative-gcp/pkg/client/injection/client"
 	"go.uber.org/zap"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/clients/dynamicclient"
-	"knative.dev/pkg/injection/clients/kubeclient"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/system"
 	servingclientset "knative.dev/serving/pkg/client/clientset/versioned"
 	servingclient "knative.dev/serving/pkg/client/injection/client"
+
+	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	runScheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
+	runclient "github.com/google/knative-gcp/pkg/client/injection/client"
 )
 
 // Options defines the common reconciler options.

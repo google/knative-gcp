@@ -104,12 +104,13 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:b4a7e9b3c23391690a61723d022552decf5aa722e15e513580cd64d32a7079f5"
+  digest = "1:dd1f8b26415c048d2806c7612da04c7be93c128ed67d4b10e50349ea8466649d"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
     "pkg/cloudevents",
     "pkg/cloudevents/client",
+    "pkg/cloudevents/codec",
     "pkg/cloudevents/context",
     "pkg/cloudevents/datacodec",
     "pkg/cloudevents/datacodec/json",
@@ -118,13 +119,10 @@
     "pkg/cloudevents/transport",
     "pkg/cloudevents/transport/http",
     "pkg/cloudevents/transport/pubsub",
-    "pkg/cloudevents/transport/pubsub/context",
-    "pkg/cloudevents/transport/pubsub/internal",
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "5088975a189005f96a59d4e375b9e88ead0ebe5c"
-  version = "v0.9.0"
+  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -227,11 +225,11 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:7915c656a10819b240db94ffd6afc6a621af4687db735341d9919668750485ec"
+  digest = "1:10aa62acd56f635de190110a836aa261b3774e697b2b6a7af27d8263cf856d47"
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "NUT"
-  revision = "abf9ef06abd9f532944e28e8942644ea4b710a40"
+  revision = "b02d448a3705facf11018efff34f1d2830be5724"
 
 [[projects]]
   digest = "1:52c5834e2bebac9030c97cc0798ac11c3aa8a39f098aeb419f142533da6cd3cc"
@@ -1139,15 +1137,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6511d17f44454dfe4b42bd4a6f3c258680c5b8492b29d7996f38e9f5170c698b"
+  digest = "1:1cf1c57872fbaeef54a9814dfdd2bec0728f521b0b06b32629ec99a12cfe779e"
   name = "knative.dev/eventing"
   packages = ["pkg/apis/duck/v1alpha1"]
   pruneopts = "NUT"
-  revision = "8679b4ef150dc92fef25345d62cd36ffea7b4b15"
+  revision = "a146086f423bb64d1c1d7302596cd7eca3e30251"
 
 [[projects]]
-  branch = "source_stats"
-  digest = "1:e0966f21f7caffbac222428b68660fc62d4dfef5ec5a2319178c5043ba57dc5b"
+  branch = "master"
+  digest = "1:d9488ee7fb53992ebd73211cb929337ca3d9b1c874cfd4d513614d86b910c334"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1169,6 +1167,14 @@
     "client/clientset/versioned/typed/authentication/v1alpha1/fake",
     "client/clientset/versioned/typed/istio/v1alpha3",
     "client/clientset/versioned/typed/istio/v1alpha3/fake",
+    "client/injection/kube/client",
+    "client/injection/kube/client/fake",
+    "client/injection/kube/informers/apps/v1/deployment",
+    "client/injection/kube/informers/apps/v1/deployment/fake",
+    "client/injection/kube/informers/batch/v1/job",
+    "client/injection/kube/informers/batch/v1/job/fake",
+    "client/injection/kube/informers/factory",
+    "client/injection/kube/informers/factory/fake",
     "codegen/cmd/injection-gen",
     "codegen/cmd/injection-gen/args",
     "codegen/cmd/injection-gen/generators",
@@ -1177,14 +1183,6 @@
     "injection",
     "injection/clients/dynamicclient",
     "injection/clients/dynamicclient/fake",
-    "injection/clients/kubeclient",
-    "injection/clients/kubeclient/fake",
-    "injection/informers/kubeinformers/appsv1/deployment",
-    "injection/informers/kubeinformers/appsv1/deployment/fake",
-    "injection/informers/kubeinformers/batchv1/job",
-    "injection/informers/kubeinformers/batchv1/job/fake",
-    "injection/informers/kubeinformers/factory",
-    "injection/informers/kubeinformers/factory/fake",
     "injection/sharedmain",
     "kmeta",
     "kmp",
@@ -1194,6 +1192,7 @@
     "metrics",
     "metrics/metricskey",
     "metrics/testing",
+    "network",
     "profiling",
     "ptr",
     "reconciler/testing",
@@ -1213,12 +1212,11 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "095955c106ff58cb4805e658dbc4301bf6ca7732"
-  source = "github.com/nachocano/pkg"
+  revision = "121082452bc0218bdbb3bf53e30747621b41bc27"
 
 [[projects]]
   branch = "master"
-  digest = "1:a631f11b31439ef880dbe5f2f533c6cdad8b58c519a46fec8a8cee994422e582"
+  digest = "1:3163bf0b840b21f90f39d7b33235b64db9d7d35af06094a0ea7163265790bd35"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1227,6 +1225,7 @@
     "pkg/apis/networking",
     "pkg/apis/networking/v1alpha1",
     "pkg/apis/serving",
+    "pkg/apis/serving/v1",
     "pkg/apis/serving/v1alpha1",
     "pkg/apis/serving/v1beta1",
     "pkg/client/clientset/versioned",
@@ -1236,6 +1235,8 @@
     "pkg/client/clientset/versioned/typed/autoscaling/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "pkg/client/clientset/versioned/typed/networking/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/serving/v1",
+    "pkg/client/clientset/versioned/typed/serving/v1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1",
     "pkg/client/clientset/versioned/typed/serving/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/serving/v1beta1",
@@ -1247,16 +1248,18 @@
     "pkg/client/informers/externalversions/networking",
     "pkg/client/informers/externalversions/networking/v1alpha1",
     "pkg/client/informers/externalversions/serving",
+    "pkg/client/informers/externalversions/serving/v1",
     "pkg/client/informers/externalversions/serving/v1alpha1",
     "pkg/client/informers/externalversions/serving/v1beta1",
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
-    "pkg/client/injection/informers/serving/factory",
-    "pkg/client/injection/informers/serving/factory/fake",
+    "pkg/client/injection/informers/factory",
+    "pkg/client/injection/informers/factory/fake",
     "pkg/client/injection/informers/serving/v1alpha1/service",
     "pkg/client/injection/informers/serving/v1alpha1/service/fake",
     "pkg/client/listers/autoscaling/v1alpha1",
     "pkg/client/listers/networking/v1alpha1",
+    "pkg/client/listers/serving/v1",
     "pkg/client/listers/serving/v1alpha1",
     "pkg/client/listers/serving/v1beta1",
     "pkg/gc",
@@ -1264,7 +1267,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "a1ab13c1f7a08cd1142d2a15e8d9a9335a2ca6bf"
+  revision = "4ebe567497cddbba256862ec4392947b0fdc10d6"
 
 [[projects]]
   branch = "master"
@@ -1286,11 +1289,14 @@
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/observability",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
@@ -1304,7 +1310,6 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/http2/h2c",
-    "golang.org/x/sync/errgroup",
     "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
     "google.golang.org/grpc/codes",
@@ -1361,25 +1366,24 @@
     "knative.dev/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/apis/v1alpha1",
     "knative.dev/pkg/client/clientset/versioned/fake",
+    "knative.dev/pkg/client/injection/kube/client",
+    "knative.dev/pkg/client/injection/kube/client/fake",
+    "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
+    "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake",
+    "knative.dev/pkg/client/injection/kube/informers/batch/v1/job",
+    "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake",
     "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/configmap",
     "knative.dev/pkg/controller",
     "knative.dev/pkg/injection",
     "knative.dev/pkg/injection/clients/dynamicclient",
     "knative.dev/pkg/injection/clients/dynamicclient/fake",
-    "knative.dev/pkg/injection/clients/kubeclient",
-    "knative.dev/pkg/injection/clients/kubeclient/fake",
-    "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment",
-    "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake",
-    "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job",
-    "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake",
     "knative.dev/pkg/injection/sharedmain",
     "knative.dev/pkg/kmeta",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/logging/testing",
     "knative.dev/pkg/metrics",
     "knative.dev/pkg/metrics/testing",
-    "knative.dev/pkg/profiling",
     "knative.dev/pkg/ptr",
     "knative.dev/pkg/reconciler/testing",
     "knative.dev/pkg/signals",

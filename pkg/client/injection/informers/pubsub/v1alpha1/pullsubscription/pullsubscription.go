@@ -22,7 +22,7 @@ import (
 	"context"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub/v1alpha1"
-	factory "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/factory"
+	factory "github.com/google/knative-gcp/pkg/client/injection/informers/factory"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 	logging "knative.dev/pkg/logging"
@@ -45,8 +45,8 @@ func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 func Get(ctx context.Context) v1alpha1.PullSubscriptionInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
-		logging.FromContext(ctx).Fatalf(
-			"Unable to fetch %T from context.", (v1alpha1.PullSubscriptionInformer)(nil))
+		logging.FromContext(ctx).Panic(
+			"Unable to fetch github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub/v1alpha1.PullSubscriptionInformer from context.")
 	}
 	return untyped.(v1alpha1.PullSubscriptionInformer)
 }

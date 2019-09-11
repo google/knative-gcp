@@ -33,8 +33,8 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
-	deploymentinformer "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment"
-	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 )

@@ -21,8 +21,8 @@ package fake
 import (
 	"context"
 
-	fake "github.com/google/knative-gcp/pkg/client/injection/informers/events/factory/fake"
 	scheduler "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/scheduler"
+	fake "github.com/google/knative-gcp/pkg/client/injection/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
