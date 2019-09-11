@@ -1,10 +1,11 @@
-package pubsub
+package context
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"strings"
 	"time"
+
+	"cloud.google.com/go/pubsub"
 )
 
 // TransportContext allows a Receiver to understand the context of a request.

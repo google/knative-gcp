@@ -62,8 +62,7 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  # HEAD as of 2019-06-04
-  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
+  version = "0.9.0"
 
 [prune]
   go-tests = true

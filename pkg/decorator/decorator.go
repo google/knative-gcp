@@ -70,7 +70,7 @@ func (a *Decorator) receive(ctx context.Context, event cloudevents.Event, resp *
 		event.SetExtension(k, v)
 	}
 
-	if r, err := a.outbound.Send(ctx, event); err != nil {
+	if _, r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
 	} else if r != nil {
 		resp.RespondWith(200, r)
