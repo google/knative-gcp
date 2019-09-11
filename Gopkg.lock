@@ -104,13 +104,12 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:dd1f8b26415c048d2806c7612da04c7be93c128ed67d4b10e50349ea8466649d"
+  digest = "1:b4a7e9b3c23391690a61723d022552decf5aa722e15e513580cd64d32a7079f5"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
     "pkg/cloudevents",
     "pkg/cloudevents/client",
-    "pkg/cloudevents/codec",
     "pkg/cloudevents/context",
     "pkg/cloudevents/datacodec",
     "pkg/cloudevents/datacodec/json",
@@ -119,10 +118,13 @@
     "pkg/cloudevents/transport",
     "pkg/cloudevents/transport/http",
     "pkg/cloudevents/transport/pubsub",
+    "pkg/cloudevents/transport/pubsub/context",
+    "pkg/cloudevents/transport/pubsub/internal",
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "6fe382645effbc5d4a7055f4280e9c3d7f58a2b6"
+  revision = "5088975a189005f96a59d4e375b9e88ead0ebe5c"
+  version = "v0.9.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1289,14 +1291,11 @@
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/client",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/observability",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",

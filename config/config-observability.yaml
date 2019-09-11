@@ -49,7 +49,7 @@ data:
 
     # metrics.allow-stackdriver-custom-metrics indicates whether it is allowed to send metrics to
     # Stackdriver using "global" resource type and custom metric type if the
-    # metrics are not supported by "knative_importer" resource type. Setting this
+    # metrics are not supported by "knative_source" resource type. Setting this
     # flag to "true" could cause extra Stackdriver charge.
     # If metrics.backend-destination is not Stackdriver, this is ignored.
     metrics.allow-stackdriver-custom-metrics: "false"
