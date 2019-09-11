@@ -30,7 +30,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
-	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
+	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 	v1alpha1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"

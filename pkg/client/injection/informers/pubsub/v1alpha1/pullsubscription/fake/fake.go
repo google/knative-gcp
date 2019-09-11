@@ -21,7 +21,7 @@ package fake
 import (
 	"context"
 
-	fake "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/factory/fake"
+	fake "github.com/google/knative-gcp/pkg/client/injection/informers/factory/fake"
 	pullsubscription "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"

@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 
-	jobinformer "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job"
+	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 
 	schedulerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/scheduler"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
