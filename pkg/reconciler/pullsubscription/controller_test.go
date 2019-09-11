@@ -33,10 +33,10 @@ import (
 
 	_ "knative.dev/pkg/metrics/testing"
 
-	// Fake injection informers
-	_ "knative.dev/pkg/injection/informers/kubeinformers/appsv1/deployment/fake"
-	_ "knative.dev/pkg/injection/informers/kubeinformers/batchv1/job/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
 
+	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 )
 
