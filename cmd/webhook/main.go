@@ -94,11 +94,6 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	// 	stores = append(stores, store)
 	// }
 
-	stats, err := webhook.NewStatsReporter()
-	if err != nil {
-		logger.Fatalw("failed to initialize the stats reporter", zap.Error(err))
-	}
-
 	if err = configMapWatcher.Start(ctx.Done()); err != nil {
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
@@ -109,7 +104,6 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 		Namespace:                       system.Namespace(),
 		Port:                            8443,
 		SecretName:                      "webhook-certs",
-		StatsReporter:                   stats,
 		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
 		ResourceAdmissionControllerPath: "/",
 	}
