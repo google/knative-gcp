@@ -20,12 +20,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
-	"net/http"
-
-	"golang.org/x/sync/errgroup"
-	"knative.dev/pkg/profiling"
-
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -36,6 +30,7 @@ import (
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
+	"log"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
@@ -51,7 +46,7 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
-func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
+func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 
 	flag.Parse()
 	cm, err := configmap.Load("/etc/config-logging")
@@ -104,42 +99,34 @@ func SharedMain(handlers map[schema.GroupVersionKind]webhook.GenericCRD) {
 	}
 
 	options := webhook.ControllerOptions{
-		ServiceName:    "webhook",
-		DeploymentName: "webhook",
-		Namespace:      system.Namespace(),
-		Port:           8443,
-		SecretName:     "webhook-certs",
-		WebhookName:    fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		ServiceName:                 "webhook",
+		DeploymentName:              "webhook",
+		Namespace:                   system.Namespace(),
+		Port:                        8443,
+		SecretName:                  "webhook-certs",
+		ResourceMutatingWebhookName: fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
 	}
 
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
+		// TODO: implement upgrades when eventing needs it:
+		//  return v1beta1.WithUpgradeViaDefaulting(store.ToContext(ctx))
 		return ctx
 	}
 
-	controller, err := webhook.NewAdmissionController(kubeClient, options, handlers, logger, ctxFunc, true)
+	resourceAdmissionController := webhook.NewResourceAdmissionController(resourceHandlers, options, true)
+	admissionControllers := map[string]webhook.AdmissionController{
+		options.ResourceAdmissionControllerPath: resourceAdmissionController,
+	}
+
+	controller, err := webhook.New(kubeClient, options, admissionControllers, logger, ctxFunc)
 
 	if err != nil {
 		logger.Fatalw("Failed to create admission controller", zap.Error(err))
 	}
 
-	profilingHandler := profiling.NewHandler(logger, false)
-	profilingServer := profiling.NewServer(profilingHandler)
-
-	eg, egCtx := errgroup.WithContext(ctx)
-	eg.Go(func() error {
-		return controller.Run(ctx.Done())
-	})
-	eg.Go(profilingServer.ListenAndServe)
-
-	// This will block until either a signal arrives or one of the grouped functions
-	// returns an error.
-	<-egCtx.Done()
-
-	profilingServer.Shutdown(context.Background())
-	// Don't forward ErrServerClosed as that indicates we're already shutting down.
-	if err := eg.Wait(); err != nil && err != http.ErrServerClosed {
-		logger.Errorw("Error while running server", zap.Error(err))
+	if err = controller.Run(ctx.Done()); err != nil {
+		logger.Fatalw("Failed to start the admission controller", zap.Error(err))
 	}
 }
 
