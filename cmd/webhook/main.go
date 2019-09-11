@@ -99,12 +99,13 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	}
 
 	options := webhook.ControllerOptions{
-		ServiceName:                 "webhook",
-		DeploymentName:              "webhook",
-		Namespace:                   system.Namespace(),
-		Port:                        8443,
-		SecretName:                  "webhook-certs",
-		ResourceMutatingWebhookName: fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		ServiceName:                     "webhook",
+		DeploymentName:                  "webhook",
+		Namespace:                       system.Namespace(),
+		Port:                            8443,
+		SecretName:                      "webhook-certs",
+		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		ResourceAdmissionControllerPath: "/",
 	}
 
 	// Decorate contexts with the current state of the config.
