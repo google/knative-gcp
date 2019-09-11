@@ -19,7 +19,7 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/source"
 	nethttp "net/http"
 
 	"github.com/cloudevents/sdk-go"
@@ -93,7 +93,7 @@ type Adapter struct {
 	transformer cloudevents.Client
 
 	// reporter reports metrics to the configured backend.
-	reporter metrics.StatsReporter
+	reporter source.StatsReporter
 }
 
 // Start starts the adapter. Note: Only call once, not thread safe.
@@ -126,7 +126,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 
 	if a.reporter == nil {
-		if a.reporter, err = metrics.NewStatsReporter(); err != nil {
+		if a.reporter, err = source.NewStatsReporter(); err != nil {
 			return fmt.Errorf("failed to create stats reporter: %s", err.Error())
 		}
 	}
@@ -147,8 +147,8 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
 	// TODO Name might cause problems in the near future, as we might use a single receive-adapter for multiple
-	//  source/importer objects. Same with Namespace, when doing multi-tenancy.
-	args := &metrics.ReportArgs{
+	//  source objects. Same with Namespace, when doing multi-tenancy.
+	args := &source.ReportArgs{
 		Name:          a.Name,
 		Namespace:     a.Namespace,
 		EventType:     event.Type(),

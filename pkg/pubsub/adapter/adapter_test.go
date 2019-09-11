@@ -18,7 +18,7 @@ package adapter
 
 import (
 	"context"
-	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/source"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -30,7 +30,7 @@ import (
 type mockStatsReporter struct{}
 
 // TODO: test this more.
-func (r *mockStatsReporter) ReportEventCount(args *metrics.ReportArgs, responseCode int) error {
+func (r *mockStatsReporter) ReportEventCount(args *source.ReportArgs, responseCode int) error {
 	return nil
 }
 

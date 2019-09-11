@@ -17,6 +17,7 @@ limitations under the License.
 package adapter
 
 // TODO refactor existing stats_reporter metrics stuff and see if we can use this instead.
+//  Also add more interesting metrics.
 
 import (
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/observability"
