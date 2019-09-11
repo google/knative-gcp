@@ -104,7 +104,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:b4a7e9b3c23391690a61723d022552decf5aa722e15e513580cd64d32a7079f5"
+  digest = "1:d4d032ec15325c5a7f306f8ba6493be2bb1c66cd4117a7b81a442b81cb6d2e5e"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -123,8 +123,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "5088975a189005f96a59d4e375b9e88ead0ebe5c"
-  version = "v0.9.0"
+  revision = "5bacd6ca6086fb16489fa098d9bdaeb9747f48b4"
+  version = "v0.9.1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1299,6 +1299,7 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
