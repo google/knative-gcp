@@ -29,7 +29,6 @@ import (
 	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/source"
 	nethttp "net/http"
 )
 
@@ -92,7 +91,7 @@ type Adapter struct {
 	transformer cloudevents.Client
 
 	// reporter reports metrics to the configured backend.
-	reporter source.StatsReporter
+	reporter StatsReporter
 }
 
 // Start starts the adapter. Note: Only call once, not thread safe.
@@ -125,9 +124,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 
 	if a.reporter == nil {
-		if a.reporter, err = source.NewStatsReporter(); err != nil {
-			return fmt.Errorf("failed to create stats reporter: %s", err.Error())
-		}
+		a.reporter = NewStatsReporter()
 	}
 
 	// Make the transformer client in case the TransformerURI has been set.
@@ -147,11 +144,12 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 
 	// TODO Name might cause problems in the near future, as we might use a single receive-adapter for multiple
 	//  source objects. Same with Namespace, when doing multi-tenancy.
-	args := &source.ReportArgs{
-		Name:          a.Name,
-		Namespace:     a.Namespace,
-		EventType:     event.Type(),
-		EventSource:   event.Source(),
+	args := &ReportArgs{
+		Name:        a.Name,
+		Namespace:   a.Namespace,
+		EventType:   event.Type(),
+		EventSource: event.Source(),
+		// TODO this conversion doesn't work for Channel.
 		ResourceGroup: converters.ResourceGroupFrom(event.Type()),
 	}
 

@@ -26,9 +26,9 @@ func GetLabelSelector(controller, channel, uid string) labels.Selector {
 
 func GetLabels(controller, channel, uid string) map[string]string {
 	return map[string]string{
-		"cloud-run-events-channel":        controller,
-		"cloud-run-events-channel-name":   channel,
-		"cloud-run-events-controller-uid": uid,
+		"events.cloud.run/channel":        controller,
+		"events.cloud.run/channel-name":   channel,
+		"events.cloud.run/controller-uid": uid,
 	}
 }
 
@@ -38,6 +38,6 @@ func GetPullSubscriptionLabelSelector(controller, source, subscriber, uid string
 
 func GetPullSubscriptionLabels(controller, channel, subscriber, uid string) map[string]string {
 	l := GetLabels(controller, channel, uid)
-	l["cloud-run-events-channel-subscriber"] = subscriber
+	l["events.cloud.run/channel-subscriber"] = subscriber
 	return l
 }

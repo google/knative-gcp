@@ -24,13 +24,12 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-	"knative.dev/pkg/source"
 )
 
 type mockStatsReporter struct{}
 
 // TODO: test this more.
-func (r *mockStatsReporter) ReportEventCount(args *source.ReportArgs, responseCode int) error {
+func (r *mockStatsReporter) ReportEventCount(args *ReportArgs, responseCode int) error {
 	return nil
 }
 
