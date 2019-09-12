@@ -414,12 +414,14 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		logging.FromContext(ctx).Error("Error serializing existing logging config", zap.Error(err))
 	}
 
-	component := sourceComponent
-	// Set the metric component based on PullSubscription label.
-	if _, ok := src.Labels["events.cloud.run/channel"]; ok {
-		component = channelComponent
+	if r.metricsConfig != nil {
+		component := sourceComponent
+		// Set the metric component based on PullSubscription label.
+		if _, ok := src.Labels["events.cloud.run/channel"]; ok {
+			component = channelComponent
+		}
+		r.metricsConfig.Component = component
 	}
-	r.metricsConfig.Component = component
 
 	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
