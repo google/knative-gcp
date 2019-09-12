@@ -18,13 +18,13 @@ package adapter
 
 import (
 	"context"
-	"knative.dev/pkg/source"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	cepubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	"knative.dev/pkg/source"
 )
 
 type mockStatsReporter struct{}
@@ -54,7 +54,7 @@ func TestConvert(t *testing.T) {
 		Subscription: "sub",
 	}
 
-	ctx := cepubsubcontext.WithTransportContext(context.TODO(), cepubsubcontext.NewTransportContext(
+	ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
 		"proj",
 		"top",
 		"sub",

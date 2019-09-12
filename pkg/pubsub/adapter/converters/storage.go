@@ -25,7 +25,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	cepubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 var (
@@ -63,7 +63,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 		return nil, fmt.Errorf("nil pubsub message")
 	}
 
-	tx := cepubsubcontext.TransportContextFrom(ctx)
+	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)

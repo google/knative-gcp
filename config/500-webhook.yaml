@@ -59,8 +59,6 @@ spec:
                   fieldPath: metadata.namespace
             - name: CONFIG_LOGGING_NAME
               value: config-logging
-            - name: METRICS_DOMAIN
-              value: knative.dev/eventing
       volumes:
         - name: config-logging
           configMap:
