@@ -20,6 +20,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
+
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
@@ -30,7 +32,6 @@ import (
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
 	"knative.dev/pkg/webhook"
-	"log"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
