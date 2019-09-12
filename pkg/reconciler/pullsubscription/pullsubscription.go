@@ -56,8 +56,7 @@ const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "PullSubscriptions"
 
-	// TODO change to source once StackDriver MonitorResources are approved.
-	component = "gcpsource"
+	component = "source"
 
 	finalizerName = controllerAgentName
 )

@@ -49,7 +49,7 @@ type ReceiveAdapterArgs struct {
 const (
 	credsVolume    = "google-cloud-key"
 	credsMountPath = "/var/secrets/google"
-	metricsDomain  = "knative.dev/eventing"
+	metricsDomain  = "cloud.run/events"
 )
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
