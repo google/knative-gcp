@@ -100,3 +100,29 @@ kubectl port-forward --namespace knative-monitoring \
 ```
 
 Then, access the [Grafana Dashboard](http://localhost:3000)
+
+## StackDriver Collection
+
+1.  Install Knative Stackdriver components by running the following command from
+    the root directory of [knative/serving](https://github.com/knative/serving)
+    repository:
+
+    ```shell
+      kubectl apply --recursive --filename config/monitoring/100-namespace.yaml \
+          --filename config/monitoring/metrics/stackdriver
+    ```
+
+1. Run the following command to setup StackDriver as the metrics backend:
+
+   ```
+   kubectl edit cm -n cloud-run-events config-observability
+   ```
+
+   Add `metrics.backend-destination: stackdriver` and `metrics.allow-stackdriver-custom-metrics: "true"`
+    to the `data` field. You can find detailed information in `data._example` field in the
+   `ConfigMap` you are editing. 
+   
+1. Open the StackDriver UI and see your resource metrics in the Metrics Explorer. 
+You should be able to see metrics with the prefix `custom.googleapis.com/knative.dev/`.
+   
+     
