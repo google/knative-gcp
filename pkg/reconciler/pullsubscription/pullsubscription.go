@@ -56,7 +56,7 @@ const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "PullSubscriptions"
 
-	component = "pullsubscriptions"
+	component = "source"
 
 	finalizerName = controllerAgentName
 )
@@ -78,7 +78,6 @@ type Reconciler struct {
 	metricsConfig *metrics.ExporterOptions
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
-
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -408,6 +407,15 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		return nil, err
 	}
 
+	loggingConfig, err := logging.LoggingConfigToJson(r.loggingConfig)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error serializing existing logging config", zap.Error(err))
+	}
+	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
+	}
+
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
 		Image:          r.receiveAdapterImage,
 		Source:         src,
@@ -415,8 +423,8 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		SubscriptionID: src.Status.SubscriptionID,
 		SinkURI:        src.Status.SinkURI,
 		TransformerURI: src.Status.TransformerURI,
-		LoggingConfig:  resources.LoggingConfigToBase64(r.loggingConfig),
-		MetricsConfig:  resources.MetricsOptionsToBase64(r.metricsConfig),
+		LoggingConfig:  loggingConfig,
+		MetricsConfig:  metricsConfig,
 	})
 
 	if existing == nil {

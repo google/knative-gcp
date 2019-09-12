@@ -124,6 +124,15 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: "LoggingConfig-ABC123",
+						}, {
+							Name:  "NAME",
+							Value: "source-name",
+						}, {
+							Name:  "NAMESPACE",
+							Value: "source-namespace",
+						}, {
+							Name:  "METRICS_DOMAIN",
+							Value: metricsDomain,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -253,6 +262,15 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: "LoggingConfig-ABC123",
+						}, {
+							Name:  "NAME",
+							Value: "source-name",
+						}, {
+							Name:  "NAMESPACE",
+							Value: "source-namespace",
+						}, {
+							Name:  "METRICS_DOMAIN",
+							Value: metricsDomain,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

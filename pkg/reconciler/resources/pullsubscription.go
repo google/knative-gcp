@@ -24,7 +24,7 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-// MakePullSubscription creates the spec for, but does not create, a GCP PullSubscrkiption
+// MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
 func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{

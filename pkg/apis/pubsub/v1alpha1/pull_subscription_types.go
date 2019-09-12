@@ -148,10 +148,6 @@ func (ps PullSubscriptionSpec) GetRetentionDuration() time.Duration {
 type ModeType string
 
 const (
-	// PubSubEventType is the GcpPubSub CloudEvent type, in case PullSubscription
-	// doesn't send a CloudEvent itself.
-	PubSubEventType = "google.pubsub.topic.publish"
-
 	// ModeCloudEventsBinary will use CloudEvents binary HTTP mode with
 	// flattened Pub/Sub payload.
 	ModeCloudEventsBinary ModeType = "CloudEventsBinary"

@@ -49,6 +49,7 @@ type ReceiveAdapterArgs struct {
 const (
 	credsVolume    = "google-cloud-key"
 	credsMountPath = "/var/secrets/google"
+	metricsDomain  = "cloud.run/events"
 )
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
@@ -132,6 +133,15 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: args.LoggingConfig,
+						}, {
+							Name:  "NAME",
+							Value: args.Source.Name,
+						}, {
+							Name:  "NAMESPACE",
+							Value: args.Source.Namespace,
+						}, {
+							Name:  "METRICS_DOMAIN",
+							Value: metricsDomain,
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

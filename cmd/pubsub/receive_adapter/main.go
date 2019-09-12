@@ -17,25 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"cloud.google.com/go/compute/metadata"
 	"flag"
 	"fmt"
-	"log"
-	"time"
-
-	"cloud.google.com/go/compute/metadata"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/json"
-	"github.com/cloudevents/sdk-go/pkg/cloudevents/datacodec/xml"
-	transporthttp "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
-	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+	"log"
 )
 
 const (
@@ -50,8 +41,8 @@ func main() {
 		panic(fmt.Sprintf("Failed to process env var: %s", err))
 	}
 
-	// Convert base64 encoded json logging.Config to logging.Config.
-	loggingConfig, err := resources.Base64ToLoggingConfig(startable.LoggingConfigBase64)
+	// Convert json logging.Config to logging.Config.
+	loggingConfig, err := logging.JsonToLoggingConfig(startable.LoggingConfigJson)
 	if err != nil {
 		fmt.Printf("[ERROR] filed to process logging config: %s", err.Error())
 		// Use default logging config.
@@ -65,8 +56,8 @@ func main() {
 	defer flush(logger)
 	ctx := logging.WithLogger(signals.NewContext(), logger)
 
-	// Convert base64 encoded json metrics.ExporterOptions to metrics.ExporterOptions.
-	metricsConfig, err := resources.Base64ToMetricsOptions(startable.MetricsConfigBase64)
+	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
+	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
 	if err != nil {
 		logger.Errorf("failed to process metrics options: %s", err.Error())
 	}
@@ -99,19 +90,22 @@ func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
 		log.Fatalf("Failed to create the metrics exporter: %v", err)
 	}
 
-	// Register the views
-	if err := view.Register(
-		client.LatencyView,
-		transporthttp.LatencyView,
-		json.LatencyView,
-		xml.LatencyView,
-		datacodec.LatencyView,
-		adapter.LatencyView,
-	); err != nil {
-		log.Fatalf("Failed to register views: %v", err)
-	}
-
-	view.SetReportingPeriod(2 * time.Second)
+	// TODO metrics are API surface, so make sure we need to expose this before doing so.
+	//  These seem to be private ones and more profiling related ones.
+	//  Commenting them for now, as we will use pkg/source stats_reporter.
+	// Register the views.
+	//if err := view.Register(
+	//	client.LatencyView,
+	//	transporthttp.LatencyView,
+	//	json.LatencyView,
+	//	xml.LatencyView,
+	//	datacodec.LatencyView,
+	//  adapter.LatencyView,
+	//); err != nil {
+	//	log.Fatalf("Failed to register views: %v", err)
+	//}
+	//
+	//view.SetReportingPeriod(2 * time.Second)
 }
 
 func flush(logger *zap.SugaredLogger) {
