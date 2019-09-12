@@ -56,7 +56,9 @@ const (
 	// ReconcilerName is the name of the reconciler
 	ReconcilerName = "PullSubscriptions"
 
-	component = "source"
+	// Component names for metrics.
+	sourceComponent  = "source"
+	channelComponent = "channel"
 
 	finalizerName = controllerAgentName
 )
@@ -411,6 +413,14 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing existing logging config", zap.Error(err))
 	}
+
+	component := sourceComponent
+	// Set the metric component based on PullSubscription label.
+	if _, ok := src.Labels["events.cloud.run/channel"]; ok {
+		component = channelComponent
+	}
+	r.metricsConfig.Component = component
+
 	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
@@ -484,13 +494,14 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 		delete(cfg.Data, "_example")
 	}
 
+	// Cannot set the component here as we don't know if its a source or a channel.
+	// Will set that up dynamically before creating the receive adapter.
+	// Won't be able to requeue the PullSubscriptions.
 	r.metricsConfig = &metrics.ExporterOptions{
 		Domain:    metrics.Domain(),
-		Component: component,
 		ConfigMap: cfg.Data,
 	}
 	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
-	// TODO: requeue all pullsubscriptions
 }
 
 // TODO: Registry
