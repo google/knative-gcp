@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 )
 
 // TODO: test this more.
@@ -30,7 +31,7 @@ func TestConvert(t *testing.T) {
 		Subscription: "sub",
 	}
 
-	ctx := cepubsub.WithTransportContext(context.TODO(), cepubsub.NewTransportContext(
+	ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
 		"proj",
 		"top",
 		"sub",

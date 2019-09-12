@@ -6,7 +6,7 @@ import (
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 )
@@ -43,7 +43,7 @@ type PubSubMessage struct {
 func ConvertToPush(ctx context.Context, event cloudevents.Event) cloudevents.Event {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
 
-	tx := cepubsub.TransportContextFrom(ctx)
+	tx := pubsubcontext.TransportContextFrom(ctx)
 
 	push := cloudevents.NewEvent(event.SpecVersion())
 	push.Context = event.Context.Clone()

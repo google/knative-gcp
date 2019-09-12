@@ -145,7 +145,7 @@ func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp 
 	if a.transformer != nil {
 		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
 		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
-		transformedEvent, err := a.transformer.Send(ctx, event)
+		_, transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
 			return err
@@ -169,7 +169,7 @@ func (a *Adapter) obsReceive(ctx context.Context, event cloudevents.Event, resp 
 	}
 
 	// Send the event.
-	if r, err := a.outbound.Send(ctx, event); err != nil {
+	if _, r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
 	} else if r != nil {
 		resp.RespondWith(200, r)

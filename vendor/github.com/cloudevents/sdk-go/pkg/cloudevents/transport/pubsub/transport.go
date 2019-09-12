@@ -5,13 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
+	"strings"
 	"sync"
-	"time"
 
 	"cloud.google.com/go/pubsub"
+
 	"github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cecontext "github.com/cloudevents/sdk-go/pkg/cloudevents/context"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal"
 )
 
 // Transport adheres to transport.Transport.
@@ -20,6 +22,11 @@ var _ transport.Transport = (*Transport)(nil)
 const (
 	TransportName = "Pub/Sub"
 )
+
+type subscriptionWithTopic struct {
+	topicID        string
+	subscriptionID string
+}
 
 // Transport acts as both a pubsub topic and a pubsub subscription .
 type Transport struct {
@@ -43,19 +50,17 @@ type Transport struct {
 	// subscription if it does not exist.
 	AllowCreateSubscription bool
 
-	projectID string
-
-	client *pubsub.Client
-
-	topicID         string
-	topic           *pubsub.Topic
-	topicWasCreated bool
-	topicOnce       sync.Once
-
+	projectID      string
+	topicID        string
 	subscriptionID string
-	sub            *pubsub.Subscription
-	subWasCreated  bool
-	subOnce        sync.Once
+
+	gccMux sync.Mutex
+
+	subscriptions []subscriptionWithTopic
+	client        *pubsub.Client
+
+	connectionsBySubscription map[string]*internal.Connection
+	connectionsByTopic        map[string]*internal.Connection
 
 	// Receiver
 	Receiver transport.Receiver
@@ -80,6 +85,14 @@ func New(ctx context.Context, opts ...Option) (*Transport, error) {
 		}
 		// Success.
 		t.client = client
+	}
+
+	if t.connectionsBySubscription == nil {
+		t.connectionsBySubscription = make(map[string]*internal.Connection, 0)
+	}
+
+	if t.connectionsByTopic == nil {
+		t.connectionsByTopic = make(map[string]*internal.Connection, 0)
 	}
 	return t, nil
 }
@@ -114,139 +127,77 @@ func (t *Transport) loadCodec(ctx context.Context) bool {
 	return true
 }
 
-func (t *Transport) getOrCreateTopic(ctx context.Context) (*pubsub.Topic, error) {
-	var err error
-	t.topicOnce.Do(func() {
-		var ok bool
-		// Load the topic.
-		topic := t.client.Topic(t.topicID)
-		ok, err = topic.Exists(ctx)
-		if err != nil {
-			_ = t.client.Close()
-			return
+func (t *Transport) getConnection(ctx context.Context, topic, subscription string) *internal.Connection {
+	if subscription != "" {
+		if conn, ok := t.connectionsBySubscription[subscription]; ok {
+			return conn
 		}
-		// If the topic does not exist, create a new topic with the given name.
-		if !ok {
-			if !t.AllowCreateTopic {
-				err = fmt.Errorf("transport not allowed to create topic %q", t.topicID)
-				return
-			}
-			topic, err = t.client.CreateTopic(ctx, t.topicID)
-			if err != nil {
-				return
-			}
-			t.topicWasCreated = true
-		}
-		// Success.
-		t.topic = topic
-	})
-	if t.topic == nil {
-		return nil, fmt.Errorf("unable to create topic %q", t.topicID)
 	}
-	return t.topic, err
+	if topic != "" {
+		if conn, ok := t.connectionsByTopic[topic]; ok {
+			return conn
+		}
+	}
+
+	return nil
 }
 
-func (t *Transport) DeleteTopic(ctx context.Context) error {
-	if t.topicWasCreated {
-		if err := t.topic.Delete(ctx); err != nil {
-			return err
-		}
-		t.topic = nil
-		t.topicWasCreated = false
-		t.topicOnce = sync.Once{}
-	}
-	return errors.New("topic was not created by pubsub transport")
-}
+func (t *Transport) getOrCreateConnection(ctx context.Context, topic, subscription string) *internal.Connection {
+	t.gccMux.Lock()
+	defer t.gccMux.Unlock()
 
-func (t *Transport) getOrCreateSubscription(ctx context.Context) (*pubsub.Subscription, error) {
-	var err error
-	t.subOnce.Do(func() {
-		// Load the topic.
-		var topic *pubsub.Topic
-		topic, err = t.getOrCreateTopic(ctx)
-		if err != nil {
-			return
-		}
-		// Load the subscription.
-		var ok bool
-		sub := t.client.Subscription(t.subscriptionID)
-		ok, err = sub.Exists(ctx)
-		if err != nil {
-			_ = t.client.Close()
-			return
-		}
-		// If subscription doesn't exist, create it.
-		if !ok {
-			if !t.AllowCreateSubscription {
-				err = fmt.Errorf("transport not allowed to create subscription %q", t.subscriptionID)
-				return
-			}
-			// Create a new subscription to the previously created topic
-			// with the given name.
-			// TODO: allow to use push config + allow setting the SubscriptionConfig.
-			sub, err = t.client.CreateSubscription(ctx, t.subscriptionID, pubsub.SubscriptionConfig{
-				Topic:             topic,
-				AckDeadline:       30 * time.Second,
-				RetentionDuration: 25 * time.Hour,
-			})
-			if err != nil {
-				_ = t.client.Close()
-				return
-			}
-			t.subWasCreated = true
-		}
-		// Success.
-		t.sub = sub
-	})
-	if t.sub == nil {
-		return nil, fmt.Errorf("unable to create sunscription %q", t.subscriptionID)
+	// Get.
+	if conn := t.getConnection(ctx, topic, subscription); conn != nil {
+		return conn
 	}
-	return t.sub, err
-}
+	// Create.
+	conn := &internal.Connection{
+		AllowCreateSubscription: t.AllowCreateSubscription,
+		AllowCreateTopic:        t.AllowCreateTopic,
+		Client:                  t.client,
+		ProjectID:               t.projectID,
+		TopicID:                 topic,
+		SubscriptionID:          subscription,
+	}
+	// Save for later.
+	if subscription != "" {
+		t.connectionsBySubscription[subscription] = conn
+	}
+	if topic != "" {
+		t.connectionsByTopic[topic] = conn
+	}
 
-func (t *Transport) DeleteSubscription(ctx context.Context) error {
-	if t.subWasCreated {
-		if err := t.sub.Delete(ctx); err != nil {
-			return err
-		}
-		t.sub = nil
-		t.subWasCreated = false
-		t.subOnce = sync.Once{}
-	}
-	return errors.New("subscription was not created by pubsub transport")
+	return conn
 }
 
 // Send implements Transport.Send
-func (t *Transport) Send(ctx context.Context, event cloudevents.Event) (*cloudevents.Event, error) {
+func (t *Transport) Send(ctx context.Context, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
+	// TODO populate response context properly.
 	if ok := t.loadCodec(ctx); !ok {
-		return nil, fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
+		return ctx, nil, fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
 	}
 
-	msg, err := t.codec.Encode(event)
-	if err != nil {
-		return nil, err
+	topic := cecontext.TopicFrom(ctx)
+	if topic == "" {
+		topic = t.topicID
 	}
 
-	topic, err := t.getOrCreateTopic(ctx)
+	conn := t.getOrCreateConnection(ctx, topic, "")
+
+	msg, err := t.codec.Encode(ctx, event)
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
 
 	if m, ok := msg.(*Message); ok {
-
-		r := topic.Publish(ctx, &pubsub.Message{
+		respEvent, err := conn.Publish(ctx, &pubsub.Message{
 			Attributes: m.Attributes,
 			Data:       m.Data,
 		})
-
-		_, err := r.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+		return ctx, respEvent, err
 	}
 
-	return nil, fmt.Errorf("failed to encode Event into a Message")
+	return ctx, nil, fmt.Errorf("failed to encode Event into a Message")
 }
 
 // SetReceiver implements Transport.SetReceiver
@@ -264,29 +215,25 @@ func (t *Transport) HasConverter() bool {
 	return t.Converter != nil
 }
 
-// StartReceiver implements Transport.StartReceiver
-// NOTE: This is a blocking call.
-func (t *Transport) StartReceiver(ctx context.Context) error {
+func (t *Transport) startSubscriber(ctx context.Context, sub subscriptionWithTopic, done func(error)) {
 	logger := cecontext.LoggerFrom(ctx)
+	logger.Infof("starting subscriber for Topic %q, Subscription %q", sub.topicID, sub.subscriptionID)
+	conn := t.getOrCreateConnection(ctx, sub.topicID, sub.subscriptionID)
 
-	// Load the codec.
-	if ok := t.loadCodec(ctx); !ok {
-		return fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
-	}
-
-	sub, err := t.getOrCreateSubscription(ctx)
-	if err != nil {
-		return err
+	logger.Info("conn is", conn)
+	if conn == nil {
+		err := fmt.Errorf("failed to find connection for Topic: %q, Subscription: %q", sub.topicID, sub.subscriptionID)
+		done(err)
+		return
 	}
 	// Ok, ready to start pulling.
-	err = sub.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
-		ctx = WithTransportContext(ctx, NewTransportContext(t.projectID, t.topicID, t.subscriptionID, "pull", m))
-
+	err := conn.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+		logger.Info("got an event!")
 		msg := &Message{
 			Attributes: m.Attributes,
 			Data:       m.Data,
 		}
-		event, err := t.codec.Decode(msg)
+		event, err := t.codec.Decode(ctx, msg)
 		// If codec returns and error, try with the converter if it is set.
 		if err != nil && t.HasConverter() {
 			event, err = t.Converter.Convert(ctx, msg, err)
@@ -304,6 +251,58 @@ func (t *Transport) StartReceiver(ctx context.Context) error {
 		}
 		m.Ack()
 	})
+	done(err)
+}
 
-	return err
+// StartReceiver implements Transport.StartReceiver
+// NOTE: This is a blocking call.
+func (t *Transport) StartReceiver(ctx context.Context) error {
+	// Load the codec.
+	if ok := t.loadCodec(ctx); !ok {
+		return fmt.Errorf("unknown encoding set on transport: %d", t.Encoding)
+	}
+
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	n := len(t.subscriptions)
+
+	// Make the channels for quit and errors.
+	quit := make(chan struct{}, n)
+	errc := make(chan error, n)
+
+	// Start up each subscription.
+	for _, sub := range t.subscriptions {
+		go t.startSubscriber(cctx, sub, func(err error) {
+			if err != nil {
+				errc <- err
+			} else {
+				quit <- struct{}{}
+			}
+		})
+	}
+
+	// Collect errors and done calls until we have n of them.
+	errs := []string(nil)
+	for success := 0; success < n; success++ {
+		var err error
+		select {
+		case <-ctx.Done(): // Block for parent context to finish.
+			success--
+		case err = <-errc: // Collect errors
+		case <-quit:
+		}
+		if cancel != nil {
+			// Stop all other subscriptions.
+			cancel()
+			cancel = nil
+		}
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+
+	close(quit)
+	close(errc)
+
+	return errors.New(strings.Join(errs, "\n"))
 }
