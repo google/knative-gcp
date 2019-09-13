@@ -104,7 +104,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:d4d032ec15325c5a7f306f8ba6493be2bb1c66cd4117a7b81a442b81cb6d2e5e"
+  digest = "1:f283fba2d01869ee44a818bcd7de4fd972afba91c7be9ceadd02b59530fdced3"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -123,8 +123,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "5bacd6ca6086fb16489fa098d9bdaeb9747f48b4"
-  version = "v0.9.1"
+  revision = "4cc108a637ff4bf2d1848c60d5fbb0f711fd1b8c"
+  version = "v0.9.2"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
