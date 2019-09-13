@@ -82,6 +82,9 @@ type Adapter struct {
 	// Environment variable containing the name.
 	Name string `envconfig:"NAME" required:"true"`
 
+	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
+	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.run" required:"true"`
+
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
 
@@ -143,15 +146,14 @@ func (a *Adapter) Start(ctx context.Context) error {
 func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()), zap.Any("sink", a.Sink))
 
-	// TODO Name might cause problems in the near future, as we might use a single receive-adapter for multiple
-	//  source objects. Same with Namespace, when doing multi-tenancy.
+	// TODO Name and ResourceGroup might cause problems in the near future, as we might use a single receive-adapter
+	//  for multiple source objects. Same with Namespace, when doing multi-tenancy.
 	args := &ReportArgs{
-		Name:        a.Name,
-		Namespace:   a.Namespace,
-		EventType:   event.Type(),
-		EventSource: event.Source(),
-		// TODO this conversion doesn't work for Channel.
-		ResourceGroup: converters.ResourceGroupFrom(event.Type()),
+		Name:          a.Name,
+		Namespace:     a.Namespace,
+		EventType:     event.Type(),
+		EventSource:   event.Source(),
+		ResourceGroup: a.ResourceGroup,
 	}
 
 	// If a transformer has been configured, then transform the message.

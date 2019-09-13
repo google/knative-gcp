@@ -30,13 +30,14 @@ import (
 // PullSubscriptionArgs are the arguments needed to create a Channel Subscriber.
 // Every field is required.
 type PullSubscriptionArgs struct {
-	Owner      kmeta.OwnerRefable
-	Name       string
-	Project    string
-	Topic      string
-	Secret     *corev1.SecretKeySelector
-	Labels     map[string]string
-	Subscriber duckv1alpha1.SubscriberSpec
+	Owner       kmeta.OwnerRefable
+	Name        string
+	Project     string
+	Topic       string
+	Secret      *corev1.SecretKeySelector
+	Labels      map[string]string
+	Annotations map[string]string
+	Subscriber  duckv1alpha1.SubscriberSpec
 }
 
 // MakePullSubscription generates (but does not insert into K8s) the
@@ -95,6 +96,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
 			Name:            args.Name,
 			Labels:          args.Labels,
+			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: spec,

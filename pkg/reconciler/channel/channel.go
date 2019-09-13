@@ -249,13 +249,14 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		c.Logger.Infof("Channel %q will create subscription %s", channel.Name, genName)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:      channel,
-			Name:       genName,
-			Project:    channel.Spec.Project,
-			Topic:      channel.Status.TopicID,
-			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Subscriber: s,
+			Owner:       channel,
+			Name:        genName,
+			Project:     channel.Spec.Project,
+			Topic:       channel.Status.TopicID,
+			Secret:      channel.Spec.Secret,
+			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
+			Subscriber:  s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
 		if err != nil {
@@ -275,13 +276,14 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		c.Logger.Infof("Channel %q will update subscription %s", channel.Name, genName)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:      channel,
-			Name:       genName,
-			Project:    channel.Spec.Project,
-			Topic:      channel.Status.TopicID,
-			Secret:     channel.Spec.Secret,
-			Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Subscriber: s,
+			Owner:       channel,
+			Name:        genName,
+			Project:     channel.Spec.Project,
+			Topic:       channel.Status.TopicID,
+			Secret:      channel.Spec.Secret,
+			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
+			Subscriber:  s,
 		})
 
 		existingPs, found := pullsubs[genName]

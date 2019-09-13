@@ -50,8 +50,6 @@ const (
 	storageArchive        = "google.storage.object.archive"
 	storageDelete         = "google.storage.object.delete"
 	storageMetadataUpdate = "google.storage.object.metadataUpdate"
-
-	storageResourceGroup = "storages.events.cloud.run"
 )
 
 func storageSource(bucket string) string {

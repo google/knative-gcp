@@ -401,12 +401,13 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 		WithChannelDefaults)
 
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-		Owner:      channel,
-		Name:       resources.GenerateSubscriptionName(subscriber.UID),
-		Project:    channel.Spec.Project,
-		Topic:      channel.Status.TopicID,
-		Secret:     channel.Spec.Secret,
-		Labels:     resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
-		Subscriber: subscriber,
+		Owner:       channel,
+		Name:        resources.GenerateSubscriptionName(subscriber.UID),
+		Project:     channel.Spec.Project,
+		Topic:       channel.Status.TopicID,
+		Secret:      channel.Spec.Secret,
+		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
+		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
+		Subscriber:  subscriber,
 	})
 }

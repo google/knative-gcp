@@ -45,7 +45,7 @@ type PubSubBase struct {
 // "TopicReady", and "PullSubscriptionReady"
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
 	if pubsubable == nil {
 		return nil, nil, fmt.Errorf("nil pubsubable passed in")
 	}
@@ -104,7 +104,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			psb.Logger.Infof("Failed to get PullSubscriptions: %s", err)
 			return t, nil, fmt.Errorf("failed to get pullsubscriptions: %s", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
+		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, resourceGroup)
 		psb.Logger.Infof("Creating pullsubscription %+v", newPS)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
