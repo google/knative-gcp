@@ -47,9 +47,10 @@ type ReceiveAdapterArgs struct {
 }
 
 const (
-	credsVolume    = "google-cloud-key"
-	credsMountPath = "/var/secrets/google"
-	metricsDomain  = "cloud.run/events"
+	credsVolume          = "google-cloud-key"
+	credsMountPath       = "/var/secrets/google"
+	metricsDomain        = "cloud.run/events"
+	defaultResourceGroup = "pullsubscriptions.pubsub.cloud.run"
 )
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
@@ -78,6 +79,11 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 		mode = converters.Structured
 	case v1alpha1.ModePushCompatible:
 		mode = converters.Push
+	}
+
+	var resourceGroup = defaultResourceGroup
+	if rg, ok := args.Source.Annotations["metrics-resource-group"]; ok {
+		resourceGroup = rg
 	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
@@ -139,6 +145,9 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "NAMESPACE",
 							Value: args.Source.Namespace,
+						}, {
+							Name:  "RESOURCE_GROUP",
+							Value: resourceGroup,
 						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,

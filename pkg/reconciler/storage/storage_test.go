@@ -350,6 +350,9 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": "storage.events.cloud.run",
 				}),
+				WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": "storages.events.cloud.run",
+				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},

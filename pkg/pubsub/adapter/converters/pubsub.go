@@ -27,8 +27,6 @@ import (
 
 const (
 	pubSubPublish = "google.pubsub.topic.publish"
-
-	pubSubResourceGroup = "pullsubscriptions.pubsub.cloud.run"
 )
 
 func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {

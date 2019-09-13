@@ -49,6 +49,8 @@ const (
 	ReconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
+
+	resourceGroup = "storages.events.cloud.run"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -152,7 +154,7 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 		return err
 	}
 
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr, topic)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr, topic, resourceGroup)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
