@@ -41,8 +41,8 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.LabelNamespaceName:     "testns",
 		metricskey.LabelEventType:         "dev.knative.event",
 		metricskey.LabelEventSource:       "unit-test",
-		"name":                            "testobject",
-		"resource_group":                  "testresourcegroup",
+		metricskey.LabelName:              "testobject",
+		metricskey.LabelResourceGroup:     "testresourcegroup",
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 	}
