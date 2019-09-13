@@ -394,6 +394,14 @@
   version = "1.0.1"
 
 [[projects]]
+  digest = "1:c01e66557785d9d75328704d11c44c26582980cd78209475cb141b3eedd11e9f"
+  name = "github.com/openzipkin/zipkin-go"
+  packages = ["model"]
+  pruneopts = "NUT"
+  revision = "f5dcc761a1a0dc7fcae2087564208206fbc10128"
+  version = "v0.2.1"
+
+[[projects]]
   branch = "master"
   digest = "1:89da0f0574bc94cfd0ac8b59af67bf76cdd110d503df2721006b9f0492394333"
   name = "github.com/petar/GoLLRB"
@@ -1147,7 +1155,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dfd153fff295bf8023d8f9eca57d4c3fd76790619093b1e6d216810b82fed7a2"
+  digest = "1:bdd1f7aa0a13b578d332f970e36861a834ff8559e06b0b718fa5d8df78e448d8"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1215,7 +1223,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "87ad483365174cda3ee83f1c0832df930f9adb52"
+  revision = "34157973944a3419f1e38fce8dfb11a2fb5aadbb"
 
 [[projects]]
   branch = "master"
@@ -1281,7 +1289,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "816123d5e71fb88533d1564c331443387967e1dc"
+  revision = "ca04b8453a8779f3c800c5e4bcda43ff53ec6f80"
 
 [solve-meta]
   analyzer-name = "dep"

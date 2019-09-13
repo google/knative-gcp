@@ -18,9 +18,10 @@ package adapter
 
 import (
 	"context"
+	"strconv"
+
 	"go.opencensus.io/stats/view"
 	"knative.dev/pkg/metrics"
-	"strconv"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"

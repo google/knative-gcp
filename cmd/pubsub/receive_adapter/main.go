@@ -17,16 +17,17 @@ limitations under the License.
 package main
 
 import (
-	"cloud.google.com/go/compute/metadata"
 	"flag"
 	"fmt"
+	"log"
+
+	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
-	"log"
 )
 
 const (

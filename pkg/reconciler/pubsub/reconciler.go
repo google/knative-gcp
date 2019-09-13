@@ -130,14 +130,14 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicAr
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
-			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
+			c.Logger.Errorw("Failed to create Job.", zap.Error(err))
+			return ops.OpsJobCreateFailed, err
 		}
 
 		c.Logger.Debugw("Created Job.")
 		return ops.OpsJobCreated, nil
 	} else if err != nil {
-		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
+		c.Logger.Errorw("Failed to get Job.", zap.Error(err))
 		return ops.OpsJobGetFailed, err
 	}
 
@@ -165,14 +165,14 @@ func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.
 
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
-			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
+			c.Logger.Errorw("Failed to create Job.", zap.Error(err))
+			return ops.OpsJobCreateFailed, err
 		}
 
 		c.Logger.Debugw("Created Job.")
 		return ops.OpsJobCreated, nil
 	} else if err != nil {
-		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
+		c.Logger.Errorw("Failed to get Job.", zap.Error(err))
 		return ops.OpsJobGetFailed, err
 	}
 
