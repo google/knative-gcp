@@ -53,3 +53,8 @@ data:
     # flag to "true" could cause extra Stackdriver charge.
     # If metrics.backend-destination is not Stackdriver, this is ignored.
     metrics.allow-stackdriver-custom-metrics: "false"
+
+    # stackdriver-custom-metrics-subdomain is the subdomain to use when sending custom metrics to StackDriver.
+    # If not specified, the default is set to "knative.dev".
+    # If metrics.backend-destination is not Stackdriver, this is ignored.
+    #metrics.stackdriver-custom-metrics-subdomain: "<your subdomain>"
