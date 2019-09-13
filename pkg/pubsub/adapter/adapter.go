@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	nethttp "net/http"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
@@ -29,7 +31,6 @@ import (
 	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
-	nethttp "net/http"
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
