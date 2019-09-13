@@ -16,6 +16,8 @@ limitations under the License.
 
 package resources
 
-func GetPullSubscriptionAnnotations() map[string]string {
-	return map[string]string{"metrics-resource-group": "channels.messaging.cloud.run"}
+func GetPullSubscriptionAnnotations(channel string) map[string]string {
+	return map[string]string{
+		"metrics-resource-group": "channels.messaging.cloud.run",
+		"metrics-resource-name":  channel}
 }

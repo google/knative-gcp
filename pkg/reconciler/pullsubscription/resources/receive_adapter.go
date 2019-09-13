@@ -85,6 +85,11 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 	if rg, ok := args.Source.Annotations["metrics-resource-group"]; ok {
 		resourceGroup = rg
 	}
+	// Needed for Channels, as we use a generate name for the PullSubscription.
+	var resourceName = args.Source.Name
+	if rn, ok := args.Source.Annotations["metrics-resource-name"]; ok {
+		resourceName = rn
+	}
 
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	replicas := int32(1)
@@ -141,7 +146,7 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 							Value: args.LoggingConfig,
 						}, {
 							Name:  "NAME",
-							Value: args.Source.Name,
+							Value: resourceName,
 						}, {
 							Name:  "NAMESPACE",
 							Value: args.Source.Namespace,

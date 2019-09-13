@@ -24,9 +24,10 @@ import (
 
 func TestGetPullSubscriptionAnnotations(t *testing.T) {
 	want := map[string]string{
+		"metrics-resource-name":  "my-channel",
 		"metrics-resource-group": "channels.messaging.cloud.run",
 	}
-	got := GetPullSubscriptionAnnotations()
+	got := GetPullSubscriptionAnnotations("my-channel")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

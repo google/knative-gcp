@@ -255,7 +255,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Topic:       channel.Status.TopicID,
 			Secret:      channel.Spec.Secret,
 			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations: resources.GetPullSubscriptionAnnotations(),
+			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
 			Subscriber:  s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -282,7 +282,7 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Topic:       channel.Status.TopicID,
 			Secret:      channel.Spec.Secret,
 			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations: resources.GetPullSubscriptionAnnotations(),
+			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
 			Subscriber:  s,
 		})
 
