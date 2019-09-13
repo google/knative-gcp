@@ -407,7 +407,7 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
 		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
-		Annotations: resources.GetPullSubscriptionAnnotations(),
+		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
 		Subscriber:  subscriber,
 	})
 }
