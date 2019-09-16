@@ -36,13 +36,10 @@ The following are prerequisites for `Channel`, `Topic` and `PullSubscription`.
         --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
         --role roles/pubsub.editor
       ```
-   1. **Optional:** If you plan on using the StackDriver monitoring APIs, also give the Service Account 
-    the `Monitoring MetricWriter` role on your Google Cloud project:  
-        ```shell 
-        gcloud projects add-iam-policy-binding $PROJECT_ID \
-        --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-        --role roles/monitoring.metricWriter
-        ```   
+   1. **Optional:** If you plan on using the StackDriver monitoring APIs, also
+      give the Service Account the `Monitoring MetricWriter` role on your Google
+      Cloud project:  
+       `shell gcloud projects add-iam-policy-binding $PROJECT_ID \ --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \ --role roles/monitoring.metricWriter`
    1. Download a new JSON private key for that Service Account. **Be sure not to
       check this key into source control!**
       ```shell
