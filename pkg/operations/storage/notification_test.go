@@ -87,14 +87,6 @@ func TestValidateArgs(t *testing.T) {
 		},
 		expectedErr: "missing Action",
 	}, {
-		name: "missing ProjectID",
-		args: NotificationArgs{
-			UID:    "uid",
-			Image:  testImage,
-			Action: "create",
-		},
-		expectedErr: "missing ProjectID",
-	}, {
 		name: "missing Bucket",
 		args: NotificationArgs{
 			UID:       "uid",
@@ -142,6 +134,21 @@ func TestValidateArgs(t *testing.T) {
 			Owner: reconcilertesting.NewStorage(storageName, testNS),
 		},
 		expectedErr: "missing TopicID",
+	}, {
+		name: "missing ProjectID on create",
+		args: NotificationArgs{
+			UID:       "uid",
+			Image:     testImage,
+			Action:    "create",
+			Bucket:    bucket,
+			TopicID:   topicID,
+			Secret: corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+				Key:                  "key.json",
+			},
+			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		},
+		expectedErr: "missing ProjectID",
 	}, {
 		name: "missing eventTypes on create",
 		args: NotificationArgs{
@@ -196,7 +203,6 @@ func TestValidateArgs(t *testing.T) {
 			UID:       "uid",
 			Image:     testImage,
 			Action:    "delete",
-			ProjectID: projectId,
 			Bucket:    bucket,
 			Secret: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
@@ -299,7 +305,6 @@ func validDeleteArgs() NotificationArgs {
 		UID:            storageUID,
 		Image:          testImage,
 		Action:         "delete",
-		ProjectID:      projectId,
 		NotificationId: notificationId,
 		Bucket:         bucket,
 		Secret: corev1.SecretKeySelector{
@@ -336,9 +341,6 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 			Name:  "ACTION",
 			Value: action,
 		}, {
-			Name:  "PROJECT_ID",
-			Value: projectId,
-		}, {
 			Name:  "BUCKET",
 			Value: bucket,
 		},
@@ -352,6 +354,9 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: topicID,
+			}, {
+				Name:  "PROJECT_ID",
+				Value: projectId,
 			},
 		}
 		env = append(env, createEnv...)
