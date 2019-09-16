@@ -48,20 +48,22 @@ spec:
       properties:
         registry:
           type: object
+          title: "Scheduler"
           description: "Internal information, users should not set this property"
           properties:
             eventTypes:
               type: object
               properties:
+                # TODO properly define type and schema.
                 publish:
                   type: object
+                  description: "This event is sent when a message is published to a Cloud Pub/Sub topic."
                   properties:
                     type:
                       type: string
                       pattern: "google.pubsub.topic.publish"
                     schema:
                       type: string
-                      pattern: "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
         spec:
           properties:
             secret:
@@ -85,15 +87,6 @@ spec:
             sink:
               type: object
               description: "Sink which receives the notifications."
-            eventTypes:
-              type: array
-              items:
-                enum:
-                  - finalize
-                  - delete
-                  - archive
-                  - metadataUpdate
-                type: string
           required:
           - location
           - schedule
