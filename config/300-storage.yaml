@@ -48,6 +48,7 @@ spec:
       properties:
         registry:
           type: object
+          title: "Storage"
           description: "Internal information, users should not set this property"
           title: "Storage"
           properties:
