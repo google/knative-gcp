@@ -36,6 +36,7 @@ readonly E2E_TEST_NAMESPACE="default"
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
+global GCS_SERVICE_ACCOUNT
 
 # Setup the Cloud Run Events environment for running tests.
 function cloud_run_events_setup() {
@@ -55,6 +56,7 @@ function knative_setup() {
 # Setup resources common to all eventing tests.
 function test_setup() {
   pubsub_setup || return 1
+  storage_setup || return 1
 
   # TODO: Publish test images.
   # echo ">> Publishing test images"
@@ -63,7 +65,7 @@ function test_setup() {
 
 # Tear down resources common to all eventing tests.
 function test_teardown() {
-  pubsub_teardown
+  teardown
 }
 
 # Create resources required for Pub/Sub Admin setup
@@ -84,9 +86,26 @@ function pubsub_setup() {
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
-# Delete resources that were used for Pub/Sub Admin setup
-function pubsub_teardown() {
-  # When not running on Prow we need to delete the service account created for Pub/Sub
+# Create resources required for Storage Admin setu
+function storage_setup() {
+  if (( ! IS_PROW )); then
+    echo "update ServiceAccount for Storage Admin"
+    gcloud services enable storage-component.googleapis.com
+    gcloud services enable storage-api.googleapis.com
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
+    echo $GCS_SERVICE_ACCOUNT
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
+      --role roles/pubsub.publisher
+  fi
+}
+
+# Delete resources that were used for setup
+function teardown() {
+  # When not running on Prow we need to delete the service account created
   if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Pub/Sub Admin"
     gcloud iam service-accounts keys delete -q ${PUBSUB_SERVICE_ACCOUNT_KEY} \
@@ -94,6 +113,13 @@ function pubsub_teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
+    cho "Tear down ServiceAccount for Storage Admin"
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
+      --role roles/pubsub.publisher
     gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
