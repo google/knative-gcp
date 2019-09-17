@@ -14,7 +14,7 @@ _All commands assume root of repo._
      | kubectl apply -f -
    ```
 
-2. To verify, run the following to show the diff between what the resource was
+1. To verify, run the following to show the diff between what the resource was
    original and is now (_note_: k8s will update `metadata.annotations`):
 
    ```shell
@@ -31,7 +31,7 @@ _All commands assume root of repo._
      | head -n $CHANGED_LINES
    ```
 
-3. Restart Prometheus
+1. Restart Prometheus
 
    To pick up this new config, the pods that run Prometheus need to be
    restarted, run:
@@ -53,7 +53,7 @@ _All commands assume root of repo._
    prometheus-system-1                  1/1     Running   0          36s
    ```
 
-4. To remove the temp files, run:
+1. To remove the temp files, run:
 
    ```shell
    rm tmp.prometheus-scrape-kn-gcp.yaml
@@ -108,24 +108,24 @@ Then, access the [Grafana Dashboard](http://localhost:3000)
     repository:
 
     ```shell
-      kubectl apply --recursive --filename config/monitoring/100-namespace.yaml \
-          --filename config/monitoring/metrics/stackdriver
+          kubectl apply --recursive --filename config/monitoring/100-namespace.yaml \
+              --filename config/monitoring/metrics/stackdriver
     ```
 
-1. Set up the [Pub/Sub Enabled Service Account](../../../docs/pubsub/README.md) with 
-StackDriver Monitoring permissions.
+1.  Set up the [Pub/Sub Enabled Service Account](../../../docs/pubsub/README.md)
+    with StackDriver Monitoring permissions.
 
-1. Run the following command to setup StackDriver as the metrics backend:
+1.  Run the following command to setup StackDriver as the metrics backend:
 
-   ```
-   kubectl edit cm -n cloud-run-events config-observability
-   ```
+    ```shell
+       kubectl edit cm -n cloud-run-events config-observability
+    ```
 
-   Add `metrics.backend-destination: stackdriver` and `metrics.allow-stackdriver-custom-metrics: "true"`
-    to the `data` field. You can find detailed information in `data._example` field in the
-   `ConfigMap` you are editing. 
-   
-1. Open the StackDriver UI and see your resource metrics in the StackDriver Metrics Explorer. 
-You should be able to see metrics with the prefix `custom.googleapis.com/knative.dev/`.
-   
-     
+    Add `metrics.backend-destination: stackdriver` and
+    `metrics.allow-stackdriver-custom-metrics: "true"` to the `data` field. You
+    can find detailed information in `data._example` field in the `ConfigMap`
+    you are editing.
+
+1.  Open the StackDriver UI and see your resource metrics in the StackDriver
+    Metrics Explorer. You should be able to see metrics with the prefix
+    `custom.googleapis.com/knative.dev/`.

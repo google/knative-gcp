@@ -157,6 +157,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscription) error {
 	logger := logging.FromContext(ctx)
 
+	source.Status.ObservedGeneration = source.Generation
 	source.Status.InitializeConditions()
 
 	if source.GetDeletionTimestamp() != nil {

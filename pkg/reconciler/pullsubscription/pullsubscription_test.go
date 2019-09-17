@@ -64,6 +64,7 @@ const (
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cre-pull-" + sourceUID
+	generation = 1
 )
 
 var (
@@ -121,6 +122,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -140,6 +142,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -149,6 +152,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				// Updates
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribing(testSubscriptionID),
 			),
 		}},
@@ -164,6 +168,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -181,6 +186,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -188,6 +194,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -200,6 +207,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -218,6 +226,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -225,6 +234,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -234,6 +244,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -260,6 +271,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -267,6 +279,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionReady(sinkURI),
 				),
@@ -275,6 +288,7 @@ func TestAllCases(t *testing.T) {
 			Name: "cannot get sink",
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -289,12 +303,14 @@ func TestAllCases(t *testing.T) {
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					// updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
 					WithPullSubscriptionSinkNotFound(),
 				),
@@ -305,6 +321,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -324,6 +341,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -335,6 +353,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionFinalizers(finalizerName),
 					WithPullSubscriptionDeleted,
 					// updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithPullSubscriptionMarkUnsubscribing(testSubscriptionID),
 				),
 			}},
@@ -347,6 +366,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -368,6 +388,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
 					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -379,6 +400,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					WithPullSubscriptionFinalizers(finalizerName),
 					// updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithPullSubscriptionMarkNoSubscription(testSubscriptionID),
 				),
 			}},
