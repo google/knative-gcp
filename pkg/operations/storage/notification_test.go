@@ -137,11 +137,11 @@ func TestValidateArgs(t *testing.T) {
 	}, {
 		name: "missing ProjectID on create",
 		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			Bucket:    bucket,
-			TopicID:   topicID,
+			UID:     "uid",
+			Image:   testImage,
+			Action:  "create",
+			Bucket:  bucket,
+			TopicID: topicID,
 			Secret: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
@@ -200,10 +200,10 @@ func TestValidateArgs(t *testing.T) {
 	}, {
 		name: "valid delete",
 		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "delete",
-			Bucket:    bucket,
+			UID:    "uid",
+			Image:  testImage,
+			Action: "delete",
+			Bucket: bucket,
 			Secret: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
