@@ -21,7 +21,7 @@ spec: {}
 
 ---
 
-apiVersion: eventing.knative.dev/v1alpha1  # TODO: change this back to messaging.knative.dev/v1alpha1 when 0.9.0 starts shipping.
+apiVersion: messaging.knative.dev/v1alpha1
 kind: Subscription
 metadata:
   name: e2e-channel-test
