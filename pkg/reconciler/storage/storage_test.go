@@ -59,6 +59,7 @@ const (
 	testProject  = "test-project-id"
 	testTopicID  = "storage-" + storageUID
 	testTopicURI = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
+	generation = 1
 )
 
 var (
@@ -181,6 +182,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 			),
@@ -190,6 +192,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithInitStorageConditions,
@@ -215,6 +219,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists, topic not ready",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -228,10 +233,13 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicNotReady("TopicNotReady", topicNotReadyMsg),
 			),
 		}},
@@ -239,6 +247,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -253,9 +262,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-storage did not expose projectid"),
 				WithStorageFinalizers(finalizerName),
 			),
@@ -264,6 +276,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -279,9 +292,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-storage did not expose topicid"),
 				WithStorageFinalizers(finalizerName),
 			),
@@ -290,6 +306,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -305,17 +322,22 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicNotReady("TopicNotReady", `Topic testnamespace/my-test-storage topic mismatch expected "storage-test-storage-uid" got "garbaaaaage"`),
 				WithStorageFinalizers(finalizerName),
+				WithStorageStatusObservedGeneration(generation),
 			),
 		}},
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -331,9 +353,12 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicReady(testTopicID),
 				WithStorageProjectID(testProject),
 				WithStorageFinalizers(finalizerName),
@@ -360,6 +385,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and ready, pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -376,10 +402,13 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicReady(testTopicID),
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
@@ -389,6 +418,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job created",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageEventTypes([]string{"finalize"}),
@@ -408,11 +438,14 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageEventTypes([]string{"finalize"}),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicReady(testTopicID),
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
@@ -427,9 +460,11 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job not finished",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
+				WithStorageObjectMetaGeneration(generation),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicReady(testTopicID),
@@ -446,10 +481,13 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicReady(testTopicID),
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
@@ -461,9 +499,11 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job failed",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
+				WithStorageObjectMetaGeneration(generation),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicReady(testTopicID),
@@ -480,10 +520,13 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
 				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageTopicReady(testTopicID),
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
@@ -495,6 +538,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, no pods found",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -514,6 +558,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -529,6 +575,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, no termination msg on pod",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -549,6 +596,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -564,6 +613,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, invalid termination msg on pod",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -584,6 +634,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -599,6 +651,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, notification creation failed",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -619,6 +672,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -634,6 +689,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic and pullsubscription exist and ready, notification job finished, notification created successfully",
 		Objects: []runtime.Object{
 			NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
@@ -654,6 +710,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: false,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewStorage(storageName, testNS,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
