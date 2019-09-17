@@ -24,13 +24,14 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/test/helpers"
 	"os"
 	"strings"
 	"time"
 
+	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	"testing"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -38,6 +39,7 @@ import (
 func makeBucket(t *testing.T) string {
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
+	bucketPrefix := "storage-e2e-test"
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -46,12 +48,11 @@ func makeBucket(t *testing.T) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-knative-gcp"
-	// Make a iteration for buckets
+	bucketName := helpers.AppendRandomString(bucketPrefix)
 	for {
 		bucketAttrs, err := it.Next()
 		if err == iterator.Done {
-			// Create a new bucket if there is no existing bucket for e2e test
+			// Create a new bucket if there is no qualified existing bucket
 			bucket := client.Bucket(bucketName)
 			if e := bucket.Create(ctx, project, &storage.BucketAttrs{}); e != nil {
 				t.Fatalf("failed to create bucket, %s", e.Error())
@@ -61,15 +62,15 @@ func makeBucket(t *testing.T) string {
 		if err != nil {
 			t.Fatalf("failed to list buckets, %s", err.Error())
 		}
-		// Break the iteration if there has a e2e test bucket
-		if strings.Compare(bucketAttrs.Name, bucketName) == 0 {
+		if strings.HasPrefix(bucketAttrs.Name, bucketPrefix) {
+			bucketName = bucketAttrs.Name
 			break
 		}
 	}
 	return bucketName
 }
 
-func getBucketHandle(t *testing.T, bucketName string) *storage.BucketHandle {
+func getBucketHandler(t *testing.T, bucketName string) *storage.BucketHandle {
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -139,8 +140,8 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	}
 
 	// Add a file in the bucket
-	bucketHandle := getBucketHandle(t, bucketName)
-	wc := bucketHandle.Object("testFile").NewWriter(ctx)
+	bucketHandler := getBucketHandler(t, bucketName)
+	wc := bucketHandler.Object("testFile").NewWriter(ctx)
 	// Write some text to object
 	if _, err := fmt.Fprintf(wc, "e2e test for storage importer.\n"); err != nil {
 		t.Error(err)
