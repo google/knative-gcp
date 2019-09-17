@@ -29,6 +29,7 @@ import (
 
 var packages = []string{
 	"github.com/google/knative-gcp/test/cmd/target",
+	"github.com/google/knative-gcp/test/cmd/storageTarget",
 }
 
 var packageToImageConfig = map[string]string{}
@@ -77,4 +78,11 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
+}
+
+// TestStorage tests we can knock down a target fot storage
+func TestStorage(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	StorageWithTestImpl(t, packageToImageConfig)
 }
