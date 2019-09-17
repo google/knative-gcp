@@ -144,7 +144,7 @@ type TargetOutput struct {
 	Success bool `json:"success"`
 }
 
-// PullSubscriptionWithTargetTestImpl todo
+// PullSubscriptionWithTargetTestImpl
 func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()

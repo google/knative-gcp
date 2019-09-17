@@ -65,6 +65,13 @@ func TestSmokeChannel(t *testing.T) {
 	SmokeTestChannelImpl(t)
 }
 
+// TestChannelWithTarget tests we can knock down a target through a channel.
+func TestChannelWithTarget(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	ChannelWithTargetTestImpl(t, packageToImageConfig)
+}
+
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
 func TestSmokePullSubscription(t *testing.T) {
 	cancel := logstream.Start(t)
