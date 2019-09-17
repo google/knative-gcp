@@ -116,6 +116,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error {
+	csr.Status.ObservedGeneration = csr.Generation
 	// If notification / topic has been already configured, stash them here
 	// since right below we remove them.
 	notificationID := csr.Status.NotificationID

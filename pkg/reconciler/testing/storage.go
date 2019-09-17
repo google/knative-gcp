@@ -151,3 +151,15 @@ func WithStorageFinalizers(finalizers ...string) StorageOption {
 		s.Finalizers = finalizers
 	}
 }
+
+func WithStorageStatusObservedGeneration(generation int64) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.Status.ObservedGeneration = generation
+	}
+}
+
+func WithStorageObjectMetaGeneration(generation int64) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.ObjectMeta.Generation = generation
+	}
+}
