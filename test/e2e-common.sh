@@ -113,7 +113,7 @@ function teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
-    cho "Tear down ServiceAccount for Storage Admin"
+    echo "Tear down ServiceAccount for Storage Admin"
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/storage.admin
