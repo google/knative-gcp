@@ -112,20 +112,20 @@ Then, access the [Grafana Dashboard](http://localhost:3000)
           --filename config/monitoring/metrics/stackdriver
     ```
 
-1. Set up the [Pub/Sub Enabled Service Account](../../../docs/pubsub/README.md) with 
-StackDriver Monitoring permissions.
+1.  Set up the [Pub/Sub Enabled Service Account](../../../docs/pubsub/README.md)
+    with StackDriver Monitoring permissions.
 
-1. Run the following command to setup StackDriver as the metrics backend:
+1.  Run the following command to setup StackDriver as the metrics backend:
 
-   ```
-   kubectl edit cm -n cloud-run-events config-observability
-   ```
+    ```
+    kubectl edit cm -n cloud-run-events config-observability
+    ```
 
-   Add `metrics.backend-destination: stackdriver` and `metrics.allow-stackdriver-custom-metrics: "true"`
-    to the `data` field. You can find detailed information in `data._example` field in the
-   `ConfigMap` you are editing. 
-   
-1. Open the StackDriver UI and see your resource metrics in the StackDriver Metrics Explorer. 
-You should be able to see metrics with the prefix `custom.googleapis.com/knative.dev/`.
-   
-     
+    Add `metrics.backend-destination: stackdriver` and
+    `metrics.allow-stackdriver-custom-metrics: "true"` to the `data` field. You
+    can find detailed information in `data._example` field in the `ConfigMap`
+    you are editing.
+
+1.  Open the StackDriver UI and see your resource metrics in the StackDriver
+    Metrics Explorer. You should be able to see metrics with the prefix
+    `custom.googleapis.com/knative.dev/`.
