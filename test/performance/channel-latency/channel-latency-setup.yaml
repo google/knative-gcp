@@ -1,0 +1,124 @@
+# Copyright 2019 The Knative Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Copy google-cloud-key secret one-liner:
+#  kubectl get secret google-cloud-key --namespace=default --export -o yaml |   kubectl apply --namespace=perf-pubsub -f -
+
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: perf-pubsub
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-mako
+  namespace: perf-pubsub
+data:
+  environment: dev
+
+---
+
+apiVersion: messaging.cloud.run/v1alpha1
+kind: Channel
+metadata:
+  name: test-channel
+  namespace: perf-pubsub
+spec: {}
+
+---
+
+# apiVersion: messaging.knative.dev/v1alpha1
+# kind: Subscription
+# metadata:
+#   name: test-channel
+#   namespace: perf-pubsub
+# spec:
+#   channel:
+#     apiVersion: messaging.cloud.run/v1alpha1
+#     kind: Channel
+#     name: test-channel
+#   subscriber:
+#     ref:
+#       apiVersion: v1
+#       kind: Service
+#       name: latency-consumer
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perf-pubsub
+  namespace: perf-pubsub
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: perf-pubsub
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perf-pubsub
+subjects:
+  - kind: ServiceAccount
+    name: perf-pubsub
+    namespace: perf-pubsub
+roleRef:
+  kind: ClusterRole
+  name: perf-pubsub
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: latency-consumer
+  namespace: perf-pubsub
+spec:
+  selector:
+    role: latency-consumer
+  ports:
+  - name: http
+    port: 80
+    targetPort: cloudevents
+    protocol: TCP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: latency-aggregator
+  namespace: perf-pubsub
+spec:
+  selector:
+    role: latency-aggregator
+  ports:
+  - name: grpc
+    port: 10000
+    targetPort: grpc
+    protocol: TCP

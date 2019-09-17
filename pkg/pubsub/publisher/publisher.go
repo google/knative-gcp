@@ -62,6 +62,7 @@ func (a *Publisher) Start(ctx context.Context) error {
 }
 
 func (a *Publisher) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
+
 	if _, r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
 	} else if r != nil {
