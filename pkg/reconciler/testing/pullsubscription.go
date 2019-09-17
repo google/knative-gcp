@@ -201,3 +201,15 @@ func WithPullSubscriptionFinalizers(finalizers ...string) PullSubscriptionOption
 		s.Finalizers = finalizers
 	}
 }
+
+func WithPullSubscriptionStatusObservedGeneration(generation int64) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.Status.ObservedGeneration = generation
+	}
+}
+
+func WithPullSubscriptionObjectMetaGeneration(generation int64) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.ObjectMeta.Generation = generation
+	}
+}
