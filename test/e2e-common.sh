@@ -99,6 +99,8 @@ function storage_setup() {
   fi
   GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
   echo "###################"
+  gcloud services list --enabled
+  echo "###################"
   echo $GCS_SERVICE_ACCOUNT
   echo "###################"
   gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
