@@ -71,49 +71,58 @@ function test_teardown() {
 
 # Create resources required for Pub/Sub Admin setup
 function pubsub_setup() {
-  echo "Set up ServiceAccount for Pub/Sub Admin"
-  gcloud services enable pubsub.googleapis.com
-  gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
-  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/pubsub.editor
-  gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
-    --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
-  service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
+  local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
+  # When not running on Prow we need to set up a service account for PubSub
+  if (( ! IS_PROW )); then
+    echo "Set up ServiceAccount for Pub/Sub Admin"
+    gcloud services enable pubsub.googleapis.com
+    gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.editor
+    gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
+      --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
+  fi
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
 # Create resources required for Storage Admin setu
 function storage_setup() {
-  echo "Update ServiceAccount for Storage Admin"
-  gcloud services enable storage-component.googleapis.com
-  gcloud services enable storage-api.googleapis.com
-  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/storage.admin
-  GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
-  echo $GCS_SERVICE_ACCOUNT
-  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
-    --role roles/pubsub.publisher
+  if (( ! IS_PROW )); then
+    echo "Update ServiceAccount for Storage Admin"
+    gcloud services enable storage-component.googleapis.com
+    gcloud services enable storage-api.googleapis.com
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
+    echo $GCS_SERVICE_ACCOUNT
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
+      --role roles/pubsub.publisher
+  fi
 }
 
 # Delete resources that were used for setup
 function teardown() {
-  echo "Tear down ServiceAccount for Pub/Sub Admin"
-  gcloud iam service-accounts keys delete -q ${PUBSUB_SERVICE_ACCOUNT_KEY} \
-    --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
-  gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/pubsub.editor
-  echo "Tear down ServiceAccount for Storage Admin"
-  gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/storage.admin
-  gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
-    --role roles/pubsub.publisher
-  gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+  # When not running on Prow we need to delete the service account created
+  if (( ! IS_PROW )); then
+    echo "Tear down ServiceAccount for Pub/Sub Admin"
+    gcloud iam service-accounts keys delete -q ${PUBSUB_SERVICE_ACCOUNT_KEY} \
+      --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.editor
+    echo "Tear down ServiceAccount for Storage Admin"
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
+      --role roles/pubsub.publisher
+    gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+  fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
 }
 

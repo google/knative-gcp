@@ -47,14 +47,12 @@ func makeBucket(t *testing.T) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-knative-gcp"
+	bucketName := "storage-e2e-test-" + project
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()
 		if err == iterator.Done {
 			// Create a new bucket if there is no existing e2e test bucket
-			// Every bucket name must be unique across the entire Google Cloud Storage namespace.
-			bucketName = helpers.AppendRandomString(bucketName)
 			bucket := client.Bucket(bucketName)
 			if e := bucket.Create(ctx, project, &storage.BucketAttrs{}); e != nil {
 				t.Fatalf("failed to create bucket, %s", e.Error())
@@ -65,8 +63,7 @@ func makeBucket(t *testing.T) string {
 			t.Fatalf("failed to list buckets, %s", err.Error())
 		}
 		// Break iteration if there has a bucket for e2e test
-		if strings.HasPrefix(bucketAttrs.Name, bucketName) {
-			bucketName = bucketAttrs.Name
+		if strings.Compare(bucketAttrs.Name, bucketName) == 0 {
 			break
 		}
 	}
@@ -167,9 +164,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	if err != nil {
 		t.Error(err)
 	}
-	// Uncomment the following line to get log from target pod.
-	//logs, err := client.LogsFor(client.Namespace, targetName, jobGVR)
-	//t.Logf(logs)
+
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
