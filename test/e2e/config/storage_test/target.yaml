@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
+spec:
+  backoffLimit: 0
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        targetUID: {{ .targetUID }}
+    spec:
+      containers:
+        - name: target
+          env:
+            - name: SUBJECT
+              value: {{ .subjectName }}
+            - name: TIME
+              value: "120"
+          image: {{ .storage_targetImage }}
+          imagePullPolicy: Always
+      restartPolicy: Never
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    targetUID: {{ .targetUID }}
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  sessionAffinity: None
+  type: ClusterIP
