@@ -57,7 +57,8 @@ function knative_setup() {
 function test_setup() {
   pubsub_setup || return 1
   storage_setup || return 1
-
+  echo "Sleep 2 min to wait for all resources to setup"
+  sleep 120
   # TODO: Publish test images.
   # echo ">> Publishing test images"
   # $(dirname $0)/upload-test-images.sh e2e || fail_test "Error uploading test images"
@@ -89,7 +90,7 @@ function pubsub_setup() {
 # Create resources required for Storage Admin setu
 function storage_setup() {
   if (( ! IS_PROW )); then
-    echo "update ServiceAccount for Storage Admin"
+    echo "Update ServiceAccount for Storage Admin"
     gcloud services enable storage-component.googleapis.com
     gcloud services enable storage-api.googleapis.com
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \

@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -8,7 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/kelseyhightower/envconfig"
@@ -25,7 +26,23 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Type prefix to match: %q.\n", r.Type)
+	fmt.Printf("Subject to match: %q.\n", r.Subject)
+
+	// Create a timer
+	duration, _ := strconv.Atoi(r.Time)
+	timer := time.NewTimer(time.Second * time.Duration(duration))
+	defer timer.Stop()
+	go func() {
+		<-timer.C
+		// Write the termination message if time out
+		fmt.Printf("time out to wait for event with subject %q.\n", r.Subject)
+		if err := r.writeTerminationMessage(map[string]interface{}{
+			"success": false,
+		}); err != nil {
+			fmt.Printf("failed to write termination message, %s.\n", err)
+		}
+		os.Exit(0)
+	}()
 
 	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
 		log.Fatal(err)
@@ -33,26 +50,25 @@ func main() {
 }
 
 type Receiver struct {
-	Type string `envconfig:"TYPE" required:"true"`
+	Subject string `envconfig:"SUBJECT" required:"true"`
+	Time    string `envconfig:"TIME" required:"true"`
 }
 
 func (r *Receiver) Receive(event cloudevents.Event) {
-	eventType := event.Context.GetType()
-	var success bool
-	if strings.HasPrefix(eventType, r.Type) {
-		fmt.Printf("Target prefix matched, %q.\n", r.Type)
-		success = true
+	eventSubject := event.Context.GetSubject()
+	fmt.Printf(event.Context.String())
+	if strings.Compare(eventSubject, r.Subject) == 0 {
+		fmt.Printf("subject matches, %q.\n", r.Subject)
+		// Write the termination message if the subject successfully matches
+		if err := r.writeTerminationMessage(map[string]interface{}{
+			"success": true,
+		}); err != nil {
+			fmt.Printf("failed to write termination message, %s.\n", err)
+		}
+		os.Exit(0)
 	} else {
-		fmt.Printf("Target prefix did not match, %q != %q.\n", eventType, r.Type)
-		success = false
+		fmt.Printf("subject doesn't match, %q != %q.\n", eventSubject, r.Subject)
 	}
-	// Write the termination message.
-	if err := r.writeTerminationMessage(map[string]interface{}{
-		"success": success,
-	}); err != nil {
-		fmt.Printf("failed to write termination message, %s.\n", err)
-	}
-	os.Exit(0)
 }
 
 func (r *Receiver) writeTerminationMessage(result interface{}) error {

@@ -14,8 +14,10 @@ spec:
       containers:
         - name: target
           env:
-            - name: TYPE
-              value: google.storage.object
+            - name: SUBJECT
+              value: {{ .subjectName }}
+            - name: TIME
+              value: "120"
           image: {{ .storageTargetImage }}
           imagePullPolicy: Always
       restartPolicy: Never

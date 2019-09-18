@@ -29,17 +29,16 @@ import (
 	"strings"
 	"time"
 
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	"testing"
 
+	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// makeBucket will get an existed bucket or create a new one if it is not existed
+// makeBucket will get an existing bucket or create a new one if it is not existed
 func makeBucket(t *testing.T) string {
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
-	bucketPrefix := "storage-e2e-test"
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -48,11 +47,12 @@ func makeBucket(t *testing.T) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := helpers.AppendRandomString(bucketPrefix)
+	bucketName := "storage-e2e-test-knative-gcp"
+	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()
 		if err == iterator.Done {
-			// Create a new bucket if there is no qualified existing bucket
+			// Create a new bucket if there is no existing e2e test bucket
 			bucket := client.Bucket(bucketName)
 			if e := bucket.Create(ctx, project, &storage.BucketAttrs{}); e != nil {
 				t.Fatalf("failed to create bucket, %s", e.Error())
@@ -62,15 +62,15 @@ func makeBucket(t *testing.T) string {
 		if err != nil {
 			t.Fatalf("failed to list buckets, %s", err.Error())
 		}
-		if strings.HasPrefix(bucketAttrs.Name, bucketPrefix) {
-			bucketName = bucketAttrs.Name
+		// Break iteration if there has a bucket for e2e test
+		if strings.Compare(bucketAttrs.Name, bucketName) == 0 {
 			break
 		}
 	}
 	return bucketName
 }
 
-func getBucketHandler(t *testing.T, bucketName string) *storage.BucketHandle {
+func getBucketHandle(t *testing.T, bucketName string) *storage.BucketHandle {
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -94,17 +94,19 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
+	fileName := helpers.AppendRandomString("test-file-for-storage-")
+
 	config := map[string]string{
-		"namespace":  client.Namespace,
-		"storage":    storageName,
-		"bucket":     bucketName,
-		"targetName": targetName,
-		"targetUID":  uuid.New().String(),
+		"namespace":   client.Namespace,
+		"storage":     storageName,
+		"bucket":      bucketName,
+		"targetName":  targetName,
+		"targetUID":   uuid.New().String(),
+		"subjectName": fileName,
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
-
 	installer := NewInstaller(client.Dynamic, config,
 		EndToEndConfigYaml([]string{"storage_test", "istio"})...)
 
@@ -120,7 +122,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 			t.Errorf("failed to delete, %s", err)
 		}
 		// Just chill for tick.
-		time.Sleep(10 * time.Second)
+		time.Sleep(60 * time.Second)
 	}()
 
 	gvr := schema.GroupVersionResource{
@@ -139,9 +141,9 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 		t.Error(err)
 	}
 
-	// Add a file in the bucket
-	bucketHandler := getBucketHandler(t, bucketName)
-	wc := bucketHandler.Object("testFile").NewWriter(ctx)
+	// Add a random name file in the bucket
+	bucketHandle := getBucketHandle(t, bucketName)
+	wc := bucketHandle.Object(fileName).NewWriter(ctx)
 	// Write some text to object
 	if _, err := fmt.Fprintf(wc, "e2e test for storage importer.\n"); err != nil {
 		t.Error(err)
@@ -150,11 +152,21 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 		t.Error(err)
 	}
 
+	// Delete test file deferred
+	defer func() {
+		o := bucketHandle.Object(fileName)
+		if err := o.Delete(ctx); err != nil {
+			t.Error(err)
+		}
+	}()
+
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {
 		t.Error(err)
 	}
-
+	// Uncomment the following line to get log from target pod.
+	//logs, err := client.LogsFor(client.Namespace, targetName, jobGVR)
+	//t.Logf(logs)
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
@@ -163,7 +175,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 			t.Error(err)
 		}
 		if !out.Success {
-			// Log the output pull subscription pods.
+			// Log the output storage pods.
 			if logs, err := client.LogsFor(client.Namespace, storageName, gvr); err != nil {
 				t.Error(err)
 			} else {
