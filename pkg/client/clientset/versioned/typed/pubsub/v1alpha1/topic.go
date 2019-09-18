@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	scheme "github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,11 +78,16 @@ func (c *topics) Get(name string, options v1.GetOptions) (result *v1alpha1.Topic
 
 // List takes label and field selectors, and returns the list of Topics that match those selectors.
 func (c *topics) List(opts v1.ListOptions) (result *v1alpha1.TopicList, err error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	result = &v1alpha1.TopicList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("topics").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Do().
 		Into(result)
 	return
@@ -88,11 +95,16 @@ func (c *topics) List(opts v1.ListOptions) (result *v1alpha1.TopicList, err erro
 
 // Watch returns a watch.Interface that watches the requested topics.
 func (c *topics) Watch(opts v1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
 		Resource("topics").
 		VersionedParams(&opts, scheme.ParameterCodec).
+		Timeout(timeout).
 		Watch()
 }
 
@@ -150,10 +162,15 @@ func (c *topics) Delete(name string, options *v1.DeleteOptions) error {
 
 // DeleteCollection deletes a collection of objects.
 func (c *topics) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+	var timeout time.Duration
+	if listOptions.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("topics").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
+		Timeout(timeout).
 		Body(options).
 		Do().
 		Error()
