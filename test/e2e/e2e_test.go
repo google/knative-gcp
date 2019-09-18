@@ -29,7 +29,7 @@ import (
 
 var packages = []string{
 	"github.com/google/knative-gcp/test/cmd/target",
-	"github.com/google/knative-gcp/test/cmd/storageTarget",
+	"github.com/google/knative-gcp/test/cmd/storage_target",
 }
 
 var packageToImageConfig = map[string]string{}

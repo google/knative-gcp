@@ -18,7 +18,7 @@ spec:
               value: {{ .subjectName }}
             - name: TIME
               value: "120"
-          image: {{ .storageTargetImage }}
+          image: {{ .storage_targetImage }}
           imagePullPolicy: Always
       restartPolicy: Never
 

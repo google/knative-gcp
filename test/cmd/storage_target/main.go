@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -39,7 +38,7 @@ func main() {
 		if err := r.writeTerminationMessage(map[string]interface{}{
 			"success": false,
 		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err)
+			fmt.Printf("failed to write termination message, %s.\n", err.Error())
 		}
 		os.Exit(0)
 	}()
@@ -57,13 +56,13 @@ type Receiver struct {
 func (r *Receiver) Receive(event cloudevents.Event) {
 	eventSubject := event.Context.GetSubject()
 	fmt.Printf(event.Context.String())
-	if strings.Compare(eventSubject, r.Subject) == 0 {
+	if eventSubject == r.Subject {
 		fmt.Printf("subject matches, %q.\n", r.Subject)
 		// Write the termination message if the subject successfully matches
 		if err := r.writeTerminationMessage(map[string]interface{}{
 			"success": true,
 		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err)
+			fmt.Printf("failed to write termination message, %s.\n", err.Error())
 		}
 		os.Exit(0)
 	} else {

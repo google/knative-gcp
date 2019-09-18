@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/test/helpers"
 	"os"
-	"strings"
 	"time"
 
 	"testing"
@@ -35,10 +34,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// makeBucket will get an existing bucket or create a new one if it is not existed
-func makeBucket(t *testing.T) string {
-	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+// makeBucket retrieves the bucket name for the test. If it does not exist, it will create it.
+func makeBucket(ctx context.Context, t *testing.T, project string) string {
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -63,17 +60,15 @@ func makeBucket(t *testing.T) string {
 			t.Fatalf("failed to list buckets, %s", err.Error())
 		}
 		// Break iteration if there has a bucket for e2e test
-		if strings.Compare(bucketAttrs.Name, bucketName) == 0 {
+		if bucketAttrs.Name == bucketName {
 			break
 		}
 	}
 	return bucketName
 }
 
-func getBucketHandle(t *testing.T, bucketName string) *storage.BucketHandle {
-	ctx := context.Background()
+func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, project string) *storage.BucketHandle {
 	// Prow sticks the project in this key
-	project := os.Getenv(ProwProjectKey)
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -86,8 +81,9 @@ func getBucketHandle(t *testing.T, bucketName string) *storage.BucketHandle {
 
 func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
 
-	bucketName := makeBucket(t)
+	bucketName := makeBucket(ctx, t, project)
 	storageName := bucketName + "-storage"
 	targetName := bucketName + "-target"
 
@@ -142,7 +138,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	}
 
 	// Add a random name file in the bucket
-	bucketHandle := getBucketHandle(t, bucketName)
+	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
 	wc := bucketHandle.Object(fileName).NewWriter(ctx)
 	// Write some text to object
 	if _, err := fmt.Fprintf(wc, "e2e test for storage importer.\n"); err != nil {
