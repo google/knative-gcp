@@ -59,7 +59,7 @@ const (
 	testProject  = "test-project-id"
 	testTopicID  = "storage-" + storageUID
 	testTopicURI = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
-	generation = 1
+	generation   = 1
 )
 
 var (

@@ -64,7 +64,7 @@ const (
 	testProject        = "test-project-id"
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cre-pull-" + sourceUID
-	generation = 1
+	generation         = 1
 )
 
 var (
