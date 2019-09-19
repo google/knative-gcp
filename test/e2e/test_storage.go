@@ -17,16 +17,17 @@ limitations under the License.
 package e2e
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
+	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/test/helpers"
-	"os"
-	"time"
 
 	"testing"
 
