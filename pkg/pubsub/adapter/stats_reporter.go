@@ -28,8 +28,6 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-// TODO upstream this to pkg.
-
 var (
 	// eventCountM is a counter which records the number of events sent.
 	eventCountM = stats.Int64(
@@ -46,8 +44,8 @@ var (
 	namespaceKey         = tag.MustNewKey(metricskey.LabelNamespaceName)
 	eventSourceKey       = tag.MustNewKey(metricskey.LabelEventSource)
 	eventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
-	nameKey              = tag.MustNewKey("name")
-	resourceGroupKey     = tag.MustNewKey("resource_group")
+	nameKey              = tag.MustNewKey(metricskey.LabelName)
+	resourceGroupKey     = tag.MustNewKey(metricskey.LabelResourceGroup)
 	responseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
 	responseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)
 )
