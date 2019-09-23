@@ -77,7 +77,6 @@ func TestSmokePullSubscription(t *testing.T) {
 func TestPullSubscriptionWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-
 	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
 }
 
