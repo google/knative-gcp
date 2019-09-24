@@ -19,22 +19,22 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
 	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
+	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-)
-
-const (
-	ProwProjectKey = "E2E_PROJECT_ID"
 )
 
 func makeTopicOrDie(t *testing.T) (string, func()) {
@@ -144,7 +144,7 @@ type TargetOutput struct {
 	Success bool `json:"success"`
 }
 
-// PullSubscriptionWithTargetTestImpl todo
+// PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()
@@ -218,6 +218,132 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		t.Error(err)
 	}
 	t.Logf("Last term message => %s", msg)
+
+	if msg != "" {
+		out := &TargetOutput{}
+		if err := json.Unmarshal([]byte(msg), out); err != nil {
+			t.Error(err)
+		}
+		if !out.Success {
+			// Log the output pull subscription pods.
+			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("pullsubscription: %+v", logs)
+			}
+			// Log the output of the target job pods.
+			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("job: %s\n", logs)
+			}
+			t.Fail()
+		}
+	}
+}
+
+// PullSubscriptionMetrics tests we send metrics to StackDriver whenever we send an event through a PullSubscription.
+func PullSubscriptionWithStackDriverMetrics(t *testing.T, packages map[string]string) {
+	topicName, deleteTopic := makeTopicOrDie(t)
+	defer deleteTopic()
+
+	psName := topicName + "-sub"
+	targetName := topicName + "-target"
+
+	client := Setup(t, true)
+	defer TearDown(client)
+
+	config := map[string]string{
+		"namespace":    client.Namespace,
+		"topic":        topicName,
+		"subscription": psName,
+		"targetName":   targetName,
+		"targetUID":    uuid.New().String(),
+	}
+	for k, v := range packages {
+		config[k] = v
+	}
+
+	installer := NewInstaller(client.Dynamic, config,
+		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+
+	// Create the resources for the test.
+	if err := installer.Do("create"); err != nil {
+		t.Errorf("failed to create resources: %s", err.Error())
+		return
+	}
+
+	// Delete deferred.
+	defer func() {
+		if err := installer.Do("delete"); err != nil {
+			t.Errorf("failed to create: %s", err.Error())
+		}
+		// Just chill for tick.
+		time.Sleep(10 * time.Second)
+	}()
+
+	gvr := schema.GroupVersionResource{
+		Group:    "pubsub.cloud.run",
+		Version:  "v1alpha1",
+		Resource: "pullsubscriptions",
+	}
+
+	jobGVR := schema.GroupVersionResource{
+		Group:    "batch",
+		Version:  "v1",
+		Resource: "jobs",
+	}
+
+	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
+		t.Error(err)
+	}
+
+	topic := getTopic(t, topicName)
+
+	start := time.Now()
+
+	r := topic.Publish(context.TODO(), &pubsub.Message{
+		Attributes: map[string]string{
+			"target": "falldown",
+		},
+		Data: []byte(`{"foo":bar}`),
+	})
+	_, err := r.Get(context.TODO())
+	if err != nil {
+		t.Logf("%s", err)
+	}
+
+	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	if err != nil {
+		t.Error(err)
+	}
+	t.Logf("Last term message => %s", msg)
+
+	metricClient, err := metrics.NewStackDriverMetricClient()
+	if err != nil {
+		t.Errorf("failed to create stackdriver metric client: %s", err.Error())
+	}
+
+	// If we reach this point, the projectID should have been set.
+	projectID := os.Getenv(ProwProjectKey)
+	filter := map[string]interface{}{
+		"metric.type":                      eventCountMetricType,
+		"resource.type":                    globalMetricResourceType,
+		"metric.label.resource_group":      pullSubscriptionResourceGroup,
+		"metric.label.event_type":          v1alpha1.PubSubPublish,
+		"metric.label.event_source":        v1alpha1.PubSubEventSource(projectID, topicName),
+		"metric.label.namespace":           client.Namespace,
+		"metric.label.name":                psName,
+		"metric.label.response_code":       http.StatusOK,
+		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusOK),
+	}
+
+	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
+		metrics.WithStackDriverFilter(filter),
+		metrics.WithStackDriverInterval(start.Unix(), time.Now().Unix()),
+		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
+		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_SUM),
+	)
 
 	if msg != "" {
 		out := &TargetOutput{}
