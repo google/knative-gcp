@@ -80,13 +80,6 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
 }
 
-// TestPullSubscriptionWithStackDriverMetrics tests we send metrics to StackDriver from PullSubscriptions.
-func TestPullSubscriptionWithStackDriverMetrics(t *testing.T) {
-	cancel := logstream.Start(t)
-	defer cancel()
-	PullSubscriptionWithStackDriverMetrics(t, packageToImageConfig)
-}
-
 // TestStorage tests we can knock down a target fot storage
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
@@ -94,3 +87,9 @@ func TestStorage(t *testing.T) {
 	StorageWithTestImpl(t, packageToImageConfig)
 }
 
+// TestStorageStackDriverMetrics tests we send metrics to StackDriver from Storages.
+func TestStorageStackDriverMetrics(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	StorageWithStackDriverMetrics(t, packageToImageConfig)
+}

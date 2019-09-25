@@ -19,19 +19,14 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
 	"github.com/google/uuid"
-	"google.golang.org/api/iterator"
-	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
+
+	"cloud.google.com/go/pubsub"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
 	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -239,126 +234,6 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 				t.Logf("job: %s\n", logs)
 			}
 			t.Fail()
-		}
-	}
-}
-
-// PullSubscriptionMetrics tests we send metrics to StackDriver whenever we send an event through a PullSubscription.
-func PullSubscriptionWithStackDriverMetrics(t *testing.T, packages map[string]string) {
-	topicName, deleteTopic := makeTopicOrDie(t)
-	defer deleteTopic()
-
-	psName := topicName + "-sub"
-	targetName := topicName + "-target"
-
-	client := Setup(t, true)
-	defer TearDown(client)
-
-	config := map[string]string{
-		"namespace":    client.Namespace,
-		"topic":        topicName,
-		"subscription": psName,
-		"targetName":   targetName,
-		"targetUID":    uuid.New().String(),
-	}
-	for k, v := range packages {
-		config[k] = v
-	}
-
-	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create resources: %s", err.Error())
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create: %s", err.Error())
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
-
-	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
-		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
-		t.Error(err)
-	}
-
-	topic := getTopic(t, topicName)
-
-	start := time.Now()
-
-	r := topic.Publish(context.TODO(), &pubsub.Message{
-		Attributes: map[string]string{
-			"target": "falldown",
-		},
-		Data: []byte(`{"foo":bar}`),
-	})
-	_, err := r.Get(context.TODO())
-	if err != nil {
-		t.Logf("%s", err)
-	}
-
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("Last term message => %s", msg)
-
-	metricClient, err := metrics.NewStackDriverMetricClient()
-	if err != nil {
-		t.Errorf("failed to create stackdriver metric client: %s", err.Error())
-	}
-
-	// If we reach this point, the projectID should have been set.
-	projectID := os.Getenv(ProwProjectKey)
-	filter := map[string]interface{}{
-		"metric.type":                      eventCountMetricType,
-		"resource.type":                    globalMetricResourceType,
-		"metric.label.resource_group":      pullSubscriptionResourceGroup,
-		"metric.label.event_type":          v1alpha1.PubSubPublish,
-		"metric.label.event_source":        v1alpha1.PubSubEventSource(projectID, topicName),
-		"metric.label.namespace":           client.Namespace,
-		"metric.label.name":                psName,
-		"metric.label.response_code":       http.StatusOK,
-		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusOK),
-	}
-
-	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
-		metrics.WithStackDriverFilter(filter),
-		metrics.WithStackDriverInterval(start.Unix(), time.Now().Unix()),
-		metrics.WithStackDriverAlignmentPeriod(int64(time.Now().Sub(start).Seconds())),
-		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
-		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_SUM),
-	)
-
-	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
-
-	for {
-		res, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			t.Errorf("failed to iterate over result: %v", err)
-		}
-		t.Logf("metric: %s, resource: %s", res.Metric.Type, res.Resource.Type)
-		for k, v := range res.Resource.Labels {
-			t.Logf("label: %s=%s", k, v)
-		}
-		actualCount := res.GetPoints()[0].GetValue().GetInt64Value()
-		expectedCount := int64(1)
-		if actualCount != expectedCount {
-			t.Errorf("actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
 		}
 	}
 }
