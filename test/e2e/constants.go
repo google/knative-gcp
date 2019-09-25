@@ -19,8 +19,7 @@ package e2e
 const (
 	ProwProjectKey = "E2E_PROJECT_ID"
 
-	eventCountMetricType          = "custom.googleapis.com/cloud.run/source/event_count"
-	globalMetricResourceType      = "global"
-	storageResourceGroup          = "storages.events.cloud.run"
-	pullSubscriptionResourceGroup = "pullsubscriptions.events.cloud.run"
+	eventCountMetricType     = "custom.googleapis.com/cloud.run/source/event_count"
+	globalMetricResourceType = "global"
+	storageResourceGroup     = "storages.events.cloud.run"
 )

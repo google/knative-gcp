@@ -308,15 +308,16 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 	// If we reach this point, the projectID should have been set.
 	projectID := os.Getenv(ProwProjectKey)
 	filter := map[string]interface{}{
-		"metric.type":                      eventCountMetricType,
-		"resource.type":                    globalMetricResourceType,
-		"metric.label.resource_group":      storageResourceGroup,
-		"metric.label.event_type":          v1alpha1.StorageFinalize,
-		"metric.label.event_source":        v1alpha1.StorageEventSource(bucketName),
-		"metric.label.namespace":           client.Namespace,
-		"metric.label.name":                storageName,
-		"metric.label.response_code":       http.StatusOK,
-		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusOK),
+		"metric.type":                 eventCountMetricType,
+		"resource.type":               globalMetricResourceType,
+		"metric.label.resource_group": storageResourceGroup,
+		"metric.label.event_type":     v1alpha1.StorageFinalize,
+		"metric.label.event_source":   v1alpha1.StorageEventSource(bucketName),
+		"metric.label.namespace":      client.Namespace,
+		"metric.label.name":           storageName,
+		// We exit the target image before sending a response, thus check for 500.
+		"metric.label.response_code":       http.StatusInternalServerError,
+		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
 	}
 
 	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
