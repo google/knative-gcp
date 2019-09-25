@@ -19,6 +19,9 @@ metadata:
     eventing.knative.dev/source: "true"
     events.cloud.run/release: devel
     events.cloud.run/crd-install: "true"
+  annotations:
+    registry.cloud.run/eventType.pullsubscription.publish: |
+      { type: "google.pubsub.topic.publish", schema: "", description: "This event is sent when a message is published to a Cloud Pub/Sub topic."}
   name: pullsubscriptions.pubsub.cloud.run
 spec:
   group: pubsub.cloud.run
@@ -46,24 +49,6 @@ spec:
   validation:
     openAPIV3Schema:
       properties:
-        registry:
-          type: object
-          title: "PubSub"
-          description: "Internal information, users should not set this property"
-          properties:
-            eventTypes:
-              type: object
-              description: "Event types that PullSubscription can produce"
-              properties:
-                publish:
-                  type: object
-                  description: "This event is sent when a message is published to a Cloud Pub/Sub topic."
-                  properties:
-                    type:
-                      type: string
-                      pattern: "google.pubsub.topic.publish"
-                    schema:
-                      type: string
         spec:
           # TODO: update the OpenAPI to be much more robust.
           required:
