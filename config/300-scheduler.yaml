@@ -21,8 +21,10 @@ metadata:
     events.cloud.run/crd-install: "true"
   annotations:
     # TODO properly define type, schema, and description.
-    registry.cloud.run/eventType.scheduler.publish: |
-      { type: "google.pubsub.topic.publish", schema: "", description: "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+    registry.cloud.run/eventTypes: |
+      [
+        { "type": "google.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+      ]
   name: schedulers.events.cloud.run
 spec:
   group: events.cloud.run

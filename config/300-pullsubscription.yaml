@@ -20,8 +20,10 @@ metadata:
     events.cloud.run/release: devel
     events.cloud.run/crd-install: "true"
   annotations:
-    registry.cloud.run/eventType.pullsubscription.publish: |
-      { type: "google.pubsub.topic.publish", schema: "", description: "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+    registry.cloud.run/eventTypes: |
+      [
+        { "type": "google.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+      ]
   name: pullsubscriptions.pubsub.cloud.run
 spec:
   group: pubsub.cloud.run
