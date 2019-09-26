@@ -54,6 +54,7 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
+	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),
