@@ -18,20 +18,36 @@ package v1alpha1
 
 import (
 	"context"
+	"time"
+
+	"knative.dev/pkg/ptr"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (s *Scheduler) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
+const (
+	defaultRetentionDuration = 7 * 24 * time.Hour
+	defaultAckDeadline       = 30 * time.Second
+)
+
+func (ps *PubSub) SetDefaults(ctx context.Context) {
+	ps.Spec.SetDefaults(ctx)
 }
 
-func (s *SchedulerSpec) SetDefaults(ctx context.Context) {
-	// TODO? What defaults?
+func (pss *PubSubSpec) SetDefaults(ctx context.Context) {
+	if pss.AckDeadline == nil {
+		ackDeadline := defaultAckDeadline
+		pss.AckDeadline = ptr.String(ackDeadline.String())
+	}
 
-	if s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, corev1.SecretKeySelector{}) {
-		s.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+	if pss.RetentionDuration == nil {
+		retentionDuration := defaultRetentionDuration
+		pss.RetentionDuration = ptr.String(retentionDuration.String())
+	}
+
+	if pss.Secret == nil || equality.Semantic.DeepEqual(pss.Secret, &corev1.SecretKeySelector{}) {
+		pss.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }

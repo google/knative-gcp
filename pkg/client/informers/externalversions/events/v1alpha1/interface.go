@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// PubSubs returns a PubSubInformer.
+	PubSubs() PubSubInformer
 	// Schedulers returns a SchedulerInformer.
 	Schedulers() SchedulerInformer
 	// Storages returns a StorageInformer.
@@ -39,6 +41,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// PubSubs returns a PubSubInformer.
+func (v *version) PubSubs() PubSubInformer {
+	return &pubSubInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Schedulers returns a SchedulerInformer.

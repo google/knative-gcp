@@ -18,6 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+// PubSubListerExpansion allows custom methods to be added to
+// PubSubLister.
+type PubSubListerExpansion interface{}
+
+// PubSubNamespaceListerExpansion allows custom methods to be added to
+// PubSubNamespaceLister.
+type PubSubNamespaceListerExpansion interface{}
+
 // SchedulerListerExpansion allows custom methods to be added to
 // SchedulerLister.
 type SchedulerListerExpansion interface{}
