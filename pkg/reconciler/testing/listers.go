@@ -138,6 +138,10 @@ func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
 	return eventslisters.NewSchedulerLister(l.indexerFor(&EventsV1alpha1.Scheduler{}))
 }
 
+func (l *Listers) GetPubSubLister() eventslisters.PubSubLister {
+	return eventslisters.NewPubSubLister(l.indexerFor(&EventsV1alpha1.PubSub{}))
+}
+
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
 }
