@@ -20,14 +20,13 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/apis/v1alpha1"
 )
 
 // +genclient
@@ -54,16 +53,9 @@ var _ = duck.VerifyType(&PubSub{}, &duckv1.Conditions{})
 
 // PubSubSpec defines the desired state of the PubSub.
 type PubSubSpec struct {
-	// Secret is the credential to use to create and poll the PubSub
-	// Subscription. The value of the secret entry must be a service account
-	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// +optional
-	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
-
-	// Project is the ID of the Google Cloud Project that the PubSub
-	// Topic exists in.
-	// +optional
-	Project string `json:"project,omitempty"`
+	// This brings in the PubSub based Source Specs. Includes:
+	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	duckv1alpha1.PubSubSpec
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
 	// be in the form of the unique identifier within the project, not the
@@ -89,30 +81,6 @@ type PubSubSpec struct {
 	// shorter than 10 minutes. Defaults to 7 days ('7d').
 	// +optional
 	RetentionDuration *string `json:"retentionDuration,omitempty"`
-
-	// Sink is a reference to an object that will resolve to a domain name or a
-	// URI directly to use as the sink.
-	Sink v1alpha1.Destination `json:"sink"`
-
-	// Transformer is a reference to an object that will resolve to a domain
-	// name or a URI directly to use as the transformer or a URI directly.
-	// +optional
-	Transformer *v1alpha1.Destination `json:"transformer,omitempty"`
-
-	// CloudEventOverrides defines overrides to control modifications of the
-	// event sent to the sink.
-	// +optional
-	CloudEventOverrides *CloudEventOverrides `json:"ceOverrides,omitempty"`
-}
-
-// CloudEventOverrides defines arguments for a Source that control the output
-// format of the CloudEvents produced by the Source.
-type CloudEventOverrides struct {
-	// Extensions specify what attribute are added or overridden on the
-	// outbound event. Each `Extensions` key-value pair are set on the event as
-	// an attribute extension independently.
-	// +optional
-	Extensions map[string]string `json:"extensions,omitempty"`
 }
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
@@ -144,59 +112,18 @@ const (
 	// PubSubConditionReady has status True when the PubSub is
 	// ready to send events.
 	PubSubConditionReady = apis.ConditionReady
-
-	// PubSubConditionSinkProvided has status True when the PubSub
-	// has been configured with a sink target.
-	PubSubConditionSinkProvided apis.ConditionType = "SinkProvided"
-
-	// PubSubConditionDeployed has status True when the PubSub has
-	// had its receive adapter deployment created.
-	PubSubConditionDeployed apis.ConditionType = "Deployed"
-
-	// PubSubConditionSubscribed has status True when a Google Cloud
-	// Pub/Sub Subscription has been created pointing at the created receive
-	// adapter deployment.
-	PubSubConditionSubscribed apis.ConditionType = "Subscribed"
-
-	// PubSubConditionTransformerProvided has status True when the
-	// PubSub has been configured with a transformer target.
-	PubSubConditionTransformerProvided apis.ConditionType = "TransformerProvided"
-
-	// PubSubConditionEventTypesProvided has status True when the
-	// PubSub has been configured with event types.
-	PubSubConditionEventTypesProvided apis.ConditionType = "EventTypesProvided"
 )
 
 var PubSubCondSet = apis.NewLivingConditionSet(
-	PubSubConditionSinkProvided,
-	PubSubConditionDeployed,
-	PubSubConditionSubscribed,
+	duckv1alpha1.PullSubscriptionReady,
+	duckv1alpha1.TopicReady,
 )
 
 // PubSubStatus defines the observed state of PubSub.
 type PubSubStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"`
-
-	// SinkURI is the current active sink URI that has been configured for the
-	// PubSub.
-	// +optional
-	SinkURI string `json:"sinkUri,omitempty"`
-
-	// TransformerURI is the current active transformer URI that has been
-	// configured for the PubSub.
-	// +optional
-	TransformerURI string `json:"transformerUri,omitempty"`
-
-	// ProjectID is the resolved project ID in use by the PubSub.
-	// +optional
-	ProjectID string `json:"projectId,omitempty"`
-
-	// SubscriptionID is the created subscription ID used by the PubSub.
-	// +optional
-	SubscriptionID string `json:"subscriptionId,omitempty"`
+	// This brings in our GCP PubSub based events importers
+	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
+	duckv1alpha1.PubSubStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

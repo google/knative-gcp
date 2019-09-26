@@ -54,12 +54,6 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 	} else if err := validateDestination(current.Sink); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
-	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &v1alpha1.Destination{}) {
-		if err := validateDestination(*current.Transformer); err != nil {
-			errs = errs.Also(err.ViaField("transformer"))
-		}
-	}
 
 	if current.RetentionDuration != nil {
 		// If set, RetentionDuration Cannot be longer than 7 days or shorter than 10 minutes.
@@ -131,7 +125,7 @@ func (current *PubSub) CheckImmutableFields(ctx context.Context, og apis.Immutab
 	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(PubSubSpec{},
-			"Sink", "Transformer", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
+			"Sink", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

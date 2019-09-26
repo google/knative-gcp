@@ -44,11 +44,13 @@ func TestPubSubDefaults(t *testing.T) {
 			Spec: PubSubSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "my-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "my-cloud-key",
+						},
+						Key: "test.json",
 					},
-					Key: "test.json",
 				},
 			},
 		},
@@ -56,11 +58,13 @@ func TestPubSubDefaults(t *testing.T) {
 			Spec: PubSubSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "my-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "my-cloud-key",
+						},
+						Key: "test.json",
 					},
-					Key: "test.json",
 				},
 			},
 		},
@@ -74,7 +78,9 @@ func TestPubSubDefaults(t *testing.T) {
 			Spec: PubSubSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				},
 			},
 		},
 	}}
@@ -98,11 +104,13 @@ func TestPubSubDefaults_NoChange(t *testing.T) {
 		Spec: PubSubSpec{
 			AckDeadline:       ptr.String(secs60.String()),
 			RetentionDuration: ptr.String(days2.String()),
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "my-cloud-key",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
 				},
-				Key: "test.json",
 			},
 		},
 	}
