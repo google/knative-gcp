@@ -61,7 +61,7 @@ type PubSubSpec struct {
 	// be in the form of the unique identifier within the project, not the
 	// entire name. E.g. it must be 'laconia', not
 	// 'projects/my-proj/topics/laconia'.
-	Topic string `json:"topic,omitempty"`
+	Topic string `json:"topic"`
 
 	// AckDeadline is the default maximum time after a subscriber receives a
 	// message before the subscriber should acknowledge the message. Defaults
@@ -138,4 +138,21 @@ type PubSubList struct {
 // GetGroupVersionKind returns the GroupVersionKind.
 func (s *PubSub) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("PubSub")
+}
+
+// Methods for pubsubable interface
+
+// PubSubSpec returns the PubSubSpec portion of the Spec.
+func (ps *PubSub) PubSubSpec() *duckv1alpha1.PubSubSpec {
+	return &ps.Spec.PubSubSpec
+}
+
+// PubSubStatus returns the PubSubStatus portion of the Status.
+func (ps *PubSub) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &ps.Status.PubSubStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (ps *PubSub) ConditionSet() *apis.ConditionSet {
+	return &PubSubCondSet
 }
