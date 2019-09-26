@@ -81,14 +81,6 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	// Mode [optional]
-	switch current.Mode {
-	case "", ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:
-		// valid
-	default:
-		errs = errs.Also(apis.ErrInvalidValue(current.Mode, "mode"))
-	}
-
 	return errs
 }
 
@@ -139,7 +131,7 @@ func (current *PubSub) CheckImmutableFields(ctx context.Context, og apis.Immutab
 	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(PubSubSpec{},
-			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
+			"Sink", "Transformer", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},

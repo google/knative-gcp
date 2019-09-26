@@ -36,26 +36,15 @@ func TestPubSubEventSource(t *testing.T) {
 	}
 }
 
-func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
+func TestPubSubGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "pubsub.cloud.run",
+		Group:   "events.cloud.run",
 		Version: "v1alpha1",
 		Kind:    "PubSub",
 	}
 
 	c := &PubSub{}
 	got := c.GetGroupVersionKind()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
-func TestPullSubscriptionPubSubMode_nil(t *testing.T) {
-	want := ModeType("")
-
-	c := &PubSub{}
-	got := c.PubSubMode()
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
