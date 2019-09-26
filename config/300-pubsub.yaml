@@ -65,9 +65,6 @@ spec:
             sink:
               type: object
               description: "Reference to an object that will resolve to a domain name to use as the sink."
-            transformer:
-              type: object
-              description: "Reference to an object that will resolve to a domain name to use as the transformer."
             ceOverrides:
               type: object
               description: "Defines overrides to control modifications of the event sent to the sink."
@@ -117,9 +114,9 @@ spec:
               type: array
             sinkUri:
               type: string
-            transformerUri:
-              type: string
             projectId:
+              type: string
+            topicId:
               type: string
             subscriptionId:
               type: string
