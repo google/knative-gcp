@@ -35,6 +35,7 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
+	event.SetSubject(tx.Subscription)
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	event.SetType(pubSubPublish)
