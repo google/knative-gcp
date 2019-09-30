@@ -31,8 +31,10 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/reconciler/testing"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
 	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
+	servingv1listers "knative.dev/serving/pkg/client/listers/serving/v1"
 	servingv1alpha1listers "knative.dev/serving/pkg/client/listers/serving/v1alpha1"
 	servingv1beta1listers "knative.dev/serving/pkg/client/listers/serving/v1beta1"
 
@@ -148,6 +150,10 @@ func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 
 func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
+}
+
+func (l *Listers) GetV1ServiceLister() servingv1listers.ServiceLister {
+	return servingv1listers.NewServiceLister(l.indexerFor(&servingv1.Service{}))
 }
 
 func (l *Listers) GetV1alpha1ServiceLister() servingv1alpha1listers.ServiceLister {

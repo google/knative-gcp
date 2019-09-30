@@ -39,19 +39,19 @@ required = [
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.15.3"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.15.3"
 
 [[override]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.15.3"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.12.9"
+  version = "kubernetes-1.15.3"
 
 # manifestival is a testing only dep.
 [[constraint]]
@@ -88,9 +88,12 @@ required = [
   name = "golang.org/x/net"
 
 # Required for opencensus.
+# We're pinning this into a version (in the head of pkg) as there
+# seems to be some wonky issues by only specifying the version.
 [[override]]
   name = "contrib.go.opencensus.io/exporter/stackdriver"
-  version = "0.12.2"
+  revision = "68e3d742b03c099c35428443886e65d9587c8d76"
+#  version = "v0.12.2"
 
 # Required for opencensus.
 [[override]]

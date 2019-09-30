@@ -32,7 +32,6 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/tracker"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 
@@ -355,7 +354,7 @@ func TestAllCases(t *testing.T) {
 			channelLister:      listers.GetChannelLister(),
 			topicLister:        listers.GetTopicLister(),
 			subscriptionLister: listers.GetPullSubscriptionLister(),
-			tracker:            tracker.New(func(string) {}, 0),
+			tracker:            &MockTracker{},
 		}
 	}))
 

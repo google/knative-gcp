@@ -27,9 +27,7 @@ import (
 	// Fake injection informers
 
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
-	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service/fake"
-
-	//_ "knative.dev/serving/pkg/client/injection/informers/serving/v1beta1/service/fake"
+	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1/service/fake"
 
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 )
@@ -41,7 +39,7 @@ func TestNew(t *testing.T) {
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
 	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
-	c := NewController(ctx, configmap.NewFixedWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher())
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

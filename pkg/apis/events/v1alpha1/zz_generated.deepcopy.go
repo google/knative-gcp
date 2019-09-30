@@ -161,7 +161,7 @@ func (in *Scheduler) DeepCopyObject() runtime.Object {
 func (in *SchedulerList) DeepCopyInto(out *SchedulerList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Scheduler, len(*in))
@@ -256,7 +256,7 @@ func (in *Storage) DeepCopyObject() runtime.Object {
 func (in *StorageList) DeepCopyInto(out *StorageList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Storage, len(*in))

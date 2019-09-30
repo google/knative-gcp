@@ -30,14 +30,8 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Events() eventsv1alpha1.EventsV1alpha1Interface
 	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Messaging() messagingv1alpha1.MessagingV1alpha1Interface
 	PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface
-	// Deprecated: please explicitly pick a version if possible.
-	Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -54,31 +48,13 @@ func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
 	return c.eventsV1alpha1
 }
 
-// Deprecated: Events retrieves the default version of EventsClient.
-// Please explicitly pick a version.
-func (c *Clientset) Events() eventsv1alpha1.EventsV1alpha1Interface {
-	return c.eventsV1alpha1
-}
-
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
 func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface {
 	return c.messagingV1alpha1
 }
 
-// Deprecated: Messaging retrieves the default version of MessagingClient.
-// Please explicitly pick a version.
-func (c *Clientset) Messaging() messagingv1alpha1.MessagingV1alpha1Interface {
-	return c.messagingV1alpha1
-}
-
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
 func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
-	return c.pubsubV1alpha1
-}
-
-// Deprecated: Pubsub retrieves the default version of PubsubClient.
-// Please explicitly pick a version.
-func (c *Clientset) Pubsub() pubsubv1alpha1.PubsubV1alpha1Interface {
 	return c.pubsubV1alpha1
 }
 
