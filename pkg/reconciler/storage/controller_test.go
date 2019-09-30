@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("STORAGE_NOTIFICATION_IMAGE", "STORAGE_NOTIFICATION_IMAGE")
 
-	c := NewController(ctx, configmap.NewFixedWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher())
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
