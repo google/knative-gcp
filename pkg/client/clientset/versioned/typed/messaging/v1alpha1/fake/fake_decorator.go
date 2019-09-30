@@ -131,7 +131,7 @@ func (c *FakeDecorators) DeleteCollection(options *v1.DeleteOptions, listOptions
 // Patch applies the patch and returns the patched decorator.
 func (c *FakeDecorators) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Decorator, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(decoratorsResource, c.ns, name, data, subresources...), &v1alpha1.Decorator{})
+		Invokes(testing.NewPatchSubresourceAction(decoratorsResource, c.ns, name, pt, data, subresources...), &v1alpha1.Decorator{})
 
 	if obj == nil {
 		return nil, err

@@ -58,7 +58,7 @@ func (in *Channel) DeepCopyObject() runtime.Object {
 func (in *ChannelList) DeepCopyInto(out *ChannelList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Channel, len(*in))
@@ -164,7 +164,7 @@ func (in *Decorator) DeepCopyObject() runtime.Object {
 func (in *DecoratorList) DeepCopyInto(out *DecoratorList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Decorator, len(*in))

@@ -37,7 +37,6 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
-	"knative.dev/pkg/tracker"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
@@ -425,7 +424,7 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
-			tracker:             tracker.New(func(string) {}, 0),
+			tracker:             &MockTracker{},
 			receiveAdapterImage: testImage,
 		}
 	}))

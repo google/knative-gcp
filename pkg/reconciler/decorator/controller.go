@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 
-	v1alpha1serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1alpha1/service"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 
 	decoratorinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/decorator"
 )
@@ -52,7 +52,7 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 	decoratorInformer := decoratorinformer.Get(ctx)
-	v1alpha1ServiceInformer := v1alpha1serviceinformer.Get(ctx)
+	serviceinformer := serviceinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
 
@@ -64,7 +64,7 @@ func NewController(
 	c := &Reconciler{
 		Base:            reconciler.NewBase(ctx, controllerAgentName, cmw),
 		decoratorLister: decoratorInformer.Lister(),
-		serviceLister:   v1alpha1ServiceInformer.Lister(),
+		serviceLister:   serviceinformer.Lister(),
 		decoratorImage:  env.Decorator,
 	}
 
@@ -73,7 +73,7 @@ func NewController(
 	c.Logger.Info("Setting up event handlers")
 	decoratorInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	v1alpha1ServiceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Decorator")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
