@@ -48,12 +48,13 @@ func (ps *PubSubStatus) MarkPullSubscriptionReady() {
 	PubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
-func (ps *PubSubStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	PubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
-}
-
-// MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
-func (ps *PubSubStatus) MarkTopicReady() {
-	PubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.TopicReady)
+func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
+	switch {
+	case ready == nil:
+		ps.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription has no Ready type status")
+	case ready.IsTrue():
+		ps.MarkPullSubscriptionReady()
+	case ready.IsFalse():
+		ps.MarkPullSubscriptionNotReady(ready.Reason, ready.Message)
+	}
 }

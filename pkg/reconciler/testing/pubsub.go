@@ -70,23 +70,6 @@ func WithInitPubSubConditions(ps *v1alpha1.PubSub) {
 	ps.Status.InitializeConditions()
 }
 
-// WithPubSubTopicNotReady marks the condition that the
-// topic is not ready
-func WithPubSubTopicNotReady(reason, message string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
-		ps.Status.MarkTopicNotReady(reason, message)
-	}
-}
-
-// WithPubSubTopicReady marks the condition that the
-// topic is not ready
-func WithPubSubTopicReady(topicID string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
-		ps.Status.MarkTopicReady()
-		ps.Status.TopicID = topicID
-	}
-}
-
 // WithPubSubPullSubscriptionNotReady marks the condition that the
 // topic is not ready
 func WithPubSubPullSubscriptionNotReady(reason, message string) PubSubOption {
@@ -107,13 +90,6 @@ func WithPubSubPullSubscriptionReady() PubSubOption {
 func WithPubSubSinkURI(url *apis.URL) PubSubOption {
 	return func(ps *v1alpha1.PubSub) {
 		ps.Status.SinkURI = url
-	}
-}
-
-// WithPubSubProjectID sets the status for Project ID
-func WithPubSubProjectID(projectID string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
-		ps.Status.ProjectID = projectID
 	}
 }
 

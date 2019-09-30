@@ -116,14 +116,12 @@ const (
 
 var PubSubCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
-	duckv1alpha1.TopicReady,
 )
 
 // PubSubStatus defines the observed state of PubSub.
 type PubSubStatus struct {
-	// This brings in our GCP PubSub based events importers
-	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubStatus
+	// This brings in duck/v1beta1 Status as well as SinkURI
+	duckv1.SourceStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -145,11 +143,6 @@ func (s *PubSub) GetGroupVersionKind() schema.GroupVersionKind {
 // PubSubSpec returns the PubSubSpec portion of the Spec.
 func (ps *PubSub) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
-}
-
-// PubSubStatus returns the PubSubStatus portion of the Status.
-func (ps *PubSub) PubSubStatus() *duckv1alpha1.PubSubStatus {
-	return &ps.Status.PubSubStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object

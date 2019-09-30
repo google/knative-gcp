@@ -26,7 +26,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/pubsub"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
@@ -44,22 +43,18 @@ func NewController(
 ) *controller.Impl {
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
-	topicInformer := topicinformers.Get(ctx)
 	pubsubInformer := pubsubinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:   reconciler.NewPubSubBase(ctx, controllerAgentName, "pubsub.events.cloud.run", cmw),
-		pubsubLister: pubsubInformer.Lister(),
+		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+		pubsubLister:           pubsubInformer.Lister(),
+		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
+		receiveAdapterName:     "pubsub.events.cloud.run",
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),

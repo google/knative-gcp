@@ -18,7 +18,6 @@ package pubsub
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -71,10 +70,6 @@ var (
 		},
 		Key: "key.json",
 	}
-
-	// Message for when the topic and pullsubscription with the above variables is not ready.
-	topicNotReadyMsg            = "Topic testnamespace/my-test-pubsub not ready"
-	pullSubscriptionNotReadyMsg = "PullSubscription testnamespace/my-test-pubsub not ready"
 )
 
 func init() {
@@ -92,19 +87,6 @@ func ownerRef() metav1.OwnerReference {
 		Controller:         &trueVal,
 		BlockOwnerDeletion: &trueVal,
 	}
-}
-
-func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	var fname string
-	if add {
-		fname = fmt.Sprintf("%q", finalizerName)
-	}
-	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
 }
 
 func newSink() *unstructured.Unstructured {
@@ -146,44 +128,7 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "topic created, not ready",
-		Objects: []runtime.Object{
-			NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubStatusObservedGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithInitPubSubConditions,
-				WithPubSubTopicNotReady("TopicNotReady", topicNotReadyMsg),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewTopic(pubsubName, testNS,
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Topic:             testTopicID,
-					PropagationPolicy: "CreateDelete",
-				}),
-				WithTopicLabels(map[string]string{
-					"receive-adapter": "pubsub.events.cloud.run",
-				}),
-				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-			),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, pubsubName, true),
-		},
-	}, {
-		Name: "topic exists, topic not ready",
+		Name: "pullsubscription created",
 		Objects: []runtime.Object{
 			NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -191,42 +136,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSink(sinkGVK, sinkName),
 				WithPubSubFinalizers(finalizerName),
 			),
-			NewTopic(pubsubName, testNS,
-				WithTopicTopicID(testTopicID),
-			),
 			newSink(),
 		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubStatusObservedGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithPubSubFinalizers(finalizerName),
-				WithInitPubSubConditions,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicNotReady("TopicNotReady", topicNotReadyMsg),
-			),
-		}},
-	}, {
-		Name: "topic exists and is ready, no projectid",
-		Objects: []runtime.Object{
-			NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithPubSubFinalizers(finalizerName),
-			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
+		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -235,101 +147,8 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSink(sinkGVK, sinkName),
 				WithInitPubSubConditions,
 				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-pubsub did not expose projectid"),
 				WithPubSubFinalizers(finalizerName),
-			),
-		}},
-	}, {
-		Name: "topic exists and is ready, no topicid",
-		Objects: []runtime.Object{
-			NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithPubSubFinalizers(finalizerName),
-			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady(""),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubStatusObservedGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithInitPubSubConditions,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicNotReady("TopicNotReady", "Topic testnamespace/my-test-pubsub did not expose topicid"),
-				WithPubSubFinalizers(finalizerName),
-			),
-		}},
-	}, {
-		Name: "topic exists and is ready, unexpected topicid",
-		Objects: []runtime.Object{
-			NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithPubSubFinalizers(finalizerName),
-			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady("garbaaaaage"),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubStatusObservedGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithInitPubSubConditions,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicNotReady("TopicNotReady", `Topic testnamespace/my-test-pubsub topic mismatch expected "test-topic" got "garbaaaaage"`),
-				WithPubSubFinalizers(finalizerName),
-				WithPubSubStatusObservedGeneration(generation),
-			),
-		}},
-	}, {
-		Name: "topic exists and is ready, pullsubscription created",
-		Objects: []runtime.Object{
-			NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithPubSubFinalizers(finalizerName),
-			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
-			),
-			newSink(),
-		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSub(pubsubName, testNS,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubStatusObservedGeneration(generation),
-				WithPubSubTopic(testTopicID),
-				WithPubSubSink(sinkGVK, sinkName),
-				WithInitPubSubConditions,
-				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicReady(testTopicID),
-				WithPubSubProjectID(testProject),
-				WithPubSubFinalizers(finalizerName),
-				WithPubSubPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+				WithPubSubPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription has no Ready type status"),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -349,7 +168,7 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 	}, {
-		Name: "topic exists and ready, pullsubscription exists but is not ready",
+		Name: "pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
 			NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -357,16 +176,11 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSink(sinkGVK, sinkName),
 				WithPubSubFinalizers(finalizerName),
 			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
-			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS),
+			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionNotReady", "no ready test message")),
 			newSink(),
 		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: true,
+		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -376,13 +190,11 @@ func TestAllCases(t *testing.T) {
 				WithPubSubFinalizers(finalizerName),
 				WithInitPubSubConditions,
 				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubTopicReady(testTopicID),
-				WithPubSubProjectID(testProject),
-				WithPubSubPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+				WithPubSubPullSubscriptionNotReady("PullSubscriptionNotReady", "no ready test message"),
 			),
 		}},
 	}, {
-		Name: "topic and pullsubscription exist and ready",
+		Name: "pullsubscription exists and ready",
 		Objects: []runtime.Object{
 			NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -390,18 +202,13 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSink(sinkGVK, sinkName),
 				WithPubSubFinalizers(finalizerName),
 			),
-			NewTopic(pubsubName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
-			),
 			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
 				WithPullSubscriptionReady(sinkURI),
+				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + pubsubName,
-		WantErr: false,
+		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSub(pubsubName, testNS,
 				WithPubSubObjectMetaGeneration(generation),
@@ -410,10 +217,8 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSink(sinkGVK, sinkName),
 				WithPubSubFinalizers(finalizerName),
 				WithInitPubSubConditions,
-				WithPubSubTopicReady(testTopicID),
 				WithPubSubPullSubscriptionReady(),
 				WithPubSubSinkURI(pubsubSinkURL),
-				WithPubSubProjectID(testProject),
 			),
 		}},
 	}}
@@ -421,8 +226,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			PubSubBase:   reconciler.NewPubSubBase(ctx, controllerAgentName, "pubsub.events.cloud.run", cmw),
-			pubsubLister: listers.GetPubSubLister(),
+			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			pubsubLister:           listers.GetPubSubLister(),
+			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
+			receiveAdapterName:     "pubsub.events.cloud.run",
 		}
 	}))
 

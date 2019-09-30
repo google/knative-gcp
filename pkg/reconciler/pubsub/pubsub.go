@@ -18,7 +18,6 @@ package pubsub
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -27,18 +26,23 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
+	// TODO Reconciler name is currently the same as PubSubBase reconciler.
+	//  Move reconciler.pubsub.reconciler.go to some other package and rename its reconciler.
+
 	finalizerName = controllerAgentName
 
 	resourceGroup = "pubsubs.events.cloud.run"
@@ -46,17 +50,21 @@ const (
 
 // Reconciler is the controller implementation for the PubSub source.
 type Reconciler struct {
-	*reconciler.PubSubBase
+	*reconciler.Base
 
 	// pubsubLister for reading pubsubs.
 	pubsubLister listers.PubSubLister
+	// pullsubscriptionLister for reading pullsubscriptions.
+	pullsubscriptionLister pubsublisters.PullSubscriptionLister
+
+	receiveAdapterName string
 }
 
 // Check that we implement the controller.Reconciler interface.
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconcile implements controller.Reconciler
-func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -65,7 +73,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Get the PubSub resource with this namespace/name
-	original, err := c.pubsubLister.PubSubs(namespace).Get(name)
+	original, err := r.pubsubLister.PubSubs(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The PubSub resource may no longer exist, in which case we stop processing.
 		runtime.HandleError(fmt.Errorf("storage '%s' in work queue no longer exists", key))
@@ -77,7 +85,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Don't modify the informers copy
 	csr := original.DeepCopy()
 
-	reconcileErr := c.reconcile(ctx, csr)
+	reconcileErr := r.reconcile(ctx, csr)
 
 	if equality.Semantic.DeepEqual(original.Status, csr.Status) &&
 		equality.Semantic.DeepEqual(original.ObjectMeta, csr.ObjectMeta) {
@@ -85,9 +93,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
-	} else if _, err := c.updateStatus(ctx, csr); err != nil {
+	} else if _, err := r.updateStatus(ctx, csr); err != nil {
 		// TODO: record the event (c.Recorder.Eventf(...
-		c.Logger.Warn("Failed to update PubSub Source status", zap.Error(err))
+		r.Logger.Warn("Failed to update PubSub Source status", zap.Error(err))
 		return err
 	}
 
@@ -99,92 +107,52 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PubSub) error {
-	ps.Status.ObservedGeneration = ps.Generation
-	// If topic has been already configured, stash it here
-	// since right below we remove them.
-	topic := ps.Status.TopicID
+func (r *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSub) error {
+	source.Status.ObservedGeneration = source.Generation
+	source.Status.InitializeConditions()
 
-	ps.Status.InitializeConditions()
-	// And restore it.
-
-	if topic == "" {
-		topic = ps.Spec.Topic
-	}
-
-	// See if the source has been deleted.
-	deletionTimestamp := ps.DeletionTimestamp
-
-	if deletionTimestamp != nil {
-		if err := c.PubSubBase.DeletePubSub(ctx, ps.Namespace, ps.Name); err != nil {
-			c.Logger.Infof("Unable to delete pubsub resources : %s", err)
-			return fmt.Errorf("failed to delete pubsub resources: %s", err)
-		}
-		c.removeFinalizer(ps)
+	if source.DeletionTimestamp != nil {
+		// No finalizer needed, the pullsubscription will be garbage collected.
 		return nil
 	}
 
-	// Ensure that there's finalizer there, since we're about to attempt to
-	// change external state with the topic, so we need to clean it up.
-	err := c.ensureFinalizer(ps)
+	ps, err := r.reconcilePullSubscription(ctx, source)
+	if err != nil {
+		r.Logger.Infof("Failed to reconcile PubSub: %s", err)
+		return err
+	}
+	source.Status.PropagatePullSubscriptionStatus(ps.Status.GetCondition(apis.ConditionReady))
+
+	r.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
+	uri, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
 		return err
 	}
-
-	t, psubs, err := c.PubSubBase.ReconcilePubSub(ctx, ps, topic, resourceGroup)
-	if err != nil {
-		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
-		return err
-	}
-
-	c.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, psubs)
-
+	source.Status.SinkURI = uri
+	r.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", source, ps)
 	return nil
 }
 
-func (c *Reconciler) ensureFinalizer(ps *v1alpha1.PubSub) error {
-	finalizers := sets.NewString(ps.Finalizers...)
-	if finalizers.Has(finalizerName) {
-		return nil
-	}
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      append(ps.Finalizers, finalizerName),
-			"resourceVersion": ps.ResourceVersion,
-		},
-	}
-	patch, err := json.Marshal(mergePatch)
+func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.PubSub) (*pubsubv1alpha1.PullSubscription, error) {
+	ps, err := r.pullsubscriptionLister.PullSubscriptions(source.Namespace).Get(source.Name)
 	if err != nil {
-		return err
+		if !apierrs.IsNotFound(err) {
+			r.Logger.Infof("Failed to get PullSubscriptions: %v", err)
+			return nil, fmt.Errorf("failed to get pullsubscriptions: %v", err)
+		}
+		newPS := resources.MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, source.Spec.Topic, r.receiveAdapterName, resourceGroup)
+		r.Logger.Infof("Creating pullsubscription %+v", newPS)
+		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
+		if err != nil {
+			r.Logger.Infof("Failed to create PullSubscription: %v", err)
+			return nil, fmt.Errorf("failed to create pullsubscription: %v", err)
+		}
 	}
-	_, err = c.RunClientSet.EventsV1alpha1().PubSubs(ps.Namespace).Patch(ps.Name, types.MergePatchType, patch)
-	return err
-
+	return ps, nil
 }
 
-func (c *Reconciler) removeFinalizer(ps *v1alpha1.PubSub) error {
-	// Only remove our finalizer if it's the first one.
-	if len(ps.Finalizers) == 0 || ps.Finalizers[0] != finalizerName {
-		return nil
-	}
-
-	// For parity with merge patch for adding, also use patch for removing
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      ps.Finalizers[1:],
-			"resourceVersion": ps.ResourceVersion,
-		},
-	}
-	patch, err := json.Marshal(mergePatch)
-	if err != nil {
-		return err
-	}
-	_, err = c.RunClientSet.EventsV1alpha1().PubSubs(ps.Namespace).Patch(ps.Name, types.MergePatchType, patch)
-	return err
-}
-
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub) (*v1alpha1.PubSub, error) {
-	source, err := c.pubsubLister.PubSubs(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub) (*v1alpha1.PubSub, error) {
+	source, err := r.pubsubLister.PubSubs(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -197,13 +165,13 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub)
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := c.RunClientSet.EventsV1alpha1().PubSubs(desired.Namespace).UpdateStatus(existing)
+	src, err := r.RunClientSet.EventsV1alpha1().PubSubs(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("PubSub %q became ready after %v", source.Name, duration)
+		r.Logger.Infof("PubSub %q became ready after %v", source.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("PubSub", source.Namespace, source.Name, duration); err != nil {
+		if err := r.StatsReporter.ReportReady("PubSub", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Infof("failed to record ready for Storage, %v", err)
 		}
 	}

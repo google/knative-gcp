@@ -28,7 +28,6 @@ import (
 	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/pubsub/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
 )
