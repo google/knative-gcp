@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("SCHEDULER_JOB_IMAGE", "SCHEDULER_JOB_IMAGE")
 
-	c := NewController(ctx, configmap.NewFixedWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher())
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

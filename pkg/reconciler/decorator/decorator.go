@@ -34,7 +34,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	servingv1alpha1listers "knative.dev/serving/pkg/client/listers/serving/v1alpha1"
+	servingv1listers "knative.dev/serving/pkg/client/listers/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
@@ -54,7 +54,7 @@ type Reconciler struct {
 
 	// decoratorLister index properties about resources
 	decoratorLister listers.DecoratorLister
-	serviceLister   servingv1alpha1listers.ServiceLister
+	serviceLister   servingv1listers.ServiceLister
 
 	decoratorImage string
 }
@@ -171,7 +171,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Decorat
 
 func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1alpha1.Decorator) error {
 	name := resources.GenerateDecoratorName(decorator)
-	existing, err := r.ServingClientSet.ServingV1alpha1().Services(decorator.Namespace).Get(name, metav1.GetOptions{})
+	existing, err := r.ServingClientSet.ServingV1().Services(decorator.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			logging.FromContext(ctx).Error("Unable to get an existing decorator", zap.Error(err))
@@ -192,14 +192,14 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 
 	svc := existing
 	if existing == nil {
-		svc, err = r.ServingClientSet.ServingV1alpha1().Services(decorator.Namespace).Create(desired)
+		svc, err = r.ServingClientSet.ServingV1().Services(decorator.Namespace).Create(desired)
 		if err != nil {
 			return err
 		}
 		logging.FromContext(ctx).Desugar().Info("Decorator created.", zap.Error(err), zap.Any("decorator", svc))
 	} else if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
 		existing.Spec = desired.Spec
-		svc, err = r.ServingClientSet.ServingV1alpha1().Services(decorator.Namespace).Update(existing)
+		svc, err = r.ServingClientSet.ServingV1().Services(decorator.Namespace).Update(existing)
 		if err != nil {
 			return err
 		}

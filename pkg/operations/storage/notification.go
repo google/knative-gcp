@@ -176,7 +176,7 @@ type NotificationOps struct {
 // Run will perform the action configured upon a subscription.
 func (n *NotificationOps) Run(ctx context.Context) error {
 	if n.Client == nil {
-		return errors.New("pub/sub client is nil")
+		return errors.New("GCS client is nil")
 	}
 	logger := logging.FromContext(ctx)
 

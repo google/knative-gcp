@@ -28,8 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
-	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
@@ -111,26 +110,24 @@ func makeDecoratorPodSpec(ctx context.Context, args *DecoratorArgs) corev1.PodSp
 }
 
 // MakeDecorator generates (but does not insert into K8s) the Decorator.
-func MakeDecoratorV1alpha1(ctx context.Context, args *DecoratorArgs) *servingv1alpha1.Service {
+func MakeDecoratorV1alpha1(ctx context.Context, args *DecoratorArgs) *servingv1.Service {
 	podSpec := makeDecoratorPodSpec(ctx, args)
 
-	return &servingv1alpha1.Service{
+	return &servingv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Decorator.Namespace,
 			Name:            GenerateDecoratorName(args.Decorator),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Decorator)},
 		},
-		Spec: servingv1alpha1.ServiceSpec{
-			ConfigurationSpec: servingv1alpha1.ConfigurationSpec{
-				Template: &servingv1alpha1.RevisionTemplateSpec{
+		Spec: servingv1.ServiceSpec{
+			ConfigurationSpec: servingv1.ConfigurationSpec{
+				Template: servingv1.RevisionTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: args.Labels,
 					},
-					Spec: servingv1alpha1.RevisionSpec{
-						RevisionSpec: servingv1beta1.RevisionSpec{
-							PodSpec: podSpec,
-						},
+					Spec: servingv1.RevisionSpec{
+						PodSpec: podSpec,
 					},
 				},
 			},

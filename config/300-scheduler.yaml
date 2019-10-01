@@ -19,6 +19,12 @@ metadata:
     eventing.knative.dev/source: "true"
     events.cloud.run/release: devel
     events.cloud.run/crd-install: "true"
+  annotations:
+    # TODO properly define type, schema, and description.
+    registry.cloud.run/eventTypes: |
+      [
+        { "type": "google.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+      ]
   name: schedulers.events.cloud.run
 spec:
   group: events.cloud.run
@@ -46,24 +52,6 @@ spec:
   validation:
     openAPIV3Schema:
       properties:
-        registry:
-          type: object
-          title: "Scheduler"
-          description: "Internal information, users should not set this property"
-          properties:
-            eventTypes:
-              type: object
-              properties:
-                # TODO properly define type and schema.
-                publish:
-                  type: object
-                  description: "This event is sent when a message is published to a Cloud Pub/Sub topic."
-                  properties:
-                    type:
-                      type: string
-                      pattern: "google.pubsub.topic.publish"
-                    schema:
-                      type: string
         spec:
           properties:
             secret:

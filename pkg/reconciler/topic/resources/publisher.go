@@ -22,8 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
-	servingv1alpha1 "knative.dev/serving/pkg/apis/serving/v1alpha1"
-	servingv1beta1 "knative.dev/serving/pkg/apis/serving/v1beta1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
@@ -90,55 +89,26 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 	return podSpec
 }
 
-// MakePublisherV1beta1 generates (but does not insert into K8s) the Invoker Deployment for
+// MakePublisher generates (but does not insert into K8s) the Invoker Deployment for
 // Channels.
-func MakePublisherV1beta1(args *PublisherArgs) *servingv1beta1.Service {
+func MakePublisher(args *PublisherArgs) *servingv1.Service {
 	podSpec := makePublisherPodSpec(args)
 
-	return &servingv1beta1.Service{
+	return &servingv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:       args.Topic.Namespace,
 			Name:            GeneratePublisherName(args.Topic),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
 		},
-		Spec: servingv1beta1.ServiceSpec{
-			ConfigurationSpec: servingv1beta1.ConfigurationSpec{
-				Template: servingv1beta1.RevisionTemplateSpec{
+		Spec: servingv1.ServiceSpec{
+			ConfigurationSpec: servingv1.ConfigurationSpec{
+				Template: servingv1.RevisionTemplateSpec{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: args.Labels,
 					},
-					Spec: servingv1beta1.RevisionSpec{
+					Spec: servingv1.RevisionSpec{
 						PodSpec: podSpec,
-					},
-				},
-			},
-		},
-	}
-}
-
-// MakePublisherV1beta1 generates (but does not insert into K8s) the Invoker Deployment for
-// Channels.
-func MakePublisherV1alpha1(args *PublisherArgs) *servingv1alpha1.Service {
-	podSpec := makePublisherPodSpec(args)
-
-	return &servingv1alpha1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       args.Topic.Namespace,
-			Name:            GeneratePublisherName(args.Topic),
-			Labels:          args.Labels,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Topic)},
-		},
-		Spec: servingv1alpha1.ServiceSpec{
-			ConfigurationSpec: servingv1alpha1.ConfigurationSpec{
-				Template: &servingv1alpha1.RevisionTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: args.Labels,
-					},
-					Spec: servingv1alpha1.RevisionSpec{
-						RevisionSpec: servingv1beta1.RevisionSpec{
-							PodSpec: podSpec,
-						},
 					},
 				},
 			},

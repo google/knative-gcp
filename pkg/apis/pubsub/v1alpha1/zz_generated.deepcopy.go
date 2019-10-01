@@ -81,7 +81,7 @@ func (in *PullSubscription) DeepCopyObject() runtime.Object {
 func (in *PullSubscriptionList) DeepCopyInto(out *PullSubscriptionList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PullSubscription, len(*in))
@@ -201,7 +201,7 @@ func (in *Topic) DeepCopyObject() runtime.Object {
 func (in *TopicList) DeepCopyInto(out *TopicList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Topic, len(*in))
