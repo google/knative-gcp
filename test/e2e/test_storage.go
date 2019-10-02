@@ -250,8 +250,6 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		t.Error(err)
 	}
 
-	start := time.Now()
-
 	// Add a random name file in the bucket
 	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
 	wc := bucketHandle.Object(fileName).NewWriter(ctx)
@@ -300,6 +298,10 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		}
 	}
 
+	sleepTime := 1 * time.Minute
+	t.Logf("sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
+	time.Sleep(sleepTime)
+
 	metricClient, err := metrics.NewStackDriverMetricClient()
 	if err != nil {
 		t.Errorf("failed to create stackdriver metric client: %s", err.Error())
@@ -313,7 +315,7 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		"metric.label.resource_group": storageResourceGroup,
 		"metric.label.event_type":     v1alpha1.StorageFinalize,
 		"metric.label.event_source":   v1alpha1.StorageEventSource(bucketName),
-		"metric.label.namespace":      client.Namespace,
+		"metric.label.namespace_name": client.Namespace,
 		"metric.label.name":           storageName,
 		// We exit the target image before sending a response, thus check for 500.
 		"metric.label.response_code":       http.StatusInternalServerError,
@@ -322,10 +324,12 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 
 	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
 		metrics.WithStackDriverFilter(filter),
-		metrics.WithStackDriverInterval(start.Unix(), time.Now().Unix()),
-		metrics.WithStackDriverAlignmentPeriod(int64(time.Now().Sub(start).Seconds())),
+		// Starting 5 minutes back up to now.
+		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
+		// Delta counts every 2 minutes.
+		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
 		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
-		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_SUM),
+		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
 	)
 
 	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
@@ -333,10 +337,12 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 	for {
 		res, err := it.Next()
 		if err == iterator.Done {
-			break
+			t.Errorf("no metric reported")
+			t.Fail()
 		}
 		if err != nil {
 			t.Errorf("failed to iterate over result: %v", err)
+			t.Fail()
 		}
 		t.Logf("metric: %s, resource: %s", res.Metric.Type, res.Resource.Type)
 		for k, v := range res.Resource.Labels {
@@ -344,8 +350,10 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		}
 		actualCount := res.GetPoints()[0].GetValue().GetInt64Value()
 		expectedCount := int64(1)
-		if actualCount != expectedCount {
-			t.Errorf("actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+		if actualCount == expectedCount {
+			break
 		}
+		t.Errorf("actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+		t.Fail()
 	}
 }
