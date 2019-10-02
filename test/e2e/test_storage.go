@@ -201,6 +201,7 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 	targetName := bucketName + "-target"
 
 	client := Setup(t, true)
+	client.SetupStackDriverMetrics(t)
 	defer TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage-")
