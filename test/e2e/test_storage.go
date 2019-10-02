@@ -324,9 +324,9 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 
 	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
 		metrics.WithStackDriverFilter(filter),
-		// Starting 5 minutes back up to now.
+		// Starting 5 minutes back until now.
 		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
-		// Delta counts every 2 minutes.
+		// Delta counts aggregated every 2 minutes.
 		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
 		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
 		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
