@@ -90,7 +90,7 @@ function pubsub_setup() {
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
-# Create resources required for Storage Admin setu
+# Create resources required for Storage Admin setup
 function storage_setup() {
   if (( ! IS_PROW )); then
     echo "Update ServiceAccount for Storage Admin"
