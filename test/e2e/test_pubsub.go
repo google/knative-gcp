@@ -30,21 +30,21 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTestImpl(t *testing.T) {
+// SmokePubSubTestImpl tests we can create a pubsub to ready state.
+func SmokePubSubTestImpl(t *testing.T) {
 	topic, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()
 
-	psName := topic + "-sub"
+	psName := topic + "-pubsub"
 
 	client := Setup(t, true)
 	defer TearDown(client)
 
 	installer := NewInstaller(client.Dynamic, map[string]string{
-		"namespace":    client.Namespace,
-		"topic":        topic,
-		"subscription": psName,
-	}, EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
+		"namespace": client.Namespace,
+		"topic":     topic,
+		"pubsub":    psName,
+	}, EndToEndConfigYaml([]string{"pubsub_test", "istio", "event_display"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -62,38 +62,38 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "events.cloud.run",
 		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
+		Resource: "pubsubs",
 	}); err != nil {
 		t.Error(err)
 	}
 }
 
-// PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
+// PubSubWithTargetTestImpl tests we can receive an event from PubSub.
+func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()
 
-	psName := topicName + "-sub"
+	psName := topicName + "-pubsub"
 	targetName := topicName + "-target"
 
 	client := Setup(t, true)
 	defer TearDown(client)
 
 	config := map[string]string{
-		"namespace":    client.Namespace,
-		"topic":        topicName,
-		"subscription": psName,
-		"targetName":   targetName,
-		"targetUID":    uuid.New().String(),
+		"namespace":  client.Namespace,
+		"topic":      topicName,
+		"pubsub":     psName,
+		"targetName": targetName,
+		"targetUID":  uuid.New().String(),
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
 
 	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+		EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -111,9 +111,9 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "events.cloud.run",
 		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
+		Resource: "pubsubs",
 	}
 
 	jobGVR := schema.GroupVersionResource{
@@ -151,11 +151,11 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 			t.Error(err)
 		}
 		if !out.Success {
-			// Log the output pull subscription pods.
+			// Log the output pods.
 			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
 				t.Error(err)
 			} else {
-				t.Logf("pullsubscription: %+v", logs)
+				t.Logf("pubsub: %+v", logs)
 			}
 			// Log the output of the target job pods.
 			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
