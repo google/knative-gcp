@@ -33,10 +33,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const (
-	ProwProjectKey = "E2E_PROJECT_ID"
-)
-
 func makeTopicOrDie(t *testing.T) (string, func()) {
 	ctx := context.Background()
 	// Prow sticks the project in this key
@@ -144,7 +140,7 @@ type TargetOutput struct {
 	Success bool `json:"success"`
 }
 
-// PullSubscriptionWithTargetTestImpl todo
+// PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()

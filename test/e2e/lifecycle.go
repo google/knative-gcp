@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -148,6 +149,22 @@ func (c *Client) CreateNamespaceIfNeeded(t *testing.T) {
 			t.Fatalf("The default ServiceAccount was not created for the Namespace: %s", c.Namespace)
 		}
 	}
+}
+
+var setStackDriverConfigOnce = sync.Once{}
+
+func (c *Client) SetupStackDriverMetrics(t *testing.T) {
+	setStackDriverConfigOnce.Do(func() {
+		err := c.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
+			"metrics.allow-stackdriver-custom-metrics":     "true",
+			"metrics.backend-destination":                  "stackdriver",
+			"metrics.stackdriver-custom-metrics-subdomain": "cloud.run",
+			"metrics.reporting-period-seconds":             "60",
+		})
+		if err != nil {
+			t.Fatalf("Unable to set the ConfigMap: %v", err)
+		}
+	})
 }
 
 // DuplicateSecret duplicates a secret from a namespace to a new namespace.
