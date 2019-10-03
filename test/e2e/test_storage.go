@@ -333,6 +333,7 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
 	)
 
+	t.Logf("Filter expression: %s", metricRequest.Filter)
 	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
 
 	for {
