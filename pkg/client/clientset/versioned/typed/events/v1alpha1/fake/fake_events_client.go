@@ -28,6 +28,10 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeEventsV1alpha1) PubSubs(namespace string) v1alpha1.PubSubInterface {
+	return &FakePubSubs{c, namespace}
+}
+
 func (c *FakeEventsV1alpha1) Schedulers(namespace string) v1alpha1.SchedulerInterface {
 	return &FakeSchedulers{c, namespace}
 }

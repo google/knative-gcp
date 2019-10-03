@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
@@ -32,6 +33,6 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
 	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = DefaultGoogleCloudSecretSelector()
+		ts.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }
