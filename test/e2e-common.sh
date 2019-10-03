@@ -47,9 +47,17 @@ function cloud_run_events_setup() {
   wait_until_pods_running cloud-run-events || fail_test "Cloud Run Events did not come up"
 }
 
+function monitoring_setup() {
+  echo "Installing Knative Monitoring"
+  kubectl create namespace istio-system
+  kubectl apply --filename "${KNATIVE_MONITORING_RELEASE}" || return 1
+  wait_until_pods_running istio-system || fail_test "Knative Monitoring did not come up"
+}
+
 function knative_setup() {
   start_latest_knative_serving
   start_latest_knative_eventing
+  monitoring_setup
   cloud_run_events_setup
 }
 
