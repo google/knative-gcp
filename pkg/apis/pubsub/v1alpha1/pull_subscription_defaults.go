@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
-	"knative.dev/pkg/ptr"
-
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/ptr"
 )
 
 const (
@@ -47,7 +47,7 @@ func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 	}
 
 	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = DefaultGoogleCloudSecretSelector()
+		ss.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 
 	switch ss.Mode {

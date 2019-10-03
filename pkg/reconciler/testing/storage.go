@@ -140,9 +140,9 @@ func WithStorageNotificationID(notificationID string) StorageOption {
 }
 
 // WithStorageProjectId sets the status for Project ID
-func WithStorageProjectID(notificationID string) StorageOption {
+func WithStorageProjectID(projectID string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.ProjectID = notificationID
+		s.Status.ProjectID = projectID
 	}
 }
 

@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"knative.dev/pkg/apis"
 	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -211,5 +212,16 @@ func WithPullSubscriptionStatusObservedGeneration(generation int64) PullSubscrip
 func WithPullSubscriptionObjectMetaGeneration(generation int64) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.ObjectMeta.Generation = generation
+	}
+}
+
+func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, message string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.Conditions = []apis.Condition{{
+			Type:    apis.ConditionReady,
+			Status:  status,
+			Reason:  reason,
+			Message: message,
+		}}
 	}
 }
