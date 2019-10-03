@@ -80,6 +80,20 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
 }
 
+// TestSmokePubSub makes sure we can run tests on PubSubs.
+func TestSmokePubSub(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokePubSubTestImpl(t)
+}
+
+// TestPubSubWithTarget tests we can knock down a target.
+func TestPubSubWithTarget(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	PubSubWithTargetTestImpl(t, packageToImageConfig)
+}
+
 // TestStorage tests we can knock down a target fot storage
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
