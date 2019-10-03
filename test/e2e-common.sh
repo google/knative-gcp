@@ -49,9 +49,8 @@ function cloud_run_events_setup() {
 
 function monitoring_setup() {
   echo "Installing Knative Monitoring"
-  kubectl create namespace istio-system
   kubectl apply --filename "${KNATIVE_MONITORING_RELEASE}" || return 1
-  wait_until_pods_running istio-system || fail_test "Knative Monitoring did not come up"
+  wait_until_pods_running knative-monitoring || fail_test "Knative Monitoring did not come up"
 }
 
 function knative_setup() {
