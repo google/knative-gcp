@@ -19,14 +19,18 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	pkgmetrics "knative.dev/pkg/metrics"
+	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -70,8 +74,9 @@ func SmokePubSubTestImpl(t *testing.T) {
 	}
 }
 
-// PubSubWithTargetTestImpl tests we can receive an event from PubSub.
-func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string) {
+// PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
+// for StackDriver metrics.
+func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -79,6 +84,9 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string) {
 	targetName := topicName + "-target"
 
 	client := Setup(t, true)
+	if assertMetrics {
+		client.SetupStackDriverMetrics(t)
+	}
 	defer TearDown(client)
 
 	config := map[string]string{
@@ -163,6 +171,41 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string) {
 			} else {
 				t.Logf("job: %s\n", logs)
 			}
+			t.Fail()
+		}
+	}
+
+	// Assert that we are actually sending event counts to StackDriver.
+	if assertMetrics {
+		sleepTime := 1 * time.Minute
+		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
+		time.Sleep(sleepTime)
+
+		// If we reach this point, the projectID should have been set.
+		projectID := os.Getenv(ProwProjectKey)
+		filter := map[string]interface{}{
+			"metric.type":                 eventCountMetricType,
+			"resource.type":               globalMetricResourceType,
+			"metric.label.resource_group": pubsubResourceGroup,
+			"metric.label.event_type":     v1alpha1.PubSubPublish,
+			"metric.label.event_source":   v1alpha1.PubSubEventSource(projectID, topicName),
+			"metric.label.namespace_name": client.Namespace,
+			"metric.label.name":           psName,
+			// We exit the target image before sending a response, thus check for 500.
+			"metric.label.response_code":       http.StatusInternalServerError,
+			"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
+		}
+
+		t.Logf("Filter expression: %v", filter)
+
+		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+		if err != nil {
+			t.Errorf("failed to get stackdriver event count metric: %v", err)
+			t.Fail()
+		}
+		expectedCount := int64(1)
+		if *actualCount != expectedCount {
+			t.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
 			t.Fail()
 		}
 	}

@@ -22,4 +22,5 @@ const (
 	eventCountMetricType     = "custom.googleapis.com/cloud.run/source/event_count"
 	globalMetricResourceType = "global"
 	storageResourceGroup     = "storages.events.cloud.run"
+	pubsubResourceGroup      = "pubsubs.events.cloud.run"
 )
