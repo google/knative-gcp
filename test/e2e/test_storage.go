@@ -88,8 +88,8 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	project := os.Getenv(ProwProjectKey)
 
 	bucketName := makeBucket(ctx, t, project)
-	storageName := helpers.AppendRandomString(bucketName + "-storage-")
-	targetName := helpers.AppendRandomString(bucketName + "-target-")
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	targetName := helpers.AppendRandomString(bucketName + "-target")
 
 	client := Setup(t, true)
 	if assertMetrics {
@@ -97,7 +97,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	}
 	defer TearDown(client)
 
-	fileName := helpers.AppendRandomString("test-file-for-storage-")
+	fileName := helpers.AppendRandomString("test-file-for-storage")
 
 	config := map[string]string{
 		"namespace":   client.Namespace,
