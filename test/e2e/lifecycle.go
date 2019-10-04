@@ -317,7 +317,7 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 	return strings.Join(logs, "\n"), nil
 }
 
-func (c *Client) StackDriverEventCountMetricFor(namespace, projectID string, filter map[string]interface{}) (*int64, error) {
+func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (*int64, error) {
 	metricClient, err := metrics.NewStackDriverMetricClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stackdriver metric client: %v", err)
