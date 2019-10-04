@@ -49,6 +49,15 @@ const (
 
 	// slackUserName is the slack user name that is used by Slack client
 	slackUserName = "Knative Testgrid Robot"
+
+	// These token settings are for alerter.
+	// If we want to enable the alerter for a benchmark, we need to mount the
+	// token to the pod, with the same name and path.
+	// See https://github.com/knative/serving/blob/master/test/performance/dataplane-probe/dataplane-probe.yaml
+	tokenFolder     = "/var/secret"
+	githubToken     = "github-token"
+	slackReadToken  = "slack-read-token"
+	slackWriteToken = "slack-write-token"
 )
 
 // Client is a wrapper that wraps all Mako related operations
@@ -143,13 +152,13 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 	alerter := &alerter.Alerter{}
 	alerter.SetupGitHub(
 		org,
-		config.MustGetRepository(),
-		tokenPath("github-token"),
+		config.GetRepository(),
+		tokenPath(githubToken),
 	)
 	alerter.SetupSlack(
 		slackUserName,
-		tokenPath("slack-read-token"),
-		tokenPath("slack-write-token"),
+		tokenPath(slackReadToken),
+		tokenPath(slackWriteToken),
 		config.GetSlackChannels(*benchmarkName),
 	)
 
@@ -165,5 +174,5 @@ func Setup(ctx context.Context, extraTags ...string) (*Client, error) {
 }
 
 func tokenPath(token string) string {
-	return filepath.Join("/var/secrets", token)
+	return filepath.Join(tokenFolder, token)
 }
