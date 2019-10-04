@@ -28,6 +28,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -183,7 +184,7 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 
 		// If we reach this point, the projectID should have been set.
 		projectID := os.Getenv(ProwProjectKey)
-		filter := map[string]interface{}{
+		f := map[string]interface{}{
 			"metric.type":                 eventCountMetricType,
 			"resource.type":               globalMetricResourceType,
 			"metric.label.resource_group": pubsubResourceGroup,
@@ -196,7 +197,8 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 			"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
 		}
 
-		t.Logf("Filter expression: %v", filter)
+		filter := metrics.StringifyStackDriverFilter(f)
+		t.Logf("Filter expression: %s", filter)
 
 		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
 		if err != nil {

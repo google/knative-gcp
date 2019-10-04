@@ -27,6 +27,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -198,7 +199,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 
 		// If we reach this point, the projectID should have been set.
 		projectID := os.Getenv(ProwProjectKey)
-		filter := map[string]interface{}{
+		f := map[string]interface{}{
 			"metric.type":                 eventCountMetricType,
 			"resource.type":               globalMetricResourceType,
 			"metric.label.resource_group": storageResourceGroup,
@@ -211,7 +212,8 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 			"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
 		}
 
-		t.Logf("Filter expression: %v", filter)
+		filter := metrics.StringifyStackDriverFilter(f)
+		t.Logf("Filter expression: %s", filter)
 
 		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
 		if err != nil {
