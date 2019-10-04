@@ -72,16 +72,12 @@ function test_teardown() {
 # Create resources required for Pub/Sub Admin setup
 function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
+  # Enable monitoring
+  gcloud services enable monitoring
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
-    # Needed for StackDriver Adapter, as explained here
-    # https://cloud.google.com/kubernetes-engine/docs/tutorials/custom-metrics-autoscaling#step1
-    echo "Setting up cluster-admin-binding"
-    kubectl create clusterrolebinding cluster-admin-binding \
-      --clusterrole cluster-admin --user "$(gcloud config get-value account)"
     echo "Set up ServiceAccount for Pub/Sub Admin"
     gcloud services enable pubsub.googleapis.com
-    gcloud services enable monitoring
     gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \

@@ -212,6 +212,11 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
 		cepubsub.WithSubscriptionID(a.Subscription),
+		// Replace the line above with the following one once
+		// https://github.com/cloudevents/sdk-go/pull/234 get merged and we upgrade to the newer SDK.
+		// Needed to set both the subscription and topic id in order to
+		// have the topic accessible in the transport at conversion time.
+		// cepubsub.WithSubscriptionAndTopicID(a.Subscription, a.Topic),
 	}
 
 	// Make a pubsub transport for the CloudEvents client.

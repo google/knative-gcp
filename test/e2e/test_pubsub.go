@@ -31,6 +31,7 @@ import (
 	"github.com/google/knative-gcp/test/e2e/metrics"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
+	"knative.dev/pkg/test/helpers"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -81,8 +82,8 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	topicName, deleteTopic := makeTopicOrDie(t)
 	defer deleteTopic()
 
-	psName := topicName + "-pubsub"
-	targetName := topicName + "-target"
+	psName := helpers.AppendRandomString(topicName + "-pubsub")
+	targetName := helpers.AppendRandomString(topicName + "-target")
 
 	client := Setup(t, true)
 	if assertMetrics {
