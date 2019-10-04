@@ -111,7 +111,6 @@ func TestStorage(t *testing.T) {
 
 // TestStorageStackDriverMetrics tests we can knock down a target from a Storage and that we send metrics to StackDriver.
 func TestStorageStackDriverMetrics(t *testing.T) {
-	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
 	StorageWithTestImpl(t, packageToImageConfig, true)
