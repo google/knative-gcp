@@ -91,7 +91,7 @@ func TestSmokePubSub(t *testing.T) {
 func TestPubSubWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, packageToImageConfig, false)
+	PubSubWithTargetTestImpl(t, packageToImageConfig, false /*assertMetrics */)
 }
 
 // TestPubSubStackDriverMetrics tests we can knock down a target from a PubSub and that we send metrics to StackDriver.
@@ -99,19 +99,19 @@ func TestPubSubStackDriverMetrics(t *testing.T) {
 	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, packageToImageConfig, true)
+	PubSubWithTargetTestImpl(t, packageToImageConfig, true /*assertMetrics */)
 }
 
 // TestStorage tests we can knock down a target from a Storage.
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, packageToImageConfig, false)
+	StorageWithTestImpl(t, packageToImageConfig, false /*assertMetrics */)
 }
 
 // TestStorageStackDriverMetrics tests we can knock down a target from a Storage and that we send metrics to StackDriver.
 func TestStorageStackDriverMetrics(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, packageToImageConfig, true)
+	StorageWithTestImpl(t, packageToImageConfig, true /*assertMetrics */)
 }

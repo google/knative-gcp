@@ -88,8 +88,8 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	project := os.Getenv(ProwProjectKey)
 
 	bucketName := makeBucket(ctx, t, project)
-	storageName := bucketName + "-storage"
-	targetName := bucketName + "-target"
+	storageName := helpers.AppendRandomString(bucketName + "-storage-")
+	targetName := helpers.AppendRandomString(bucketName + "-target-")
 
 	client := Setup(t, true)
 	if assertMetrics {
