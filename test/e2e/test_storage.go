@@ -296,7 +296,7 @@ func StorageWithStackDriverMetrics(t *testing.T, packages map[string]string) {
 		}
 	}
 
-	sleepTime := 1 * time.Minute
+	sleepTime := 5 * time.Minute
 	t.Logf("sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 	time.Sleep(sleepTime)
 
