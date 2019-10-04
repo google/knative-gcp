@@ -88,8 +88,9 @@ E2E_PROJECT_ID=<project name> \
   go test --tags=e2e ./test/e2e/... -run TestPullSubscription
 ```
 
-Note that if you plan on running metrics-related E2E tests using the StackDriver backend, you need to give your 
-[Service Account](../../docs/pubsub/README.md) the `Monitoring Editor` role on your Google Cloud project:
+Note that if you plan on running metrics-related E2E tests using the StackDriver
+backend, you need to give your [Service Account](../../docs/pubsub/README.md)
+the `Monitoring Editor` role on your Google Cloud project:
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
