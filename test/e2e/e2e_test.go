@@ -82,6 +82,7 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 
 // TestStorage tests we can knock down a target fot storage
 func TestStorage(t *testing.T) {
+	t.Skip("")
 	cancel := logstream.Start(t)
 	defer cancel()
 	StorageWithTestImpl(t, packageToImageConfig)

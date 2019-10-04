@@ -51,12 +51,6 @@ function monitoring_setup() {
   echo "Installing Knative Monitoring"
   kubectl apply --filename "${KNATIVE_MONITORING_RELEASE}" || return 1
   wait_until_pods_running knative-monitoring || fail_test "Knative Monitoring did not come up"
-
-  # Needed for StackDriver Adapter, as explained here
-  # https://cloud.google.com/kubernetes-engine/docs/tutorials/custom-metrics-autoscaling#step1
-  echo "Setting up cluster-admin-binding"
-  kubectl create clusterrolebinding cluster-admin-binding \
-    --clusterrole cluster-admin --user "$(gcloud config get-value account)"
 }
 
 function knative_setup() {
