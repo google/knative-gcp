@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"cloud.google.com/go/monitoring/apiv3"
+	monitoring "cloud.google.com/go/monitoring/apiv3"
 	"github.com/golang/protobuf/ptypes/duration"
 	googlepb "github.com/golang/protobuf/ptypes/timestamp"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
