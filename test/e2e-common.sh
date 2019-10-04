@@ -80,10 +80,10 @@ function test_teardown() {
 function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
   # When not running on Prow we need to set up a service account for PubSub
+  gcloud services enable monitoring
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount for Pub/Sub Admin"
     gcloud services enable pubsub.googleapis.com
-    gcloud services enable monitoring
     gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
