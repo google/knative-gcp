@@ -317,6 +317,7 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 	return strings.Join(logs, "\n"), nil
 }
 
+// TODO make this function more generic.
 func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (*int64, error) {
 	metricClient, err := metrics.NewStackDriverMetricClient()
 	if err != nil {
@@ -329,6 +330,8 @@ func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter str
 		// Starting 5 minutes back until now.
 		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
 		// Delta counts aggregated every 2 minutes.
+		// We aggregate for count as other aggregations will give higher values.
+		// The reason is that PubSub upon an error, will retry, thus we will be recording multiple events.
 		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
 		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
 		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
