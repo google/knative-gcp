@@ -44,6 +44,11 @@ const (
 	StorageReadyCountN = "storage_ready_count"
 	// StorageReadyLatencyN is the time it takes for a storage to become ready since the resource is created.
 	StorageReadyLatencyN = "storage_ready_latency"
+
+	// PubSubReadyCountN is the number of pubsubs that have become ready.
+	PubSubReadyCountN = "pubsub_ready_count"
+	// PubSubReadyLatencyN is the time it takes for a pubsub to become ready since the resource is created.
+	PubSubReadyLatencyN = "pubsub_ready_latency"
 )
 
 var (
@@ -59,6 +64,10 @@ var (
 		"Storage": {
 			ReadyCountKey:   StorageReadyCountN,
 			ReadyLatencyKey: StorageReadyLatencyN,
+		},
+		"PubSub": {
+			ReadyCountKey:   PubSubReadyCountN,
+			ReadyLatencyKey: PubSubReadyLatencyN,
 		},
 	}
 

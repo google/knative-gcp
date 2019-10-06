@@ -80,9 +80,31 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
 }
 
+// TestSmokePubSub makes sure we can run tests on PubSubs.
+func TestSmokePubSub(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokePubSubTestImpl(t)
+}
+
+// TestPubSubWithTarget tests we can knock down a target.
+func TestPubSubWithTarget(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	PubSubWithTargetTestImpl(t, packageToImageConfig)
+}
+
 // TestStorage tests we can knock down a target fot storage
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	StorageWithTestImpl(t, packageToImageConfig)
+}
+
+// TestStorageStackDriverMetrics tests we send metrics to StackDriver from Storages.
+func TestStorageStackDriverMetrics(t *testing.T) {
+	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
+	cancel := logstream.Start(t)
+	defer cancel()
+	StorageWithStackDriverMetrics(t, packageToImageConfig)
 }

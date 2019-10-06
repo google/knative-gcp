@@ -24,6 +24,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -77,7 +78,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModePushCompatible,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            DefaultGoogleCloudSecretSelector(),
+				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -92,7 +93,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            DefaultGoogleCloudSecretSelector(),
+				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -106,7 +107,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            DefaultGoogleCloudSecretSelector(),
+				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
 			},
 		},
 	}, {
@@ -120,7 +121,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            DefaultGoogleCloudSecretSelector(),
+				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
 			},
 		},
 	}}

@@ -25,10 +25,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-const (
-	pubSubPublish = "google.pubsub.topic.publish"
-)
-
 func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
@@ -37,7 +33,7 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetTime(tx.PublishTime)
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	event.SetType(pubSubPublish)
+	event.SetType(v1alpha1.PubSubPublish)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")

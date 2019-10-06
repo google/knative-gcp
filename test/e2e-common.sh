@@ -80,6 +80,9 @@ function pubsub_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+    --role roles/monitoring.editor
     gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
       --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
@@ -87,7 +90,7 @@ function pubsub_setup() {
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
-# Create resources required for Storage Admin setu
+# Create resources required for Storage Admin setup
 function storage_setup() {
   if (( ! IS_PROW )); then
     echo "Update ServiceAccount for Storage Admin"
@@ -114,6 +117,9 @@ function teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+    --role roles/monitoring.editor
     echo "Tear down ServiceAccount for Storage Admin"
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \

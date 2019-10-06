@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/reconciler/channel"
 	"github.com/google/knative-gcp/pkg/reconciler/decorator"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage"
@@ -34,6 +35,7 @@ func main() {
 	sharedmain.Main("controller",
 		storage.NewController,
 		scheduler.NewController,
+		pubsub.NewController,
 		pullsubscription.NewController,
 		topic.NewController,
 		channel.NewController,

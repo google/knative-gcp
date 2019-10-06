@@ -66,6 +66,7 @@ rules:
   resources:
     - storages
     - schedulers
+    - pubsubs
   verbs: *everything
 
 - apiGroups:
@@ -73,6 +74,7 @@ rules:
   resources:
     - storages/status
     - schedulers/status
+    - pubsubs/status
   verbs:
     - get
     - update
