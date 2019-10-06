@@ -42,6 +42,7 @@ import (
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -85,7 +86,7 @@ var (
 	topicNotReadyMsg            = "Topic testnamespace/my-test-storage not ready"
 	pullSubscriptionNotReadyMsg = "PullSubscription testnamespace/my-test-storage not ready"
 	jobNotCompletedMsg          = `Failed to create Storage notification: Job "my-test-storage" has not completed yet`
-	jobFailedMsg                = `Failed to create Storage notification: Job "my-test-storage" failed to create or job failed`
+	jobFailedMsg                = `Failed to create Storage notification: Error creating job "my-test-storage": "[test-failure] induced test failure"`
 	jobPodNotFoundMsg           = "Failed to create Storage notification: Pod not found"
 )
 
@@ -728,71 +729,67 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
+		reconciler := &Reconciler{
 			NotificationOpsImage: testImage,
 			PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.run", cmw),
 			storageLister:        listers.GetStorageLister(),
-			jobLister:            listers.GetJobLister(),
 		}
+		reconciler.jobReconciler = job.Reconciler{
+			KubeClientSet: reconciler.KubeClientSet,
+			JobLister:     listers.GetJobLister(),
+			Logger:        reconciler.Logger,
+		}
+		return reconciler
 	}))
 
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	if action == "create" {
-		j, _ := operations.NewNotificationOps(operations.NotificationArgs{
-			UID:        storageUID,
-			Image:      testImage,
-			Action:     ops.ActionCreate,
-			ProjectID:  testProject,
-			Bucket:     bucket,
-			TopicID:    testTopicID,
-			EventTypes: []string{"finalize"},
-			Secret:     secret,
-			Owner:      owner,
-		})
-		return j
+func testOpCtx(owner kmeta.OwnerRefable) ops.OpCtx {
+	return ops.OpCtx{
+		UID:    storageUID,
+		Image:  testImage,
+		Secret: secret,
+		Owner:  owner,
 	}
-	j, _ := operations.NewNotificationOps(operations.NotificationArgs{
-		UID:            storageUID,
-		Image:          testImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      testProject,
-		Bucket:         bucket,
+}
+
+func testNotificationCreateArgs() operations.NotificationCreateArgs {
+	return operations.NotificationCreateArgs{
+		NotificationArgs: operations.NotificationArgs{
+			StorageArgs: operations.StorageArgs{
+				ProjectID: testProject,
+			},
+			Bucket: bucket,
+		},
+		TopicID:    testTopicID,
+		EventTypes: []string{"finalize"},
+	}
+}
+
+func testNotificationDeleteArgs() operations.NotificationDeleteArgs {
+	return operations.NotificationDeleteArgs{
+		NotificationArgs: operations.NotificationArgs{
+			StorageArgs: operations.StorageArgs{},
+			Bucket:      bucket,
+		},
 		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
-	})
+	}
+}
+
+func testJobArgs(action string) ops.JobArgs {
+	if action == "create" {
+		return testNotificationCreateArgs()
+	}
+	return testNotificationDeleteArgs()
+}
+
+func newJob(owner kmeta.OwnerRefable, action string) *batchv1.Job {
+	j, _ := ops.NewOpsJob(testOpCtx(owner), testJobArgs(action))
 	return j
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	var job *batchv1.Job
-	if action == "create" {
-		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:        storageUID,
-			Image:      testImage,
-			Action:     ops.ActionCreate,
-			ProjectID:  testProject,
-			Bucket:     bucket,
-			TopicID:    testTopicID,
-			EventTypes: []string{"finalize"},
-			Secret:     secret,
-			Owner:      owner,
-		})
-	} else {
-		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:            storageUID,
-			Image:          testImage,
-			Action:         ops.ActionDelete,
-			ProjectID:      testProject,
-			Bucket:         bucket,
-			NotificationId: notificationId,
-			Secret:         secret,
-			Owner:          owner,
-		})
-	}
-
+	job := newJob(owner, action)
 	if success {
 		job.Status.Active = 0
 		job.Status.Succeeded = 1
@@ -810,8 +807,10 @@ func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runti
 			Type:   batchv1.JobComplete,
 			Status: corev1.ConditionTrue,
 		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
+			Type:    batchv1.JobFailed,
+			Status:  corev1.ConditionTrue,
+			Reason:  "test-failure",
+			Message: "induced test failure",
 		}}
 	}
 

@@ -43,6 +43,7 @@ import (
 	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler"
 
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -88,7 +89,7 @@ var (
 	topicNotReadyMsg            = "Topic testnamespace/my-test-scheduler not ready"
 	pullSubscriptionNotReadyMsg = "PullSubscription testnamespace/my-test-scheduler not ready"
 	jobNotCompletedMsg          = `Failed to create Scheduler Job: Job "my-test-scheduler" has not completed yet`
-	jobFailedMsg                = `Failed to create Scheduler Job: Job "my-test-scheduler" failed to create or job failed`
+	jobFailedMsg                = `Failed to create Scheduler Job: Job "my-test-scheduler" failed to create or job failed: "[test-failure] induced test failure"`
 	jobPodNotFoundMsg           = "Failed to create Scheduler Job: Pod not found"
 )
 
@@ -669,66 +670,65 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
-		return &Reconciler{
+		reconciler := &Reconciler{
 			SchedulerOpsImage: testImage,
 			PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.run", cmw),
 			schedulerLister:   listers.GetSchedulerLister(),
-			jobLister:         listers.GetJobLister(),
 		}
+		reconciler.jobReconciler = &job.Reconciler{
+			KubeClientSet: reconciler.KubeClientSet,
+			JobLister:     listers.GetJobLister(),
+			Logger:        reconciler.Logger,
+		}
+		return reconciler
 	}))
 
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	if action == "create" {
-		j, _ := operations.NewJobOps(operations.JobArgs{
-			UID:      schedulerUID,
-			JobName:  jobName,
-			Image:    testImage,
-			Action:   ops.ActionCreate,
-			TopicID:  testTopicID,
-			Secret:   secret,
-			Owner:    owner,
-			Data:     testData,
-			Schedule: onceAMinuteSchedule,
-		})
-		return j
+func testOpCtx(owner kmeta.OwnerRefable) ops.OpCtx {
+	return ops.OpCtx{
+		UID:    schedulerUID,
+		Image:  testImage,
+		Secret: secret,
+		Owner:  owner,
 	}
-	j, _ := operations.NewJobOps(operations.JobArgs{
-		UID:     schedulerUID,
-		Image:   testImage,
+}
+
+func testSchedulerJobArgs() operations.SchedulerJobArgs {
+	return operations.SchedulerJobArgs{
 		JobName: jobName,
-		Action:  ops.ActionDelete,
-		Secret:  secret,
-		Owner:   owner,
-	})
+	}
+}
+
+func testSchedulerJobCreateArgs() operations.SchedulerJobCreateArgs {
+	return operations.SchedulerJobCreateArgs{
+		SchedulerJobArgs: testSchedulerJobArgs(),
+		TopicID:          testTopicID,
+		Data:             testData,
+		Schedule:         onceAMinuteSchedule,
+	}
+}
+
+func testSchedulerJobDeleteArgs() operations.SchedulerJobDeleteArgs {
+	return operations.SchedulerJobDeleteArgs{
+		SchedulerJobArgs: testSchedulerJobArgs(),
+	}
+}
+
+func testJobArgs(action string) ops.JobArgs {
+	if action == "create" {
+		return testSchedulerJobCreateArgs()
+	}
+	return testSchedulerJobDeleteArgs()
+}
+
+func newJob(owner kmeta.OwnerRefable, action string) *batchv1.Job {
+	j, _ := ops.NewOpsJob(testOpCtx(owner), testJobArgs(action))
 	return j
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	var job *batchv1.Job
-	if action == "create" {
-		job, _ = operations.NewJobOps(operations.JobArgs{
-			UID:      schedulerUID,
-			JobName:  jobName,
-			Image:    testImage,
-			Action:   ops.ActionCreate,
-			TopicID:  testTopicID,
-			Secret:   secret,
-			Data:     testData,
-			Owner:    owner,
-			Schedule: onceAMinuteSchedule,
-		})
-	} else {
-		job, _ = operations.NewJobOps(operations.JobArgs{
-			UID:    schedulerUID,
-			Image:  testImage,
-			Action: ops.ActionDelete,
-			Secret: secret,
-			Owner:  owner,
-		})
-	}
-
+	job := newJob(owner, action)
 	if success {
 		job.Status.Active = 0
 		job.Status.Succeeded = 1
@@ -746,8 +746,10 @@ func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runti
 			Type:   batchv1.JobComplete,
 			Status: corev1.ConditionTrue,
 		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
+			Type:    batchv1.JobFailed,
+			Status:  corev1.ConditionTrue,
+			Reason:  "test-failure",
+			Message: "induced test failure",
 		}}
 	}
 

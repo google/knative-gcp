@@ -43,6 +43,7 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
 
@@ -377,6 +378,11 @@ func TestAllCases(t *testing.T) {
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
 			TopicOpsImage: testImage + "pub",
 		}
+		pubsubBase.JobReconciler = &job.Reconciler{
+			KubeClientSet: pubsubBase.KubeClientSet,
+			JobLister:     listers.GetJobLister(),
+			Logger:        pubsubBase.Logger,
+		}
 		return &Reconciler{
 			PubSubBase:     pubsubBase,
 			topicLister:    listers.GetTopicLister(),
@@ -524,27 +530,49 @@ func newPublisher(get, done bool) runtime.Object {
 	return pub
 }
 
-func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	return operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Secret:    secret,
-		Owner:     owner,
-	})
+func testOpCtx(owner kmeta.OwnerRefable) ops.OpCtx {
+	return ops.OpCtx{
+		UID:    topicUID,
+		Image:  testImage + "pub",
+		Secret: secret,
+		Owner:  owner,
+	}
+}
+
+func testTopicArgs() operations.TopicArgs {
+	return operations.TopicArgs{
+		PubSubArgs: operations.PubSubArgs{
+			ProjectID: testProject,
+		},
+		TopicID: testTopicID,
+	}
+}
+
+func testJobArgs(action string) ops.JobArgs {
+	switch action {
+	case "create":
+		return operations.TopicCreateArgs{
+			TopicArgs: testTopicArgs(),
+		}
+	case "delete":
+		return operations.TopicDeleteArgs{
+			TopicArgs: testTopicArgs(),
+		}
+	case "exists":
+		return operations.TopicExistsArgs{
+			TopicArgs: testTopicArgs(),
+		}
+	}
+	return nil
+}
+
+func newTopicJob(owner kmeta.OwnerRefable, action string) *batchv1.Job {
+	j, _ := ops.NewOpsJob(testOpCtx(owner), testJobArgs(action))
+	return j
 }
 
 func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	job := operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Secret:    secret,
-		Owner:     owner,
-	})
-
+	job := newTopicJob(owner, action)
 	if success {
 		job.Status.Active = 0
 		job.Status.Succeeded = 1

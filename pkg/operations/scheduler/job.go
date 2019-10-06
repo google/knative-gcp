@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
@@ -35,9 +34,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/operations"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -59,95 +56,116 @@ type JobActionResult struct {
 	ProjectId string `json:"projectId,omitempty"`
 }
 
-// JobArgs are the configuration required to make a NewJobOps.
-type JobArgs struct {
-	// UID of the resource that caused the action to be taken. Will
-	// be added as a label to the podtemplate.
-	UID string
-
-	// Image is the actual binary that we'll run to operate on the
-	// notification.
-	Image string
-
-	// Action is what the binary should do
-	Action string
-
-	// TopicID we'll use for pubsub target.
-	TopicID string
-
+// Scheduler common args.
+type SchedulerJobArgs struct {
 	// JobName is the name of the Scheduler Job that we're
 	// operating on. The format is like so:
 	// projects/PROJECT_ID/locations/LOCATION_ID/jobs/JobId
 	JobName string
+}
+
+func (_ SchedulerJobArgs) OperationGroup() string {
+	return "scheduler"
+}
+
+func (_ SchedulerJobArgs) OperationSubgroup() string {
+	return "j"
+}
+
+func (_ SchedulerJobArgs) LabelKey() string {
+	return "scheduler-job"
+}
+
+func ValidateSchedulerArgs(s SchedulerJobArgs) error {
+	if s.JobName == "" {
+		return fmt.Errorf("missing JobName")
+	}
+	match, err := regexp.Match(jobNameFormat, []byte(s.JobName))
+	if err != nil {
+		return err
+	}
+	if !match {
+		return fmt.Errorf("JobName format is wrong")
+	}
+	return nil
+}
+
+func SchedulerJobEnv(a SchedulerJobArgs) []corev1.EnvVar {
+	return []corev1.EnvVar{{
+		Name:  "JOB_NAME",
+		Value: a.JobName,
+	}}
+}
+
+type SchedulerJobCreateArgs struct {
+	SchedulerJobArgs
+
+	// TopicID we'll use for pubsub target.
+	TopicID string
 
 	// Schedule for the Job
 	Schedule string
 
 	// Data to send in the payload
 	Data string
-
-	Secret corev1.SecretKeySelector
-	Owner  kmeta.OwnerRefable
 }
 
-// NewJobOps returns a new batch Job resource.
-func NewJobOps(arg JobArgs) (*batchv1.Job, error) {
-	if err := validateArgs(arg); err != nil {
-		return nil, err
-	}
+func (_ SchedulerJobCreateArgs) Action() string {
+	return operations.ActionCreate
+}
 
-	env := []corev1.EnvVar{{
-		Name:  "ACTION",
-		Value: arg.Action,
-	}, {
-		Name:  "JOB_NAME",
-		Value: arg.JobName,
-	}}
-
-	switch arg.Action {
-	case operations.ActionCreate:
-		jobName := arg.JobName
-		// JobName is like this:
-		// projects/PROJECT_ID/locations/LOCATION_ID/jobs/JobId
-		// For create we need a Parent, which (in the above is):
-		// projects/PROJECT_ID/locations/LOCATION_ID
-		// so construct it.
-		parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
-
-		env = append(env, []corev1.EnvVar{
-			{
-				Name:  "JOB_PARENT",
-				Value: parent,
-			}, {
-				Name:  "PUBSUB_TOPIC_ID",
-				Value: arg.TopicID,
-			}, {
-				Name:  "SCHEDULE",
-				Value: arg.Schedule,
-			}, {
-				Name:  "DATA",
-				Value: arg.Data,
-			}}...)
-	}
-
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
-
-	backoffLimit := int32(3)
-	parallelism := int32(1)
-
-	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            SchedulerJobName(arg.Owner, arg.Action),
-			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
-			Labels:          SchedulerJobLabels(arg.Owner, arg.Action),
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
+func (s SchedulerJobCreateArgs) Env() []corev1.EnvVar {
+	// JobName is like this:
+	// projects/PROJECT_ID/locations/LOCATION_ID/jobs/JobId For
+	// create we need a Parent, which (in the above is):
+	// projects/PROJECT_ID/locations/LOCATION_ID so construct it.
+	parent := s.JobName[0:strings.LastIndex(s.JobName, "/jobs/")]
+	return append(SchedulerJobEnv(s.SchedulerJobArgs),
+		corev1.EnvVar{
+			Name:  "JOB_PARENT",
+			Value: parent,
 		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Parallelism:  &parallelism,
-			Template:     *podTemplate,
+		corev1.EnvVar{
+			Name:  "PUBSUB_TOPIC_ID",
+			Value: s.TopicID,
 		},
-	}, nil
+		corev1.EnvVar{
+			Name:  "SCHEDULE",
+			Value: s.Schedule,
+		},
+		corev1.EnvVar{
+			Name:  "DATA",
+			Value: s.Data,
+		})
+}
+
+func (s SchedulerJobCreateArgs) Validate() error {
+	if s.TopicID == "" {
+		return fmt.Errorf("missing TopicID")
+	}
+	if s.Schedule == "" {
+		return fmt.Errorf("missing Schedule")
+	}
+	if s.Data == "" {
+		return fmt.Errorf("missing Data")
+	}
+	return ValidateSchedulerArgs(s.SchedulerJobArgs)
+}
+
+type SchedulerJobDeleteArgs struct {
+	SchedulerJobArgs
+}
+
+func (_ SchedulerJobDeleteArgs) Action() string {
+	return operations.ActionDelete
+}
+
+func (s SchedulerJobDeleteArgs) Env() []corev1.EnvVar {
+	return SchedulerJobEnv(s.SchedulerJobArgs)
+}
+
+func (s SchedulerJobDeleteArgs) Validate() error {
+	return ValidateSchedulerArgs(s.SchedulerJobArgs)
 }
 
 // JobOps defines the configuration to use for this operation.
@@ -289,47 +307,4 @@ func (n *JobOps) writeTerminationMessage(result *JobActionResult) error {
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", m, 0644)
-}
-
-func validateArgs(arg JobArgs) error {
-	if arg.UID == "" {
-		return fmt.Errorf("missing UID")
-	}
-	if arg.Image == "" {
-		return fmt.Errorf("missing Image")
-	}
-	if arg.Action == "" {
-		return fmt.Errorf("missing Action")
-	}
-	if arg.JobName == "" {
-		return fmt.Errorf("missing JobName")
-	}
-	match, err := regexp.Match(jobNameFormat, []byte(arg.JobName))
-	if err != nil {
-		return err
-	}
-	if !match {
-		return fmt.Errorf("JobName format is wrong")
-	}
-	if arg.Secret.Name == "" || arg.Secret.Key == "" {
-		return fmt.Errorf("invalid secret missing name or key")
-	}
-	if arg.Owner == nil {
-		return fmt.Errorf("missing owner")
-	}
-
-	switch arg.Action {
-	case operations.ActionCreate:
-		if arg.TopicID == "" {
-			return fmt.Errorf("missing TopicID")
-		}
-		if arg.Schedule == "" {
-			return fmt.Errorf("missing Schedule")
-		}
-		if arg.Data == "" {
-			return fmt.Errorf("missing Data")
-		}
-
-	}
-	return nil
 }

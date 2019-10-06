@@ -26,12 +26,9 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/knative-gcp/pkg/operations"
 )
@@ -47,43 +44,58 @@ type TopicActionResult struct {
 }
 
 type TopicArgs struct {
-	UID       string
-	Image     string
-	Action    string
-	ProjectID string
-	TopicID   string
-	Secret    corev1.SecretKeySelector
-	Owner     kmeta.OwnerRefable
+	PubSubArgs
+	TopicID string
 }
 
-func NewTopicOps(arg TopicArgs) *batchv1.Job {
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, []corev1.EnvVar{{
-		Name:  "ACTION",
-		Value: arg.Action,
-	}, {
-		Name:  "PROJECT_ID",
-		Value: arg.ProjectID,
-	}, {
+func (t TopicArgs) OperationSubgroup() string {
+	return "t"
+}
+
+func (t TopicArgs) LabelKey() string {
+	return "topic"
+}
+
+func (t TopicArgs) Env() []corev1.EnvVar {
+	return append(PubSubEnv(t.PubSubArgs), corev1.EnvVar{
 		Name:  "PUBSUB_TOPIC_ID",
-		Value: arg.TopicID,
-	}}...)
+		Value: t.TopicID,
+	})
+}
 
-	backoffLimit := int32(3)
-	parallelism := int32(1)
+type TopicCreateArgs struct {
+	TopicArgs
+}
 
-	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            TopicJobName(arg.Owner, arg.Action),
-			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
-			Labels:          TopicJobLabels(arg.Owner, arg.Action),
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Parallelism:  &parallelism,
-			Template:     *podTemplate,
-		},
-	}
+var _ operations.JobArgs = TopicCreateArgs{}
+
+func (_ TopicCreateArgs) Action() string {
+	return operations.ActionCreate
+}
+
+type TopicDeleteArgs struct {
+	TopicArgs
+}
+
+var _ operations.JobArgs = TopicDeleteArgs{}
+
+func (_ TopicDeleteArgs) Action() string {
+	return operations.ActionDelete
+}
+
+type TopicExistsArgs struct {
+	TopicArgs
+}
+
+var _ operations.JobArgs = TopicExistsArgs{}
+
+func (_ TopicExistsArgs) Action() string {
+	return operations.ActionExists
+}
+
+//TODO: Add topic arg validation.
+func (t TopicArgs) Validate() error {
+	return nil
 }
 
 type TopicOps struct {

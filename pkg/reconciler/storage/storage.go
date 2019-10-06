@@ -19,19 +19,15 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -39,6 +35,7 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -64,8 +61,8 @@ type Reconciler struct {
 	// gcssourceclientset is a clientset for our own API group
 	storageLister listers.StorageLister
 
-	// For readling with jobs
-	jobLister batchv1listers.JobLister
+	// Reconciles batch jobs.
+	jobReconciler job.Reconciler
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -178,24 +175,21 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	return nil
 }
 
-func (c *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
-	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:        string(storage.UID),
-		Image:      c.NotificationOpsImage,
-		Action:     ops.ActionCreate,
-		ProjectID:  storage.Status.ProjectID,
-		Bucket:     storage.Spec.Bucket,
-		TopicID:    storage.Status.TopicID,
-		EventTypes: storage.Spec.EventTypes,
-		Secret:     *storage.Spec.Secret,
-		Owner:      storage,
-	})
-}
-
 func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := c.EnsureNotification(ctx, storage)
+	createArgs := operations.NotificationCreateArgs{
+		NotificationArgs: operations.NotificationArgs{
+			StorageArgs: operations.StorageArgs{
+				ProjectID: storage.Status.ProjectID,
+			},
+			Bucket: storage.Spec.Bucket,
+		},
+		TopicID:          storage.Status.TopicID,
+		EventTypes:       storage.Spec.EventTypes,
+		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
+	}
+	state, err := c.jobReconciler.EnsureOpJob(ctx, c.notificationOpCtx(storage), createArgs)
 	if err != nil {
-		c.Logger.Infof("EnsureNotification failed: %s", err)
+		return "", fmt.Errorf("Error creating job %q: %q", storage.Name, err)
 	}
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
@@ -222,19 +216,6 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
-func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
-	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:            UID,
-		Image:          c.NotificationOpsImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      project,
-		Bucket:         bucket,
-		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
-	})
-}
-
 // deleteNotification looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
 // in the Storage, remove it.
@@ -243,7 +224,19 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
+	deleteArgs := operations.NotificationDeleteArgs{
+		NotificationArgs: operations.NotificationArgs{
+			StorageArgs: operations.StorageArgs{
+				ProjectID: storage.Spec.Project,
+			},
+			Bucket: storage.Spec.Bucket,
+		},
+		NotificationId: storage.Status.NotificationID,
+	}
+	state, err := c.jobReconciler.EnsureOpJob(ctx, c.notificationOpCtx(storage), deleteArgs)
+	if err != nil {
+		return fmt.Errorf("Error creating job %q: %q", storage.Name, err)
+	}
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return fmt.Errorf("Job %q has not completed yet", storage.Name)
@@ -337,45 +330,20 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage
 	return src, err
 }
 
-func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.NotificationArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.NotificationJobName(args.Owner, args.Action)
-	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
-
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		c.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
-
-		args.Image = c.NotificationOpsImage
-
-		job, err = operations.NewNotificationOps(args)
-		if err != nil {
-			return ops.OpsJobCreateFailed, err
-		}
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, err
-		}
-
-		c.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
-		// TODO: Handle this case
-		//	} else if !metav1.IsControlledBy(job, args.Owner) {
-		//		return ops.OpsJobCreateFailed, fmt.Errorf("storage does not own job %q", jobName)
+func (c *Reconciler) notificationOpCtx(storage *v1alpha1.Storage) ops.OpCtx {
+	return ops.OpCtx{
+		Image:  c.NotificationOpsImage,
+		UID:    string(storage.UID),
+		Secret: *storage.Spec.Secret,
+		Owner:  storage,
 	}
+}
 
-	if ops.IsJobComplete(job) {
-		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
+func notificationArgs(storage *v1alpha1.Storage) operations.NotificationArgs {
+	return operations.NotificationArgs{
+		StorageArgs: operations.StorageArgs{
+			ProjectID: storage.Spec.Project,
+		},
+		Bucket: storage.Spec.Bucket,
 	}
-	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
 }

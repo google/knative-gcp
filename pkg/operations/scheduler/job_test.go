@@ -17,9 +17,13 @@ limitations under the License.
 package operations
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/operations"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	"knative.dev/pkg/kmeta"
@@ -71,135 +75,55 @@ func ownerRef() metav1.OwnerReference {
 func TestValidateArgs(t *testing.T) {
 	tests := []struct {
 		name        string
-		args        JobArgs
+		args        operations.JobArgs
 		expectedErr string
 	}{{
-		name:        "empty",
-		args:        JobArgs{},
-		expectedErr: "missing UID",
-	}, {
-		name:        "missing Image",
-		args:        JobArgs{UID: "uid"},
-		expectedErr: "missing Image",
-	}, {
 		name: "missing JobName",
-		args: JobArgs{
-			UID:    "uid",
-			Image:  testImage,
-			Action: "create",
-		},
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.JobName = ""
+			return a
+		}(validCreateArgs()),
 		expectedErr: "missing JobName",
 	}, {
 		name: "invalid JobName format",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: "projects/foo",
-		},
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.JobName = "projects/foo"
+			return a
+		}(validCreateArgs()),
 		expectedErr: "JobName format is wrong",
 	}, {
-		name: "missing secret",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-		},
-		expectedErr: "invalid secret missing name or key",
-	}, {
-		name: "missing owner",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-		},
-		expectedErr: "missing owner",
-	}, {
 		name: "missing topicId",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
-		},
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.TopicID = ""
+			return a
+		}(validCreateArgs()),
 		expectedErr: "missing TopicID",
 	}, {
 		name: "missing Schedule",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner:   reconcilertesting.NewScheduler(schedulerName, testNS),
-			TopicID: topicID,
-		},
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.Schedule = ""
+			return a
+		}(validCreateArgs()),
 		expectedErr: "missing Schedule",
 	}, {
 		name: "missing data",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
-			TopicID:  topicID,
-			Schedule: onceAMinuteSchedule,
-		},
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.Data = ""
+			return a
+		}(validCreateArgs()),
 		expectedErr: "missing Data",
 	}, {
-		name: "valid create",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
-			TopicID:  topicID,
-			Schedule: onceAMinuteSchedule,
-			Data:     testData,
-		},
+		name:        "valid create",
+		args:        validCreateArgs(),
 		expectedErr: "",
 	}, {
-		name: "valid delete",
-		args: JobArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "delete",
-			JobName: validJobName,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
-		},
+		name:        "valid delete",
+		args:        validDeleteArgs(),
 		expectedErr: "",
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := validateArgs(test.args)
+			got := test.args.Validate()
 
 			if (test.expectedErr != "" && got == nil) ||
 				(test.expectedErr == "" && got != nil) ||
@@ -213,13 +137,17 @@ func TestValidateArgs(t *testing.T) {
 func TestNewJobOps(t *testing.T) {
 	tests := []struct {
 		name        string
-		args        JobArgs
+		opCtx       operations.OpCtx
+		args        operations.JobArgs
 		expectedErr string
 		expected    *batchv1.Job
 	}{{
-		name:        "empty",
-		args:        JobArgs{},
-		expectedErr: "missing UID",
+		name: "empty",
+		args: func(a SchedulerJobCreateArgs) SchedulerJobCreateArgs {
+			a.JobName = ""
+			return a
+		}(validCreateArgs()),
+		expectedErr: "missing JobName",
 		expected:    nil,
 	}, {
 		name:        "valid create",
@@ -233,16 +161,29 @@ func TestNewJobOps(t *testing.T) {
 		expected:    validDeleteJob(),
 	}}
 
+	opCtx := operations.OpCtx{
+		UID:   schedulerUID,
+		Image: testImage,
+		Secret: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			Key:                  "key.json",
+		},
+		Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := NewJobOps(test.args)
+			got, err := operations.NewOpsJob(opCtx, test.args)
 
 			if (test.expectedErr != "" && err == nil) ||
 				(test.expectedErr == "" && err != nil) ||
 				(test.expectedErr != "" && err != nil && test.expectedErr != err.Error()) {
 				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			sortEnvVars := cmpopts.SortSlices(func(l corev1.EnvVar, r corev1.EnvVar) bool {
+				return l.Name < r.Name
+			})
+			if diff := cmp.Diff(test.expected, got, sortEnvVars); diff != "" {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 
@@ -250,17 +191,11 @@ func TestNewJobOps(t *testing.T) {
 	}
 }
 
-func validCreateArgs() JobArgs {
-	return JobArgs{
-		UID:     schedulerUID,
-		Image:   testImage,
-		Action:  "create",
-		JobName: validJobName,
-		Secret: corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-			Key:                  "key.json",
+func validCreateArgs() SchedulerJobCreateArgs {
+	return SchedulerJobCreateArgs{
+		SchedulerJobArgs: SchedulerJobArgs{
+			JobName: validJobName,
 		},
-		Owner:    reconcilertesting.NewScheduler(schedulerName, testNS),
 		TopicID:  topicID,
 		Schedule: onceAMinuteSchedule,
 		Data:     testData,
@@ -271,9 +206,11 @@ func validCreateJob() *batchv1.Job {
 	owner := reconcilertesting.NewScheduler(schedulerName, testNS)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            SchedulerJobName(owner, "create"),
-			Namespace:       testNS,
-			Labels:          SchedulerJobLabels(owner, "create"),
+			Name:      fmt.Sprintf("scheduler-j-%s-scheduler-create", strings.ToLower(schedulerName)),
+			Namespace: testNS,
+			Labels: map[string]string{
+				"events.cloud.run/scheduler-job": fmt.Sprintf("%s-Scheduler-createops", schedulerName),
+			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: batchv1.JobSpec{
@@ -284,17 +221,11 @@ func validCreateJob() *batchv1.Job {
 	}
 }
 
-func validDeleteArgs() JobArgs {
-	return JobArgs{
-		UID:     schedulerUID,
-		Image:   testImage,
-		Action:  "delete",
-		JobName: validJobName,
-		Secret: corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-			Key:                  "key.json",
+func validDeleteArgs() SchedulerJobDeleteArgs {
+	return SchedulerJobDeleteArgs{
+		SchedulerJobArgs{
+			JobName: validJobName,
 		},
-		Owner: reconcilertesting.NewScheduler(schedulerName, testNS),
 	}
 }
 
@@ -302,9 +233,11 @@ func validDeleteJob() *batchv1.Job {
 	owner := reconcilertesting.NewScheduler(schedulerName, testNS)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            SchedulerJobName(owner, "delete"),
-			Namespace:       testNS,
-			Labels:          SchedulerJobLabels(owner, "delete"),
+			Name:      fmt.Sprintf("scheduler-j-%s-scheduler-delete", strings.ToLower(schedulerName)),
+			Namespace: testNS,
+			Labels: map[string]string{
+				"events.cloud.run/scheduler-job": fmt.Sprintf("%s-Scheduler-deleteops", schedulerName),
+			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: batchv1.JobSpec{

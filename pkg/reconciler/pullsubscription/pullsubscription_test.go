@@ -42,6 +42,7 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
 
@@ -420,6 +421,11 @@ func TestAllCases(t *testing.T) {
 			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
 			SubscriptionOpsImage: testImage,
 		}
+		pubsubBase.JobReconciler = &job.Reconciler{
+			KubeClientSet: pubsubBase.KubeClientSet,
+			JobLister:     listers.GetJobLister(),
+			Logger:        pubsubBase.Logger,
+		}
 		return &Reconciler{
 			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
@@ -456,38 +462,56 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 	}
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+func testOpCtx(owner kmeta.OwnerRefable) ops.OpCtx {
+	return ops.OpCtx{
+		UID:    sourceUID,
+		Image:  testImage,
+		Secret: secret,
+		Owner:  owner,
+	}
+}
+
+func testSubArgs() operations.SubArgs {
+	return operations.SubArgs{
+		PubSubArgs: operations.PubSubArgs{
+			ProjectID: testProject,
+		},
+		TopicID:        testTopicID,
+		SubscriptionID: testSubscriptionID,
+	}
+}
+
+func testSubCreateArgs() operations.SubCreateArgs {
 	days7 := 7 * 24 * time.Hour
 	secs30 := 30 * time.Second
-	return operations.NewSubscriptionOps(operations.SubArgs{
-		Image:               testImage,
-		Action:              action,
-		ProjectID:           testProject,
-		TopicID:             testTopicID,
-		SubscriptionID:      testSubscriptionID,
+	return operations.SubCreateArgs{
+		SubArgs:             testSubArgs(),
 		AckDeadline:         secs30,
 		RetainAckedMessages: false,
 		RetentionDuration:   days7,
-		Secret:              secret,
-		Owner:               owner,
-	})
+	}
+}
+
+func testSubDeleteArgs() operations.SubDeleteArgs {
+	return operations.SubDeleteArgs{
+		SubArgs: testSubArgs(),
+	}
+}
+
+func testJobArgs(action string) ops.JobArgs {
+	if action == "create" {
+		return testSubCreateArgs()
+	}
+	return testSubDeleteArgs()
+}
+
+func newJob(owner kmeta.OwnerRefable, action string) *batchv1.Job {
+	j, _ := ops.NewOpsJob(testOpCtx(owner), testJobArgs(action))
+	return j
 }
 
 func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	days7 := 7 * 24 * time.Hour
-	secs30 := 30 * time.Second
-	job := operations.NewSubscriptionOps(operations.SubArgs{
-		Image:               testImage,
-		Action:              action,
-		ProjectID:           testProject,
-		TopicID:             testTopicID,
-		SubscriptionID:      testSubscriptionID,
-		AckDeadline:         secs30,
-		RetainAckedMessages: false,
-		RetentionDuration:   days7,
-		Owner:               owner,
-	})
-
+	job := newJob(owner, action)
 	if success {
 		job.Status.Active = 0
 		job.Status.Succeeded = 1

@@ -19,12 +19,14 @@ package operations
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 )
 
@@ -38,6 +40,118 @@ const (
 	OpsJobCompleteFailed     OpsJobStatus = "JOB_FAILED"
 	OpsJobOngoing            OpsJobStatus = "JOB_ONGOING"
 )
+
+type JobArgs interface {
+	// Group of operations, e.g. pubsub, storage, ...
+	OperationGroup() string
+	// Typically single character subgroup of the operation,
+	// e.g. t for pubsub topic operations or n for storage
+	// notification operations.
+	OperationSubgroup() string
+	// Action to be performed by the job.
+	Action() string
+	// Environment variables to set in the job.
+	Env() []corev1.EnvVar
+	// Label key identifying the job. Label value will consist of
+	// owner name, owner GVK, and the operation action.
+	LabelKey() string
+	// Ensures that the job args are valid, returning an error
+	// otherwise.
+	Validate() error
+}
+
+type OpCtx struct {
+	// Image that should be used when performing the operation.
+	Image string
+	// UID of the resource that caused this action to be taken. It
+	// will be added to the job's pod template as a label as
+	// "resource-uid".
+	UID    string
+	Secret corev1.SecretKeySelector
+	Owner  kmeta.OwnerRefable
+}
+
+func JobName(o OpCtx, a JobArgs) string {
+	base := strings.ToLower(
+		strings.Join(append([]string{
+			a.OperationGroup(),
+			a.OperationSubgroup(),
+			o.Owner.GetObjectMeta().GetName(),
+			o.Owner.GetGroupVersionKind().Kind}),
+			"-"),
+	)
+	return kmeta.ChildName(base, "-"+a.Action())
+}
+
+func JobLabelVal(o OpCtx, a JobArgs) (value string) {
+	value = strings.Join([]string{
+		o.Owner.GetObjectMeta().GetName(),
+		o.Owner.GetGroupVersionKind().Kind,
+		a.Action(),
+	}, "-")
+	value = kmeta.ChildName(value, "ops")
+	return
+}
+
+func JobLabels(o OpCtx, a JobArgs) map[string]string {
+	return map[string]string{
+		"events.cloud.run/" + a.LabelKey(): JobLabelVal(o, a),
+	}
+}
+
+func NewOpsJob(o OpCtx, a JobArgs) (*batchv1.Job, error) {
+	if err := validateJobArgs(a); err != nil {
+		return nil, err
+	}
+
+	podTemplate := MakePodTemplate(
+		o.Image, o.UID, a.Action(), o.Secret,
+		append(a.Env(), corev1.EnvVar{
+			Name:  "ACTION",
+			Value: a.Action(),
+		})...)
+
+	backoffLimit := int32(3)
+	parallelism := int32(1)
+
+	return &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            JobName(o, a),
+			Namespace:       o.Owner.GetObjectMeta().GetNamespace(),
+			Labels:          JobLabels(o, a),
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(o.Owner)},
+		},
+		Spec: batchv1.JobSpec{
+			BackoffLimit: &backoffLimit,
+			Parallelism:  &parallelism,
+			Template:     *podTemplate,
+		},
+	}, nil
+}
+
+func validateJobArgs(a JobArgs) error {
+	if a.Action() == "" {
+		return fmt.Errorf("missing Action")
+	}
+
+	return a.Validate()
+}
+
+func validateOpCtx(o OpCtx) error {
+	if o.UID == "" {
+		return fmt.Errorf("missing UID")
+	}
+	if o.Image == "" {
+		return fmt.Errorf("missing Image")
+	}
+	if o.Secret.Name == "" || o.Secret.Key == "" {
+		return fmt.Errorf("invalid secret missing name or key")
+	}
+	if o.Owner == nil {
+		return fmt.Errorf("missing owner")
+	}
+	return nil
+}
 
 func IsJobComplete(job *batchv1.Job) bool {
 	for _, c := range job.Status.Conditions {
@@ -70,7 +184,7 @@ func JobFailedMessage(job *batchv1.Job) string {
 	return ""
 }
 
-// GetJobProd will find the Pod that belongs to the resource that created it.
+// GetJobPod will find the Pod that belongs to the resource that created it.
 // Uses label ""controller-uid  as the label selector. So, your job should
 // tag the job with that label as the UID of the resource that's needing it.
 // For example, if you create a storage object that requires us to create

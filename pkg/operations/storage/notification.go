@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	storageClient "cloud.google.com/go/storage"
@@ -33,9 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -63,86 +60,102 @@ type NotificationActionResult struct {
 
 // NotificationArgs are the configuration required to make a NewNotificationOps.
 type NotificationArgs struct {
-	// UID of the resource that caused the action to be taken. Will
-	// be added as a label to the podtemplate.
-	UID string
-	// Image is the actual binary that we'll run to operate on the
-	// notification.
-	Image string
-	// Action is what the binary should do
-	Action    string
-	ProjectID string
+	StorageArgs
 	// Bucket
 	Bucket string
+}
+
+func (n NotificationArgs) OperationSubgroup() string {
+	return "n"
+}
+
+func (n NotificationArgs) LabelKey() string {
+	return "notification"
+}
+
+func NotificationEnv(n NotificationArgs) []corev1.EnvVar {
+	return append(StorageEnv(n.StorageArgs),
+		corev1.EnvVar{
+			Name:  "BUCKET",
+			Value: n.Bucket,
+		})
+}
+
+func ValidateNotificationArgs(n NotificationArgs) error {
+	if n.Bucket == "" {
+		return fmt.Errorf("missing Bucket")
+	}
+	return ValidateStorageArgs(n.StorageArgs)
+}
+
+type NotificationCreateArgs struct {
+	NotificationArgs
 	// TopicID we'll use for pubsub target.
 	TopicID string
-	// NotificationId is the notifification ID that GCS gives
-	// back to us. We need that to delete it.
-	NotificationId string
 	// EventTypes is an array of strings specifying which
 	// event types we want the notification to fire on.
 	EventTypes []string
-	// ObjectNamePrefix is an optional filter
+	// ObjectNamePrefix is an optional filter (currently ignored).
 	ObjectNamePrefix string
-	// CustomAttributes is the list of additional attributes to have
-	// GCS supply back to us when it sends a notification.
-	CustomAttributes map[string]string
-	Secret           corev1.SecretKeySelector
-	Owner            kmeta.OwnerRefable
 }
 
-// NewNotificationOps returns a new batch Job resource.
-func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
-	if err := validateArgs(arg); err != nil {
-		return nil, err
+var _ operations.JobArgs = NotificationCreateArgs{}
+
+func (n NotificationCreateArgs) Action() string {
+	return operations.ActionCreate
+}
+
+func (n NotificationCreateArgs) Env() []corev1.EnvVar {
+	return append(NotificationEnv(n.NotificationArgs),
+		corev1.EnvVar{
+			Name:  "EVENT_TYPES",
+			Value: strings.Join(n.EventTypes, ":"),
+		},
+		corev1.EnvVar{
+			Name:  "PUBSUB_TOPIC_ID",
+			Value: n.TopicID,
+		})
+}
+
+func (n NotificationCreateArgs) Validate() error {
+	if n.ProjectID == "" {
+		return fmt.Errorf("missing ProjectID")
 	}
+	if n.TopicID == "" {
+		return fmt.Errorf("missing TopicID")
+	}
+	if len(n.EventTypes) == 0 {
+		return fmt.Errorf("missing EventTypes")
+	}
+	return ValidateNotificationArgs(n.NotificationArgs)
+}
 
-	env := []corev1.EnvVar{{
-		Name:  "ACTION",
-		Value: arg.Action,
-	}, {
-		Name:  "BUCKET",
-		Value: arg.Bucket,
-	}}
+type NotificationDeleteArgs struct {
+	NotificationArgs
+	// NotificationId is the notifification ID that GCS gives
+	// back to us. We need that to delete it.
+	NotificationId string
+}
 
-	switch arg.Action {
-	case operations.ActionCreate:
-		env = append(env, []corev1.EnvVar{
-			{
-				Name:  "EVENT_TYPES",
-				Value: strings.Join(arg.EventTypes, ":"),
-			}, {
-				Name:  "PUBSUB_TOPIC_ID",
-				Value: arg.TopicID,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: arg.ProjectID,
-			}}...)
-	case operations.ActionDelete:
-		env = append(env, []corev1.EnvVar{{
+var _ operations.JobArgs = NotificationDeleteArgs{}
+
+func (n NotificationDeleteArgs) Action() string {
+	return operations.ActionDelete
+}
+
+func (n NotificationDeleteArgs) Env() []corev1.EnvVar {
+	return append(NotificationEnv(n.NotificationArgs),
+		corev1.EnvVar{
 			Name:  "NOTIFICATION_ID",
-			Value: arg.NotificationId,
-		}}...)
+			Value: n.NotificationId,
+		})
+}
+
+func (n NotificationDeleteArgs) Validate() error {
+	if n.NotificationId == "" {
+		return fmt.Errorf("missing NotificationId")
 	}
-
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
-
-	backoffLimit := int32(3)
-	parallelism := int32(1)
-
-	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            NotificationJobName(arg.Owner, arg.Action),
-			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
-			Labels:          NotificationJobLabels(arg.Owner, arg.Action),
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Parallelism:  &parallelism,
-			Template:     *podTemplate,
-		},
-	}, nil
+	return ValidateNotificationArgs(n.NotificationArgs)
 }
 
 // NotificationOps defines the configuration to use for this operation.
@@ -312,45 +325,4 @@ func (n *NotificationOps) writeTerminationMessage(result *NotificationActionResu
 		return err
 	}
 	return ioutil.WriteFile("/dev/termination-log", m, 0644)
-}
-
-func validateArgs(arg NotificationArgs) error {
-	if arg.UID == "" {
-		return fmt.Errorf("missing UID")
-	}
-	if arg.Image == "" {
-		return fmt.Errorf("missing Image")
-	}
-	if arg.Action == "" {
-		return fmt.Errorf("missing Action")
-	}
-	if arg.Bucket == "" {
-		return fmt.Errorf("missing Bucket")
-	}
-	if arg.Secret.Name == "" || arg.Secret.Key == "" {
-		return fmt.Errorf("invalid secret missing name or key")
-	}
-	if arg.Owner == nil {
-		return fmt.Errorf("missing owner")
-	}
-
-	switch arg.Action {
-	case operations.ActionCreate:
-		if arg.TopicID == "" {
-			return fmt.Errorf("missing TopicID")
-		}
-		if arg.ProjectID == "" {
-			return fmt.Errorf("missing ProjectID")
-		}
-		if len(arg.EventTypes) == 0 {
-			return fmt.Errorf("missing EventTypes")
-		}
-
-	case operations.ActionDelete:
-		if arg.NotificationId == "" {
-			return fmt.Errorf("missing NotificationId")
-		}
-
-	}
-	return nil
 }

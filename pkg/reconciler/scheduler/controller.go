@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 
 	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 
@@ -69,7 +70,11 @@ func NewController(
 		SchedulerOpsImage: env.SchedulerJobOpsImage,
 		PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.run", cmw),
 		schedulerLister:   schedulerInformer.Lister(),
-		jobLister:         jobInformer.Lister(),
+	}
+	c.jobReconciler = &job.Reconciler{
+		KubeClientSet: c.KubeClientSet,
+		JobLister:     jobInformer.Lister(),
+		Logger:        c.Logger,
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 

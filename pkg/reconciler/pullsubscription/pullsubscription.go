@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"knative.dev/pkg/metrics"
@@ -163,11 +164,14 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
 
-		state, err := c.EnsureSubscriptionDeleted(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
+		deleteArgs := pubsubOps.SubDeleteArgs{
+			SubArgs: subscriptionsArgs(source),
+		}
+		state, err := c.JobReconciler.EnsureOpJob(ctx, c.subscriptionOpCtx(source), deleteArgs)
 		switch state {
 		case ops.OpsJobGetFailed:
 			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
-			return err
+			return fmt.Errorf("Failed to get subscription ops job: %q", err)
 
 		case ops.OpsJobCreated:
 			// If we created a job to make a subscription, then add the finalizer and update the status.
@@ -196,7 +200,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				"DeleteFailed",
 				"Failed to delete Subscription: %q",
 				msg)
-			return err
+			return fmt.Errorf("Failed to delete subscription: %q", err)
 		}
 
 		return nil
@@ -223,12 +227,18 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
 
-	state, err := c.EnsureSubscriptionCreated(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic,
-		source.Status.SubscriptionID, source.Spec.GetAckDeadline(), source.Spec.RetainAckedMessages, source.Spec.GetRetentionDuration())
+	opCtx := c.subscriptionOpCtx(source)
+	createArgs := pubsubOps.SubCreateArgs{
+		SubArgs:             subscriptionsArgs(source),
+		AckDeadline:         source.Spec.GetAckDeadline(),
+		RetainAckedMessages: source.Spec.RetainAckedMessages,
+		RetentionDuration:   source.Spec.GetRetentionDuration(),
+	}
+	state, err := c.JobReconciler.EnsureOpJob(ctx, opCtx, createArgs)
 	switch state {
 	case ops.OpsJobGetFailed:
 		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
-		return err
+		return fmt.Errorf("Failed to get subscription ops job: %q", err)
 
 	case ops.OpsJobCreated:
 		// If we created a job to make a subscription, then add the finalizer and update the status.
@@ -244,7 +254,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		// Now that the job completed, grab the pod status for it.
 		// Note that since it's not yet currently relied upon, don't hard
 		// fail this if we can't fetch it. Just warn
-		jobName := pubsubOps.SubscriptionJobName(source, "create")
+		jobName := ops.JobName(opCtx, createArgs)
 		logger.Info("Finding job pods for", zap.String("jobName", jobName))
 		jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, source.Namespace, jobName)
 		if err != nil {
@@ -274,7 +284,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 			"CreateFailed",
 			"Failed to create Subscription: %q.",
 			msg)
-		return err
+		return fmt.Errorf("Failed to create Subscription: %q", err)
 	}
 
 	_, err = c.createOrUpdateReceiveAdapter(ctx, source)
@@ -505,6 +515,25 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 		ConfigMap: cfg.Data,
 	}
 	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
+}
+
+func (r *Reconciler) subscriptionOpCtx(source *v1alpha1.PullSubscription) ops.OpCtx {
+	return ops.OpCtx{
+		Image:  r.SubscriptionOpsImage,
+		UID:    string(source.UID),
+		Secret: *source.Spec.Secret,
+		Owner:  source,
+	}
+}
+
+func subscriptionsArgs(source *v1alpha1.PullSubscription) pubsubOps.SubArgs {
+	return pubsubOps.SubArgs{
+		PubSubArgs: pubsubOps.PubSubArgs{
+			ProjectID: source.Spec.Project,
+		},
+		TopicID:        source.Spec.Topic,
+		SubscriptionID: source.Status.SubscriptionID,
+	}
 }
 
 // TODO: Registry

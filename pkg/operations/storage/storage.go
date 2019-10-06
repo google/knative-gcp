@@ -21,9 +21,33 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/compute/metadata"
-
 	"cloud.google.com/go/storage"
+	corev1 "k8s.io/api/core/v1"
 )
+
+type StorageArgs struct {
+	// Optional ProjectID. When unset the job will fallback to the
+	// metadata server.
+	ProjectID string
+}
+
+func (s StorageArgs) OperationGroup() string {
+	return "storage"
+}
+
+func StorageEnv(s StorageArgs) []corev1.EnvVar {
+	if s.ProjectID == "" {
+		return []corev1.EnvVar{}
+	}
+	return []corev1.EnvVar{{
+		Name:  "PROJECT_ID",
+		Value: s.ProjectID,
+	}}
+}
+
+func ValidateStorageArgs(s StorageArgs) error {
+	return nil
+}
 
 type StorageOps struct {
 	// Environment variable containing project id.

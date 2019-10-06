@@ -42,6 +42,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/operations"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -148,11 +149,15 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			// Ensure the Topic is deleted.
-			state, err := c.EnsureTopicDeleted(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
+			deleteArgs := pubsubOps.TopicDeleteArgs{
+				TopicArgs: topicArgs(topic),
+			}
+			state, err := c.JobReconciler.EnsureOpJob(ctx, c.topicOpCtx(topic), deleteArgs)
+
 			switch state {
 			case ops.OpsJobGetFailed:
 				logger.Error("Failed to get Topic ops job.", zap.Any("state", state), zap.Error(err))
-				return err
+				return fmt.Errorf("Failed to get Topic ops job: %q", err)
 
 			case ops.OpsJobCreated:
 				// If we created a job to delete a topic, update the status.
@@ -178,7 +183,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 					"DeleteFailed",
 					"Failed to delete topic: %q.",
 					msg)
-				return err
+				return fmt.Errorf("Failed to delete topic: %q", err)
 			}
 		} else {
 			removeFinalizer(topic)
@@ -192,7 +197,11 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	switch topic.Spec.PropagationPolicy {
 	case v1alpha1.TopicPolicyCreateDelete, v1alpha1.TopicPolicyCreateNoDelete:
-		state, err := c.EnsureTopicCreated(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
+		opCtx := c.topicOpCtx(topic)
+		createArgs := pubsubOps.TopicCreateArgs{
+			TopicArgs: topicArgs(topic),
+		}
+		state, err := c.JobReconciler.EnsureOpJob(ctx, opCtx, createArgs)
 		// Check state.
 		switch state {
 		case ops.OpsJobGetFailed:
@@ -200,7 +209,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),
 				zap.Error(err))
-			return err
+			return fmt.Errorf("Failed to get topic ops job: %q", err)
 
 		case ops.OpsJobCreated:
 			// If we created a job to make a topic, then add the finalizer and update the status.
@@ -216,7 +225,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			// Now that the job completed, grab the pod status for it.
 			// Note that since it's not yet currently relied upon, don't hard
 			// fail this if we can't fetch it. Just warn
-			jobName := pubsubOps.TopicJobName(topic, "create")
+			jobName := ops.JobName(opCtx, createArgs)
 			logger.Info("Finding job pods for", zap.String("jobName", jobName))
 			jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, topic.Namespace, jobName)
 			if err != nil {
@@ -248,11 +257,14 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				"CreateFailed",
 				"Failed to create Topic: %q",
 				msg)
-			return err
+			return fmt.Errorf("Failed to create topic: %q", err)
 		}
 
 	case v1alpha1.TopicPolicyNoCreateNoDelete:
-		state, err := c.EnsureTopicExists(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
+		existsArgs := pubsubOps.TopicExistsArgs{
+			TopicArgs: topicArgs(topic),
+		}
+		state, err := c.JobReconciler.EnsureOpJob(ctx, c.topicOpCtx(topic), existsArgs)
 		// Check state.
 		switch state {
 		case ops.OpsJobGetFailed:
@@ -260,7 +272,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
 				zap.Any("state", state),
 				zap.Error(err))
-			return err
+			return fmt.Errorf("Failed to get topic ops job: %q", err)
 
 		case ops.OpsJobCreated:
 			// If we created a job to verify a topic, then update the status.
@@ -286,7 +298,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				"VerifyFailed",
 				"Failed to verify Topic: %q",
 				msg)
-			return err
+			return fmt.Errorf("Failed to verify topic: %q", err)
 		}
 	default:
 		logger.Error("Unknown propagation policy.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
@@ -453,4 +465,22 @@ func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*
 		}
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (r *Reconciler) topicOpCtx(topic *v1alpha1.Topic) operations.OpCtx {
+	return operations.OpCtx{
+		Image:  r.TopicOpsImage,
+		UID:    string(topic.UID),
+		Secret: *topic.Spec.Secret,
+		Owner:  topic,
+	}
+}
+
+func topicArgs(topic *v1alpha1.Topic) pubsubOps.TopicArgs {
+	return pubsubOps.TopicArgs{
+		PubSubArgs: pubsubOps.PubSubArgs{
+			ProjectID: topic.Spec.Project,
+		},
+		TopicID: topic.Status.TopicID,
+	}
 }

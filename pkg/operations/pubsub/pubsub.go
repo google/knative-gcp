@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/compute/metadata"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/google/knative-gcp/pkg/pubsub"
 )
@@ -48,4 +49,19 @@ func (s *PubSubOps) CreateClient(ctx context.Context) error {
 	}
 	s.Client = client
 	return nil
+}
+
+type PubSubArgs struct {
+	ProjectID string
+}
+
+func PubSubEnv(args PubSubArgs) []corev1.EnvVar {
+	return []corev1.EnvVar{{
+		Name:  "PROJECT_ID",
+		Value: args.ProjectID,
+	}}
+}
+
+func (a PubSubArgs) OperationGroup() string {
+	return "pubsub"
 }

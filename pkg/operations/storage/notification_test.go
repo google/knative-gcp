@@ -17,13 +17,17 @@ limitations under the License.
 package operations
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/operations"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -66,156 +70,91 @@ func ownerRef() metav1.OwnerReference {
 	}
 }
 
-func TestValidateArgs(t *testing.T) {
+func TestValidateCreateArgs(t *testing.T) {
 	tests := []struct {
 		name        string
-		args        NotificationArgs
+		f           func(NotificationCreateArgs) NotificationCreateArgs
 		expectedErr string
 	}{{
-		name:        "empty",
-		args:        NotificationArgs{},
-		expectedErr: "missing UID",
-	}, {
-		name:        "missing Image",
-		args:        NotificationArgs{UID: "uid"},
-		expectedErr: "missing Image",
-	}, {
-		name: "missing Action",
-		args: NotificationArgs{
-			UID:   "uid",
-			Image: testImage,
-		},
-		expectedErr: "missing Action",
-	}, {
-		name: "missing Bucket",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			ProjectID: projectId,
+		name: "missing Bucket on create",
+		f: func(a NotificationCreateArgs) NotificationCreateArgs {
+			a.Bucket = ""
+			return a
 		},
 		expectedErr: "missing Bucket",
 	}, {
-		name: "missing secret",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			ProjectID: projectId,
-			Bucket:    bucket,
-		},
-		expectedErr: "invalid secret missing name or key",
-	}, {
-		name: "missing owner",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			ProjectID: projectId,
-			Bucket:    bucket,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-		},
-		expectedErr: "missing owner",
-	}, {
 		name: "missing topicId on create",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			ProjectID: projectId,
-			Bucket:    bucket,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		f: func(a NotificationCreateArgs) NotificationCreateArgs {
+			a.TopicID = ""
+			return a
 		},
 		expectedErr: "missing TopicID",
 	}, {
 		name: "missing ProjectID on create",
-		args: NotificationArgs{
-			UID:     "uid",
-			Image:   testImage,
-			Action:  "create",
-			Bucket:  bucket,
-			TopicID: topicID,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		f: func(a NotificationCreateArgs) NotificationCreateArgs {
+			a.ProjectID = ""
+			return a
 		},
 		expectedErr: "missing ProjectID",
 	}, {
 		name: "missing eventTypes on create",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "create",
-			ProjectID: projectId,
-			Bucket:    bucket,
-			TopicID:   topicID,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		f: func(a NotificationCreateArgs) NotificationCreateArgs {
+			a.EventTypes = nil
+			return a
 		},
 		expectedErr: "missing EventTypes",
 	}, {
+		name:        "valid create",
+		f:           func(a NotificationCreateArgs) NotificationCreateArgs { return a },
+		expectedErr: "",
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.f(validCreateArgs()).Validate()
+
+			if (test.expectedErr != "" && got == nil) ||
+				(test.expectedErr == "" && got != nil) ||
+				(test.expectedErr != "" && got != nil && test.expectedErr != got.Error()) {
+				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, got)
+			}
+		})
+	}
+}
+
+func TestValidateDeleteArgs(t *testing.T) {
+	tests := []struct {
+		name        string
+		f           func(NotificationDeleteArgs) NotificationDeleteArgs
+		expectedErr string
+	}{{
+		name:        "valid delete",
+		f:           func(a NotificationDeleteArgs) NotificationDeleteArgs { return a },
+		expectedErr: "",
+	}, {
 		name: "missing NotificationId on delete",
-		args: NotificationArgs{
-			UID:       "uid",
-			Image:     testImage,
-			Action:    "delete",
-			ProjectID: projectId,
-			Bucket:    bucket,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		f: func(a NotificationDeleteArgs) NotificationDeleteArgs {
+			a.NotificationId = ""
+			return a
 		},
 		expectedErr: "missing NotificationId",
 	}, {
-		name: "valid create",
-		args: NotificationArgs{
-			UID:        "uid",
-			Image:      testImage,
-			Action:     "create",
-			ProjectID:  projectId,
-			Bucket:     bucket,
-			EventTypes: []string{"finalize", "delete"},
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner:   reconcilertesting.NewStorage(storageName, testNS),
-			TopicID: topicID,
+		name: "missing Bucket on delete",
+		f: func(a NotificationDeleteArgs) NotificationDeleteArgs {
+			a.Bucket = ""
+			return a
 		},
-		expectedErr: "",
+		expectedErr: "missing Bucket",
 	}, {
-		name: "valid delete",
-		args: NotificationArgs{
-			UID:    "uid",
-			Image:  testImage,
-			Action: "delete",
-			Bucket: bucket,
-			Secret: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-				Key:                  "key.json",
-			},
-			Owner:          reconcilertesting.NewStorage(storageName, testNS),
-			NotificationId: notificationId,
+		name: "missing ProjectID on delete",
+		f: func(a NotificationDeleteArgs) NotificationDeleteArgs {
+			a.ProjectID = ""
+			return a
 		},
 		expectedErr: "",
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := validateArgs(test.args)
+			got := test.f(validDeleteArgs()).Validate()
 
 			if (test.expectedErr != "" && got == nil) ||
 				(test.expectedErr == "" && got != nil) ||
@@ -229,15 +168,10 @@ func TestValidateArgs(t *testing.T) {
 func TestNewNotificationOps(t *testing.T) {
 	tests := []struct {
 		name        string
-		args        NotificationArgs
+		args        operations.JobArgs
 		expectedErr string
 		expected    *batchv1.Job
 	}{{
-		name:        "empty",
-		args:        NotificationArgs{},
-		expectedErr: "missing UID",
-		expected:    nil,
-	}, {
 		name:        "valid create",
 		args:        validCreateArgs(),
 		expectedErr: "",
@@ -249,16 +183,29 @@ func TestNewNotificationOps(t *testing.T) {
 		expected:    validDeleteJob(),
 	}}
 
+	opCtx := operations.OpCtx{
+		UID:   storageUID,
+		Image: testImage,
+		Secret: corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+			Key:                  "key.json",
+		},
+		Owner: reconcilertesting.NewStorage(storageName, testNS),
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := NewNotificationOps(test.args)
+			got, err := operations.NewOpsJob(opCtx, test.args)
 
 			if (test.expectedErr != "" && err == nil) ||
 				(test.expectedErr == "" && err != nil) ||
 				(test.expectedErr != "" && err != nil && test.expectedErr != err.Error()) {
 				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			sortEnvVars := cmpopts.SortSlices(func(l corev1.EnvVar, r corev1.EnvVar) bool {
+				return l.Name < r.Name
+			})
+			if diff := cmp.Diff(test.expected, got, sortEnvVars); diff != "" {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 
@@ -266,20 +213,16 @@ func TestNewNotificationOps(t *testing.T) {
 	}
 }
 
-func validCreateArgs() NotificationArgs {
-	return NotificationArgs{
-		UID:        storageUID,
-		Image:      testImage,
-		Action:     "create",
-		ProjectID:  projectId,
-		Bucket:     bucket,
-		EventTypes: []string{"finalize"},
-		Secret: corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-			Key:                  "key.json",
+func validCreateArgs() NotificationCreateArgs {
+	return NotificationCreateArgs{
+		NotificationArgs: NotificationArgs{
+			StorageArgs: StorageArgs{
+				ProjectID: projectId,
+			},
+			Bucket: bucket,
 		},
-		Owner:   reconcilertesting.NewStorage(storageName, testNS),
-		TopicID: topicID,
+		EventTypes: []string{"finalize", "delete"},
+		TopicID:    topicID,
 	}
 }
 
@@ -287,9 +230,11 @@ func validCreateJob() *batchv1.Job {
 	owner := reconcilertesting.NewStorage(storageName, testNS)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            NotificationJobName(owner, "create"),
-			Namespace:       testNS,
-			Labels:          NotificationJobLabels(owner, "create"),
+			Name:      fmt.Sprintf("storage-n-%s-storage-create", strings.ToLower(storageName)),
+			Namespace: testNS,
+			Labels: map[string]string{
+				"events.cloud.run/notification": fmt.Sprintf("%s-Storage-createops", storageName),
+			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: batchv1.JobSpec{
@@ -300,18 +245,13 @@ func validCreateJob() *batchv1.Job {
 	}
 }
 
-func validDeleteArgs() NotificationArgs {
-	return NotificationArgs{
-		UID:            storageUID,
-		Image:          testImage,
-		Action:         "delete",
-		NotificationId: notificationId,
-		Bucket:         bucket,
-		Secret: corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
-			Key:                  "key.json",
+func validDeleteArgs() NotificationDeleteArgs {
+	return NotificationDeleteArgs{
+		NotificationArgs: NotificationArgs{
+			StorageArgs: StorageArgs{},
+			Bucket:      bucket,
 		},
-		Owner: reconcilertesting.NewStorage(storageName, testNS),
+		NotificationId: notificationId,
 	}
 }
 
@@ -319,9 +259,12 @@ func validDeleteJob() *batchv1.Job {
 	owner := reconcilertesting.NewStorage(storageName, testNS)
 	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            NotificationJobName(owner, "delete"),
-			Namespace:       testNS,
-			Labels:          NotificationJobLabels(owner, "delete"),
+			Name:      fmt.Sprintf("storage-n-%s-storage-delete", strings.ToLower(storageName)),
+			Namespace: testNS,
+
+			Labels: map[string]string{
+				"events.cloud.run/notification": fmt.Sprintf("%s-Storage-deleteops", storageName),
+			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
 		Spec: batchv1.JobSpec{
@@ -350,7 +293,7 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 		createEnv := []corev1.EnvVar{
 			{
 				Name:  "EVENT_TYPES",
-				Value: "finalize",
+				Value: "finalize:delete",
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: topicID,

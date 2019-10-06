@@ -19,19 +19,15 @@ package scheduler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -39,6 +35,7 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -63,8 +60,8 @@ type Reconciler struct {
 	// gcssourceclientset is a clientset for our own API group
 	schedulerLister listers.SchedulerLister
 
-	// For readling with jobs
-	jobLister batchv1listers.JobLister
+	// Reconciles batch jobs.
+	jobReconciler *job.Reconciler
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -167,25 +164,18 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 	return nil
 }
 
-func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName, schedule, data string) (ops.OpsJobStatus, error) {
-	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:      UID,
-		Image:    c.SchedulerOpsImage,
-		Action:   ops.ActionCreate,
-		TopicID:  topic,
-		JobName:  jobName,
-		Secret:   secret,
-		Owner:    owner,
-		Schedule: schedule,
-		Data:     data,
-	})
-}
-
 func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
-	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName, scheduler.Spec.Schedule, scheduler.Spec.Data)
-
+	createArgs := operations.SchedulerJobCreateArgs{
+		SchedulerJobArgs: operations.SchedulerJobArgs{
+			JobName: jobName,
+		},
+		TopicID:  topic,
+		Schedule: scheduler.Spec.Schedule,
+		Data:     scheduler.Spec.Data,
+	}
+	state, err := c.jobReconciler.EnsureOpJob(ctx, c.schedulerOpCtx(scheduler), createArgs)
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
-		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
+		return "", fmt.Errorf("Job %q failed to create or job failed: %q", scheduler.Name, err)
 	}
 
 	if state != ops.OpsJobCompleteSuccessful {
@@ -208,15 +198,13 @@ func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alp
 	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
-func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, jobName string) (ops.OpsJobStatus, error) {
-	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:     UID,
-		Image:   c.SchedulerOpsImage,
-		Action:  ops.ActionDelete,
-		JobName: jobName,
-		Secret:  secret,
-		Owner:   owner,
-	})
+func (c *Reconciler) schedulerOpCtx(scheduler *v1alpha1.Scheduler) ops.OpCtx {
+	return ops.OpCtx{
+		UID:    string(scheduler.UID),
+		Image:  c.SchedulerOpsImage,
+		Secret: *scheduler.Spec.Secret,
+		Owner:  scheduler,
+	}
 }
 
 // deleteSchedulerJob looks at the status.NotificationID and if non-empty
@@ -227,9 +215,16 @@ func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 		return nil
 	}
 
-	state, err := c.EnsureSchedulerJobDeleted(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Status.JobName)
-
+	deleteArgs := operations.SchedulerJobDeleteArgs{
+		SchedulerJobArgs: operations.SchedulerJobArgs{
+			JobName: scheduler.Status.JobName,
+		},
+	}
+	state, err := c.jobReconciler.EnsureOpJob(ctx, c.schedulerOpCtx(scheduler), deleteArgs)
 	if state != ops.OpsJobCompleteSuccessful {
+		if err != nil {
+			return fmt.Errorf("Error deleting scheduler job %q: %q", scheduler.Name, err)
+		}
 		return fmt.Errorf("Job %q has not completed yet", scheduler.Name)
 	}
 
@@ -320,47 +315,4 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	}
 
 	return src, err
-}
-
-func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.JobArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.SchedulerJobName(args.Owner, args.Action)
-	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
-
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		c.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
-
-		args.Image = c.SchedulerOpsImage
-
-		job, err = operations.NewJobOps(args)
-		if err != nil {
-			return ops.OpsJobCreateFailed, err
-		}
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
-		}
-
-		c.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		c.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
-		// TODO: Handle this case
-		//	} else if !metav1.IsControlledBy(job, args.Owner) {
-		//		return ops.OpsJobCreateFailed, fmt.Errorf("scheduler does not own job %q", jobName)
-	}
-
-	if ops.IsJobComplete(job) {
-		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
-	}
-	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
 }

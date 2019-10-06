@@ -29,15 +29,12 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"go.uber.org/zap"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/pubsub"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // TODO: This is currently only used on success to communicate the
@@ -52,71 +49,100 @@ type SubActionResult struct {
 
 // SubArgs are the configuration required to make a NewSubscriptionOps.
 type SubArgs struct {
-	// UID is the UID of the resource that caused this action to be
-	// taken. It will be added to the pod template as a label as
-	// "resource-uid"
-	UID string
+	PubSubArgs
+	TopicID        string
+	SubscriptionID string
+}
 
-	Image               string
-	Action              string
-	ProjectID           string
-	TopicID             string
-	SubscriptionID      string
+func (s SubArgs) OperationSubgroup() string {
+	return "s"
+}
+
+func (s SubArgs) LabelKey() string {
+	return "subscription"
+}
+
+func SubEnv(s SubArgs) []corev1.EnvVar {
+	return append(PubSubEnv(s.PubSubArgs),
+		corev1.EnvVar{
+			Name:  "PUBSUB_TOPIC_ID",
+			Value: s.TopicID,
+		}, corev1.EnvVar{
+			Name:  "PUBSUB_SUBSCRIPTION_ID",
+			Value: s.SubscriptionID,
+		})
+}
+
+type SubExistsArgs struct {
+	SubArgs
+}
+
+var _ operations.JobArgs = SubExistsArgs{}
+
+func (s SubExistsArgs) Action() string {
+	return operations.ActionExists
+}
+
+func (s SubExistsArgs) Env() []corev1.EnvVar {
+	return SubEnv(s.SubArgs)
+}
+
+//TODO: Add validation
+func (s SubExistsArgs) Validate() error {
+	return nil
+}
+
+type SubCreateArgs struct {
+	SubArgs
 	AckDeadline         time.Duration
 	RetainAckedMessages bool
 	RetentionDuration   time.Duration
-	Secret              corev1.SecretKeySelector
-	Owner               kmeta.OwnerRefable
 }
 
-// NewSubscriptionOps returns a new batch Job resource.
-func NewSubscriptionOps(arg SubArgs) *batchv1.Job {
-	env := []corev1.EnvVar{{
-		Name:  "ACTION",
-		Value: arg.Action,
-	}, {
-		Name:  "PROJECT_ID",
-		Value: arg.ProjectID,
-	}, {
-		Name:  "PUBSUB_TOPIC_ID",
-		Value: arg.TopicID,
-	}, {
-		Name:  "PUBSUB_SUBSCRIPTION_ID",
-		Value: arg.SubscriptionID,
-	}}
+var _ operations.JobArgs = SubCreateArgs{}
 
-	switch arg.Action {
-	case operations.ActionCreate:
-		env = append(env, []corev1.EnvVar{{
+func (s SubCreateArgs) Action() string {
+	return operations.ActionCreate
+}
+
+func (s SubCreateArgs) Env() []corev1.EnvVar {
+	return append(SubEnv(s.SubArgs),
+		corev1.EnvVar{
 			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_ACK_DEAD",
-			Value: arg.AckDeadline.String(),
-		}, {
+			Value: s.AckDeadline.String(),
+		},
+		corev1.EnvVar{
 			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_ACKED",
-			Value: strconv.FormatBool(arg.RetainAckedMessages),
-		}, {
+			Value: strconv.FormatBool(s.RetainAckedMessages),
+		},
+		corev1.EnvVar{
 			Name:  "PUBSUB_SUBSCRIPTION_CONFIG_RET_DUR",
-			Value: arg.RetentionDuration.String(),
-		}}...)
-	}
+			Value: s.RetentionDuration.String(),
+		})
+}
 
-	podTemplate := operations.MakePodTemplate(arg.Image, arg.UID, arg.Action, arg.Secret, env...)
+//TODO: Add validation
+func (s SubCreateArgs) Validate() error {
+	return nil
+}
 
-	backoffLimit := int32(3)
-	parallelism := int32(1)
+type SubDeleteArgs struct {
+	SubArgs
+}
 
-	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            SubscriptionJobName(arg.Owner, arg.Action),
-			Namespace:       arg.Owner.GetObjectMeta().GetNamespace(),
-			Labels:          SubscriptionJobLabels(arg.Owner, arg.Action),
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(arg.Owner)},
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Parallelism:  &parallelism,
-			Template:     *podTemplate,
-		},
-	}
+var _ operations.JobArgs = SubDeleteArgs{}
+
+func (s SubDeleteArgs) Action() string {
+	return operations.ActionDelete
+}
+
+func (s SubDeleteArgs) Env() []corev1.EnvVar {
+	return SubEnv(s.SubArgs)
+}
+
+//TODO: Add validation
+func (s SubDeleteArgs) Validate() error {
+	return nil
 }
 
 // TODO: the job could output the resolved projectID.
