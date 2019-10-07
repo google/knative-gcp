@@ -20,10 +20,15 @@ package e2e
 
 import (
 	"fmt"
+	"knative.dev/pkg/test/zipkin"
+	"log"
 	"os"
 	"strings"
 	"testing"
 
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing/test/conformance/helpers"
 	"knative.dev/pkg/test/logstream"
 )
 
@@ -47,6 +52,11 @@ func TestMain(m *testing.M) {
 	}
 	packageToImageConfigDone = true
 
+	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
+	// place that cleans it up. If an individual test calls this instead, then it will break other
+	// tests that need the tracing in place.
+	defer zipkin.CleanupZipkinTracingSetup(log.Printf)
+
 	os.Exit(m.Run())
 }
 
@@ -64,6 +74,15 @@ func TestSmokeChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	SmokeTestChannelImpl(t)
+}
+
+func TestChannelTracing(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
+		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
+		Kind: "Channel",
+	})
 }
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
