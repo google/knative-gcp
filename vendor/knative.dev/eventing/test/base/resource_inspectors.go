@@ -35,9 +35,6 @@ func GetAddressableURI(dynamicClient dynamic.Interface, obj *resources.MetaResou
 	}
 
 	at := untyped.(*duckv1alpha1.AddressableType)
-	if uri := at.Status.Address.URL; uri != nil && uri.String() != "" {
-		return uri.String(), nil
-	}
 	uri := fmt.Sprintf("http://%s", at.Status.Address.Hostname)
 	return uri, nil
 }

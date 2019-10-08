@@ -43,6 +43,14 @@
   revision = "68e3d742b03c099c35428443886e65d9587c8d76"
 
 [[projects]]
+  digest = "1:7b5f423f5b0dd3dfa32a19a6183b0ab9129bff371ebf3f9efae32f87e4986d8f"
+  name = "contrib.go.opencensus.io/exporter/zipkin"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "30f9fad5db2c8944c21d223496e2543aeb445d4c"
+  version = "v0.1.1"
+
+[[projects]]
   digest = "1:77dfd27299a11fa91e91c93e5155eda28e3e22897f20abd59be1bc5194315856"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -395,9 +403,16 @@
   version = "1.0.1"
 
 [[projects]]
-  digest = "1:c01e66557785d9d75328704d11c44c26582980cd78209475cb141b3eedd11e9f"
+  digest = "1:1a0de55901552615e2b2f24bdb51431634165e74745b042a3ec11c3e97ce5843"
   name = "github.com/openzipkin/zipkin-go"
-  packages = ["model"]
+  packages = [
+    ".",
+    "idgenerator",
+    "model",
+    "propagation",
+    "reporter",
+    "reporter/http",
+  ]
   pruneopts = "NUT"
   revision = "c29478e51bfb2e9c93e0e9f5e015e5993a490399"
   version = "v0.2.2"
@@ -1200,7 +1215,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ff6aa037dd2f758649983ff549669393efaebe412e4029fea1cd5dae61640120"
+  digest = "1:c3f1d37dbe88931cc955af52e7a62d82377b7d723f9b75cc7a474888198c2eb6"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1216,6 +1231,9 @@
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
+    "pkg/configmap",
+    "pkg/kncloudevents",
+    "pkg/tracing",
     "test/base",
     "test/base/resources",
     "test/common",
@@ -1290,6 +1308,8 @@
     "test/monitoring",
     "test/spoof",
     "test/zipkin",
+    "tracing",
+    "tracing/config",
     "tracker",
     "version",
     "webhook",
@@ -1395,6 +1415,8 @@
     "github.com/kelseyhightower/envconfig",
     "github.com/pkg/errors",
     "go.opencensus.io/metric/metricexport",
+    "go.opencensus.io/plugin/ochttp",
+    "go.opencensus.io/plugin/ochttp/propagation/b3",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
@@ -1452,6 +1474,9 @@
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/kncloudevents",
+    "knative.dev/eventing/pkg/tracing",
+    "knative.dev/eventing/test/common",
     "knative.dev/eventing/test/conformance/helpers",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
@@ -1487,6 +1512,7 @@
     "knative.dev/pkg/test",
     "knative.dev/pkg/test/helpers",
     "knative.dev/pkg/test/logstream",
+    "knative.dev/pkg/test/zipkin",
     "knative.dev/pkg/tracker",
     "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",

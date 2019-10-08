@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/b3"
+
 	nethttp "net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -30,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 )
 
@@ -185,6 +189,9 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		event.SetExtension(k, v)
 	}
 
+	// a.Sink is likely not exactly what we want...
+	ctx, err := tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
+
 	// Send the event and report the count.
 	rctx, r, err := a.outbound.Send(ctx, event)
 	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
@@ -242,6 +249,13 @@ func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents
 	t, err := cloudevents.NewHTTPTransport(tOpts...)
 	if err != nil {
 		return nil, err
+	}
+
+	// Add output tracing.
+	t.Client = &nethttp.Client{
+		Transport: &ochttp.Transport{
+			Propagation: &b3.HTTPFormat{},
+		},
 	}
 
 	// Use the transport to make a new CloudEvents client.
