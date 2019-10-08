@@ -105,6 +105,13 @@ func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
 		Value: arg.Bucket,
 	}}
 
+	if arg.ProjectID != "" {
+		env = append(env, corev1.EnvVar{
+			Name:  "PROJECT_ID",
+			Value: arg.ProjectID,
+		})
+	}
+
 	switch arg.Action {
 	case operations.ActionCreate:
 		env = append(env, []corev1.EnvVar{
@@ -114,9 +121,6 @@ func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: arg.TopicID,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: arg.ProjectID,
 			}}...)
 	case operations.ActionDelete:
 		env = append(env, []corev1.EnvVar{{
