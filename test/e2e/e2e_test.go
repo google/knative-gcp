@@ -87,24 +87,32 @@ func TestSmokePubSub(t *testing.T) {
 	SmokePubSubTestImpl(t)
 }
 
-// TestPubSubWithTarget tests we can knock down a target.
+// TestPubSubWithTarget tests we can knock down a target from a PubSub.
 func TestPubSubWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, packageToImageConfig)
+	PubSubWithTargetTestImpl(t, packageToImageConfig, false /*assertMetrics */)
 }
 
-// TestStorage tests we can knock down a target fot storage
+// TestPubSubStackDriverMetrics tests we can knock down a target from a PubSub and that we send metrics to StackDriver.
+func TestPubSubStackDriverMetrics(t *testing.T) {
+	t.Skip("See issues https://github.com/google/knative-gcp/issues/317 and https://github.com/cloudevents/sdk-go/pull/234")
+	cancel := logstream.Start(t)
+	defer cancel()
+	PubSubWithTargetTestImpl(t, packageToImageConfig, true /*assertMetrics */)
+}
+
+// TestStorage tests we can knock down a target from a Storage.
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, packageToImageConfig)
+	StorageWithTestImpl(t, packageToImageConfig, false /*assertMetrics */)
 }
 
-// TestStorageStackDriverMetrics tests we send metrics to StackDriver from Storages.
+// TestStorageStackDriverMetrics tests we can knock down a target from a Storage and that we send metrics to StackDriver.
 func TestStorageStackDriverMetrics(t *testing.T) {
 	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithStackDriverMetrics(t, packageToImageConfig)
+	StorageWithTestImpl(t, packageToImageConfig, true /*assertMetrics */)
 }

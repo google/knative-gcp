@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -28,8 +29,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/operations"
+	"github.com/google/knative-gcp/test/e2e/metrics"
+	"google.golang.org/api/iterator"
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,8 +45,6 @@ import (
 	"knative.dev/pkg/test"
 	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
-
-	"github.com/google/knative-gcp/pkg/operations"
 )
 
 // Setup creates the client objects needed in the e2e tests,
@@ -92,7 +94,7 @@ func TearDown(client *Client) {
 // DeleteNameSpace deletes the namespace that has the given name.
 func DeleteNameSpace(client *Client) error {
 	_, err := client.Kube.Kube.CoreV1().Namespaces().Get(client.Namespace, metav1.GetOptions{})
-	if err == nil || !errors.IsNotFound(err) {
+	if err == nil || !apierrors.IsNotFound(err) {
 		return client.Kube.Kube.CoreV1().Namespaces().Delete(client.Namespace, nil)
 	}
 	return err
@@ -134,7 +136,7 @@ func NewClient(configPath string, clusterName string, namespace string, t *testi
 func (c *Client) CreateNamespaceIfNeeded(t *testing.T) {
 	nsSpec, err := c.Kube.Kube.CoreV1().Namespaces().Get(c.Namespace, metav1.GetOptions{})
 
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && apierrors.IsNotFound(err) {
 		nsSpec = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: c.Namespace}}
 		nsSpec, err = c.Kube.Kube.CoreV1().Namespaces().Create(nsSpec)
 
@@ -313,4 +315,39 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 	}
 
 	return strings.Join(logs, "\n"), nil
+}
+
+// TODO make this function more generic.
+func (c *Client) StackDriverEventCountMetricFor(namespace, projectID, filter string) (*int64, error) {
+	metricClient, err := metrics.NewStackDriverMetricClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stackdriver metric client: %v", err)
+	}
+
+	// TODO make times configurable if needed.
+	metricRequest := metrics.NewStackDriverListTimeSeriesRequest(projectID,
+		metrics.WithStackDriverFilter(filter),
+		// Starting 5 minutes back until now.
+		metrics.WithStackDriverInterval(time.Now().Add(-5*time.Minute).Unix(), time.Now().Unix()),
+		// Delta counts aggregated every 2 minutes.
+		// We aggregate for count as other aggregations will give higher values.
+		// The reason is that PubSub upon an error, will retry, thus we will be recording multiple events.
+		metrics.WithStackDriverAlignmentPeriod(2*int64(time.Minute.Seconds())),
+		metrics.WithStackDriverPerSeriesAligner(monitoringpb.Aggregation_ALIGN_DELTA),
+		metrics.WithStackDriverCrossSeriesReducer(monitoringpb.Aggregation_REDUCE_COUNT),
+	)
+
+	it := metricClient.ListTimeSeries(context.TODO(), metricRequest)
+
+	for {
+		res, err := it.Next()
+		if err == iterator.Done {
+			return nil, errors.New("no metric reported")
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to iterate over result: %v", err)
+		}
+		actualCount := res.GetPoints()[0].GetValue().GetInt64Value()
+		return &actualCount, nil
+	}
 }

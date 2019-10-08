@@ -72,6 +72,8 @@ function test_teardown() {
 # Create resources required for Pub/Sub Admin setup
 function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
+  # Enable monitoring
+  gcloud services enable monitoring
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount for Pub/Sub Admin"
