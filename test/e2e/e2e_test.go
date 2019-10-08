@@ -20,14 +20,17 @@ package e2e
 
 import (
 	"fmt"
-	"knative.dev/pkg/test/zipkin"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
+	"knative.dev/pkg/test/zipkin"
+
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing/test/common"
 	"knative.dev/eventing/test/conformance/helpers"
 	"knative.dev/pkg/test/logstream"
 )
@@ -81,7 +84,27 @@ func TestChannelTracing(t *testing.T) {
 	defer cancel()
 	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
 		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
-		Kind: "Channel",
+		Kind:       "Channel",
+	}, func(client *common.Client) error {
+		secret, err := client.Kube.Kube.CoreV1().Secrets("default").Get("google-cloud-key", metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("could not get secret: %v", err)
+		}
+		newSecret, err := client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        secret.Name,
+				Labels:      secret.Labels,
+				Annotations: secret.Annotations,
+			},
+			Type:       secret.Type,
+			Data:       secret.Data,
+			StringData: secret.StringData,
+		})
+		if err != nil {
+			return fmt.Errorf("could not create secret: %v", err)
+		}
+		client.Tracker.Add(newSecret.GroupVersionKind().Group, newSecret.GroupVersionKind().Version, "secrets", newSecret.Namespace, newSecret.Name)
+		return nil
 	})
 }
 

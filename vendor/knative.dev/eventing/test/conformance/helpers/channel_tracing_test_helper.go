@@ -47,19 +47,19 @@ type TracingTestCase struct {
 
 // ChannelTracingTestHelperWithChannelTestRunner runs the CHannel tracing tests for all Channels in
 // the ChannelTestRunner.
-func ChannelTracingTestHelperWithChannelTestRunner(t *testing.T, channelTestRunner common.ChannelTestRunner) {
+func ChannelTracingTestHelperWithChannelTestRunner(t *testing.T, channelTestRunner common.ChannelTestRunner, f func(*common.Client) error) {
 	channelTestRunner.RunTests(t, common.FeatureBasic, func(st *testing.T, channel string) {
 		// Don't accidentally use t, use st instead. To ensure this, shadow 't' to a useless type.
 		t := struct{}{}
 		_ = fmt.Sprintf("%s", t)
 
 		channelTypeMeta := common.GetChannelTypeMeta(channel)
-		ChannelTracingTestHelper(st, *channelTypeMeta)
+		ChannelTracingTestHelper(st, *channelTypeMeta, f)
 	})
 }
 
 // ChannelTracingTestHelper runs the Channel tracing test using the given TypeMeta.
-func ChannelTracingTestHelper(t *testing.T, channel metav1.TypeMeta) {
+func ChannelTracingTestHelper(t *testing.T, channel metav1.TypeMeta, f func(*common.Client) error) {
 	testCases := map[string]TracingTestCase{
 		"includes incoming trace id": {
 			IncomingTraceId: true,
@@ -68,13 +68,13 @@ func ChannelTracingTestHelper(t *testing.T, channel metav1.TypeMeta) {
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tracingTest(t, setupChannelTracingWithReply, channel, tc)
+			tracingTest(t, f, setupChannelTracingWithReply, channel, tc)
 		})
 	}
 }
 
 // tracingTest is the generic outline of a tracing test.
-func tracingTest(t *testing.T, setup SetupFunc, channel metav1.TypeMeta, tc TracingTestCase) {
+func tracingTest(t *testing.T, f func(*common.Client) error, setup SetupFunc, channel metav1.TypeMeta, tc TracingTestCase) {
 	const (
 		loggerPodName = "logger"
 	)
@@ -84,6 +84,9 @@ func tracingTest(t *testing.T, setup SetupFunc, channel metav1.TypeMeta, tc Trac
 	// Do NOT call zipkin.CleanupZipkinTracingSetup. That will be called exactly once in TestMain.
 	tracinghelper.Setup(t, client)
 
+	if err := f(client); err != nil {
+		t.Fatalf("Passed in setup function failed: %v", err)
+	}
 	expected, mustContain := setup(t, &channel, client, loggerPodName, tc)
 	assertLogContents(t, client, loggerPodName, mustContain)
 

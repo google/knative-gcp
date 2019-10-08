@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -139,13 +140,24 @@ func (client *Client) WaitForResourcesReady(typemeta *metav1.TypeMeta) error {
 // WaitForAllTestResourcesReady waits until all test resources in the namespace are Ready.
 func (client *Client) WaitForAllTestResourcesReady() error {
 	// wait for all Knative resources created in this test to become ready.
-	client.Tracker.WaitForKResourcesReady()
+	if err := client.Tracker.WaitForKResourcesReady(); err != nil {
+		return fmt.Errorf("waiting for KResources to be ready): %v", err)
+	}
 	// explicitly wait for all pods to become ready.
-	if err := pkgTest.WaitForAllPodsRunning(client.Kube, client.Namespace); err != nil {
+	if err := client.waitForAllCreatedPodsRunning(); err != nil {
 		return err
 	}
 	// FIXME(Fredy-Z): This hacky sleep is added to try mitigating the test flakiness.
 	// Will delete it after we find the root cause and fix.
 	time.Sleep(10 * time.Second)
+	return nil
+}
+
+func (client *Client) waitForAllCreatedPodsRunning() error {
+	for _, n := range client.pods {
+		if err := pkgTest.WaitForPodRunning(client.Kube, n, client.Namespace); err != nil {
+			return fmt.Errorf("waiting for %q to reach RUNNING: %v", n, err)
+		}
+	}
 	return nil
 }

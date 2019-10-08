@@ -210,6 +210,7 @@ func (client *Client) CreatePodOrFail(pod *corev1.Pod, options ...func(*corev1.P
 		client.T.Fatalf("Failed to create pod %q: %v", pod.Name, err)
 	}
 	client.Tracker.Add(coreAPIGroup, coreAPIVersion, "pods", namespace, pod.Name)
+	client.pods = append(client.pods, pod.Name)
 }
 
 // CreateServiceAccountOrFail will create a ServiceAccount or fail the test if there is an error.
