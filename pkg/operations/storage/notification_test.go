@@ -24,6 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -258,7 +259,10 @@ func TestNewNotificationOps(t *testing.T) {
 				(test.expectedErr != "" && err != nil && test.expectedErr != err.Error()) {
 				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			sortEnvVars := cmpopts.SortSlices(func(l corev1.EnvVar, r corev1.EnvVar) bool {
+				return l.Name < r.Name
+			})
+			if diff := cmp.Diff(test.expected, got, sortEnvVars); diff != "" {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 
