@@ -62,7 +62,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "pubsub.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pullsubscriptions",
 	}); err != nil {
@@ -111,7 +111,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "pubsub.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pullsubscriptions",
 	}

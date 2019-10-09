@@ -19,5 +19,5 @@ limitations under the License.
 // of the same resource
 
 // +k8s:deepcopy-gen=package
-// +groupName=duck.cloud.run
+// +groupName=duck.cloud.google.com
 package v1alpha1

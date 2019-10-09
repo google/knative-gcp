@@ -23,7 +23,7 @@ import (
 )
 
 func TestGetLabelSelector(t *testing.T) {
-	want := "events.cloud.run/channel=controller,events.cloud.run/channel-name=source,events.cloud.run/controller-uid=UID"
+	want := "events.cloud.google.com/channel=controller,events.cloud.google.com/channel-name=source,events.cloud.google.com/controller-uid=UID"
 	got := GetLabelSelector("controller", "source", "UID").String()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -33,9 +33,9 @@ func TestGetLabelSelector(t *testing.T) {
 
 func TestGetLabels(t *testing.T) {
 	want := map[string]string{
-		"events.cloud.run/channel":        "controller",
-		"events.cloud.run/channel-name":   "channel",
-		"events.cloud.run/controller-uid": "UID",
+		"events.cloud.google.com/channel":        "controller",
+		"events.cloud.google.com/channel-name":   "channel",
+		"events.cloud.google.com/controller-uid": "UID",
 	}
 	got := GetLabels("controller", "channel", "UID")
 
@@ -45,7 +45,7 @@ func TestGetLabels(t *testing.T) {
 }
 
 func TestGetPullSubscriptionLabelSelector(t *testing.T) {
-	want := "events.cloud.run/channel=controller,events.cloud.run/channel-name=source,events.cloud.run/channel-subscriber=subscriber,events.cloud.run/controller-uid=UID"
+	want := "events.cloud.google.com/channel=controller,events.cloud.google.com/channel-name=source,events.cloud.google.com/channel-subscriber=subscriber,events.cloud.google.com/controller-uid=UID"
 	got := GetPullSubscriptionLabelSelector("controller", "source", "subscriber", "UID").String()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -55,10 +55,10 @@ func TestGetPullSubscriptionLabelSelector(t *testing.T) {
 
 func TestGetPullSubscriptionLabels(t *testing.T) {
 	want := map[string]string{
-		"events.cloud.run/channel":            "controller",
-		"events.cloud.run/channel-name":       "channel",
-		"events.cloud.run/channel-subscriber": "subscriber",
-		"events.cloud.run/controller-uid":     "UID",
+		"events.cloud.google.com/channel":            "controller",
+		"events.cloud.google.com/channel-name":       "channel",
+		"events.cloud.google.com/channel-subscriber": "subscriber",
+		"events.cloud.google.com/controller-uid":     "UID",
 	}
 	got := GetPullSubscriptionLabels("controller", "channel", "subscriber", "UID")
 

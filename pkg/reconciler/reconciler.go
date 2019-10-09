@@ -126,7 +126,7 @@ type Base struct {
 }
 
 const (
-	ControllerType = "events.cloud.run/controller"
+	ControllerType = "events.cloud.google.com/controller"
 )
 
 // NewBase instantiates a new instance of Base implementing

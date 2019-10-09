@@ -50,7 +50,7 @@ const (
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "storages.events.cloud.run"
+	resourceGroup = "storages.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event

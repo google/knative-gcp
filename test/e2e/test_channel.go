@@ -51,7 +51,7 @@ func SmokeTestChannelImpl(t *testing.T) {
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{
-		Group:    "messaging.cloud.run",
+		Group:    "messaging.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "channels",
 	}); err != nil {

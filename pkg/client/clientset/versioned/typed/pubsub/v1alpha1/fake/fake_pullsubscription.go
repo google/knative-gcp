@@ -34,9 +34,9 @@ type FakePullSubscriptions struct {
 	ns   string
 }
 
-var pullsubscriptionsResource = schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "pullsubscriptions"}
+var pullsubscriptionsResource = schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}
 
-var pullsubscriptionsKind = schema.GroupVersionKind{Group: "pubsub.cloud.run", Version: "v1alpha1", Kind: "PullSubscription"}
+var pullsubscriptionsKind = schema.GroupVersionKind{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Kind: "PullSubscription"}
 
 // Get takes name of the pullSubscription, and returns the corresponding pullSubscription object, and an error if there is any.
 func (c *FakePullSubscriptions) Get(name string, options v1.GetOptions) (result *v1alpha1.PullSubscription, err error) {

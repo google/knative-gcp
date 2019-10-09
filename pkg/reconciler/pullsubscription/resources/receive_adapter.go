@@ -49,8 +49,8 @@ type ReceiveAdapterArgs struct {
 const (
 	credsVolume          = "google-cloud-key"
 	credsMountPath       = "/var/secrets/google"
-	metricsDomain        = "cloud.run/events"
-	defaultResourceGroup = "pullsubscriptions.pubsub.cloud.run"
+	metricsDomain        = "cloud.google.com/events"
+	defaultResourceGroup = "pullsubscriptions.pubsub.cloud.google.com"
 )
 
 // MakeReceiveAdapter generates (but does not insert into K8s) the Receive Adapter Deployment for
