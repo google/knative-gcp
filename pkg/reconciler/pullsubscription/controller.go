@@ -31,6 +31,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/job"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -74,6 +75,11 @@ func NewController(
 	pubsubBase := &pubsub.PubSubBase{
 		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
 		SubscriptionOpsImage: env.SubscriptionOps,
+	}
+	pubsubBase.JobReconciler = &job.Reconciler{
+		KubeClientSet: pubsubBase.KubeClientSet,
+		JobLister:     jobInformer.Lister(),
+		Logger:        pubsubBase.Logger,
 	}
 
 	c := &Reconciler{
