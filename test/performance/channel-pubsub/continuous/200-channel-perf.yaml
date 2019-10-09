@@ -15,10 +15,10 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: broker-pubsub-receiver
+  name: channel-perf-send-receive
   namespace: default
   labels:
-    role: broker-pubsub-receiver
+    role: channel-perf-consumer
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
@@ -34,7 +34,7 @@ spec:
       template:
         metadata:
           labels:
-            role: broker-pubsub-receiver
+            role: channel-perf-consumer
         spec:
           serviceAccountName: perf-pubsub
           restartPolicy: Never
@@ -43,8 +43,8 @@ spec:
               image: knative.dev/eventing/test/test_images/performance
               args:
                 - "--role=sender-receiver"
-                - "--sink=http://pubsub-broker"
-                - "--aggregator=broker-pubsub-aggregator:10000"
+                - "--sink=http://cre-pubsub-test-channel-chan-publish.default.svc.cluster.local"
+                - "--aggregator=channel-perf-aggregator:10000"
                 - "--pace=100:10,400:20,800:30,1000:60,2000:60,3000:60"
                 - "--verbose"
               env:
@@ -69,10 +69,10 @@ spec:
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: broker-pubsub-aggregator
+  name: channel-perf-aggregator
   namespace: default
   labels:
-    role: broker-pubsub-aggregator
+    role: channel-perf-aggregator
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
@@ -88,7 +88,7 @@ spec:
       template:
         metadata:
           labels:
-            role: broker-pubsub-aggregator
+            role: channel-perf-aggregator
         spec:
           serviceAccountName: perf-pubsub
           restartPolicy: Never
@@ -101,8 +101,8 @@ spec:
                 - "--expect-records=1"
                 - "--mako-tags=channel=pubsub"
                 - "--verbose"
-                - "--benchmark-key=5903682180743168"
-                - "--benchmark-name=Development - Broker Latency & Throughput"
+                - "--benchmark-key=5683818216292352"
+                - "--benchmark-name=Development - Channel Latency & Throughput"
               ports:
                 - name: grpc
                   containerPort: 10000
@@ -133,3 +133,4 @@ spec:
             - name: service-account
               secret:
                 secretName: service-account
+
