@@ -129,7 +129,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.run",
+		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "storages",
 	}

@@ -170,7 +170,7 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 
 func WithPullSubscriptionSinkNotFound() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkNoSink("InvalidSink", `sinks.testing.cloud.run "sink" not found`)
+		s.Status.MarkNoSink("InvalidSink", `sinks.testing.cloud.google.com "sink" not found`)
 	}
 }
 

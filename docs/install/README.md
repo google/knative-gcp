@@ -12,11 +12,11 @@ Applying the `config` dir will:
 
 - create a new namespace, `cloud-run-events`.
 - install new CRDs,
-  - `channel.messaging.cloud.run`
-  - `decorator.messaging.cloud.run`
-  - `storages.events.cloud.run`
-  - `pullsubscriptions.pubsub.cloud.run`
-  - `topics.pubsub.cloud.run`
+  - `channel.messaging.cloud.google.com`
+  - `decorator.messaging.cloud.google.com`
+  - `storages.events.cloud.google.com`
+  - `pullsubscriptions.pubsub.cloud.google.com`
+  - `topics.pubsub.cloud.google.com`
 - install a controller to operate on the new resources,
   `cloud-run-events/cloud-run-events-controller`.
 - install a new service account, `cloud-run-events/cloud-run-events-controller`.
@@ -40,11 +40,11 @@ Applying the `config` dir will:
 
 - create a new namespace, `cloud-run-events`.
 - install new CRDs,
-  - `channel.messaging.cloud.run`
-  - `decorator.messaging.cloud.run`
-  - `storages.events.cloud.run`
-  - `pullsubscriptions.pubsub.cloud.run`
-  - `topics.pubsub.cloud.run`
+  - `channel.messaging.cloud.google.com`
+  - `decorator.messaging.cloud.google.com`
+  - `storages.events.cloud.google.com`
+  - `pullsubscriptions.pubsub.cloud.google.com`
+  - `topics.pubsub.cloud.google.com`
 - install a controller to operate on the new resources,
   `cloud-run-events/cloud-run-events-controller`.
 - install a new service account, `cloud-run-events/cloud-run-events-controller`.

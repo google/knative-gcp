@@ -17,5 +17,5 @@ limitations under the License.
 package duck
 
 const (
-	GroupName = "duck.cloud.run"
+	GroupName = "duck.cloud.google.com"
 )

@@ -19,7 +19,7 @@ kind: ClusterRole
 metadata:
   name: addressable-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 aggregationRule:
   clusterRoleSelectors:
   - matchLabels:
@@ -33,7 +33,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: service-addressable-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
     duck.knative.dev/addressable: "true"
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
@@ -54,7 +54,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kservice-addressable-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
     duck.knative.dev/addressable: "true"
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
@@ -77,12 +77,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pubsub-topic-addressable-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
     duck.knative.dev/addressable: "true"
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
   - apiGroups:
-      - pubsub.cloud.run
+      - pubsub.cloud.google.com
     resources:
       - topics
       - topics/status
@@ -98,12 +98,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: events-channel-addressable-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
     duck.knative.dev/addressable: "true"
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
   - apiGroups:
-      - messaging.cloud.run
+      - messaging.cloud.google.com
     resources:
       - channels
       - channels/status

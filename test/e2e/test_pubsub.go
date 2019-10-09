@@ -68,7 +68,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "events.cloud.run",
+		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pubsubs",
 	}); err != nil {
@@ -121,7 +121,7 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.run",
+		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pubsubs",
 	}

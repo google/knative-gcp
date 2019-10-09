@@ -418,7 +418,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 	if r.metricsConfig != nil {
 		component := sourceComponent
 		// Set the metric component based on PullSubscription label.
-		if _, ok := src.Labels["events.cloud.run/channel"]; ok {
+		if _, ok := src.Labels["events.cloud.google.com/channel"]; ok {
 			component = channelComponent
 		}
 		r.metricsConfig.Component = component

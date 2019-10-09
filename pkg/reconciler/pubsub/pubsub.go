@@ -45,7 +45,7 @@ const (
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "pubsubs.events.cloud.run"
+	resourceGroup = "pubsubs.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for the PubSub source.

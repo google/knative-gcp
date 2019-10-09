@@ -16,7 +16,7 @@
 #   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
 #   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
-apiVersion: pubsub.cloud.run/v1alpha1
+apiVersion: pubsub.cloud.google.com/v1alpha1
 kind: PullSubscription
 metadata:
   name: TOPIC_NAME-source
