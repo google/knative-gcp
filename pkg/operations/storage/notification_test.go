@@ -151,6 +151,22 @@ func TestValidateArgs(t *testing.T) {
 		},
 		expectedErr: "missing ProjectID",
 	}, {
+		name: "missing ProjectID on delete",
+		args: NotificationArgs{
+			UID:            "uid",
+			Image:          testImage,
+			Action:         "delete",
+			Bucket:         bucket,
+			TopicID:        topicID,
+			NotificationId: notificationId,
+			Secret: corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+				Key:                  "key.json",
+			},
+			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		},
+		expectedErr: "missing ProjectID",
+	}, {
 		name: "missing eventTypes on create",
 		args: NotificationArgs{
 			UID:       "uid",
@@ -201,10 +217,11 @@ func TestValidateArgs(t *testing.T) {
 	}, {
 		name: "valid delete",
 		args: NotificationArgs{
-			UID:    "uid",
-			Image:  testImage,
-			Action: "delete",
-			Bucket: bucket,
+			UID:       "uid",
+			Image:     testImage,
+			Action:    "delete",
+			Bucket:    bucket,
+			ProjectID: projectId,
 			Secret: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
@@ -311,6 +328,7 @@ func validDeleteArgs() NotificationArgs {
 		Action:         "delete",
 		NotificationId: notificationId,
 		Bucket:         bucket,
+		ProjectID:      projectId,
 		Secret: corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 			Key:                  "key.json",
@@ -347,6 +365,9 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 		}, {
 			Name:  "BUCKET",
 			Value: bucket,
+		}, {
+			Name:  "PROJECT_ID",
+			Value: projectId,
 		},
 	}
 	switch action {
@@ -358,9 +379,6 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: topicID,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: projectId,
 			},
 		}
 		env = append(env, createEnv...)
