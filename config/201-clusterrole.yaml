@@ -144,7 +144,7 @@ metadata:
     duck.knative.dev/source: "true"
 rules:
   - apiGroups:
-      - "pubsub.cloud.run"
+      - "pubsub.cloud.google.com"
     resources:
       - "pullsubscriptions"
     verbs:
@@ -163,9 +163,10 @@ metadata:
     duck.knative.dev/source: "true"
 rules:
   - apiGroups:
-      - "events.cloud.run"
+      - "events.cloud.google.com"
     resources:
       - "storages"
+      - "pubsubs"
     verbs:
       - get
       - list
