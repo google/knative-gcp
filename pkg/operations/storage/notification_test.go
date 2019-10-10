@@ -233,7 +233,7 @@ func validCreateJob() *batchv1.Job {
 			Name:      fmt.Sprintf("storage-n-%s-storage-create", strings.ToLower(storageName)),
 			Namespace: testNS,
 			Labels: map[string]string{
-				"events.cloud.run/notification": fmt.Sprintf("%s-Storage-createops", storageName),
+				"events.cloud.google.com/notification": fmt.Sprintf("%s-Storage-createops", storageName),
 			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
@@ -263,7 +263,7 @@ func validDeleteJob() *batchv1.Job {
 			Namespace: testNS,
 
 			Labels: map[string]string{
-				"events.cloud.run/notification": fmt.Sprintf("%s-Storage-deleteops", storageName),
+				"events.cloud.google.com/notification": fmt.Sprintf("%s-Storage-deleteops", storageName),
 			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},

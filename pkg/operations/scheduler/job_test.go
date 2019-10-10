@@ -209,7 +209,7 @@ func validCreateJob() *batchv1.Job {
 			Name:      fmt.Sprintf("scheduler-j-%s-scheduler-create", strings.ToLower(schedulerName)),
 			Namespace: testNS,
 			Labels: map[string]string{
-				"events.cloud.run/scheduler-job": fmt.Sprintf("%s-Scheduler-createops", schedulerName),
+				"events.cloud.google.com/scheduler-job": fmt.Sprintf("%s-Scheduler-createops", schedulerName),
 			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
@@ -236,7 +236,7 @@ func validDeleteJob() *batchv1.Job {
 			Name:      fmt.Sprintf("scheduler-j-%s-scheduler-delete", strings.ToLower(schedulerName)),
 			Namespace: testNS,
 			Labels: map[string]string{
-				"events.cloud.run/scheduler-job": fmt.Sprintf("%s-Scheduler-deleteops", schedulerName),
+				"events.cloud.google.com/scheduler-job": fmt.Sprintf("%s-Scheduler-deleteops", schedulerName),
 			},
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
 		},
