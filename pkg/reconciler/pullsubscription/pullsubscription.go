@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -109,6 +110,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	// Don't modify the informers copy
 	source := original.DeepCopy()
+
+	if err := c.reconcileSecretFinalizers(ctx, source); err != nil {
+		// log error
+		// should we return error
+	}
 
 	// Reconcile this copy of the source and then write back any status
 	// updates regardless of whether the reconciliation errored out.
@@ -339,6 +345,91 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	}
 
 	return src, err
+}
+
+func (c *Reconciler) reconcileSecretFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) error {
+	psl, err := c.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	sl, err := c.KubeClientSet.CoreV1().Secrets(desired.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, secret := range sl.Items {
+		dps := dependentPullSubscriptions(secret, psl)
+		if len(dps) == 0 {
+			// The secret is no longer referenced by any PullSubscription.
+			// So delete the finalizer.
+			if err := c.updateSecretFinalizer(ctx, &secret, false); err != nil {
+				// log but don't error out.
+			}
+		} else {
+			if desired.GetDeletionTimestamp() != nil {
+				// The secret is referenced by the current PullSubscription and
+				// it is the last one being deleted. So delete the finalizer.
+				if len(dps) == 1 && dps[0].GetName() == desired.GetName() {
+					if err := c.updateSecretFinalizer(ctx, &secret, false); err != nil {
+						// log but don't error out.
+					}
+				}
+			} else {
+				if err := c.updateSecretFinalizer(ctx, &secret, true); err != nil {
+					// should we return error in this case?
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func dependentPullSubscriptions(secret corev1.Secret, psl []*v1alpha1.PullSubscription) []*v1alpha1.PullSubscription {
+	result := []*v1alpha1.PullSubscription{}
+	for _, ps := range psl {
+		if ps.Spec.Secret.Name == secret.GetName() {
+			result = append(result, ps)
+		}
+	}
+	return result
+}
+
+func (c *Reconciler) updateSecretFinalizer(ctx context.Context, secret *corev1.Secret, ensureFinalizer bool) error {
+	source, err := c.KubeClientSet.CoreV1().Secrets(secret.GetNamespace()).Get(secret.GetName(), metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	existing := source.DeepCopy()
+	existingFinalizers := sets.NewString(existing.GetFinalizers()...)
+	hasFinalizer := existingFinalizers.Has(finalizerName)
+
+	if ensureFinalizer == hasFinalizer {
+		return nil
+	}
+
+	var desiredFinalizers []string
+	if hasFinalizer {
+		existingFinalizers.Delete(finalizerName)
+		desiredFinalizers = existingFinalizers.List()
+	} else {
+		desiredFinalizers = append(existing.Finalizers, finalizerName)
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      desiredFinalizers,
+			"resourceVersion": existing.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
+	return err
 }
 
 // updateFinalizers is a generic method for future compatibility with a
