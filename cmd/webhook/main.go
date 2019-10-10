@@ -58,9 +58,9 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	if err != nil {
 		log.Fatal("Error parsing logging configuration:", err)
 	}
-	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
-	defer logger.Sync()
-	logger = logger.With(zap.String("cloud.google.com/events", component))
+	sl, atomicLevel := logging.NewLoggerFromConfig(config, component)
+	defer sl.Sync()
+	logger := sl.Desugar().With(zap.String("cloud.google.com/events", component))
 
 	logger.Info("Starting the Cloud Run Events Webhook")
 
@@ -69,21 +69,21 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 
 	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
 	if err != nil {
-		logger.Fatalw("Failed to get cluster config", zap.Error(err))
+		logger.Fatal("Failed to get cluster config", zap.Error(err))
 	}
 
 	kubeClient, err := kubernetes.NewForConfig(clusterConfig)
 	if err != nil {
-		logger.Fatalw("Failed to get the client set", zap.Error(err))
+		logger.Fatal("Failed to get the client set", zap.Error(err))
 	}
 
 	if err := version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
-		logger.Fatalw("Version check failed", err)
+		logger.Fatal("Version check failed", zap.Error(err))
 	}
 
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
-	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
+	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger.Sugar(), atomicLevel, component))
 
 	// // If you want to control Defaulting or Validation, you can attach config state
 	// // to the context by watching the configmap here, and then uncommenting the logic
@@ -96,7 +96,7 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	// }
 
 	if err = configMapWatcher.Start(ctx.Done()); err != nil {
-		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
+		logger.Fatal("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
 	options := webhook.ControllerOptions{
@@ -121,14 +121,14 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 		options.ResourceAdmissionControllerPath: resourceAdmissionController,
 	}
 
-	controller, err := webhook.New(kubeClient, options, admissionControllers, logger, ctxFunc)
+	controller, err := webhook.New(kubeClient, options, admissionControllers, logger.Sugar(), ctxFunc)
 
 	if err != nil {
-		logger.Fatalw("Failed to create admission controller", zap.Error(err))
+		logger.Fatal("Failed to create admission controller", zap.Error(err))
 	}
 
 	if err = controller.Run(ctx.Done()); err != nil {
-		logger.Fatalw("Failed to start the admission controller", zap.Error(err))
+		logger.Fatal("Failed to start the admission controller", zap.Error(err))
 	}
 }
 

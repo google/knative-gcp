@@ -53,14 +53,15 @@ func main() {
 		}
 	}
 
-	logger, _ := logging.NewLoggerFromConfig(loggingConfig, component)
+	sl, _ := logging.NewLoggerFromConfig(loggingConfig, component)
+	logger := sl.Desugar()
 	defer flush(logger)
-	ctx := logging.WithLogger(signals.NewContext(), logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
 	if err != nil {
-		logger.Errorf("failed to process metrics options: %s", err.Error())
+		logger.Error("Failed to process metrics options", zap.Error(err))
 	}
 
 	mainMetrics(logger, metricsConfig)
@@ -73,19 +74,19 @@ func main() {
 		startable.Project = project
 	}
 
-	logger.Desugar().Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
 }
 
-func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
+func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
 	if opts == nil {
 		logger.Info("metrics disabled")
 		return
 	}
 
-	if err := metrics.UpdateExporter(*opts, logger); err != nil {
+	if err := metrics.UpdateExporter(*opts, logger.Sugar()); err != nil {
 		log.Fatalf("Failed to create the metrics exporter: %v", err)
 	}
 
@@ -107,7 +108,7 @@ func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
 	//view.SetReportingPeriod(2 * time.Second)
 }
 
-func flush(logger *zap.SugaredLogger) {
+func flush(logger *zap.Logger) {
 	_ = logger.Sync()
 	metrics.FlushExporter()
 }
