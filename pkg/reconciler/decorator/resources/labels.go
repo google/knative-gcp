@@ -18,6 +18,6 @@ package resources
 
 func GetLabels(controller string) map[string]string {
 	return map[string]string{
-		"messaging.cloud.run/controller": controller,
+		"messaging.cloud.google.com/controller": controller,
 	}
 }

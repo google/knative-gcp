@@ -64,7 +64,7 @@ func TestMakePullSubscription(t *testing.T) {
 		},
 	}
 
-	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.run", "storages.events.cloud.run")
+	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com", "storages.events.cloud.google.com")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
@@ -72,13 +72,13 @@ func TestMakePullSubscription(t *testing.T) {
 			Namespace: "bucket-namespace",
 			Name:      "bucket-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.run",
+				"receive-adapter": "storage.events.cloud.google.com",
 			},
 			Annotations: map[string]string{
-				"metrics-resource-group": "storages.events.cloud.run",
+				"metrics-resource-group": "storages.events.cloud.google.com",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "events.cloud.run/v1alpha1",
+				APIVersion:         "events.cloud.google.com/v1alpha1",
 				Kind:               "Storage",
 				Name:               "bucket-name",
 				UID:                "bucket-uid",

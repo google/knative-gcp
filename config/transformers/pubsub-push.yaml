@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: pubsub-push
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 spec:
   template:
     spec:

@@ -68,7 +68,7 @@ func NewController(
 
 	c := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
-		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.run", cmw),
+		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
 		storageLister:        storageInformer.Lister(),
 	}
 	c.jobReconciler = job.Reconciler{

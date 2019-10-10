@@ -18,5 +18,5 @@ limitations under the License.
 package events
 
 const (
-	GroupName = "events.cloud.run"
+	GroupName = "events.cloud.google.com"
 )

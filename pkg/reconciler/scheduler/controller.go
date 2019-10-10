@@ -68,7 +68,7 @@ func NewController(
 
 	c := &Reconciler{
 		SchedulerOpsImage: env.SchedulerJobOpsImage,
-		PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.run", cmw),
+		PubSubBase:        reconciler.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
 		schedulerLister:   schedulerInformer.Lister(),
 	}
 	c.jobReconciler = &job.Reconciler{

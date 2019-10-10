@@ -70,7 +70,7 @@ func TestMakeTopic(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "messaging.cloud.run/v1alpha1",
+				APIVersion:         "messaging.cloud.google.com/v1alpha1",
 				Kind:               "Channel",
 				Name:               "channel-name",
 				Controller:         &yes,

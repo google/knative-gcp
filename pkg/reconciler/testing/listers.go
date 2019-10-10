@@ -52,7 +52,7 @@ import (
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.cloud.run", Version: "v1alpha1", Kind: "Sink"}, &unstructured.Unstructured{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.cloud.google.com", Version: "v1alpha1", Kind: "Sink"}, &unstructured.Unstructured{})
 	return nil
 }
 

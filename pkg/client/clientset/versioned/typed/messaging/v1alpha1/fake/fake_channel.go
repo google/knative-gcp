@@ -34,9 +34,9 @@ type FakeChannels struct {
 	ns   string
 }
 
-var channelsResource = schema.GroupVersionResource{Group: "messaging.cloud.run", Version: "v1alpha1", Resource: "channels"}
+var channelsResource = schema.GroupVersionResource{Group: "messaging.cloud.google.com", Version: "v1alpha1", Resource: "channels"}
 
-var channelsKind = schema.GroupVersionKind{Group: "messaging.cloud.run", Version: "v1alpha1", Kind: "Channel"}
+var channelsKind = schema.GroupVersionKind{Group: "messaging.cloud.google.com", Version: "v1alpha1", Kind: "Channel"}
 
 // Get takes name of the channel, and returns the corresponding channel object, and an error if there is any.
 func (c *FakeChannels) Get(name string, options v1.GetOptions) (result *v1alpha1.Channel, err error) {

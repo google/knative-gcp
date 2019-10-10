@@ -95,7 +95,7 @@ func JobLabelVal(o OpCtx, a JobArgs) (value string) {
 
 func JobLabels(o OpCtx, a JobArgs) map[string]string {
 	return map[string]string{
-		"events.cloud.run/" + a.LabelKey(): JobLabelVal(o, a),
+		"events.cloud.google.com/" + a.LabelKey(): JobLabelVal(o, a),
 	}
 }
 

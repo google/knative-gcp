@@ -31,7 +31,7 @@ type EventsV1alpha1Interface interface {
 	StoragesGetter
 }
 
-// EventsV1alpha1Client is used to interact with features provided by the events.cloud.run group.
+// EventsV1alpha1Client is used to interact with features provided by the events.cloud.google.com group.
 type EventsV1alpha1Client struct {
 	restClient rest.Interface
 }

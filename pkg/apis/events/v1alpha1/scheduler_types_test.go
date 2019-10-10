@@ -25,7 +25,7 @@ import (
 
 func TestSchedulerGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "events.cloud.run",
+		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Scheduler",
 	}

@@ -70,7 +70,7 @@ var (
 	sinkURI = "http://" + sinkDNS + "/"
 
 	sinkGVK = metav1.GroupVersionKind{
-		Group:   "testing.cloud.run",
+		Group:   "testing.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
@@ -98,7 +98,7 @@ func init() {
 // Returns an ownerref for the test Storage object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.run/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1alpha1",
 		Kind:               "Storage",
 		Name:               "my-test-storage",
 		UID:                storageUID,
@@ -123,7 +123,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.run/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1alpha1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -208,7 +208,7 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				WithTopicLabels(map[string]string{
-					"receive-adapter": "storage.events.cloud.run",
+					"receive-adapter": "storage.events.cloud.google.com",
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -374,10 +374,10 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": "storage.events.cloud.run",
+					"receive-adapter": "storage.events.cloud.google.com",
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": "storages.events.cloud.run",
+					"metrics-resource-group": "storages.events.cloud.google.com",
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -731,7 +731,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		reconciler := &Reconciler{
 			NotificationOpsImage: testImage,
-			PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.run", cmw),
+			PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
 			storageLister:        listers.GetStorageLister(),
 		}
 		reconciler.jobReconciler = job.Reconciler{

@@ -34,9 +34,9 @@ type FakeDecorators struct {
 	ns   string
 }
 
-var decoratorsResource = schema.GroupVersionResource{Group: "messaging.cloud.run", Version: "v1alpha1", Resource: "decorators"}
+var decoratorsResource = schema.GroupVersionResource{Group: "messaging.cloud.google.com", Version: "v1alpha1", Resource: "decorators"}
 
-var decoratorsKind = schema.GroupVersionKind{Group: "messaging.cloud.run", Version: "v1alpha1", Kind: "Decorator"}
+var decoratorsKind = schema.GroupVersionKind{Group: "messaging.cloud.google.com", Version: "v1alpha1", Kind: "Decorator"}
 
 // Get takes name of the decorator, and returns the corresponding decorator object, and an error if there is any.
 func (c *FakeDecorators) Get(name string, options v1.GetOptions) (result *v1alpha1.Decorator, err error) {

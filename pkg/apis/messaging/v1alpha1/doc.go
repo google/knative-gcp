@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/google/knative-gcp/pkg/apis/messaging
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=messaging.cloud.run
+// +groupName=messaging.cloud.google.com
 package v1alpha1

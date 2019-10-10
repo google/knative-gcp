@@ -34,9 +34,9 @@ type FakePubSubs struct {
 	ns   string
 }
 
-var pubsubsResource = schema.GroupVersionResource{Group: "events.cloud.run", Version: "v1alpha1", Resource: "pubsubs"}
+var pubsubsResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "pubsubs"}
 
-var pubsubsKind = schema.GroupVersionKind{Group: "events.cloud.run", Version: "v1alpha1", Kind: "PubSub"}
+var pubsubsKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "PubSub"}
 
 // Get takes name of the pubSub, and returns the corresponding pubSub object, and an error if there is any.
 func (c *FakePubSubs) Get(name string, options v1.GetOptions) (result *v1alpha1.PubSub, err error) {

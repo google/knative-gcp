@@ -71,7 +71,7 @@ var (
 	sinkURI = "http://" + sinkDNS + "/"
 
 	sinkGVK = metav1.GroupVersionKind{
-		Group:   "testing.cloud.run",
+		Group:   "testing.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
@@ -92,7 +92,7 @@ func init() {
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.run/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1alpha1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -473,7 +473,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 
 func ownerReferences() []metav1.OwnerReference {
 	return []metav1.OwnerReference{{
-		APIVersion:         "pubsub.cloud.run/v1alpha1",
+		APIVersion:         "pubsub.cloud.google.com/v1alpha1",
 		Kind:               "Topic",
 		Name:               topicName,
 		UID:                topicUID,
