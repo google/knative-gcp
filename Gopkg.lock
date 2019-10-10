@@ -1215,7 +1215,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:939c9e36fc9eca59a284010950d11c93d390de7c08803ccf677ee50d918aa585"
+  digest = "1:1010ab4c3272d57694f32680b1837f5cafd4974771a3b53dd2b130e79b13e282"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1241,7 +1241,7 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "c1d9087b3bfcc61d56fb086c0ac1be205fa27bfb"
+  revision = "6046331ad7aab2fd082ae047bbe4201106a56b91"
 
 [[projects]]
   branch = "master"
