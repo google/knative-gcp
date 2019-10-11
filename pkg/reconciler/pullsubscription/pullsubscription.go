@@ -29,6 +29,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -342,9 +343,18 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	return src, err
 }
 
-// updateSecretFinalizer adds or deletes finalizer from the secret used the PullSubscription based on
-// the ensureFinalizer parameter.
+// updateSecretFinalizer adds or deletes the finalizer on the secret used by the PullSubscription.
 func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha1.PullSubscription, ensureFinalizer bool) error {
+	psl, err := c.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	// Only delete the finalizer if this PullSubscription is the last one
+	// references the Secret.
+	if !ensureFinalizer && !(len(psl) == 1 && psl[0].Name == desired.Name) {
+		return nil
+	}
+
 	secret, err := c.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
