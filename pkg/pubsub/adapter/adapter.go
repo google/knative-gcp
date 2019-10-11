@@ -80,6 +80,11 @@ type Adapter struct {
 	// a config map inside the controllers namespace and copied here.
 	LoggingConfigJson string `envconfig:"K_LOGGING_CONFIG" required:"true"`
 
+	// TracingConfigJson is a JSON string of tracing.Config. This is used to configure tracing. The
+	// original config is stored in a ConfigMap inside the controller's namespace. Its value is
+	// copied here as a JSON string.
+	TracingConfigJson string `envconfig:"K_TRACING_CONFIG" required:"true"`
+
 	// Environment variable containing the namespace.
 	Namespace string `envconfig:"NAMESPACE" required:"true"`
 

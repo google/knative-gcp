@@ -17,8 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+
+	"knative.dev/eventing/pkg/tracing"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
@@ -27,6 +31,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
+	tracingconfig "knative.dev/pkg/tracing/config"
 )
 
 const (
@@ -64,6 +69,14 @@ func main() {
 	}
 
 	mainMetrics(logger, metricsConfig)
+
+	tracingConfig, err := JsonToTracingConfig(startable.TracingConfigJson)
+	if err != nil {
+		logger.Error("Failed to process tracing options", zap.Error(err))
+	}
+	if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracingConfig); err != nil {
+		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
+	}
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
@@ -112,4 +125,17 @@ func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
 func flush(logger *zap.Logger) {
 	_ = logger.Sync()
 	metrics.FlushExporter()
+}
+
+func JsonToTracingConfig(jsonConfig string) (*tracingconfig.Config, error) {
+	var cfg tracingconfig.Config
+	if jsonConfig == "" {
+		return nil, errors.New("tracing config json string is empty")
+	}
+
+	if err := json.Unmarshal([]byte(jsonConfig), &cfg); err != nil {
+		return nil, fmt.Errorf("unmarshaling tracing config json: %v", err)
+	}
+
+	return &cfg, nil
 }

@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"time"
 
+	tracingconfig "knative.dev/pkg/tracing/config"
+
 	"knative.dev/pkg/metrics"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -78,6 +80,7 @@ type Reconciler struct {
 
 	loggingConfig *logging.Config
 	metricsConfig *metrics.ExporterOptions
+	tracingConfig *tracingconfig.Config
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 }
@@ -429,6 +432,11 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
 	}
 
+	tracingConfig, err := TracingConfigToJson(r.tracingConfig)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
+	}
+
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
 		Image:          r.receiveAdapterImage,
 		Source:         src,
@@ -438,6 +446,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		TransformerURI: src.Status.TransformerURI,
 		LoggingConfig:  loggingConfig,
 		MetricsConfig:  metricsConfig,
+		TracingConfig:  tracingConfig,
 	})
 
 	if existing == nil {
@@ -484,7 +493,7 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 
 	logcfg, err := logging.NewConfigFromConfigMap(cfg)
 	if err != nil {
-		r.Logger.Warn("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
+		r.Logger.Warnw("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
 		return
 	}
 	r.loggingConfig = logcfg
@@ -505,6 +514,36 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 		ConfigMap: cfg.Data,
 	}
 	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
+}
+
+func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
+	if cfg == nil {
+		r.Logger.Error("Tracing ConfigMap is nil")
+		return
+	}
+	delete(cfg.Data, "_example")
+
+	tracingCfg, err := tracingconfig.NewTracingConfigFromConfigMap(cfg)
+	if err != nil {
+		r.Logger.Warnw("failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
+	}
+	r.tracingConfig = tracingCfg
+	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	// TODO: requeue all pullsubscription
+}
+
+func TracingConfigToJson(cfg *tracingconfig.Config) (string, error) {
+	if cfg == nil {
+		return "", nil
+	}
+
+	jsonCfg, err := json.Marshal(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	return string(jsonCfg), nil
 }
 
 // TODO: Registry

@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -37,6 +39,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	tracingconfig "knative.dev/pkg/tracing/config"
 	serving "knative.dev/serving/pkg/apis/serving/v1"
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
 
@@ -65,6 +68,8 @@ type Reconciler struct {
 	serviceLister servinglisters.ServiceLister
 
 	publisherImage string
+
+	tracingConfig *tracingconfig.Config
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -405,10 +410,16 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
+	tracingCfg, err := pullsubscription.TracingConfigToJson(r.tracingConfig)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
+	}
+
 	desired := resources.MakePublisher(&resources.PublisherArgs{
-		Image:  r.publisherImage,
-		Topic:  topic,
-		Labels: resources.GetLabels(controllerAgentName, topic.Name),
+		Image:         r.publisherImage,
+		Topic:         topic,
+		Labels:        resources.GetLabels(controllerAgentName, topic.Name),
+		TracingConfig: tracingCfg,
 	})
 
 	svc := existing
@@ -453,4 +464,21 @@ func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*
 		}
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
+	if cfg == nil {
+		r.Logger.Error("Tracing ConfigMap is nil")
+		return
+	}
+	delete(cfg.Data, "_example")
+
+	tracingCfg, err := tracingconfig.NewTracingConfigFromConfigMap(cfg)
+	if err != nil {
+		r.Logger.Warnw("failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
+	}
+	r.tracingConfig = tracingCfg
+	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	// TODO: requeue all pullsubscription
 }
