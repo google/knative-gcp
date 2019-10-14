@@ -27,7 +27,7 @@ import (
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
 func TestResource(t *testing.T) {
 	want := schema.GroupResource{
-		Group:    "messaging.cloud.run",
+		Group:    "messaging.cloud.google.com",
 		Resource: "foo",
 	}
 
@@ -40,7 +40,7 @@ func TestResource(t *testing.T) {
 
 func TestKind(t *testing.T) {
 	want := schema.GroupKind{
-		Group: "messaging.cloud.run",
+		Group: "messaging.cloud.google.com",
 		Kind:  "foo",
 	}
 

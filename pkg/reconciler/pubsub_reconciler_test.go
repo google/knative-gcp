@@ -67,7 +67,7 @@ var (
 // Returns an ownerref for the test object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.run/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1alpha1",
 		Kind:               "Storage",
 		Name:               name,
 		UID:                "test-storage-uid",
@@ -453,14 +453,14 @@ func TestDeletes(t *testing.T) {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "topics"},
+					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"},
 				},
 				Name: name,
 			}, {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "pullsubscriptions"},
+					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"},
 				},
 				Name: name,
 			},

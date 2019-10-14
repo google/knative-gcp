@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/google/knative-gcp/pkg/apis/events
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=events.cloud.run
+// +groupName=events.cloud.google.com
 package v1alpha1

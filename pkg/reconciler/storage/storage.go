@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ const (
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "storages.events.cloud.run"
+	resourceGroup = "storages.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -64,7 +64,7 @@ type Reconciler struct {
 	// gcssourceclientset is a clientset for our own API group
 	storageLister listers.StorageLister
 
-	// For readling with jobs
+	// For reading with jobs
 	jobLister batchv1listers.JobLister
 }
 

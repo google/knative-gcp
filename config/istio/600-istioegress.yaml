@@ -18,7 +18,7 @@ kind: ServiceEntry
 metadata:
   name: cloud-run-events-googleapis-ext
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 spec:
   hosts:
   - "*.googleapis.com"

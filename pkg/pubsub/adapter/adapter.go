@@ -82,8 +82,8 @@ type Adapter struct {
 	// Environment variable containing the name.
 	Name string `envconfig:"NAME" required:"true"`
 
-	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
-	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.run" required:"true"`
+	// Environment variable containing the resource group. E.g., storages.events.cloud.google.com.
+	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.google.com" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -212,6 +212,11 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
 		cepubsub.WithSubscriptionID(a.Subscription),
+		// TODO Replace the line above with the following one once
+		//  https://github.com/cloudevents/sdk-go/pull/234 gets merged and we upgrade to the newer SDK.
+		//  Needed to set both the subscription and topic ID in order to
+		//  have the topic accessible in the transport at conversion time.
+		// cepubsub.WithSubscriptionAndTopicID(a.Subscription, a.Topic),
 	}
 
 	// Make a pubsub transport for the CloudEvents client.

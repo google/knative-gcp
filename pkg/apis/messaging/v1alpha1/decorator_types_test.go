@@ -26,7 +26,7 @@ import (
 
 func TestDecoratorGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "messaging.cloud.run",
+		Group:   "messaging.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Decorator",
 	}

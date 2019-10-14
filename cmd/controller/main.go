@@ -17,11 +17,12 @@ limitations under the License.
 package main
 
 import (
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/google/knative-gcp/pkg/reconciler/channel"
 	"github.com/google/knative-gcp/pkg/reconciler/decorator"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/storage"
@@ -34,6 +35,7 @@ func main() {
 	sharedmain.Main("controller",
 		storage.NewController,
 		scheduler.NewController,
+		pubsub.NewController,
 		pullsubscription.NewController,
 		topic.NewController,
 		channel.NewController,

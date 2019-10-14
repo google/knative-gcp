@@ -71,7 +71,7 @@ var (
 	sinkURI = "http://" + sinkDNS
 
 	sinkGVK = metav1.GroupVersionKind{
-		Group:   "testing.cloud.run",
+		Group:   "testing.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
@@ -92,7 +92,7 @@ func init() {
 func newSink() *unstructured.Unstructured {
 	return &unstructured.Unstructured{
 		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.run/v1alpha1",
+			"apiVersion": "testing.cloud.google.com/v1alpha1",
 			"kind":       "Sink",
 			"metadata": map[string]interface{}{
 				"namespace": testNS,
@@ -298,7 +298,7 @@ func TestAllCases(t *testing.T) {
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.run "sink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.google.com "sink" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,

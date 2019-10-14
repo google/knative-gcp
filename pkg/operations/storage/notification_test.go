@@ -57,7 +57,7 @@ var (
 // Returns an ownerref for the test Scheduler object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.run/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1alpha1",
 		Kind:               "Storage",
 		Name:               "my-test-storage",
 		UID:                storageUID,

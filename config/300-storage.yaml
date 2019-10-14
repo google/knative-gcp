@@ -17,19 +17,19 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
-    events.cloud.run/release: devel
-    events.cloud.run/crd-install: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
   annotations:
-    registry.cloud.run/eventTypes: |
+    registry.cloud.google.com/eventTypes: |
       [
         { "type": "google.storage.object.finalize", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
         { "type": "google.storage.object.delete", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
         { "type": "google.storage.object.archive", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
         { "type": "google.storage.object.metadataUpdate", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when the metadata of an existing object changes." }
       ]
-  name: storages.events.cloud.run
+  name: storages.events.cloud.google.com
 spec:
-  group: events.cloud.run
+  group: events.cloud.google.com
   version: v1alpha1
   names:
     categories:

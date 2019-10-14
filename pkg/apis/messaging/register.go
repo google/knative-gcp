@@ -18,5 +18,5 @@ limitations under the License.
 package messaging
 
 const (
-	GroupName = "messaging.cloud.run"
+	GroupName = "messaging.cloud.google.com"
 )

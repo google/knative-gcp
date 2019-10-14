@@ -56,7 +56,7 @@ type PubSubSpec struct {
 	// Name: google-cloud-key
 	// Key: key.json
 	// +optional
-	Secret *corev1.SecretKeySelector `json:"Secret,omitempty"`
+	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
 
 	// PubSubSecret is the credential to use to create
 	// Topic / PullSubscription resources. If omitted, uses Secret

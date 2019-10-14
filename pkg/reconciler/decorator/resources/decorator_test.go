@@ -59,11 +59,11 @@ func TestMakePublisherV1alpha1(t *testing.T) {
     "namespace": "dec-namespace",
     "creationTimestamp": null,
     "labels": {
-      "messaging.cloud.run/controller": "controller-name"
+      "messaging.cloud.google.com/controller": "controller-name"
     },
     "ownerReferences": [
       {
-        "apiVersion": "messaging.cloud.run/v1alpha1",
+        "apiVersion": "messaging.cloud.google.com/v1alpha1",
         "kind": "Decorator",
         "name": "dec-name",
         "uid": "",
@@ -77,7 +77,7 @@ func TestMakePublisherV1alpha1(t *testing.T) {
       "metadata": {
         "creationTimestamp": null,
         "labels": {
-          "messaging.cloud.run/controller": "controller-name"
+          "messaging.cloud.google.com/controller": "controller-name"
         }
       },
       "spec": {

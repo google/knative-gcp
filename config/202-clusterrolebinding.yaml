@@ -17,7 +17,7 @@ kind: ClusterRoleBinding
 metadata:
   name: cloud-run-events-controller
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 subjects:
 - kind: ServiceAccount
   name: controller
@@ -34,7 +34,7 @@ kind: ClusterRoleBinding
 metadata:
   name: cloud-run-events-controller-resolver
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 subjects:
 - kind: ServiceAccount
   name: controller

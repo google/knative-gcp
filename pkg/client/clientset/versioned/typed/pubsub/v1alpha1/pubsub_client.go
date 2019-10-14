@@ -30,7 +30,7 @@ type PubsubV1alpha1Interface interface {
 	TopicsGetter
 }
 
-// PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.run group.
+// PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.google.com group.
 type PubsubV1alpha1Client struct {
 	restClient rest.Interface
 }

@@ -18,7 +18,7 @@ metadata:
   name: webhook
   namespace: cloud-run-events
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 spec:
   replicas: 1
   selector:
@@ -30,7 +30,7 @@ spec:
       labels:
         app: cloud-run-events
         role: webhook
-        events.cloud.run/release: devel
+        events.cloud.google.com/release: devel
     spec:
       serviceAccountName: controller
       containers:

@@ -34,9 +34,9 @@ type FakeSchedulers struct {
 	ns   string
 }
 
-var schedulersResource = schema.GroupVersionResource{Group: "events.cloud.run", Version: "v1alpha1", Resource: "schedulers"}
+var schedulersResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "schedulers"}
 
-var schedulersKind = schema.GroupVersionKind{Group: "events.cloud.run", Version: "v1alpha1", Kind: "Scheduler"}
+var schedulersKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "Scheduler"}
 
 // Get takes name of the scheduler, and returns the corresponding scheduler object, and an error if there is any.
 func (c *FakeSchedulers) Get(name string, options v1.GetOptions) (result *v1alpha1.Scheduler, err error) {

@@ -52,7 +52,7 @@ import (
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.cloud.run", Version: "v1alpha1", Kind: "Sink"}, &unstructured.Unstructured{})
+	scheme.AddKnownTypeWithName(schema.GroupVersionKind{Group: "testing.cloud.google.com", Version: "v1alpha1", Kind: "Sink"}, &unstructured.Unstructured{})
 	return nil
 }
 
@@ -138,6 +138,10 @@ func (l *Listers) GetStorageLister() eventslisters.StorageLister {
 
 func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
 	return eventslisters.NewSchedulerLister(l.indexerFor(&EventsV1alpha1.Scheduler{}))
+}
+
+func (l *Listers) GetPubSubLister() eventslisters.PubSubLister {
+	return eventslisters.NewPubSubLister(l.indexerFor(&EventsV1alpha1.PubSub{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {

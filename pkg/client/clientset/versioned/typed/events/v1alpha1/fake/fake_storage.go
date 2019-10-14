@@ -34,9 +34,9 @@ type FakeStorages struct {
 	ns   string
 }
 
-var storagesResource = schema.GroupVersionResource{Group: "events.cloud.run", Version: "v1alpha1", Resource: "storages"}
+var storagesResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "storages"}
 
-var storagesKind = schema.GroupVersionKind{Group: "events.cloud.run", Version: "v1alpha1", Kind: "Storage"}
+var storagesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "Storage"}
 
 // Get takes name of the storage, and returns the corresponding storage object, and an error if there is any.
 func (c *FakeStorages) Get(name string, options v1.GetOptions) (result *v1alpha1.Storage, err error) {

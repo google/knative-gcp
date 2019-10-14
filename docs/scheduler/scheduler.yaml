@@ -1,4 +1,4 @@
-apiVersion: events.cloud.run/v1alpha1
+apiVersion: events.cloud.google.com/v1alpha1
 kind: Scheduler
 metadata:
   name: scheduler-test

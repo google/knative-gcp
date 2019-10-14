@@ -68,7 +68,7 @@ var (
 	topicURI = "http://" + topicDNS + "/"
 
 	sinkGVK = metav1.GroupVersionKind{
-		Group:   "testing.cloud.run",
+		Group:   "testing.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
@@ -89,7 +89,7 @@ func init() {
 //func newSink() *unstructured.Unstructured {
 //	return &unstructured.Unstructured{
 //		Object: map[string]interface{}{
-//			"apiVersion": "testing.cloud.run/v1alpha1",
+//			"apiVersion": "testing.cloud.google.com/v1alpha1",
 //			"kind":       "Sink",
 //			"metadata": map[string]interface{}{
 //				"namespace": testNS,
@@ -341,7 +341,7 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantDeletes: []clientgotesting.DeleteActionImpl{
 			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
 				Name: "cre-sub-testsubscription-abc-123",
 			},
 		},

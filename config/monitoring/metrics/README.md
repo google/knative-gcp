@@ -123,11 +123,11 @@ Then, access the [Grafana Dashboard](http://localhost:3000)
 
 Add `metrics.backend-destination: stackdriver`,
 `metrics.allow-stackdriver-custom-metrics: "true"` and
-`metrics.stackdriver-custom-metrics-subdomain: "cloud.run/events"` to the `data`
+`metrics.stackdriver-custom-metrics-subdomain: "cloud.google.com/events"` to the `data`
 field.  
  You can find detailed information in `data._example` field in the `ConfigMap` you
 are editing.
 
 1. Open the StackDriver UI and see your resource metrics in the StackDriver
    Metrics Explorer. You should be able to see metrics with the prefix
-   `custom.googleapis.com/cloud.run/events`.
+   `custom.googleapis.com/cloud.google.com/events`.
