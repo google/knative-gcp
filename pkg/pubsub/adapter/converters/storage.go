@@ -57,7 +57,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
-	event.SetSchemaURL(storageSchemaUrl)
+	event.SetDataSchema(storageSchemaUrl)
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["bucketId"]; ok {
 			delete(msg.Attributes, "bucketId")
