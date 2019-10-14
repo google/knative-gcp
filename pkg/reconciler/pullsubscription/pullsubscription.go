@@ -248,21 +248,13 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		// fail this if we can't fetch it. Just warn
 		jobName := pubsubOps.SubscriptionJobName(source, "create")
 		logger.Info("Finding job pods for", zap.String("jobName", jobName))
-		jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, source.Namespace, jobName)
-		if err != nil {
-			logger.Error("Failed to fetch job pods, can not fetch projectid",
-				zap.Error(err))
-		}
-		if jobPod != nil {
-			terminationMessage := ops.GetFirstTerminationMessage(jobPod)
-			if terminationMessage != "" {
-				var sar pubsubOps.SubActionResult
-				err = json.Unmarshal([]byte(terminationMessage), &sar)
-				if err == nil {
-					c.Logger.Infof("Topic project: %q", sar.ProjectId)
-					source.Status.ProjectID = sar.ProjectId
-				}
-			}
+
+		var sar pubsubOps.SubActionResult
+		if err := c.UnmarshalJobTerminationMessage(ctx, source.Namespace, jobName, &sar); err != nil {
+			logger.Error("Failed to unmarshal termination message", zap.Error(err))
+		} else {
+			c.Logger.Infof("Topic project: %q", sar.ProjectId)
+			source.Status.ProjectID = sar.ProjectId
 		}
 
 	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
