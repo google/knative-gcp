@@ -61,6 +61,17 @@ func TestTopicValidation(t *testing.T) {
 			},
 		},
 		want: nil,
+	}, {
+		name: "invalid propagation policy",
+		cr: &Topic{
+			Spec: TopicSpec{
+				Topic:             "topic",
+				PropagationPolicy: "invalid-propagation-policy",
+			},
+		},
+		want: []string{
+			"invalid value: invalid-propagation-policy: spec.propagationPolicy",
+		},
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
