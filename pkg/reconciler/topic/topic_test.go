@@ -19,6 +19,7 @@ package topic
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -61,6 +62,8 @@ const (
 	testProject  = "test-project-id"
 	testTopicID  = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
 	testTopicURI = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
+
+	secretName = "testing-secret"
 )
 
 var (
@@ -77,7 +80,7 @@ var (
 
 	secret = corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "testing-secret",
+			Name: secretName,
 		},
 		Key: "testing-key",
 	}
@@ -106,6 +109,23 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
+func newSecret(withFinalizer bool) *corev1.Secret {
+	finalizers := []string{"noisy-finalizer"}
+	if withFinalizer {
+		finalizers = append(finalizers, finalizerName)
+	}
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:  testNS,
+			Name:       secretName,
+			Finalizers: finalizers,
+		},
+		Data: map[string][]byte{
+			"testing-key": []byte("abcd"),
+		},
+	}
+}
+
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
 		Name: "bad workqueue key",
@@ -128,6 +148,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
 			newSink(),
+			newSecret(false),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -162,6 +183,7 @@ func TestAllCases(t *testing.T) {
 				}),
 			),
 			newSink(),
+			newSecret(false),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -186,6 +208,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, true),
+			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
 		},
 	}, {
 		Name: "successful create",
@@ -201,6 +224,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopicID(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
+			newSecret(true),
 		},
 		Key: testNS + "/" + topicName,
 		WithReactors: []clientgotesting.ReactionFunc{
@@ -241,6 +265,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopicID(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
+			newSecret(true),
 			newPublisher(true, true),
 			NewService(topicName+"-topic", testNS,
 				WithServiceOwnerReferences(ownerReferences()),
@@ -280,6 +305,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
 			),
+			newSecret(true),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -287,6 +313,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, false),
+			patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
 		},
 	}, {
 		Name: "deleting - delete topic - policy CreateDelete",
@@ -344,6 +371,63 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopicDeleting(testTopicID),
 			),
 			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true),
+			newSecret(true),
+		},
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+				// Updates
+				WithTopicTopicDeleted(testTopicID),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, false),
+			patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+		},
+	}, {
+		Name: "deleting final stage - policy CreateDelete - not the only Topic",
+		Objects: []runtime.Object{
+			NewTopic("not-relevant", testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicTopicDeleting(testTopicID),
+			),
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+				WithTopicTopicDeleting(testTopicID),
+			),
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true),
+			newSecret(true),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -452,14 +536,18 @@ func ProvideResource(verb, resource string, obj runtime.Object) clientgotesting.
 	}
 }
 
-func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
+func patchFinalizers(namespace, name string, add bool, existingFinalizers ...string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
 	action.Namespace = namespace
-	var fname string
-	if add {
-		fname = fmt.Sprintf("%q", finalizerName)
+
+	for i, ef := range existingFinalizers {
+		existingFinalizers[i] = fmt.Sprintf("%q", ef)
 	}
+	if add {
+		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizerName))
+	}
+	fname := strings.Join(existingFinalizers, ",")
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
