@@ -19,6 +19,7 @@ package pullsubscription
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -64,6 +65,8 @@ const (
 	testTopicID        = sourceUID + "-TOPIC"
 	testSubscriptionID = "cre-pull-" + sourceUID
 	generation         = 1
+
+	secretName = "testing-secret"
 )
 
 var (
@@ -78,7 +81,7 @@ var (
 
 	secret = corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "testing-secret",
+			Name: secretName,
 		},
 		Key: "testing-key",
 	}
@@ -87,6 +90,23 @@ var (
 func init() {
 	// Add types to scheme
 	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+}
+
+func newSecret(withFinalizer bool) *corev1.Secret {
+	finalizers := []string{"noisy-finalizer"}
+	if withFinalizer {
+		finalizers = append(finalizers, finalizerName)
+	}
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:  testNS,
+			Name:       secretName,
+			Finalizers: finalizers,
+		},
+		Data: map[string][]byte{
+			"testing-key": []byte("abcd"),
+		},
+	}
 }
 
 func newSink() *unstructured.Unstructured {
@@ -132,6 +152,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkSink(sinkURI),
 			),
 			newSink(),
+			newSecret(false),
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
@@ -160,6 +181,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
+			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
 		},
 	},
 		{
@@ -171,11 +193,13 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
+				newSecret(true),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
@@ -189,6 +213,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -210,11 +235,13 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
+				newSecret(true),
 				newReceiveAdapter(context.Background(), testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
@@ -229,6 +256,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -247,11 +275,13 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
 				),
 				newSink(),
+				newSecret(true),
 				newReceiveAdapter(context.Background(), "old"+testImage),
 				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
@@ -274,6 +304,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
@@ -291,9 +322,11 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 				),
+				newSecret(true),
 			},
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
@@ -306,6 +339,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 						Project: testProject,
 						Topic:   testTopicID,
+						Secret:  &secret,
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					// updates
@@ -332,6 +366,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionFinalizers(finalizerName),
 					WithPullSubscriptionDeleted,
 				),
+				newSecret(true),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -377,6 +412,69 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					WithPullSubscriptionFinalizers(finalizerName),
 				),
+				newSecret(true),
+				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+					// updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
+					WithPullSubscriptionMarkNoSubscription(testSubscriptionID),
+				),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, false),
+				patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+			},
+		},
+		{
+			Name: "deleting final stage - not the only PullSubscription",
+			Objects: []runtime.Object{
+				NewPullSubscription("not-relevant", testNS,
+					WithPullSubscriptionUID("not-relevant"),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+				),
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionDeleted,
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					WithPullSubscriptionFinalizers(finalizerName),
+				),
+				newSecret(true),
 				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true),
 			},
 			Key: testNS + "/" + sourceName,
@@ -437,6 +535,7 @@ func newReceiveAdapter(ctx context.Context, image string) runtime.Object {
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 			Project: testProject,
 			Topic:   testTopicID,
+			Secret:  &secret,
 		}))
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,
@@ -569,14 +668,18 @@ func TestFinalizers(t *testing.T) {
 	}
 }
 
-func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
+func patchFinalizers(namespace, name string, add bool, existingFinalizers ...string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
 	action.Namespace = namespace
-	var fname string
-	if add {
-		fname = fmt.Sprintf("%q", finalizerName)
+
+	for i, ef := range existingFinalizers {
+		existingFinalizers[i] = fmt.Sprintf("%q", ef)
 	}
+	if add {
+		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizerName))
+	}
+	fname := strings.Join(existingFinalizers, ",")
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
