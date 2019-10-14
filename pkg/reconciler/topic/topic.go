@@ -221,22 +221,15 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			// fail this if we can't fetch it. Just warn
 			jobName := pubsubOps.TopicJobName(topic, "create")
 			logger.Info("Finding job pods for", zap.String("jobName", jobName))
-			jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, topic.Namespace, jobName)
-			if err != nil {
-				logger.Error("Failed to fetch job pods, can not fetch projectid",
-					zap.Error(err))
+
+			var tar pubsubOps.TopicActionResult
+			if err := c.UnmarshalJobTerminationMessage(ctx, topic.Namespace, jobName, &tar); err != nil {
+				logger.Error("Failed to unmarshal termination message", zap.Error(err))
+			} else {
+				c.Logger.Infof("Topic project: %q", tar.ProjectId)
+				topic.Status.ProjectID = tar.ProjectId
 			}
-			if jobPod != nil {
-				terminationMessage := ops.GetFirstTerminationMessage(jobPod)
-				if terminationMessage != "" {
-					var tar pubsubOps.TopicActionResult
-					err = json.Unmarshal([]byte(terminationMessage), &tar)
-					if err == nil {
-						c.Logger.Infof("Topic project: %q", tar.ProjectId)
-						topic.Status.ProjectID = tar.ProjectId
-					}
-				}
-			}
+
 		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to create topic.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),

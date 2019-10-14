@@ -44,6 +44,9 @@ type TopicActionResult struct {
 	// been defaulted, so we'll expose it so that controller can
 	// reflect this in the Status).
 	ProjectId string `json:"projectId,omitempty"`
+
+	// Reason is the reason of the result.
+	Reason string `json:"reason,omitempty"`
 }
 
 type TopicArgs struct {
@@ -106,7 +109,7 @@ func (t *TopicOps) Run(ctx context.Context) error {
 	if t.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
-			return fmt.Errorf("failed to find project id, %s", err)
+			return t.terminationErr(logger, fmt.Errorf("failed to find project id, %s", err))
 		}
 		t.Project = project
 	}
@@ -121,20 +124,20 @@ func (t *TopicOps) Run(ctx context.Context) error {
 
 	client, err := pubsub.NewClient(ctx, t.Project)
 	if err != nil {
-		return fmt.Errorf("failed to create Pub/Sub client, %s", err)
+		return t.terminationErr(logger, fmt.Errorf("failed to create Pub/Sub client, %s", err))
 	}
 
 	topic := client.Topic(t.Topic)
 	exists, err := topic.Exists(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to verify topic exists, %s", err)
+		return t.terminationErr(logger, fmt.Errorf("failed to verify topic exists, %s", err))
 	}
 
 	switch t.Action {
 	case operations.ActionExists:
 		// If topic doesn't exist, that is an error.
 		if !exists {
-			return errors.New("topic does not exist")
+			return t.terminationErr(logger, errors.New("topic does not exist"))
 		}
 		logger.Info("Previously created.")
 
@@ -144,7 +147,7 @@ func (t *TopicOps) Run(ctx context.Context) error {
 			// Create a new topic with the given name.
 			topic, err = client.CreateTopic(ctx, t.Topic)
 			if err != nil {
-				return fmt.Errorf("failed to create topic, %s", err)
+				return t.terminationErr(logger, fmt.Errorf("failed to create topic, %s", err))
 			}
 			logger.Info("Successfully created.")
 		} else {
@@ -154,7 +157,7 @@ func (t *TopicOps) Run(ctx context.Context) error {
 	case operations.ActionDelete:
 		if exists {
 			if err := topic.Delete(ctx); err != nil {
-				return fmt.Errorf("failed to delete topic, %s", err)
+				return t.terminationErr(logger, fmt.Errorf("failed to delete topic, %s", err))
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -162,12 +165,20 @@ func (t *TopicOps) Run(ctx context.Context) error {
 		}
 
 	default:
-		return fmt.Errorf("unknown action value %s", t.Action)
+		return t.terminationErr(logger, fmt.Errorf("unknown action value %s", t.Action))
 	}
 
 	t.writeTerminationMessage(&TopicActionResult{})
 	logger.Info("Done.")
 	return nil
+}
+
+func (t *TopicOps) terminationErr(logger *zap.SugaredLogger, e error) error {
+	result := &TopicActionResult{Reason: e.Error()}
+	if err := t.writeTerminationMessage(result); err != nil {
+		logger.Errorf("Failed to write termination log", zap.Error(err))
+	}
+	return e
 }
 
 func (t *TopicOps) writeTerminationMessage(result *TopicActionResult) error {

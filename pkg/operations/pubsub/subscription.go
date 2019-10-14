@@ -48,6 +48,9 @@ type SubActionResult struct {
 	// been defaulted, so we'll expose it so that controller can
 	// reflect this in the Status).
 	ProjectId string `json:"projectId,omitempty"`
+
+	// Reason is the reason of the result.
+	Reason string `json:"reason,omitempty"`
 }
 
 // SubArgs are the configuration required to make a NewSubscriptionOps.
@@ -180,7 +183,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	sub := s.Client.Subscription(s.Subscription)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to verify topic exists: %s", err)
+		return s.terminationErr(logger, fmt.Errorf("failed to verify topic exists: %s", err))
 	}
 
 	switch s.Action {
@@ -195,7 +198,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		// Load the topic.
 		topic, err := s.getTopic(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to get topic, %s", err)
+			return s.terminationErr(logger, fmt.Errorf("failed to get topic, %s", err))
 		}
 		// subConfig is the wanted config based on settings.
 		subConfig := pubsub.SubscriptionConfig{
@@ -210,7 +213,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 			// Create a new subscription to the previous topic with the given name.
 			sub, err = s.Client.CreateSubscription(ctx, s.Subscription, subConfig)
 			if err != nil {
-				return fmt.Errorf("failed to create subscription, %s", err)
+				return s.terminationErr(logger, fmt.Errorf("failed to create subscription, %s", err))
 			}
 			logger.Info("Successfully created.")
 		} else {
@@ -219,7 +222,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 			// Get current config.
 			currentConfig, err := sub.Config(ctx)
 			if err != nil {
-				return fmt.Errorf("failed to get subscription config, %s", err)
+				return s.terminationErr(logger, fmt.Errorf("failed to get subscription config, %s", err))
 			}
 			// Compare the current config to the expected config. Update if different.
 			if diff := cmp.Diff(subConfig, currentConfig, ignoreSubConfig); diff != "" {
@@ -230,7 +233,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 					Labels:              currentConfig.Labels,
 				})
 				if err != nil {
-					return fmt.Errorf("failed to update subscription config, %s", err)
+					return s.terminationErr(logger, fmt.Errorf("failed to update subscription config, %s", err))
 				}
 				logger.Info("Updated subscription config.", zap.String("diff", diff))
 
@@ -240,7 +243,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 	case operations.ActionDelete:
 		if exists {
 			if err := sub.Delete(ctx); err != nil {
-				return fmt.Errorf("failed to delete subscription, %s", err)
+				return s.terminationErr(logger, fmt.Errorf("failed to delete subscription, %s", err))
 			}
 			logger.Info("Successfully deleted.")
 		} else {
@@ -248,7 +251,7 @@ func (s *SubscriptionOps) Run(ctx context.Context) error {
 		}
 
 	default:
-		return fmt.Errorf("unknown action value %v", s.Action)
+		return s.terminationErr(logger, fmt.Errorf("unknown action value %v", s.Action))
 	}
 
 	s.writeTerminationMessage(&SubActionResult{})
@@ -267,6 +270,14 @@ func (s *SubscriptionOps) getTopic(ctx context.Context) (pubsub.Topic, error) {
 		return topic, err
 	}
 	return nil, errors.New("topic does not exist")
+}
+
+func (s *SubscriptionOps) terminationErr(logger *zap.SugaredLogger, e error) error {
+	result := &SubActionResult{Reason: e.Error()}
+	if err := s.writeTerminationMessage(result); err != nil {
+		logger.Errorf("Failed to write termination log", zap.Error(err))
+	}
+	return e
 }
 
 func (s *SubscriptionOps) writeTerminationMessage(result *SubActionResult) error {

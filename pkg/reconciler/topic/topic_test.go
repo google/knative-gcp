@@ -63,7 +63,8 @@ const (
 	testTopicID  = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
 	testTopicURI = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
 
-	secretName = "testing-secret"
+	secretName            = "testing-secret"
+	testJobFailureMessage = "job failed"
 )
 
 var (
@@ -211,6 +212,38 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
 		},
 	}, {
+		Name: "failed to create topic",
+		Objects: append([]runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithInitTopicConditions,
+			)},
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate, false)...,
+		),
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", testJobFailureMessage),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithInitTopicConditions,
+				// Updates
+				WithTopicJobFailure(testTopicID, "CreateFailed", fmt.Sprintf("Failed to create Topic: %q", testJobFailureMessage)),
+			),
+		}},
+		WantErr: true,
+	}, {
 		Name: "successful create",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
@@ -356,7 +389,7 @@ func TestAllCases(t *testing.T) {
 		},
 	}, {
 		Name: "deleting final stage - policy CreateDelete",
-		Objects: []runtime.Object{
+		Objects: append([]runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
@@ -370,9 +403,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicDeleted,
 				WithTopicTopicDeleting(testTopicID),
 			),
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true),
-			newSecret(true),
-		},
+			newSecret(true)},
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
+		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
@@ -400,7 +433,7 @@ func TestAllCases(t *testing.T) {
 		},
 	}, {
 		Name: "deleting final stage - policy CreateDelete - not the only Topic",
-		Objects: []runtime.Object{
+		Objects: append([]runtime.Object{
 			NewTopic("not-relevant", testNS,
 				WithTopicUID(topicUID),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
@@ -426,9 +459,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicDeleted,
 				WithTopicTopicDeleting(testTopicID),
 			),
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true),
-			newSecret(true),
-		},
+			newSecret(true)},
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
+		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
@@ -453,6 +486,45 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, false),
 		},
+	}, {
+		Name: "fail to delete topic - policy CreateDelete",
+		Objects: append([]runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+				WithTopicTopicDeleting(testTopicID),
+			)},
+			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, false)...,
+		),
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", testJobFailureMessage),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicReady(testTopicID),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+				// Updates
+				WithTopicJobFailure(testTopicID, "DeleteFailed", fmt.Sprintf("Failed to delete topic: %q.", testJobFailureMessage)),
+			),
+		}},
+		WantErr: true,
 	}}
 
 	defer logtesting.ClearAll()
@@ -623,7 +695,7 @@ func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
 	})
 }
 
-func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) []runtime.Object {
 	job := operations.NewTopicOps(operations.TopicArgs{
 		Image:     testImage + "pub",
 		Action:    action,
@@ -655,5 +727,32 @@ func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) 
 		}}
 	}
 
-	return job
+	podTerminationMessage := fmt.Sprintf(`{"projectId":"%s"}`, testProject)
+	if !success {
+		podTerminationMessage = fmt.Sprintf(`{"projectId":"%s","reason":"%s"}`, testProject, testJobFailureMessage)
+	}
+
+	jobPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "pubsub-s-source-topic-create-pod",
+			Namespace: testNS,
+			Labels:    map[string]string{"job-name": job.Name},
+		},
+		Status: corev1.PodStatus{
+			ContainerStatuses: []corev1.ContainerStatus{
+				{
+					Name:  "job",
+					Ready: false,
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							ExitCode: 1,
+							Message:  podTerminationMessage,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return []runtime.Object{job, jobPod}
 }
