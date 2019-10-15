@@ -104,7 +104,8 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:f283fba2d01869ee44a818bcd7de4fd972afba91c7be9ceadd02b59530fdced3"
+  branch = "master"
+  digest = "1:ae074f5a0babb2e9989ab6c153c9796f8614090c6f272fbc98eb8747d300ba82"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -113,6 +114,7 @@
     "pkg/cloudevents/context",
     "pkg/cloudevents/datacodec",
     "pkg/cloudevents/datacodec/json",
+    "pkg/cloudevents/datacodec/text",
     "pkg/cloudevents/datacodec/xml",
     "pkg/cloudevents/observability",
     "pkg/cloudevents/transport",
@@ -123,8 +125,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "4cc108a637ff4bf2d1848c60d5fbb0f711fd1b8c"
-  version = "v0.9.2"
+  revision = "8dc7a6994d99f07031904838c4e91101d5fd218a"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
