@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	storageClient "cloud.google.com/go/storage"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/operations"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -39,12 +40,12 @@ import (
 )
 
 var (
-	// Mapping of the storage importer eventTypes to google storage types.
+	// Mapping of the storage source CloudEvent types to google storage types.
 	storageEventTypes = map[string]string{
-		"finalize":       "OBJECT_FINALIZE",
-		"archive":        "OBJECT_ARCHIVE",
-		"delete":         "OBJECT_DELETE",
-		"metadataUpdate": "OBJECT_METADATA_UPDATE",
+		v1alpha1.StorageFinalize:       "OBJECT_FINALIZE",
+		v1alpha1.StorageArchive:        "OBJECT_ARCHIVE",
+		v1alpha1.StorageDelete:         "OBJECT_DELETE",
+		v1alpha1.StorageMetadataUpdate: "OBJECT_METADATA_UPDATE",
 	}
 )
 
@@ -210,7 +211,7 @@ func (n *NotificationOps) Run(ctx context.Context) error {
 		customAttributes := make(map[string]string)
 
 		// Add our own event type here...
-		customAttributes["knative-gcp"] = "google.storage"
+		customAttributes["knative-gcp"] = "com.google.cloud.storage"
 
 		eventTypes := strings.Split(n.EventTypes, ":")
 		logger.Infof("Creating a notification on bucket %s", n.Bucket)

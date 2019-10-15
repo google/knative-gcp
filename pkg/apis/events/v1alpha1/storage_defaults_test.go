@@ -33,7 +33,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		"missing defaults": {
 			orig: &StorageSpec{},
 			expected: &StorageSpec{
-				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
+				EventTypes: allEventTypes,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -51,7 +51,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
-				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
+				EventTypes: allEventTypes,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -74,7 +74,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
-				EventTypes: []string{"finalize", "delete", "archive", "metadataUpdate"},
+				EventTypes: allEventTypes,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -87,7 +87,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		},
 		"secret exists same name": {
 			orig: &StorageSpec{
-				EventTypes: []string{"finalize"},
+				EventTypes: []string{StorageFinalize},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -98,7 +98,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
-				EventTypes: []string{"finalize"},
+				EventTypes: []string{StorageFinalize},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -111,7 +111,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 		},
 		"secret exists all different": {
 			orig: &StorageSpec{
-				EventTypes: []string{"finalize", "delete"},
+				EventTypes: []string{StorageFinalize, StorageDelete},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -122,7 +122,7 @@ func TestStorage_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &StorageSpec{
-				EventTypes: []string{"finalize", "delete"},
+				EventTypes: []string{StorageFinalize, StorageDelete},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
