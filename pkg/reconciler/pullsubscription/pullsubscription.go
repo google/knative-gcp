@@ -475,12 +475,12 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
-		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Error serializing metrics config", zap.Error(err))
 	}
 
 	tracingConfig, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
-		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
 	}
 
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
@@ -576,7 +576,7 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.tracingConfig = tracingCfg
 	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
-	// TODO: requeue all pullsubscription
+	// TODO: requeue all PullSubscriptions.
 }
 
 // TODO: Registry

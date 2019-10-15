@@ -460,7 +460,7 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 
 	tracingCfg, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
-		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
 	}
 
 	desired := resources.MakePublisher(&resources.PublisherArgs{
@@ -528,5 +528,5 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.tracingConfig = tracingCfg
 	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
-	// TODO: requeue all pullsubscription
+	// TODO: requeue all PullSubscriptions.
 }
