@@ -530,10 +530,10 @@ func (s *Span) String() string {
 		return "<nil>"
 	}
 	if s.data == nil {
-		return fmt.Sprintf("span %s", s.spanContext.SpanID)
+		return fmt.Sprintf("span %s %s", s.spanContext.TraceID, s.spanContext.SpanID)
 	}
 	s.mu.Lock()
-	str := fmt.Sprintf("span %s %q", s.spanContext.SpanID, s.data.Name)
+	str := fmt.Sprintf("span %s %s %q", s.spanContext.TraceID, s.spanContext.SpanID, s.data.Name)
 	s.mu.Unlock()
 	return str
 }

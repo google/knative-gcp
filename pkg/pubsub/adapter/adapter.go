@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.opencensus.io/trace"
+
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 
@@ -165,11 +167,18 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		ResourceGroup: a.ResourceGroup,
 	}
 
+	// a.Sink is likely not exactly what we want...
+	ctx, err := tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
+	if err != nil {
+		logger.Infow("Unable to attach tracing to context", zap.Error(err))
+	}
+
 	// If a transformer has been configured, then transform the message.
 	if a.transformer != nil {
+		logger.Infow("QQQQ - Just before transformer", zap.Any("event.extensions", event.Extensions()), zap.Any("ctx", trace.FromContext(ctx)))
 		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
 		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
-		_, transformedEvent, err := a.transformer.Send(ctx, event)
+		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
 			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
@@ -182,6 +191,8 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		}
 		// Update the event with the transformed one.
 		event = *transformedEvent
+		// Update the tracing information to use the span returned by the transformer.
+		ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
 	}
 
 	// If send mode is Push, convert to Pub/Sub Push payload style.
@@ -194,8 +205,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		event.SetExtension(k, v)
 	}
 
-	// a.Sink is likely not exactly what we want...
-	ctx, err := tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
+	logger.Infow("QQQQ - Just before send", zap.Any("event.extensions", event.Extensions()), zap.Any("ctx", trace.FromContext(ctx)))
 
 	// Send the event and report the count.
 	rctx, r, err := a.outbound.Send(ctx, event)
