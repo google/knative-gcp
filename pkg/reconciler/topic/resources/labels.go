@@ -26,7 +26,7 @@ func GetLabelSelector(controller, source string) labels.Selector {
 
 func GetLabels(controller, topic string) map[string]string {
 	return map[string]string{
-		"pubsub.cloud.run/controller": controller,
-		"pubsub.cloud.run/topic":      topic,
+		"pubsub.cloud.google.com/controller": controller,
+		"pubsub.cloud.google.com/topic":      topic,
 	}
 }

@@ -20,18 +20,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"testing"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"testing"
-
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -80,18 +83,21 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, proje
 	return client.Bucket(bucketName)
 }
 
-func StorageWithTestImpl(t *testing.T, packages map[string]string) {
+func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
 	ctx := context.Background()
 	project := os.Getenv(ProwProjectKey)
 
 	bucketName := makeBucket(ctx, t, project)
-	storageName := bucketName + "-storage"
-	targetName := bucketName + "-target"
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	targetName := helpers.AppendRandomString(bucketName + "-target")
 
 	client := Setup(t, true)
+	if assertMetrics {
+		client.SetupStackDriverMetrics(t)
+	}
 	defer TearDown(client)
 
-	fileName := helpers.AppendRandomString("test-file-for-storage-")
+	fileName := helpers.AppendRandomString("test-file-for-storage")
 
 	config := map[string]string{
 		"namespace":   client.Namespace,
@@ -123,7 +129,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.run",
+		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "storages",
 	}
@@ -182,6 +188,41 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string) {
 			} else {
 				t.Logf("job: %s\n", logs)
 			}
+			t.Fail()
+		}
+	}
+
+	if assertMetrics {
+		sleepTime := 1 * time.Minute
+		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
+		time.Sleep(sleepTime)
+
+		// If we reach this point, the projectID should have been set.
+		projectID := os.Getenv(ProwProjectKey)
+		f := map[string]interface{}{
+			"metric.type":                 eventCountMetricType,
+			"resource.type":               globalMetricResourceType,
+			"metric.label.resource_group": storageResourceGroup,
+			"metric.label.event_type":     v1alpha1.StorageFinalize,
+			"metric.label.event_source":   v1alpha1.StorageEventSource(bucketName),
+			"metric.label.namespace_name": client.Namespace,
+			"metric.label.name":           storageName,
+			// We exit the target image before sending a response, thus check for 500.
+			"metric.label.response_code":       http.StatusInternalServerError,
+			"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
+		}
+
+		filter := metrics.StringifyStackDriverFilter(f)
+		t.Logf("Filter expression: %s", filter)
+
+		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+		if err != nil {
+			t.Errorf("failed to get stackdriver event count metric: %v", err)
+			t.Fail()
+		}
+		expectedCount := int64(1)
+		if *actualCount != expectedCount {
+			t.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
 			t.Fail()
 		}
 	}

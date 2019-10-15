@@ -82,8 +82,8 @@ type Adapter struct {
 	// Environment variable containing the name.
 	Name string `envconfig:"NAME" required:"true"`
 
-	// Environment variable containing the resource group. E.g., storages.events.cloud.run.
-	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.run" required:"true"`
+	// Environment variable containing the resource group. E.g., storages.events.cloud.google.com.
+	ResourceGroup string `envconfig:"RESOURCE_GROUP" default:"pullsubscriptions.pubsub.cloud.google.com" required:"true"`
 
 	// inbound is the cloudevents client to use to receive events.
 	inbound cloudevents.Client
@@ -211,7 +211,7 @@ func (a *Adapter) newPubSubClient(ctx context.Context) (cloudevents.Client, erro
 	tOpts := []cepubsub.Option{
 		cepubsub.WithProjectID(a.Project),
 		cepubsub.WithTopicID(a.Topic),
-		cepubsub.WithSubscriptionID(a.Subscription),
+		cepubsub.WithSubscriptionAndTopicID(a.Subscription, a.Topic),
 	}
 
 	// Make a pubsub transport for the CloudEvents client.

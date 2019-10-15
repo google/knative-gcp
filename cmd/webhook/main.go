@@ -60,7 +60,7 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	}
 	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
 	defer logger.Sync()
-	logger = logger.With(zap.String("cloud.run/events", component))
+	logger = logger.With(zap.String("cloud.google.com/events", component))
 
 	logger.Info("Starting the Cloud Run Events Webhook")
 
@@ -105,7 +105,7 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 		Namespace:                       system.Namespace(),
 		Port:                            8443,
 		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.run", system.Namespace()),
+		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.google.com", system.Namespace()),
 		ResourceAdmissionControllerPath: "/",
 	}
 
@@ -138,6 +138,7 @@ func main() {
 		messagingv1alpha1.SchemeGroupVersion.WithKind("Decorator"):     &messagingv1alpha1.Decorator{},
 		eventsv1alpha1.SchemeGroupVersion.WithKind("Storage"):          &eventsv1alpha1.Storage{},
 		eventsv1alpha1.SchemeGroupVersion.WithKind("Scheduler"):        &eventsv1alpha1.Scheduler{},
+		eventsv1alpha1.SchemeGroupVersion.WithKind("PubSub"):           &eventsv1alpha1.PubSub{},
 		pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
 		pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 	}

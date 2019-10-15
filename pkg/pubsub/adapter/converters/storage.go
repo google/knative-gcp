@@ -26,35 +26,26 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 var (
 	// Mapping of GCS eventTypes to CloudEvent types.
 	storageEventTypes = map[string]string{
-		"OBJECT_FINALIZE":        storageFinalize,
-		"OBJECT_ARCHIVE":         storageArchive,
-		"OBJECT_DELETE":          storageDelete,
-		"OBJECT_METADATA_UPDATE": storageMetadataUpdate,
+		"OBJECT_FINALIZE":        v1alpha1.StorageFinalize,
+		"OBJECT_ARCHIVE":         v1alpha1.StorageArchive,
+		"OBJECT_DELETE":          v1alpha1.StorageDelete,
+		"OBJECT_METADATA_UPDATE": v1alpha1.StorageMetadataUpdate,
 	}
 )
 
 const (
-	storageDefaultEventType = "google.storage"
-	storageSourcePrefix     = "//storage.googleapis.com/buckets"
+	storageDefaultEventType = "com.google.cloud.storage"
 	// Schema extracted from https://raw.githubusercontent.com/googleapis/google-api-go-client/master/storage/v1/storage-api.json.
 	// TODO find the public google endpoint we should use to point to the schema and avoid hosting it ourselves.
 	//  The link above is tied to the go-client, and it seems not to be a valid json schema.
 	storageSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-
-	storageFinalize       = "google.storage.object.finalize"
-	storageArchive        = "google.storage.object.archive"
-	storageDelete         = "google.storage.object.delete"
-	storageMetadataUpdate = "google.storage.object.metadataUpdate"
 )
-
-func storageSource(bucket string) string {
-	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
-}
 
 func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
@@ -66,11 +57,11 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event := cloudevents.NewEvent(cloudevents.VersionV03)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
-	event.SetSchemaURL(storageSchemaUrl)
+	event.SetDataSchema(storageSchemaUrl)
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["bucketId"]; ok {
 			delete(msg.Attributes, "bucketId")
-			event.SetSource(storageSource(val))
+			event.SetSource(v1alpha1.StorageEventSource(val))
 		} else {
 			return nil, fmt.Errorf("received event did not have bucketId")
 		}

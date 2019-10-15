@@ -17,4 +17,4 @@ kind: Namespace
 metadata:
   name: cloud-run-events
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel

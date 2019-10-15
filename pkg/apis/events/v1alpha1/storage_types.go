@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -78,6 +80,17 @@ type StorageSpec struct {
 }
 
 const (
+	// CloudEvent types used by Storage.
+	StorageFinalize       = "com.google.cloud.storage.object.finalize"
+	StorageArchive        = "com.google.cloud.storage.object.archive"
+	StorageDelete         = "com.google.cloud.storage.object.delete"
+	StorageMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
+
+	// CloudEvent source prefix.
+	storageSourcePrefix = "//storage.googleapis.com/buckets"
+)
+
+const (
 	// StorageConditionReady has status True when the Storage is ready to send events.
 	StorageConditionReady = apis.ConditionReady
 
@@ -85,6 +98,10 @@ const (
 	// send Notification events
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
+
+func StorageEventSource(bucket string) string {
+	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
+}
 
 var StorageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,

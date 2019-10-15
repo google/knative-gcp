@@ -34,9 +34,9 @@ type FakeTopics struct {
 	ns   string
 }
 
-var topicsResource = schema.GroupVersionResource{Group: "pubsub.cloud.run", Version: "v1alpha1", Resource: "topics"}
+var topicsResource = schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}
 
-var topicsKind = schema.GroupVersionKind{Group: "pubsub.cloud.run", Version: "v1alpha1", Kind: "Topic"}
+var topicsKind = schema.GroupVersionKind{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Kind: "Topic"}
 
 // Get takes name of the topic, and returns the corresponding topic object, and an error if there is any.
 func (c *FakeTopics) Get(name string, options v1.GetOptions) (result *v1alpha1.Topic, err error) {

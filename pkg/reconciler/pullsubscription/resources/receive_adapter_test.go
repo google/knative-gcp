@@ -70,7 +70,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "pubsub.cloud.run/v1alpha1",
+				APIVersion:         "pubsub.cloud.google.com/v1alpha1",
 				Kind:               "PullSubscription",
 				Name:               "source-name",
 				Controller:         &yes,
@@ -212,7 +212,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 				"test-key2": "test-value2",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
-				APIVersion:         "pubsub.cloud.run/v1alpha1",
+				APIVersion:         "pubsub.cloud.google.com/v1alpha1",
 				Kind:               "PullSubscription",
 				Name:               "source-name",
 				Controller:         &yes,

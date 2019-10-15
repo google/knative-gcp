@@ -167,6 +167,11 @@ func PubSubEventSource(googleCloudProject, topic string) string {
 }
 
 const (
+	// PullSubscription CloudEvent type
+	PubSubPublish = "google.pubsub.topic.publish"
+)
+
+const (
 	// PullSubscriptionConditionReady has status True when the PullSubscription is
 	// ready to send events.
 	PullSubscriptionConditionReady = apis.ConditionReady

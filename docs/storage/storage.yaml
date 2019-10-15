@@ -16,7 +16,7 @@
 #   TOPIC_NAME: Replace with the Cloud PubSub Topic name.
 #   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
-apiVersion: events.cloud.run/v1alpha1
+apiVersion: events.cloud.google.com/v1alpha1
 kind: Storage
 metadata:
   name: storage-source

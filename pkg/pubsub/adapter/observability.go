@@ -29,7 +29,7 @@ var (
 	// LatencyMs measures the latency in milliseconds for the PullSubscription
 	// adapter methods for Pub/Sub.
 	LatencyMs = stats.Float64(
-		"events.cloud.run/pubsub/adapter/latency",
+		"events.cloud.google.com/pubsub/adapter/latency",
 		"The latency in milliseconds for the PullSubscription adapter methods for Pub/Sub.",
 		"ms")
 )

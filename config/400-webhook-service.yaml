@@ -17,7 +17,7 @@ kind: Service
 metadata:
   labels:
     role: webhook
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
   name: webhook
   namespace: cloud-run-events
 spec:

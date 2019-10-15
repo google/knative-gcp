@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,9 +141,9 @@ func WithStorageNotificationID(notificationID string) StorageOption {
 }
 
 // WithStorageProjectId sets the status for Project ID
-func WithStorageProjectID(notificationID string) StorageOption {
+func WithStorageProjectID(projectID string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.ProjectID = notificationID
+		s.Status.ProjectID = projectID
 	}
 }
 
@@ -161,5 +162,12 @@ func WithStorageStatusObservedGeneration(generation int64) StorageOption {
 func WithStorageObjectMetaGeneration(generation int64) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.ObjectMeta.Generation = generation
+	}
+}
+
+func WithDeletionTimestamp() StorageOption {
+	return func(s *v1alpha1.Storage) {
+		ts := metav1.NewTime(time.Unix(1e9, 0))
+		s.DeletionTimestamp = &ts
 	}
 }

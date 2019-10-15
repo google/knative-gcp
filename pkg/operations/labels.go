@@ -28,6 +28,6 @@ func JobLabels(key string, parts ...string) map[string]string {
 	value := strings.Join(append(parts), "-")
 	value = kmeta.ChildName(value, "ops")
 	return map[string]string{
-		"events.cloud.run/" + key: value,
+		"events.cloud.google.com/" + key: value,
 	}
 }

@@ -73,9 +73,7 @@ func main() {
 		startable.Project = project
 	}
 
-	logger.Info("using project.", zap.String("project", startable.Project))
-
-	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
+	logger.Desugar().Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}

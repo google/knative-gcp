@@ -50,7 +50,7 @@ const (
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "schedulers.events.cloud.run"
+	resourceGroup = "schedulers.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for Google Cloud Scheduler Jobs.

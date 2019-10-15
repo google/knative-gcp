@@ -26,13 +26,18 @@ import (
 
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	PubSubsGetter
 	SchedulersGetter
 	StoragesGetter
 }
 
-// EventsV1alpha1Client is used to interact with features provided by the events.cloud.run group.
+// EventsV1alpha1Client is used to interact with features provided by the events.cloud.google.com group.
 type EventsV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *EventsV1alpha1Client) PubSubs(namespace string) PubSubInterface {
+	return newPubSubs(c, namespace)
 }
 
 func (c *EventsV1alpha1Client) Schedulers(namespace string) SchedulerInterface {
