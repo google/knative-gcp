@@ -192,6 +192,9 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		}
 	}
 
+	t.Logf("Sleeping for 10 minutes")
+	time.Sleep(time.Minute * 10)
+
 	if assertMetrics {
 		sleepTime := 1 * time.Minute
 		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
