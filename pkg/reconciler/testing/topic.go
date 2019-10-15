@@ -98,6 +98,13 @@ func WithTopicTopicDeleted(topicID string) TopicOption {
 	}
 }
 
+func WithTopicJobFailure(topicID, reason, message string) TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.TopicID = topicID
+		s.Status.MarkNoTopic(reason, message)
+	}
+}
+
 func WithTopicAddress(uri string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		if uri != "" {

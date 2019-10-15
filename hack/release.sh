@@ -32,8 +32,8 @@ readonly RELEASES
 function build_release() {
   # Update release labels if this is a tagged release
   if [[ -n "${TAG}" ]]; then
-    echo "Tagged release, updating release labels to events.cloud.run/release: \"${TAG}\""
-    LABEL_YAML_CMD=(sed -e "s|events.cloud.run/release: devel|events.cloud.run/release: \"${TAG}\"|")
+    echo "Tagged release, updating release labels to events.cloud.google.com/release: \"${TAG}\""
+    LABEL_YAML_CMD=(sed -e "s|events.cloud.google.com/release: devel|events.cloud.google.com/release: \"${TAG}\"|")
   else
     echo "Untagged release, will NOT update release labels"
     LABEL_YAML_CMD=(cat)

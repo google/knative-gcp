@@ -47,13 +47,9 @@ func NewStackDriverListTimeSeriesRequest(projectID string, o ...StackDriverListT
 	return req
 }
 
-func WithStackDriverFilter(filter map[string]interface{}) StackDriverListTimeSeriesRequestOption {
+func WithStackDriverFilter(filter string) StackDriverListTimeSeriesRequestOption {
 	return func(r *monitoringpb.ListTimeSeriesRequest) {
-		var sb strings.Builder
-		for k, v := range filter {
-			sb.WriteString(fmt.Sprintf("%s=\"%v\" ", k, v))
-		}
-		r.Filter = strings.TrimSuffix(sb.String(), " ")
+		r.Filter = filter
 	}
 }
 
@@ -81,4 +77,12 @@ func WithStackDriverCrossSeriesReducer(reducer monitoringpb.Aggregation_Reducer)
 	return func(r *monitoringpb.ListTimeSeriesRequest) {
 		r.Aggregation.CrossSeriesReducer = reducer
 	}
+}
+
+func StringifyStackDriverFilter(filter map[string]interface{}) string {
+	var sb strings.Builder
+	for k, v := range filter {
+		sb.WriteString(fmt.Sprintf("%s=\"%v\" ", k, v))
+	}
+	return strings.TrimSuffix(sb.String(), " ")
 }

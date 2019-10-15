@@ -17,11 +17,11 @@ kind: ClusterRole
 metadata:
   name: cloud-run-events-controller
   labels:
-    events.cloud.run/release: devel
+    events.cloud.google.com/release: devel
 rules:
 
 - apiGroups:
-    - pubsub.cloud.run
+    - pubsub.cloud.google.com
   resources:
     - pullsubscriptions
     - topics
@@ -35,7 +35,7 @@ rules:
     - delete
 
 - apiGroups:
-    - pubsub.cloud.run
+    - pubsub.cloud.google.com
   resources:
     - pullsubscriptions/status
     - topics/status
@@ -45,14 +45,14 @@ rules:
     - patch
 
 - apiGroups:
-    - messaging.cloud.run
+    - messaging.cloud.google.com
   resources:
     - channels
     - decorators
   verbs: *everything
 
 - apiGroups:
-    - messaging.cloud.run
+    - messaging.cloud.google.com
   resources:
     - channels/status
     - decorators/status
@@ -62,7 +62,7 @@ rules:
     - patch
 
 - apiGroups:
-    - events.cloud.run
+    - events.cloud.google.com
   resources:
     - storages
     - schedulers
@@ -70,7 +70,7 @@ rules:
   verbs: *everything
 
 - apiGroups:
-    - events.cloud.run
+    - events.cloud.google.com
   resources:
     - storages/status
     - schedulers/status
@@ -134,3 +134,45 @@ rules:
   resources:
     - eventtypes
   verbs: *everything
+
+
+---
+# The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".
+# See https://github.com/knative/eventing/blob/master/config/200-source-observer-clusterrole.yaml.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: knative-gcp-pullsubscription-observer
+  labels:
+    eventing.knative.dev/release: devel
+    duck.knative.dev/source: "true"
+rules:
+  - apiGroups:
+      - "pubsub.cloud.google.com"
+    resources:
+      - "pullsubscriptions"
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+# The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".
+# See https://github.com/knative/eventing/blob/master/config/200-source-observer-clusterrole.yaml.
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: knative-gcp-storage-observer
+  labels:
+    eventing.knative.dev/release: devel
+    duck.knative.dev/source: "true"
+rules:
+  - apiGroups:
+      - "events.cloud.google.com"
+    resources:
+      - "storages"
+      - "pubsubs"
+    verbs:
+      - get
+      - list
+      - watch

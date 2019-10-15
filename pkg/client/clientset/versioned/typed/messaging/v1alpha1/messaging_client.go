@@ -30,7 +30,7 @@ type MessagingV1alpha1Interface interface {
 	DecoratorsGetter
 }
 
-// MessagingV1alpha1Client is used to interact with features provided by the messaging.cloud.run group.
+// MessagingV1alpha1Client is used to interact with features provided by the messaging.cloud.google.com group.
 type MessagingV1alpha1Client struct {
 	restClient rest.Interface
 }

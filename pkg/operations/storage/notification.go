@@ -103,6 +103,9 @@ func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
 	}, {
 		Name:  "BUCKET",
 		Value: arg.Bucket,
+	}, {
+		Name:  "PROJECT_ID",
+		Value: arg.ProjectID,
 	}}
 
 	switch arg.Action {
@@ -114,9 +117,6 @@ func NewNotificationOps(arg NotificationArgs) (*batchv1.Job, error) {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: arg.TopicID,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: arg.ProjectID,
 			}}...)
 	case operations.ActionDelete:
 		env = append(env, []corev1.EnvVar{{
@@ -327,6 +327,9 @@ func validateArgs(arg NotificationArgs) error {
 	if arg.Bucket == "" {
 		return fmt.Errorf("missing Bucket")
 	}
+	if arg.ProjectID == "" {
+		return fmt.Errorf("missing ProjectID")
+	}
 	if arg.Secret.Name == "" || arg.Secret.Key == "" {
 		return fmt.Errorf("invalid secret missing name or key")
 	}
@@ -338,9 +341,6 @@ func validateArgs(arg NotificationArgs) error {
 	case operations.ActionCreate:
 		if arg.TopicID == "" {
 			return fmt.Errorf("missing TopicID")
-		}
-		if arg.ProjectID == "" {
-			return fmt.Errorf("missing ProjectID")
 		}
 		if len(arg.EventTypes) == 0 {
 			return fmt.Errorf("missing EventTypes")

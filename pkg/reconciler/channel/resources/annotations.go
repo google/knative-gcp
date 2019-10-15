@@ -18,6 +18,6 @@ package resources
 
 func GetPullSubscriptionAnnotations(channel string) map[string]string {
 	return map[string]string{
-		"metrics-resource-group": "channels.messaging.cloud.run",
+		"metrics-resource-group": "channels.messaging.cloud.google.com",
 		"metrics-resource-name":  channel}
 }

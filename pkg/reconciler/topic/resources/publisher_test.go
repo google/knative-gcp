@@ -60,12 +60,12 @@ func TestMakePublisher(t *testing.T) {
     "namespace": "topic-namespace",
     "creationTimestamp": null,
     "labels": {
-      "pubsub.cloud.run/controller": "controller-name",
-      "pubsub.cloud.run/topic": "topic-name"
+      "pubsub.cloud.google.com/controller": "controller-name",
+      "pubsub.cloud.google.com/topic": "topic-name"
     },
     "ownerReferences": [
       {
-        "apiVersion": "pubsub.cloud.run/v1alpha1",
+        "apiVersion": "pubsub.cloud.google.com/v1alpha1",
         "kind": "Topic",
         "name": "topic-name",
         "uid": "",
@@ -79,8 +79,8 @@ func TestMakePublisher(t *testing.T) {
       "metadata": {
         "creationTimestamp": null,
         "labels": {
-          "pubsub.cloud.run/controller": "controller-name",
-          "pubsub.cloud.run/topic": "topic-name"
+          "pubsub.cloud.google.com/controller": "controller-name",
+          "pubsub.cloud.google.com/topic": "topic-name"
         }
       },
       "spec": {
@@ -133,7 +133,7 @@ func TestMakePublisher(t *testing.T) {
 func TestMakePublisherSelector(t *testing.T) {
 	selector := GetLabelSelector("controller-name", "topic-name")
 
-	want := "pubsub.cloud.run/controller=controller-name,pubsub.cloud.run/topic=topic-name"
+	want := "pubsub.cloud.google.com/controller=controller-name,pubsub.cloud.google.com/topic=topic-name"
 
 	got := selector.String()
 

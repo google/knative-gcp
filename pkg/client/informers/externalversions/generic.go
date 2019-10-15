@@ -54,7 +54,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=events.cloud.run, Version=v1alpha1
+	// Group=events.cloud.google.com, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("pubsubs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().PubSubs().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("schedulers"):
@@ -62,13 +62,13 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v1alpha1.SchemeGroupVersion.WithResource("storages"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().Storages().Informer()}, nil
 
-		// Group=messaging.cloud.run, Version=v1alpha1
+		// Group=messaging.cloud.google.com, Version=v1alpha1
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("decorators"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Decorators().Informer()}, nil
 
-		// Group=pubsub.cloud.run, Version=v1alpha1
+		// Group=pubsub.cloud.google.com, Version=v1alpha1
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().PullSubscriptions().Informer()}, nil
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("topics"):

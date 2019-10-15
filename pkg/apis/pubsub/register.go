@@ -18,5 +18,5 @@ limitations under the License.
 package pubsub
 
 const (
-	GroupName = "pubsub.cloud.run"
+	GroupName = "pubsub.cloud.google.com"
 )

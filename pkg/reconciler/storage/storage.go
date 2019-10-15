@@ -50,7 +50,7 @@ const (
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "storages.events.cloud.run"
+	resourceGroup = "storages.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -243,7 +243,7 @@ func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Spec.Project, storage.Spec.Bucket, storage.Status.NotificationID)
+	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.NotificationID)
 
 	if state != ops.OpsJobCompleteSuccessful {
 		return fmt.Errorf("Job %q has not completed yet", storage.Name)

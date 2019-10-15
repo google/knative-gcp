@@ -31,6 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -187,6 +188,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 				source.Status.SubscriptionID)
 			source.Status.SubscriptionID = ""
 			removeFinalizer(source)
+			return c.updateSecretFinalizer(ctx, source, false)
 
 		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
@@ -239,7 +241,7 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		source.Status.MarkSubscriptionOperation("Creating",
 			"Created Job to create Subscription %q.",
 			source.Status.SubscriptionID)
-		return nil
+		return c.updateSecretFinalizer(ctx, source, true)
 
 	case ops.OpsJobCompleteSuccessful:
 		source.Status.MarkSubscribed()
@@ -249,21 +251,13 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 		// fail this if we can't fetch it. Just warn
 		jobName := pubsubOps.SubscriptionJobName(source, "create")
 		logger.Info("Finding job pods for", zap.String("jobName", jobName))
-		jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, source.Namespace, jobName)
-		if err != nil {
-			logger.Error("Failed to fetch job pods, can not fetch projectid",
-				zap.Error(err))
-		}
-		if jobPod != nil {
-			terminationMessage := ops.GetFirstTerminationMessage(jobPod)
-			if terminationMessage != "" {
-				var sar pubsubOps.SubActionResult
-				err = json.Unmarshal([]byte(terminationMessage), &sar)
-				if err == nil {
-					c.Logger.Infof("Topic project: %q", sar.ProjectId)
-					source.Status.ProjectID = sar.ProjectId
-				}
-			}
+
+		var sar pubsubOps.SubActionResult
+		if err := c.UnmarshalJobTerminationMessage(ctx, source.Namespace, jobName, &sar); err != nil {
+			logger.Error("Failed to unmarshal termination message", zap.Error(err))
+		} else {
+			c.Logger.Infof("Topic project: %q", sar.ProjectId)
+			source.Status.ProjectID = sar.ProjectId
 		}
 
 	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
@@ -344,6 +338,57 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	return src, err
 }
 
+// updateSecretFinalizer adds or deletes the finalizer on the secret used by the PullSubscription.
+func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha1.PullSubscription, ensureFinalizer bool) error {
+	psl, err := c.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
+	if err != nil {
+		return err
+	}
+	// Only delete the finalizer if this PullSubscription is the last one
+	// references the Secret.
+	if !ensureFinalizer && !(len(psl) == 1 && psl[0].Name == desired.Name) {
+		return nil
+	}
+
+	secret, err := c.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	existing := secret.DeepCopy()
+	existingFinalizers := sets.NewString(existing.Finalizers...)
+	hasFinalizer := existingFinalizers.Has(finalizerName)
+
+	if ensureFinalizer == hasFinalizer {
+		return nil
+	}
+
+	var desiredFinalizers []string
+	if ensureFinalizer {
+		desiredFinalizers = append(existing.Finalizers, finalizerName)
+	} else {
+		existingFinalizers.Delete(finalizerName)
+		desiredFinalizers = existingFinalizers.List()
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      desiredFinalizers,
+			"resourceVersion": existing.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
+	if err != nil {
+		logging.FromContext(ctx).Errorf("Failed to update PullSubscription Secret's finalizers", zap.Error(err))
+	}
+	return err
+}
+
 // updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
 func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
@@ -421,7 +466,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 	if r.metricsConfig != nil {
 		component := sourceComponent
 		// Set the metric component based on PullSubscription label.
-		if _, ok := src.Labels["events.cloud.run/channel"]; ok {
+		if _, ok := src.Labels["events.cloud.google.com/channel"]; ok {
 			component = channelComponent
 		}
 		r.metricsConfig.Component = component

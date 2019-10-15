@@ -24,6 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,7 +58,7 @@ var (
 // Returns an ownerref for the test Scheduler object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "events.cloud.run/v1alpha1",
+		APIVersion:         "events.cloud.google.com/v1alpha1",
 		Kind:               "Storage",
 		Name:               "my-test-storage",
 		UID:                storageUID,
@@ -150,6 +151,22 @@ func TestValidateArgs(t *testing.T) {
 		},
 		expectedErr: "missing ProjectID",
 	}, {
+		name: "missing ProjectID on delete",
+		args: NotificationArgs{
+			UID:            "uid",
+			Image:          testImage,
+			Action:         "delete",
+			Bucket:         bucket,
+			TopicID:        topicID,
+			NotificationId: notificationId,
+			Secret: corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
+				Key:                  "key.json",
+			},
+			Owner: reconcilertesting.NewStorage(storageName, testNS),
+		},
+		expectedErr: "missing ProjectID",
+	}, {
 		name: "missing eventTypes on create",
 		args: NotificationArgs{
 			UID:       "uid",
@@ -200,10 +217,11 @@ func TestValidateArgs(t *testing.T) {
 	}, {
 		name: "valid delete",
 		args: NotificationArgs{
-			UID:    "uid",
-			Image:  testImage,
-			Action: "delete",
-			Bucket: bucket,
+			UID:       "uid",
+			Image:     testImage,
+			Action:    "delete",
+			Bucket:    bucket,
+			ProjectID: projectId,
 			Secret: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 				Key:                  "key.json",
@@ -258,7 +276,10 @@ func TestNewNotificationOps(t *testing.T) {
 				(test.expectedErr != "" && err != nil && test.expectedErr != err.Error()) {
 				t.Errorf("Error mismatch, want: %q got: %q", test.expectedErr, err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			sortEnvVars := cmpopts.SortSlices(func(l corev1.EnvVar, r corev1.EnvVar) bool {
+				return l.Name < r.Name
+			})
+			if diff := cmp.Diff(test.expected, got, sortEnvVars); diff != "" {
 				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 
@@ -307,6 +328,7 @@ func validDeleteArgs() NotificationArgs {
 		Action:         "delete",
 		NotificationId: notificationId,
 		Bucket:         bucket,
+		ProjectID:      projectId,
 		Secret: corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{Name: secretName},
 			Key:                  "key.json",
@@ -343,6 +365,9 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 		}, {
 			Name:  "BUCKET",
 			Value: bucket,
+		}, {
+			Name:  "PROJECT_ID",
+			Value: projectId,
 		},
 	}
 	switch action {
@@ -354,9 +379,6 @@ func podTemplate(action string) corev1.PodTemplateSpec {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: topicID,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: projectId,
 			},
 		}
 		env = append(env, createEnv...)

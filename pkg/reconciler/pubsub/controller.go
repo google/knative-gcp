@@ -49,7 +49,7 @@ func NewController(
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		pubsubLister:           pubsubInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
-		receiveAdapterName:     "pubsub.events.cloud.run",
+		receiveAdapterName:     "pubsub.events.cloud.google.com",
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 

@@ -26,8 +26,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
+	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
@@ -63,7 +62,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	}()
 
 	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "pubsub.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pullsubscriptions",
 	}); err != nil {
@@ -112,7 +111,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	}()
 
 	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.run",
+		Group:    "pubsub.cloud.google.com",
 		Version:  "v1alpha1",
 		Resource: "pullsubscriptions",
 	}
