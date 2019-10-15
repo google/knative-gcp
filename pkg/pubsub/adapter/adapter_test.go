@@ -108,8 +108,8 @@ func TestInboundConvert(t *testing.T) {
 			e.SetSource(v1alpha1.PubSubEventSource("proj", "topic"))
 			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 			e.SetType(v1alpha1.PubSubPublish)
-			e.SetSchemaURL("http://example.com")
-			e.SetExtension("knativecemode", converters.DefaultSendMode)
+			e.SetDataSchema("http://example.com")
+			e.SetExtension("knativecemode", string(converters.DefaultSendMode))
 			e.Data = []byte("some data")
 			e.DataEncoded = true
 			e.SetExtension("key1", "value1")
@@ -127,7 +127,7 @@ func TestInboundConvert(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("some data"),
 			Attributes: map[string]string{
-				"knative-gcp": "google.storage",
+				"knative-gcp": "com.google.cloud.storage",
 				"bucketId":    "my-bucket",
 				"objectId":    "my-obj",
 				"key1":        "value1",
@@ -140,8 +140,8 @@ func TestInboundConvert(t *testing.T) {
 			e.SetSource(v1alpha1.StorageEventSource("my-bucket"))
 			e.SetSubject("my-obj")
 			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-			e.SetType("google.storage.object.finalize")
-			e.SetSchemaURL("https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json")
+			e.SetType("com.google.cloud.storage.object.finalize")
+			e.SetDataSchema("https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json")
 			e.Data = []byte("some data")
 			e.DataEncoded = true
 			e.SetExtension("key1", "value1")
@@ -159,7 +159,7 @@ func TestInboundConvert(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("some data"),
 			Attributes: map[string]string{
-				"knative-gcp": "google.storage",
+				"knative-gcp": "com.google.cloud.storage",
 				"key1":        "value1",
 				"eventType":   "OBJECT_FINALIZE",
 			},
