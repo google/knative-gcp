@@ -23,6 +23,6 @@ spec:
     name: demo
   subscriber:
     ref:
-      apiVersion: serving.knative.dev/v1alpha1
+      apiVersion: v1
       kind: Service
       name: event-display
