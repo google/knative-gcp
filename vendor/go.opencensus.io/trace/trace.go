@@ -261,13 +261,6 @@ func startSpanInternal(name string, hasParent bool, parent SpanContext, remotePa
 	return span
 }
 
-func (s *Span) SetSpanID(spanID SpanID) {
-	if s.data != nil {
-		s.data.SpanID = spanID
-	}
-	s.spanContext.SpanID = spanID
-}
-
 // End ends the span.
 func (s *Span) End() {
 	if s == nil {
@@ -530,10 +523,10 @@ func (s *Span) String() string {
 		return "<nil>"
 	}
 	if s.data == nil {
-		return fmt.Sprintf("span %s %s", s.spanContext.TraceID, s.spanContext.SpanID)
+		return fmt.Sprintf("span %s", s.spanContext.SpanID)
 	}
 	s.mu.Lock()
-	str := fmt.Sprintf("span %s %s %q", s.spanContext.TraceID, s.spanContext.SpanID, s.data.Name)
+	str := fmt.Sprintf("span %s %q", s.spanContext.SpanID, s.data.Name)
 	s.mu.Unlock()
 	return str
 }
