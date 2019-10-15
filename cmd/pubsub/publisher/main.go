@@ -18,21 +18,17 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"flag"
-	"fmt"
 	"log"
-
-	"knative.dev/eventing/pkg/tracing"
-	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"knative.dev/eventing/pkg/tracing"
 
 	"github.com/google/knative-gcp/pkg/pubsub/publisher"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 )
 
 type envConfig struct {
@@ -76,7 +72,7 @@ func main() {
 
 	logger.Info("Using project.", zap.String("project", env.Project))
 
-	tracingConfig, err := JsonToTracingConfig(env.TracingConfigJson)
+	tracingConfig, err := tracingconfig.JSONToConfig(env.TracingConfigJson)
 	if err != nil {
 		logger.Error("Failed to process tracing options", zap.Error(err))
 	}
@@ -93,17 +89,4 @@ func main() {
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start publisher: ", zap.Error(err))
 	}
-}
-
-func JsonToTracingConfig(jsonConfig string) (*tracingconfig.Config, error) {
-	var cfg tracingconfig.Config
-	if jsonConfig == "" {
-		return nil, errors.New("tracing config json string is empty")
-	}
-
-	if err := json.Unmarshal([]byte(jsonConfig), &cfg); err != nil {
-		return nil, fmt.Errorf("unmarshaling tracing config json: %v", err)
-	}
-
-	return &cfg, nil
 }

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription"
+	"github.com/google/knative-gcp/pkg/tracing"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -458,7 +458,7 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
-	tracingCfg, err := pullsubscription.TracingConfigToJson(r.tracingConfig)
+	tracingCfg, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
 	}

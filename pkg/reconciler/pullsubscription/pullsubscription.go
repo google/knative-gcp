@@ -53,6 +53,7 @@ import (
 	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/tracing"
 )
 
 const (
@@ -477,7 +478,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
 	}
 
-	tracingConfig, err := TracingConfigToJson(r.tracingConfig)
+	tracingConfig, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Error("Error serializing tracing config", zap.Error(err))
 	}
@@ -576,19 +577,6 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	r.tracingConfig = tracingCfg
 	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
 	// TODO: requeue all pullsubscription
-}
-
-func TracingConfigToJson(cfg *tracingconfig.Config) (string, error) {
-	if cfg == nil {
-		return "", nil
-	}
-
-	jsonCfg, err := json.Marshal(cfg)
-	if err != nil {
-		return "", err
-	}
-
-	return string(jsonCfg), nil
 }
 
 // TODO: Registry

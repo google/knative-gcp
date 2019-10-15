@@ -175,7 +175,6 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 
 	// If a transformer has been configured, then transform the message.
 	if a.transformer != nil {
-		logger.Infow("QQQQ - Just before transformer", zap.Any("event.extensions", event.Extensions()), zap.Any("ctx", trace.FromContext(ctx)))
 		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
 		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
 		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
@@ -204,8 +203,6 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	for k, v := range a.extensions {
 		event.SetExtension(k, v)
 	}
-
-	logger.Infow("QQQQ - Just before send", zap.Any("event.extensions", event.Extensions()), zap.Any("ctx", trace.FromContext(ctx)))
 
 	// Send the event and report the count.
 	rctx, r, err := a.outbound.Send(ctx, event)
