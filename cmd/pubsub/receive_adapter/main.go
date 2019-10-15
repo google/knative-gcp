@@ -56,7 +56,7 @@ func main() {
 	sl, _ := logging.NewLoggerFromConfig(loggingConfig, component)
 	logger := sl.Desugar()
 	defer flush(logger)
-	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
+	ctx := logging.WithLogger(signals.NewContext(), sl)
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)

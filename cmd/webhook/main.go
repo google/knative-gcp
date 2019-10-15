@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
@@ -59,8 +60,8 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 		log.Fatal("Error parsing logging configuration:", err)
 	}
 	sl, atomicLevel := logging.NewLoggerFromConfig(config, component)
-	defer sl.Sync()
 	logger := sl.Desugar().With(zap.String("cloud.google.com/events", component))
+	defer flush(logger)
 
 	logger.Info("Starting the Cloud Run Events Webhook")
 
@@ -143,4 +144,9 @@ func main() {
 		pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 	}
 	SharedMain(handlers)
+}
+
+func flush(logger *zap.Logger) {
+	_ = logger.Sync()
+	metrics.FlushExporter()
 }
