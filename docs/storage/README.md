@@ -146,7 +146,7 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 0.3
-  type: google.storage.object.finalize
+  type: com.google.cloud.storage.object.finalize
   source: //storage.googleapis.com/buckets/vaikasvaikas-notification-test
   subject: testfilehere
   id: 710717795564381

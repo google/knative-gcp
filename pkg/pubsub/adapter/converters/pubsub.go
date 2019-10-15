@@ -37,10 +37,10 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")
-		event.SetSchemaURL(val)
+		event.SetDataSchema(val)
 	}
 	// Set the mode to be an extension attribute.
-	event.SetExtension("knativecemode", sendMode)
+	event.SetExtension("knativecemode", string(sendMode))
 	event.Data = msg.Data
 	event.DataEncoded = true
 	// Attributes are extensions.

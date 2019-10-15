@@ -81,10 +81,10 @@ type StorageSpec struct {
 
 const (
 	// CloudEvent types used by Storage.
-	StorageFinalize       = "google.storage.object.finalize"
-	StorageArchive        = "google.storage.object.archive"
-	StorageDelete         = "google.storage.object.delete"
-	StorageMetadataUpdate = "google.storage.object.metadataUpdate"
+	StorageFinalize       = "com.google.cloud.storage.object.finalize"
+	StorageArchive        = "com.google.cloud.storage.object.archive"
+	StorageDelete         = "com.google.cloud.storage.object.delete"
+	StorageMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
 
 	// CloudEvent source prefix.
 	storageSourcePrefix = "//storage.googleapis.com/buckets"
