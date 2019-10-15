@@ -46,9 +46,10 @@ func TestMakePublisher(t *testing.T) {
 	}
 
 	pub := MakePublisher(&PublisherArgs{
-		Image:  "test-image",
-		Topic:  topic,
-		Labels: GetLabels("controller-name", "topic-name"),
+		Image:         "test-image",
+		Topic:         topic,
+		Labels:        GetLabels("controller-name", "topic-name"),
+		TracingConfig: "TracingConfig-ABC123",
 	})
 
 	gotb, _ := json.MarshalIndent(pub, "", "  ")
@@ -108,6 +109,10 @@ func TestMakePublisher(t *testing.T) {
               {
                 "name": "PUBSUB_TOPIC_ID",
                 "value": "topic-name"
+              },
+              {
+                "name": "K_TRACING_CONFIG",
+                "value": "TracingConfig-ABC123"
               }
             ],
             "resources": {},
