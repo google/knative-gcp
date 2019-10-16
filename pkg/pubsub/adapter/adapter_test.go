@@ -56,7 +56,12 @@ func TestStartAdapter(t *testing.T) {
 	}
 	// This test only does sanity checks to see if all fields are
 	// initialized.
-	a.Start(context.Background())
+	// In reality, Start should be a blocking function. Here, it's not
+	// blocking because we expect it to fail as it shouldn't be able to
+	// connect to pubsub.
+	if err := a.Start(context.Background()); err == nil {
+		t.Fatal("adapter.Start got nil want error")
+	}
 
 	if a.SendMode == "" {
 		t.Errorf("adapter.SendMode got %q want %q", a.SendMode, converters.DefaultSendMode)
