@@ -74,6 +74,9 @@ function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
   # Enable monitoring
   gcloud services enable monitoring
+  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+  --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+  --role roles/monitoring.editor
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount for Pub/Sub Admin"
@@ -82,9 +85,6 @@ function pubsub_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
-    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/monitoring.editor
     gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
       --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
