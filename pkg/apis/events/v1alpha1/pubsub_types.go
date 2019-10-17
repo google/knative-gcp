@@ -110,7 +110,7 @@ func PubSubEventSource(googleCloudProject, topic string) string {
 
 const (
 	// PubSub CloudEvent type
-	PubSubPublish = "google.pubsub.topic.publish"
+	PubSubPublish = "com.google.cloud.pubsub.topic.publish"
 )
 
 const (
