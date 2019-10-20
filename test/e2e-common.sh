@@ -36,7 +36,7 @@ readonly E2E_TEST_NAMESPACE="default"
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
-global GCS_SERVICE_ACCOUNT
+GCS_SERVICE_ACCOUNT=""
 
 # Setup the Cloud Run Events environment for running tests.
 function cloud_run_events_setup() {
@@ -74,9 +74,6 @@ function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
   # Enable monitoring
   gcloud services enable monitoring
-  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-  --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-  --role roles/monitoring.editor
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount for Pub/Sub Admin"
@@ -85,6 +82,9 @@ function pubsub_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/monitoring.editor
     gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
       --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
@@ -94,10 +94,10 @@ function pubsub_setup() {
 
 # Create resources required for Storage Admin setup
 function storage_setup() {
+  gcloud services enable storage-component.googleapis.com
+  gcloud services enable storage-api.googleapis.com
   if (( ! IS_PROW )); then
     echo "Update ServiceAccount for Storage Admin"
-    gcloud services enable storage-component.googleapis.com
-    gcloud services enable storage-api.googleapis.com
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/storage.admin
