@@ -88,7 +88,8 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 		}
 	}
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
-	event.SetData(msg.Data)
+	event.Data = msg.Data
+	event.DataEncoded = true
 	// Attributes are extensions.
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
