@@ -56,6 +56,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		SinkURI:        "sink-uri",
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
+		TracingConfig:  "TracingConfig-ABC123",
 	})
 
 	one := int32(1)
@@ -124,6 +125,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: "LoggingConfig-ABC123",
+						}, {
+							Name:  "K_TRACING_CONFIG",
+							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
 							Value: "source-name",
@@ -198,6 +202,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		TransformerURI: "transformer-uri",
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
+		TracingConfig:  "TracingConfig-ABC123",
 	})
 
 	one := int32(1)
@@ -268,6 +273,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: "LoggingConfig-ABC123",
+						}, {
+							Name:  "K_TRACING_CONFIG",
+							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
 							Value: "source-name",

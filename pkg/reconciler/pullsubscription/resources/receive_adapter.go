@@ -44,6 +44,7 @@ type ReceiveAdapterArgs struct {
 	TransformerURI string
 	MetricsConfig  string
 	LoggingConfig  string
+	TracingConfig  string
 }
 
 const (
@@ -144,6 +145,9 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "K_LOGGING_CONFIG",
 							Value: args.LoggingConfig,
+						}, {
+							Name:  "K_TRACING_CONFIG",
+							Value: args.TracingConfig,
 						}, {
 							Name:  "NAME",
 							Value: resourceName,

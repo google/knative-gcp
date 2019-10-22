@@ -20,6 +20,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.opencensus.io/trace"
+
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/b3"
+
 	nethttp "net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -30,6 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 )
 
@@ -75,6 +81,11 @@ type Adapter struct {
 	// This is used to configure the logging config, the config is stored in
 	// a config map inside the controllers namespace and copied here.
 	LoggingConfigJson string `envconfig:"K_LOGGING_CONFIG" required:"true"`
+
+	// TracingConfigJson is a JSON string of tracing.Config. This is used to configure tracing. The
+	// original config is stored in a ConfigMap inside the controller's namespace. Its value is
+	// copied here as a JSON string.
+	TracingConfigJson string `envconfig:"K_TRACING_CONFIG" required:"true"`
 
 	// Environment variable containing the namespace.
 	Namespace string `envconfig:"NAMESPACE" required:"true"`
@@ -156,11 +167,17 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		ResourceGroup: a.ResourceGroup,
 	}
 
+	// a.Sink is likely not exactly what we want...
+	ctx, err := tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
+	if err != nil {
+		logger.Infow("Unable to attach tracing to context", zap.Error(err))
+	}
+
 	// If a transformer has been configured, then transform the message.
 	if a.transformer != nil {
 		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
 		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
-		_, transformedEvent, err := a.transformer.Send(ctx, event)
+		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
 			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
@@ -173,6 +190,8 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		}
 		// Update the event with the transformed one.
 		event = *transformedEvent
+		// Update the tracing information to use the span returned by the transformer.
+		ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
 	}
 
 	// If send mode is Push, convert to Pub/Sub Push payload style.
@@ -242,6 +261,13 @@ func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents
 	t, err := cloudevents.NewHTTPTransport(tOpts...)
 	if err != nil {
 		return nil, err
+	}
+
+	// Add output tracing.
+	t.Client = &nethttp.Client{
+		Transport: &ochttp.Transport{
+			Propagation: &b3.HTTPFormat{},
+		},
 	}
 
 	// Use the transport to make a new CloudEvents client.

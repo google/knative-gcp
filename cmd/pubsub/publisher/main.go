@@ -25,8 +25,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"knative.dev/eventing/pkg/tracing"
 
 	"github.com/google/knative-gcp/pkg/pubsub/publisher"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 )
 
 type envConfig struct {
@@ -37,6 +39,11 @@ type envConfig struct {
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
 	Topic string `envconfig:"PUBSUB_TOPIC_ID" required:"true"`
+
+	// TracingConfigJson is a JSON string of tracing.Config. This is used to configure tracing. The
+	// original config is stored in a ConfigMap inside the controller's namespace. Its value is
+	// copied here as a JSON string.
+	TracingConfigJson string `envconfig:"K_TRACING_CONFIG" required:"true"`
 }
 
 func main() {
@@ -63,7 +70,15 @@ func main() {
 		env.Project = project
 	}
 
-	logger.Info("using project.", zap.String("project", env.Project))
+	logger.Info("Using project.", zap.String("project", env.Project))
+
+	tracingConfig, err := tracingconfig.JSONToConfig(env.TracingConfigJson)
+	if err != nil {
+		logger.Error("Failed to process tracing options", zap.Error(err))
+	}
+	if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracingConfig); err != nil {
+		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
+	}
 
 	startable := &publisher.Publisher{
 		ProjectID: env.Project,

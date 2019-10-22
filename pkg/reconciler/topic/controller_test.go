@@ -20,6 +20,11 @@ import (
 	"os"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/system"
+	tracingconfig "knative.dev/pkg/tracing/config"
+
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -39,7 +44,15 @@ func TestNew(t *testing.T) {
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
 	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
-	c := NewController(ctx, configmap.NewStaticWatcher())
+	c := NewController(ctx, configmap.NewStaticWatcher(
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tracingconfig.ConfigName,
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+	))
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")

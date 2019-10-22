@@ -20,10 +20,18 @@ package e2e
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
 
+	"knative.dev/pkg/test/zipkin"
+
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing/test/common"
+	"knative.dev/eventing/test/conformance/helpers"
 	"knative.dev/pkg/test/logstream"
 )
 
@@ -47,6 +55,11 @@ func TestMain(m *testing.M) {
 	}
 	packageToImageConfigDone = true
 
+	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
+	// place that cleans it up. If an individual test calls this instead, then it will break other
+	// tests that need the tracing in place.
+	defer zipkin.CleanupZipkinTracingSetup(log.Printf)
+
 	os.Exit(m.Run())
 }
 
@@ -64,6 +77,46 @@ func TestSmokeChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	SmokeTestChannelImpl(t)
+}
+
+func TestChannelTracing(t *testing.T) {
+	t.Skip("Skipping until https://github.com/knative/eventing/issues/2046 is fixed")
+	cancel := logstream.Start(t)
+	defer cancel()
+	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
+		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
+		Kind:       "Channel",
+	}, func(client *common.Client) error {
+		// This test is running based on code in knative/eventing, so it does not use the same
+		// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
+		// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
+		// repo whose functionality we need to copy here.
+
+		// Copy the secret from the default namespace to the namespace used in the test.
+		return copySecret(client)
+	})
+}
+
+func copySecret(client *common.Client) error {
+	secret, err := client.Kube.Kube.CoreV1().Secrets("default").Get("google-cloud-key", metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("could not get secret: %v", err)
+	}
+	newSecret, err := client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(&corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        secret.Name,
+			Labels:      secret.Labels,
+			Annotations: secret.Annotations,
+		},
+		Type:       secret.Type,
+		Data:       secret.Data,
+		StringData: secret.StringData,
+	})
+	if err != nil {
+		return fmt.Errorf("could not create secret: %v", err)
+	}
+	client.Tracker.Add(newSecret.GroupVersionKind().Group, newSecret.GroupVersionKind().Version, "secrets", newSecret.Namespace, newSecret.Name)
+	return nil
 }
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
