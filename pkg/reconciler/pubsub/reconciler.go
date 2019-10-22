@@ -18,6 +18,7 @@ package pubsub
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -146,7 +147,12 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicAr
 		if ops.IsJobSucceeded(job) {
 			return ops.OpsJobCompleteSuccessful, nil
 		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			var tar operations.TopicActionResult
+			if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &tar); err != nil {
+				c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
+				return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			}
+			return ops.OpsJobCompleteFailed, errors.New(tar.Reason)
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
@@ -181,11 +187,33 @@ func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.
 		if ops.IsJobSucceeded(job) {
 			return ops.OpsJobCompleteSuccessful, nil
 		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			var sar operations.SubActionResult
+			if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &sar); err != nil {
+				c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
+				return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+			}
+			return ops.OpsJobCompleteFailed, errors.New(sar.Reason)
 		}
 	}
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
+}
+
+// UnmarshalJobTerminationMessage unmarshals the job pod termination message.
+func (c *PubSubBase) UnmarshalJobTerminationMessage(ctx context.Context, namespace, name string, v interface{}) error {
+	jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, namespace, name)
+	if err != nil {
+		return err
+	}
+	if jobPod != nil {
+		terminationMessage := ops.GetFirstTerminationMessage(jobPod)
+		if terminationMessage != "" {
+			if err := json.Unmarshal([]byte(terminationMessage), v); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *PubSubBase) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*v1.Job, error) {

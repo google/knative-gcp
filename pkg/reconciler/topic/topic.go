@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -166,6 +167,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				topic.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topic.Status.TopicID)
 				topic.Status.TopicID = ""
 				removeFinalizer(topic)
+				return c.updateSecretFinailizer(ctx, topic, false)
 
 			case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 				logger.Error("Failed to delete topic.", zap.Any("state", state), zap.Error(err))
@@ -182,6 +184,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			}
 		} else {
 			removeFinalizer(topic)
+			return c.updateSecretFinailizer(ctx, topic, false)
 		}
 
 		return nil
@@ -208,7 +211,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			topic.Status.MarkTopicOperating("Creating",
 				"Created Job to create topic %q.",
 				topic.Status.TopicID)
-			return nil
+			return c.updateSecretFinailizer(ctx, topic, true)
 
 		case ops.OpsJobCompleteSuccessful:
 			topic.Status.MarkTopicReady()
@@ -218,22 +221,15 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 			// fail this if we can't fetch it. Just warn
 			jobName := pubsubOps.TopicJobName(topic, "create")
 			logger.Info("Finding job pods for", zap.String("jobName", jobName))
-			jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, topic.Namespace, jobName)
-			if err != nil {
-				logger.Error("Failed to fetch job pods, can not fetch projectid",
-					zap.Error(err))
+
+			var tar pubsubOps.TopicActionResult
+			if err := c.UnmarshalJobTerminationMessage(ctx, topic.Namespace, jobName, &tar); err != nil {
+				logger.Error("Failed to unmarshal termination message", zap.Error(err))
+			} else {
+				c.Logger.Infof("Topic project: %q", tar.ProjectId)
+				topic.Status.ProjectID = tar.ProjectId
 			}
-			if jobPod != nil {
-				terminationMessage := ops.GetFirstTerminationMessage(jobPod)
-				if terminationMessage != "" {
-					var tar pubsubOps.TopicActionResult
-					err = json.Unmarshal([]byte(terminationMessage), &tar)
-					if err == nil {
-						c.Logger.Infof("Topic project: %q", tar.ProjectId)
-						topic.Status.ProjectID = tar.ProjectId
-					}
-				}
-			}
+
 		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
 			logger.Error("Failed to create topic.",
 				zap.Any("propagationPolicy", topic.Spec.PropagationPolicy),
@@ -326,6 +322,58 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 	}
 
 	return ch, err
+}
+
+// updateSecretFinailizer adds or deletes the finalizer on the secret used by the Topic.
+func (c *Reconciler) updateSecretFinailizer(ctx context.Context, desired *v1alpha1.Topic, ensureFinalizer bool) error {
+	tl, err := c.topicLister.Topics(desired.Namespace).List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Errorf("Failed to list Topics", zap.Error(err))
+		return err
+	}
+	// Only delete the finalizer if this Topic is the last one
+	// references the Secret.
+	if !ensureFinalizer && !(len(tl) == 1 && tl[0].Name == desired.Name) {
+		return nil
+	}
+
+	secret, err := c.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	existing := secret.DeepCopy()
+	existingFinalizers := sets.NewString(existing.Finalizers...)
+	hasFinalizer := existingFinalizers.Has(finalizerName)
+
+	if ensureFinalizer == hasFinalizer {
+		return nil
+	}
+
+	var desiredFinalizers []string
+	if ensureFinalizer {
+		desiredFinalizers = append(existing.Finalizers, finalizerName)
+	} else {
+		existingFinalizers.Delete(finalizerName)
+		desiredFinalizers = existingFinalizers.List()
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      desiredFinalizers,
+			"resourceVersion": existing.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
+	if err != nil {
+		logging.FromContext(ctx).Errorf("Failed to update Topic Secret's finalizers", zap.Error(err))
+	}
+	return err
 }
 
 // updateFinalizers is a generic method for future compatibility with a

@@ -23,7 +23,7 @@ metadata:
     # TODO properly define type, schema, and description.
     registry.cloud.google.com/eventTypes: |
       [
-        { "type": "google.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
+        { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
       ]
   name: schedulers.events.cloud.google.com
 spec:
