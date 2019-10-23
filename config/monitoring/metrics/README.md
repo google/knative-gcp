@@ -123,8 +123,8 @@ Then, access the [Grafana Dashboard](http://localhost:3000)
 
 Add `metrics.backend-destination: stackdriver`,
 `metrics.allow-stackdriver-custom-metrics: "true"` and
-`metrics.stackdriver-custom-metrics-subdomain: "cloud.google.com/events"` to the `data`
-field.  
+`metrics.stackdriver-custom-metrics-subdomain: "cloud.google.com/events"` to the
+`data` field.  
  You can find detailed information in `data._example` field in the `ConfigMap` you
 are editing.
 
