@@ -165,6 +165,10 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	source.Status.ObservedGeneration = source.Generation
 	source.Status.InitializeConditions()
 
+	if sink := source.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
+		source.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	}
+
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
 

@@ -126,6 +126,10 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// And restore them.
 	csr.Status.NotificationID = notificationID
 
+	if sink := csr.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
+		csr.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	}
+
 	if topic == "" {
 		topic = fmt.Sprintf("storage-%s", string(csr.UID))
 	}

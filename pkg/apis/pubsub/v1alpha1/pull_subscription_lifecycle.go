@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -103,4 +107,24 @@ func (s *PullSubscriptionStatus) MarkEventTypes() {
 // MarkNoEventTypes sets the condition that the source does not its event types configured.
 func (s *PullSubscriptionStatus) MarkNoEventTypes(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionEventTypesProvided, reason, messageFormat, messageA...)
+}
+
+// MarkDeprecated adds a warning condition that using is deprecated
+// and will stop working in the future. Note that this does not affect the Ready condition.
+func (s *PullSubscriptionStatus) MarkDestinationDeprecatedRef(reason, msg string) {
+	dc := apis.Condition{
+		Type:               "Deprecated",
+		Reason:             reason,
+		Status:             v1.ConditionTrue,
+		Severity:           apis.ConditionSeverityWarning,
+		Message:            msg,
+		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Now())},
+	}
+	for i, c := range s.Conditions {
+		if c.Type == dc.Type {
+			s.Conditions[i] = dc
+			return
+		}
+	}
+	s.Conditions = append(s.Conditions, dc)
 }

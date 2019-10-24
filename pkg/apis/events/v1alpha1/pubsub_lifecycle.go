@@ -17,6 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -57,4 +61,24 @@ func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
 	case ready.IsFalse():
 		ps.MarkPullSubscriptionNotReady(ready.Reason, ready.Message)
 	}
+}
+
+// MarkDeprecated adds a warning condition that using is deprecated
+// and will stop working in the future. Note that this does not affect the Ready condition.
+func (ps *PubSubStatus) MarkDestinationDeprecatedRef(reason, msg string) {
+	dc := apis.Condition{
+		Type:               "Deprecated",
+		Reason:             reason,
+		Status:             v1.ConditionTrue,
+		Severity:           apis.ConditionSeverityWarning,
+		Message:            msg,
+		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Now())},
+	}
+	for i, c := range ps.Conditions {
+		if c.Type == dc.Type {
+			ps.Conditions[i] = dc
+			return
+		}
+	}
+	ps.Conditions = append(ps.Conditions, dc)
 }
