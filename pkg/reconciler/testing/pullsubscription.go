@@ -97,7 +97,7 @@ func WithInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
 func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Sink = apisv1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
+			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,

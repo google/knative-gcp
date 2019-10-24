@@ -63,7 +63,7 @@ func WithStorageEventTypes(eventTypes []string) StorageOption {
 func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Spec.Sink = apisv1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
+			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,

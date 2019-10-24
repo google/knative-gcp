@@ -37,7 +37,7 @@ var (
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
+					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
@@ -56,7 +56,7 @@ var (
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
+					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
@@ -81,7 +81,7 @@ var (
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: apisv1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
+					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
@@ -175,7 +175,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",
@@ -197,7 +197,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",
@@ -220,7 +220,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",
@@ -247,7 +247,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",
@@ -273,7 +273,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",
@@ -300,7 +300,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
 							Namespace:  "baz",

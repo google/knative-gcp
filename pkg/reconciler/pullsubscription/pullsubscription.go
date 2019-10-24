@@ -300,7 +300,7 @@ func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1a
 	if destination.URI != nil {
 		return destination.URI, nil
 	} else {
-		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
+		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.GetRef(), namespace); err != nil {
 			return nil, err
 		} else {
 			if destURI, err := apis.ParseURL(uri); err != nil {

@@ -50,7 +50,7 @@ func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Sched
 func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Sink = apisv1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
+			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
