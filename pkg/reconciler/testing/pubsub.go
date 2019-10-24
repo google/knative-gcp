@@ -58,6 +58,15 @@ func WithPubSubSink(gvk metav1.GroupVersionKind, name string) PubSubOption {
 		}
 	}
 }
+func WithPubSubDeprecatedSink(gvk metav1.GroupVersionKind, name string) PubSubOption {
+	return func(ps *v1alpha1.PubSub) {
+		ps.Spec.Sink = apisv1alpha1.Destination{
+			DeprecatedAPIVersion: apiVersion(gvk),
+			DeprecatedKind:       gvk.Kind,
+			DeprecatedName:       name,
+		}
+	}
+}
 
 func WithPubSubTopic(topicID string) PubSubOption {
 	return func(ps *v1alpha1.PubSub) {
@@ -108,5 +117,11 @@ func WithPubSubStatusObservedGeneration(generation int64) PubSubOption {
 func WithPubSubObjectMetaGeneration(generation int64) PubSubOption {
 	return func(ps *v1alpha1.PubSub) {
 		ps.ObjectMeta.Generation = generation
+	}
+}
+
+func WithPubSubDeprecatedSinkStatus() PubSubOption {
+	return func(ps *v1alpha1.PubSub) {
+		ps.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

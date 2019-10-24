@@ -221,6 +221,35 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSinkURI(pubsubSinkURL),
 			),
 		}},
+	}, {
+		Name: "pullsubscription exists and ready - deprecated ref",
+		Objects: []runtime.Object{
+			NewPubSub(pubsubName, testNS,
+				WithPubSubObjectMetaGeneration(generation),
+				WithPubSubTopic(testTopicID),
+				WithPubSubDeprecatedSink(sinkGVK, sinkName),
+				WithPubSubFinalizers(finalizerName),
+			),
+			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + pubsubName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPubSub(pubsubName, testNS,
+				WithPubSubObjectMetaGeneration(generation),
+				WithPubSubStatusObservedGeneration(generation),
+				WithPubSubTopic(testTopicID),
+				WithPubSubDeprecatedSink(sinkGVK, sinkName),
+				WithPubSubFinalizers(finalizerName),
+				WithInitPubSubConditions,
+				WithPubSubDeprecatedSinkStatus(),
+				WithPubSubPullSubscriptionReady(),
+				WithPubSubSinkURI(pubsubSinkURL),
+			),
+		}},
 	}}
 
 	defer logtesting.ClearAll()

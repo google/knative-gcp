@@ -59,6 +59,16 @@ func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption
 	}
 }
 
+func WithSchedulerDeprecatedSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Sink = apisv1alpha1.Destination{
+			DeprecatedAPIVersion: apiVersion(gvk),
+			DeprecatedKind:       gvk.Kind,
+			DeprecatedName:       name,
+		}
+	}
+}
+
 func WithSchedulerLocation(location string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Location = location
@@ -140,5 +150,11 @@ func WithSchedulerSinkURI(url *apis.URL) SchedulerOption {
 func WithSchedulerFinalizers(finalizers ...string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Finalizers = finalizers
+	}
+}
+
+func WithSchedulerDeprecatedSinkStatus() SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

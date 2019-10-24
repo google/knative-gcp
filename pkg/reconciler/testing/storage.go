@@ -71,6 +71,15 @@ func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
 		}
 	}
 }
+func WithStorageDeprecatedSink(gvk metav1.GroupVersionKind, name string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Spec.Sink = apisv1alpha1.Destination{
+			DeprecatedAPIVersion: apiVersion(gvk),
+			DeprecatedKind:       gvk.Kind,
+			DeprecatedName:       name,
+		}
+	}
+}
 
 // WithInitStorageConditions initializes the Storages's conditions.
 func WithInitStorageConditions(s *v1alpha1.Storage) {
@@ -169,5 +178,11 @@ func WithDeletionTimestamp() StorageOption {
 	return func(s *v1alpha1.Storage) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
+	}
+}
+
+func WithStorageDeprecatedSinkStatus() StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }
