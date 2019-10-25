@@ -19,6 +19,8 @@ package pullsubscription
 import (
 	"context"
 
+	tracingconfig "knative.dev/pkg/tracing/config"
+
 	"knative.dev/pkg/metrics"
 
 	"github.com/kelseyhightower/envconfig"
@@ -101,6 +103,7 @@ func NewController(
 
 	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
 	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
+	cmw.Watch(tracingconfig.ConfigName, c.UpdateFromTracingConfigMap)
 
 	return impl
 }

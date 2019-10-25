@@ -25,6 +25,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -94,6 +95,8 @@ func NewController(
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
+
+	cmw.Watch(tracingconfig.ConfigName, c.UpdateFromTracingConfigMap)
 
 	return impl
 }

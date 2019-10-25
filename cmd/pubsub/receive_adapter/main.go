@@ -19,10 +19,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+
+	"knative.dev/eventing/pkg/tracing"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -56,7 +58,7 @@ func main() {
 	sl, _ := logging.NewLoggerFromConfig(loggingConfig, component)
 	logger := sl.Desugar()
 	defer flush(logger)
-	ctx := logging.WithLogger(signals.NewContext(), sl)
+	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
@@ -65,6 +67,14 @@ func main() {
 	}
 
 	mainMetrics(logger, metricsConfig)
+
+	tracingConfig, err := tracingconfig.JSONToConfig(startable.TracingConfigJson)
+	if err != nil {
+		logger.Error("Failed to process tracing options", zap.Error(err))
+	}
+	if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracingConfig); err != nil {
+		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
+	}
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
@@ -87,7 +97,7 @@ func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
 	}
 
 	if err := metrics.UpdateExporter(*opts, logger.Sugar()); err != nil {
-		log.Fatalf("Failed to create the metrics exporter: %v", err)
+		logger.Fatal("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	// TODO metrics are API surface, so make sure we need to expose this before doing so.
@@ -102,7 +112,7 @@ func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
 	//	datacodec.LatencyView,
 	//  adapter.LatencyView,
 	//); err != nil {
-	//	log.Fatalf("Failed to register views: %v", err)
+	//  logger.Fatal("Failed to register views", zap.Error(err))
 	//}
 	//
 	//view.SetReportingPeriod(2 * time.Second)

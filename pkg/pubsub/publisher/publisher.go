@@ -23,8 +23,8 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-
-	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"knative.dev/eventing/pkg/kncloudevents"
+	"knative.dev/eventing/pkg/tracing"
 )
 
 // Publisher implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -66,6 +66,8 @@ func (a *Publisher) receive(ctx context.Context, event cloudevents.Event, resp *
 	if event.SpecVersion() != cloudevents.VersionV03 {
 		event.Context = event.Context.AsV03()
 	}
+
+	event = tracing.AddTraceparentAttributeFromContext(ctx, event)
 
 	if _, r, err := a.outbound.Send(ctx, event); err != nil {
 		return err
