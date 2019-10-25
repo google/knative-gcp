@@ -304,7 +304,9 @@ func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1al
 		Ref: destination.GetRef(),
 		URI: destination.URI,
 	}
-	dest.Ref.Namespace = source.Namespace
+	if dest.Ref != nil {
+		dest.Ref.Namespace = source.Namespace
+	}
 	return c.uriResolver.URIFromDestination(dest, source)
 }
 
