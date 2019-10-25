@@ -63,11 +63,11 @@ func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
 	}
 }
 
-// MarkDeprecated adds a warning condition that using is deprecated
+// MarkDeprecated adds a warning condition that this object's spec is using deprecated fields
 // and will stop working in the future. Note that this does not affect the Ready condition.
 func (ps *PubSubStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 	dc := apis.Condition{
-		Type:               "Deprecated",
+		Type:               StatusConditionTypeDeprecated,
 		Reason:             reason,
 		Status:             v1.ConditionTrue,
 		Severity:           apis.ConditionSeverityWarning,
@@ -81,4 +81,16 @@ func (ps *PubSubStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 		}
 	}
 	ps.Conditions = append(ps.Conditions, dc)
+}
+
+// ClearDeprecated removes the StatusConditionTypeDeprecated warning condition. Note that this does not
+// affect the Ready condition.
+func (s *PubSubStatus) ClearDeprecated() {
+	conds := make([]apis.Condition, 0, len(s.Conditions))
+	for _, c := range s.Conditions {
+		if c.Type != StatusConditionTypeDeprecated {
+			conds = append(conds, c)
+		}
+	}
+	s.Conditions = conds
 }

@@ -201,6 +201,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopic(testTopicID),
 				WithPubSubSink(sinkGVK, sinkName),
 				WithPubSubFinalizers(finalizerName),
+				// This deprecated status will be removed because the Sink is not using the
+				// deprecated fields.
+				WithPubSubDeprecatedSinkStatus(),
 			),
 			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
 				WithPullSubscriptionReady(sinkURI),

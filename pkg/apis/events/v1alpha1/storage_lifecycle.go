@@ -26,6 +26,13 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
+
+const (
+	// StatusConditionTypeDeprecated is the status.conditions.type used to provide deprecation
+	// warnings.
+	StatusConditionTypeDeprecated = "Deprecated"
+)
+
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return StorageCondSet.Manage(s).GetCondition(t)
@@ -72,15 +79,11 @@ func (s *StorageStatus) MarkNotificationReady() {
 	StorageCondSet.Manage(s).MarkTrue(NotificationReady)
 }
 
-const (
-	deprecated = "Deprecated"
-)
-
-// MarkDeprecated adds a warning condition that using is deprecated
+// MarkDeprecated adds a warning condition that this object's spec is using deprecated fields
 // and will stop working in the future. Note that this does not affect the Ready condition.
 func (s *StorageStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 	dc := apis.Condition{
-		Type:               deprecated,
+		Type:               StatusConditionTypeDeprecated,
 		Reason:             reason,
 		Status:             v1.ConditionTrue,
 		Severity:           apis.ConditionSeverityWarning,
@@ -96,12 +99,12 @@ func (s *StorageStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 	s.Conditions = append(s.Conditions, dc)
 }
 
-// ClearDeprecated removes the deprecated warning condition. Note that this does not
+// ClearDeprecated removes the StatusConditionTypeDeprecated warning condition. Note that this does not
 // affect the Ready condition.
 func (s *StorageStatus) ClearDeprecated() {
 	conds := make([]apis.Condition, 0, len(s.Conditions))
 	for _, c := range s.Conditions {
-		if c.Type != deprecated {
+		if c.Type != StatusConditionTypeDeprecated {
 			conds = append(conds, c)
 		}
 	}

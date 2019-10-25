@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -109,11 +110,11 @@ func (s *PullSubscriptionStatus) MarkNoEventTypes(reason, messageFormat string, 
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionEventTypesProvided, reason, messageFormat, messageA...)
 }
 
-// MarkDeprecated adds a warning condition that using is deprecated
+// MarkDeprecated adds a warning condition that this object's spec is using deprecated fields
 // and will stop working in the future. Note that this does not affect the Ready condition.
 func (s *PullSubscriptionStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 	dc := apis.Condition{
-		Type:               "Deprecated",
+		Type:               v1alpha1.StatusConditionTypeDeprecated,
 		Reason:             reason,
 		Status:             v1.ConditionTrue,
 		Severity:           apis.ConditionSeverityWarning,
@@ -127,4 +128,16 @@ func (s *PullSubscriptionStatus) MarkDestinationDeprecatedRef(reason, msg string
 		}
 	}
 	s.Conditions = append(s.Conditions, dc)
+}
+
+// ClearDeprecated removes the deprecated warning condition. Note that this does not
+// affect the Ready condition.
+func (s *PullSubscriptionStatus) ClearDeprecated() {
+	conds := make([]apis.Condition, 0, len(s.Conditions))
+	for _, c := range s.Conditions {
+		if c.Type != v1alpha1.StatusConditionTypeDeprecated {
+			conds = append(conds, c)
+		}
+	}
+	s.Conditions = conds
 }

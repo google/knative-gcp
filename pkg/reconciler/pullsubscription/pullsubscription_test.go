@@ -240,6 +240,9 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
+					// This deprecated status will be removed because the Sink is not using the
+					// deprecated fields.
+					WithPullSubscriptionDeprecatedSinkStatus(),
 				),
 				newSink(),
 				newSecret(true),

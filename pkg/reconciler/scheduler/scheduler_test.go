@@ -636,6 +636,9 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerData(testData),
 				WithSchedulerSchedule(onceAMinuteSchedule),
 				WithSchedulerFinalizers(finalizerName),
+				// This deprecated status will be removed because the Sink is not using the
+				// deprecated fields.
+				WithSchedulerDeprecatedSinkStatus(),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicReady(testTopicID),

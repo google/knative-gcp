@@ -113,6 +113,8 @@ func (r *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSub) err
 
 	if sink := source.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
 		source.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	} else {
+		source.Status.ClearDeprecated()
 	}
 
 	if source.DeletionTimestamp != nil {

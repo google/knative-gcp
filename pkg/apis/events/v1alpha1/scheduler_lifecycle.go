@@ -79,11 +79,11 @@ func (s *SchedulerStatus) MarkJobReady(jobName string) {
 	s.JobName = jobName
 }
 
-// MarkDeprecated adds a warning condition that using is deprecated
+// MarkDeprecated adds a warning condition that this object's spec is using deprecated fields
 // and will stop working in the future. Note that this does not affect the Ready condition.
 func (s *SchedulerStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 	dc := apis.Condition{
-		Type:               "Deprecated",
+		Type:               StatusConditionTypeDeprecated,
 		Reason:             reason,
 		Status:             v1.ConditionTrue,
 		Severity:           apis.ConditionSeverityWarning,
@@ -97,4 +97,16 @@ func (s *SchedulerStatus) MarkDestinationDeprecatedRef(reason, msg string) {
 		}
 	}
 	s.Conditions = append(s.Conditions, dc)
+}
+
+// ClearDeprecated removes the StatusConditionTypeDeprecated warning condition. Note that this does not
+// affect the Ready condition.
+func (s *SchedulerStatus) ClearDeprecated() {
+	conds := make([]apis.Condition, 0, len(s.Conditions))
+	for _, c := range s.Conditions {
+		if c.Type != StatusConditionTypeDeprecated {
+			conds = append(conds, c)
+		}
+	}
+	s.Conditions = conds
 }
