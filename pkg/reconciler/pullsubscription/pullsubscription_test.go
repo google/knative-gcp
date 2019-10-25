@@ -23,6 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/resolver"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -121,7 +124,7 @@ func newSink() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"hostname": sinkDNS,
+					"url": sinkURI,
 				},
 			},
 		},
@@ -416,7 +419,8 @@ func TestAllCases(t *testing.T) {
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.google.com "sink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError",
+					`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -651,11 +655,10 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
-			tracker:             &MockTracker{},
+			uriResolver:         resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			receiveAdapterImage: testImage,
 		}
 	}))
-
 }
 
 func newReceiveAdapter(ctx context.Context, image string) runtime.Object {

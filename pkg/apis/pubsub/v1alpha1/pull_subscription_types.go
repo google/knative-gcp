@@ -60,7 +60,7 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
 	// This brings in CloudEventOverrides and Sink.
-	duckv1.SourceSpec
+	duckv1.SourceSpec `json:",inline"`
 
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
