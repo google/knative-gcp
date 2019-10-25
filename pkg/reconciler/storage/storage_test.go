@@ -693,6 +693,9 @@ func TestAllCases(t *testing.T) {
 				WithStorageBucket(bucket),
 				WithStorageSink(sinkGVK, sinkName),
 				WithStorageFinalizers(finalizerName),
+				// This deprecated status will be removed because the Sink is not using the
+				// deprecated fields.
+				WithStorageDeprecatedSinkStatus(),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicReady(testTopicID),

@@ -128,6 +128,8 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 
 	if sink := csr.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
 		csr.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	} else {
+		csr.Status.ClearDeprecated()
 	}
 
 	if topic == "" {
