@@ -151,11 +151,19 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, channel); err != nil {
+		// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
+		// component to work with Eventing pre-v0.9.
+		// TODO: delete this when DeprecatedSubscribableStatus goes away.
+		channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
 		return err
 	}
 
 	// 3. Sync all subscriptions statuses.
 	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
+		// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
+		// component to work with Eventing pre-v0.9.
+		// TODO: delete this when DeprecatedSubscribableStatus goes away.
+		channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
 		return err
 	}
 
@@ -259,7 +267,15 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Subscriber:  s,
 		})
 		ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
-		if err != nil {
+		if apierrs.IsAlreadyExists(err) {
+			// If the pullsub already exists and is owned by the current channel, mark it for update.
+			if _, found := pullsubs[genName]; found {
+				subUpdates = append(subUpdates, s)
+			} else {
+				c.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
+				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
+			}
+		} else if err != nil {
 			c.Recorder.Eventf(channel, corev1.EventTypeWarning, "CreateSubscriberFailed", "Creating Subscriber %q failed", genName)
 			return err
 		}
@@ -290,7 +306,11 @@ func (c *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		if !found {
 			// PullSubscription does not exist, that's ok, create it now.
 			ps, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
-			if err != nil {
+			if apierrs.IsAlreadyExists(err) {
+				// If the pullsub is not owned by the current channel, this is an error.
+				c.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
+				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
+			} else if err != nil {
 				c.Recorder.Eventf(channel, corev1.EventTypeWarning, "CreateSubscriberFailed", "Creating Subscriber %q failed", genName)
 				return err
 			}
