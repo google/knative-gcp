@@ -23,7 +23,6 @@ import (
 	"knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/google/go-cmp/cmp"
@@ -51,7 +50,7 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 	// Sink [required]
 	if equality.Semantic.DeepEqual(current.Sink, v1alpha1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
-	} else if err := validateDestination(current.Sink); err != nil {
+	} else if err := current.Sink.Validate(ctx); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 
@@ -73,41 +72,6 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 		} else if ad < minAckDeadline || ad > maxAckDeadline {
 			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
 		}
-	}
-
-	return errs
-}
-
-func validateDestination(dest v1alpha1.Destination) *apis.FieldError {
-	if dest.URI != nil {
-		if dest.ObjectReference != nil {
-			return apis.ErrMultipleOneOf("uri", "name")
-		}
-		if dest.URI.Host == "" || dest.URI.Scheme == "" {
-			return apis.ErrInvalidValue(dest.URI.String(), "uri")
-		}
-	} else {
-		return validateRef(dest.ObjectReference)
-	}
-	return nil
-}
-
-func validateRef(ref *corev1.ObjectReference) *apis.FieldError {
-	// nil check.
-	if ref == nil {
-		return apis.ErrMissingField(apis.CurrentField)
-	}
-	// Check the object.
-	var errs *apis.FieldError
-	// Required Fields
-	if ref.Name == "" {
-		errs = errs.Also(apis.ErrMissingField("name"))
-	}
-	if ref.APIVersion == "" {
-		errs = errs.Also(apis.ErrMissingField("apiVersion"))
-	}
-	if ref.Kind == "" {
-		errs = errs.Also(apis.ErrMissingField("kind"))
 	}
 
 	return errs

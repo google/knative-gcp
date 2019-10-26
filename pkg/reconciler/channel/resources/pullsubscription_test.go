@@ -19,17 +19,15 @@ package resources
 import (
 	"testing"
 
-	"knative.dev/pkg/apis"
-
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
@@ -97,8 +95,10 @@ func TestMakePullSubscription(t *testing.T) {
 			},
 			Project: "project-123",
 			Topic:   "topic-abc",
-			Sink: apisv1alpha1.Destination{
-				URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+				},
 			},
 			Transformer: &apisv1alpha1.Destination{
 				URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
@@ -175,8 +175,10 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			},
 			Project: "project-123",
 			Topic:   "topic-abc",
-			Sink: apisv1alpha1.Destination{
-				URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
+				},
 			},
 		},
 	}
@@ -250,8 +252,10 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			},
 			Project: "project-123",
 			Topic:   "topic-abc",
-			Sink: apisv1alpha1.Destination{
-				URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+				},
 			},
 		},
 	}

@@ -18,6 +18,7 @@ package resources
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -52,11 +53,13 @@ func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec,
 			Secret:  pubsubSecret,
 			Project: spec.Project,
 			Topic:   topic,
-			Sink:    spec.Sink,
+			SourceSpec: duckv1.SourceSpec{
+				Sink: spec.Sink,
+			},
 		},
 	}
 	if spec.CloudEventOverrides != nil && spec.CloudEventOverrides.Extensions != nil {
-		ps.Spec.CloudEventOverrides = &pubsubv1alpha1.CloudEventOverrides{
+		ps.Spec.SourceSpec.CloudEventOverrides = &duckv1.CloudEventOverrides{
 			Extensions: spec.CloudEventOverrides.Extensions,
 		}
 	}

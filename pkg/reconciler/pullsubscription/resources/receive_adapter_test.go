@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestMakeMinimumReceiveAdapter(t *testing.T) {
@@ -177,10 +178,13 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		Spec: v1alpha1.PullSubscriptionSpec{
 			Project: "eventing-name",
 			Topic:   "topic",
-			CloudEventOverrides: &v1alpha1.CloudEventOverrides{
-				Extensions: map[string]string{
-					"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
-				}},
+			SourceSpec: duckv1.SourceSpec{
+				CloudEventOverrides: &duckv1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+					},
+				},
+			},
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",

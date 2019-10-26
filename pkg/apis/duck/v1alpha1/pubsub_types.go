@@ -48,8 +48,8 @@ type PubSub struct {
 }
 
 type PubSubSpec struct {
-	// This brings in CloudEventOverrides and Sink
-	duckv1.SourceSpec
+	// This brings in CloudEventOverrides and Sink.
+	duckv1.SourceSpec `json:",inline"`
 
 	// Secret is the credential to use to create the Scheduler Job.
 	// If not specified, defaults to:

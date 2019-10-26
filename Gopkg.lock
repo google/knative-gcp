@@ -180,14 +180,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
-  name = "github.com/golang/glog"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
-
-[[projects]]
-  branch = "master"
   digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
   name = "github.com/golang/groupcache"
   packages = ["lru"]
@@ -1246,7 +1238,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2a1af5e20affdf0508f4296328c812f1448bff1c5d7a8d74a2a8a56b5913ff72"
+  digest = "1:60eb83b6db703546cbddab378c2e8675237726dba71f883feeaec6ad45ba0659"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1298,6 +1290,7 @@
     "profiling",
     "ptr",
     "reconciler/testing",
+    "resolver",
     "signals",
     "system",
     "system/testing",
@@ -1316,7 +1309,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "849fcc967b598b47945067cfe0536377bac6bd19"
+  revision = "2a3fc371d3266d59a0ae7e29a724ccc9a0550793"
 
 [[projects]]
   branch = "master"
@@ -1509,6 +1502,7 @@
     "knative.dev/pkg/metrics/testing",
     "knative.dev/pkg/ptr",
     "knative.dev/pkg/reconciler/testing",
+    "knative.dev/pkg/resolver",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",
     "knative.dev/pkg/test",

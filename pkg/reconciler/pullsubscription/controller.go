@@ -19,26 +19,21 @@ package pullsubscription
 import (
 	"context"
 
-	tracingconfig "knative.dev/pkg/tracing/config"
-
-	"knative.dev/pkg/metrics"
-
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/tracker"
-
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-
-	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
-
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/resolver"
+	tracingconfig "knative.dev/pkg/tracing/config"
 )
 
 const (
@@ -99,7 +94,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
+	c.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
 	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
