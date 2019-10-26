@@ -271,6 +271,88 @@ func TestAllCases(t *testing.T) {
 			Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 		}},
 	}, {
+		Name: "subscriber already exists owned by other channel",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+			),
+			newReadyTopic(),
+			newPullSubscriptionWithOwner(
+				eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+			),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+				// Updates
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+		},
+		WantErr: true,
+	}, {
+		Name: "subscriber already exists in status owned by other channel",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribers([]eventingduck.SubscriberSpec{
+					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				}),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					{UID: subscriptionUID, ObservedGeneration: 1},
+				}),
+			),
+			newReadyTopic(),
+			newPullSubscriptionWithOwner(
+				eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+				NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+			),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+		},
+		WantCreates: []runtime.Object{
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+		},
+		WantErr: true,
+	}, {
 		Name: "update - subscriber missing",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
@@ -399,6 +481,10 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 		WithChannelTopic(testTopicID),
 		WithChannelDefaults)
 
+	return newPullSubscriptionWithOwner(subscriber, channel)
+}
+
+func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *pubsubv1alpha1.PullSubscription {
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 		Owner:       channel,
 		Name:        resources.GenerateSubscriptionName(subscriber.UID),

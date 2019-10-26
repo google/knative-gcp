@@ -59,6 +59,9 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
+	// This brings in CloudEventOverrides and Sink.
+	duckv1.SourceSpec `json:",inline"`
+
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
@@ -95,10 +98,6 @@ type PullSubscriptionSpec struct {
 	// +optional
 	RetentionDuration *string `json:"retentionDuration,omitempty"`
 
-	// Sink is a reference to an object that will resolve to a domain name or a
-	// URI directly to use as the sink.
-	Sink v1alpha1.Destination `json:"sink"`
-
 	// Transformer is a reference to an object that will resolve to a domain
 	// name or a URI directly to use as the transformer or a URI directly.
 	// +optional
@@ -108,11 +107,6 @@ type PullSubscriptionSpec struct {
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
-
-	// CloudEventOverrides defines overrides to control modifications of the
-	// event sent to the sink.
-	// +optional
-	CloudEventOverrides *CloudEventOverrides `json:"ceOverrides,omitempty"`
 }
 
 // CloudEventOverrides defines arguments for a Source that control the output

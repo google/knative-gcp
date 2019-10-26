@@ -48,7 +48,7 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -95,16 +95,18 @@ func TestMakePullSubscription(t *testing.T) {
 			},
 			Project: "project-123",
 			Topic:   "topic-abc",
-			Sink: apisv1alpha1.Destination{
-				ObjectReference: &corev1.ObjectReference{
-					APIVersion: "v1",
-					Kind:       "Kitchen",
-					Name:       "sink",
+			SourceSpec: duckv1.SourceSpec{
+				Sink: apisv1alpha1.Destination{
+					Ref: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Kitchen",
+						Name:       "sink",
+					},
 				},
-			},
-			CloudEventOverrides: &pubsubv1alpha1.CloudEventOverrides{
-				Extensions: map[string]string{
-					"foo": "bar",
+				CloudEventOverrides: &duckv1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo": "bar",
+					},
 				},
 			},
 		},

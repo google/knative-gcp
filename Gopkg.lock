@@ -1238,7 +1238,7 @@
 
 [[projects]]
   branch = "release-0.10"
-  digest = "1:d91a27f79bca7f71b57bdc3581542d646c90dca75862c38d21ad7b1aca6c22aa"
+  digest = "1:60eb83b6db703546cbddab378c2e8675237726dba71f883feeaec6ad45ba0659"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1290,6 +1290,7 @@
     "profiling",
     "ptr",
     "reconciler/testing",
+    "resolver",
     "signals",
     "system",
     "system/testing",
@@ -1308,7 +1309,7 @@
     "webhook",
   ]
   pruneopts = "T"
-  revision = "cad41c40ccb5a40de7a3b65097649703c8d96e0b"
+  revision = "2a3fc371d3266d59a0ae7e29a724ccc9a0550793"
 
 [[projects]]
   branch = "master"
@@ -1501,6 +1502,7 @@
     "knative.dev/pkg/metrics/testing",
     "knative.dev/pkg/ptr",
     "knative.dev/pkg/reconciler/testing",
+    "knative.dev/pkg/resolver",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",
     "knative.dev/pkg/test",

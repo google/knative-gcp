@@ -23,6 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/resolver"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -121,7 +124,7 @@ func newSink() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"hostname": sinkDNS,
+					"url": sinkURI,
 				},
 			},
 		},
@@ -240,6 +243,9 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
+					// This deprecated status will be removed because the Sink is not using the
+					// deprecated fields.
+					WithPullSubscriptionDeprecatedSinkStatus(),
 				),
 				newSink(),
 				newSecret(true),
@@ -264,6 +270,47 @@ func TestAllCases(t *testing.T) {
 					// Updates
 					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionReady(sinkURI),
+				),
+			}},
+		}, {
+			Name: "successful create - reuse existing receive adapter - match - deprecated ref",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+				),
+				newSink(),
+				newSecret(true),
+				newReceiveAdapter(context.Background(), testImage),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionDeprecatedSinkStatus(),
 					WithPullSubscriptionReady(sinkURI),
 				),
 			}},
@@ -372,7 +419,8 @@ func TestAllCases(t *testing.T) {
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.google.com "sink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError",
+					`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -607,11 +655,10 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
-			tracker:             &MockTracker{},
+			uriResolver:         resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			receiveAdapterImage: testImage,
 		}
 	}))
-
 }
 
 func newReceiveAdapter(ctx context.Context, image string) runtime.Object {

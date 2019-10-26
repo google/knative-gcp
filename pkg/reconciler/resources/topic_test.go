@@ -48,7 +48,7 @@ func TestMakeTopicWithStorage(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -115,7 +115,7 @@ func TestMakeTopicWithScheduler(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -187,7 +187,7 @@ func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: apisv1alpha1.Destination{
-						ObjectReference: &corev1.ObjectReference{
+						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",

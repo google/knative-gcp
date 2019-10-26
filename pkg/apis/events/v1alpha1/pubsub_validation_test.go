@@ -39,7 +39,7 @@ var (
 			},
 			SourceSpec: duckv1.SourceSpec{
 				Sink: v1alpha1.Destination{
-					ObjectReference: &corev1.ObjectReference{
+					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
@@ -97,7 +97,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, name": {
 			spec: func() PubSubSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink.Name = ""
+				obj.Sink.Ref.Name = ""
 				return *obj
 			}(),
 			error: true,
@@ -105,7 +105,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, apiVersion": {
 			spec: func() PubSubSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink.APIVersion = ""
+				obj.Sink.Ref.APIVersion = ""
 				return *obj
 			}(),
 			error: true,
@@ -113,7 +113,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, kind": {
 			spec: func() PubSubSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink.Kind = ""
+				obj.Sink.Ref.Kind = ""
 				return *obj
 			}(),
 			error: true,
@@ -158,7 +158,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 						Scheme: "http",
 						Host:   "example.com",
 					},
-					ObjectReference: &corev1.ObjectReference{
+					Ref: &corev1.ObjectReference{
 						Name: "foo",
 					},
 				}
@@ -276,11 +276,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: v1alpha1.Destination{
-							ObjectReference: &corev1.ObjectReference{
+							Ref: &corev1.ObjectReference{
 								APIVersion: "some-other-api-version",
-								Kind:       pullSubscriptionSpec.Sink.Kind,
-								Namespace:  pullSubscriptionSpec.Sink.Namespace,
-								Name:       pullSubscriptionSpec.Sink.Name,
+								Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
+								Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
+								Name:       pullSubscriptionSpec.Sink.DeprecatedName,
 							},
 						},
 					},
@@ -302,11 +302,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: v1alpha1.Destination{
-							ObjectReference: &corev1.ObjectReference{
-								APIVersion: pullSubscriptionSpec.Sink.APIVersion,
+							Ref: &corev1.ObjectReference{
+								APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
 								Kind:       "some-other-kind",
-								Namespace:  pullSubscriptionSpec.Sink.Namespace,
-								Name:       pullSubscriptionSpec.Sink.Name,
+								Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
+								Name:       pullSubscriptionSpec.Sink.DeprecatedName,
 							},
 						},
 					},
@@ -328,11 +328,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: v1alpha1.Destination{
-							ObjectReference: &corev1.ObjectReference{
-								APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-								Kind:       pullSubscriptionSpec.Sink.Kind,
+							Ref: &corev1.ObjectReference{
+								APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
+								Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
 								Namespace:  "some-other-namespace",
-								Name:       pullSubscriptionSpec.Sink.Name,
+								Name:       pullSubscriptionSpec.Sink.DeprecatedName,
 							},
 						},
 					},
@@ -354,10 +354,10 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: v1alpha1.Destination{
-							ObjectReference: &corev1.ObjectReference{
-								APIVersion: pullSubscriptionSpec.Sink.APIVersion,
-								Kind:       pullSubscriptionSpec.Sink.Kind,
-								Namespace:  pullSubscriptionSpec.Sink.Namespace,
+							Ref: &corev1.ObjectReference{
+								APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
+								Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
+								Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
 								Name:       "some-other-name",
 							},
 						},
