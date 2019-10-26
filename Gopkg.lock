@@ -1237,7 +1237,7 @@
   revision = "6046331ad7aab2fd082ae047bbe4201106a56b91"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.10"
   digest = "1:60eb83b6db703546cbddab378c2e8675237726dba71f883feeaec6ad45ba0659"
   name = "knative.dev/pkg"
   packages = [
