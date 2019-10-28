@@ -87,11 +87,11 @@ func MapToBase64(extensions map[string]string) (string, error) {
 }
 
 func makeDecoratorPodSpec(ctx context.Context, args *DecoratorArgs) corev1.PodSpec {
-	ceExtensions, err := MapToBase64(args.Decorator.Spec.Extensions)
+	ceExtensions, err := MapToBase64(args.Decorator.Spec.CloudEventOverrides.Extensions)
 	if err != nil {
 		logging.FromContext(ctx).Warnw("failed to make decorator extensions",
 			zap.Error(err),
-			zap.Any("extensions", args.Decorator.Spec.Extensions))
+			zap.Any("extensions", args.Decorator.Spec.CloudEventOverrides.Extensions))
 	}
 
 	podSpec := corev1.PodSpec{

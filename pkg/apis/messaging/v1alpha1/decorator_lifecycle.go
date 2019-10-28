@@ -38,16 +38,12 @@ func (ds *DecoratorStatus) InitializeConditions() {
 }
 
 // MarkSink sets the condition that the source has a sink configured.
-func (ds *DecoratorStatus) MarkSink(sink *apis.URL) {
-	var uri string
-	if sink != nil {
-		uri = sink.String()
-	}
-	ds.SinkURI = uri
-	if len(uri) > 0 {
+func (ds *DecoratorStatus) MarkSink(sink string) {
+	ds.SinkURI = sink
+	if len(sink) > 0 {
 		decoratorCondSet.Manage(ds).MarkTrue(DecoratorConditionSinkProvided)
 	} else {
-		decoratorCondSet.Manage(ds).MarkUnknown(DecoratorConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+		decoratorCondSet.Manage(ds).MarkUnknown(DecoratorConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.")
 	}
 }
 

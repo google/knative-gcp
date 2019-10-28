@@ -18,6 +18,7 @@ package decorator
 
 import (
 	"context"
+	"knative.dev/pkg/resolver"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -77,6 +78,8 @@ func NewController(
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Decorator")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
+
+	c.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	return impl
 }
