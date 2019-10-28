@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	v1 "knative.dev/pkg/apis/duck/v1"
+
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -34,9 +36,13 @@ func TestMakePublisherV1alpha1(t *testing.T) {
 			Namespace: "dec-namespace",
 		},
 		Spec: v1alpha1.DecoratorSpec{
-			Extensions: map[string]string{
-				"foo":   "bar",
-				"boosh": "kakow",
+			SourceSpec: v1.SourceSpec{
+				CloudEventOverrides: &v1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo":   "bar",
+						"boosh": "kakow",
+					},
+				},
 			},
 		},
 		Status: v1alpha1.DecoratorStatus{

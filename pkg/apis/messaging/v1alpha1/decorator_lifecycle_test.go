@@ -196,7 +196,7 @@ func TestDecoratorIsReady(t *testing.T) {
 				cs.MarkNoService("NoService", "UnitTest")
 			}
 			if test.markSink {
-				cs.MarkSink(&apis.URL{Scheme: "http", Host: "foo.bar"})
+				cs.MarkSink("http://foo.bar")
 			} else {
 				cs.MarkNoSink("NoSink", "UnitTest")
 			}
