@@ -63,6 +63,9 @@ const (
 	channelComponent = "channel"
 
 	finalizerName = controllerAgentName
+
+	// Custom secret finalizer requires at least one slash
+	secretFinalizerName = controllerAgentName + "/secret"
 )
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
@@ -355,7 +358,7 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 	}
 	existing := secret.DeepCopy()
 	existingFinalizers := sets.NewString(existing.Finalizers...)
-	hasFinalizer := existingFinalizers.Has(finalizerName)
+	hasFinalizer := existingFinalizers.Has(secretFinalizerName)
 
 	if ensureFinalizer == hasFinalizer {
 		return nil
@@ -363,9 +366,9 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 
 	var desiredFinalizers []string
 	if ensureFinalizer {
-		desiredFinalizers = append(existing.Finalizers, finalizerName)
+		desiredFinalizers = append(existing.Finalizers, secretFinalizerName)
 	} else {
-		existingFinalizers.Delete(finalizerName)
+		existingFinalizers.Delete(secretFinalizerName)
 		desiredFinalizers = existingFinalizers.List()
 	}
 
