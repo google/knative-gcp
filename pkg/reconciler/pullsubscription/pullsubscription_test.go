@@ -99,7 +99,7 @@ func init() {
 func newSecret(withFinalizer bool) *corev1.Secret {
 	finalizers := []string{"noisy-finalizer"}
 	if withFinalizer {
-		finalizers = append(finalizers, finalizerName)
+		finalizers = append(finalizers, secretFinalizerName)
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -184,8 +184,8 @@ func TestAllCases(t *testing.T) {
 			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
+			patchFinalizers(testNS, sourceName, finalizerName),
+			patchFinalizers(testNS, secretName, secretFinalizerName, "noisy-finalizer"),
 		},
 	},
 		{
@@ -529,8 +529,8 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, sourceName, false),
-				patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+				patchFinalizers(testNS, sourceName, ""),
+				patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
 			},
 		},
 		{
@@ -591,7 +591,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, sourceName, false),
+				patchFinalizers(testNS, sourceName, ""),
 			},
 		},
 		{
@@ -827,7 +827,7 @@ func TestFinalizers(t *testing.T) {
 	}
 }
 
-func patchFinalizers(namespace, name string, add bool, existingFinalizers ...string) clientgotesting.PatchActionImpl {
+func patchFinalizers(namespace, name, finalizer string, existingFinalizers ...string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
 	action.Namespace = namespace
@@ -835,8 +835,8 @@ func patchFinalizers(namespace, name string, add bool, existingFinalizers ...str
 	for i, ef := range existingFinalizers {
 		existingFinalizers[i] = fmt.Sprintf("%q", ef)
 	}
-	if add {
-		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizerName))
+	if finalizer != "" {
+		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizer))
 	}
 	fname := strings.Join(existingFinalizers, ",")
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`

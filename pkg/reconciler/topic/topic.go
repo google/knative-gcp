@@ -56,6 +56,9 @@ const (
 	ReconcilerName = "Topics"
 
 	finalizerName = controllerAgentName
+
+	// Custom secret finalizer requires at least one slash
+	secretFinalizerName = controllerAgentName + "/secret"
 )
 
 // Reconciler implements controller.Reconciler for Topic resources.
@@ -347,7 +350,7 @@ func (c *Reconciler) updateSecretFinailizer(ctx context.Context, desired *v1alph
 	}
 	existing := secret.DeepCopy()
 	existingFinalizers := sets.NewString(existing.Finalizers...)
-	hasFinalizer := existingFinalizers.Has(finalizerName)
+	hasFinalizer := existingFinalizers.Has(secretFinalizerName)
 
 	if ensureFinalizer == hasFinalizer {
 		return nil
@@ -355,9 +358,9 @@ func (c *Reconciler) updateSecretFinailizer(ctx context.Context, desired *v1alph
 
 	var desiredFinalizers []string
 	if ensureFinalizer {
-		desiredFinalizers = append(existing.Finalizers, finalizerName)
+		desiredFinalizers = append(existing.Finalizers, secretFinalizerName)
 	} else {
-		existingFinalizers.Delete(finalizerName)
+		existingFinalizers.Delete(secretFinalizerName)
 		desiredFinalizers = existingFinalizers.List()
 	}
 
