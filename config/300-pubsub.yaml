@@ -17,10 +17,11 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
+    duck.knative.dev/source: "true"
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
-    registry.cloud.google.com/eventTypes: |
+    registry.knative.dev/eventTypes: |
       [
         { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
       ]
