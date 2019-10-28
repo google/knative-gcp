@@ -26,7 +26,6 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
-
 const (
 	// StatusConditionTypeDeprecated is the status.conditions.type used to provide deprecation
 	// warnings.
