@@ -22,6 +22,7 @@ import (
 
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	tracingconfig "knative.dev/pkg/tracing/config"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,6 +59,13 @@ func TestNew(t *testing.T) {
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      metrics.ConfigMapName(),
+				Namespace: system.Namespace(),
+			},
+			Data: map[string]string{},
+		},
+		&corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      tracingconfig.ConfigName,
 				Namespace: system.Namespace(),
 			},
 			Data: map[string]string{},

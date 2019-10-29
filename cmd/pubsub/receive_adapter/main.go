@@ -19,10 +19,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+
+	"knative.dev/eventing/pkg/tracing"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter"
+	tracingconfig "github.com/google/knative-gcp/pkg/tracing"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -53,17 +55,26 @@ func main() {
 		}
 	}
 
-	logger, _ := logging.NewLoggerFromConfig(loggingConfig, component)
+	sl, _ := logging.NewLoggerFromConfig(loggingConfig, component)
+	logger := sl.Desugar()
 	defer flush(logger)
-	ctx := logging.WithLogger(signals.NewContext(), logger)
+	ctx := logging.WithLogger(signals.NewContext(), logger.Sugar())
 
 	// Convert json metrics.ExporterOptions to metrics.ExporterOptions.
 	metricsConfig, err := metrics.JsonToMetricsOptions(startable.MetricsConfigJson)
 	if err != nil {
-		logger.Errorf("failed to process metrics options: %s", err.Error())
+		logger.Error("Failed to process metrics options", zap.Error(err))
 	}
 
 	mainMetrics(logger, metricsConfig)
+
+	tracingConfig, err := tracingconfig.JSONToConfig(startable.TracingConfigJson)
+	if err != nil {
+		logger.Error("Failed to process tracing options", zap.Error(err))
+	}
+	if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracingConfig); err != nil {
+		logger.Error("Failed to setup tracing", zap.Error(err), zap.Any("tracingConfig", tracingConfig))
+	}
 
 	if startable.Project == "" {
 		project, err := metadata.ProjectID()
@@ -73,20 +84,20 @@ func main() {
 		startable.Project = project
 	}
 
-	logger.Desugar().Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
+	logger.Info("Starting Pub/Sub Receive Adapter.", zap.Any("adapter", startable))
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
 }
 
-func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
+func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
 	if opts == nil {
 		logger.Info("metrics disabled")
 		return
 	}
 
-	if err := metrics.UpdateExporter(*opts, logger); err != nil {
-		log.Fatalf("Failed to create the metrics exporter: %v", err)
+	if err := metrics.UpdateExporter(*opts, logger.Sugar()); err != nil {
+		logger.Fatal("Failed to create the metrics exporter", zap.Error(err))
 	}
 
 	// TODO metrics are API surface, so make sure we need to expose this before doing so.
@@ -101,13 +112,13 @@ func mainMetrics(logger *zap.SugaredLogger, opts *metrics.ExporterOptions) {
 	//	datacodec.LatencyView,
 	//  adapter.LatencyView,
 	//); err != nil {
-	//	log.Fatalf("Failed to register views: %v", err)
+	//  logger.Fatal("Failed to register views", zap.Error(err))
 	//}
 	//
 	//view.SetReportingPeriod(2 * time.Second)
 }
 
-func flush(logger *zap.SugaredLogger) {
+func flush(logger *zap.Logger) {
 	_ = logger.Sync()
 	metrics.FlushExporter()
 }

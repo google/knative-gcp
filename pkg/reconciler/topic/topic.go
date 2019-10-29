@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/tracing"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -33,11 +35,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	tracingconfig "knative.dev/pkg/tracing/config"
 	serving "knative.dev/serving/pkg/apis/serving/v1"
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
 
@@ -54,6 +56,9 @@ const (
 	ReconcilerName = "Topics"
 
 	finalizerName = controllerAgentName
+
+	// Custom secret finalizer requires at least one slash
+	secretFinalizerName = controllerAgentName + "/secret"
 )
 
 // Reconciler implements controller.Reconciler for Topic resources.
@@ -66,6 +71,8 @@ type Reconciler struct {
 	serviceLister servinglisters.ServiceLister
 
 	publisherImage string
+
+	tracingConfig *tracingconfig.Config
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -343,7 +350,7 @@ func (c *Reconciler) updateSecretFinailizer(ctx context.Context, desired *v1alph
 	}
 	existing := secret.DeepCopy()
 	existingFinalizers := sets.NewString(existing.Finalizers...)
-	hasFinalizer := existingFinalizers.Has(finalizerName)
+	hasFinalizer := existingFinalizers.Has(secretFinalizerName)
 
 	if ensureFinalizer == hasFinalizer {
 		return nil
@@ -351,9 +358,9 @@ func (c *Reconciler) updateSecretFinailizer(ctx context.Context, desired *v1alph
 
 	var desiredFinalizers []string
 	if ensureFinalizer {
-		desiredFinalizers = append(existing.Finalizers, finalizerName)
+		desiredFinalizers = append(existing.Finalizers, secretFinalizerName)
 	} else {
-		existingFinalizers.Delete(finalizerName)
+		existingFinalizers.Delete(secretFinalizerName)
 		desiredFinalizers = existingFinalizers.List()
 	}
 
@@ -453,10 +460,16 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 		return fmt.Errorf("Topic: %s does not own Service: %s", topic.Name, name)
 	}
 
+	tracingCfg, err := tracing.ConfigToJSON(r.tracingConfig)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
+	}
+
 	desired := resources.MakePublisher(&resources.PublisherArgs{
-		Image:  r.publisherImage,
-		Topic:  topic,
-		Labels: resources.GetLabels(controllerAgentName, topic.Name),
+		Image:         r.publisherImage,
+		Topic:         topic,
+		Labels:        resources.GetLabels(controllerAgentName, topic.Name),
+		TracingConfig: tracingCfg,
 	})
 
 	svc := existing
@@ -466,14 +479,14 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 			return err
 		}
 		logging.FromContext(ctx).Desugar().Info("Publisher created.", zap.Error(err), zap.Any("publisher", svc))
-	} else if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
+	} else if !equality.Semantic.DeepEqual(&existing.Spec, &desired.Spec) {
 		existing.Spec = desired.Spec
 		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Update(existing)
 		if err != nil {
 			return err
 		}
 		logging.FromContext(ctx).Desugar().Info("Publisher updated.",
-			zap.Error(err), zap.Any("publisher", svc), zap.String("diff", diff))
+			zap.Error(err), zap.Any("publisher", svc))
 	} else {
 		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
 	}
@@ -501,4 +514,21 @@ func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*
 		}
 	}
 	return nil, apierrors.NewNotFound(schema.GroupResource{}, "")
+}
+
+func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
+	if cfg == nil {
+		r.Logger.Error("Tracing ConfigMap is nil")
+		return
+	}
+	delete(cfg.Data, "_example")
+
+	tracingCfg, err := tracingconfig.NewTracingConfigFromConfigMap(cfg)
+	if err != nil {
+		r.Logger.Warnw("failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
+	}
+	r.tracingConfig = tracingCfg
+	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	// TODO: requeue all PullSubscriptions.
 }

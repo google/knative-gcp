@@ -126,6 +126,12 @@ func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error
 	// And restore them.
 	csr.Status.NotificationID = notificationID
 
+	if sink := csr.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
+		csr.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	} else {
+		csr.Status.ClearDeprecated()
+	}
+
 	if topic == "" {
 		topic = fmt.Sprintf("storage-%s", string(csr.UID))
 	}
@@ -368,14 +374,15 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 		//		return ops.OpsJobCreateFailed, fmt.Errorf("storage does not own job %q", jobName)
 	}
 
+	if ops.IsJobFailed(job) {
+		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+	}
+
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
+		return ops.OpsJobCompleteSuccessful, nil
 	}
+
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }

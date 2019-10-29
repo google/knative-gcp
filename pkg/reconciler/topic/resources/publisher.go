@@ -33,6 +33,8 @@ type PublisherArgs struct {
 	Image  string
 	Topic  *v1alpha1.Topic
 	Labels map[string]string
+
+	TracingConfig string
 }
 
 const (
@@ -71,6 +73,9 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 			}, {
 				Name:  "PUBSUB_TOPIC_ID",
 				Value: args.Topic.Spec.Topic,
+			}, {
+				Name:  "K_TRACING_CONFIG",
+				Value: args.TracingConfig,
 			}},
 			VolumeMounts: []corev1.VolumeMount{{
 				Name:      credsVolume,

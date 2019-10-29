@@ -97,11 +97,20 @@ func WithInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
 func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Sink = apisv1alpha1.Destination{
-			ObjectReference: &corev1.ObjectReference{
+			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
+		}
+	}
+}
+func WithPullSubscriptionDeprecatedSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.Sink = apisv1alpha1.Destination{
+			DeprecatedAPIVersion: apiVersion(gvk),
+			DeprecatedKind:       gvk.Kind,
+			DeprecatedName:       name,
 		}
 	}
 }
@@ -177,7 +186,8 @@ func WithPullSubscriptionJobFailure(subscriptionID, reason, message string) Pull
 
 func WithPullSubscriptionSinkNotFound() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkNoSink("InvalidSink", `sinks.testing.cloud.google.com "sink" not found`)
+		s.Status.MarkNoSink("InvalidSink",
+			`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`)
 	}
 }
 
@@ -230,5 +240,11 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 			Reason:  reason,
 			Message: message,
 		}}
+	}
+}
+
+func WithPullSubscriptionDeprecatedSinkStatus() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

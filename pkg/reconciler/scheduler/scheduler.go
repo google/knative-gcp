@@ -117,6 +117,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error {
 	s.Status.InitializeConditions()
 
+	if sink := s.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
+		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	} else {
+		s.Status.ClearDeprecated()
+	}
+
 	topic := fmt.Sprintf("scheduler-%s", string(s.UID))
 
 	// See if the Scheduler has been deleted.
@@ -353,14 +359,16 @@ func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.Job
 		//		return ops.OpsJobCreateFailed, fmt.Errorf("scheduler does not own job %q", jobName)
 	}
 
+	if ops.IsJobFailed(job) {
+		c.Logger.Debugw("Job has failed.")
+		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+	}
+
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
+		return ops.OpsJobCompleteSuccessful, nil
 	}
+
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }

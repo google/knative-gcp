@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )

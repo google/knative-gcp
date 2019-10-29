@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"time"
 
+	pkgv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	"knative.dev/pkg/resolver"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,7 +41,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
-	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 )
@@ -55,6 +57,8 @@ type Reconciler struct {
 	// decoratorLister index properties about resources
 	decoratorLister listers.DecoratorLister
 	serviceLister   servingv1listers.ServiceLister
+
+	uriResolver *resolver.URIResolver
 
 	decoratorImage string
 }
@@ -127,12 +131,10 @@ func (c *Reconciler) reconcile(ctx context.Context, decorator *v1alpha1.Decorato
 	}
 
 	// Sink is required to continue.
-	sinkURI, err := c.resolveSink(ctx, decorator.Spec.Sink, decorator.Namespace)
+	sinkURI, err := c.resolveDestination(ctx, decorator.Spec.Sink, decorator)
 	decorator.Status.MarkSink(sinkURI)
 	if err != nil {
 		return err
-	} else if sinkURI == nil {
-		return nil
 	}
 
 	if err := c.createOrUpdateDecorator(ctx, decorator); err != nil {
@@ -217,14 +219,13 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 	return nil
 }
 
-func (c *Reconciler) resolveSink(ctx context.Context, sink *corev1.ObjectReference, namespace string) (*apis.URL, error) {
-	if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, sink, namespace); err != nil {
-		return nil, err
-	} else {
-		if destURI, err := apis.ParseURL(uri); err != nil {
-			return nil, err
-		} else {
-			return destURI, nil
-		}
+func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1alpha1.Destination, decorator *v1alpha1.Decorator) (string, error) {
+	dest := pkgv1alpha1.Destination{
+		Ref: destination.GetRef(),
+		URI: destination.URI,
 	}
+	if dest.Ref != nil {
+		dest.Ref.Namespace = decorator.Namespace
+	}
+	return c.uriResolver.URIFromDestination(dest, decorator)
 }

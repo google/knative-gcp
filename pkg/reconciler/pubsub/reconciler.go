@@ -142,19 +142,21 @@ func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicAr
 		return ops.OpsJobGetFailed, err
 	}
 
+	if ops.IsJobFailed(job) {
+		c.Logger.Debugw("Job has failed.")
+		var tar operations.TopicActionResult
+		if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &tar); err != nil {
+			c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
+			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+		}
+		return ops.OpsJobCompleteFailed, errors.New(tar.Reason)
+	}
+
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			var tar operations.TopicActionResult
-			if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &tar); err != nil {
-				c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
-				return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-			}
-			return ops.OpsJobCompleteFailed, errors.New(tar.Reason)
-		}
+		return ops.OpsJobCompleteSuccessful, nil
 	}
+
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }
@@ -182,19 +184,21 @@ func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.
 		return ops.OpsJobGetFailed, err
 	}
 
+	if ops.IsJobFailed(job) {
+		c.Logger.Debugw("Job has failed.")
+		var sar operations.SubActionResult
+		if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &sar); err != nil {
+			c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
+			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+		}
+		return ops.OpsJobCompleteFailed, errors.New(sar.Reason)
+	}
+
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			var sar operations.SubActionResult
-			if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &sar); err != nil {
-				c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
-				return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-			}
-			return ops.OpsJobCompleteFailed, errors.New(sar.Reason)
-		}
+		return ops.OpsJobCompleteSuccessful, nil
 	}
+
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }

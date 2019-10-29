@@ -17,11 +17,12 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
+    duck.knative.dev/source: "true"
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
     # TODO properly define type, schema, and description.
-    registry.cloud.google.com/eventTypes: |
+    registry.knative.dev/eventTypes: |
       [
         { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
       ]
@@ -75,6 +76,41 @@ spec:
             sink:
               type: object
               description: "Sink which receives the notifications."
+              anyOf:
+                - type: object
+                  properties:
+                    uri:
+                      type: string
+                      minLength: 1
+                - type: object
+                  properties:
+                    ref:
+                      type: object
+                      required:
+                        - apiVersion
+                        - kind
+                        - name
+                      properties:
+                        apiVersion:
+                          type: string
+                          minLength: 1
+                        kind:
+                          type: string
+                          minLength: 1
+                        name:
+                          type: string
+                          minLength: 1
+                - type: object
+                  properties:
+                    apiVersion:
+                      type: string
+                      minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    name:
+                      type: string
+                      minLength: 1
           required:
           - location
           - schedule

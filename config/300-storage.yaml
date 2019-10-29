@@ -17,10 +17,11 @@ kind: CustomResourceDefinition
 metadata:
   labels:
     eventing.knative.dev/source: "true"
+    duck.knative.dev/source: "true"
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
-    registry.cloud.google.com/eventTypes: |
+    registry.knative.dev/eventTypes: |
       [
         { "type": "com.google.cloud.storage.object.finalize", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
         { "type": "com.google.cloud.storage.object.delete", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
@@ -80,6 +81,41 @@ spec:
             sink:
               type: object
               description: "Sink which receives the notifications."
+              anyOf:
+                - type: object
+                  properties:
+                    uri:
+                      type: string
+                      minLength: 1
+                - type: object
+                  properties:
+                    ref:
+                      type: object
+                      required:
+                        - apiVersion
+                        - kind
+                        - name
+                      properties:
+                        apiVersion:
+                          type: string
+                          minLength: 1
+                        kind:
+                          type: string
+                          minLength: 1
+                        name:
+                          type: string
+                          minLength: 1
+                - type: object
+                  properties:
+                    apiVersion:
+                      type: string
+                      minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    name:
+                      type: string
+                      minLength: 1
             eventTypes:
               type: array
               items:

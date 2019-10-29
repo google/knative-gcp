@@ -20,6 +20,10 @@ import (
 	"context"
 	"testing"
 
+	"knative.dev/pkg/apis/v1alpha1"
+
+	v1 "knative.dev/pkg/apis/duck/v1"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
@@ -36,18 +40,45 @@ func TestDecoratorValidation(t *testing.T) {
 		cr: &Decorator{
 			Spec: DecoratorSpec{},
 		},
-		want: nil,
+		want: &apis.FieldError{
+			Message: "missing field(s)",
+			Paths:   []string{"spec.sink"},
+		},
+	}, {
+		name: "sink missing kind",
+		cr: &Decorator{
+			Spec: DecoratorSpec{
+				SourceSpec: v1.SourceSpec{
+					Sink: v1alpha1.Destination{
+						Ref: &corev1.ObjectReference{
+							APIVersion: "v1awesome1",
+							Name:       "aName",
+						},
+					},
+				},
+			},
+		},
+		want: &apis.FieldError{
+			Message: "missing field(s)",
+			Paths:   []string{"spec.sink.ref.kind"},
+		},
 	}, {
 		name: "valid",
 		cr: &Decorator{
 			Spec: DecoratorSpec{
-				Extensions: map[string]string{
-					"foo": "bar",
-				},
-				Sink: &corev1.ObjectReference{
-					Kind:       "aKind",
-					APIVersion: "v1awesome1",
-					Name:       "aName",
+				SourceSpec: v1.SourceSpec{
+					CloudEventOverrides: &v1.CloudEventOverrides{
+						Extensions: map[string]string{
+							"foo": "bar",
+						},
+					},
+					Sink: v1alpha1.Destination{
+						Ref: &corev1.ObjectReference{
+							Kind:       "aKind",
+							APIVersion: "v1awesome1",
+							Name:       "aName",
+						},
+					},
 				},
 			},
 		},

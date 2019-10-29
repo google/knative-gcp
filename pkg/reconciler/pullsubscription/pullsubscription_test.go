@@ -23,6 +23,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/types"
+	"knative.dev/pkg/resolver"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -96,7 +99,7 @@ func init() {
 func newSecret(withFinalizer bool) *corev1.Secret {
 	finalizers := []string{"noisy-finalizer"}
 	if withFinalizer {
-		finalizers = append(finalizers, finalizerName)
+		finalizers = append(finalizers, secretFinalizerName)
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,7 +124,7 @@ func newSink() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"hostname": sinkDNS,
+					"url": sinkURI,
 				},
 			},
 		},
@@ -181,8 +184,8 @@ func TestAllCases(t *testing.T) {
 			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
+			patchFinalizers(testNS, sourceName, finalizerName),
+			patchFinalizers(testNS, secretName, secretFinalizerName, "noisy-finalizer"),
 		},
 	},
 		{
@@ -240,6 +243,9 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
+					// This deprecated status will be removed because the Sink is not using the
+					// deprecated fields.
+					WithPullSubscriptionDeprecatedSinkStatus(),
 				),
 				newSink(),
 				newSecret(true),
@@ -264,6 +270,47 @@ func TestAllCases(t *testing.T) {
 					// Updates
 					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionReady(sinkURI),
+				),
+			}},
+		}, {
+			Name: "successful create - reuse existing receive adapter - match - deprecated ref",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+				),
+				newSink(),
+				newSecret(true),
+				newReceiveAdapter(context.Background(), testImage),
+				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
+					WithPullSubscriptionSubscription(testSubscriptionID),
+					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionDeprecatedSinkStatus(),
 					WithPullSubscriptionReady(sinkURI),
 				),
 			}},
@@ -372,7 +419,8 @@ func TestAllCases(t *testing.T) {
 			Key:     testNS + "/" + sourceName,
 			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", `sinks.testing.cloud.google.com "sink" not found`),
+				Eventf(corev1.EventTypeWarning, "InternalError",
+					`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewPullSubscription(sourceName, testNS,
@@ -481,8 +529,8 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, sourceName, false),
-				patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+				patchFinalizers(testNS, sourceName, ""),
+				patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
 			},
 		},
 		{
@@ -543,7 +591,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, sourceName, false),
+				patchFinalizers(testNS, sourceName, ""),
 			},
 		},
 		{
@@ -607,11 +655,10 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:          pubsubBase,
 			deploymentLister:    listers.GetDeploymentLister(),
 			sourceLister:        listers.GetPullSubscriptionLister(),
-			tracker:             &MockTracker{},
+			uriResolver:         resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			receiveAdapterImage: testImage,
 		}
 	}))
-
 }
 
 func newReceiveAdapter(ctx context.Context, image string) runtime.Object {
@@ -780,7 +827,7 @@ func TestFinalizers(t *testing.T) {
 	}
 }
 
-func patchFinalizers(namespace, name string, add bool, existingFinalizers ...string) clientgotesting.PatchActionImpl {
+func patchFinalizers(namespace, name, finalizer string, existingFinalizers ...string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
 	action.Namespace = namespace
@@ -788,8 +835,8 @@ func patchFinalizers(namespace, name string, add bool, existingFinalizers ...str
 	for i, ef := range existingFinalizers {
 		existingFinalizers[i] = fmt.Sprintf("%q", ef)
 	}
-	if add {
-		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizerName))
+	if finalizer != "" {
+		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizer))
 	}
 	fname := strings.Join(existingFinalizers, ",")
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`

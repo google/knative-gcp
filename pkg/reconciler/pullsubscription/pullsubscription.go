@@ -21,6 +21,11 @@ import (
 	"encoding/json"
 	"time"
 
+	pkgv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	"knative.dev/pkg/resolver"
+
+	tracingconfig "knative.dev/pkg/tracing/config"
+
 	"knative.dev/pkg/metrics"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -37,20 +42,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/go-cmp/cmp"
-	"go.uber.org/zap"
-	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
-	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/tracker"
-
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/duck"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/tracing"
+	"go.uber.org/zap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -62,23 +63,26 @@ const (
 	channelComponent = "channel"
 
 	finalizerName = controllerAgentName
+
+	// Custom secret finalizer requires at least one slash
+	secretFinalizerName = controllerAgentName + "/secret"
 )
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
 type Reconciler struct {
 	*pubsub.PubSubBase
 
+	// Listers index properties about resources.
 	deploymentLister appsv1listers.DeploymentLister
+	sourceLister     listers.PullSubscriptionLister
 
-	// listers index properties about resources
-	sourceLister listers.PullSubscriptionLister
-
-	tracker tracker.Interface // TODO: use tracker for sink.
+	uriResolver *resolver.URIResolver
 
 	receiveAdapterImage string
 
 	loggingConfig *logging.Config
 	metricsConfig *metrics.ExporterOptions
+	tracingConfig *tracingconfig.Config
 
 	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 }
@@ -161,6 +165,12 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	source.Status.ObservedGeneration = source.Generation
 	source.Status.InitializeConditions()
 
+	if sink := source.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
+		source.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
+	} else {
+		source.Status.ClearDeprecated()
+	}
+
 	if source.GetDeletionTimestamp() != nil {
 		logger.Info("Source Deleting.")
 
@@ -205,21 +215,21 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	}
 
 	// Sink is required.
-	sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source.Namespace)
+	sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source)
 	if err != nil {
 		source.Status.MarkNoSink("InvalidSink", err.Error())
 		return err
 	} else {
-		source.Status.MarkSink(sinkURI.String())
+		source.Status.MarkSink(sinkURI)
 	}
 
 	// Transformer is optional.
 	if source.Spec.Transformer != nil {
-		transformerURI, err := c.resolveDestination(ctx, *source.Spec.Transformer, source.Namespace)
+		transformerURI, err := c.resolveDestination(ctx, *source.Spec.Transformer, source)
 		if err != nil {
 			source.Status.MarkNoTransformer("InvalidTransformer", err.Error())
 		} else {
-			source.Status.MarkTransformer(transformerURI.String())
+			source.Status.MarkTransformer(transformerURI)
 		}
 	}
 
@@ -292,20 +302,15 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination apisv1alpha1.Destination, namespace string) (*apis.URL, error) {
-	if destination.URI != nil {
-		return destination.URI, nil
-	} else {
-		if uri, err := duck.GetSinkURI(ctx, c.DynamicClientSet, destination.ObjectReference, namespace); err != nil {
-			return nil, err
-		} else {
-			if destURI, err := apis.ParseURL(uri); err != nil {
-				return nil, err
-			} else {
-				return destURI, nil
-			}
-		}
+func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1alpha1.Destination, source *v1alpha1.PullSubscription) (string, error) {
+	dest := pkgv1alpha1.Destination{
+		Ref: destination.GetRef(),
+		URI: destination.URI,
 	}
+	if dest.Ref != nil {
+		dest.Ref.Namespace = source.Namespace
+	}
+	return c.uriResolver.URIFromDestination(dest, source)
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
@@ -353,7 +358,7 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 	}
 	existing := secret.DeepCopy()
 	existingFinalizers := sets.NewString(existing.Finalizers...)
-	hasFinalizer := existingFinalizers.Has(finalizerName)
+	hasFinalizer := existingFinalizers.Has(secretFinalizerName)
 
 	if ensureFinalizer == hasFinalizer {
 		return nil
@@ -361,9 +366,9 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 
 	var desiredFinalizers []string
 	if ensureFinalizer {
-		desiredFinalizers = append(existing.Finalizers, finalizerName)
+		desiredFinalizers = append(existing.Finalizers, secretFinalizerName)
 	} else {
-		existingFinalizers.Delete(finalizerName)
+		existingFinalizers.Delete(secretFinalizerName)
 		desiredFinalizers = existingFinalizers.List()
 	}
 
@@ -471,7 +476,12 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
-		logging.FromContext(ctx).Error("Error serializing metrics config", zap.Error(err))
+		logging.FromContext(ctx).Errorw("Error serializing metrics config", zap.Error(err))
+	}
+
+	tracingConfig, err := tracing.ConfigToJSON(r.tracingConfig)
+	if err != nil {
+		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
 	}
 
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
@@ -483,6 +493,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		TransformerURI: src.Status.TransformerURI,
 		LoggingConfig:  loggingConfig,
 		MetricsConfig:  metricsConfig,
+		TracingConfig:  tracingConfig,
 	})
 
 	if existing == nil {
@@ -529,7 +540,7 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 
 	logcfg, err := logging.NewConfigFromConfigMap(cfg)
 	if err != nil {
-		r.Logger.Warn("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
+		r.Logger.Warnw("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
 		return
 	}
 	r.loggingConfig = logcfg
@@ -550,6 +561,23 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 		ConfigMap: cfg.Data,
 	}
 	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
+}
+
+func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
+	if cfg == nil {
+		r.Logger.Error("Tracing ConfigMap is nil")
+		return
+	}
+	delete(cfg.Data, "_example")
+
+	tracingCfg, err := tracingconfig.NewTracingConfigFromConfigMap(cfg)
+	if err != nil {
+		r.Logger.Warnw("failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
+		return
+	}
+	r.tracingConfig = tracingCfg
+	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	// TODO: requeue all PullSubscriptions.
 }
 
 // TODO: Registry

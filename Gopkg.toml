@@ -21,7 +21,7 @@ required = [
 
 [[override]]
   name = "knative.dev/pkg"
-  branch = "master"
+  branch = "release-0.10"
 
 # This is a preemptive override.
 [[override]]
@@ -62,7 +62,7 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  branch = "master"
+  version = "0.10.0"
 
 [prune]
   go-tests = true

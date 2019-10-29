@@ -17,7 +17,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,13 +52,8 @@ var _ webhook.GenericCRD = (*Decorator)(nil)
 
 // DecoratorSpec
 type DecoratorSpec struct {
-	// Extensions specify what attribute are added or overridden on the
-	// outbound event. Each `Extensions` key-value pair are set on the event
-	// as an attribute extension independently."
-	Extensions map[string]string `json:"extensions,omitempty"`
-	// Sink is a reference to an object that will resolve to a domain name to use
-	// as the sink.
-	Sink *corev1.ObjectReference `json:"sink,omitempty"`
+	// This brings in CloudEventOverrides and Sink.
+	duckv1.SourceSpec `json:",inline"`
 }
 
 var decoratorCondSet = apis.NewLivingConditionSet(

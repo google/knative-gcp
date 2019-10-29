@@ -113,7 +113,7 @@ func newSink() *unstructured.Unstructured {
 func newSecret(withFinalizer bool) *corev1.Secret {
 	finalizers := []string{"noisy-finalizer"}
 	if withFinalizer {
-		finalizers = append(finalizers, finalizerName)
+		finalizers = append(finalizers, secretFinalizerName)
 	}
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -208,8 +208,8 @@ func TestAllCases(t *testing.T) {
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, true),
-			patchFinalizers(testNS, secretName, true, "noisy-finalizer"),
+			patchFinalizers(testNS, topicName, finalizerName),
+			patchFinalizers(testNS, secretName, secretFinalizerName, "noisy-finalizer"),
 		},
 	}, {
 		Name: "failed to create topic",
@@ -345,8 +345,8 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, false),
-			patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+			patchFinalizers(testNS, topicName, ""),
+			patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
 		},
 	}, {
 		Name: "deleting - delete topic - policy CreateDelete",
@@ -428,8 +428,8 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, false),
-			patchFinalizers(testNS, secretName, false, "noisy-finalizer"),
+			patchFinalizers(testNS, topicName, ""),
+			patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
 		},
 	}, {
 		Name: "deleting final stage - policy CreateDelete - not the only Topic",
@@ -484,7 +484,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, false),
+			patchFinalizers(testNS, topicName, ""),
 		},
 	}, {
 		Name: "fail to delete topic - policy CreateDelete",
@@ -608,7 +608,7 @@ func ProvideResource(verb, resource string, obj runtime.Object) clientgotesting.
 	}
 }
 
-func patchFinalizers(namespace, name string, add bool, existingFinalizers ...string) clientgotesting.PatchActionImpl {
+func patchFinalizers(namespace, name, finalizer string, existingFinalizers ...string) clientgotesting.PatchActionImpl {
 	action := clientgotesting.PatchActionImpl{}
 	action.Name = name
 	action.Namespace = namespace
@@ -616,8 +616,8 @@ func patchFinalizers(namespace, name string, add bool, existingFinalizers ...str
 	for i, ef := range existingFinalizers {
 		existingFinalizers[i] = fmt.Sprintf("%q", ef)
 	}
-	if add {
-		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizerName))
+	if finalizer != "" {
+		existingFinalizers = append(existingFinalizers, fmt.Sprintf("%q", finalizer))
 	}
 	fname := strings.Join(existingFinalizers, ",")
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
