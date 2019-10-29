@@ -172,6 +172,11 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	}
 
 	if source.GetDeletionTimestamp() != nil {
+		if !subscriptionExists(source) {
+			removeFinalizer(source)
+			return c.updateSecretFinalizer(ctx, source, false)
+		}
+
 		logger.Info("Source Deleting.")
 
 		state, err := c.EnsureSubscriptionDeleted(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
@@ -300,6 +305,15 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 	//}
 
 	return nil
+}
+
+func subscriptionExists(sub *v1alpha1.PullSubscription) bool {
+	for _, c := range sub.Status.Conditions {
+		if c.Type == v1alpha1.PullSubscriptionConditionSubscribed && !c.IsFalse() {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1alpha1.Destination, source *v1alpha1.PullSubscription) (string, error) {

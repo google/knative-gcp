@@ -388,6 +388,47 @@ func TestAllCases(t *testing.T) {
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete),
 		},
 	}, {
+		Name: "skip deleting if topic not exists - policy CreateDelete",
+		Objects: []runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithTopicJobFailure(testTopicID, "CreateFailed", "topic creation failed"),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+			),
+			newSecret(true),
+		},
+		Key: testNS + "/" + topicName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateDelete"),
+				WithInitTopicConditions,
+				WithTopicJobFailure(testTopicID, "CreateFailed", "topic creation failed"),
+				WithTopicFinalizers(finalizerName),
+				WithTopicDeleted,
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, ""),
+			patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
+		},
+	}, {
 		Name: "deleting final stage - policy CreateDelete",
 		Objects: append([]runtime.Object{
 			NewTopic(topicName, testNS,

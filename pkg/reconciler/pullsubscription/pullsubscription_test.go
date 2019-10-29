@@ -534,6 +534,52 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		{
+			Name: "skip deleting if subscription not exists",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionJobFailure(testSubscriptionID, "CreateFailed", "subscription creation failed"),
+					WithPullSubscriptionDeleted,
+					WithPullSubscriptionFinalizers(finalizerName),
+				),
+				newSecret(true),
+			},
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionDeleted,
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionJobFailure(testSubscriptionID, "CreateFailed", "subscription creation failed"),
+					WithPullSubscriptionFinalizers(finalizerName),
+					// updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
+				),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, ""),
+				patchFinalizers(testNS, secretName, "", "noisy-finalizer"),
+			},
+		},
+		{
 			Name: "deleting final stage - not the only PullSubscription",
 			Objects: append([]runtime.Object{
 				NewPullSubscription("not-relevant", testNS,
