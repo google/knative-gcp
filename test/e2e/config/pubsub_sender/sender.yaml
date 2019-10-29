@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .senderName }}
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    role:  {{ .senderName }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  sessionAffinity: None
+  type: ClusterIP
+
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .senderName}}
+  namespace: {{ .namespace}}
+spec:
+  backoffLimit: 0
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: {{ .senderName}}
+    spec:
+      containers:
+        - name: sender
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: BROKER_NAME
+              value: {{ .brokerName }}
+          image: {{ .senderImage }}
+          imagePullPolicy: Always
+      restartPolicy: Never
+
+---

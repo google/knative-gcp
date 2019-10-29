@@ -1,0 +1,123 @@
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Broker
+metadata:
+  name: {{ .brokerName }}
+  namespace: {{ .namespace }}
+spec:
+  channelTemplateSpec:
+    apiVersion: messaging.cloud.google.com/v1alpha1
+    kind: Channel
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-ingress
+  namespace: {{ .namespace }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-filter
+  namespace: {{ .namespace }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: e2e-pubsub
+  namespace: {{ .namespace }}
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: e2e-pubsub
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: e2e-pubsub
+subjects:
+  - kind: ServiceAccount
+    name: e2e-pubsub
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: e2e-pubsub
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-ingress
+  namespace: {{ .namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-ingress
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-ingress
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-filter
+  namespace: {{ .namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-filter
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-filter
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-config-reader-default-eventing-broker-ingress
+  namespace: knative-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-ingress
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-config-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-config-reader-default-eventing-broker-filter
+  namespace: knative-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-filter
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-config-reader
+  apiGroup: rbac.authorization.k8s.io
