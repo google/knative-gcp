@@ -115,6 +115,15 @@ rules:
     - ""
   resources:
     - secrets # TODO: Does it really need global secrets access?
+  verbs:
+    - get
+    - list
+    - watch
+    - finalize
+
+- apiGroups:
+    - ""
+  resources:
     - configmaps
     - pods # For reading termination messages
   verbs: &readOnly
