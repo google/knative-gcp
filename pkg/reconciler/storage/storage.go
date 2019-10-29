@@ -374,14 +374,15 @@ func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.
 		//		return ops.OpsJobCreateFailed, fmt.Errorf("storage does not own job %q", jobName)
 	}
 
+	if ops.IsJobFailed(job) {
+		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
+	}
+
 	if ops.IsJobComplete(job) {
 		c.Logger.Debugw("Job is complete.")
-		if ops.IsJobSucceeded(job) {
-			return ops.OpsJobCompleteSuccessful, nil
-		} else if ops.IsJobFailed(job) {
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
+		return ops.OpsJobCompleteSuccessful, nil
 	}
+
 	c.Logger.Debug("Job still active.", zap.Any("job", job))
 	return ops.OpsJobOngoing, nil
 }

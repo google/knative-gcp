@@ -786,7 +786,7 @@ func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runti
 		job.Status.Succeeded = 0
 		job.Status.Conditions = []batchv1.JobCondition{{
 			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
+			Status: corev1.ConditionFalse,
 		}, {
 			Type:   batchv1.JobFailed,
 			Status: corev1.ConditionTrue,
