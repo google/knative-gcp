@@ -115,7 +115,9 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	config["brokerURL"] = u.String()
 
-	// Send a dummy cloundevent to ksvc
+	time.Sleep(30 * time.Second)
+
+	// Send a dummy cloudevent to broker
 	senderInstaller := createresource(client, config, []string{"pubsub_sender"}, t)
 	defer deleteResource(senderInstaller, t)
 

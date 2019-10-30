@@ -28,7 +28,7 @@ func main() {
 	if err != nil {
 		fmt.Printf(err.Error())
 	}
-
+	fmt.Printf(rtctx.String())
 	var success bool
 	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
 		success = true
