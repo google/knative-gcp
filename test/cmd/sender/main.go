@@ -12,21 +12,17 @@ import (
 )
 
 const (
-	podNamespaceEnvVar = "POD_NAMESPACE"
-	brokerNameEnvVar   = "BROKER_NAME"
+	brokerURLEnvVar = "BROKER_URL"
 )
 
 func main() {
-	namespace := os.Getenv(podNamespaceEnvVar)
-	brokerName := os.Getenv(brokerNameEnvVar)
-	brokerURL := "http://" + brokerName + "-broker." + namespace + ".svc.cluster.local"
+	brokerURL := os.Getenv(brokerURLEnvVar)
 
 	ceClient, err := kncloudevents.NewDefaultClient(brokerURL)
 	if err != nil {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 	event := dummyCloudEvent()
-
 	rctx, _, err := ceClient.Send(context.TODO(), event)
 	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
 	if err != nil {
@@ -39,7 +35,6 @@ func main() {
 	} else {
 		success = false
 	}
-
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
 	}); err != nil {

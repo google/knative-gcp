@@ -19,6 +19,9 @@ package e2e
 import (
 	"encoding/json"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/eventing/test/base"
+	"knative.dev/eventing/test/base/resources"
+	"knative.dev/eventing/test/common"
 	"knative.dev/pkg/test/helpers"
 	"testing"
 	"time"
@@ -80,8 +83,6 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	if err := client.WaitForResourceReady(client.Namespace, brokerName, brokerGVR); err != nil {
 		t.Error(err)
-	} else {
-		t.Log("broker is ready")
 	}
 
 	triggerGVR := schema.GroupVersionResource{
@@ -92,13 +93,9 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 
 	if err := client.WaitForResourceReady(client.Namespace, dummyTriggerName, triggerGVR); err != nil {
 		t.Error(err)
-	} else {
-		t.Log("dummy trigger is ready")
 	}
 	if err := client.WaitForResourceReady(client.Namespace, respTriggerName, triggerGVR); err != nil {
 		t.Error(err)
-	} else {
-		t.Log("resp trigger is ready")
 	}
 
 	ksvcGVR := schema.GroupVersionResource{
@@ -108,26 +105,34 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	if err := client.WaitForResourceReady(client.Namespace, kserviceName, ksvcGVR); err != nil {
 		t.Error(err)
-	} else {
-		t.Log("ksvc is ready")
 	}
+
+	// Get broker URL
+	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, common.BrokerTypeMeta)
+	u, err := base.GetAddressableURI(client.Dynamic, metaAddressable)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	config["brokerURL"] = u.String()
 
 	// Send a dummy cloundevent to ksvc
 	senderInstaller := createresource(client, config, []string{"pubsub_sender"}, t)
 	defer deleteResource(senderInstaller, t)
-	// Check dummy cloudevent is sent out
-	if done := jobDone(client, senderName, t); !done {
+
+	jobGVR := schema.GroupVersionResource{
+		Group:    "batch",
+		Version:  "v1",
+		Resource: "jobs",
+	}
+	// Check if dummy cloudevent is sent out
+	if done := jobDone(client, senderName, t, jobGVR); !done {
 		t.Error("dummy event didn't send to broker")
 		t.Failed()
-	} else {
-		t.Log("dummy event sent")
 	}
-	// Check resp cloudevent hits the target service
-	if done := jobDone(client, targetName, t); !done {
+	// Check if resp cloudevent hits the target service
+	if done := jobDone(client, targetName, t, jobGVR); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
-	} else {
-		t.Log("resp event received")
 	}
 }
 
@@ -138,7 +143,6 @@ func createresource(client *Client, config map[string]string, folders []string, 
 		t.Errorf("failed to create, %s", err)
 		return nil
 	}
-	t.Log("resource created")
 	return installer
 }
 
@@ -150,13 +154,14 @@ func deleteResource(installer *Installer, t *testing.T) {
 	time.Sleep(15 * time.Second)
 }
 
-func jobDone(client *Client, podName string, t *testing.T) bool {
+func jobDone(client *Client, podName string, t *testing.T, jobGVR schema.GroupVersionResource) bool {
 	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
 	if err != nil {
 		t.Error(err)
 		return false
 	}
 	if msg == "" {
+		t.Error("No terminating message from the pod")
 		return false
 	} else {
 		out := &TargetOutput{}
@@ -165,6 +170,11 @@ func jobDone(client *Client, podName string, t *testing.T) bool {
 			return false
 		}
 		if !out.Success {
+			if logs, err := client.LogsFor(client.Namespace, podName, jobGVR); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("job: %s\n", logs)
+			}
 			return false
 		}
 	}
