@@ -80,6 +80,8 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	if err := client.WaitForResourceReady(client.Namespace, brokerName, brokerGVR); err != nil {
 		t.Error(err)
+	} else {
+		t.Log("broker is ready")
 	}
 
 	triggerGVR := schema.GroupVersionResource{
@@ -90,9 +92,13 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 
 	if err := client.WaitForResourceReady(client.Namespace, dummyTriggerName, triggerGVR); err != nil {
 		t.Error(err)
+	} else {
+		t.Log("dummy trigger is ready")
 	}
 	if err := client.WaitForResourceReady(client.Namespace, respTriggerName, triggerGVR); err != nil {
 		t.Error(err)
+	} else {
+		t.Log("resp trigger is ready")
 	}
 
 	ksvcGVR := schema.GroupVersionResource{
@@ -102,6 +108,8 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	if err := client.WaitForResourceReady(client.Namespace, kserviceName, ksvcGVR); err != nil {
 		t.Error(err)
+	} else {
+		t.Log("ksvc is ready")
 	}
 
 	// Send a dummy cloundevent to ksvc
@@ -111,11 +119,15 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	if done := jobDone(client, senderName, t); !done {
 		t.Error("dummy event didn't send to broker")
 		t.Failed()
+	} else {
+		t.Log("dummy event sent")
 	}
 	// Check resp cloudevent hits the target service
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
+	} else {
+		t.Log("resp event received")
 	}
 }
 
@@ -126,12 +138,13 @@ func createresource(client *Client, config map[string]string, folders []string, 
 		t.Errorf("failed to create, %s", err)
 		return nil
 	}
+	t.Log("resource created")
 	return installer
 }
 
 func deleteResource(installer *Installer, t *testing.T) {
 	if err := installer.Do("delete"); err != nil {
-		t.Errorf("failed to create, %s", err)
+		t.Errorf("failed to delete, %s", err)
 	}
 	// Just chill for tick.
 	time.Sleep(15 * time.Second)
@@ -144,7 +157,6 @@ func jobDone(client *Client, podName string, t *testing.T) bool {
 		return false
 	}
 	if msg == "" {
-		t.Error("Sender failed to send event to broker")
 		return false
 	} else {
 		out := &TargetOutput{}
