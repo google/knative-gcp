@@ -34,7 +34,7 @@ PubSubWithBrokerTestImpl tests the following scenario:
 					------------------   --------------------
                     |                 | |                    |
               1     v	    2         | v        3           |
-(Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Reviever)
+(Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
                     |-------> respTrigger -------> Service(Target)
@@ -42,7 +42,7 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
+func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	brokerName := helpers.AppendRandomString("pubsub")
 	dummyTriggerName := "dummy-broker-" + brokerName
 	respTriggerName := "resp-broker-" + brokerName
