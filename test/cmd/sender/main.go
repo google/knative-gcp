@@ -23,7 +23,9 @@ func main() {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 	event := dummyCloudEvent()
-	rctx, _, err := ceClient.Send(context.TODO(), event)
+	fmt.Printf(event.String())
+	fmt.Printf(brokerURL)
+	rctx, _, err := ceClient.Send(context.Background(), event)
 	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
 	if err != nil {
 		fmt.Printf(err.Error())
@@ -50,6 +52,7 @@ func dummyCloudEvent() cloudevents.Event {
 	event.SetType("e2e-testing-dummy")
 	event.SetSource("e2e-testing")
 	event.SetDataContentType("application/json")
+	event.SetData(`{"hello": "world!"}`)
 	return event
 }
 

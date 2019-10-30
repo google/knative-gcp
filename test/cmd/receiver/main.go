@@ -29,12 +29,13 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 		resp.Status = http.StatusAccepted
 		event = cloudevents.NewEvent()
 		resp.Event = &event
-		resp.Event.Context.SetID("target")
-		resp.Event.Context.SetType("e2e-testing-resp")
-		resp.Event.Context.SetSource("e2e-testing")
-		resp.Event.Context.SetDataContentType("application/json")
+		resp.Event.SetID("target")
+		resp.Event.SetType("e2e-testing-resp")
+		resp.Event.SetSource("e2e-testing")
+		resp.Event.SetDataContentType("application/json")
+		resp.Event.SetData(`{"hello": "world!"}`)
 		resp.Event.SetExtension("target", "falldown")
 	} else {
-		resp.Status = http.StatusBadRequest
+		resp.Status = http.StatusForbidden
 	}
 }
