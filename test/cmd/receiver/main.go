@@ -27,11 +27,12 @@ func main() {
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
 	if event.ID() == "dummy" {
 		resp.Status = http.StatusAccepted
-		event = cloudevents.NewEvent(cloudevents.VersionV03)
+		event = cloudevents.NewEvent()
 		resp.Event = &event
 		resp.Event.Context.SetID("target")
 		resp.Event.Context.SetType("e2e-testing-resp")
 		resp.Event.Context.SetSource("e2e-testing")
+		resp.Event.Context.SetDataContentType("application/json")
 		resp.Event.SetExtension("target", "falldown")
 	} else {
 		resp.Status = http.StatusBadRequest

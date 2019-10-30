@@ -49,6 +49,7 @@ func dummyCloudEvent() cloudevents.Event {
 	event.SetID("dummy")
 	event.SetType("e2e-testing-dummy")
 	event.SetSource("e2e-testing")
+	event.SetDataContentType("application/json")
 	return event
 }
 

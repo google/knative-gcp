@@ -34,7 +34,7 @@ import (
 PubSubWithBrokerTestImpl tests the following scenario:
 
                           5                 4
-					------------------   --------------------
+                    ------------------   --------------------
                     |                 | |                    |
               1     v	    2         | v        3           |
 (Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Receiver)
