@@ -29,7 +29,7 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: e2e-pubsub
+  name: {{ .clusterRoleName }}
   namespace: {{ .namespace }}
 
 ---
@@ -37,7 +37,7 @@ metadata:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: e2e-pubsub
+  name: {{ .clusterRoleName }}
 rules:
   - apiGroups: [""]
     resources: ["nodes", "pods"]
@@ -48,14 +48,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: e2e-pubsub
+  name: {{ .clusterRoleName }}
 subjects:
   - kind: ServiceAccount
-    name: e2e-pubsub
+    name: {{ .clusterRoleName }}
     namespace: {{ .namespace }}
 roleRef:
   kind: ClusterRole
-  name: e2e-pubsub
+  name: {{ .clusterRoleName }}
   apiGroup: rbac.authorization.k8s.io
 
 ---
@@ -95,7 +95,7 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: eventing-config-reader-default-eventing-broker-ingress
+  name: eventing-config-reader-{{ .namespace }}-eventing-broker-ingress
   namespace: knative-eventing
 subjects:
   - kind: ServiceAccount
@@ -111,7 +111,7 @@ roleRef:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: eventing-config-reader-default-eventing-broker-filter
+  name: eventing-config-reader-{{ .namespace }}-eventing-broker-filter
   namespace: knative-eventing
 subjects:
   - kind: ServiceAccount

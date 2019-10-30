@@ -49,6 +49,7 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string, assertMe
 	kserviceName := helpers.AppendRandomString("kservice")
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
+	clusterRoleName := helpers.AppendRandomString("e2e-pubsub")
 
 	client := Setup(t, true)
 	defer TearDown(client)
@@ -61,6 +62,7 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string, assertMe
 		"kserviceName":     kserviceName,
 		"senderName":       senderName,
 		"targetName":       targetName,
+		"clusterRoleName":  clusterRoleName,
 	}
 	for k, v := range packages {
 		config[k] = v
@@ -70,7 +72,7 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string, assertMe
 	brokerInstaller := createresource(client, config, []string{"pubsub_broker", "istio"}, t)
 	defer deleteResource(brokerInstaller, t)
 
-	// Wait for broker, ksvc ready
+	// Wait for broker, trigger, ksvc ready
 	brokerGVR := schema.GroupVersionResource{
 		Group:    "eventing.knative.dev",
 		Version:  "v1alpha1",
@@ -132,7 +134,7 @@ func deleteResource(installer *Installer, t *testing.T) {
 		t.Errorf("failed to create, %s", err)
 	}
 	// Just chill for tick.
-	time.Sleep(5 * time.Second)
+	time.Sleep(15 * time.Second)
 }
 
 func jobDone(client *Client, podName string, t *testing.T) bool {
