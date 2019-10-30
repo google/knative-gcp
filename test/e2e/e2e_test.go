@@ -161,7 +161,7 @@ func TestPubSubStackDriverMetrics(t *testing.T) {
 func TestPubSubWithBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithBrokerTestImpl(t, packageToImageConfig, false /*assertMetrics */)
+	PubSubWithBrokerTestImpl(t, packageToImageConfig)
 }
 
 // TestStorage tests we can knock down a target from a Storage.
