@@ -19,15 +19,21 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
+	"strconv"
+	"time"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"knative.dev/pkg/configmap"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/injection"
+	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/logging/logkey"
+	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
@@ -38,6 +44,10 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
+type envConfig struct {
+	RegistrationDelayTime string `envconfig:"REG_DELAY_TIME" required:"false"`
+}
+
 const (
 	component = "webhook"
 )
@@ -47,71 +57,98 @@ var (
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
+func getRegistrationDelayTime(rdt string) time.Duration {
+	var RegistrationDelay time.Duration
+
+	if rdt != "" {
+		rdtime, err := strconv.ParseInt(rdt, 10, 64)
+		if err != nil {
+			log.Fatalf("Error ParseInt: %v", err)
+		}
+
+		RegistrationDelay = time.Duration(rdtime)
+	}
+
+	return RegistrationDelay
+}
+
+
 func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD) {
-
-	flag.Parse()
-	cm, err := configmap.Load("/etc/config-logging")
-	if err != nil {
-		log.Fatal("Error loading logging configuration:", err)
-	}
-	config, err := logging.NewConfigFromMap(cm)
-	if err != nil {
-		log.Fatal("Error parsing logging configuration:", err)
-	}
-	logger, atomicLevel := logging.NewLoggerFromConfig(config, component)
-	defer logger.Sync()
-	logger = logger.With(zap.String("cloud.google.com/events", component))
-
-	logger.Info("Starting the Cloud Run Events Webhook")
+  flag.Parse()
 
 	// Set up signals so we handle the first shutdown signal gracefully.
 	ctx := signals.NewContext()
 
-	clusterConfig, err := clientcmd.BuildConfigFromFlags(*masterURL, *kubeconfig)
-	if err != nil {
-		logger.Fatalw("Failed to get cluster config", zap.Error(err))
+	// Report stats on Go memory usage every 30 seconds.
+	msp := metrics.NewMemStatsAll()
+	msp.Start(ctx, 30*time.Second)
+	if err := view.Register(msp.DefaultViews()...); err != nil {
+		log.Fatalf("Error exporting go memstats view: %v", err)
 	}
 
-	kubeClient, err := kubernetes.NewForConfig(clusterConfig)
+	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
-		logger.Fatalw("Failed to get the client set", zap.Error(err))
+		log.Fatal("Failed to get cluster config:", err)
 	}
+
+	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
+	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
+	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+
+	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
+	kubeClient := kubeclient.Get(ctx)
+
+	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
+	if err != nil {
+		log.Fatal("Error loading/parsing logging configuration:", err)
+	}
+	logger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
+	defer logger.Sync()
+	logger = logger.With(zap.String(logkey.ControllerType, component))
 
 	if err := version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
-		logger.Fatalw("Version check failed", err)
+		logger.Fatalw("Version check failed", zap.Error(err))
 	}
+
+	logger.Infow("Starting the Cloud Run Events Webhook")
 
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+	// Watch the observability config map and dynamically update metrics exporter.
+  configMapWatcher.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+	// Watch the observability config map and dynamically update request logs.
 	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-
-	// // If you want to control Defaulting or Validation, you can attach config state
-	// // to the context by watching the configmap here, and then uncommenting the logic
-	// // below.
-	// stores := make([]Store, 0, len(factories))
-	// for _, sf := range factories {
-	// 	store := sf(logger)
-	// 	store.WatchConfigs(configMapWatcher)
-	// 	stores = append(stores, store)
-	// }
 
 	if err = configMapWatcher.Start(ctx.Done()); err != nil {
 		logger.Fatalw("Failed to start the ConfigMap watcher", zap.Error(err))
 	}
 
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatalw("Failed to process env var", zap.Error(err))
+	}
+	registrationDelay := getRegistrationDelayTime(env.RegistrationDelayTime)
+
+	stats, err := webhook.NewStatsReporter()
+	if err != nil {
+		logger.Fatalw("failed to initialize the stats reporter", zap.Error(err))
+	}
+
 	options := webhook.ControllerOptions{
-		ServiceName:                     "webhook",
-		DeploymentName:                  "webhook",
-		Namespace:                       system.Namespace(),
-		Port:                            8443,
-		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.google.com", system.Namespace()),
+		ServiceName:       component,
+		Namespace:         system.Namespace(),
+		Port:              8443,
+		SecretName:        "webhook-certs",
+		StatsReporter:     stats,
+		RegistrationDelay: registrationDelay * time.Second,
+
+		ResourceMutatingWebhookName:     "webhook.events.cloud.google.com",
 		ResourceAdmissionControllerPath: "/",
 	}
 
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		// TODO: implement upgrades when eventing needs it:
+		// TODO: implement upgrades when needed:
 		//  return v1beta1.WithUpgradeViaDefaulting(store.ToContext(ctx))
 		return ctx
 	}
@@ -130,6 +167,8 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 	if err = controller.Run(ctx.Done()); err != nil {
 		logger.Fatalw("Failed to start the admission controller", zap.Error(err))
 	}
+
+	logger.Infow("Webhook stopping")
 }
 
 func main() {

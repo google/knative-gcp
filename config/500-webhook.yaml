@@ -49,9 +49,6 @@ spec:
             limits:
               cpu: 200m
               memory: 200Mi
-          volumeMounts:
-            - name: config-logging
-              mountPath: /etc/config-logging
           env:
             - name: SYSTEM_NAMESPACE
               valueFrom:
@@ -59,7 +56,3 @@ spec:
                   fieldPath: metadata.namespace
             - name: CONFIG_LOGGING_NAME
               value: config-logging
-      volumes:
-        - name: config-logging
-          configMap:
-            name: config-logging
