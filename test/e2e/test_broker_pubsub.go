@@ -18,13 +18,14 @@ package e2e
 
 import (
 	"encoding/json"
+	"testing"
+	"time"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/test/base"
 	"knative.dev/eventing/test/base/resources"
 	"knative.dev/eventing/test/common"
 	"knative.dev/pkg/test/helpers"
-	"testing"
-	"time"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
