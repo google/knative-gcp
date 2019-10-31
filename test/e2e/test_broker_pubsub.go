@@ -115,7 +115,7 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	config["brokerURL"] = u.String()
 
-	time.Sleep(30 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// Send a dummy cloudevent to broker
 	senderInstaller := createresource(client, config, []string{"pubsub_sender"}, t)

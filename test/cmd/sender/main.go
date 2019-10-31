@@ -23,14 +23,11 @@ func main() {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 	event := dummyCloudEvent()
-	fmt.Printf(event.String())
-	fmt.Printf(brokerURL)
 	rctx, _, err := ceClient.Send(context.Background(), event)
 	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
 	if err != nil {
 		fmt.Printf(err.Error())
 	}
-	fmt.Printf(rtctx.String())
 	var success bool
 	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
 		success = true
