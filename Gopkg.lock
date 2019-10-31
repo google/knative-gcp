@@ -1237,8 +1237,8 @@
   revision = "6046331ad7aab2fd082ae047bbe4201106a56b91"
 
 [[projects]]
-  branch = "release-0.10"
-  digest = "1:60eb83b6db703546cbddab378c2e8675237726dba71f883feeaec6ad45ba0659"
+  branch = "master"
+  digest = "1:268f1b56e9be83c7eccdb19d537ab97184ae1290789eac698ba27015b35c5f6c"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1266,6 +1266,7 @@
     "client/injection/kube/informers/apps/v1/deployment/fake",
     "client/injection/kube/informers/batch/v1/job",
     "client/injection/kube/informers/batch/v1/job/fake",
+    "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/factory",
     "client/injection/kube/informers/factory/fake",
     "codegen/cmd/injection-gen",
@@ -1307,9 +1308,10 @@
     "tracker",
     "version",
     "webhook",
+    "webhook/certificates/resources",
   ]
   pruneopts = "T"
-  revision = "2a3fc371d3266d59a0ae7e29a724ccc9a0550793"
+  revision = "0d45f1cc9db54812559fdaebe4a6582a01ef5246"
 
 [[projects]]
   branch = "master"
