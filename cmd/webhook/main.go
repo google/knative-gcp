@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 
 	"go.uber.org/zap"
@@ -101,11 +100,10 @@ func SharedMain(resourceHandlers map[schema.GroupVersionKind]webhook.GenericCRD)
 
 	options := webhook.ControllerOptions{
 		ServiceName:                     "webhook",
-		DeploymentName:                  "webhook",
 		Namespace:                       system.Namespace(),
 		Port:                            8443,
 		SecretName:                      "webhook-certs",
-		ResourceMutatingWebhookName:     fmt.Sprintf("webhook.%s.events.cloud.google.com", system.Namespace()),
+		ResourceMutatingWebhookName:     "webhook.events.cloud.google.com",
 		ResourceAdmissionControllerPath: "/",
 	}
 
