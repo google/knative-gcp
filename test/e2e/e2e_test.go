@@ -157,11 +157,11 @@ func TestPubSubStackDriverMetrics(t *testing.T) {
 	PubSubWithTargetTestImpl(t, packageToImageConfig, true /*assertMetrics */)
 }
 
-// TestPubSubWithBroker tests we can knock a knative service from a broker with PubSub channel.
-func TestPubSubWithBroker(t *testing.T) {
+// TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
+func TestBrokerWithPubSubChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithBrokerTestImpl(t, packageToImageConfig)
+	BrokerWithPubSubChannelTestImpl(t, packageToImageConfig)
 }
 
 // TestStorage tests we can knock down a target from a Storage.

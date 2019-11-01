@@ -51,11 +51,15 @@ function knative_setup() {
   start_latest_knative_serving
   start_latest_knative_eventing
   cloud_run_events_setup
+  istio_patch
+}
+
+function istio_patch() {
+  kubectl apply -f $(dirname $0)/e2e/config/istio-patch/istio-knative-extras.yaml
 }
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  kubectl apply -f $(dirname $0)/e2e/config/istio-patch/istio-knative-extras.yaml
   pubsub_setup || return 1
   storage_setup || return 1
   echo "Sleep 2 min to wait for all resources to setup"

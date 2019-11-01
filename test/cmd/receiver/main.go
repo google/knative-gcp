@@ -42,16 +42,18 @@ func main() {
 }
 
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
+	// Check if the received event is the dummy event sent by sender pod.
+	// If it is, send back a response CloudEvent.
 	if event.ID() == "dummy" {
 		resp.Status = http.StatusAccepted
-		event = cloudevents.NewEvent()
+		event = cloudevents.NewEvent(cloudevents.VersionV03)
+		event.SetID("target")
+		event.SetType("e2e-testing-resp")
+		event.SetSource("e2e-testing")
+		event.SetDataContentType(cloudevents.ApplicationJSON)
+		event.SetData(`{"hello": "world!"}`)
+		event.SetExtension("target", "falldown")
 		resp.Event = &event
-		resp.Event.SetID("target")
-		resp.Event.SetType("e2e-testing-resp")
-		resp.Event.SetSource("e2e-testing")
-		resp.Event.SetDataContentType("application/json")
-		resp.Event.SetData(`{"hello": "world!"}`)
-		resp.Event.SetExtension("target", "falldown")
 	} else {
 		resp.Status = http.StatusForbidden
 	}

@@ -46,7 +46,7 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	brokerName := helpers.AppendRandomString("pubsub")
 	dummyTriggerName := "dummy-broker-" + brokerName
 	respTriggerName := "resp-broker-" + brokerName
@@ -72,11 +72,11 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 		config[k] = v
 	}
 
-	// Create resources
-	brokerInstaller := createresource(client, config, []string{"pubsub_broker", "istio"}, t)
+	// Create resources.
+	brokerInstaller := createResource(client, config, []string{"pubsub_broker", "istio"}, t)
 	defer deleteResource(brokerInstaller, t)
 
-	// Wait for broker, trigger, ksvc ready
+	// Wait for broker, trigger, ksvc ready.
 	brokerGVR := schema.GroupVersionResource{
 		Group:    "eventing.knative.dev",
 		Version:  "v1alpha1",
@@ -101,14 +101,14 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 
 	ksvcGVR := schema.GroupVersionResource{
 		Group:    "serving.knative.dev",
-		Version:  "v1alpha1",
+		Version:  "v1",
 		Resource: "services",
 	}
 	if err := client.WaitForResourceReady(client.Namespace, kserviceName, ksvcGVR); err != nil {
 		t.Error(err)
 	}
 
-	// Get broker URL
+	// Get broker URL.
 	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, common.BrokerTypeMeta)
 	u, err := base.GetAddressableURI(client.Dynamic, metaAddressable)
 	if err != nil {
@@ -116,10 +116,11 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 	}
 	config["brokerURL"] = u.String()
 
+	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Send a dummy cloudevent to broker
-	senderInstaller := createresource(client, config, []string{"pubsub_sender"}, t)
+	// Send a dummy CloudEvent to broker.
+	senderInstaller := createResource(client, config, []string{"pubsub_sender"}, t)
 	defer deleteResource(senderInstaller, t)
 
 	jobGVR := schema.GroupVersionResource{
@@ -127,19 +128,19 @@ func PubSubWithBrokerTestImpl(t *testing.T, packages map[string]string) {
 		Version:  "v1",
 		Resource: "jobs",
 	}
-	// Check if dummy cloudevent is sent out
+	// Check if dummy CloudEvent is sent out.
 	if done := jobDone(client, senderName, t, jobGVR); !done {
-		t.Error("dummy event didn't send to broker")
+		t.Error("dummy event wasn't sent to broker")
 		t.Failed()
 	}
-	// Check if resp cloudevent hits the target service
+	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName, t, jobGVR); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
 	}
 }
 
-func createresource(client *Client, config map[string]string, folders []string, t *testing.T) *Installer {
+func createResource(client *Client, config map[string]string, folders []string, t *testing.T) *Installer {
 	installer := NewInstaller(client.Dynamic, config,
 		EndToEndConfigYaml(folders)...)
 	if err := installer.Do("create"); err != nil {
@@ -153,7 +154,7 @@ func deleteResource(installer *Installer, t *testing.T) {
 	if err := installer.Do("delete"); err != nil {
 		t.Errorf("failed to delete, %s", err)
 	}
-	// Just chill for tick.
+	// Wait for resources to be deleted.
 	time.Sleep(15 * time.Second)
 }
 
