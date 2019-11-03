@@ -33,7 +33,7 @@ export PUBSUB_SECRET_NAME="google-cloud-key"
 # Install the knative-gcp resources from the repo
 function install_knative_gcp_resources() {
   pushd .
-  cd ${GOPATH}/src/github.com/google/knative-gcp
+  cd ${GOPATH}/src/github.com/chizhg/knative-gcp
 
   echo ">> Update knative-gcp core"
   ko apply --selector events.cloud.run/crd-install=true \
