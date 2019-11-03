@@ -20,7 +20,7 @@
 
 # Setup env vars to override the default settings
 export PROJECT_NAME="knative-eventing-performance"
-export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/chizhg/knative-gcp/test/performance/benchmarks"
+export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/google/knative-gcp/test/performance/benchmarks"
 
 source vendor/knative.dev/test-infra/scripts/performance-tests.sh
 source $(dirname $0)/../lib.sh
@@ -34,7 +34,7 @@ readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 # Install the knative-gcp resources from the repo
 function install_knative_gcp_resources() {
   pushd .
-  cd ${GOPATH}/src/github.com/chizhg/knative-gcp
+  cd ${GOPATH}/src/github.com/google/knative-gcp
 
   echo ">> Update knative-gcp core"
   ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || abort "Failed to install knative-gcp"
@@ -52,7 +52,7 @@ function update_knative() {
 
 function update_benchmark() {
   echo ">> Updating benchmark $1"
-  ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT}
+  ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} --ignore-not-found=true
   ko apply -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 }
 
