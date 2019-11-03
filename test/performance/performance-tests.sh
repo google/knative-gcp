@@ -26,9 +26,10 @@ source vendor/knative.dev/test-infra/scripts/performance-tests.sh
 source $(dirname $0)/../lib.sh
 
 # Vars used in this script
-export TEST_CONFIG_VARIANT="continuous"
-export TEST_NAMESPACE="default"
-export PUBSUB_SECRET_NAME="google-cloud-key"
+readonly TEST_CONFIG_VARIANT="continuous"
+readonly TEST_NAMESPACE="default"
+readonly PUBSUB_SECRET_NAME="google-cloud-key"
+readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 
 # Install the knative-gcp resources from the repo
 function install_knative_gcp_resources() {
@@ -36,11 +37,7 @@ function install_knative_gcp_resources() {
   cd ${GOPATH}/src/github.com/chizhg/knative-gcp
 
   echo ">> Update knative-gcp core"
-  ko apply --selector events.cloud.run/crd-install=true \
-    -f config/ || abort "Failed to apply knative-gcp CRDs"
-
-  ko apply \
-    -f config/ || abort "Failed to apply knative-gcp resources"
+  ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || abort "Failed to install knative-gcp"
 
   popd
 }
