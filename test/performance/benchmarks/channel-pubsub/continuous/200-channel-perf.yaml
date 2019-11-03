@@ -99,8 +99,8 @@ spec:
                 # set to the number of sender + receiver (same image that does both counts 2)
                 - "--expect-records=2"
                 - "--mako-tags=channel=pubsub"
-                - "--benchmark-key=5683818216292352"
-                - "--benchmark-name=Development - Channel Latency & Throughput"
+                - "--benchmark-key=6246352530964480"
+                - "--benchmark-name=Development - PubSub Channel Latency & Throughput"
               ports:
                 - name: grpc
                   containerPort: 10000
@@ -118,7 +118,7 @@ spec:
                 - name: GOOGLE_APPLICATION_CREDENTIALS
                   value: /var/secret/robot.json
               volumeMounts:
-                - name: service-account
+                - name: mako-secrets
                   mountPath: /var/secret
               ports:
                 - name: quickstore
@@ -128,7 +128,7 @@ spec:
             - name: config-mako
               configMap:
                 name: config-mako
-            - name: service-account
+            - name: mako-secrets
               secret:
-                secretName: service-account
+                secretName: mako-secrets
 
