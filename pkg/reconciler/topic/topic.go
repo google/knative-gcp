@@ -154,7 +154,7 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	if topic.GetDeletionTimestamp() != nil {
 		logger.Debug("Topic Deleting.", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
 
-		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
+		if topicExists(topic) && topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			// Ensure the Topic is deleted.
 			state, err := c.EnsureTopicDeleted(ctx, topic, *topic.Spec.Secret, topic.Spec.Project, topic.Status.TopicID)
 			switch state {
@@ -302,6 +302,15 @@ func (c *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	}
 
 	return nil
+}
+
+func topicExists(topic *v1alpha1.Topic) bool {
+	for _, c := range topic.Status.Conditions {
+		if c.Type == v1alpha1.TopicConditionTopicExists && !c.IsFalse() {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) (*v1alpha1.Topic, error) {
