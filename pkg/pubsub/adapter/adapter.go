@@ -183,7 +183,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		// a.Sink is likely not exactly what we want...
 		ctx, err = tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
 		if err != nil {
-			logger.Infow("Unable to attach tracing to context", zap.Error(err))
+			logger.Debugw("Unable to attach tracing to context", zap.Error(err))
 		}
 	}
 
