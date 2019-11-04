@@ -35,8 +35,17 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
+)
+
+var (
+	channelGVR = schema.GroupVersionResource{
+		Group:    "messaging.cloud.google.com",
+		Version:  "v1alpha1",
+		Resource: "channels",
+	}
 )
 
 // Adapter implements the Pub/Sub adapter to deliver Pub/Sub messages from a
@@ -167,10 +176,15 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		ResourceGroup: a.ResourceGroup,
 	}
 
-	// a.Sink is likely not exactly what we want...
-	ctx, err := tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
-	if err != nil {
-		logger.Infow("Unable to attach tracing to context", zap.Error(err))
+	var err error
+	// If the resource group is the Channel one, then we attach the span from the traceparent attribute.
+	// Otherwise, it means it's a Source, thus it does not have traceparent.
+	if a.ResourceGroup == channelGVR.GroupResource().String() {
+		// a.Sink is likely not exactly what we want...
+		ctx, err = tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
+		if err != nil {
+			logger.Warnw("Unable to attach tracing to context", zap.Error(err))
+		}
 	}
 
 	// If a transformer has been configured, then transform the message.

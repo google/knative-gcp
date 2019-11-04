@@ -213,6 +213,7 @@ func TestReceive(t *testing.T) {
 		wantReportArgs *ReportArgs
 		wantReportCode int
 		wantErr        bool
+		isSource       bool
 	}{{
 		name: "success without responding event",
 		eventFn: func() cloudevents.Event {
@@ -240,8 +241,39 @@ func TestReceive(t *testing.T) {
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
 		wantReportArgs: &ReportArgs{
-			EventSource: "source",
-			EventType:   "unit.testing",
+			EventSource:   "source",
+			EventType:     "unit.testing",
+			ResourceGroup: "channels.messaging.cloud.google.com",
+		},
+		wantReportCode: 200,
+	}, {
+		name: "success without responding event and from source",
+		eventFn: func() cloudevents.Event {
+			e := cloudevents.NewEvent("0.3")
+			e.SetSource("source")
+			e.SetType("unit.testing")
+			e.SetID("abc")
+			e.SetDataContentType("application/json")
+			e.Data = []byte(`{"key":"value"}`)
+			return e
+		},
+		returnStatus: http.StatusOK,
+		isSource:     true,
+		wantHeader: map[string][]string{
+			"Ce-Id":          {"abc"},
+			"Ce-Source":      {"source"},
+			"Ce-Specversion": {"0.3"},
+			"Ce-Type":        {"unit.testing"},
+			"Content-Length": {"15"},
+			"Content-Type":   {"application/json"},
+			"X-B3-Sampled":   {"0"},
+		},
+		wantBody:    []byte(`{"key":"value"}`),
+		wantEventFn: func() *cloudevents.Event { return nil },
+		wantReportArgs: &ReportArgs{
+			EventSource:   "source",
+			EventType:     "unit.testing",
+			ResourceGroup: "pubsub.events.cloud.google.com",
 		},
 		wantReportCode: 200,
 	}, {
@@ -291,8 +323,9 @@ func TestReceive(t *testing.T) {
 		},
 		wantStatus: 200,
 		wantReportArgs: &ReportArgs{
-			EventSource: "source",
-			EventType:   "unit.testing",
+			EventSource:   "source",
+			EventType:     "unit.testing",
+			ResourceGroup: "channels.messaging.cloud.google.com",
 		},
 		wantReportCode: 200,
 	}, {
@@ -322,8 +355,9 @@ func TestReceive(t *testing.T) {
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
 		wantReportArgs: &ReportArgs{
-			EventSource: "source",
-			EventType:   "unit.testing",
+			EventSource:   "source",
+			EventType:     "unit.testing",
+			ResourceGroup: "channels.messaging.cloud.google.com",
 		},
 		wantReportCode: 500,
 		wantErr:        true,
@@ -353,12 +387,19 @@ func TestReceive(t *testing.T) {
 			server := httptest.NewServer(handler)
 
 			r := &mockStatsReporter{}
+			var resourceGroup string
+			if tc.isSource {
+				resourceGroup = "pubsub.events.cloud.google.com"
+			} else {
+				resourceGroup = "channels.messaging.cloud.google.com"
+			}
 			a := Adapter{
-				Project:      "proj",
-				Topic:        "topic",
-				Subscription: "sub",
-				SendMode:     converters.Binary,
-				reporter:     r,
+				Project:       "proj",
+				Topic:         "topic",
+				Subscription:  "sub",
+				SendMode:      converters.Binary,
+				reporter:      r,
+				ResourceGroup: resourceGroup,
 			}
 
 			var err error
@@ -373,11 +414,20 @@ func TestReceive(t *testing.T) {
 				t.Errorf("adapter.receiver got error %v want error %v", err, tc.wantErr)
 			}
 
+			options := make([]cmp.Option, 0)
 			ignoreSpanID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
 				return n == "X-B3-Spanid"
 			})
-			if diff := cmp.Diff(tc.wantHeader, gotHeader, ignoreSpanID); diff != "" {
-				t.Errorf("recevier got unexpected HTTP header (-want +got): %s", diff)
+			options = append(options, ignoreSpanID)
+			// If it's a source, it has no parent trace id, thus we ignore it when diffing.
+			if tc.isSource {
+				ignoreTraceID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
+					return n == "X-B3-Traceid"
+				})
+				options = append(options, ignoreTraceID)
+			}
+			if diff := cmp.Diff(tc.wantHeader, gotHeader, options...); diff != "" {
+				t.Errorf("receiver got unexpected HTTP header (-want +got): %s", diff)
 			}
 			if !bytes.Equal(tc.wantBody, gotBody) {
 				t.Errorf("receiver got HTTP body %v want %v", string(gotBody), string(tc.wantBody))
