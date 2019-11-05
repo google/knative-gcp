@@ -1,4 +1,4 @@
-# Copyright 2019 The Knative Authors
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ spec:
                 - "--roles=sender,receiver"
                 - "--sink=http://pubsub-broker"
                 - "--aggregator=broker-pubsub-aggregator:10000"
-                - "--pace=100:10,400:20,800:30,1000:60,2000:60,3000:60"
+                - "--pace=100:10,200:20,400:30,500:60,600:60"
               env:
                 - name: POD_NAME
                   valueFrom:
