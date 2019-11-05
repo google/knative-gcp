@@ -8,4 +8,8 @@ approvers:
 # list. To add reviewers while spreading the load among existing approvers,
 # copy the approvers to the reviewers list too.
 reviewers:
+- evankanderson
+- grantr
+- Harwayne
+- nachocano
 # Add reviewers below
