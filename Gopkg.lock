@@ -1475,6 +1475,8 @@
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/tracing",
+    "knative.dev/eventing/test/base",
+    "knative.dev/eventing/test/base/resources",
     "knative.dev/eventing/test/common",
     "knative.dev/eventing/test/conformance/helpers",
     "knative.dev/pkg/apis",

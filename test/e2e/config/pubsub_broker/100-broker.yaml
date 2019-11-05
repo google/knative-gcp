@@ -1,0 +1,137 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: eventing.knative.dev/v1alpha1
+kind: Broker
+metadata:
+  name: {{ .brokerName }}
+  namespace: {{ .namespace }}
+spec:
+  channelTemplateSpec:
+    apiVersion: messaging.cloud.google.com/v1alpha1
+    kind: Channel
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-ingress
+  namespace: {{ .namespace }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: eventing-broker-filter
+  namespace: {{ .namespace }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .clusterRoleName }}
+  namespace: {{ .namespace }}
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ .clusterRoleName }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "pods"]
+    verbs: ["list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .clusterRoleName }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ .clusterRoleName }}
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ .clusterRoleName }}
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-ingress
+  namespace: {{ .namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-ingress
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-ingress
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-broker-filter
+  namespace: {{ .namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-filter
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-broker-filter
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-config-reader-{{ .namespace }}-eventing-broker-ingress
+  namespace: knative-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-ingress
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-config-reader
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: eventing-config-reader-{{ .namespace }}-eventing-broker-filter
+  namespace: knative-eventing
+subjects:
+  - kind: ServiceAccount
+    name: eventing-broker-filter
+    namespace: {{ .namespace }}
+roleRef:
+  kind: ClusterRole
+  name: eventing-config-reader
+  apiGroup: rbac.authorization.k8s.io
