@@ -43,10 +43,6 @@ function install_knative_gcp_resources() {
 }
 
 function update_knative() {
-  pushd .
-  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
-  git clone https://github.com/knative/eventing
-  popd
   start_latest_knative_eventing
   # Create the secret for pub-sub.
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
@@ -56,6 +52,10 @@ function update_knative() {
 
 function update_benchmark() {
   echo ">> Updating benchmark $1"
+  pushd .
+  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
+  git clone https://github.com/knative/eventing
+  popd
   ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} --ignore-not-found=true
   ko apply -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 }
