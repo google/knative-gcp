@@ -32,8 +32,8 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
-	// We do not know the content type and we do not want to inspect the payload, thus setting
-	// this generic one.
+	// We do not know the content type and we do not want to inspect the payload,
+	// thus we set this generic one.
 	event.SetDataContentType("application/octet-stream")
 	event.SetType(v1alpha1.PubSubPublish)
 	// Set the schema if it comes as an attribute.
