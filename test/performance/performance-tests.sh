@@ -43,6 +43,10 @@ function install_knative_gcp_resources() {
 }
 
 function update_knative() {
+  pushd .
+  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
+  git clone https://github.com/knative/eventing
+  popd
   start_latest_knative_eventing
   # Create the secret for pub-sub.
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \

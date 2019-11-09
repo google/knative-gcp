@@ -39,29 +39,29 @@ spec:
           serviceAccountName: perf-pubsub
           restartPolicy: Never
           containers:
-            - name: sender-receiver
-              image: knative.dev/eventing/test/test_images/performance
-              args:
-                - "--roles=sender,receiver"
-                - "--sink=http://cre-pubsub-test-channel-chan-publish.default.svc.cluster.local"
-                - "--aggregator=channel-perf-aggregator:10000"
-                - "--pace=100:10,200:20,400:30,500:60,600:60,700:60"
-              env:
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: POD_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-              resources:
-                requests:
-                  cpu: 1000m
-                  memory: 2Gi
-              ports:
-                - name: cloudevents
-                  containerPort: 8080
+          - name: sender-receiver
+            image: knative.dev/eventing/test/test_images/performance
+            args:
+              - "--roles=sender,receiver"
+              - "--sink=http://cre-pubsub-test-channel-chan-publish.default.svc.cluster.local"
+              - "--aggregator=channel-perf-aggregator:10000"
+              - "--pace=100:10,200:20,400:30,500:60,600:60,700:60"
+            env:
+              - name: POD_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              - name: POD_NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.namespace
+            resources:
+              requests:
+                cpu: 1000m
+                memory: 2Gi
+            ports:
+              - name: cloudevents
+                containerPort: 8080
 
 ---
 
@@ -92,38 +92,38 @@ spec:
           serviceAccountName: perf-pubsub
           restartPolicy: Never
           containers:
-            - name: aggregator
-              image: knative.dev/eventing/test/test_images/performance
-              args:
-                - "--roles=aggregator"
-                # set to the number of sender + receiver (same image that does both counts 2)
-                - "--expect-records=2"
-                - "--mako-tags=channel=pubsub"
-                - "--benchmark-key=6246352530964480"
-                - "--benchmark-name=Development - PubSub Channel Latency & Throughput"
-              ports:
-                - name: grpc
-                  containerPort: 10000
-              resources:
-                requests:
-                  cpu: 1000m
-                  memory: 2Gi
-              volumeMounts:
-                - name: config-mako
-                  mountPath: /etc/config-mako
-              terminationMessagePolicy: FallbackToLogsOnError
-            - name: mako
-              image: gcr.io/knative-performance/mako-microservice:latest
-              env:
-                - name: GOOGLE_APPLICATION_CREDENTIALS
-                  value: /var/secret/robot.json
-              volumeMounts:
-                - name: mako-secrets
-                  mountPath: /var/secret
-              ports:
-                - name: quickstore
-                  containerPort: 9813
-              terminationMessagePolicy: FallbackToLogsOnError
+          - name: aggregator
+            image: knative.dev/eventing/test/test_images/performance
+            args:
+              - "--roles=aggregator"
+              # set to the number of sender + receiver (same image that does both counts 2)
+              - "--expect-records=2"
+              - "--mako-tags=channel=pubsub"
+              - "--benchmark-key=6246352530964480"
+              - "--benchmark-name=Development - PubSub Channel Latency & Throughput"
+            ports:
+              - name: grpc
+                containerPort: 10000
+            resources:
+              requests:
+                cpu: 1000m
+                memory: 2Gi
+            volumeMounts:
+              - name: config-mako
+                mountPath: /etc/config-mako
+            terminationMessagePolicy: FallbackToLogsOnError
+          - name: mako
+            image: gcr.io/knative-performance/mako-microservice:latest
+            env:
+              - name: GOOGLE_APPLICATION_CREDENTIALS
+                value: /var/secret/robot.json
+            volumeMounts:
+              - name: mako-secrets
+                mountPath: /var/secret
+            ports:
+              - name: quickstore
+                containerPort: 9813
+            terminationMessagePolicy: FallbackToLogsOnError
           volumes:
             - name: config-mako
               configMap:
