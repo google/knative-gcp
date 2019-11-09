@@ -114,7 +114,7 @@ func TestInboundConvert(t *testing.T) {
 			e := cloudevents.NewEvent(cloudevents.VersionV03)
 			e.SetID("abc")
 			e.SetSource(v1alpha1.PubSubEventSource("proj", "topic"))
-			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
+			e.SetDataContentType("application/octet-stream")
 			e.SetType(v1alpha1.PubSubPublish)
 			e.SetDataSchema("http://example.com")
 			e.SetExtension("knativecemode", string(converters.DefaultSendMode))
