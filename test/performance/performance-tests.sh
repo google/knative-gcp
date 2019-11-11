@@ -56,6 +56,10 @@ function update_knative() {
 
 function update_benchmark() {
   echo ">> Updating benchmark $1"
+  pushd .
+  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
+  git clone https://github.com/knative/eventing
+  popd
   ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} --ignore-not-found=true
   ko apply -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 }
