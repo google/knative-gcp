@@ -297,14 +297,6 @@
   version = "v0.3.7"
 
 [[projects]]
-  branch = "master"
-  digest = "1:aa0434674a14402891f31f393b4dd53792bc67eee05158748d999096a8826ed3"
-  name = "github.com/influxdata/tdigest"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "bf2b5ad3c0a925c44a0d2842c5d8182113cd248e"
-
-[[projects]]
   digest = "1:b21d55dedeae51eb2af7d575d26cb280f97dc5187c81048445974bbb59dcf4bd"
   name = "github.com/jcrossley3/manifestival"
   packages = ["pkg/manifestival"]
@@ -342,18 +334,6 @@
   pruneopts = "NUT"
   revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
   version = "v1.4.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:927762c6729b4e72957ba3310e485ed09cf8451c5a637a52fd016a9fe09e7936"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    "buffer",
-    "jlexer",
-    "jwriter",
-  ]
-  pruneopts = "NUT"
-  revision = "efd84ab4db439838cce1b8a5f7dba45ce24cfe47"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -497,14 +477,6 @@
   pruneopts = "NUT"
   revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
   version = "v1.0.5"
-
-[[projects]]
-  digest = "1:435d9fe926ee0d903662215091e27fba6f1b7228d33a30c289cdb5aeff1c8fc8"
-  name = "github.com/tsenart/vegeta"
-  packages = ["lib"]
-  pruneopts = "NUT"
-  revision = "9c95632b3e8562be6df690c639a3f5a6f40d3004"
-  version = "v12.7.0"
 
 [[projects]]
   digest = "1:b7d98c64e9467a8e5e67509031cd6baee81fba090ba2c3d30df1ff3d02d1d035"
@@ -1207,8 +1179,8 @@
   revision = "69764acb6e8e900b7c05296c5d3c9c19545475f9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:1010ab4c3272d57694f32680b1837f5cafd4974771a3b53dd2b130e79b13e282"
+  branch = "release-0.10"
+  digest = "1:c34cb02cf5300f40c19a33f455eb4467bc545ba1b487e2600c26493c3d51b5a7"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1234,7 +1206,7 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "6046331ad7aab2fd082ae047bbe4201106a56b91"
+  revision = "fce0712a35ac4fe0578c6b3222e6121345208bf5"
 
 [[projects]]
   branch = "release-0.10"
