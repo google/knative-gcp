@@ -25,7 +25,6 @@ data:
     #    EXAMPLE CONFIGURATION     #
     #                              #
     ################################
-
     # This block is not actually functional configuration,
     # but serves to illustrate the available configuration
     # options and document them in a way that is accessible
@@ -34,19 +33,16 @@ data:
     # These sample configuration options may be copied out of
     # this example block and unindented to be in the data block
     # to actually change the configuration.
-
     # The Mako environment in which we are running.
     # Only our performance automation should run in "prod", but
     # there should be a "dev" environment with a fairly broad
     # write ACL.  Users can also develop against custom configurations
     # by adding `foo.config` under their benchmark's kodata directory.
     environment: dev
-
     # Additional tags to tag the runs. These tags are added
     # to the list that the binary itself publishes (Kubernetes version, etc).
     # It is a comma separated list of tags.
     additionalTags: "key=value,absolute"
-
 ---
 
 apiVersion: v1
@@ -58,10 +54,10 @@ spec:
   selector:
     role: channel-perf-consumer
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: cloudevents
-    name: http
+    - protocol: TCP
+      port: 80
+      targetPort: cloudevents
+      name: http
 
 ---
 
@@ -124,4 +120,7 @@ spec:
     kind: Channel
     name: pubsub-test-channel
   subscriber:
-    uri: "http://channel-perf-consumer.default.svc.cluster.local"
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: channel-perf-consumer
