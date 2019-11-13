@@ -29,7 +29,6 @@ function random6() {
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
 # Eventing main config.
-readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly E2E_TEST_NAMESPACE="default"
 
 # Constants used for creating ServiceAccount for Pub/Sub Admin if it's not running on Prow.
@@ -38,24 +37,8 @@ readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
 global GCS_SERVICE_ACCOUNT
 
-# Setup the Cloud Run Events environment for running tests.
-function cloud_run_events_setup() {
-  # Install the latest Cloud Run Events in the current cluster.
-  echo ">> Starting Cloud Run Events"
-  echo "Installing Cloud Run Events"
-  ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || return 1
-  wait_until_pods_running cloud-run-events || fail_test "Cloud Run Events did not come up"
-}
-
 function knative_setup() {
-  start_latest_knative_serving
-  start_latest_knative_eventing
-  cloud_run_events_setup
-  istio_patch
-}
-
-function istio_patch() {
-  kubectl apply -f $(dirname $0)/e2e/config/istio-patch/istio-knative-extras.yaml
+  start_knative_gcp
 }
 
 # Setup resources common to all eventing tests.

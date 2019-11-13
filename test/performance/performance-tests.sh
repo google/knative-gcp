@@ -29,29 +29,13 @@ source $(dirname $0)/../lib.sh
 readonly TEST_CONFIG_VARIANT="continuous"
 readonly TEST_NAMESPACE="default"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
-readonly CLOUD_RUN_EVENTS_CONFIG="config/"
-
-# Install the knative-gcp resources from the repo
-function install_knative_gcp_resources() {
-  pushd .
-  cd ${GOPATH}/src/github.com/google/knative-gcp
-
-  echo ">> Update knative-gcp core"
-  ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || abort "Failed to install knative-gcp"
-
-  popd
-}
 
 function update_knative() {
-  pushd .
-  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
-  git clone https://github.com/knative/eventing
-  popd
-  start_latest_knative_eventing
-  # Create the secret for pub-sub.
+  start_knative_gcp
+  # Create the secret for pub-sub if it does not exist.
+  kubectl -n ${TEST_NAMESPACE} get secret ${PUBSUB_SECRET_NAME} || \
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
     --from-file=key.json=${GOOGLE_APPLICATION_CREDENTIALS}
-  install_knative_gcp_resources
 }
 
 function update_benchmark() {
@@ -61,7 +45,29 @@ function update_benchmark() {
   git clone https://github.com/knative/eventing
   popd
   ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} --ignore-not-found=true
+  sleep 60
   ko apply -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
+
+  echo "Sleeping 2 min to wait for all resources to setup"
+  sleep 120
+  # In the current implmentation, for some reason there can be error pods after the setup, but it does not necessarily
+  # mean there is an error. Delete the error pods after the setup is done.
+  # TODO(chizhg): remove it after there is no longer error pod.
+  delete_error_pods
+}
+
+function delete_error_pods() {
+  local pods="$(kubectl get pods --no-headers -n "${TEST_NAMESPACE}" 2>/dev/null)"
+  # Get pods that are not running.
+  local not_running_pods=$(echo "${pods}" | grep -v Running | grep -v Completed)
+  if [[ -n "${not_running_pods}" ]]; then
+    # Delete all pods that are not in Running or Completed status.
+    while read pod ; do
+      pod_name=$(echo -n "${pod}" | cut -f1 -d' ')
+      echo "Deleting error pod ${pod_name} from test namespace ${TEST_NAMESPACE}"
+      kubectl delete pod "${pod_name}" -n "${TEST_NAMESPACE}"
+    done <<< "${not_running_pods}"
+  fi
 }
 
 main $@

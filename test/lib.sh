@@ -16,6 +16,30 @@
 
 # Include after test-infra/scripts/library.sh
 
+readonly CLOUD_RUN_EVENTS_CONFIG="config/"
+
+# Install all required components for running knative-gcp.
+function start_knative_gcp() {
+  start_latest_knative_serving
+  start_latest_knative_eventing
+  cloud_run_events_setup
+  istio_patch
+}
+
+# Setup the Cloud Run Events environment for running tests.
+function cloud_run_events_setup() {
+  # Install the latest Cloud Run Events in the current cluster.
+  header "Starting Cloud Run Events"
+  subheader "Installing Cloud Run Events"
+  ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || return 1
+  wait_until_pods_running cloud-run-events || return 1
+}
+
+function istio_patch() {
+  header "Patching Istio"
+  kubectl apply -f test/e2e/config/istio-patch/istio-knative-extras.yaml
+}
+
 # Install Knative Eventing in the current cluster.
 # Parameters: $1 - Knative Eventing manifest.
 function start_knative_eventing() {
