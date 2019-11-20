@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package reconciler
+package pubsub_base
 
 import (
 	"context"
@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -395,7 +396,7 @@ func TestCreates(t *testing.T) {
 		cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
 
 		psBase := &PubSubBase{
-			Base:               &Base{},
+			Base:               &reconciler.Base{},
 			pubsubClient:       cs,
 			receiveAdapterName: receiveAdapterName,
 		}
@@ -473,7 +474,7 @@ func TestDeletes(t *testing.T) {
 		cs := fakePubsubClient.NewSimpleClientset()
 
 		psBase := &PubSubBase{
-			Base:               &Base{},
+			Base:               &reconciler.Base{},
 			pubsubClient:       cs,
 			receiveAdapterName: receiveAdapterName,
 		}

@@ -29,8 +29,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 
-	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
-
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
@@ -40,6 +38,8 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-storage-source-controller"
+	// receiveAdapterName is the string used as name for the receive adapter pod.
+	receiveAdapterName = "storage.events.cloud.google.com"
 )
 
 type envConfig struct {
@@ -56,7 +56,6 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
-	jobInformer := jobinformer.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
@@ -67,19 +66,13 @@ func NewController(
 
 	c := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
-		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
+		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		storageLister:        storageInformer.Lister(),
-		jobLister:            jobInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(c, c.Logger, reconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
@@ -90,8 +83,6 @@ func NewController(
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
-
-	//	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }

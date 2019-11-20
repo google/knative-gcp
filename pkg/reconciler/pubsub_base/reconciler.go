@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package reconciler
+package pubsub_base
 
 import (
 	"context"
@@ -23,15 +23,16 @@ import (
 
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	duck "github.com/google/knative-gcp/pkg/duck"
+	"github.com/google/knative-gcp/pkg/duck"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/resources"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
 type PubSubBase struct {
-	*Base
+	*reconciler.Base
 
 	// For dealing with Topics and Pullsubscriptions
 	pubsubClient pubsubsourceclientset.Interface

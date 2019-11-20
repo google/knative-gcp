@@ -14,18 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package reconciler
+package pubsub_base
 
 import (
-	"go.uber.org/zap"
-	"knative.dev/pkg/controller"
+	"context"
+
+	"knative.dev/pkg/configmap"
+
+	pubsubClient "github.com/google/knative-gcp/pkg/client/injection/client"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
-// MustNewStatsReporter creates a new instance of StatsReporter. Panics if creation fails.
-func MustNewStatsReporter(reconciler string, logger *zap.SugaredLogger) controller.StatsReporter {
-	stats, err := controller.NewStatsReporter(reconciler)
-	if err != nil {
-		logger.Fatalw("Failed to initialize the stats reporter", zap.Error(err))
+func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *PubSubBase {
+	return &PubSubBase{
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		pubsubClient:       pubsubClient.Get(ctx),
+		receiveAdapterName: receiveAdapterName,
 	}
-	return stats
 }

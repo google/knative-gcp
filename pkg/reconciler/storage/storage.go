@@ -46,7 +46,7 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Storage"
+	reconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
 
