@@ -21,16 +21,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"knative.dev/pkg/webhook"
-
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 func TestChannelValidation(t *testing.T) {
 	tests := []struct {
 		name string
-		cr   webhook.GenericCRD
+		cr   resourcesemantics.GenericCRD
 		want *apis.FieldError
 	}{{
 		name: "empty",

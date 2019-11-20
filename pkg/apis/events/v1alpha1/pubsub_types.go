@@ -45,9 +45,6 @@ type PubSub struct {
 // Check that PubSub can be validated and can be defaulted.
 var _ runtime.Object = (*PubSub)(nil)
 
-// Check that PubSub will be checked for immutable fields.
-var _ apis.Immutable = (*PubSub)(nil)
-
 // Check that PubSub implements the Conditions duck type.
 var _ = duck.VerifyType(&PubSub{}, &duckv1.Conditions{})
 

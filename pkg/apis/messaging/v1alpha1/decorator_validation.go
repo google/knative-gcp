@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/api/equality"
-	"knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/apis"
 )
@@ -33,7 +33,7 @@ func (ds *DecoratorSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
 	// Sink [required]
-	if equality.Semantic.DeepEqual(ds.Sink, v1alpha1.Destination{}) {
+	if equality.Semantic.DeepEqual(ds.Sink, duckv1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := ds.Sink.Validate(ctx); err != nil {
 		errs = errs.Also(err.ViaField("sink"))

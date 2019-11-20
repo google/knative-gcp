@@ -180,6 +180,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:e2b86e41f3d669fc36b50d31d32d22c8ac656c75aa5ea89717ce7177e134ff2a"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+
+[[projects]]
+  branch = "master"
   digest = "1:b7cb6054d3dff43b38ad2e92492f220f57ae6087ee797dca298139776749ace8"
   name = "github.com/golang/groupcache"
   packages = ["lru"]
@@ -297,14 +305,6 @@
   version = "v0.3.7"
 
 [[projects]]
-  branch = "master"
-  digest = "1:aa0434674a14402891f31f393b4dd53792bc67eee05158748d999096a8826ed3"
-  name = "github.com/influxdata/tdigest"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "bf2b5ad3c0a925c44a0d2842c5d8182113cd248e"
-
-[[projects]]
   digest = "1:b21d55dedeae51eb2af7d575d26cb280f97dc5187c81048445974bbb59dcf4bd"
   name = "github.com/jcrossley3/manifestival"
   packages = ["pkg/manifestival"]
@@ -342,18 +342,6 @@
   pruneopts = "NUT"
   revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
   version = "v1.4.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:927762c6729b4e72957ba3310e485ed09cf8451c5a637a52fd016a9fe09e7936"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    "buffer",
-    "jlexer",
-    "jwriter",
-  ]
-  pruneopts = "NUT"
-  revision = "efd84ab4db439838cce1b8a5f7dba45ce24cfe47"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -497,14 +485,6 @@
   pruneopts = "NUT"
   revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
   version = "v1.0.5"
-
-[[projects]]
-  digest = "1:435d9fe926ee0d903662215091e27fba6f1b7228d33a30c289cdb5aeff1c8fc8"
-  name = "github.com/tsenart/vegeta"
-  packages = ["lib"]
-  pruneopts = "NUT"
-  revision = "9c95632b3e8562be6df690c639a3f5a6f40d3004"
-  version = "v12.7.0"
 
 [[projects]]
   digest = "1:b7d98c64e9467a8e5e67509031cd6baee81fba090ba2c3d30df1ff3d02d1d035"
@@ -1209,13 +1189,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1010ab4c3272d57694f32680b1837f5cafd4974771a3b53dd2b130e79b13e282"
+  digest = "1:e5ce9475d05e2a7ba820f19fae856f7471aa6af12a15d453f9f5332f27e6ceaa"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
     "pkg/apis/duck/v1alpha1",
     "pkg/apis/eventing",
     "pkg/apis/eventing/v1alpha1",
+    "pkg/apis/flows",
+    "pkg/apis/flows/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
     "pkg/apis/sources",
@@ -1223,10 +1205,12 @@
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
+    "pkg/client/clientset/versioned/typed/flows/v1alpha1",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/configmap",
     "pkg/kncloudevents",
+    "pkg/logconfig",
     "pkg/tracing",
     "test/base",
     "test/base/resources",
@@ -1235,11 +1219,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "6046331ad7aab2fd082ae047bbe4201106a56b91"
+  revision = "8e38791d3e4cba16df132c0b42ba68f62a746eac"
 
 [[projects]]
-  branch = "release-0.10"
-  digest = "1:60eb83b6db703546cbddab378c2e8675237726dba71f883feeaec6ad45ba0659"
+  branch = "master"
+  digest = "1:32f261861e17e9477c6b2ff5fdf7b70f4a2b4c8eec8a696541c70fc1c81c32ab"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1252,7 +1236,6 @@
     "apis/istio/authentication/v1alpha1",
     "apis/istio/common/v1alpha1",
     "apis/istio/v1alpha3",
-    "apis/v1alpha1",
     "changeset",
     "client/clientset/versioned",
     "client/clientset/versioned/fake",
@@ -1263,10 +1246,13 @@
     "client/clientset/versioned/typed/istio/v1alpha3/fake",
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
+    "client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration",
+    "client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration",
     "client/injection/kube/informers/apps/v1/deployment",
     "client/injection/kube/informers/apps/v1/deployment/fake",
     "client/injection/kube/informers/batch/v1/job",
     "client/injection/kube/informers/batch/v1/job/fake",
+    "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/factory",
     "client/injection/kube/informers/factory/fake",
     "codegen/cmd/injection-gen",
@@ -1311,13 +1297,19 @@
     "tracker",
     "version",
     "webhook",
+    "webhook/certificates",
+    "webhook/certificates/resources",
+    "webhook/configmaps",
+    "webhook/resourcesemantics",
+    "webhook/resourcesemantics/defaulting",
+    "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "2a3fc371d3266d59a0ae7e29a724ccc9a0550793"
+  revision = "27b3dc39ad1be3fc418a5f6c3a606e838a318360"
 
 [[projects]]
   branch = "master"
-  digest = "1:d1e9aa5d8546397aecc0f7d30ff7647a5dcbf25336690c979d8aca77b5361337"
+  digest = "1:11ea854dcb1a68431bae949a31fa673254fd9bf90cbde6d777c0d0d6b5b530a2"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1368,7 +1360,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "7a38ea6789ef987fab7e97ae8cb1073529663676"
+  revision = "6c8bbf02e13576014fd4527a0c31c374a94d3fba"
 
 [[projects]]
   branch = "master"
@@ -1464,7 +1456,6 @@
     "k8s.io/client-go/rest",
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
-    "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/code-generator/cmd/client-gen",
@@ -1474,6 +1465,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/kncloudevents",
+    "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
     "knative.dev/eventing/test/base",
     "knative.dev/eventing/test/base/resources",
@@ -1484,7 +1476,6 @@
     "knative.dev/pkg/apis/duck/v1",
     "knative.dev/pkg/apis/duck/v1alpha1",
     "knative.dev/pkg/apis/duck/v1beta1",
-    "knative.dev/pkg/apis/v1alpha1",
     "knative.dev/pkg/client/clientset/versioned/fake",
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/client/fake",
@@ -1519,8 +1510,12 @@
     "knative.dev/pkg/tracing",
     "knative.dev/pkg/tracing/config",
     "knative.dev/pkg/tracker",
-    "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",
+    "knative.dev/pkg/webhook/certificates",
+    "knative.dev/pkg/webhook/configmaps",
+    "knative.dev/pkg/webhook/resourcesemantics",
+    "knative.dev/pkg/webhook/resourcesemantics/defaulting",
+    "knative.dev/pkg/webhook/resourcesemantics/validation",
     "knative.dev/serving/pkg/apis/serving/v1",
     "knative.dev/serving/pkg/apis/serving/v1alpha1",
     "knative.dev/serving/pkg/apis/serving/v1beta1",

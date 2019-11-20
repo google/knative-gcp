@@ -27,7 +27,6 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/apis/v1alpha1"
 )
 
 // +genclient
@@ -50,9 +49,6 @@ func (p *PullSubscription) PubSubMode() ModeType {
 
 // Check that PullSubscription can be validated and can be defaulted.
 var _ runtime.Object = (*PullSubscription)(nil)
-
-// Check that PullSubscription will be checked for immutable fields.
-var _ apis.Immutable = (*PullSubscription)(nil)
 
 // Check that PullSubscription implements the Conditions duck type.
 var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
@@ -101,7 +97,7 @@ type PullSubscriptionSpec struct {
 	// Transformer is a reference to an object that will resolve to a domain
 	// name or a URI directly to use as the transformer or a URI directly.
 	// +optional
-	Transformer *v1alpha1.Destination `json:"transformer,omitempty"`
+	Transformer *duckv1.Destination `json:"transformer,omitempty"`
 
 	// Mode defines the encoding and structure of the payload of when the
 	// PullSubscription invokes the sink.

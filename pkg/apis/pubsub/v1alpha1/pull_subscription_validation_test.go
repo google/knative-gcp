@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/apis/v1alpha1"
 	"knative.dev/pkg/ptr"
 )
 
@@ -38,7 +37,7 @@ var (
 		Project: "my-eventing-project",
 		Topic:   "pubsub-topic",
 		SourceSpec: duckv1.SourceSpec{
-			Sink: v1alpha1.Destination{
+			Sink: duckv1.Destination{
 				Ref: &corev1.ObjectReference{
 					APIVersion: "foo",
 					Kind:       "bar",
@@ -47,7 +46,7 @@ var (
 				},
 			},
 		},
-		Transformer: &v1alpha1.Destination{
+		Transformer: &duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: "foo",
 				Kind:       "bar",
@@ -127,7 +126,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, empty": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = v1alpha1.Destination{}
+				obj.Sink = duckv1.Destination{}
 				return *obj
 			}(),
 			error: true,
@@ -135,7 +134,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri scheme": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = v1alpha1.Destination{
+				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Host: "example.com",
 					},
@@ -147,7 +146,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri host": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = v1alpha1.Destination{
+				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
 					},
@@ -159,7 +158,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 		"bad sink, uri and ref": {
 			spec: func() PullSubscriptionSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
-				obj.Sink = v1alpha1.Destination{
+				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
 						Host:   "example.com",
@@ -286,12 +285,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "some-other-api-version",
-							Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
-							Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
-							Name:       pullSubscriptionSpec.Sink.DeprecatedName,
+							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+							Name:       pullSubscriptionSpec.Sink.Ref.Name,
 						},
 					},
 				},
@@ -311,12 +310,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
-							APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
+							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 							Kind:       "some-other-kind",
-							Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
-							Name:       pullSubscriptionSpec.Sink.DeprecatedName,
+							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+							Name:       pullSubscriptionSpec.Sink.Ref.Name,
 						},
 					},
 				},
@@ -336,12 +335,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
-							APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
-							Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
+							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 							Namespace:  "some-other-namespace",
-							Name:       pullSubscriptionSpec.Sink.DeprecatedName,
+							Name:       pullSubscriptionSpec.Sink.Ref.Name,
 						},
 					},
 				},
@@ -361,11 +360,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
-							APIVersion: pullSubscriptionSpec.Sink.DeprecatedAPIVersion,
-							Kind:       pullSubscriptionSpec.Sink.DeprecatedKind,
-							Namespace:  pullSubscriptionSpec.Sink.DeprecatedNamespace,
+							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
 							Name:       "some-other-name",
 						},
 					},
@@ -386,12 +385,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "some-other-api-version",
-							Kind:       pullSubscriptionSpec.Transformer.DeprecatedKind,
-							Namespace:  pullSubscriptionSpec.Transformer.DeprecatedNamespace,
-							Name:       pullSubscriptionSpec.Transformer.DeprecatedName,
+							Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+							Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+							Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 						},
 					},
 				},
@@ -410,12 +409,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &v1alpha1.Destination{
+				Transformer: &duckv1.Destination{
 					Ref: &corev1.ObjectReference{
-						APIVersion: pullSubscriptionSpec.Transformer.DeprecatedAPIVersion,
+						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
 						Kind:       "some-other-kind",
-						Namespace:  pullSubscriptionSpec.Transformer.DeprecatedNamespace,
-						Name:       pullSubscriptionSpec.Transformer.DeprecatedName,
+						Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
@@ -433,12 +432,12 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &v1alpha1.Destination{
+				Transformer: &duckv1.Destination{
 					Ref: &corev1.ObjectReference{
-						APIVersion: pullSubscriptionSpec.Transformer.DeprecatedAPIVersion,
-						Kind:       pullSubscriptionSpec.Transformer.DeprecatedKind,
+						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
 						Namespace:  "some-other-namespace",
-						Name:       pullSubscriptionSpec.Transformer.DeprecatedName,
+						Name:       pullSubscriptionSpec.Transformer.Ref.Name,
 					},
 				},
 				Mode: pullSubscriptionSpec.Mode,
@@ -456,11 +455,11 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				},
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
-				Transformer: &v1alpha1.Destination{
+				Transformer: &duckv1.Destination{
 					Ref: &corev1.ObjectReference{
-						APIVersion: pullSubscriptionSpec.Transformer.DeprecatedAPIVersion,
-						Kind:       pullSubscriptionSpec.Transformer.DeprecatedKind,
-						Namespace:  pullSubscriptionSpec.Transformer.DeprecatedNamespace,
+						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
+						Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+						Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
 						Name:       "some-other-name",
 					},
 				},

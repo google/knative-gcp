@@ -23,9 +23,10 @@ metadata:
 spec:
   bucket: BUCKET
   sink:
-    apiVersion: v1
-    kind: Service
-    name: event-display
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: event-display
 
   # If running in GKE, we will ask the metadata server, change this if required.
   #project: MY_PROJECT

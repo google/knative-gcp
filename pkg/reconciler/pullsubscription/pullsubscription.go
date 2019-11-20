@@ -21,7 +21,8 @@ import (
 	"encoding/json"
 	"time"
 
-	pkgv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/resolver"
 
 	tracingconfig "knative.dev/pkg/tracing/config"
@@ -164,12 +165,6 @@ func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscri
 
 	source.Status.ObservedGeneration = source.Generation
 	source.Status.InitializeConditions()
-
-	if sink := source.Spec.Sink; sink.DeprecatedAPIVersion != "" || sink.DeprecatedKind != "" || sink.DeprecatedName != "" || sink.DeprecatedNamespace != "" {
-		source.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
-	} else {
-		source.Status.ClearDeprecated()
-	}
 
 	if source.GetDeletionTimestamp() != nil {
 		if !subscriptionExists(source) {
@@ -316,8 +311,8 @@ func subscriptionExists(sub *v1alpha1.PullSubscription) bool {
 	return false
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1alpha1.Destination, source *v1alpha1.PullSubscription) (string, error) {
-	dest := pkgv1alpha1.Destination{
+func (c *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, source *v1alpha1.PullSubscription) (string, error) {
+	dest := duckv1beta1.Destination{
 		Ref: destination.GetRef(),
 		URI: destination.URI,
 	}

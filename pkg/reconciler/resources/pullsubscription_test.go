@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
@@ -47,7 +46,7 @@ func TestMakePullSubscription(t *testing.T) {
 					Key: "eventing-secret-key",
 				},
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
@@ -96,7 +95,7 @@ func TestMakePullSubscription(t *testing.T) {
 			Project: "project-123",
 			Topic:   "topic-abc",
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					Ref: &corev1.ObjectReference{
 						APIVersion: "v1",
 						Kind:       "Kitchen",

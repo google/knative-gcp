@@ -81,12 +81,6 @@ rules:
     - patch
 
 - apiGroups:
-    - admissionregistration.k8s.io
-  resources:
-    - mutatingwebhookconfigurations
-  verbs: *everything
-
-- apiGroups:
     - apps
   resources:
     - deployments

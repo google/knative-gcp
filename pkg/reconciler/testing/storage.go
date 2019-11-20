@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
@@ -62,21 +62,12 @@ func WithStorageEventTypes(eventTypes []string) StorageOption {
 
 func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Spec.Sink = apisv1alpha1.Destination{
+		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
-		}
-	}
-}
-func WithStorageDeprecatedSink(gvk metav1.GroupVersionKind, name string) StorageOption {
-	return func(s *v1alpha1.Storage) {
-		s.Spec.Sink = apisv1alpha1.Destination{
-			DeprecatedAPIVersion: apiVersion(gvk),
-			DeprecatedKind:       gvk.Kind,
-			DeprecatedName:       name,
 		}
 	}
 }
@@ -178,11 +169,5 @@ func WithDeletionTimestamp() StorageOption {
 	return func(s *v1alpha1.Storage) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
-	}
-}
-
-func WithStorageDeprecatedSinkStatus() StorageOption {
-	return func(s *v1alpha1.Storage) {
-		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

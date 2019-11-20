@@ -26,7 +26,6 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 // PubSub is an Implementable "duck type".
@@ -121,7 +120,7 @@ func (*PubSub) GetFullType() duck.Populatable {
 
 // Populate implements duck.Populatable
 func (s *PubSub) Populate() {
-	s.Spec.Sink = apisv1alpha1.Destination{
+	s.Spec.Sink = duckv1.Destination{
 		URI: &apis.URL{
 			Scheme:   "https",
 			Host:     "tableflip.dev",

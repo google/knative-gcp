@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -48,7 +48,7 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, v1alpha1.Destination{}) {
+	if equality.Semantic.DeepEqual(current.Sink, duckv1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := current.Sink.Validate(ctx); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
@@ -77,11 +77,7 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func (current *PubSub) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
-	original, ok := og.(*PubSub)
-	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a PubSub"}
-	}
+func (current *PubSub) CheckImmutableFields(ctx context.Context, original *PubSub) *apis.FieldError {
 	if original == nil {
 		return nil
 	}

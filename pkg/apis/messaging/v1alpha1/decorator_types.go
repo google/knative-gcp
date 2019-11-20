@@ -22,7 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 // +genclient
@@ -48,7 +48,7 @@ type Decorator struct {
 var _ apis.Validatable = (*Decorator)(nil)
 var _ apis.Defaultable = (*Decorator)(nil)
 var _ runtime.Object = (*Decorator)(nil)
-var _ webhook.GenericCRD = (*Decorator)(nil)
+var _ resourcesemantics.GenericCRD = (*Decorator)(nil)
 
 // DecoratorSpec
 type DecoratorSpec struct {

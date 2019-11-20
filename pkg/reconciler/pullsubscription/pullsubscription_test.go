@@ -243,9 +243,6 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionSubscription(testSubscriptionID),
-					// This deprecated status will be removed because the Sink is not using the
-					// deprecated fields.
-					WithPullSubscriptionDeprecatedSinkStatus(),
 				),
 				newSink(),
 				newSecret(true),
@@ -270,47 +267,6 @@ func TestAllCases(t *testing.T) {
 					// Updates
 					WithPullSubscriptionStatusObservedGeneration(generation),
 					WithInitPullSubscriptionConditions,
-					WithPullSubscriptionReady(sinkURI),
-				),
-			}},
-		}, {
-			Name: "successful create - reuse existing receive adapter - match - deprecated ref",
-			Objects: []runtime.Object{
-				NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionObjectMetaGeneration(generation),
-					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
-					WithPullSubscriptionSubscription(testSubscriptionID),
-				),
-				newSink(),
-				newSecret(true),
-				newReceiveAdapter(context.Background(), testImage),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
-			},
-			Key: testNS + "/" + sourceName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewPullSubscription(sourceName, testNS,
-					WithPullSubscriptionUID(sourceUID),
-					WithPullSubscriptionObjectMetaGeneration(generation),
-					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithPullSubscriptionDeprecatedSink(sinkGVK, sinkName),
-					WithPullSubscriptionSubscription(testSubscriptionID),
-					// Updates
-					WithPullSubscriptionStatusObservedGeneration(generation),
-					WithInitPullSubscriptionConditions,
-					WithPullSubscriptionDeprecatedSinkStatus(),
 					WithPullSubscriptionReady(sinkURI),
 				),
 			}},

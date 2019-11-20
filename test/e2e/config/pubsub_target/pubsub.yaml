@@ -20,6 +20,7 @@ metadata:
 spec:
   topic: {{ .topic }}
   sink:
-    apiVersion: v1
-    kind: Service
-    name: {{ .targetName }}
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: {{ .targetName }}

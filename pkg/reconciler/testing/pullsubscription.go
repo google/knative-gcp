@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
@@ -96,21 +96,12 @@ func WithInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
 
 func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Spec.Sink = apisv1alpha1.Destination{
+		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
-		}
-	}
-}
-func WithPullSubscriptionDeprecatedSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Spec.Sink = apisv1alpha1.Destination{
-			DeprecatedAPIVersion: apiVersion(gvk),
-			DeprecatedKind:       gvk.Kind,
-			DeprecatedName:       name,
 		}
 	}
 }
@@ -240,11 +231,5 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 			Reason:  reason,
 			Message: message,
 		}}
-	}
-}
-
-func WithPullSubscriptionDeprecatedSinkStatus() PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

@@ -35,6 +35,7 @@ spec:
     - all
     - knative
     - scheduler
+    - sources
     kind: Scheduler
     plural: schedulers
   scope: Namespaced

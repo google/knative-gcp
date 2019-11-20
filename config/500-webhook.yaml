@@ -32,26 +32,22 @@ spec:
         role: webhook
         events.cloud.google.com/release: devel
     spec:
-      serviceAccountName: controller
+      serviceAccountName: webhook
       containers:
         - name: webhook
+          terminationMessagePolicy: FallbackToLogsOnError
           # This is the Go import path for the binary that is containerized
           # and substituted here.
           image: github.com/google/knative-gcp/cmd/webhook
-          ports:
-          - name: metrics
-            containerPort: 9090
-          imagePullPolicy: Always
           resources:
             requests:
+              # taken from serving.
               cpu: 20m
               memory: 20Mi
             limits:
+              # taken from serving.
               cpu: 200m
               memory: 200Mi
-          volumeMounts:
-            - name: config-logging
-              mountPath: /etc/config-logging
           env:
             - name: SYSTEM_NAMESPACE
               valueFrom:
@@ -59,7 +55,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: CONFIG_LOGGING_NAME
               value: config-logging
-      volumes:
-        - name: config-logging
-          configMap:
-            name: config-logging
+            - name: METRICS_DOMAIN
+              value: cloud.google.com/events
+            - name: WEBHOOK_NAME
+              value: webhook

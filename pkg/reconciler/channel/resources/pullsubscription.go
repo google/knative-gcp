@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -75,18 +75,18 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 	// Otherwise, pull.sink has to be used, but subscriptions allow for just
 	// reply or just subscriber. So set the single non-nil uri to to pull.sink.
 	if subscriber != nil && reply != nil {
-		spec.Transformer = &apisv1alpha1.Destination{
+		spec.Transformer = &duckv1.Destination{
 			URI: subscriber,
 		}
-		spec.Sink = apisv1alpha1.Destination{
+		spec.Sink = duckv1.Destination{
 			URI: reply,
 		}
 	} else if subscriber != nil {
-		spec.Sink = apisv1alpha1.Destination{
+		spec.Sink = duckv1.Destination{
 			URI: subscriber,
 		}
 	} else if reply != nil {
-		spec.Sink = apisv1alpha1.Destination{
+		spec.Sink = duckv1.Destination{
 			URI: reply,
 		}
 	}
