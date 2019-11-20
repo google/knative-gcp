@@ -27,7 +27,9 @@ webhooks:
       namespace: cloud-run-events
   failurePolicy: Fail
   name: defaulting.webhook.events.cloud.google.com
+
 ---
+
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -43,7 +45,9 @@ webhooks:
       namespace: cloud-run-events
   failurePolicy: Fail
   name: validation.webhook.events.cloud.google.com
+
 ---
+
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -63,7 +67,9 @@ webhooks:
     matchExpressions:
     - key: events.cloud.google.com/release
       operator: Exists
+
 ---
+
 apiVersion: v1
 kind: Secret
 metadata:

@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
@@ -30,7 +29,6 @@ import (
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 	tracingconfig "knative.dev/pkg/tracing/config"
 	"knative.dev/pkg/webhook"
 	"knative.dev/pkg/webhook/certificates"
@@ -67,8 +65,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 	return defaulting.NewAdmissionController(ctx,
 
 		// Name of the default webhook.
-		// Keeping the same name as 0.10 release to avoid upgrade problems.
-		fmt.Sprintf("webhook.%s.events.cloud.google.com", system.Namespace()),
+		"defaulting.webhook.events.cloud.google.com",
 
 		// The path on which to serve the webhook.
 		"/defaulting",
