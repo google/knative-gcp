@@ -23,7 +23,6 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +34,7 @@ var (
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
@@ -52,7 +51,7 @@ var (
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
@@ -75,7 +74,7 @@ var (
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					Ref: &corev1.ObjectReference{
 						APIVersion: "foo",
 						Kind:       "bar",
@@ -154,7 +153,7 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &StorageSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
@@ -175,7 +174,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
@@ -200,7 +199,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
@@ -224,7 +223,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",
@@ -249,7 +248,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "foo",
 							Kind:       "bar",

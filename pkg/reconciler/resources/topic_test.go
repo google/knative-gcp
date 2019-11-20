@@ -27,7 +27,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakeTopicWithStorage(t *testing.T) {
@@ -47,7 +46,7 @@ func TestMakeTopicWithStorage(t *testing.T) {
 					Key: "eventing-secret-key",
 				},
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
@@ -114,7 +113,7 @@ func TestMakeTopicWithScheduler(t *testing.T) {
 					Key: "eventing-secret-key",
 				},
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
@@ -186,7 +185,7 @@ func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
 					Key: "pubsub-secret-key",
 				},
 				SourceSpec: duckv1.SourceSpec{
-					Sink: apisv1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",

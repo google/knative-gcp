@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"knative.dev/pkg/apis/duck"
-	"knative.dev/pkg/apis/duck/v1beta1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestTypesImplements(t *testing.T) {
@@ -28,10 +28,10 @@ func TestTypesImplements(t *testing.T) {
 		instance interface{}
 		iface    duck.Implementable
 	}{
-		{instance: &PullSubscription{}, iface: &v1beta1.Source{}},
-		{instance: &PullSubscription{}, iface: &v1beta1.Conditions{}},
-		{instance: &Topic{}, iface: &v1beta1.Conditions{}},
-		{instance: &Topic{}, iface: &v1beta1.Addressable{}},
+		{instance: &PullSubscription{}, iface: &duckv1.Source{}},
+		{instance: &PullSubscription{}, iface: &duckv1.Conditions{}},
+		{instance: &Topic{}, iface: &duckv1.Conditions{}},
+		{instance: &Topic{}, iface: &duckv1.Addressable{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {

@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 func TestTopicValidation(t *testing.T) {
 	tests := []struct {
 		name string
-		cr   webhook.GenericCRD
+		cr   resourcesemantics.GenericCRD
 		want []string
 	}{{
 		name: "empty",

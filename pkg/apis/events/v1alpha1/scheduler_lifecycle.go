@@ -17,10 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -77,36 +73,4 @@ func (s *SchedulerStatus) MarkJobNotReady(reason, messageFormat string, messageA
 func (s *SchedulerStatus) MarkJobReady(jobName string) {
 	schedulerCondSet.Manage(s).MarkTrue(JobReady)
 	s.JobName = jobName
-}
-
-// MarkDeprecated adds a warning condition that this object's spec is using deprecated fields
-// and will stop working in the future. Note that this does not affect the Ready condition.
-func (s *SchedulerStatus) MarkDestinationDeprecatedRef(reason, msg string) {
-	dc := apis.Condition{
-		Type:               StatusConditionTypeDeprecated,
-		Reason:             reason,
-		Status:             v1.ConditionTrue,
-		Severity:           apis.ConditionSeverityWarning,
-		Message:            msg,
-		LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Now())},
-	}
-	for i, c := range s.Conditions {
-		if c.Type == dc.Type {
-			s.Conditions[i] = dc
-			return
-		}
-	}
-	s.Conditions = append(s.Conditions, dc)
-}
-
-// ClearDeprecated removes the StatusConditionTypeDeprecated warning condition. Note that this does not
-// affect the Ready condition.
-func (s *SchedulerStatus) ClearDeprecated() {
-	conds := make([]apis.Condition, 0, len(s.Conditions))
-	for _, c := range s.Conditions {
-		if c.Type != StatusConditionTypeDeprecated {
-			conds = append(conds, c)
-		}
-	}
-	s.Conditions = conds
 }

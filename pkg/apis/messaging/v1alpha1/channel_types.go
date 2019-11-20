@@ -24,7 +24,7 @@ import (
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 // +genclient
@@ -49,7 +49,7 @@ type Channel struct {
 var _ apis.Validatable = (*Channel)(nil)
 var _ apis.Defaultable = (*Channel)(nil)
 var _ runtime.Object = (*Channel)(nil)
-var _ webhook.GenericCRD = (*Channel)(nil)
+var _ resourcesemantics.GenericCRD = (*Channel)(nil)
 
 // ChannelSpec defines which subscribers have expressed interest in
 // receiving events from this Channel.

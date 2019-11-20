@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
@@ -49,22 +49,12 @@ func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Sched
 
 func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Spec.Sink = apisv1alpha1.Destination{
+		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
 			},
-		}
-	}
-}
-
-func WithSchedulerDeprecatedSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
-		s.Spec.Sink = apisv1alpha1.Destination{
-			DeprecatedAPIVersion: apiVersion(gvk),
-			DeprecatedKind:       gvk.Kind,
-			DeprecatedName:       name,
 		}
 	}
 }
@@ -150,11 +140,5 @@ func WithSchedulerSinkURI(url *apis.URL) SchedulerOption {
 func WithSchedulerFinalizers(finalizers ...string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Finalizers = finalizers
-	}
-}
-
-func WithSchedulerDeprecatedSinkStatus() SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkDestinationDeprecatedRef("sinkDeprecatedRef", "spec.sink.{apiVersion,kind,name} are deprecated and will be removed in 0.11. Use spec.sink.ref instead.")
 	}
 }

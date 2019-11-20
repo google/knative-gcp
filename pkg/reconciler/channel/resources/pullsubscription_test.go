@@ -27,7 +27,6 @@ import (
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	apisv1alpha1 "knative.dev/pkg/apis/v1alpha1"
 )
 
 func TestMakePullSubscription(t *testing.T) {
@@ -96,11 +95,11 @@ func TestMakePullSubscription(t *testing.T) {
 			Project: "project-123",
 			Topic:   "topic-abc",
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
 				},
 			},
-			Transformer: &apisv1alpha1.Destination{
+			Transformer: &duckv1.Destination{
 				URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
 			},
 		},
@@ -176,7 +175,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			Project: "project-123",
 			Topic:   "topic-abc",
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
 				},
 			},
@@ -253,7 +252,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			Project: "project-123",
 			Topic:   "topic-abc",
 			SourceSpec: duckv1.SourceSpec{
-				Sink: apisv1alpha1.Destination{
+				Sink: duckv1.Destination{
 					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
 				},
 			},

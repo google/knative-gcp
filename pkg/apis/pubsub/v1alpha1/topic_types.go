@@ -25,7 +25,7 @@ import (
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/webhook"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 // +genclient
@@ -48,7 +48,7 @@ type Topic struct {
 
 // Check that Topic can be validated, can be defaulted, and has immutable fields.
 var _ runtime.Object = (*Topic)(nil)
-var _ webhook.GenericCRD = (*Topic)(nil)
+var _ resourcesemantics.GenericCRD = (*Topic)(nil)
 
 // Check that Topic implements the Conditions duck type.
 var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})

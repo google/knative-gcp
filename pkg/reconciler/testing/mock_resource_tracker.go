@@ -28,10 +28,16 @@ type MockTracker struct {
 
 var _ tracker.Interface = (*MockTracker)(nil)
 
-// TrackInNamespace implements the ResourceTracker interface.
+// Track implements the tracker.Interface interface.
 func (at *MockTracker) Track(ref corev1.ObjectReference, obj interface{}) error {
 	return nil
 }
 
+// TrackReference implements the tracker.Interface interface.
+func (at *MockTracker) TrackReference(ref tracker.Reference, obj interface{}) error {
+	return nil
+}
+
+// OnChanged implements the tracker.Interface interface.
 func (at *MockTracker) OnChanged(obj interface{}) {
 }

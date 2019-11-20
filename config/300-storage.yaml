@@ -37,6 +37,7 @@ spec:
     - all
     - knative
     - storage
+    - sources
     kind: Storage
     plural: storages
   scope: Namespaced

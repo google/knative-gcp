@@ -22,7 +22,8 @@ import (
 	"fmt"
 	"time"
 
-	pkgv1alpha1 "knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/resolver"
 
 	corev1 "k8s.io/api/core/v1"
@@ -219,8 +220,8 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination pkgv1alpha1.Destination, decorator *v1alpha1.Decorator) (string, error) {
-	dest := pkgv1alpha1.Destination{
+func (c *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, decorator *v1alpha1.Decorator) (string, error) {
+	dest := duckv1beta1.Destination{
 		Ref: destination.GetRef(),
 		URI: destination.URI,
 	}

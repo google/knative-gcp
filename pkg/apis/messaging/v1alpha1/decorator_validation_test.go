@@ -20,20 +20,21 @@ import (
 	"context"
 	"testing"
 
-	"knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
-	v1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/webhook/resourcesemantics"
 
 	"github.com/google/go-cmp/cmp"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/webhook"
 )
 
 func TestDecoratorValidation(t *testing.T) {
 	tests := []struct {
 		name string
-		cr   webhook.GenericCRD
+		cr   resourcesemantics.GenericCRD
 		want *apis.FieldError
 	}{{
 		name: "empty",
@@ -49,7 +50,7 @@ func TestDecoratorValidation(t *testing.T) {
 		cr: &Decorator{
 			Spec: DecoratorSpec{
 				SourceSpec: v1.SourceSpec{
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							APIVersion: "v1awesome1",
 							Name:       "aName",
@@ -72,7 +73,7 @@ func TestDecoratorValidation(t *testing.T) {
 							"foo": "bar",
 						},
 					},
-					Sink: v1alpha1.Destination{
+					Sink: duckv1.Destination{
 						Ref: &corev1.ObjectReference{
 							Kind:       "aKind",
 							APIVersion: "v1awesome1",

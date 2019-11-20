@@ -1,0 +1,111 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloud-run-events-webhook
+  labels:
+    events.cloud.google.com/release: devel
+rules:
+  # For watching logging configuration and getting certs.
+  - apiGroups:
+      - ""
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+  # For manipulating certs into secrets.
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "get"
+      - "create"
+      - "update"
+      - "list"
+      - "watch"
+
+  # For getting our Deployment so we can decorate with ownerref.
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments"
+    verbs:
+      - "get"
+
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments/finalizers"
+    verbs:
+      - update
+
+  # For actually registering our webhook.
+  - apiGroups:
+      - "admissionregistration.k8s.io"
+    resources:
+      - "mutatingwebhookconfigurations"
+      - "validatingwebhookconfigurations"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+      - "watch"
+
+  # Our own resources and statuses we care about.
+  - apiGroups:
+      - "events.cloud.google.com"
+    resources:
+      - "pubsubs"
+      - "pubsubs/status"
+      - "storages"
+      - "storages/status"
+      - "schedulers"
+      - "schedulers/status"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+  - apiGroups:
+      - "messaging.cloud.google.com"
+    resources:
+      - "channels"
+      - "channels/status"
+      - "decorators"
+      - "decorators/status"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+
+  - apiGroups:
+      - "pubsub.cloud.google.com"
+    resources:
+      - "pullsubscriptions"
+      - "pullsubscriptions/status"
+      - "topics"
+      - "topics/status"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"

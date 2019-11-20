@@ -44,11 +44,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func (current *Channel) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
-	original, ok := og.(*Channel)
-	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a Channel"}
-	}
+func (current *Channel) CheckImmutableFields(ctx context.Context, original *Channel) *apis.FieldError {
 	if original == nil {
 		return nil
 	}

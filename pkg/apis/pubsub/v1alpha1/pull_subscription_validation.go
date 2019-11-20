@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"knative.dev/pkg/apis/v1alpha1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -48,13 +48,13 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 	// Sink [required]
-	if equality.Semantic.DeepEqual(current.Sink, v1alpha1.Destination{}) {
+	if equality.Semantic.DeepEqual(current.Sink, duckv1.Destination{}) {
 		errs = errs.Also(apis.ErrMissingField("sink"))
 	} else if err := current.Sink.Validate(ctx); err != nil {
 		errs = errs.Also(err.ViaField("sink"))
 	}
 	// Transformer [optional]
-	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &v1alpha1.Destination{}) {
+	if current.Transformer != nil && !equality.Semantic.DeepEqual(current.Transformer, &duckv1.Destination{}) {
 		if err := current.Transformer.Validate(ctx); err != nil {
 			errs = errs.Also(err.ViaField("transformer"))
 		}
@@ -91,11 +91,7 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 	return errs
 }
 
-func (current *PullSubscription) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
-	original, ok := og.(*PullSubscription)
-	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a PullSubscription"}
-	}
+func (current *PullSubscription) CheckImmutableFields(ctx context.Context, original *PullSubscription) *apis.FieldError {
 	if original == nil {
 		return nil
 	}

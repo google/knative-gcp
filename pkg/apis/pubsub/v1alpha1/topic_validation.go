@@ -49,11 +49,7 @@ func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func (current *Topic) CheckImmutableFields(ctx context.Context, og apis.Immutable) *apis.FieldError {
-	original, ok := og.(*Topic)
-	if !ok {
-		return &apis.FieldError{Message: "The provided original was not a Topic"}
-	}
+func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic) *apis.FieldError {
 	if original == nil {
 		return nil
 	}
