@@ -90,11 +90,6 @@ func (ts *TopicStatus) MarkTopicReady() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)
 }
 
-// MarkTopicOperating sets the condition that the topic is currently involved in an operation.
-func (ts *TopicStatus) MarkTopicOperating(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionTopicExists, reason, messageFormat, messageA...)
-}
-
 // MarkNoTopic sets the condition that signals there is not a topic for this
 // Topic. This could be because of an error or the Topic is being deleted.
 func (ts *TopicStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
