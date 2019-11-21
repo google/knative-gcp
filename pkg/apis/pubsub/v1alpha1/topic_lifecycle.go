@@ -81,10 +81,6 @@ func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ..
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
-func (ts *TopicStatus) MarkPublisherNotOwned(messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, "NotOwned", messageFormat, messageA...)
-}
-
 // MarkTopicReady sets the condition that the topic has been created.
 func (ts *TopicStatus) MarkTopicReady() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)

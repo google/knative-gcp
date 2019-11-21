@@ -41,6 +41,7 @@ import (
 	"knative.dev/pkg/logging"
 	tracingconfig "knative.dev/pkg/tracing/config"
 	serving "knative.dev/serving/pkg/apis/serving/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -78,16 +79,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		r.Logger.Errorf("invalid resource key: %s", key)
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
-	logger := logging.FromContext(ctx)
 
 	// Get the Topic resource with this namespace/name
 	original, err := r.topicLister.Topics(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("Topic %q in work queue no longer exists", key)
+		logging.FromContext(ctx).Desugar().Error("Topic in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
 	} else if _, updated, fErr := r.updateFinalizers(ctx, topic); fErr != nil {
-		logger.Warnw("Failed to update Topic finalizers", zap.Error(fErr))
+		logging.FromContext(ctx).Desugar().Warn("Failed to update Topic finalizers", zap.Error(fErr))
 		r.Recorder.Eventf(topic, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update finalizers for Topic %q: %v", topic.Name, fErr)
 		return fErr
@@ -125,7 +125,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 
 	} else if _, uErr := r.updateStatus(ctx, topic); uErr != nil {
-		logger.Warnw("Failed to update Topic status", zap.Error(uErr))
+		logging.FromContext(ctx).Desugar().Warn("Failed to update Topic status", zap.Error(uErr))
 		r.Recorder.Eventf(topic, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for Topic %q: %v", topic.Name, uErr)
 		return uErr
@@ -140,18 +140,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error {
-	logger := logging.FromContext(ctx)
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
 
 	topic.Status.InitializeConditions()
 
 	if topic.GetDeletionTimestamp() != nil {
-		logger.Debug("Deleting topic", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
+		logging.FromContext(ctx).Desugar().Debug("Deleting topic")
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			if err := r.deleteTopic(ctx, topic); err != nil {
-				logger.Error("failed to delete topic", zap.Error(err))
+				logging.FromContext(ctx).Desugar().Error("Failed to delete topic", zap.Error(err))
 				return err
 			}
-			topic.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topic.Status.TopicID)
+			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted topic %q.", topic.Status.TopicID)
 			topic.Status.TopicID = ""
 		}
 		removeFinalizer(topic)
@@ -165,60 +165,64 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	addFinalizer(topic)
 
 	if err := r.reconcileTopic(ctx, topic); err != nil {
-		topic.Status.MarkNoTopic("ReconcileFailed",
-			"Failed to reconcile Topic: %q", err.Error())
+		topic.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 	topic.Status.MarkTopicReady()
 
-	if err := r.createOrUpdatePublisher(ctx, topic); err != nil {
+	err, svc := r.reconcilePublisher(ctx, topic)
+	if err != nil {
+		topic.Status.MarkNotDeployed("PublisherReconcileFailed", "Failed to reconcile Publisher: %s", err.Error())
 		return err
+	}
+
+	// Update the topic.
+	topic.Status.PropagatePublisherStatus(svc.Status.GetCondition(apis.ConditionReady))
+	if svc.Status.IsReady() {
+		topic.Status.SetAddress(svc.Status.Address.URL)
 	}
 
 	return nil
 }
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) error {
-	logger := logging.FromContext(ctx).With(zap.String("topic", topic.Spec.Topic))
 	if topic.Spec.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
-			logger.Error("failed to find project id", zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err
 		}
 		topic.Spec.Project = project
 	}
-	logger = logger.With(zap.String("project", topic.Spec.Project))
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
 	client, err := googlepubsub.NewClient(ctx, topic.Spec.Project)
 	if err != nil {
-		logger.Error("failed to create Pub/Sub client", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
 
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
-		logger.Error("failed to verify topic exists", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
 		return err
 	}
 
 	if !exists {
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyNoCreateNoDelete {
-			logger.Error("topic does not exist", zap.Any("propagationPolicy", topic.Spec.PropagationPolicy))
-			return fmt.Errorf("topic %q does not exist", topic.Spec.Topic)
+			logging.FromContext(ctx).Desugar().Error("Topic does not exist")
+			return fmt.Errorf("Topic %q does not exist", topic.Spec.Topic)
 		} else {
 			// Create a new topic with the given name.
 			t, err = client.CreateTopic(ctx, topic.Spec.Topic)
 			if err != nil {
-				logger.Error("failed to create topic", zap.Error(err))
+				logging.FromContext(ctx).Desugar().Error("Failed to create topic", zap.Error(err))
 				return err
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -227,16 +231,19 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
 	client, err := googlepubsub.NewClient(ctx, topic.Spec.Project)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
 		return err
 	}
 	if exists {
 		// Delete the topic.
 		if err := t.Delete(ctx); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete topic", zap.Error(err))
 			return err
 		}
 	}
@@ -260,10 +267,10 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 	ch, err := r.RunClientSet.PubsubV1alpha1().Topics(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Infof("Topic %q became ready after %v", topic.Name, duration)
+		logging.FromContext(ctx).Desugar().Info("Topic became ready after", zap.Any("duration", duration))
 
 		if err := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for Topic, %v", err)
+			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Topic", zap.Error(err))
 		}
 	}
 
@@ -332,24 +339,24 @@ func removeFinalizer(s *v1alpha1.Topic) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha1.Topic) error {
+func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1alpha1.Topic) (error, *servingv1.Service) {
 	name := resources.GeneratePublisherName(topic)
 	existing, err := r.serviceLister.Services(topic.Namespace).Get(name)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			logging.FromContext(ctx).Error("Unable to get an existing publisher", zap.Error(err))
-			return err
+			logging.FromContext(ctx).Desugar().Error("Unable to get an existing publisher", zap.Error(err))
+			return err, nil
 		}
 		existing = nil
 	} else if !metav1.IsControlledBy(existing, topic) {
 		p, _ := json.Marshal(existing)
-		logging.FromContext(ctx).Error("Got a pre-owned publisher", zap.Any("publisher", p))
-		return fmt.Errorf("topic %q does not own service: %q", topic.Name, name)
+		logging.FromContext(ctx).Desugar().Error("Got a pre-owned publisher", zap.Any("publisher", p))
+		return fmt.Errorf("Topic %q does not own service: %q", topic.Name, name), nil
 	}
 
 	tracingCfg, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
 	desired := resources.MakePublisher(&resources.PublisherArgs{
@@ -363,26 +370,23 @@ func (r *Reconciler) createOrUpdatePublisher(ctx context.Context, topic *v1alpha
 	if existing == nil {
 		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Create(desired)
 		if err != nil {
-			return err
+			logging.FromContext(ctx).Desugar().Error("Failed to create publisher", zap.Error(err))
+			return err, nil
 		}
 		logging.FromContext(ctx).Desugar().Info("Publisher created", zap.Any("publisher", svc))
 	} else if !equality.Semantic.DeepEqual(&existing.Spec, &desired.Spec) {
 		existing.Spec = desired.Spec
 		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Update(existing)
 		if err != nil {
-			return err
+			logging.FromContext(ctx).Desugar().Error("Failed to update publisher", zap.Any("publisher", existing), zap.Error(err))
+			return err, nil
 		}
 		logging.FromContext(ctx).Desugar().Info("Publisher updated", zap.Any("publisher", svc))
 	} else {
 		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
 	}
 
-	// Update the topic.
-	topic.Status.PropagatePublisherStatus(svc.Status.GetCondition(apis.ConditionReady))
-	if svc.Status.IsReady() {
-		topic.Status.SetAddress(svc.Status.Address.URL)
-	}
-	return nil
+	return nil, svc
 }
 
 func (r *Reconciler) getPublisher(ctx context.Context, topic *v1alpha1.Topic) (*serving.Service, error) {
