@@ -70,27 +70,6 @@ func WithTopicPropagationPolicy(policy string) TopicOption {
 	}
 }
 
-func WithTopicMarkTopicCreating(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Status.MarkTopicOperating("Creating", "Created Job to create topic %q.", topicID)
-		s.Status.TopicID = topicID
-	}
-}
-
-func WithTopicMarkTopicVerifying(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Status.MarkTopicOperating("Verifying", "Created Job to verify topic %q.", topicID)
-		s.Status.TopicID = topicID
-	}
-}
-
-func WithTopicTopicDeleting(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Status.MarkTopicOperating("Deleting", "Created Job to delete topic %q.", topicID)
-		s.Status.TopicID = topicID
-	}
-}
-
 func WithTopicTopicDeleted(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topicID)

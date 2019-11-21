@@ -31,10 +31,8 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 
-	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
-	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
-
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
 const (
@@ -58,7 +56,6 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
-	jobInformer := jobinformer.Get(ctx)
 	serviceinformer := serviceinformer.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
@@ -76,10 +73,9 @@ func NewController(
 	c := &Reconciler{
 		PubSubBase:     pubsubBase,
 		topicLister:    topicInformer.Lister(),
+		serviceLister:  serviceinformer.Lister(),
 		publisherImage: env.Publisher,
 	}
-
-	c.serviceLister = serviceinformer.Lister()
 
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
@@ -87,11 +83,6 @@ func NewController(
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})

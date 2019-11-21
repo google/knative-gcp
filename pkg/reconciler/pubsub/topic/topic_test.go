@@ -110,16 +110,11 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
-func newSecret(withFinalizer bool) *corev1.Secret {
-	finalizers := []string{"noisy-finalizer"}
-	if withFinalizer {
-		finalizers = append(finalizers, secretFinalizerName)
-	}
+func newSecret() *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:  testNS,
-			Name:       secretName,
-			Finalizers: finalizers,
+			Namespace: testNS,
+			Name:      secretName,
 		},
 		Data: map[string][]byte{
 			"testing-key": []byte("abcd"),
@@ -149,7 +144,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 			),
 			newSink(),
-			newSecret(false),
+			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -166,7 +161,6 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicMarkTopicVerifying(testTopicID),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -184,7 +178,7 @@ func TestAllCases(t *testing.T) {
 				}),
 			),
 			newSink(),
-			newSecret(false),
+			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -201,7 +195,6 @@ func TestAllCases(t *testing.T) {
 				}),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicMarkTopicCreating(testTopicID),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -209,7 +202,6 @@ func TestAllCases(t *testing.T) {
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, finalizerName),
-			patchFinalizers(testNS, secretName, secretFinalizerName, "noisy-finalizer"),
 		},
 	}, {
 		Name: "failed to create topic",
@@ -257,7 +249,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopicID(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
-			newSecret(true),
+			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
 		WithReactors: []clientgotesting.ReactionFunc{
@@ -298,7 +290,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicTopicID(testTopicID),
 			),
 			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
-			newSecret(true),
+			newSecret(),
 			newPublisher(true, true),
 			NewService(topicName+"-topic", testNS,
 				WithServiceOwnerReferences(ownerReferences()),
@@ -338,7 +330,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
 			),
-			newSecret(true),
+			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -380,8 +372,6 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
-				// Updates
-				WithTopicTopicDeleting(testTopicID),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -402,7 +392,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
 			),
-			newSecret(true),
+			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -442,9 +432,8 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
-				WithTopicTopicDeleting(testTopicID),
 			),
-			newSecret(true)},
+			newSecret()},
 			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
 		),
 		Key: testNS + "/" + topicName,
@@ -485,7 +474,6 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateDelete"),
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
-				WithTopicTopicDeleting(testTopicID),
 			),
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
@@ -498,9 +486,8 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
-				WithTopicTopicDeleting(testTopicID),
 			),
-			newSecret(true)},
+			newSecret()},
 			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
 		),
 		Key: testNS + "/" + topicName,
@@ -541,7 +528,6 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
-				WithTopicTopicDeleting(testTopicID),
 			)},
 			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, false)...,
 		),
