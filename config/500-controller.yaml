@@ -37,6 +37,8 @@ spec:
         image: github.com/google/knative-gcp/cmd/controller
         imagePullPolicy: Always
         env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
         - name: PUBSUB_RA_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
         - name: PUBSUB_PUBLISHER_IMAGE
@@ -62,6 +64,8 @@ spec:
         - name: METRICS_DOMAIN
           value: cloud.google.com/events
         volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
         - name: config-logging
           mountPath: /etc/config-logging
         resources:
@@ -78,5 +82,8 @@ spec:
       - name: config-logging
         configMap:
           name: config-logging
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
       serviceAccount: controller
       terminationGracePeriodSeconds: 10

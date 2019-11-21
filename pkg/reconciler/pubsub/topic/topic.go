@@ -190,6 +190,8 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 	}
 	logger = logger.With(zap.String("project", topic.Spec.Project))
 
+	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
+	// pointing at a credential file.
 	client, err := googlepubsub.NewClient(ctx, topic.Spec.Project)
 	if err != nil {
 		logger.Error("failed to create Pub/Sub client", zap.Error(err))

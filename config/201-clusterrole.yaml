@@ -108,7 +108,7 @@ rules:
 - apiGroups:
     - ""
   resources:
-    - secrets # TODO: Does it really need global secrets access?
+    - secrets # For authentication with GCP.
   verbs:
     - get
     - list
