@@ -142,16 +142,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
 
+	topic.Status.ObservedGeneration = topic.Generation
 	topic.Status.InitializeConditions()
 
 	if topic.GetDeletionTimestamp() != nil {
-		logging.FromContext(ctx).Desugar().Debug("Deleting topic")
+		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			if err := r.deleteTopic(ctx, topic); err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to delete topic", zap.Error(err))
+				topic.Status.MarkNoTopic("TopicDeleteFailed", "Failed to delete Pub/Sub topic: %s", err.Error())
+				logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub topic", zap.Error(err))
 				return err
 			}
-			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted topic %q.", topic.Status.TopicID)
+			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted Pub/Sub topic %q.", topic.Status.TopicID)
 			topic.Status.TopicID = ""
 		}
 		removeFinalizer(topic)
@@ -417,6 +419,6 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 		return
 	}
 	r.tracingConfig = tracingCfg
-	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	r.Logger.Debugw("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
 	// TODO: requeue all Topics.
 }

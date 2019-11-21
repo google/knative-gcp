@@ -92,22 +92,20 @@ type Reconciler struct {
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Service resource
+// converge the two. It then updates the Status block of the PullSubscription resource
 // with the current status of the resource.
-func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		c.Logger.Errorf("invalid resource key: %s", key)
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
-	logger := logging.FromContext(ctx)
-
 	// Get the PullSubscription resource with this namespace/name
-	original, err := c.sourceLister.PullSubscriptions(namespace).Get(name)
+	original, err := r.sourceLister.PullSubscriptions(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("service %q in work queue no longer exists", key)
+		logging.FromContext(ctx).Desugar().Error("PullSubscription in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -118,7 +116,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 
 	// Reconcile this copy of the source and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = c.reconcile(ctx, source)
+	var reconcileErr = r.reconcile(ctx, source)
 
 	// If no error is returned, mark the observed generation.
 	// This has to be done before updateStatus is called.
@@ -129,14 +127,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	if equality.Semantic.DeepEqual(original.Finalizers, source.Finalizers) {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
-	} else if _, updated, fErr := c.updateFinalizers(ctx, source); fErr != nil {
-		logger.Warnw("Failed to update PullSubscription finalizers", zap.Error(fErr))
-		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
+	} else if _, updated, fErr := r.updateFinalizers(ctx, source); fErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update PullSubscription finalizers", zap.Error(fErr))
+		r.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update finalizers for PullSubscription %q: %v", source.Name, fErr)
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		c.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", source.GetName())
+		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", source.GetName())
 	}
 
 	if equality.Semantic.DeepEqual(original.Status, source.Status) {
@@ -145,159 +143,79 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(ctx, source); uErr != nil {
-		logger.Warnw("Failed to update source status", zap.Error(uErr))
-		c.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
+	} else if _, uErr := r.updateStatus(ctx, source); uErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update source status", zap.Error(uErr))
+		r.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for PullSubscription %q: %v", source.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		c.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", source.GetName())
+		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", source.GetName())
 	}
 	if reconcileErr != nil {
-		c.Recorder.Event(source, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+		r.Recorder.Event(source, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
+
 	return reconcileErr
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PullSubscription) error {
-	logger := logging.FromContext(ctx)
+func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscription) error {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pullsubscription", ps)))
 
-	source.Status.ObservedGeneration = source.Generation
-	source.Status.InitializeConditions()
+	ps.Status.ObservedGeneration = ps.Generation
+	ps.Status.InitializeConditions()
 
-	if source.GetDeletionTimestamp() != nil {
-		if !subscriptionExists(source) {
-			removeFinalizer(source)
-			return c.updateSecretFinalizer(ctx, source, false)
-		}
-
-		logger.Info("Source Deleting.")
-
-		state, err := c.EnsureSubscriptionDeleted(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic, source.Status.SubscriptionID)
-		switch state {
-		case ops.OpsJobGetFailed:
-			logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
-			return err
-
-		case ops.OpsJobCreated:
-			// If we created a job to make a subscription, then add the finalizer and update the status.
-			source.Status.MarkSubscriptionOperation(
-				"Deleting",
-				"Created Job to delete Subscription %q.",
-				source.Status.SubscriptionID)
-			return nil
-
-		case ops.OpsJobCompleteSuccessful:
-			source.Status.MarkNoSubscription(
-				"Deleted",
-				"Successfully deleted Subscription %q.",
-				source.Status.SubscriptionID)
-			source.Status.SubscriptionID = ""
-			removeFinalizer(source)
-			return c.updateSecretFinalizer(ctx, source, false)
-
-		case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
-			logger.Error("Failed to delete subscription.", zap.Any("state", state), zap.Error(err))
-
-			msg := "unknown"
-			if err != nil {
-				msg = err.Error()
-			}
-			source.Status.MarkNoSubscription(
-				"DeleteFailed",
-				"Failed to delete Subscription: %q",
-				msg)
+	if ps.GetDeletionTimestamp() != nil {
+		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
+		if err := r.deleteSubscription(ctx, ps); err != nil {
+			ps.Status.MarkNoSubscription("SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: %s", err.Error())
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
 			return err
 		}
-
+		ps.Status.MarkNoSubscription("SubscriptionDeleted", "Successfully deleted Pub/Sub subscription %q", ps.Status.SubscriptionID)
+		ps.Status.SubscriptionID = ""
+		removeFinalizer(ps)
 		return nil
 	}
 
 	// Sink is required.
-	sinkURI, err := c.resolveDestination(ctx, source.Spec.Sink, source)
+	sinkURI, err := r.resolveDestination(ctx, ps.Spec.Sink, ps)
 	if err != nil {
-		source.Status.MarkNoSink("InvalidSink", err.Error())
+		ps.Status.MarkNoSink("InvalidSink", err.Error())
 		return err
 	} else {
-		source.Status.MarkSink(sinkURI)
+		ps.Status.MarkSink(sinkURI)
 	}
 
-	// Transformer is optional.
-	if source.Spec.Transformer != nil {
-		transformerURI, err := c.resolveDestination(ctx, *source.Spec.Transformer, source)
-		if err != nil {
-			source.Status.MarkNoTransformer("InvalidTransformer", err.Error())
-		} else {
-			source.Status.MarkTransformer(transformerURI)
-		}
-	}
+	ps.Status.SubscriptionID = resources.GenerateSubscriptionName(ps)
 
-	source.Status.SubscriptionID = resources.GenerateSubscriptionName(source)
-
-	state, err := c.EnsureSubscriptionCreated(ctx, source, *source.Spec.Secret, source.Spec.Project, source.Spec.Topic,
-		source.Status.SubscriptionID, source.Spec.GetAckDeadline(), source.Spec.RetainAckedMessages, source.Spec.GetRetentionDuration())
+	state, err := r.EnsureSubscriptionCreated(ctx, ps, *ps.Spec.Secret, ps.Spec.Project, ps.Spec.Topic,
+		ps.Status.SubscriptionID, ps.Spec.GetAckDeadline(), ps.Spec.RetainAckedMessages, ps.Spec.GetRetentionDuration())
 	switch state {
-	case ops.OpsJobGetFailed:
-		logger.Error("Failed to get subscription ops job.", zap.Any("state", state), zap.Error(err))
-		return err
-
-	case ops.OpsJobCreated:
-		// If we created a job to make a subscription, then add the finalizer and update the status.
-		addFinalizer(source)
-		source.Status.MarkSubscriptionOperation("Creating",
-			"Created Job to create Subscription %q.",
-			source.Status.SubscriptionID)
-		return c.updateSecretFinalizer(ctx, source, true)
 
 	case ops.OpsJobCompleteSuccessful:
-		source.Status.MarkSubscribed()
-
-		// Now that the job completed, grab the pod status for it.
-		// Note that since it's not yet currently relied upon, don't hard
-		// fail this if we can't fetch it. Just warn
-		jobName := pubsubOps.SubscriptionJobName(source, "create")
-		logger.Info("Finding job pods for", zap.String("jobName", jobName))
-
-		var sar pubsubOps.SubActionResult
-		if err := c.UnmarshalJobTerminationMessage(ctx, source.Namespace, jobName, &sar); err != nil {
-			logger.Error("Failed to unmarshal termination message", zap.Error(err))
-		} else {
-			c.Logger.Infof("Topic project: %q", sar.ProjectId)
-			source.Status.ProjectID = sar.ProjectId
-		}
+		ps.Status.MarkSubscribed()
 
 	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
-		logger.Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
 
 		msg := "unknown"
 		if err != nil {
 			msg = err.Error()
 		}
-		source.Status.MarkNoSubscription(
+		ps.Status.MarkNoSubscription(
 			"CreateFailed",
 			"Failed to create Subscription: %q.",
 			msg)
 		return err
 	}
 
-	_, err = c.createOrUpdateReceiveAdapter(ctx, source)
+	_, err = r.createOrUpdateReceiveAdapter(ctx, ps)
 	if err != nil {
-		logger.Error("Unable to create the receive adapter", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Unable to create the receive adapter", zap.Error(err))
 		return err
 	}
-	source.Status.MarkDeployed()
-
-	// TODO: Registry
-	//// Only create EventTypes for Broker sinks.
-	//if source.Spec.Sink.Kind == "Broker" {
-	//	err = r.reconcileEventTypes(ctx, src)
-	//	if err != nil {
-	//		logger.Error("Unable to reconcile the event types", zap.Error(err))
-	//		return err
-	//	}
-	//	src.Status.MarkEventTypes()
-	//}
+	ps.Status.MarkDeployed()
 
 	return nil
 }
@@ -311,19 +229,24 @@ func subscriptionExists(sub *v1alpha1.PullSubscription) bool {
 	return false
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, source *v1alpha1.PullSubscription) (string, error) {
+func (r *Reconciler) deleteSubscription(ctx context.Context, ps v1alpha1.PullSubscription) error {
+	// TODO nacho
+	return nil
+}
+
+func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (string, error) {
 	dest := duckv1beta1.Destination{
 		Ref: destination.GetRef(),
 		URI: destination.URI,
 	}
 	if dest.Ref != nil {
-		dest.Ref.Namespace = source.Namespace
+		dest.Ref.Namespace = ps.Namespace
 	}
-	return c.uriResolver.URIFromDestination(dest, source)
+	return r.uriResolver.URIFromDestination(dest, ps)
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
-	source, err := c.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
+	source, err := r.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -336,12 +259,12 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
 
-	src, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(desired.Namespace).UpdateStatus(existing)
+	src, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("PullSubscription %q became ready after %v", source.Name, duration)
+		r.Logger.Infof("PullSubscription %q became ready after %v", source.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); err != nil {
+		if err := r.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Infof("failed to record ready for PullSubscription, %v", err)
 		}
 	}
@@ -350,8 +273,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 }
 
 // updateSecretFinalizer adds or deletes the finalizer on the secret used by the PullSubscription.
-func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha1.PullSubscription, ensureFinalizer bool) error {
-	psl, err := c.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
+func (r *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha1.PullSubscription, ensureFinalizer bool) error {
+	psl, err := r.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
 	if err != nil {
 		return err
 	}
@@ -361,7 +284,7 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 		return nil
 	}
 
-	secret, err := c.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
+	secret, err := r.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -393,7 +316,7 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 		return err
 	}
 
-	_, err = c.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
+	_, err = r.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
 	if err != nil {
 		logging.FromContext(ctx).Errorf("Failed to update PullSubscription Secret's finalizers", zap.Error(err))
 	}
@@ -402,8 +325,8 @@ func (c *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha
 
 // updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
-func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
-	source, err := c.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
+	source, err := r.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
 	}
@@ -446,7 +369,7 @@ func (c *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Pul
 		return desired, false, err
 	}
 
-	update, err := c.RunClientSet.PubsubV1alpha1().PullSubscriptions(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	update, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
 	return update, true, err
 }
 
@@ -476,7 +399,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	if r.metricsConfig != nil {
 		component := sourceComponent
-		// Set the metric component based on PullSubscription label.
+		// Set the metric component based on the channel label.
 		if _, ok := src.Labels["events.cloud.google.com/channel"]; ok {
 			component = channelComponent
 		}
@@ -499,7 +422,6 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
 		SubscriptionID: src.Status.SubscriptionID,
 		SinkURI:        src.Status.SinkURI,
-		TransformerURI: src.Status.TransformerURI,
 		LoggingConfig:  loggingConfig,
 		MetricsConfig:  metricsConfig,
 		TracingConfig:  tracingConfig,
@@ -549,11 +471,11 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 
 	logcfg, err := logging.NewConfigFromConfigMap(cfg)
 	if err != nil {
-		r.Logger.Warnw("failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
+		r.Logger.Warnw("Failed to create logging config from configmap", zap.String("cfg.Name", cfg.Name))
 		return
 	}
 	r.loggingConfig = logcfg
-	r.Logger.Infow("Update from logging ConfigMap", zap.Any("ConfigMap", cfg))
+	r.Logger.Debugw("Update from logging ConfigMap", zap.Any("loggingCfg", cfg))
 	// TODO: requeue all pullsubscriptions
 }
 
@@ -569,7 +491,7 @@ func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
 		Domain:    metrics.Domain(),
 		ConfigMap: cfg.Data,
 	}
-	r.Logger.Infow("Update from metrics ConfigMap", zap.Any("ConfigMap", cfg))
+	r.Logger.Debugw("Update from metrics ConfigMap", zap.Any("metricsCfg", cfg))
 }
 
 func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
@@ -581,31 +503,10 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 
 	tracingCfg, err := tracingconfig.NewTracingConfigFromConfigMap(cfg)
 	if err != nil {
-		r.Logger.Warnw("failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
+		r.Logger.Warnw("Failed to create tracing config from configmap", zap.String("cfg.Name", cfg.Name))
 		return
 	}
 	r.tracingConfig = tracingCfg
-	r.Logger.Infow("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
+	r.Logger.Debugw("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
 	// TODO: requeue all PullSubscriptions.
 }
-
-// TODO: Registry
-//func (r *Reconciler) reconcileEventTypes(ctx context.Context, src *v1alpha1.PullSubscription) error {
-//	args := r.newEventTypeReconcilerArgs(src)
-//	return r.eventTypeReconciler.Reconcile(ctx, src, args)
-//}
-//
-//func (r *Reconciler) newEventTypeReconcilerArgs(src *v1alpha1.PubSubBase) *eventtype.ReconcilerArgs {
-//	spec := eventingv1alpha1.EventTypeSpec{
-//		Type:   v1alpha1.PubSubEventType,
-//		Source: v1alpha1.GetPubSub(src.Status.ProjectID, src.Spec.Topic),
-//		Broker: src.Spec.Sink.Name,
-//	}
-//	specs := make([]eventingv1alpha1.EventTypeSpec, 0, 1)
-//	specs = append(specs, spec)
-//	return &eventtype.ReconcilerArgs{
-//		Specs:     specs,
-//		Namespace: src.Namespace,
-//		Labels:    getLabels(src),
-//	}
-//}

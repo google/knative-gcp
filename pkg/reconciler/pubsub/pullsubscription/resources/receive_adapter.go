@@ -41,7 +41,6 @@ type ReceiveAdapterArgs struct {
 	Labels         map[string]string
 	SubscriptionID string
 	SinkURI        string
-	TransformerURI string
 	MetricsConfig  string
 	LoggingConfig  string
 	TracingConfig  string
@@ -130,9 +129,6 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "SINK_URI",
 							Value: args.SinkURI,
-						}, {
-							Name:  "TRANSFORMER_URI",
-							Value: args.TransformerURI,
 						}, {
 							Name:  "SEND_MODE",
 							Value: string(mode),

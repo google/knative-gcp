@@ -41,28 +41,13 @@ func (s *PullSubscriptionStatus) MarkSink(uri string) {
 	if len(uri) > 0 {
 		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionSinkProvided)
 	} else {
-		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty.%s", "")
+		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty")
 	}
 }
 
 // MarkNoSink sets the condition that the source does not have a sink configured.
 func (s *PullSubscriptionStatus) MarkNoSink(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSinkProvided, reason, messageFormat, messageA...)
-}
-
-// MarkTransformer sets the condition that the source has a transformer configured.
-func (s *PullSubscriptionStatus) MarkTransformer(uri string) {
-	s.TransformerURI = uri
-	if len(uri) > 0 {
-		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionTransformerProvided)
-	} else {
-		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionTransformerProvided, "TransformerEmpty", "Transformer has resolved to empty.")
-	}
-}
-
-// MarkNoTransformer sets the condition that the source does not have a transformer configured.
-func (s *PullSubscriptionStatus) MarkNoTransformer(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionTransformerProvided, reason, messageFormat, messageA...)
 }
 
 // MarkDeployed sets the condition that the source has been deployed.
@@ -85,22 +70,7 @@ func (s *PullSubscriptionStatus) MarkSubscribed() {
 	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionSubscribed)
 }
 
-// MarkSubscriptionOperation sets the condition that the subscription is being operated on.
-func (s *PullSubscriptionStatus) MarkSubscriptionOperation(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
-}
-
 // MarkNoSubscription sets the condition that the subscription does not exist.
 func (s *PullSubscriptionStatus) MarkNoSubscription(reason, messageFormat string, messageA ...interface{}) {
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSubscribed, reason, messageFormat, messageA...)
-}
-
-// MarkEventTypes sets the condition that the source has created its event types.
-func (s *PullSubscriptionStatus) MarkEventTypes() {
-	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionEventTypesProvided)
-}
-
-// MarkNoEventTypes sets the condition that the source does not its event types configured.
-func (s *PullSubscriptionStatus) MarkNoEventTypes(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionEventTypesProvided, reason, messageFormat, messageA...)
 }

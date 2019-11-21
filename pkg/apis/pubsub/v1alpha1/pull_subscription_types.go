@@ -178,14 +178,6 @@ const (
 	// Pub/Sub Subscription has been created pointing at the created receive
 	// adapter deployment.
 	PullSubscriptionConditionSubscribed apis.ConditionType = "Subscribed"
-
-	// PullSubscriptionConditionTransformerProvided has status True when the
-	// PullSubscription has been configured with a transformer target.
-	PullSubscriptionConditionTransformerProvided apis.ConditionType = "TransformerProvided"
-
-	// PullSubscriptionConditionEventTypesProvided has status True when the
-	// PullSubscription has been configured with event types.
-	PullSubscriptionConditionEventTypesProvided apis.ConditionType = "EventTypesProvided"
 )
 
 var pullSubscriptionCondSet = apis.NewLivingConditionSet(
@@ -205,11 +197,6 @@ type PullSubscriptionStatus struct {
 	// PullSubscription.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
-
-	// TransformerURI is the current active transformer URI that has been
-	// configured for the PullSubscription.
-	// +optional
-	TransformerURI string `json:"transformerUri,omitempty"`
 
 	// ProjectID is the resolved project ID in use by the PullSubscription.
 	// +optional
