@@ -19,6 +19,8 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -42,11 +44,12 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
+	"cloud.google.com/go/compute/metadata"
+	googlepubsub "cloud.google.com/go/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
-	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -189,6 +192,11 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 
 	ps.Status.SubscriptionID = resources.GenerateSubscriptionName(ps)
 
+	err = r.reconcileSubscription(ctx, ps)
+	if err != nil {
+		return err
+	}
+
 	state, err := r.EnsureSubscriptionCreated(ctx, ps, *ps.Spec.Secret, ps.Spec.Project, ps.Spec.Topic,
 		ps.Status.SubscriptionID, ps.Spec.GetAckDeadline(), ps.Spec.RetainAckedMessages, ps.Spec.GetRetentionDuration())
 	switch state {
@@ -220,16 +228,73 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 	return nil
 }
 
-func subscriptionExists(sub *v1alpha1.PullSubscription) bool {
-	for _, c := range sub.Status.Conditions {
-		if c.Type == v1alpha1.PullSubscriptionConditionSubscribed && !c.IsFalse() {
-			return true
+func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
+	if ps.Spec.Project == "" {
+		project, err := metadata.ProjectID()
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
+			return err
+		}
+		ps.Spec.Project = project
+	}
+
+	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
+	// pointing at a credential file.
+	client, err := googlepubsub.NewClient(ctx, ps.Spec.Project)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+		return err
+	}
+
+	t := client.Topic(ps.Spec.Topic)
+	topicExists, err := t.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		return err
+	}
+
+	if !topicExists {
+		return errors.New("topic does not exist")
+	}
+
+	var ackDeadline time.Duration
+	if ps.Spec.AckDeadline != nil {
+		ackDeadline, err = time.ParseDuration(*ps.Spec.AckDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid ackDeadline: %s", err.Error())
 		}
 	}
-	return false
+
+	var retentionDuration time.Duration
+	if ps.Spec.AckDeadline != nil {
+		retentionDuration, err = time.ParseDuration(*ps.Spec.RetentionDuration)
+		if err != nil {
+			return fmt.Errorf("invalid retentionDuration: %s", err.Error())
+		}
+	}
+
+	// subConfig is the wanted config based on settings.
+	subConfig := googlepubsub.SubscriptionConfig{
+		Topic:               t,
+		AckDeadline:         ackDeadline,
+		RetainAckedMessages: ps.Spec.RetainAckedMessages,
+		RetentionDuration:   retentionDuration,
+	}
+
+	// If the subscription doesn't exist, create it.
+	if !exists {
+		// Create a new subscription to the previous topic with the given name.
+		sub, err = client.CreateSubscription(ctx, s.Subscription, subConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create subscription, %s", err.Error())
+		}
+	}
+
+	return nil
+
 }
 
-func (r *Reconciler) deleteSubscription(ctx context.Context, ps v1alpha1.PullSubscription) error {
+func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
 	// TODO nacho
 	return nil
 }
