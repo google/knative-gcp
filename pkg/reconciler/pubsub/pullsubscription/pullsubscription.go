@@ -246,6 +246,14 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		return err
 	}
 
+	// Load the subscription.
+	sub := client.Subscription(ps.Status.SubscriptionID)
+	exists, err := sub.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		return err
+	}
+
 	t := client.Topic(ps.Spec.Topic)
 	topicExists, err := t.Exists(ctx)
 	if err != nil {
@@ -257,28 +265,26 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		return errors.New("topic does not exist")
 	}
 
-	var ackDeadline time.Duration
-	if ps.Spec.AckDeadline != nil {
-		ackDeadline, err = time.ParseDuration(*ps.Spec.AckDeadline)
-		if err != nil {
-			return fmt.Errorf("invalid ackDeadline: %s", err.Error())
-		}
-	}
-
-	var retentionDuration time.Duration
-	if ps.Spec.AckDeadline != nil {
-		retentionDuration, err = time.ParseDuration(*ps.Spec.RetentionDuration)
-		if err != nil {
-			return fmt.Errorf("invalid retentionDuration: %s", err.Error())
-		}
-	}
-
 	// subConfig is the wanted config based on settings.
 	subConfig := googlepubsub.SubscriptionConfig{
 		Topic:               t,
-		AckDeadline:         ackDeadline,
 		RetainAckedMessages: ps.Spec.RetainAckedMessages,
-		RetentionDuration:   retentionDuration,
+	}
+
+	if ps.Spec.AckDeadline != nil {
+		ackDeadline, err := time.ParseDuration(*ps.Spec.AckDeadline)
+		if err != nil {
+			return fmt.Errorf("invalid ackDeadline: %s", err.Error())
+		}
+		subConfig.AckDeadline = ackDeadline
+	}
+
+	if ps.Spec.RetentionDuration != nil {
+		retentionDuration, err := time.ParseDuration(*ps.Spec.RetentionDuration)
+		if err != nil {
+			return fmt.Errorf("invalid retentionDuration: %s", err.Error())
+		}
+		subConfig.RetentionDuration = retentionDuration
 	}
 
 	// If the subscription doesn't exist, create it.
