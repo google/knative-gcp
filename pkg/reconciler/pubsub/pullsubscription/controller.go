@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
@@ -59,9 +58,8 @@ func NewController(
 
 	deploymentInformer := deploymentinformer.Get(ctx)
 	sourceInformer := pullsubscriptioninformers.Get(ctx)
-	jobInformer := jobinformer.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
@@ -81,15 +79,10 @@ func NewController(
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
-	c.Logger.Info("Setting up event handlers")
+	logger.Info("Setting up event handlers")
 	sourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
