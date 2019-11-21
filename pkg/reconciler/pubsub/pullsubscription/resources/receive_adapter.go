@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 

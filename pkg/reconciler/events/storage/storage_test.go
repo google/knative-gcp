@@ -39,9 +39,8 @@ import (
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
-	operations "github.com/google/knative-gcp/pkg/operations/storage"
-	"github.com/google/knative-gcp/pkg/reconciler"
-
+	"github.com/google/knative-gcp/pkg/operations/storage"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -777,7 +776,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
 			NotificationOpsImage: testImage,
-			PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
+			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
 			storageLister:        listers.GetStorageLister(),
 			jobLister:            listers.GetJobLister(),
 		}

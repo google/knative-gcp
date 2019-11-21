@@ -42,7 +42,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/channel/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 )
 
 const (

@@ -47,8 +47,8 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
 )
 
 const (

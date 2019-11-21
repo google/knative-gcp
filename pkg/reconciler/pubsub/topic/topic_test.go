@@ -44,8 +44,8 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/topic/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
 
 	. "knative.dev/pkg/reconciler/testing"
 

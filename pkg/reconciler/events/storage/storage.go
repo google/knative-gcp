@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scheduler
+package storage
 
 import (
 	"context"
@@ -37,8 +37,8 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
-	operations "github.com/google/knative-gcp/pkg/operations/scheduler"
-	"github.com/google/knative-gcp/pkg/reconciler"
+	operations "github.com/google/knative-gcp/pkg/operations/storage"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -46,24 +46,25 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Scheduler"
+	reconcilerName = "Storage"
 
 	finalizerName = controllerAgentName
 
-	resourceGroup = "schedulers.events.cloud.google.com"
+	resourceGroup = "storages.events.cloud.google.com"
 )
 
-// Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
+// Reconciler is the controller implementation for Google Cloud Storage (GCS) event
+// notifications.
 type Reconciler struct {
-	*reconciler.PubSubBase
+	*pubsub.PubSubBase
 
-	// Image to use for launching jobs that operate on Scheduler resources.
-	SchedulerOpsImage string
+	// Image to use for launching jobs that operate on notifications
+	NotificationOpsImage string
 
 	// gcssourceclientset is a clientset for our own API group
-	schedulerLister listers.SchedulerLister
+	storageLister listers.StorageLister
 
-	// For readling with jobs
+	// For reading with jobs
 	jobLister batchv1listers.JobLister
 }
 
@@ -79,11 +80,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the Scheduler resource with this namespace/name
-	original, err := c.schedulerLister.Schedulers(namespace).Get(name)
+	// Get the Storage resource with this namespace/name
+	original, err := c.storageLister.Storages(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
-		// The Scheduler resource may no longer exist, in which case we stop processing.
-		runtime.HandleError(fmt.Errorf("scheduler '%s' in work queue no longer exists", key))
+		// The Storage resource may no longer exist, in which case we stop processing.
+		runtime.HandleError(fmt.Errorf("storage '%s' in work queue no longer exists", key))
 		return nil
 	} else if err != nil {
 		return err
@@ -102,7 +103,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 	} else if _, err := c.updateStatus(ctx, csr); err != nil {
 		// TODO: record the event (c.Recorder.Eventf(...
-		c.Logger.Warn("Failed to update Scheduler status", zap.Error(err))
+		c.Logger.Warn("Failed to update Storage Source status", zap.Error(err))
 		return err
 	}
 
@@ -114,37 +115,47 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return nil
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error {
-	s.Status.InitializeConditions()
+func (c *Reconciler) reconcile(ctx context.Context, csr *v1alpha1.Storage) error {
+	csr.Status.ObservedGeneration = csr.Generation
+	// If notification / topic has been already configured, stash them here
+	// since right below we remove them.
+	notificationID := csr.Status.NotificationID
+	topic := csr.Status.TopicID
 
-	topic := fmt.Sprintf("scheduler-%s", string(s.UID))
+	csr.Status.InitializeConditions()
+	// And restore them.
+	csr.Status.NotificationID = notificationID
 
-	// See if the Scheduler has been deleted.
-	deletionTimestamp := s.DeletionTimestamp
+	if topic == "" {
+		topic = fmt.Sprintf("storage-%s", string(csr.UID))
+	}
+
+	// See if the source has been deleted.
+	deletionTimestamp := csr.DeletionTimestamp
 
 	if deletionTimestamp != nil {
-		err := c.deleteSchedulerJob(ctx, s)
+		err := c.deleteNotification(ctx, csr)
 		if err != nil {
-			c.Logger.Infof("Unable to delete the scheduler job: %s", err)
+			c.Logger.Infof("Unable to delete the Notification: %s", err)
 			return err
 		}
-		err = c.PubSubBase.DeletePubSub(ctx, s.Namespace, s.Name)
+		err = c.PubSubBase.DeletePubSub(ctx, csr.Namespace, csr.Name)
 		if err != nil {
 			c.Logger.Infof("Unable to delete pubsub resources : %s", err)
 			return fmt.Errorf("failed to delete pubsub resources: %s", err)
 		}
-		c.removeFinalizer(s)
+		c.removeFinalizer(csr)
 		return nil
 	}
 
 	// Ensure that there's finalizer there, since we're about to attempt to
 	// change external state with the topic, so we need to clean it up.
-	err := c.ensureFinalizer(s)
+	err := c.ensureFinalizer(csr)
 	if err != nil {
 		return err
 	}
 
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic, resourceGroup)
+	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, csr, topic, resourceGroup)
 	if err != nil {
 		c.Logger.Infof("Failed to reconcile PubSub: %s", err)
 		return err
@@ -152,95 +163,99 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.Scheduler) error
 
 	c.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
 
-	jobName := fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", t.Status.ProjectID, s.Spec.Location, string(s.UID))
-
-	retJobName, err := c.reconcileNotification(ctx, s, topic, jobName)
+	notification, err := c.reconcileNotification(ctx, csr)
 	if err != nil {
 		// TODO: Update status with this...
-		c.Logger.Infof("Failed to reconcile Scheduler Job: %s", err)
-		s.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler Job: %s", err)
+		c.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
+		csr.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to create Storage notification: %s", err)
 		return err
 	}
 
-	s.Status.MarkJobReady(retJobName)
-	c.Logger.Infof("Reconciled Scheduler notification: %q", retJobName)
+	csr.Status.MarkNotificationReady()
+
+	c.Logger.Infof("Reconciled Storage notification: %+v", notification)
+	csr.Status.NotificationID = notification
 	return nil
 }
 
-func (c *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName, schedule, data string) (ops.OpsJobStatus, error) {
-	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:      UID,
-		Image:    c.SchedulerOpsImage,
-		Action:   ops.ActionCreate,
-		TopicID:  topic,
-		JobName:  jobName,
-		Secret:   secret,
-		Owner:    owner,
-		Schedule: schedule,
-		Data:     data,
+func (c *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
+	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+		UID:        string(storage.UID),
+		Image:      c.NotificationOpsImage,
+		Action:     ops.ActionCreate,
+		ProjectID:  storage.Status.ProjectID,
+		Bucket:     storage.Spec.Bucket,
+		TopicID:    storage.Status.TopicID,
+		EventTypes: storage.Spec.EventTypes,
+		Secret:     *storage.Spec.Secret,
+		Owner:      storage,
 	})
 }
 
-func (c *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
-	state, err := c.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName, scheduler.Spec.Schedule, scheduler.Spec.Data)
+func (c *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
+	state, err := c.EnsureNotification(ctx, storage)
+	if err != nil {
+		c.Logger.Infof("EnsureNotification failed: %s", err)
+	}
 
 	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
-		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
+		return "", fmt.Errorf("Job %q failed to create or job failed", storage.Name)
 	}
 
 	if state != ops.OpsJobCompleteSuccessful {
-		return "", fmt.Errorf("Job %q has not completed yet", scheduler.Name)
+		return "", fmt.Errorf("Job %q has not completed yet", storage.Name)
 	}
 
 	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, scheduler.Namespace, string(scheduler.UID), "create")
+	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, storage.Namespace, string(storage.UID), "create")
 	if err != nil {
 		return "", err
 	}
 
-	var result operations.JobActionResult
+	var result operations.NotificationActionResult
 	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return "", err
 	}
 	if result.Result {
-		return result.JobName, nil
+		return result.NotificationId, nil
 	}
 	return "", fmt.Errorf("operation failed: %s", result.Error)
 }
 
-func (c *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, jobName string) (ops.OpsJobStatus, error) {
-	return c.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:     UID,
-		Image:   c.SchedulerOpsImage,
-		Action:  ops.ActionDelete,
-		JobName: jobName,
-		Secret:  secret,
-		Owner:   owner,
+func (c *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
+	return c.ensureNotificationJob(ctx, operations.NotificationArgs{
+		UID:            UID,
+		Image:          c.NotificationOpsImage,
+		Action:         ops.ActionDelete,
+		ProjectID:      project,
+		Bucket:         bucket,
+		NotificationId: notificationId,
+		Secret:         secret,
+		Owner:          owner,
 	})
 }
 
-// deleteSchedulerJob looks at the status.NotificationID and if non-empty
+// deleteNotification looks at the status.NotificationID and if non-empty
 // hence indicating that we have created a notification successfully
-// in the Scheduler, remove it.
-func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
-	if scheduler.Status.JobName == "" {
+// in the Storage, remove it.
+func (c *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.Storage) error {
+	if storage.Status.NotificationID == "" {
 		return nil
 	}
 
-	state, err := c.EnsureSchedulerJobDeleted(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Status.JobName)
+	state, err := c.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.NotificationID)
 
 	if state != ops.OpsJobCompleteSuccessful {
-		return fmt.Errorf("Job %q has not completed yet", scheduler.Name)
+		return fmt.Errorf("Job %q has not completed yet", storage.Name)
 	}
 
 	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, scheduler.Namespace, string(scheduler.UID), "delete")
+	pod, err := ops.GetJobPod(ctx, c.KubeClientSet, storage.Namespace, string(storage.UID), "delete")
 	if err != nil {
 		return err
 	}
-
 	// Check to see if the operation worked.
-	var result operations.JobActionResult
+	var result operations.NotificationActionResult
 	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
 		return err
 	}
@@ -248,54 +263,54 @@ func (c *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 		return fmt.Errorf("operation failed: %s", result.Error)
 	}
 
-	c.Logger.Infof("Deleted Notification: %q", scheduler.Status.JobName)
-	scheduler.Status.JobName = ""
+	c.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
+	storage.Status.NotificationID = ""
 	return nil
 }
 
-func (c *Reconciler) ensureFinalizer(s *v1alpha1.Scheduler) error {
-	finalizers := sets.NewString(s.Finalizers...)
+func (c *Reconciler) ensureFinalizer(csr *v1alpha1.Storage) error {
+	finalizers := sets.NewString(csr.Finalizers...)
 	if finalizers.Has(finalizerName) {
 		return nil
 	}
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"finalizers":      append(s.Finalizers, finalizerName),
-			"resourceVersion": s.ResourceVersion,
+			"finalizers":      append(csr.Finalizers, finalizerName),
+			"resourceVersion": csr.ResourceVersion,
 		},
 	}
 	patch, err := json.Marshal(mergePatch)
 	if err != nil {
 		return err
 	}
-	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(s.Namespace).Patch(s.Name, types.MergePatchType, patch)
+	_, err = c.RunClientSet.EventsV1alpha1().Storages(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
 	return err
 
 }
 
-func (c *Reconciler) removeFinalizer(s *v1alpha1.Scheduler) error {
+func (c *Reconciler) removeFinalizer(csr *v1alpha1.Storage) error {
 	// Only remove our finalizer if it's the first one.
-	if len(s.Finalizers) == 0 || s.Finalizers[0] != finalizerName {
+	if len(csr.Finalizers) == 0 || csr.Finalizers[0] != finalizerName {
 		return nil
 	}
 
 	// For parity with merge patch for adding, also use patch for removing
 	mergePatch := map[string]interface{}{
 		"metadata": map[string]interface{}{
-			"finalizers":      s.Finalizers[1:],
-			"resourceVersion": s.ResourceVersion,
+			"finalizers":      csr.Finalizers[1:],
+			"resourceVersion": csr.ResourceVersion,
 		},
 	}
 	patch, err := json.Marshal(mergePatch)
 	if err != nil {
 		return err
 	}
-	_, err = c.RunClientSet.EventsV1alpha1().Schedulers(s.Namespace).Patch(s.Name, types.MergePatchType, patch)
+	_, err = c.RunClientSet.EventsV1alpha1().Storages(csr.Namespace).Patch(csr.Name, types.MergePatchType, patch)
 	return err
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Scheduler) (*v1alpha1.Scheduler, error) {
-	source, err := c.schedulerLister.Schedulers(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage) (*v1alpha1.Storage, error) {
+	source, err := c.storageLister.Storages(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -308,31 +323,31 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := c.RunClientSet.EventsV1alpha1().Schedulers(desired.Namespace).UpdateStatus(existing)
+	src, err := c.RunClientSet.EventsV1alpha1().Storages(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Scheduler %q became ready after %v", source.Name, duration)
+		c.Logger.Infof("Storage %q became ready after %v", source.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("Scheduler", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for Scheduler, %v", err)
+		if err := c.StatsReporter.ReportReady("Storage", source.Namespace, source.Name, duration); err != nil {
+			logging.FromContext(ctx).Infof("failed to record ready for Storage, %v", err)
 		}
 	}
 
 	return src, err
 }
 
-func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.JobArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.SchedulerJobName(args.Owner, args.Action)
+func (c *Reconciler) ensureNotificationJob(ctx context.Context, args operations.NotificationArgs) (ops.OpsJobStatus, error) {
+	jobName := operations.NotificationJobName(args.Owner, args.Action)
 	job, err := c.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
 
 	// If the resource doesn't exist, we'll create it
 	if apierrs.IsNotFound(err) {
 		c.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
 
-		args.Image = c.SchedulerOpsImage
+		args.Image = c.NotificationOpsImage
 
-		job, err = operations.NewJobOps(args)
+		job, err = operations.NewNotificationOps(args)
 		if err != nil {
 			return ops.OpsJobCreateFailed, err
 		}
@@ -340,7 +355,7 @@ func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.Job
 		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
 		if err != nil || job == nil {
 			c.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
+			return ops.OpsJobCreateFailed, err
 		}
 
 		c.Logger.Debugw("Created Job.")
@@ -350,11 +365,10 @@ func (c *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.Job
 		return ops.OpsJobGetFailed, err
 		// TODO: Handle this case
 		//	} else if !metav1.IsControlledBy(job, args.Owner) {
-		//		return ops.OpsJobCreateFailed, fmt.Errorf("scheduler does not own job %q", jobName)
+		//		return ops.OpsJobCreateFailed, fmt.Errorf("storage does not own job %q", jobName)
 	}
 
 	if ops.IsJobFailed(job) {
-		c.Logger.Debugw("Job has failed.")
 		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
 	}
 

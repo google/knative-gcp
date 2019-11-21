@@ -47,8 +47,8 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	pubsubOps "github.com/google/knative-gcp/pkg/operations/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	"github.com/google/knative-gcp/pkg/tracing"
 	"go.uber.org/zap"
 	"knative.dev/pkg/controller"
@@ -595,7 +595,7 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 //	return r.eventTypeReconciler.Reconcile(ctx, src, args)
 //}
 //
-//func (r *Reconciler) newEventTypeReconcilerArgs(src *v1alpha1.PubSub) *eventtype.ReconcilerArgs {
+//func (r *Reconciler) newEventTypeReconcilerArgs(src *v1alpha1.PubSubBase) *eventtype.ReconcilerArgs {
 //	spec := eventingv1alpha1.EventTypeSpec{
 //		Type:   v1alpha1.PubSubEventType,
 //		Source: v1alpha1.GetPubSub(src.Status.ProjectID, src.Spec.Topic),

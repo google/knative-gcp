@@ -33,7 +33,7 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/tracing"

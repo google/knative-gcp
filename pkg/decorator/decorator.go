@@ -23,7 +23,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 
 	"github.com/google/knative-gcp/pkg/kncloudevents"
-	"github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
 )
 
 // Decorator implements a Decorator to add attributes to a cloudevent and forward to a sink.

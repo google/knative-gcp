@@ -38,7 +38,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/channel/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 
 	. "knative.dev/pkg/reconciler/testing"
 

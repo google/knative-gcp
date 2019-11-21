@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
@@ -66,7 +66,7 @@ func NewController(
 
 	c := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
-		PubSubBase:           reconciler.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		storageLister:        storageInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, reconcilerName)
