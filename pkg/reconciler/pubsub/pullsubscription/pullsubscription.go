@@ -37,7 +37,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -49,7 +48,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -172,7 +170,6 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
 		if err := r.deleteSubscription(ctx, ps); err != nil {
 			ps.Status.MarkNoSubscription("SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: %s", err.Error())
-			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
 			return err
 		}
 		ps.Status.MarkNoSubscription("SubscriptionDeleted", "Successfully deleted Pub/Sub subscription %q", ps.Status.SubscriptionID)
@@ -190,37 +187,20 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 		ps.Status.MarkSink(sinkURI)
 	}
 
+	addFinalizer(ps)
+
 	ps.Status.SubscriptionID = resources.GenerateSubscriptionName(ps)
 
 	err = r.reconcileSubscription(ctx, ps)
 	if err != nil {
+		ps.Status.MarkNoSubscription("SubscriptionReconcileFailed", "Failed to reconcile Subscription: %s", err.Error())
 		return err
 	}
-
-	state, err := r.EnsureSubscriptionCreated(ctx, ps, *ps.Spec.Secret, ps.Spec.Project, ps.Spec.Topic,
-		ps.Status.SubscriptionID, ps.Spec.GetAckDeadline(), ps.Spec.RetainAckedMessages, ps.Spec.GetRetentionDuration())
-	switch state {
-
-	case ops.OpsJobCompleteSuccessful:
-		ps.Status.MarkSubscribed()
-
-	case ops.OpsJobCreateFailed, ops.OpsJobCompleteFailed:
-		logging.FromContext(ctx).Desugar().Error("Failed to create subscription.", zap.Any("state", state), zap.Error(err))
-
-		msg := "unknown"
-		if err != nil {
-			msg = err.Error()
-		}
-		ps.Status.MarkNoSubscription(
-			"CreateFailed",
-			"Failed to create Subscription: %q.",
-			msg)
-		return err
-	}
+	ps.Status.MarkSubscribed()
 
 	_, err = r.createOrUpdateReceiveAdapter(ctx, ps)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to create the receive adapter", zap.Error(err))
+		ps.Status.MarkNotDeployed("AdapterReconcileFailed", "Failed to reconcile Receive Adapter: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkDeployed()
@@ -248,7 +228,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 
 	// Load the subscription.
 	sub := client.Subscription(ps.Status.SubscriptionID)
-	exists, err := sub.Exists(ctx)
+	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
 		return err
@@ -274,6 +254,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 	if ps.Spec.AckDeadline != nil {
 		ackDeadline, err := time.ParseDuration(*ps.Spec.AckDeadline)
 		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Invalid ackDeadline", zap.String("ackDeadline", *ps.Spec.AckDeadline))
 			return fmt.Errorf("invalid ackDeadline: %s", err.Error())
 		}
 		subConfig.AckDeadline = ackDeadline
@@ -282,26 +263,49 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 	if ps.Spec.RetentionDuration != nil {
 		retentionDuration, err := time.ParseDuration(*ps.Spec.RetentionDuration)
 		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Invalid retentionDuration", zap.String("retentionDuration", *ps.Spec.RetentionDuration))
 			return fmt.Errorf("invalid retentionDuration: %s", err.Error())
 		}
 		subConfig.RetentionDuration = retentionDuration
 	}
 
 	// If the subscription doesn't exist, create it.
-	if !exists {
+	if !subExists {
 		// Create a new subscription to the previous topic with the given name.
-		sub, err = client.CreateSubscription(ctx, s.Subscription, subConfig)
+		sub, err = client.CreateSubscription(ctx, ps.Status.SubscriptionID, subConfig)
 		if err != nil {
-			return fmt.Errorf("failed to create subscription, %s", err.Error())
+			logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
+			return err
 		}
 	}
+	// TODO update the subscription's config if needed.
 
 	return nil
 
 }
 
 func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
-	// TODO nacho
+	// At this point the project should have been populated.
+	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
+	client, err := googlepubsub.NewClient(ctx, ps.Spec.Project)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+		return err
+	}
+
+	// Load the subscription.
+	sub := client.Subscription(ps.Status.SubscriptionID)
+	exists, err := sub.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		return err
+	}
+	if exists {
+		if err := sub.Delete(ctx); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub subscription", zap.Error(err))
+			return err
+		}
+	}
 	return nil
 }
 
@@ -333,65 +337,14 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	src, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		r.Logger.Infof("PullSubscription %q became ready after %v", source.Name, duration)
+		logging.FromContext(ctx).Desugar().Info("PullSubscription became ready after", zap.Any("duration", duration))
 
 		if err := r.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for PullSubscription, %v", err)
+			logging.FromContext(ctx).Desugar().Info("Failed to record ready for PullSubscription", zap.Error(err))
 		}
 	}
 
 	return src, err
-}
-
-// updateSecretFinalizer adds or deletes the finalizer on the secret used by the PullSubscription.
-func (r *Reconciler) updateSecretFinalizer(ctx context.Context, desired *v1alpha1.PullSubscription, ensureFinalizer bool) error {
-	psl, err := r.sourceLister.PullSubscriptions(desired.Namespace).List(labels.Everything())
-	if err != nil {
-		return err
-	}
-	// Only delete the finalizer if this PullSubscription is the last one
-	// references the Secret.
-	if !ensureFinalizer && !(len(psl) == 1 && psl[0].Name == desired.Name) {
-		return nil
-	}
-
-	secret, err := r.KubeClientSet.CoreV1().Secrets(desired.Namespace).Get(desired.Spec.Secret.Name, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	existing := secret.DeepCopy()
-	existingFinalizers := sets.NewString(existing.Finalizers...)
-	hasFinalizer := existingFinalizers.Has(secretFinalizerName)
-
-	if ensureFinalizer == hasFinalizer {
-		return nil
-	}
-
-	var desiredFinalizers []string
-	if ensureFinalizer {
-		desiredFinalizers = append(existing.Finalizers, secretFinalizerName)
-	} else {
-		existingFinalizers.Delete(secretFinalizerName)
-		desiredFinalizers = existingFinalizers.List()
-	}
-
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      desiredFinalizers,
-			"resourceVersion": existing.ResourceVersion,
-		},
-	}
-
-	patch, err := json.Marshal(mergePatch)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.KubeClientSet.CoreV1().Secrets(existing.GetNamespace()).Patch(existing.GetName(), types.MergePatchType, patch)
-	if err != nil {
-		logging.FromContext(ctx).Errorf("Failed to update PullSubscription Secret's finalizers", zap.Error(err))
-	}
-	return err
 }
 
 // updateFinalizers is a generic method for future compatibility with a
@@ -459,13 +412,13 @@ func removeFinalizer(s *v1alpha1.PullSubscription) {
 func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
 	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Error("Unable to get an existing receive adapter", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Unable to get an existing receive adapter", zap.Error(err))
 		return nil, err
 	}
 
 	loggingConfig, err := logging.LoggingConfigToJson(r.loggingConfig)
 	if err != nil {
-		logging.FromContext(ctx).Error("Error serializing existing logging config", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Error serializing existing logging config", zap.Error(err))
 	}
 
 	if r.metricsConfig != nil {
@@ -479,12 +432,12 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	metricsConfig, err := metrics.MetricsOptionsToJson(r.metricsConfig)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("Error serializing metrics config", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Error serializing metrics config", zap.Error(err))
 	}
 
 	tracingConfig, err := tracing.ConfigToJSON(r.tracingConfig)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("Error serializing tracing config", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Error serializing tracing config", zap.Error(err))
 	}
 
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
@@ -500,17 +453,17 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	if existing == nil {
 		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
-		logging.FromContext(ctx).Desugar().Info("Receive Adapter created.", zap.Error(err), zap.Any("receiveAdapter", ra))
+		logging.FromContext(ctx).Desugar().Debug("Receive Adapter created", zap.Error(err), zap.Any("receiveAdapter", ra))
 		return ra, err
 	}
 	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
 		existing.Spec = desired.Spec
 		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
-		logging.FromContext(ctx).Desugar().Info("Receive Adapter updated.",
+		logging.FromContext(ctx).Desugar().Debug("Receive Adapter updated",
 			zap.Error(err), zap.Any("receiveAdapter", ra), zap.String("diff", diff))
 		return ra, err
 	}
-	logging.FromContext(ctx).Desugar().Info("Reusing existing Receive Adapter", zap.Any("receiveAdapter", existing))
+	logging.FromContext(ctx).Desugar().Debug("Reusing existing Receive Adapter", zap.Any("receiveAdapter", existing))
 	return existing, nil
 }
 
@@ -524,7 +477,7 @@ func (r *Reconciler) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSu
 	})
 
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to list deployments: %v", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Unable to list deployments", zap.Error(err))
 		return nil, err
 	}
 	for _, dep := range dl.Items {

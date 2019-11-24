@@ -150,7 +150,6 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			if err := r.deleteTopic(ctx, topic); err != nil {
 				topic.Status.MarkNoTopic("TopicDeleteFailed", "Failed to delete Pub/Sub topic: %s", err.Error())
-				logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub topic", zap.Error(err))
 				return err
 			}
 			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted Pub/Sub topic %q.", topic.Status.TopicID)
@@ -167,7 +166,7 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	addFinalizer(topic)
 
 	if err := r.reconcileTopic(ctx, topic); err != nil {
-		topic.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
+		topic.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Pub/Sub topic: %s", err.Error())
 		return err
 	}
 	topic.Status.MarkTopicReady()
