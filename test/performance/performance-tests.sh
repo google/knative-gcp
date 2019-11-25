@@ -20,8 +20,7 @@
 
 # Setup env vars to override the default settings
 export PROJECT_NAME="knative-eventing-performance"
-#export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/google/knative-gcp/test/performance/benchmarks"
-export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/chizhg/knative-gcp/test/performance/benchmarks"
+export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/google/knative-gcp/test/performance/benchmarks"
 
 source vendor/knative.dev/test-infra/scripts/performance-tests.sh
 source $(dirname $0)/../lib.sh
