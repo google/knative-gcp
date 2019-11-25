@@ -99,8 +99,6 @@ spec:
               # set to the number of sender + receiver (same image that does both counts 2)
               - "--expect-records=2"
               - "--mako-tags=channel=pubsub"
-              - "--benchmark-key=6592390798245888"
-              - "--benchmark-name=Development - PubSub Broker Latency & Throughput"
             ports:
               - name: grpc
                 containerPort: 10000

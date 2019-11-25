@@ -31,6 +31,11 @@ function cloud_run_events_setup() {
   # Install the latest Cloud Run Events in the current cluster.
   header "Starting Cloud Run Events"
   subheader "Installing Cloud Run Events"
+  pushd .
+  cd ${GOPATH} && mkdir -p src/github.com/google && cd src/github.com/google
+  git clone https://github.com/google/knative-gcp
+  popd
+
   ko apply -f ${CLOUD_RUN_EVENTS_CONFIG} || return 1
   wait_until_pods_running cloud-run-events || return 1
 }
