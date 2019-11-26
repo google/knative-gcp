@@ -70,14 +70,14 @@ func NewController(
 		TopicOpsImage: env.TopicOps,
 	}
 
-	c := &Reconciler{
+	r := &Reconciler{
 		PubSubBase:     pubsubBase,
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceinformer.Lister(),
 		publisherImage: env.Publisher,
 	}
 
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 
 	logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
@@ -87,7 +87,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	cmw.Watch(tracingconfig.ConfigName, c.UpdateFromTracingConfigMap)
+	cmw.Watch(tracingconfig.ConfigName, r.UpdateFromTracingConfigMap)
 
 	return impl
 }

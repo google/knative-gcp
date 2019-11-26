@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/apis"
@@ -40,9 +40,6 @@ import (
 )
 
 const (
-	// TODO Reconciler name is currently the same as PubSubBase reconciler.
-	//  Move reconciler.pubsub.reconciler.go to some other package and rename its reconciler.
-
 	finalizerName = controllerAgentName
 
 	resourceGroup = "pubsubs.events.cloud.google.com"
@@ -63,12 +60,14 @@ type Reconciler struct {
 // Check that we implement the controller.Reconciler interface.
 var _ controller.Reconciler = (*Reconciler)(nil)
 
-// Reconcile implements controller.Reconciler
+// Reconcile compares the actual state with the desired, and attempts to
+// converge the two. It then updates the Status block of the PubSub resource
+// with the current status of the resource.
 func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
 
@@ -76,60 +75,69 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	original, err := r.pubsubLister.PubSubs(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The PubSub resource may no longer exist, in which case we stop processing.
-		runtime.HandleError(fmt.Errorf("storage '%s' in work queue no longer exists", key))
+		logging.FromContext(ctx).Desugar().Error("PubSub in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	// Don't modify the informers copy
-	csr := original.DeepCopy()
+	pubsub := original.DeepCopy()
 
-	reconcileErr := r.reconcile(ctx, csr)
+	reconcileErr := r.reconcile(ctx, pubsub)
 
-	if equality.Semantic.DeepEqual(original.Status, csr.Status) &&
-		equality.Semantic.DeepEqual(original.ObjectMeta, csr.ObjectMeta) {
+	// If no error is returned, mark the observed generation.
+	if reconcileErr == nil {
+		pubsub.Status.ObservedGeneration = pubsub.Generation
+	}
+
+	if equality.Semantic.DeepEqual(original.Status, pubsub.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
-	} else if _, err := r.updateStatus(ctx, csr); err != nil {
-		// TODO: record the event (c.Recorder.Eventf(...
-		r.Logger.Warn("Failed to update PubSub Source status", zap.Error(err))
-		return err
-	}
 
+	} else if _, uErr := r.updateStatus(ctx, pubsub); uErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update PubSub status", zap.Error(uErr))
+		r.Recorder.Eventf(pubsub, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for PubSub %q: %v", pubsub.Name, uErr)
+		return uErr
+	} else if reconcileErr == nil {
+		// There was a difference and updateStatus did not return an error.
+		r.Recorder.Eventf(pubsub, corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsub.Name)
+	}
 	if reconcileErr != nil {
-		// TODO: record the event (c.Recorder.Eventf(...
-		return reconcileErr
+		r.Recorder.Event(pubsub, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
-
-	return nil
+	return reconcileErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, source *v1alpha1.PubSub) error {
-	source.Status.ObservedGeneration = source.Generation
-	source.Status.InitializeConditions()
+func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.PubSub) error {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
 
-	if source.DeletionTimestamp != nil {
+	pubsub.Status.InitializeConditions()
+
+	if pubsub.DeletionTimestamp != nil {
 		// No finalizer needed, the pullsubscription will be garbage collected.
 		return nil
 	}
 
-	ps, err := r.reconcilePullSubscription(ctx, source)
+	ps, err := r.reconcilePullSubscription(ctx, pubsub)
 	if err != nil {
-		r.Logger.Infof("Failed to reconcile PubSub: %s", err)
+		pubsub.Status.MarkPullSubscriptionNotReady("PullSubscriptionReconcileFailed", "Failed to reconcile PullSubscription: %s", err.Error())
 		return err
 	}
-	source.Status.PropagatePullSubscriptionStatus(ps.Status.GetCondition(apis.ConditionReady))
+	pubsub.Status.PropagatePullSubscriptionStatus(ps.Status.GetCondition(apis.ConditionReady))
 
-	r.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
-	uri, err := apis.ParseURL(ps.Status.SinkURI)
+	// Sink has been resolved from the underlying PullSubscription, set it here.
+	// TODO should be uriResolve it here as well?
+	sinkURI, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
+		pubsub.Status.SinkURI = nil
 		return err
+	} else {
+		pubsub.Status.SinkURI = sinkURI
 	}
-	source.Status.SinkURI = uri
-	r.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", source, ps)
 	return nil
 }
 

@@ -119,19 +119,6 @@ func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOpt
 	}
 }
 
-func WithPullSubscriptionMarkSubscribing(subscriptionID string) PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscriptionOperation("Creating", "Created Job to create Subscription %q.", subscriptionID)
-		s.Status.SubscriptionID = subscriptionID
-	}
-}
-
-func WithPullSubscriptionMarkUnsubscribing(subscriptionID string) PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscriptionOperation("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
-	}
-}
-
 func WithPullSubscriptionMarkNoSubscription(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkNoSubscription("Deleted", "Successfully deleted Subscription %q.", subscriptionID)
@@ -161,12 +148,6 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 		s.Status.MarkSubscribed()
 	}
 }
-
-//func WithPullSubscriptionProjectResolved(projectID string) PullSubscriptionOption {
-//	return func(s *v1alpha1.PullSubscription) {
-//		s.Status.ProjectID = projectID
-//	}
-//}
 
 func WithPullSubscriptionJobFailure(subscriptionID, reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {

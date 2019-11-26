@@ -115,7 +115,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(topic, corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topic.GetName())
+		r.Recorder.Eventf(topic, corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topic.Name)
 	}
 
 	if equality.Semantic.DeepEqual(original.Status, topic.Status) {
@@ -131,7 +131,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(topic, corev1.EventTypeNormal, "Updated", "Updated Topic %q", topic.GetName())
+		r.Recorder.Eventf(topic, corev1.EventTypeNormal, "Updated", "Updated Topic %q", topic.Name)
 	}
 	if reconcileErr != nil {
 		r.Recorder.Event(topic, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
@@ -142,10 +142,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("topic", topic)))
 
-	topic.Status.ObservedGeneration = topic.Generation
 	topic.Status.InitializeConditions()
 
-	if topic.GetDeletionTimestamp() != nil {
+	if topic.DeletionTimestamp != nil {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 			if err := r.deleteTopic(ctx, topic); err != nil {

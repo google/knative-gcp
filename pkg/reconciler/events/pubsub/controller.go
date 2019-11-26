@@ -19,20 +19,22 @@ package pubsub
 import (
 	"context"
 
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
-
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/pubsub"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"k8s.io/client-go/tools/cache"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
 )
 
 const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
+
+	// receiveAdapterName is the string used as name for the receive adapter pod.
+	receiveAdapterName = "pubsub.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -45,19 +47,19 @@ func NewController(
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	pubsubInformer := pubsubinformers.Get(ctx)
 
-	c := &Reconciler{
+	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		pubsubLister:           pubsubInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
-		receiveAdapterName:     "pubsub.events.cloud.google.com",
+		receiveAdapterName:     receiveAdapterName,
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 
-	c.Logger.Info("Setting up event handlers")
+	r.Logger.Info("Setting up event handlers")
 	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSubBase")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

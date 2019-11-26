@@ -135,7 +135,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", source.GetName())
+		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", source.Name)
 	}
 
 	if equality.Semantic.DeepEqual(original.Status, source.Status) {
@@ -151,7 +151,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", source.GetName())
+		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", source.Name)
 	}
 	if reconcileErr != nil {
 		r.Recorder.Event(source, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
@@ -163,10 +163,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscription) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pullsubscription", ps)))
 
-	ps.Status.ObservedGeneration = ps.Generation
 	ps.Status.InitializeConditions()
 
-	if ps.GetDeletionTimestamp() != nil {
+	if ps.DeletionTimestamp != nil {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
 		if err := r.deleteSubscription(ctx, ps); err != nil {
 			ps.Status.MarkNoSubscription("SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: %s", err.Error())

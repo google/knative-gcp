@@ -71,13 +71,13 @@ func NewController(
 		SubscriptionOpsImage: env.SubscriptionOps,
 	}
 
-	c := &Reconciler{
+	r := &Reconciler{
 		PubSubBase:          pubsubBase,
 		deploymentLister:    deploymentInformer.Lister(),
 		sourceLister:        sourceInformer.Lister(),
 		receiveAdapterImage: env.ReceiveAdapter,
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 
 	logger.Info("Setting up event handlers")
 	sourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
@@ -87,11 +87,11 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
-	cmw.Watch(logging.ConfigMapName(), c.UpdateFromLoggingConfigMap)
-	cmw.Watch(metrics.ConfigMapName(), c.UpdateFromMetricsConfigMap)
-	cmw.Watch(tracingconfig.ConfigName, c.UpdateFromTracingConfigMap)
+	cmw.Watch(logging.ConfigMapName(), r.UpdateFromLoggingConfigMap)
+	cmw.Watch(metrics.ConfigMapName(), r.UpdateFromMetricsConfigMap)
+	cmw.Watch(tracingconfig.ConfigName, r.UpdateFromTracingConfigMap)
 
 	return impl
 }
