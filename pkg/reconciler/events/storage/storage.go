@@ -19,25 +19,24 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
+	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	"cloud.google.com/go/compute/metadata"
+	gstorage "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -50,6 +49,16 @@ const (
 	finalizerName = controllerAgentName
 
 	resourceGroup = "storages.events.cloud.google.com"
+)
+
+var (
+	// Mapping of the storage source CloudEvent types to google storage types.
+	storageEventTypes = map[string]string{
+		v1alpha1.StorageFinalize:       "OBJECT_FINALIZE",
+		v1alpha1.StorageArchive:        "OBJECT_ARCHIVE",
+		v1alpha1.StorageDelete:         "OBJECT_DELETE",
+		v1alpha1.StorageMetadataUpdate: "OBJECT_METADATA_UPDATE",
+	}
 )
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
@@ -133,6 +142,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) error {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
+
 	// If notification / topic has been already configured, stash them here
 	// since right below we remove them.
 	notificationID := storage.Status.NotificationID
@@ -147,18 +158,17 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	}
 
 	// See if the source has been deleted.
-	deletionTimestamp := storage.DeletionTimestamp
-
-	if deletionTimestamp != nil {
-		err := r.deleteNotification(ctx, storage)
-		if err != nil {
-			r.Logger.Infof("Unable to delete the Notification: %s", err)
+	if storage.DeletionTimestamp != nil {
+		logging.FromContext(ctx).Desugar().Debug("Deleting Storage notification")
+		if err := r.deleteNotification(ctx, storage); err != nil {
+			storage.Status.MarkNotificationNotReady("NotificationDeleteFailed", "Failed to delete Storage notification: %s", err.Error())
 			return err
 		}
-		err = r.PubSubBase.DeletePubSub(ctx, storage.Namespace, storage.Name)
-		if err != nil {
-			r.Logger.Infof("Unable to delete pubsub resources : %s", err)
-			return fmt.Errorf("failed to delete pubsub resources: %s", err)
+		storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted Storage notification: %s", storage.Status.NotificationID)
+		storage.Status.NotificationID = ""
+
+		if err := r.PubSubBase.DeletePubSub(ctx, storage.Namespace, storage.Name); err != nil {
+			return err
 		}
 		removeFinalizer(storage)
 		return nil
@@ -168,87 +178,86 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	// change external state with the topic, so we need to clean it up.
 	addFinalizer(storage)
 
-	t, ps, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
+	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
-		r.Logger.Infof("Failed to reconcile PubSub: %s", err)
+		logging.FromContext(ctx).Desugar().Error("Failed to reconcile PubSub", zap.Error(err))
 		return err
 	}
-
-	r.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
 
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
-		// TODO: Update status with this...
-		r.Logger.Infof("Failed to reconcile Storage Notification: %s", err)
-		storage.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to create Storage notification: %s", err)
+		logging.FromContext(ctx).Desugar().Error("Failed to reconcile Storage notification", zap.Error(err))
+		storage.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to reconcile Storage notification: %s", err)
 		return err
 	}
-
 	storage.Status.MarkNotificationReady()
-
-	r.Logger.Infof("Reconciled Storage notification: %+v", notification)
 	storage.Status.NotificationID = notification
+
 	return nil
 }
 
-func (r *Reconciler) EnsureNotification(ctx context.Context, storage *v1alpha1.Storage) (ops.OpsJobStatus, error) {
-	return r.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:        string(storage.UID),
-		Image:      r.NotificationOpsImage,
-		Action:     ops.ActionCreate,
-		ProjectID:  storage.Status.ProjectID,
-		Bucket:     storage.Spec.Bucket,
-		TopicID:    storage.Status.TopicID,
-		EventTypes: storage.Spec.EventTypes,
-		Secret:     *storage.Spec.Secret,
-		Owner:      storage,
-	})
-}
-
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	state, err := r.EnsureNotification(ctx, storage)
+	if storage.Spec.Project == "" {
+		project, err := metadata.ProjectID()
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
+			return "", err
+		}
+		storage.Spec.Project = project
+	}
+
+	client, err := gstorage.NewClient(ctx)
 	if err != nil {
-		r.Logger.Infof("EnsureNotification failed: %s", err)
-	}
-
-	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
-		return "", fmt.Errorf("Job %q failed to create or job failed", storage.Name)
-	}
-
-	if state != ops.OpsJobCompleteSuccessful {
-		return "", fmt.Errorf("Job %q has not completed yet", storage.Name)
-	}
-
-	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, r.KubeClientSet, storage.Namespace, string(storage.UID), "create")
-	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Storage client", zap.Error(err))
 		return "", err
 	}
 
-	var result operations.NotificationActionResult
-	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
+	// Load the Bucket.
+	bucket := client.Bucket(storage.Spec.Bucket)
+
+	notifications, err := bucket.Notifications(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
 		return "", err
 	}
-	if result.Result {
-		return result.NotificationId, nil
+
+	// If the notification does exist, then return its ID.
+	if existing, ok := notifications[storage.Status.NotificationID]; ok {
+		return existing.ID, nil
 	}
-	return "", fmt.Errorf("operation failed: %s", result.Error)
+
+	// If the notification does not exist, then create it.
+
+	customAttributes := make(map[string]string)
+	// Add our own event type here...
+	customAttributes["knative-gcp"] = "com.google.cloud.storage"
+
+	nc := &gstorage.Notification{
+		TopicProjectID:   storage.Spec.Project,
+		TopicID:          storage.Status.TopicID,
+		PayloadFormat:    gstorage.JSONPayload,
+		EventTypes:       r.toStorageEventTypes(storage.Spec.EventTypes),
+		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
+		CustomAttributes: customAttributes,
+	}
+
+	notification, err := bucket.AddNotification(ctx, nc)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Storage notification", zap.Error(err))
+		return "", err
+	}
+	return notification.ID, nil
 }
 
-func (r *Reconciler) EnsureNotificationDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, bucket, notificationId string) (ops.OpsJobStatus, error) {
-	return r.ensureNotificationJob(ctx, operations.NotificationArgs{
-		UID:            UID,
-		Image:          r.NotificationOpsImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      project,
-		Bucket:         bucket,
-		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
-	})
+func (r *Reconciler) toStorageEventTypes(eventTypes []string) []string {
+	storageTypes := make([]string, 0, len(eventTypes))
+	for _, eventType := range eventTypes {
+		storageTypes = append(storageTypes, storageEventTypes[eventType])
+	}
+	return storageTypes
 }
 
-// deleteNotification looks at the status.NotificationID and if non-empty
+// deleteNotification looks at the status.NotificationID and if non-empty,
 // hence indicating that we have created a notification successfully
 // in the Storage, remove it.
 func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.Storage) error {
@@ -256,28 +265,41 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 		return nil
 	}
 
-	state, err := r.EnsureNotificationDeleted(ctx, string(storage.UID), storage, *storage.Spec.Secret, storage.Status.ProjectID, storage.Spec.Bucket, storage.Status.NotificationID)
-
-	if state != ops.OpsJobCompleteSuccessful {
-		return fmt.Errorf("Job %q has not completed yet", storage.Name)
-	}
-
-	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, r.KubeClientSet, storage.Namespace, string(storage.UID), "delete")
+	// At this point the project should have been populated.
+	// Querying Storage as the notification could have been deleted outside the cluster (e.g, through gcloud).
+	client, err := gstorage.NewClient(ctx)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Storage client", zap.Error(err))
 		return err
-	}
-	// Check to see if the operation worked.
-	var result operations.NotificationActionResult
-	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
-		return err
-	}
-	if !result.Result {
-		return fmt.Errorf("operation failed: %s", result.Error)
 	}
 
-	r.Logger.Infof("Deleted Notification: %q", storage.Status.NotificationID)
-	storage.Status.NotificationID = ""
+	// Load the Bucket.
+	bucket := client.Bucket(storage.Spec.Bucket)
+
+	notifications, err := bucket.Notifications(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
+		return err
+	}
+
+	// This is bit wonky because, we could always just try to delete, but figuring out
+	// if an error returned is NotFound seems to not really work, so, we'll try
+	// checking first the list and only then deleting.
+	if existing, ok := notifications[storage.Status.NotificationID]; ok {
+		logging.FromContext(ctx).Desugar().Debug("Found existing notification", zap.Any("notification", existing))
+		err = bucket.DeleteNotification(ctx, storage.Status.NotificationID)
+		if err == nil {
+			logging.FromContext(ctx).Desugar().Debug("Deleted Notification", zap.String("notificationId", storage.Status.NotificationID))
+			return nil
+		}
+		if st, ok := gstatus.FromError(err); !ok {
+			logging.FromContext(ctx).Desugar().Error("Failed from Storage client while deleting Storage notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
+			return err
+		} else if st.Code() != codes.NotFound {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Storage notification", zap.String("notificationId", storage.Status.NotificationID), zap.Error(err))
+			return err
+		}
+	}
 	return nil
 }
 
@@ -369,48 +391,4 @@ func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Sto
 
 	update, err := r.RunClientSet.EventsV1alpha1().Storages(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
 	return update, true, err
-}
-
-func (r *Reconciler) ensureNotificationJob(ctx context.Context, args operations.NotificationArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.NotificationJobName(args.Owner, args.Action)
-	job, err := r.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
-
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		r.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
-
-		args.Image = r.NotificationOpsImage
-
-		job, err = operations.NewNotificationOps(args)
-		if err != nil {
-			return ops.OpsJobCreateFailed, err
-		}
-
-		job, err := r.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			r.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, err
-		}
-
-		r.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		r.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
-		// TODO: Handle this case
-		//	} else if !metav1.IsControlledBy(job, args.Owner) {
-		//		return ops.OpsJobCreateFailed, fmt.Errorf("storage does not own job %q", jobName)
-	}
-
-	if ops.IsJobFailed(job) {
-		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-	}
-
-	if ops.IsJobComplete(job) {
-		r.Logger.Debugw("Job is complete.")
-		return ops.OpsJobCompleteSuccessful, nil
-	}
-
-	r.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
 }

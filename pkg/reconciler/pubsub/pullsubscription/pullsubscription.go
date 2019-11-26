@@ -44,7 +44,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"cloud.google.com/go/compute/metadata"
-	googlepubsub "cloud.google.com/go/pubsub"
+	gpubsub "cloud.google.com/go/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
@@ -219,7 +219,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := googlepubsub.NewClient(ctx, ps.Spec.Project)
+	client, err := gpubsub.NewClient(ctx, ps.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
@@ -245,7 +245,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 	}
 
 	// subConfig is the wanted config based on settings.
-	subConfig := googlepubsub.SubscriptionConfig{
+	subConfig := gpubsub.SubscriptionConfig{
 		Topic:               t,
 		RetainAckedMessages: ps.Spec.RetainAckedMessages,
 	}
@@ -286,7 +286,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := googlepubsub.NewClient(ctx, ps.Spec.Project)
+	client, err := gpubsub.NewClient(ctx, ps.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
@@ -499,7 +499,7 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.loggingConfig = logcfg
 	r.Logger.Debugw("Update from logging ConfigMap", zap.Any("loggingCfg", cfg))
-	// TODO: requeue all pullsubscriptions
+	// TODO: requeue all PullSubscriptions
 }
 
 func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {

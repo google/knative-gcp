@@ -145,15 +145,15 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 	ps, err := r.pullsubscriptionLister.PullSubscriptions(source.Namespace).Get(source.Name)
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
-			r.Logger.Infof("Failed to get PullSubscriptions: %v", err)
-			return nil, fmt.Errorf("failed to get pullsubscriptions: %v", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
+			return nil, fmt.Errorf("failed to get PullSubscription: %v", err)
 		}
 		newPS := resources.MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, source.Spec.Topic, r.receiveAdapterName, resourceGroup)
-		r.Logger.Infof("Creating pullsubscription %+v", newPS)
+		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
 		if err != nil {
-			r.Logger.Infof("Failed to create PullSubscription: %v", err)
-			return nil, fmt.Errorf("failed to create pullsubscription: %v", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Error(err))
+			return nil, fmt.Errorf("failed to create PullSubscription: %v", err)
 		}
 	}
 	return ps, nil
@@ -177,10 +177,10 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub)
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		r.Logger.Infof("PubSub %q became ready after %v", source.Name, duration)
+		logging.FromContext(ctx).Desugar().Info("PubSub became ready after", zap.Any("duration", duration))
 
 		if err := r.StatsReporter.ReportReady("PubSub", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for Storage, %v", err)
+			logging.FromContext(ctx).Desugar().Info("Failed to record ready for PubSub", zap.Error(err))
 		}
 	}
 

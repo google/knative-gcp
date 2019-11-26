@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	googlepubsub "cloud.google.com/go/pubsub"
+	gpubsub "cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/tracing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -197,7 +197,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := googlepubsub.NewClient(ctx, topic.Spec.Project)
+	client, err := gpubsub.NewClient(ctx, topic.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
@@ -229,7 +229,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) error {
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := googlepubsub.NewClient(ctx, topic.Spec.Project)
+	client, err := gpubsub.NewClient(ctx, topic.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
