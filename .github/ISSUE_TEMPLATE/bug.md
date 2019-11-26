@@ -16,7 +16,7 @@ A clear and concise description of what you expected to happen.
  **To Reproduce**
 Steps to reproduce the behavior.
 
- **Knative release version**
+ **Knative-GCP release version**
 
  **Additional context**
 Add any other context about the problem here such as proposed priority
