@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -60,15 +62,14 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
-			psb.Logger.Infof("Failed to get Topics: %s", err)
-			return nil, nil, fmt.Errorf("failed to get topics: %s", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to get Topics: %s", err.Error())
 		}
 		newTopic := resources.MakeTopic(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
-		psb.Logger.Infof("Creating topic %+v", newTopic)
 		t, err = topics.Create(newTopic)
 		if err != nil {
-			psb.Logger.Infof("Failed to create Topic: %s", err)
-			return nil, nil, fmt.Errorf("failed to create topic: %s", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to create Topic: %s", err.Error())
 		}
 	}
 
@@ -89,7 +90,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 
 	if t.Status.TopicID != topic {
-		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s topic mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
 		return t, nil, errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
 	}
 
@@ -102,29 +103,26 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
-			psb.Logger.Infof("Failed to get PullSubscriptions: %s", err)
-			return t, nil, fmt.Errorf("failed to get pullsubscriptions: %s", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
+			return t, nil, fmt.Errorf("failed to get Pullsubscription: %s", err.Error())
 		}
 		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, resourceGroup)
-		psb.Logger.Infof("Creating pullsubscription %+v", newPS)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
-			psb.Logger.Infof("Failed to create PullSubscription: %s", err)
-			return t, nil, fmt.Errorf("failed to create pullsubscription: %s", err)
+			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
+			return t, nil, fmt.Errorf("failed to create PullSubscription: %s", err.Error())
 		}
 	}
 
 	if !ps.Status.IsReady() {
-		psb.Logger.Infof("PullSubscription is not ready yet")
 		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %s/%s not ready", ps.Namespace, ps.Name)
 		return t, ps, errors.New("pullsubscription not ready")
 	} else {
 		status.MarkPullSubscriptionReady(cs)
 	}
-	psb.Logger.Infof("Using %q as a cluster internal sink", ps.Status.SinkURI)
 	uri, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
-		return t, ps, errors.New(fmt.Sprintf("failed to parse url %q : %q", ps.Status.SinkURI, err))
+		return t, ps, fmt.Errorf("failed to parse url %q: %s", ps.Status.SinkURI, err.Error())
 	}
 	status.SinkURI = uri
 	return t, ps, nil
@@ -134,15 +132,15 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, namespace, name string)
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	err := topics.Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
-		psb.Logger.Infof("Failed to delete Topic: %s/%s : %s", namespace, name, err)
-		return fmt.Errorf("failed to delete topic: %s", err)
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("namespace", namespace), zap.String("name", name), zap.Error(err))
+		return fmt.Errorf("failed to delete topic: %s", err.Error())
 	}
 
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	err = pullSubscriptions.Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
-		psb.Logger.Infof("Failed to delete pullsubscription: %s/%s : %s", namespace, name, err)
-		return fmt.Errorf("failed to delete pullsubscription: %s", err)
+		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("namespace", namespace), zap.String("name", name), zap.Error(err))
+		return fmt.Errorf("failed to delete PullSubscription: %s", err.Error())
 	}
 	return nil
 }
