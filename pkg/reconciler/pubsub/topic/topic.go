@@ -169,6 +169,8 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		return err
 	}
 	topic.Status.MarkTopicReady()
+	// Set the project being used.
+	topic.Status.ProjectID = topic.Spec.Project
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {

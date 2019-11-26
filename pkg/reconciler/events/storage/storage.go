@@ -150,9 +150,9 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	topic := storage.Status.TopicID
 
 	storage.Status.InitializeConditions()
+
 	// And restore them.
 	storage.Status.NotificationID = notificationID
-
 	if topic == "" {
 		topic = fmt.Sprintf("storage-%s", string(storage.UID))
 	}
