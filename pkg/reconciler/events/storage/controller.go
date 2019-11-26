@@ -58,20 +58,20 @@ func NewController(
 	topicInformer := topicinformers.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	c := &Reconciler{
+	r := &Reconciler{
 		NotificationOpsImage: env.NotificationOpsImage,
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		storageLister:        storageInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, reconcilerName)
+	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
-	c.Logger.Info("Setting up event handlers")
+	r.Logger.Info("Setting up event handlers")
 	storageInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
