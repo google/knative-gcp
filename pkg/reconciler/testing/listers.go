@@ -39,7 +39,6 @@ import (
 	servingv1beta1listers "knative.dev/serving/pkg/client/listers/serving/v1beta1"
 
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	fakesharedclientset "knative.dev/pkg/client/clientset/versioned/fake"
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -58,7 +57,6 @@ var sinkAddToScheme = func(scheme *runtime.Scheme) error {
 
 var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakekubeclientset.AddToScheme,
-	fakesharedclientset.AddToScheme,
 	fakeeventsclientset.AddToScheme,
 	fakeservingclientset.AddToScheme,
 	sinkAddToScheme,
@@ -110,10 +108,6 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 
 func (l *Listers) GetServingObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeservingclientset.AddToScheme)
-}
-
-func (l *Listers) GetSharedObjects() []runtime.Object {
-	return l.sorter.ObjectsForSchemeFunc(fakesharedclientset.AddToScheme)
 }
 
 func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
