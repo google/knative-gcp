@@ -1309,7 +1309,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:11ea854dcb1a68431bae949a31fa673254fd9bf90cbde6d777c0d0d6b5b530a2"
+  digest = "1:2f827c49cb574aae6f5c310527e05a0bf8c494d32e6a26ea18a3e6dd220e3f3a"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1360,7 +1360,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "6c8bbf02e13576014fd4527a0c31c374a94d3fba"
+  revision = "d5ba001d9e9a3f8ec9b6afdeabbb1ee81d651685"
 
 [[projects]]
   branch = "master"
