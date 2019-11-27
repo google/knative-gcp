@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8e42ae1e640581432b26f2c75631b16e6525d1020e662a3ae0b78620bcf23877"
+  digest = "1:4e3f9d5cda677f4a71a8aec93f04a4aa823295a257265e2ddb437b45b4e174eb"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1219,11 +1219,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "8b5f8057cd205baa1ef88e0a7d4f2cdd961b3ccd"
+  revision = "82475968a0507db6ad48fb1246839c1c7160070a"
 
 [[projects]]
   branch = "master"
-  digest = "1:02bb033254628cebfbb92810a742f7a60e51ec685c7e2987c04ff4b97e1de058"
+  digest = "1:190c5a3785a8f9d0c19d22b3dfaa9f7e799f4645df0f279ee7dbc6add1ad11df"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1294,11 +1294,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "06d6b25dd6e10d1c02f31ecb7d953d98481715cf"
+  revision = "7fbd5952bb8ba857b8a9aa31d93aba07272f6ff2"
 
 [[projects]]
   branch = "master"
-  digest = "1:2f827c49cb574aae6f5c310527e05a0bf8c494d32e6a26ea18a3e6dd220e3f3a"
+  digest = "1:b1c00a39e3510f336768f16e184a9f1080c4b81d914ba0bb01cfdcc893c9d881"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1349,7 +1349,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "d5ba001d9e9a3f8ec9b6afdeabbb1ee81d651685"
+  revision = "509d53052bdad12a2ea8ef0a1cd99c2aefabd07d"
 
 [[projects]]
   branch = "master"
