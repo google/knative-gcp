@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
-	subscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 )
 
@@ -49,20 +49,19 @@ func NewController(
 	channelInformer := channelinformer.Get(ctx)
 
 	topicInformer := topicinformer.Get(ctx)
-	subscriptionInformer := subscriptioninformer.Get(ctx)
+	pullSubscriptionInformer := pullsubscriptioninformer.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName)
-	_ = logger
+	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
-	c := &Reconciler{
+	r := &Reconciler{
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 		channelLister:      channelInformer.Lister(),
 		topicLister:        topicInformer.Lister(),
-		subscriptionLister: subscriptionInformer.Lister(),
+		subscriptionLister: pullSubscriptionInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 
-	c.Logger.Info("Setting up event handlers")
+	logger.Info("Setting up event handlers")
 	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
@@ -70,12 +69,12 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	subscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
+	r.tracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 
 	return impl
 }

@@ -180,7 +180,6 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkSink(sinkURI),
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionMarkSubscribing(testSubscriptionID),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -436,7 +435,6 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionDeleted,
 					// updates
 					WithPullSubscriptionStatusObservedGeneration(generation),
-					WithPullSubscriptionMarkUnsubscribing(testSubscriptionID),
 				),
 			}},
 			WantCreates: []runtime.Object{

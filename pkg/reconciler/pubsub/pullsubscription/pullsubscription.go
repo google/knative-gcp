@@ -85,8 +85,6 @@ type Reconciler struct {
 	loggingConfig *logging.Config
 	metricsConfig *metrics.ExporterOptions
 	tracingConfig *tracingconfig.Config
-
-	//	eventTypeReconciler eventtype.Reconciler // TODO: event types.
 }
 
 // Check that our Reconciler implements controller.Reconciler

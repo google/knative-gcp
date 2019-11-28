@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package topic implements the Cloud Pub/Sub Topic controller.
+// Package topic implements the Pub/Sub Topic controller.
 package topic
