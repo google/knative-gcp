@@ -54,10 +54,10 @@ func NewController(
 	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		channelLister:      channelInformer.Lister(),
-		topicLister:        topicInformer.Lister(),
-		subscriptionLister: pullSubscriptionInformer.Lister(),
+		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+		channelLister:          channelInformer.Lister(),
+		topicLister:            topicInformer.Lister(),
+		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
 	}
 	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 

@@ -86,13 +86,6 @@ func WithChannelTopic(topicID string) ChannelOption {
 	}
 }
 
-func WithChannelMarkTopicCreating(topicID string) ChannelOption {
-	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("", "")
-		s.Status.TopicID = topicID
-	}
-}
-
 func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Spec = spec

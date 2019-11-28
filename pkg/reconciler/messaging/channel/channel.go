@@ -54,9 +54,9 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	channelLister      listers.ChannelLister
-	topicLister        pubsublisters.TopicLister
-	subscriptionLister pubsublisters.PullSubscriptionLister
+	channelLister          listers.ChannelLister
+	topicLister            pubsublisters.TopicLister
+	pullSubscriptionLister pubsublisters.PullSubscriptionLister
 
 	tracker tracker.Interface // TODO: use tracker for sink.
 }

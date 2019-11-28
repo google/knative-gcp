@@ -137,7 +137,6 @@ func TestAllCases(t *testing.T) {
 				WithChannelDefaults,
 				// Updates
 				WithInitChannelConditions,
-				WithChannelMarkTopicCreating(testTopicID),
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
 			),
 		}},
@@ -432,11 +431,11 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			channelLister:      listers.GetChannelLister(),
-			topicLister:        listers.GetTopicLister(),
-			subscriptionLister: listers.GetPullSubscriptionLister(),
-			tracker:            &MockTracker{},
+			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			channelLister:          listers.GetChannelLister(),
+			topicLister:            listers.GetTopicLister(),
+			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			tracker:                &MockTracker{},
 		}
 	}))
 
