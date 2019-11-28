@@ -56,7 +56,7 @@ func NewController(
 	decoratorInformer := decoratorinformer.Get(ctx)
 	serviceinformer := serviceinformer.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName)
+	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
@@ -72,7 +72,7 @@ func NewController(
 
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
-	c.Logger.Info("Setting up event handlers")
+	logger.Info("Setting up event handlers")
 	decoratorInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

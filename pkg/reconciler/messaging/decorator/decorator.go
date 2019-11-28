@@ -68,22 +68,21 @@ type Reconciler struct {
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Service resource
+// converge the two. It then updates the Status block of the Decorator resource
 // with the current status of the resource.
-func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		c.Logger.Errorf("invalid resource key: %s", key)
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
-	logger := logging.FromContext(ctx)
 
 	// Get the Decorator resource with this namespace/name
-	original, err := c.decoratorLister.Decorators(namespace).Get(name)
+	original, err := r.decoratorLister.Decorators(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logger.Errorf("service %q in work queue no longer exists", key)
+		logging.FromContext(ctx).Desugar().Error("Channel in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -92,9 +91,9 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Don't modify the informers copy
 	decorator := original.DeepCopy()
 
-	// Reconcile this copy of the Topic and then write back any status
+	// Reconcile this copy of the Decorator and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = c.reconcile(ctx, decorator)
+	var reconcileErr = r.reconcile(ctx, decorator)
 
 	// If no error is returned, mark the observed generation.
 	if reconcileErr == nil {
@@ -107,47 +106,48 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := c.updateStatus(ctx, decorator); uErr != nil {
-		logger.Warnw("Failed to update Topic status", zap.Error(uErr))
-		c.Recorder.Eventf(decorator, corev1.EventTypeWarning, "UpdateFailed",
+	} else if _, uErr := r.updateStatus(ctx, decorator); uErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update Decorator status", zap.Error(uErr))
+		r.Recorder.Eventf(decorator, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for Decorator %q: %v", decorator.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		c.Recorder.Eventf(decorator, corev1.EventTypeNormal, "Updated", "Updated Decorator %q", decorator.GetName())
+		r.Recorder.Eventf(decorator, corev1.EventTypeNormal, "Updated", "Updated Decorator %q", decorator.Name)
 	}
 	if reconcileErr != nil {
-		c.Recorder.Event(decorator, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+		r.Recorder.Event(decorator, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
 	return reconcileErr
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, decorator *v1alpha1.Decorator) error {
-	logger := logging.FromContext(ctx)
+func (r *Reconciler) reconcile(ctx context.Context, decorator *v1alpha1.Decorator) error {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("decorator", decorator)))
 
 	decorator.Status.InitializeConditions()
 
-	if decorator.GetDeletionTimestamp() != nil {
+	if decorator.DeletionTimestamp != nil {
 		return nil
 	}
 
 	// Sink is required to continue.
-	sinkURI, err := c.resolveDestination(ctx, decorator.Spec.Sink, decorator)
-	decorator.Status.MarkSink(sinkURI)
+	sinkURI, err := r.resolveDestination(ctx, decorator.Spec.Sink, decorator)
 	if err != nil {
+		decorator.Status.MarkNoSink("InvalidSink", err.Error())
 		return err
 	}
+	decorator.Status.MarkSink(sinkURI)
 
-	if err := c.createOrUpdateDecorator(ctx, decorator); err != nil {
-		logger.Error("Unable to create the decorator@v1alpha1", zap.Error(err))
+	if err := r.createOrUpdateDecorator(ctx, decorator); err != nil {
+		logging.FromContext(ctx).Desugar().Error("Unable to create the Decorator", zap.Error(err))
 		return err
 	}
 
 	return nil
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Decorator) (*v1alpha1.Decorator, error) {
-	decorator, err := c.decoratorLister.Decorators(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Decorator) (*v1alpha1.Decorator, error) {
+	decorator, err := r.decoratorLister.Decorators(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -160,12 +160,12 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Decorat
 	existing := decorator.DeepCopy()
 	existing.Status = desired.Status
 
-	dec, err := c.RunClientSet.MessagingV1alpha1().Decorators(desired.Namespace).UpdateStatus(existing)
+	dec, err := r.RunClientSet.MessagingV1alpha1().Decorators(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(dec.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Decorator %q became ready after %v", decorator.Name, duration)
+		r.Logger.Infof("Decorator %q became ready after %v", decorator.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("Decorator", decorator.Namespace, decorator.Name, duration); err != nil {
+		if err := r.StatsReporter.ReportReady("Decorator", decorator.Namespace, decorator.Name, duration); err != nil {
 			logging.FromContext(ctx).Infof("failed to record ready for Decorator, %v", err)
 		}
 	}
@@ -220,7 +220,7 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 	return nil
 }
 
-func (c *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, decorator *v1alpha1.Decorator) (string, error) {
+func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, decorator *v1alpha1.Decorator) (string, error) {
 	dest := duckv1beta1.Destination{
 		Ref: destination.GetRef(),
 		URI: destination.URI,
@@ -228,5 +228,5 @@ func (c *Reconciler) resolveDestination(ctx context.Context, destination duckv1.
 	if dest.Ref != nil {
 		dest.Ref.Namespace = decorator.Namespace
 	}
-	return c.uriResolver.URIFromDestination(dest, decorator)
+	return r.uriResolver.URIFromDestination(dest, decorator)
 }
