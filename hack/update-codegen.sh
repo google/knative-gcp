@@ -43,7 +43,7 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1" \
+  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 duck:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Make sure our dependencies are up-to-date
