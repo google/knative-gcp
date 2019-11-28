@@ -151,26 +151,13 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, channel); err != nil {
-		// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
-		// component to work with Eventing pre-v0.9.
-		// TODO: delete this when DeprecatedSubscribableStatus goes away.
-		channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
 		return err
 	}
 
 	// 3. Sync all subscriptions statuses.
 	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
-		// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
-		// component to work with Eventing pre-v0.9.
-		// TODO: delete this when DeprecatedSubscribableStatus goes away.
-		channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
 		return err
 	}
-
-	// Sync DeprecatedSubscribableStatus to SubscribableStatus. This allows the
-	// component to work with Eventing pre-v0.9.
-	// TODO: delete this when DeprecatedSubscribableStatus goes away.
-	channel.Status.DeprecatedSubscribableStatus = channel.Status.SubscribableStatus
 
 	return nil
 }

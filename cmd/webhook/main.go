@@ -62,7 +62,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 	return defaulting.NewAdmissionController(ctx,
 
 		// Name of the default webhook.
-		"defaulting.webhook.events.cloud.google.com",
+		"webhook.events.cloud.google.com",
 
 		// The path on which to serve the webhook.
 		"/defaulting",

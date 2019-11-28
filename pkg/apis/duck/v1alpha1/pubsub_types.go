@@ -31,7 +31,7 @@ import (
 // PubSub is an Implementable "duck type".
 var _ duck.Implementable = (*PubSub)(nil)
 
-// +genclient
+// +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PubSub is a shared type that GCP sources which create a
@@ -160,7 +160,6 @@ func (*PubSub) GetListType() runtime.Object {
 	return &PubSubList{}
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PubSubList is a list of PubSub resources

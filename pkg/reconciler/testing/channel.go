@@ -131,9 +131,6 @@ func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) C
 		c.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{
 			Subscribers: subscribers,
 		}
-		c.Status.DeprecatedSubscribableStatus = &duckv1alpha1.SubscribableStatus{
-			Subscribers: subscribers,
-		}
 	}
 }
 
