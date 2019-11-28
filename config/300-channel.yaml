@@ -58,12 +58,10 @@ spec:
           properties:
             secret:
               type: object
-              # TODO: document we default.
               description: "Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
             project:
               type: string
-              # TODO: document we default.
-              description: "ID of the Google Cloud Project to own the Pub/Sub credentials. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'."
+              description: "ID of the Google Cloud Project to own the Pub/Sub credentials. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
             subscribable:
               type: object
               properties:
@@ -129,8 +127,6 @@ spec:
                 required:
                   - type
                   - status
-            subscribablestatus: # deprecated
-              type: object
             subscribableStatus:
               type: object
               properties:

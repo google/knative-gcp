@@ -60,7 +60,7 @@ spec:
           properties:
             secret:
               type: object
-              description: "Credential to use for managing GCS notifications. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'"
+              description: "Credential to use for managing GCS notifications. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."
             pubSubSecret:
               type: object
               description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses secret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
@@ -106,17 +106,13 @@ spec:
                         name:
                           type: string
                           minLength: 1
-                - type: object
-                  properties:
-                    apiVersion:
-                      type: string
-                      minLength: 1
-                    kind:
-                      type: string
-                      minLength: 1
-                    name:
-                      type: string
-                      minLength: 1
+            ceOverrides:
+              type: object
+              description: "Defines overrides to control modifications of the event sent to the sink."
+              properties:
+                extensions:
+                  type: object
+                  description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
             eventTypes:
               type: array
               items:
