@@ -44,9 +44,18 @@ function update_benchmark() {
   cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
   git clone https://github.com/knative/eventing
   popd
-  ko delete -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} --ignore-not-found=true
-  sleep 60
-  ko apply -f ${BENCHMARK_ROOT_PATH}/$1/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
+
+  local benchmark_path="${BENCHMARK_ROOT_PATH}/$1"
+  # TODO(chizhg): add update_environment function in test-infra/scripts/performance-tests.sh and move the below code there
+  echo ">> Updating configmap"
+  kubectl delete configmap config-mako -n "${TEST_NAMESPACE}" --ignore-not-found=true
+  kubectl create configmap config-mako -n "${TEST_NAMESPACE}" --from-file="${benchmark_path}/prod.config" || abort "failed to create config-mako configmap"
+  kubectl patch configmap config-mako -n "${TEST_NAMESPACE}" -p '{"data":{"environment":"prod"}}' || abort "failed to patch config-mako configmap"
+
+  echo ">> Updating benchmark $1"
+  ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true
+  sleep 30
+  ko apply -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 
   echo "Sleeping 2 min to wait for all resources to setup"
   sleep 120

@@ -15,7 +15,7 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: defaulting.webhook.events.cloud.google.com
+  name: webhook.events.cloud.google.com
   labels:
     events.cloud.google.com/release: devel
 webhooks:
@@ -26,7 +26,7 @@ webhooks:
       name: webhook
       namespace: cloud-run-events
   failurePolicy: Fail
-  name: defaulting.webhook.events.cloud.google.com
+  name: webhook.events.cloud.google.com
 
 ---
 
