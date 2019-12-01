@@ -35,7 +35,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
