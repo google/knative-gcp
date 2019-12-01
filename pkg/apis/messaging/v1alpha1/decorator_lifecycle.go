@@ -72,11 +72,6 @@ func (ds *DecoratorStatus) MarkServiceReady() {
 	decoratorCondSet.Manage(ds).MarkTrue(DecoratorConditionServiceReady)
 }
 
-// MarkServiceOperating sets the condition that the serivce is being created.
-func (ds *DecoratorStatus) MarkServiceOperating(reason, messageFormat string, messageA ...interface{}) {
-	decoratorCondSet.Manage(ds).MarkUnknown(DecoratorConditionServiceReady, reason, messageFormat, messageA...)
-}
-
 // MarkNoService sets the condition that signals there is not a service for this
 // Decorator. This could be because of an error or the Decorator is being deleted.
 func (ds *DecoratorStatus) MarkNoService(reason, messageFormat string, messageA ...interface{}) {
@@ -92,7 +87,7 @@ func (ds *DecoratorStatus) MarkServiceNotOwned(messageFormat string, messageA ..
 func (ds *DecoratorStatus) PropagateServiceStatus(ready *apis.Condition) {
 	switch {
 	case ready == nil:
-		ds.MarkServiceOperating("ServiceStatus", "Decorator Service has no Ready type status.")
+		ds.MarkNoService("ServiceNotReady", "Decorator Service has no Ready type status.")
 	case ready.IsTrue():
 		ds.MarkServiceReady()
 	case ready.IsFalse():

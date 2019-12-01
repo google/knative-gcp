@@ -38,6 +38,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	servingv1listers "knative.dev/serving/pkg/client/listers/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
@@ -138,11 +139,16 @@ func (r *Reconciler) reconcile(ctx context.Context, decorator *v1alpha1.Decorato
 	}
 	decorator.Status.MarkSink(sinkURI)
 
-	if err := r.createOrUpdateDecorator(ctx, decorator); err != nil {
-		logging.FromContext(ctx).Desugar().Error("Unable to create the Decorator", zap.Error(err))
+	svc, err := r.createOrUpdateDecorator(ctx, decorator)
+	if err != nil {
+		decorator.Status.MarkNoService("DecoratorReconcileFailed", "Failed to reconcile Decorator: %s", err.Error())
 		return err
 	}
-
+	// Update the decorator.
+	decorator.Status.PropagateServiceStatus(svc.Status.GetCondition(apis.ConditionReady))
+	if svc.Status.IsReady() {
+		decorator.Status.SetAddress(svc.Status.Address.URL)
+	}
 	return nil
 }
 
@@ -163,28 +169,28 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Decorat
 	dec, err := r.RunClientSet.MessagingV1alpha1().Decorators(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(dec.ObjectMeta.CreationTimestamp.Time)
-		r.Logger.Infof("Decorator %q became ready after %v", decorator.Name, duration)
+		logging.FromContext(ctx).Desugar().Info("Decorator became ready after", zap.Any("duration", duration))
 
 		if err := r.StatsReporter.ReportReady("Decorator", decorator.Namespace, decorator.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for Decorator, %v", err)
+			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Decorator", zap.Error(err))
 		}
 	}
 	return dec, err
 }
 
-func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1alpha1.Decorator) error {
+func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1alpha1.Decorator) (*servingv1.Service, error) {
 	name := resources.GenerateDecoratorName(decorator)
 	existing, err := r.ServingClientSet.ServingV1().Services(decorator.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			logging.FromContext(ctx).Error("Unable to get an existing decorator", zap.Error(err))
-			return err
+			logging.FromContext(ctx).Desugar().Error("Unable to get an existing decorator", zap.Error(err))
+			return nil, err
 		}
 		existing = nil
 	} else if !metav1.IsControlledBy(existing, decorator) {
 		p, _ := json.Marshal(existing)
-		logging.FromContext(ctx).Error("Got a preowned decorator", zap.Any("decorator", string(p)))
-		return fmt.Errorf("Decorator: %s does not own Service: %s", decorator.Name, name)
+		logging.FromContext(ctx).Desugar().Error("Got a preowned decorator", zap.Any("decorator", string(p)))
+		return nil, fmt.Errorf("Decorator: %s does not own Service: %s", decorator.Name, name)
 	}
 
 	desired := resources.MakeDecoratorV1alpha1(ctx, &resources.DecoratorArgs{
@@ -197,27 +203,22 @@ func (r *Reconciler) createOrUpdateDecorator(ctx context.Context, decorator *v1a
 	if existing == nil {
 		svc, err = r.ServingClientSet.ServingV1().Services(decorator.Namespace).Create(desired)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		logging.FromContext(ctx).Desugar().Info("Decorator created.", zap.Error(err), zap.Any("decorator", svc))
+		logging.FromContext(ctx).Desugar().Info("Decorator created", zap.Any("decorator", svc))
 	} else if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
 		existing.Spec = desired.Spec
 		svc, err = r.ServingClientSet.ServingV1().Services(decorator.Namespace).Update(existing)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		logging.FromContext(ctx).Desugar().Info("Decorator updated.",
-			zap.Error(err), zap.Any("decorator", svc), zap.String("diff", diff))
+		logging.FromContext(ctx).Desugar().Info("Decorator updated",
+			zap.Any("decorator", svc), zap.String("diff", diff))
 	} else {
 		logging.FromContext(ctx).Desugar().Info("Reusing existing decorator", zap.Any("decorator", existing))
 	}
 
-	// Update the decorator.
-	decorator.Status.PropagateServiceStatus(svc.Status.GetCondition(apis.ConditionReady))
-	if svc.Status.IsReady() {
-		decorator.Status.SetAddress(svc.Status.Address.URL)
-	}
-	return nil
+	return svc, nil
 }
 
 func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, decorator *v1alpha1.Decorator) (string, error) {
