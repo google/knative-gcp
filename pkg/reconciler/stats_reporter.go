@@ -35,10 +35,20 @@ const (
 	// ChannelReadyLatencyN is the time it takes for a channel to become ready since the resource is created.
 	ChannelReadyLatencyN = "channel_ready_latency"
 
+	// DecoratorReadyCountN is the number of decorators that have become ready.
+	DecoratorReadyCountN = "decorator_ready_count"
+	// DecoratorReadyLatencyN is the time it takes for a decorator to become ready since the resource is created.
+	DecoratorReadyLatencyN = "decorator_ready_latency"
+
 	// PullSubscriptionReadyCountN is the number of pull subscriptions that have become ready.
 	PullSubscriptionReadyCountN = "pullsubscription_ready_count"
 	// PullSubscriptionReadyLatencyN is the time it takes for a pull subscription to become ready since the resource is created.
 	PullSubscriptionReadyLatencyN = "pullsubscription_ready_latency"
+
+	// TopicReadyCountN is the number of topics that have become ready.
+	TopicReadyCountN = "pullsubscription_ready_count"
+	// TopicReadyLatencyN is the time it takes for a topic to become ready since the resource is created.
+	TopicReadyLatencyN = "pullsubscription_ready_latency"
 
 	// StorageReadyCountN is the number of storages that have become ready.
 	StorageReadyCountN = "storage_ready_count"
@@ -49,18 +59,34 @@ const (
 	PubSubReadyCountN = "pubsub_ready_count"
 	// PubSubReadyLatencyN is the time it takes for a pubsub to become ready since the resource is created.
 	PubSubReadyLatencyN = "pubsub_ready_latency"
+
+	// SchedulerReadyCountN is the number of schedulers that have become ready.
+	SchedulerReadyCountN = "scheduler_ready_count"
+	// SchedulerReadyLatencyN is the time it takes for a scheduler to become ready since the resource is created.
+	SchedulerReadyLatencyN = "scheduler_ready_latency"
 )
 
 var (
 	KindToStatKeys = map[string]StatKey{
+		// messaging
 		"Channel": {
 			ReadyCountKey:   ChannelReadyCountN,
 			ReadyLatencyKey: ChannelReadyLatencyN,
 		},
+		"Decorator": {
+			ReadyCountKey:   DecoratorReadyCountN,
+			ReadyLatencyKey: DecoratorReadyLatencyN,
+		},
+		// pubsub
 		"PullSubscription": {
 			ReadyCountKey:   PullSubscriptionReadyCountN,
 			ReadyLatencyKey: PullSubscriptionReadyLatencyN,
 		},
+		"Topic": {
+			ReadyCountKey:   TopicReadyCountN,
+			ReadyLatencyKey: TopicReadyLatencyN,
+		},
+		// events
 		"Storage": {
 			ReadyCountKey:   StorageReadyCountN,
 			ReadyLatencyKey: StorageReadyLatencyN,
@@ -68,6 +94,10 @@ var (
 		"PubSub": {
 			ReadyCountKey:   PubSubReadyCountN,
 			ReadyLatencyKey: PubSubReadyLatencyN,
+		},
+		"Scheduler": {
+			ReadyCountKey:   SchedulerReadyCountN,
+			ReadyLatencyKey: SchedulerReadyLatencyN,
 		},
 	}
 
