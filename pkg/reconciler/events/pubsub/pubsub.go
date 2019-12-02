@@ -130,7 +130,6 @@ func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.PubSub) err
 	pubsub.Status.PropagatePullSubscriptionStatus(ps.Status.GetCondition(apis.ConditionReady))
 
 	// Sink has been resolved from the underlying PullSubscription, set it here.
-	// TODO should be uriResolve it here as well?
 	sinkURI, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
 		pubsub.Status.SinkURI = nil

@@ -40,6 +40,9 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-scheduler-source-controller"
+
+	// receiveAdapterName is the string used as name for the receive adapter pod.
+	receiveAdapterName = "scheduler.events.cloud.google.com"
 )
 
 type envConfig struct {
@@ -67,7 +70,7 @@ func NewController(
 
 	c := &Reconciler{
 		SchedulerOpsImage: env.SchedulerJobOpsImage,
-		PubSubBase:        pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
+		PubSubBase:        pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		schedulerLister:   schedulerInformer.Lister(),
 		jobLister:         jobInformer.Lister(),
 	}
