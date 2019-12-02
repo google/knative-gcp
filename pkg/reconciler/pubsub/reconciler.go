@@ -25,7 +25,7 @@ import (
 	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"go.uber.org/zap"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
