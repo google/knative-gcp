@@ -24,11 +24,11 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
+	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,6 +41,7 @@ type ReceiveAdapterArgs struct {
 	Labels         map[string]string
 	SubscriptionID string
 	SinkURI        string
+	TransformerURI string
 	MetricsConfig  string
 	LoggingConfig  string
 	TracingConfig  string
@@ -63,7 +64,7 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 	ceExtensions := ""
 	if args.Source.Spec.CloudEventOverrides != nil && args.Source.Spec.CloudEventOverrides.Extensions != nil {
 		var err error
-		ceExtensions, err = resources.MapToBase64(args.Source.Spec.CloudEventOverrides.Extensions)
+		ceExtensions, err = utils.MapToBase64(args.Source.Spec.CloudEventOverrides.Extensions)
 		if err != nil {
 			logging.FromContext(ctx).Warnw("failed to make cloudevents overrides extensions",
 				zap.Error(err),
@@ -129,6 +130,9 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						}, {
 							Name:  "SINK_URI",
 							Value: args.SinkURI,
+						}, {
+							Name:  "TRANSFORMER_URI",
+							Value: args.TransformerURI,
 						}, {
 							Name:  "SEND_MODE",
 							Value: string(mode),

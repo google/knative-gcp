@@ -27,7 +27,7 @@ func (c *pubsubClient) Topic(id string) Topic {
 	return &pubsubTopic{topic: c.client.Topic(id)}
 }
 
-// pubsubTopic wrapps pubsub.Topic
+// pubsubTopic wraps pubsub.Topic
 type pubsubTopic struct {
 	topic *pubsub.Topic
 }
