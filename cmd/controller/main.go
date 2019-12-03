@@ -24,7 +24,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
-	"github.com/google/knative-gcp/pkg/reconciler/messaging/decorator"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic"
 
@@ -39,6 +38,5 @@ func main() {
 		pullsubscription.NewController,
 		topic.NewController,
 		channel.NewController,
-		decorator.NewController,
 	)
 }

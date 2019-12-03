@@ -43,8 +43,6 @@ spec:
           value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
         - name: PUBSUB_PUBLISHER_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/publisher
-        - name: DECORATOR_IMAGE
-          value: github.com/google/knative-gcp/cmd/decorator
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

@@ -14,22 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package adapter
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestDecoratorDefaults(t *testing.T) {
-	want := &Decorator{Spec: DecoratorSpec{}}
+func TestCEExtensions(t *testing.T) {
+	extensions := map[string]string{
+		"foo":   "bar",
+		"boosh": "kakow",
+	}
+	extensionsString, _ := MapToBase64(extensions)
+	// Test the to string
+	{
+		want := "eyJib29zaCI6Imtha293IiwiZm9vIjoiYmFyIn0="
+		got := extensionsString
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("unexpected (-want, +got) = %v", diff)
+			t.Log(got)
+		}
+	}
+	// Test the to map
+	{
+		want := extensions
+		got, _ := Base64ToMap(extensionsString)
 
-	got := &Decorator{Spec: DecoratorSpec{}}
-	got.SetDefaults(context.Background())
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("unexpected (-want, +got) = %v", diff)
+			t.Log(got)
+		}
 	}
 }

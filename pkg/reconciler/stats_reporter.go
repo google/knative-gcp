@@ -35,11 +35,6 @@ const (
 	// ChannelReadyLatencyN is the time it takes for a channel to become ready since the resource is created.
 	ChannelReadyLatencyN = "channel_ready_latency"
 
-	// DecoratorReadyCountN is the number of decorators that have become ready.
-	DecoratorReadyCountN = "decorator_ready_count"
-	// DecoratorReadyLatencyN is the time it takes for a decorator to become ready since the resource is created.
-	DecoratorReadyLatencyN = "decorator_ready_latency"
-
 	// PullSubscriptionReadyCountN is the number of pull subscriptions that have become ready.
 	PullSubscriptionReadyCountN = "pullsubscription_ready_count"
 	// PullSubscriptionReadyLatencyN is the time it takes for a pull subscription to become ready since the resource is created.
@@ -72,10 +67,6 @@ var (
 		"Channel": {
 			ReadyCountKey:   ChannelReadyCountN,
 			ReadyLatencyKey: ChannelReadyLatencyN,
-		},
-		"Decorator": {
-			ReadyCountKey:   DecoratorReadyCountN,
-			ReadyLatencyKey: DecoratorReadyLatencyN,
 		},
 		// pubsub
 		"PullSubscription": {

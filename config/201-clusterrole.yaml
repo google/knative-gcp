@@ -48,14 +48,12 @@ rules:
     - messaging.cloud.google.com
   resources:
     - channels
-    - decorators
   verbs: *everything
 
 - apiGroups:
     - messaging.cloud.google.com
   resources:
     - channels/status
-    - decorators/status
   verbs:
     - get
     - update

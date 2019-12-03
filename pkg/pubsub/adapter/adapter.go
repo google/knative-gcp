@@ -27,13 +27,12 @@ import (
 
 	nethttp "net/http"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/tracing"
@@ -127,8 +126,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 
 	// Convert base64 encoded json map to extensions map.
-	// This implementation comes from the Decorator object.
-	a.extensions, err = decoratorresources.Base64ToMap(a.ExtensionsBase64)
+	a.extensions, err = Base64ToMap(a.ExtensionsBase64)
 	if err != nil {
 		fmt.Printf("[warn] failed to convert base64 extensions to map: %v", err)
 	}

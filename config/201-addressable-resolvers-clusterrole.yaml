@@ -107,8 +107,6 @@ rules:
     resources:
       - channels
       - channels/status
-      - decorators
-      - decorators/status
     verbs:
       - get
       - list
