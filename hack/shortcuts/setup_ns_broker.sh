@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Usage: ./setup_ns_broker.sh [REQUIRED: EXISTING_NAMESPACE] [OPTIONAL: EXISTING_GSA]
-# If the second parameter is not provided, a default service account name ("cloud-run-eventing") will be used.
+# If the second parameter is not provided, a default service account name ("cloud-run-events") will be used.
 # The current project set in gcloud MUST be the same as where the cluster is running.
 
 set -o errexit
@@ -31,7 +31,7 @@ NAMESPACE=$1
 PROJECT_ID=$(gcloud config get-value project)
 KEY_TEMP=google-cloud-key.json
 
-GSA=cloud-run-eventing
+GSA=cloud-run-events
 if [[ -z "$2" ]]; then
   echo "GSA not provided; will create GSA ${GSA} in project ${PROJECT_ID} instead."
   gcloud iam service-accounts create ${GSA}
