@@ -43,16 +43,8 @@ spec:
           value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
         - name: PUBSUB_PUBLISHER_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/publisher
-        - name: PUBSUB_TOPIC_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/topic
-        - name: PUBSUB_SUB_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/subscription
         - name: DECORATOR_IMAGE
           value: github.com/google/knative-gcp/cmd/decorator
-        - name: STORAGE_NOTIFICATION_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/notification
-        - name: SCHEDULER_JOB_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/scheduler
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:

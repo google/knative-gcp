@@ -19,17 +19,20 @@ package decorator
 import (
 	"context"
 
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
+
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/resolver"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
-
-	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 
 	decoratorinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/decorator"
+	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
 const (
@@ -41,6 +44,11 @@ const (
 	controllerAgentName = "cloud-run-events-decorator-controller"
 )
 
+type envConfig struct {
+	// Decorator is the image used to run the decorator. Required.
+	Decorator string `envconfig:"DECORATOR_IMAGE" required:"true"`
+}
+
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
 func NewController(
@@ -50,10 +58,18 @@ func NewController(
 	decoratorInformer := decoratorinformer.Get(ctx)
 	serviceinformer := serviceinformer.Get(ctx)
 
+	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
+
+	var env envConfig
+	if err := envconfig.Process("", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
+	}
+
 	r := &Reconciler{
 		Base:            reconciler.NewBase(ctx, controllerAgentName, cmw),
 		decoratorLister: decoratorInformer.Lister(),
 		serviceLister:   serviceinformer.Lister(),
+		decoratorImage:  env.Decorator,
 	}
 
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
