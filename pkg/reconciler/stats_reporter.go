@@ -46,9 +46,9 @@ const (
 	PullSubscriptionReadyLatencyN = "pullsubscription_ready_latency"
 
 	// TopicReadyCountN is the number of topics that have become ready.
-	TopicReadyCountN = "pullsubscription_ready_count"
+	TopicReadyCountN = "topic_ready_count"
 	// TopicReadyLatencyN is the time it takes for a topic to become ready since the resource is created.
-	TopicReadyLatencyN = "pullsubscription_ready_latency"
+	TopicReadyLatencyN = "topic_ready_latency"
 
 	// StorageReadyCountN is the number of storages that have become ready.
 	StorageReadyCountN = "storage_ready_count"

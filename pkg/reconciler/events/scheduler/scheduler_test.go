@@ -672,7 +672,6 @@ func TestAllCases(t *testing.T) {
 			SchedulerOpsImage: testImage,
 			PubSubBase:        pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
 			schedulerLister:   listers.GetSchedulerLister(),
-			jobLister:         listers.GetJobLister(),
 		}
 	}))
 

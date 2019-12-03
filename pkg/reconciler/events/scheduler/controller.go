@@ -29,8 +29,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
-	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
-
 	schedulerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/scheduler"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
@@ -59,7 +57,6 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
-	jobInformer := jobinformer.Get(ctx)
 	schedulerInformer := schedulerinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName)
@@ -72,17 +69,11 @@ func NewController(
 		SchedulerOpsImage: env.SchedulerJobOpsImage,
 		PubSubBase:        pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		schedulerLister:   schedulerInformer.Lister(),
-		jobLister:         jobInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
 	schedulerInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
-	jobInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Scheduler")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Scheduler")),
