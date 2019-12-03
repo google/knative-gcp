@@ -23,13 +23,10 @@ import (
 	"fmt"
 	"time"
 
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
-	"knative.dev/pkg/resolver"
-
-	tracingconfig "knative.dev/pkg/tracing/config"
-
-	"knative.dev/pkg/metrics"
+	"cloud.google.com/go/compute/metadata"
+	gpubsub "cloud.google.com/go/pubsub"
+	"github.com/google/go-cmp/cmp"
+	"go.uber.org/zap"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,23 +40,23 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
-	"cloud.google.com/go/compute/metadata"
-	gpubsub "cloud.google.com/go/pubsub"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
-	"github.com/google/knative-gcp/pkg/tracing"
-	"go.uber.org/zap"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
+	tracingconfig "knative.dev/pkg/tracing/config"
+
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/resolver"
+
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
+	"github.com/google/knative-gcp/pkg/tracing"
 )
 
 const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "PullSubscriptions"
-
 	// Component names for metrics.
 	sourceComponent  = "source"
 	channelComponent = "channel"
@@ -74,9 +71,10 @@ const (
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	// Listers index properties about resources.
+	// deploymentLister index properties about deployments.
 	deploymentLister appsv1listers.DeploymentLister
-	sourceLister     listers.PullSubscriptionLister
+	// pullSubscriptionLister index properties about pullsubscriptions.
+	pullSubscriptionLister listers.PullSubscriptionLister
 
 	uriResolver *resolver.URIResolver
 
@@ -101,7 +99,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 	// Get the PullSubscription resource with this namespace/name
-	original, err := r.sourceLister.PullSubscriptions(namespace).Get(name)
+	original, err := r.pullSubscriptionLister.PullSubscriptions(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
 		logging.FromContext(ctx).Desugar().Error("PullSubscription in work queue no longer exists")
@@ -318,7 +316,7 @@ func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
-	source, err := r.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
+	source, err := r.pullSubscriptionLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +345,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 // updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
 func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
-	source, err := r.sourceLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
+	source, err := r.pullSubscriptionLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
 	}

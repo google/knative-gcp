@@ -29,13 +29,16 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
 const (
+	// reconcilerName is the name of the reconciler
+	reconcilerName = "Topics"
+
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
@@ -44,9 +47,6 @@ const (
 type envConfig struct {
 	// Publisher is the image used to publish to Pub/Sub. Required.
 	Publisher string `envconfig:"PUBSUB_PUBLISHER_IMAGE" required:"true"`
-
-	// TopicOps is the image for operating on topics. Required.
-	TopicOps string `envconfig:"PUBSUB_TOPIC_IMAGE" required:"true"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -66,8 +66,7 @@ func NewController(
 	}
 
 	pubsubBase := &pubsub.PubSubBase{
-		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-		TopicOpsImage: env.TopicOps,
+		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
 	r := &Reconciler{
@@ -77,9 +76,9 @@ func NewController(
 		publisherImage: env.Publisher,
 	}
 
-	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
-	logger.Info("Setting up event handlers")
+	pubsubBase.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{

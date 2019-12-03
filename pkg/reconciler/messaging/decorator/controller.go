@@ -21,15 +21,11 @@ import (
 
 	"knative.dev/pkg/resolver"
 
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
-
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
 
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 
@@ -37,15 +33,13 @@ import (
 )
 
 const (
+	// reconcilerName is the name of the reconciler
+	reconcilerName = "Decorators"
+
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-decorator-controller"
 )
-
-type envConfig struct {
-	// Decorator is the image used to run the decorator. Required.
-	Decorator string `envconfig:"DECORATOR_IMAGE" required:"true"`
-}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -56,23 +50,15 @@ func NewController(
 	decoratorInformer := decoratorinformer.Get(ctx)
 	serviceinformer := serviceinformer.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
-
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logger.Fatal("Failed to process env var", zap.Error(err))
-	}
-
-	c := &Reconciler{
+	r := &Reconciler{
 		Base:            reconciler.NewBase(ctx, controllerAgentName, cmw),
 		decoratorLister: decoratorInformer.Lister(),
 		serviceLister:   serviceinformer.Lister(),
-		decoratorImage:  env.Decorator,
 	}
 
-	impl := controller.NewImpl(c, c.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
-	logger.Info("Setting up event handlers")
+	r.Logger.Info("Setting up event handlers")
 	decoratorInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
@@ -80,7 +66,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	c.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	return impl
 }

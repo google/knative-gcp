@@ -30,11 +30,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"go.uber.org/zap"
+	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/tracker"
-
-	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -42,11 +40,6 @@ import (
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-)
-
-const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Channels"
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
@@ -57,8 +50,6 @@ type Reconciler struct {
 	channelLister          listers.ChannelLister
 	topicLister            pubsublisters.TopicLister
 	pullSubscriptionLister pubsublisters.PullSubscriptionLister
-
-	tracker tracker.Interface // TODO: use tracker for sink.
 }
 
 // Check that our Reconciler implements controller.Reconciler

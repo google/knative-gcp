@@ -19,23 +19,29 @@ package pullsubscription
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
-	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
+
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 )
 
 const (
+	// reconcilerName is the name of the reconciler
+	reconcilerName = "PullSubscriptions"
+
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
@@ -44,9 +50,6 @@ const (
 type envConfig struct {
 	// ReceiveAdapter is the receive adapters image. Required.
 	ReceiveAdapter string `envconfig:"PUBSUB_RA_IMAGE" required:"true"`
-
-	// SubscriptionOps is the image for operating on subscriptions. Required.
-	SubscriptionOps string `envconfig:"PUBSUB_SUB_IMAGE" required:"true"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -57,7 +60,7 @@ func NewController(
 ) *controller.Impl {
 
 	deploymentInformer := deploymentinformer.Get(ctx)
-	sourceInformer := pullsubscriptioninformers.Get(ctx)
+	pullSubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
@@ -67,20 +70,20 @@ func NewController(
 	}
 
 	pubsubBase := &pubsub.PubSubBase{
-		Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-		SubscriptionOpsImage: env.SubscriptionOps,
+		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
 	r := &Reconciler{
-		PubSubBase:          pubsubBase,
-		deploymentLister:    deploymentInformer.Lister(),
-		sourceLister:        sourceInformer.Lister(),
-		receiveAdapterImage: env.ReceiveAdapter,
+		PubSubBase:             pubsubBase,
+		deploymentLister:       deploymentInformer.Lister(),
+		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
+		receiveAdapterImage:    env.ReceiveAdapter,
 	}
-	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
 
-	logger.Info("Setting up event handlers")
-	sourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
+
+	pubsubBase.Logger.Info("Setting up event handlers")
+	pullSubscriptionInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),

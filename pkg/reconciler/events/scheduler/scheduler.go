@@ -46,9 +46,6 @@ import (
 )
 
 const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Scheduler"
-
 	finalizerName = controllerAgentName
 
 	resourceGroup = "schedulers.events.cloud.google.com"
@@ -58,10 +55,7 @@ const (
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	// Image to use for launching jobs that operate on Scheduler resources.
-	SchedulerOpsImage string
-
-	// gcssourceclientset is a clientset for our own API group
+	// schedulerLister for reading schedulers.
 	schedulerLister listers.SchedulerLister
 }
 

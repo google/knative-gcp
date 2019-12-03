@@ -49,7 +49,7 @@ import (
 	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 
 	. "knative.dev/pkg/reconciler/testing"
@@ -651,15 +651,14 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		pubsubBase := &pubsub.PubSubBase{
-			Base:                 reconciler.NewBase(ctx, controllerAgentName, cmw),
-			SubscriptionOpsImage: testImage,
+			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
 		return &Reconciler{
-			PubSubBase:          pubsubBase,
-			deploymentLister:    listers.GetDeploymentLister(),
-			sourceLister:        listers.GetPullSubscriptionLister(),
-			uriResolver:         resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
-			receiveAdapterImage: testImage,
+			PubSubBase:             pubsubBase,
+			deploymentLister:       listers.GetDeploymentLister(),
+			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			uriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
+			receiveAdapterImage:    testImage,
 		}
 	}))
 }

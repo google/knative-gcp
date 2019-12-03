@@ -20,19 +20,17 @@ import (
 	"os"
 	"testing"
 
+	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
+	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics"
+	_ "knative.dev/pkg/metrics/testing"
+	. "knative.dev/pkg/reconciler/testing"
+	"knative.dev/pkg/system"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"knative.dev/pkg/configmap"
-	logtesting "knative.dev/pkg/logging/testing"
-	. "knative.dev/pkg/reconciler/testing"
-	"knative.dev/pkg/system"
-
-	_ "knative.dev/pkg/metrics/testing"
 
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"

@@ -47,18 +47,14 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/decorator/resources"
 )
 
-const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Decorators"
-)
-
-// Reconciler implements controller.Reconciler for Topic resources.
+// Reconciler implements controller.Reconciler for Decorator resources.
 type Reconciler struct {
 	*reconciler.Base
 
-	// decoratorLister index properties about resources
+	// decoratorLister index properties about decorators.
 	decoratorLister listers.DecoratorLister
-	serviceLister   servingv1listers.ServiceLister
+	// serviceLister index properties about services.
+	serviceLister servingv1listers.ServiceLister
 
 	uriResolver *resolver.URIResolver
 

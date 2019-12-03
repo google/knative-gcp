@@ -29,6 +29,9 @@ import (
 )
 
 const (
+	// reconcilerName is the name of the reconciler
+	reconcilerName = "PubSub"
+
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
@@ -53,7 +56,7 @@ func NewController(
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		receiveAdapterName:     receiveAdapterName,
 	}
-	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
+	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
 	r.Logger.Info("Setting up event handlers")
 	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))

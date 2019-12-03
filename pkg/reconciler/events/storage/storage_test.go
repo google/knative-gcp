@@ -775,10 +775,8 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			NotificationOpsImage: testImage,
-			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
-			storageLister:        listers.GetStorageLister(),
-			jobLister:            listers.GetJobLister(),
+			PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
+			storageLister: listers.GetStorageLister(),
 		}
 	}))
 

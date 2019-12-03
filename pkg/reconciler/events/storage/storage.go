@@ -43,9 +43,6 @@ import (
 )
 
 const (
-	// ReconcilerName is the name of the reconciler
-	reconcilerName = "Storage"
-
 	finalizerName = controllerAgentName
 
 	resourceGroup = "storages.events.cloud.google.com"
@@ -66,10 +63,7 @@ var (
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	// Image to use for launching jobs that operate on notifications
-	NotificationOpsImage string
-
-	// storageLister is the Storage lister.
+	// storageLister for reading storages.
 	storageLister listers.StorageLister
 }
 

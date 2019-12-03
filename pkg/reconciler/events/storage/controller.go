@@ -19,15 +19,11 @@ package storage
 import (
 	"context"
 
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/logging"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	storageinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
@@ -35,17 +31,16 @@ import (
 )
 
 const (
+	// reconcilerName is the name of the reconciler
+	reconcilerName = "Storage"
+
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-storage-source-controller"
+
 	// receiveAdapterName is the string used as name for the receive adapter pod.
 	receiveAdapterName = "storage.events.cloud.google.com"
 )
-
-type envConfig struct {
-	// NotificationOps is the image for operating on notifications. Required.
-	NotificationOpsImage string `envconfig:"STORAGE_NOTIFICATION_IMAGE" required:"true"`
-}
 
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
@@ -58,16 +53,9 @@ func NewController(
 	topicInformer := topicinformers.Get(ctx)
 	storageInformer := storageinformers.Get(ctx)
 
-	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
-	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logger.Fatal("Failed to process env var", zap.Error(err))
-	}
-
 	r := &Reconciler{
-		NotificationOpsImage: env.NotificationOpsImage,
-		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		storageLister:        storageInformer.Lister(),
+		PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		storageLister: storageInformer.Lister(),
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 

@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/compute/metadata"
 	gpubsub "cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/tracing"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -35,25 +36,22 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
-	"go.uber.org/zap"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	tracingconfig "knative.dev/pkg/tracing/config"
+
 	serving "knative.dev/serving/pkg/apis/serving/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
 )
 
 const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Topics"
-
 	finalizerName = controllerAgentName
 )
 
@@ -61,8 +59,9 @@ const (
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	// listers index properties about resources
-	topicLister   listers.TopicLister
+	// topicLister index properties about topics.
+	topicLister listers.TopicLister
+	// serviceLister index properties about services.
 	serviceLister servinglisters.ServiceLister
 
 	publisherImage string

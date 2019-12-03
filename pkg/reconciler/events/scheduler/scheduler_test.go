@@ -669,9 +669,8 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		return &Reconciler{
-			SchedulerOpsImage: testImage,
-			PubSubBase:        pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
-			schedulerLister:   listers.GetSchedulerLister(),
+			PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
+			schedulerLister: listers.GetSchedulerLister(),
 		}
 	}))
 
