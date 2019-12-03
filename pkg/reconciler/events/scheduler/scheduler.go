@@ -17,10 +17,13 @@ limitations under the License.
 package scheduler
 
 import (
+	"cloud.google.com/go/compute/metadata"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -32,11 +35,15 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	gscheduler "cloud.google.com/go/scheduler/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	ops "github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/pkg/operations/scheduler"
+	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -148,7 +155,7 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 
 	// See if the source has been deleted.
 	if scheduler.DeletionTimestamp != nil {
-		logging.FromContext(ctx).Desugar().Debug("Deleting Storage notification")
+		logging.FromContext(ctx).Desugar().Debug("Deleting Scheduler job")
 		if err := r.deleteSchedulerJob(ctx, scheduler); err != nil {
 			scheduler.Status.MarkJobNotReady("JobDeleteFailed", "Failed to delete Scheduler job: %s", err.Error())
 			return err
@@ -173,75 +180,70 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 		return err
 	}
 
-	jobName := fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, string(scheduler.UID))
-
-	retJobName, err := r.reconcileNotification(ctx, scheduler, topic, jobName)
+	jobName, err = r.reconcileJob(ctx, scheduler, topic, resources.GenerateJobName(scheduler))
 	if err != nil {
-		// TODO: Update status with this...
-		r.Logger.Infof("Failed to reconcile Scheduler Job: %scheduler", err)
-		scheduler.Status.MarkJobNotReady("JobNotReady", "Failed to create Scheduler Job: %scheduler", err)
+		logging.FromContext(ctx).Desugar().Error("Failed to reconcile Scheduler job", zap.Error(err))
+		scheduler.Status.MarkJobNotReady("JobReconcileFailed", "Failed to reconcile Scheduler job: %s", err.Error())
 		return err
 	}
-
-	scheduler.Status.MarkJobReady(retJobName)
-	r.Logger.Infof("Reconciled Scheduler notification: %q", retJobName)
+	scheduler.Status.MarkJobReady(jobName)
 	return nil
 }
 
-func (r *Reconciler) EnsureSchedulerJob(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, topic, jobName, schedule, data string) (ops.OpsJobStatus, error) {
-	return r.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:      UID,
-		Image:    r.SchedulerOpsImage,
-		Action:   ops.ActionCreate,
-		TopicID:  topic,
-		JobName:  jobName,
-		Secret:   secret,
-		Owner:    owner,
-		Schedule: schedule,
-		Data:     data,
-	})
-}
-
-func (r *Reconciler) reconcileNotification(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
-	state, err := r.EnsureSchedulerJob(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, topic, jobName, scheduler.Spec.Schedule, scheduler.Spec.Data)
-
-	if state == ops.OpsJobCreateFailed || state == ops.OpsJobCompleteFailed {
-		return "", fmt.Errorf("Job %q failed to create or job failed", scheduler.Name)
+func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
+	if scheduler.Spec.Project == "" {
+		project, err := metadata.ProjectID()
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
+			return "", err
+		}
+		scheduler.Spec.Project = project
 	}
 
-	if state != ops.OpsJobCompleteSuccessful {
-		return "", fmt.Errorf("Job %q has not completed yet", scheduler.Name)
-	}
-
-	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, r.KubeClientSet, scheduler.Namespace, string(scheduler.UID), "create")
+	client, err := gscheduler.NewCloudSchedulerClient(ctx)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
 		return "", err
 	}
 
-	var result operations.JobActionResult
-	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
-		return "", err
+	// Check if the job exists.
+	job, err := client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
+	if err != nil {
+		if st, ok := gstatus.FromError(err); !ok {
+			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Error(err))
+			return "", err
+		} else if st.Code() == codes.NotFound {
+			// Create the job as it does not exist.
+			// For create we need a Parent, which from the jobName projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID,
+			// is: projects/PROJECT_ID/locations/LOCATION_ID
+			parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
+			job, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
+				Parent: parent,
+				Job: &schedulerpb.Job{
+					Name: jobName,
+					Target: &schedulerpb.Job_PubsubTarget{
+						PubsubTarget: &schedulerpb.PubsubTarget{
+							TopicName: fmt.Sprintf("projects/%s/topics/%s", scheduler.Spec.Project, topic),
+							Data:      []byte(scheduler.Spec.Data),
+						},
+					},
+					Schedule: scheduler.Spec.Schedule,
+				},
+			})
+			if err != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler job", zap.String("jobName", jobName), zap.Error(err))
+				return "", err
+			}
+		} else {
+			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Any("errorCode", st.Code()), zap.Error(err))
+			return "", err
+		}
 	}
-	if result.Result {
-		return result.JobName, nil
-	}
-	return "", fmt.Errorf("operation failed: %s", result.Error)
+	return job.Name, nil
 }
 
-func (r *Reconciler) EnsureSchedulerJobDeleted(ctx context.Context, UID string, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, jobName string) (ops.OpsJobStatus, error) {
-	return r.ensureSchedulerJob(ctx, operations.JobArgs{
-		UID:     UID,
-		Image:   r.SchedulerOpsImage,
-		Action:  ops.ActionDelete,
-		JobName: jobName,
-		Secret:  secret,
-		Owner:   owner,
-	})
-}
-
-// deleteSchedulerJob looks at the status.NotificationID and if non-empty
-// hence indicating that we have created a notification successfully
+// deleteSchedulerJob looks at the status.JobName and if non-empty
+// hence indicating that we have created a Job successfully
 // in the Scheduler, remove it.
 func (r *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
 	if scheduler.Status.JobName == "" {
@@ -272,51 +274,6 @@ func (r *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1
 	r.Logger.Infof("Deleted Notification: %q", scheduler.Status.JobName)
 	scheduler.Status.JobName = ""
 	return nil
-}
-
-func (r *Reconciler) ensureSchedulerJob(ctx context.Context, args operations.JobArgs) (ops.OpsJobStatus, error) {
-	jobName := operations.SchedulerJobName(args.Owner, args.Action)
-	job, err := r.jobLister.Jobs(args.Owner.GetObjectMeta().GetNamespace()).Get(jobName)
-
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		r.Logger.Debugw("Job not found, creating with:", zap.Any("args", args))
-
-		args.Image = r.SchedulerOpsImage
-
-		job, err = operations.NewJobOps(args)
-		if err != nil {
-			return ops.OpsJobCreateFailed, err
-		}
-
-		job, err := r.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			r.Logger.Debugw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, nil
-		}
-
-		r.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		r.Logger.Debugw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
-		// TODO: Handle this case
-		//	} else if !metav1.IsControlledBy(job, args.Owner) {
-		//		return ops.OpsJobCreateFailed, fmt.Errorf("scheduler does not own job %q", jobName)
-	}
-
-	if ops.IsJobFailed(job) {
-		r.Logger.Debugw("Job has failed.")
-		return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-	}
-
-	if ops.IsJobComplete(job) {
-		r.Logger.Debugw("Job is complete.")
-		return ops.OpsJobCompleteSuccessful, nil
-	}
-
-	r.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
 }
 
 func addFinalizer(s *v1alpha1.Scheduler) {

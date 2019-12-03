@@ -187,7 +187,7 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to reconcile Storage notification", zap.Error(err))
-		storage.Status.MarkNotificationNotReady("NotificationNotReady", "Failed to reconcile Storage notification: %s", err)
+		storage.Status.MarkNotificationNotReady("NotificationReconcileFailed", "Failed to reconcile Storage notification: %s", err)
 		return err
 	}
 	storage.Status.MarkNotificationReady()
