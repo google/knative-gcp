@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ limitations under the License.
 package scheduler
 
 import (
-	"cloud.google.com/go/compute/metadata"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"google.golang.org/grpc/codes"
 	"strings"
 	"time"
 
@@ -32,17 +29,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
+	"cloud.google.com/go/compute/metadata"
 	gscheduler "cloud.google.com/go/scheduler/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
@@ -156,7 +152,7 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	// See if the source has been deleted.
 	if scheduler.DeletionTimestamp != nil {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Scheduler job")
-		if err := r.deleteSchedulerJob(ctx, scheduler); err != nil {
+		if err := r.deleteJob(ctx, scheduler); err != nil {
 			scheduler.Status.MarkJobNotReady("JobDeleteFailed", "Failed to delete Scheduler job: %s", err.Error())
 			return err
 		}
@@ -242,37 +238,32 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 	return job.Name, nil
 }
 
-// deleteSchedulerJob looks at the status.JobName and if non-empty
-// hence indicating that we have created a Job successfully
+// deleteJob looks at the status.JobName and if non-empty,
+// hence indicating that we have created a job successfully
 // in the Scheduler, remove it.
-func (r *Reconciler) deleteSchedulerJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
+func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
 	if scheduler.Status.JobName == "" {
 		return nil
 	}
 
-	state, err := r.EnsureSchedulerJobDeleted(ctx, string(scheduler.UID), scheduler, *scheduler.Spec.Secret, scheduler.Status.JobName)
-
-	if state != ops.OpsJobCompleteSuccessful {
-		return fmt.Errorf("Job %q has not completed yet", scheduler.Name)
-	}
-
-	// See if the pod exists or not...
-	pod, err := ops.GetJobPod(ctx, r.KubeClientSet, scheduler.Namespace, string(scheduler.UID), "delete")
+	client, err := gscheduler.NewCloudSchedulerClient(ctx)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
 		return err
 	}
 
-	// Check to see if the operation worked.
-	var result operations.JobActionResult
-	if err := ops.GetOperationsResult(ctx, pod, &result); err != nil {
+	err = client.DeleteJob(ctx, &schedulerpb.DeleteJobRequest{Name: scheduler.Status.JobName})
+	if err == nil {
+		logging.FromContext(ctx).Desugar().Debug("Deleted Scheduler job", zap.String("jobName", scheduler.Status.JobName))
+		return nil
+	}
+	if st, ok := gstatus.FromError(err); !ok {
+		logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while deleting Scheduler job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
+		return err
+	} else if st.Code() != codes.NotFound {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Scheduler job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
 		return err
 	}
-	if !result.Result {
-		return fmt.Errorf("operation failed: %s", result.Error)
-	}
-
-	r.Logger.Infof("Deleted Notification: %q", scheduler.Status.JobName)
-	scheduler.Status.JobName = ""
 	return nil
 }
 
