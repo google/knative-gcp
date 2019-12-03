@@ -40,6 +40,7 @@ import (
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"knative.dev/pkg/controller"
@@ -172,8 +173,7 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 	}
 
 	// Sink is required.
-
-	sinkURI, err := r.uriResolver.URIFromDestinationV1(ps.Spec.Sink, ps)
+	sinkURI, err := r.resolveDestination(ctx, ps.Spec.Sink, ps)
 	if err != nil {
 		ps.Status.MarkNoSink("InvalidSink", err.Error())
 		return err
@@ -301,6 +301,14 @@ func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSu
 		}
 	}
 	return nil
+}
+
+func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (string, error) {
+	// Setting up the namespace.
+	if destination.Ref != nil {
+		destination.Ref.Namespace = ps.Namespace
+	}
+	return r.uriResolver.URIFromDestinationV1(destination, ps)
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
