@@ -42,7 +42,6 @@ func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
-	_ = os.Setenv("PUBSUB_TOPIC_IMAGE", "PUBSUB_TOPIC_IMAGE")
 
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
