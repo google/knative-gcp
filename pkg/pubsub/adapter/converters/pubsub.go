@@ -28,7 +28,7 @@ import (
 func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
-	event := cloudevents.NewEvent(cloudevents.VersionV03)
+	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
 	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))

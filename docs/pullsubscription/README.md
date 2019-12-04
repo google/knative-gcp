@@ -103,7 +103,7 @@ You should see log lines similar to:
 ☁️ cloudevents.Event
 Validation: valid
  Context Attributes,
-   specversion: 0.2
+   specversion: 1.0
    type: com.google.cloud.pubsub.topic.publish
    source: //pubsub.googleapis.com/PROJECT_ID/topics/TOPIC_NAME
    id: 9f9b0968-a15f-4e74-ac58-e8a1c4fa587d

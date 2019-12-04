@@ -62,11 +62,6 @@ func (a *Publisher) Start(ctx context.Context) error {
 }
 
 func (a *Publisher) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
-	// Upgrade to supported transport version.
-	if event.SpecVersion() != cloudevents.VersionV03 {
-		event.Context = event.Context.AsV03()
-	}
-
 	event = tracing.AddTraceparentAttributeFromContext(ctx, event)
 
 	if _, r, err := a.outbound.Send(ctx, event); err != nil {
