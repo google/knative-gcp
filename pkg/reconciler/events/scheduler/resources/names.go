@@ -25,3 +25,9 @@ import (
 func GenerateJobName(scheduler *v1alpha1.Scheduler) string {
 	return fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, string(scheduler.UID))
 }
+
+// GenerateTopicName generates a topic name for the scheduler. This refers to the underlying Pub/Sub topic, and not our
+// Topic resource.
+func GenerateTopicName(scheduler *v1alpha1.Scheduler) string {
+	return fmt.Sprintf("scheduler-%s", string(scheduler.UID))
+}

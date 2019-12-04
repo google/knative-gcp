@@ -115,7 +115,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	} else if _, uErr := r.updateStatus(ctx, scheduler); uErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update Scheduler status", zap.Error(uErr))
 		r.Recorder.Eventf(scheduler, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Storage %q: %v", scheduler.Name, uErr)
+			"Failed to update status for Scheduler %q: %v", scheduler.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	// And restore them.
 	scheduler.Status.JobName = jobName
 	if topic == "" {
-		topic = fmt.Sprintf("scheduler-%s", string(scheduler.UID))
+		topic = resources.GenerateTopicName(scheduler)
 	}
 
 	// See if the source has been deleted.

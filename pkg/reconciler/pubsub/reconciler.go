@@ -18,7 +18,6 @@ package pubsub
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -75,23 +74,23 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 
 	cs := pubsubable.ConditionSet()
 	if !t.Status.IsReady() {
-		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s not ready", t.Namespace, t.Name)
-		return t, nil, errors.New("topic not ready")
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q not ready", t.Name)
+		return t, nil, fmt.Errorf("Topic %q not ready", t.Name)
 	}
 
 	if t.Status.ProjectID == "" {
-		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s did not expose projectid", t.Namespace, t.Name)
-		return t, nil, errors.New("topic did not expose projectid")
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q did not expose projectid", t.Name)
+		return t, nil, fmt.Errorf("Topic %q did not expose projectid", t.Name)
 	}
 
 	if t.Status.TopicID == "" {
-		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s did not expose topicid", t.Namespace, t.Name)
-		return t, nil, errors.New("topic did not expose topicid")
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q did not expose topicid", t.Name)
+		return t, nil, fmt.Errorf("Topic %q did not expose topicid", t.Name)
 	}
 
 	if t.Status.TopicID != topic {
-		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %s/%s mismatch expected %q got %q", t.Namespace, t.Name, topic, t.Status.TopicID)
-		return t, nil, errors.New(fmt.Sprintf("topic did not match expected: %q got: %q", topic, t.Status.TopicID))
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
+		return t, nil, fmt.Errorf("Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
 	}
 
 	status.TopicID = t.Status.TopicID
@@ -115,8 +114,8 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 
 	if !ps.Status.IsReady() {
-		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %s/%s not ready", ps.Namespace, ps.Name)
-		return t, ps, errors.New("pullsubscription not ready")
+		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %q not ready", ps.Name)
+		return t, ps, fmt.Errorf("PullSubscription %q not ready", ps.Name)
 	} else {
 		status.MarkPullSubscriptionReady(cs)
 	}
@@ -132,14 +131,14 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, namespace, name string)
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	err := topics.Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("namespace", namespace), zap.String("name", name), zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
 		return fmt.Errorf("failed to delete topic: %s", err.Error())
 	}
 
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	err = pullSubscriptions.Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("namespace", namespace), zap.String("name", name), zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
 		return fmt.Errorf("failed to delete PullSubscription: %s", err.Error())
 	}
 	return nil
