@@ -14,25 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package pubsub
 
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/pubsub"
+	"cloud.google.com/go/pubsub"
 )
 
-// Topic implements Client.Topic.
-func (c *TestClient) Topic(id string) pubsub.Topic {
-	return &TestTopic{id: id}
+// pubsubTopic wraps pubsub.Topic. Is the topic that will be used everywhere except unit tests.
+type pubsubTopic struct {
+	topic *pubsub.Topic
 }
 
-// TestTopic is a test Pub/Sub topic.
-type TestTopic struct {
-	id string
-}
+// Verify that it satisfies the pubsub.Topic interface.
+var _ Topic = &pubsubTopic{}
 
-// Exists implements Topic.Exists.
-func (t *TestTopic) Exists(ctx context.Context) (bool, error) {
-	return true, nil
+// Exists implements pubsub.Topic.Exists
+func (t *pubsubTopic) Exists(ctx context.Context) (bool, error) {
+	return t.topic.Exists(ctx)
 }

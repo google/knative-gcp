@@ -25,10 +25,8 @@ import (
 type Client interface {
 	// Close see https://godoc.org/cloud.google.com/go/pubsub#Client.Close
 	Close() error
-
 	// Topic see https://godoc.org/cloud.google.com/go/pubsub#Client.Topic
 	Topic(id string) Topic
-
 	// Subscription see https://godoc.org/cloud.google.com/go/pubsub#Client.Subscription
 	Subscription(id string) Subscription
 	// CreateSubscription see https://godoc.org/cloud.google.com/go/pubsub#Client.CreateSubscription

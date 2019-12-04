@@ -23,31 +23,6 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
-// Subscription implements pubsub.Client.Subscription
-func (c *pubsubClient) Subscription(id string) Subscription {
-	return &pubsubSubscription{sub: c.client.Subscription(id)}
-}
-
-// CreateSubscription implements pubsub.Client.CreateSubscription
-func (c *pubsubClient) CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error) {
-	var topic *pubsub.Topic
-	if t, ok := cfg.Topic.(*pubsubTopic); ok {
-		topic = t.topic
-	}
-	pscfg := pubsub.SubscriptionConfig{
-		Topic:               topic,
-		AckDeadline:         cfg.AckDeadline,
-		RetainAckedMessages: cfg.RetainAckedMessages,
-		RetentionDuration:   cfg.RetentionDuration,
-		Labels:              cfg.Labels,
-	}
-	sub, err := c.client.CreateSubscription(ctx, id, pscfg)
-	if err != nil {
-		return nil, err
-	}
-	return &pubsubSubscription{sub: sub}, nil
-}
-
 // SubscriptionConfig re-implements pubsub.SubscriptionConfig to allow us to
 // use a wrapped Topic internally.
 type SubscriptionConfig struct {
@@ -58,10 +33,13 @@ type SubscriptionConfig struct {
 	Labels              map[string]string
 }
 
-// pubsubSubscription wraps pubsub.Subscription
+// pubsubSubscription wraps pubsub.Subscription. Is the subscription that will be used everywhere except unit tests.
 type pubsubSubscription struct {
 	sub *pubsub.Subscription
 }
+
+// Verify that it satisfies the pubsub.Subscription interface.
+var _ Subscription = &pubsubSubscription{}
 
 // Exists implements pubsub.Subscription.Exists
 func (s *pubsubSubscription) Exists(ctx context.Context) (bool, error) {

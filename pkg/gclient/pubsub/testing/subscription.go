@@ -14,23 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package testing
 
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/pubsub"
+	"github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
-
-// Subscription implements Client.Subscription.
-func (c *TestClient) Subscription(id string) pubsub.Subscription {
-	return &TestSubscription{id: id}
-}
-
-// CreateSubscription implements Client.CreateSubscription.
-func (c *TestClient) CreateSubscription(ctx context.Context, id string, cfg pubsub.SubscriptionConfig) (pubsub.Subscription, error) {
-	return &TestSubscription{id: id}, nil
-}
 
 // TestSubscription is a test Pub/Sub subscription.
 type TestSubscription struct {

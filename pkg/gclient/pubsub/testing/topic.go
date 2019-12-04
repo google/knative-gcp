@@ -14,32 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pubsub
+package testing
 
 import (
 	"context"
-
-	"cloud.google.com/go/pubsub"
-	"google.golang.org/api/option"
 )
 
-// NewClient creates a new wrapped Pub/Sub client.
-func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error) {
-	client, err := pubsub.NewClient(ctx, projectID, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &pubsubClient{
-		client: client,
-	}, nil
+// TestTopic is a test Pub/Sub topic.
+type TestTopic struct {
+	id string
 }
 
-// pubsubClient wraps pubsub.Client.
-type pubsubClient struct {
-	client *pubsub.Client
-}
-
-// Close implements pubsub.Client.Close
-func (c *pubsubClient) Close() error {
-	return c.client.Close()
+// Exists implements Topic.Exists.
+func (t *TestTopic) Exists(ctx context.Context) (bool, error) {
+	return true, nil
 }
