@@ -47,20 +47,16 @@ import (
 
 const (
 	channelName = "chan"
-	//sinkName    = "sink"
 
 	testNS = "testnamespace"
-
-	testImage = "test_image"
 
 	channelUID = channelName + "-abc-123"
 
 	testProject = "test-project-id"
 	testTopicID = "cre-chan-" + channelUID
 
-	subscriptionUID        = subscriptionName + "-abc-123"
-	subscriptionName       = "testsubscription"
-	subscriptionGeneration = 1
+	subscriptionUID  = subscriptionName + "-abc-123"
+	subscriptionName = "testsubscription"
 )
 
 var (
@@ -84,25 +80,6 @@ func init() {
 	// Add types to scheme
 	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
 }
-
-//
-//func newSink() *unstructured.Unstructured {
-//	return &unstructured.Unstructured{
-//		Object: map[string]interface{}{
-//			"apiVersion": "testing.cloud.google.com/v1alpha1",
-//			"kind":       "Sink",
-//			"metadata": map[string]interface{}{
-//				"namespace": testNS,
-//				"name":      sinkName,
-//			},
-//			"status": map[string]interface{}{
-//				"address": map[string]interface{}{
-//					"hostname": sinkDNS,
-//				},
-//			},
-//		},
-//	}
-//}
 
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
@@ -195,7 +172,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -244,7 +221,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -374,8 +351,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
-			//Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 		},
 		WantCreates: []runtime.Object{
 			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
@@ -402,7 +378,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			Eventf(corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{

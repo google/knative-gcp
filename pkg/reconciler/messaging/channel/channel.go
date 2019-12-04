@@ -125,7 +125,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	// 1. Create the Topic.
 	topic, err := r.createTopic(ctx, channel)
 	if err != nil {
-		channel.Status.MarkNoTopic("CreateTopicFailed", "Error when attempting to create Topic.")
+		channel.Status.MarkNoTopic("TopicCreateFailed", "Error when attempting to create Topic.")
 		return err
 	}
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
@@ -245,10 +245,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
 			}
 		} else if err != nil {
-			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "CreateSubscriberFailed", "Creating Subscriber %q failed", genName)
+			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberCreateFailed", "Creating Subscriber %q failed", genName)
 			return err
 		}
-		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", genName)
+		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", genName)
 
 		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
 			UID:                s.UID,
@@ -279,20 +279,20 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", genName)
 				return fmt.Errorf("channel %q does not own subscriber %q", channel.Name, genName)
 			} else if err != nil {
-				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "CreateSubscriberFailed", "Creating Subscriber %q failed", genName)
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberCreateFailed", "Creating Subscriber %q failed", genName)
 				return err
 			}
-			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "CreatedSubscriber", "Created Subscriber %q", ps.Name)
+			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", ps.Name)
 		} else if !equality.Semantic.DeepEqual(ps.Spec, existingPs.Spec) {
 			// Don't modify the informers copy.
 			desired := existingPs.DeepCopy()
 			desired.Spec = ps.Spec
 			ps, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Update(desired)
 			if err != nil {
-				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateSubscriberFailed", "Updating Subscriber %q failed", genName)
+				r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberUpdateFailed", "Updating Subscriber %q failed", genName)
 				return err
 			}
-			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "UpdatedSubscriber", "Updated Subscriber %q", ps.Name)
+			r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", ps.Name)
 		}
 		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
@@ -307,10 +307,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		// TODO: we need to handle the case of a already deleted pull subscription. Perhaps move to ensure deleted method.
 		if err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Delete(genName, &metav1.DeleteOptions{}); err != nil {
 			logging.FromContext(ctx).Desugar().Error("unable to delete PullSubscription for Channel", zap.String("ps", genName), zap.String("channel", channel.Name), zap.Error(err))
-			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "DeleteSubscriberFailed", "Deleting Subscriber %q failed", genName)
+			r.Recorder.Eventf(channel, corev1.EventTypeWarning, "SubscriberDeleteFailed", "Deleting Subscriber %q failed", genName)
 			return err
 		}
-		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "DeletedSubscriber", "Deleted Subscriber %q", genName)
+		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", genName)
 
 		for i, ss := range channel.Status.SubscribableStatus.Subscribers {
 			if ss.UID == s.UID {
