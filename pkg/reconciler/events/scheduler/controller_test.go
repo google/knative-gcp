@@ -17,7 +17,6 @@ limitations under the License.
 package scheduler
 
 import (
-	"os"
 	"testing"
 
 	"knative.dev/pkg/configmap"
@@ -37,8 +36,6 @@ import (
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
-
-	_ = os.Setenv("SCHEDULER_JOB_IMAGE", "SCHEDULER_JOB_IMAGE")
 
 	c := NewController(ctx, configmap.NewStaticWatcher())
 

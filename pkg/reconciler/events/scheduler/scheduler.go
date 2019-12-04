@@ -166,13 +166,11 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, scheduler, topic, resourceGroup)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to reconcile PubSub", zap.Error(err))
 		return err
 	}
 
 	jobName, err = r.reconcileJob(ctx, scheduler, topic, resources.GenerateJobName(scheduler))
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to reconcile Scheduler job", zap.Error(err))
 		scheduler.Status.MarkJobNotReady("JobReconcileFailed", "Failed to reconcile Scheduler job: %s", err.Error())
 		return err
 	}

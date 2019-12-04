@@ -19,7 +19,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -35,6 +34,7 @@ import (
 	gstorage "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -148,7 +148,7 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	// And restore them.
 	storage.Status.NotificationID = notificationID
 	if topic == "" {
-		topic = fmt.Sprintf("storage-%s", string(storage.UID))
+		topic = resources.GenerateTopicName(storage)
 	}
 
 	// See if the source has been deleted.
@@ -174,14 +174,12 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to reconcile PubSub", zap.Error(err))
 		return err
 	}
 
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to reconcile Storage notification", zap.Error(err))
-		storage.Status.MarkNotificationNotReady("NotificationReconcileFailed", "Failed to reconcile Storage notification: %s", err)
+		storage.Status.MarkNotificationNotReady("NotificationCreateFailed", "Failed to create Storage notification: %s", err)
 		return err
 	}
 	storage.Status.MarkNotificationReady()
