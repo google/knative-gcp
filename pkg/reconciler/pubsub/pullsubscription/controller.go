@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
@@ -78,6 +79,7 @@ func NewController(
 		deploymentLister:       deploymentInformer.Lister(),
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
 		receiveAdapterImage:    env.ReceiveAdapter,
+		createClientFn:         gpubsub.NewClient,
 	}
 
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)

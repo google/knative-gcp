@@ -23,8 +23,8 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Creator creates a Pub/Sub client
-type Creator func(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error)
+// CreateFn is a factory function to create a Pub/Sub client.
+type CreateFn func(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error)
 
 // NewClient creates a new wrapped Pub/Sub client.
 func NewClient(ctx context.Context, projectID string, opts ...option.ClientOption) (Client, error) {

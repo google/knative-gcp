@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	gpubsub "cloud.google.com/go/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 
@@ -50,6 +49,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -82,6 +82,10 @@ type Reconciler struct {
 	loggingConfig *logging.Config
 	metricsConfig *metrics.ExporterOptions
 	tracingConfig *tracingconfig.Config
+
+	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
+	// This is needed so that we can inject a mock client for UTs purposes.
+	createClientFn gpubsub.CreateFn
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -214,7 +218,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := gpubsub.NewClient(ctx, ps.Spec.Project)
+	client, err := r.createClientFn(ctx, ps.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
@@ -281,7 +285,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := gpubsub.NewClient(ctx, ps.Spec.Project)
+	client, err := r.createClientFn(ctx, ps.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
