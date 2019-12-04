@@ -45,11 +45,9 @@ const (
 	pubsubUID  = "test-pubsub-uid"
 	sinkName   = "sink"
 
-	testNS       = "testnamespace"
-	testProject  = "test-project-id"
-	testTopicID  = "test-topic"
-	testTopicURI = "http://" + pubsubName + "-topic." + testNS + ".svc.cluster.local"
-	generation   = 1
+	testNS      = "testnamespace"
+	testTopicID = "test-topic"
+	generation  = 1
 )
 
 var (
@@ -167,6 +165,9 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsubName),
+		},
 	}, {
 		Name: "pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
@@ -193,6 +194,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubPullSubscriptionNotReady("PullSubscriptionNotReady", "no ready test message"),
 			),
 		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsubName),
+		},
 	}, {
 		Name: "pullsubscription exists and ready",
 		Objects: []runtime.Object{
@@ -221,6 +225,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubSinkURI(pubsubSinkURL),
 			),
 		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsubName),
+		},
 	}}
 
 	defer logtesting.ClearAll()
@@ -229,7 +236,7 @@ func TestAllCases(t *testing.T) {
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			pubsubLister:           listers.GetPubSubLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
-			receiveAdapterName:     "pubsub.events.cloud.google.com",
+			receiveAdapterName:     receiveAdapterName,
 		}
 	}))
 
