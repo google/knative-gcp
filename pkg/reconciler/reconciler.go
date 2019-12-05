@@ -44,6 +44,13 @@ import (
 	runclient "github.com/google/knative-gcp/pkg/client/injection/client"
 )
 
+const (
+	// DefaultResyncPeriod sets the period between reconciliations in case nothing we are watching within the
+	// cluster changed. This is needed because an external resource (e.g., Pub/Sub subscription, GCS notification, etc.)
+	// could have been deleted outside the cluster, and we want to properly update our K8s object statuses.
+	DefaultResyncPeriod = 5 * time.Minute
+)
+
 // Options defines the common reconciler options.
 // We define this to reduce the boilerplate argument list when
 // creating our controllers.

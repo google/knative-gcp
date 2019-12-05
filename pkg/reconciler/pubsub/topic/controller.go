@@ -18,8 +18,6 @@ package topic
 
 import (
 	"context"
-	"time"
-
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -44,11 +42,6 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
-
-	// defaultResyncPeriod sets the period between reconciliations in case nothing we are watching within the
-	// cluster changed. This is needed because a Pub/Sub topic could have been deleted outside the cluster,
-	// and we want to properly update our Topic status.
-	defaultResyncPeriod = 5 * time.Minute
 )
 
 type envConfig struct {
@@ -87,7 +80,7 @@ func NewController(
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), defaultResyncPeriod)
+	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),

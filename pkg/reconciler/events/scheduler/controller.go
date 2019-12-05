@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -62,7 +63,7 @@ func NewController(
 	impl := controller.NewImpl(c, c.Logger, reconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	schedulerInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	schedulerInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Scheduler")),

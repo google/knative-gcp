@@ -18,16 +18,14 @@ package pullsubscription
 
 import (
 	"context"
-	"time"
-
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -47,11 +45,6 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
-
-	// defaultResyncPeriod sets the period between reconciliations in case nothing we are watching within the
-	// cluster changed. This is needed because a Pub/Sub subscription could have been deleted outside the cluster,
-	// and we want to properly update our PullSubscription status.
-	defaultResyncPeriod = 5 * time.Minute
 )
 
 type envConfig struct {
@@ -91,7 +84,7 @@ func NewController(
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), defaultResyncPeriod)
+	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
