@@ -114,8 +114,7 @@ func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
 
 func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscribed()
-		s.Status.SubscriptionID = subscriptionID
+		s.Status.MarkSubscribed(subscriptionID)
 	}
 }
 
@@ -145,7 +144,7 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
 		s.Status.MarkDeployed()
-		s.Status.MarkSubscribed()
+		s.Status.MarkSubscribed("subID")
 	}
 }
 

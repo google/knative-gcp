@@ -22,27 +22,22 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/kmeta"
-
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
@@ -164,7 +159,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionExists),
+			//newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionExists),
 		},
 	}, {
 		Name: "create topic",
@@ -198,7 +193,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
+			//newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, topicName, finalizerName),
@@ -215,7 +210,7 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithInitTopicConditions,
 			)},
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate, false)...,
+		//newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate, false)...,
 		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -248,7 +243,7 @@ func TestAllCases(t *testing.T) {
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
 			),
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
+			//newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
@@ -289,7 +284,7 @@ func TestAllCases(t *testing.T) {
 				WithInitTopicConditions,
 				WithTopicTopicID(testTopicID),
 			),
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
+			//newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionCreate),
 			newSecret(),
 			newPublisher(true, true),
 			NewService(topicName+"-topic", testNS,
@@ -375,7 +370,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete),
+			//newTopicJob(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete),
 		},
 	}, {
 		Name: "skip deleting if topic not exists - policy CreateDelete",
@@ -434,7 +429,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicDeleted,
 			),
 			newSecret()},
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
+		//newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
 		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -488,7 +483,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicDeleted,
 			),
 			newSecret()},
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
+		//newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, true)...,
 		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -529,7 +524,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicFinalizers(finalizerName),
 				WithTopicDeleted,
 			)},
-			newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, false)...,
+		//newTopicJobFinished(NewTopic(topicName, testNS, WithTopicUID(topicUID)), ops.ActionDelete, false)...,
 		),
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
@@ -710,75 +705,75 @@ func newPublisher(get, done bool) runtime.Object {
 	return pub
 }
 
-func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	return operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Secret:    secret,
-		Owner:     owner,
-	})
-}
+//func newTopicJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+//	return operations.NewTopicOps(operations.TopicArgs{
+//		Image:     testImage + "pub",
+//		Action:    action,
+//		ProjectID: testProject,
+//		TopicID:   testTopicID,
+//		Secret:    secret,
+//		Owner:     owner,
+//	})
+//}
 
-func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) []runtime.Object {
-	job := operations.NewTopicOps(operations.TopicArgs{
-		Image:     testImage + "pub",
-		Action:    action,
-		ProjectID: testProject,
-		TopicID:   testTopicID,
-		Secret:    secret,
-		Owner:     owner,
-	})
-
-	if success {
-		job.Status.Active = 0
-		job.Status.Succeeded = 1
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionFalse,
-		}}
-	} else {
-		job.Status.Active = 0
-		job.Status.Succeeded = 0
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
-		}}
-	}
-
-	podTerminationMessage := fmt.Sprintf(`{"projectId":"%s"}`, testProject)
-	if !success {
-		podTerminationMessage = fmt.Sprintf(`{"projectId":"%s","reason":"%s"}`, testProject, testJobFailureMessage)
-	}
-
-	jobPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pubsub-s-source-topic-create-pod",
-			Namespace: testNS,
-			Labels:    map[string]string{"job-name": job.Name},
-		},
-		Status: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{
-				{
-					Name:  "job",
-					Ready: false,
-					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{
-							ExitCode: 1,
-							Message:  podTerminationMessage,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return []runtime.Object{job, jobPod}
-}
+//func newTopicJobFinished(owner kmeta.OwnerRefable, action string, success bool) []runtime.Object {
+//	job := operations.NewTopicOps(operations.TopicArgs{
+//		Image:     testImage + "pub",
+//		Action:    action,
+//		ProjectID: testProject,
+//		TopicID:   testTopicID,
+//		Secret:    secret,
+//		Owner:     owner,
+//	})
+//
+//	if success {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 1
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionFalse,
+//		}}
+//	} else {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 0
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionTrue,
+//		}}
+//	}
+//
+//	podTerminationMessage := fmt.Sprintf(`{"projectId":"%s"}`, testProject)
+//	if !success {
+//		podTerminationMessage = fmt.Sprintf(`{"projectId":"%s","reason":"%s"}`, testProject, testJobFailureMessage)
+//	}
+//
+//	jobPod := &corev1.Pod{
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name:      "pubsub-s-source-topic-create-pod",
+//			Namespace: testNS,
+//			Labels:    map[string]string{"job-name": job.Name},
+//		},
+//		Status: corev1.PodStatus{
+//			ContainerStatuses: []corev1.ContainerStatus{
+//				{
+//					Name:  "job",
+//					Ready: false,
+//					State: corev1.ContainerState{
+//						Terminated: &corev1.ContainerStateTerminated{
+//							ExitCode: 1,
+//							Message:  podTerminationMessage,
+//						},
+//					},
+//				},
+//			},
+//		},
+//	}
+//
+//	return []runtime.Object{job, jobPod}
+//}

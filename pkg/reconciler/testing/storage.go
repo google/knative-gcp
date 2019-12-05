@@ -122,7 +122,7 @@ func WithStorageNotificationNotReady(reason, message string) StorageOption {
 // Notification is ready.
 func WithStorageNotificationReady() StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.MarkNotificationReady()
+		s.Status.MarkNotificationReady("notificationID")
 	}
 }
 
