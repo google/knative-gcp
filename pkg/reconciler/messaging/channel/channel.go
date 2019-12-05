@@ -118,16 +118,13 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		return nil
 	}
 
-	if channel.Status.TopicID == "" {
-		channel.Status.TopicID = resources.GenerateTopicID(channel.UID)
-	}
-
 	// 1. Create the Topic.
 	topic, err := r.createTopic(ctx, channel)
 	if err != nil {
 		channel.Status.MarkNoTopic("TopicCreateFailed", "Error when attempting to create Topic.")
 		return err
 	}
+	channel.Status.TopicID = topic.Spec.Topic
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
 
 	// 2. Sync all subscriptions.
@@ -361,11 +358,10 @@ func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha
 func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
 	topic, err := r.getTopic(ctx, channel)
 	if err != nil && !apierrors.IsNotFound(err) {
-		logging.FromContext(ctx).Desugar().Error("Unable to get an Topic", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Unable to get a Topic", zap.Error(err))
 		return nil, err
 	}
 	if topic != nil {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing Topic", zap.Any("topic", topic))
 		if topic.Status.Address != nil {
 			channel.Status.SetAddress(topic.Status.Address.URL)
 		} else {
@@ -373,18 +369,22 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 		}
 		return topic, nil
 	}
-	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(resources.MakeTopic(&resources.TopicArgs{
+	t := resources.MakeTopic(&resources.TopicArgs{
 		Owner:   channel,
 		Name:    resources.GeneratePublisherName(channel),
 		Project: channel.Spec.Project,
 		Secret:  channel.Spec.Secret,
-		Topic:   channel.Status.TopicID,
+		Topic:   resources.GenerateTopicID(channel.UID),
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
-	}))
+	})
+
+	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(t)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Info("Topic created", zap.Error(err), zap.Any("topic", topic))
-		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", topic.GetName())
+		logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Error(err))
+		r.Recorder.Eventf(channel, corev1.EventTypeWarning, "TopicCreateFailed", "Failed to created Topic %q: %s", topic.Name, err.Error())
+		return nil, err
 	}
+	r.Recorder.Eventf(channel, corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", topic.Name)
 	return topic, err
 }
 

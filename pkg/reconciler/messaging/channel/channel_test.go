@@ -52,8 +52,9 @@ const (
 
 	channelUID = channelName + "-abc-123"
 
-	testProject = "test-project-id"
-	testTopicID = "cre-chan-" + channelUID
+	testProject   = "test-project-id"
+	testTopicID   = "cre-chan-" + channelUID
+	testTopicName = "cre-chan-" + channelName
 
 	subscriptionUID  = subscriptionName + "-abc-123"
 	subscriptionName = "testsubscription"
@@ -104,6 +105,7 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", testTopicName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
@@ -115,6 +117,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithInitChannelConditions,
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelTopic(testTopicID),
 			),
 		}},
 		WantCreates: []runtime.Object{
