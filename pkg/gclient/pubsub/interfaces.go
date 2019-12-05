@@ -31,6 +31,8 @@ type Client interface {
 	Subscription(id string) Subscription
 	// CreateSubscription see https://godoc.org/cloud.google.com/go/pubsub#Client.CreateSubscription
 	CreateSubscription(ctx context.Context, id string, cfg SubscriptionConfig) (Subscription, error)
+	// CreateTopic see https://godoc.org/cloud.google.com/go/pubsub#Client.CreateTopic
+	CreateTopic(ctx context.Context, id string) (Topic, error)
 }
 
 // Client matches the interface exposed by pubsub.Subscription
@@ -51,4 +53,6 @@ type Subscription interface {
 type Topic interface {
 	// Exists see https://godoc.org/cloud.google.com/go/pubsub#Topic.Exists
 	Exists(ctx context.Context) (bool, error)
+	// Delete see https://godoc.org/cloud.google.com/go/pubsub#Topic.Delete
+	Delete(ctx context.Context) error
 }

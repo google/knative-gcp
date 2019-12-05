@@ -18,6 +18,8 @@ package testing
 
 import (
 	"context"
+
+	"github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
 
 // TestTopic is a test Pub/Sub topic.
@@ -25,7 +27,14 @@ type TestTopic struct {
 	id string
 }
 
+// Verify that it satisfies the pubsub.Topic interface.
+var _ pubsub.Topic = &TestTopic{}
+
 // Exists implements Topic.Exists.
 func (t *TestTopic) Exists(ctx context.Context) (bool, error) {
 	return true, nil
+}
+
+func (t *TestTopic) Delete(ctx context.Context) error {
+	return nil
 }
