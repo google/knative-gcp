@@ -21,18 +21,13 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
-	"k8s.io/apimachinery/pkg/types"
-	"knative.dev/pkg/resolver"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
@@ -42,18 +37,15 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
+	"knative.dev/pkg/resolver"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/pubsub"
+	gpubsubtesting "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
-
-	. "knative.dev/pkg/reconciler/testing"
-
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -183,7 +175,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantCreates: []runtime.Object{
-			newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+			//newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, finalizerName),
@@ -206,7 +198,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 				newSecret(true),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+				//newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -249,7 +241,7 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 				newSecret(true),
 				newReceiveAdapter(context.Background(), testImage),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+				//newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -289,7 +281,7 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 				newSecret(true),
 				newReceiveAdapter(context.Background(), "old"+testImage),
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
+				//newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate),
 			},
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -336,7 +328,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionMarkSink(sinkURI),
 				),
 				newSink()},
-				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate, false)...,
+			//newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionCreate, false)...,
 			),
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -438,7 +430,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete),
+				//newJob(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete),
 			},
 		},
 		{
@@ -459,7 +451,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionFinalizers(finalizerName),
 				),
 				newSecret(true)},
-				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true)...,
+			//newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true)...,
 			),
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -567,7 +559,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionFinalizers(finalizerName),
 				),
 				newSecret(true)},
-				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true)...,
+			//newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, true)...,
 			),
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -614,7 +606,7 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionSubscription(testSubscriptionID),
 					WithPullSubscriptionFinalizers(finalizerName),
 				)},
-				newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, false)...,
+			//newJobFinished(NewPullSubscription(sourceName, testNS, WithPullSubscriptionUID(sourceUID)), ops.ActionDelete, false)...,
 			),
 			Key: testNS + "/" + sourceName,
 			WantEvents: []string{
@@ -641,10 +633,6 @@ func TestAllCases(t *testing.T) {
 			}},
 			WantErr: true,
 		},
-
-		// TODO:
-		//			Name: "successful create event types",
-		//			Name: "cannot create event types",
 	}
 
 	defer logtesting.ClearAll()
@@ -659,6 +647,7 @@ func TestAllCases(t *testing.T) {
 			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
 			uriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 			receiveAdapterImage:    testImage,
+			createClientFn:         gpubsubtesting.NewClient,
 		}
 	}))
 }
@@ -689,89 +678,89 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 	}
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	days7 := 7 * 24 * time.Hour
-	secs30 := 30 * time.Second
-	return operations.NewSubscriptionOps(operations.SubArgs{
-		Image:               testImage,
-		Action:              action,
-		ProjectID:           testProject,
-		TopicID:             testTopicID,
-		SubscriptionID:      testSubscriptionID,
-		AckDeadline:         secs30,
-		RetainAckedMessages: false,
-		RetentionDuration:   days7,
-		Secret:              secret,
-		Owner:               owner,
-	})
-}
+//func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+//	days7 := 7 * 24 * time.Hour
+//	secs30 := 30 * time.Second
+//	return operations.NewSubscriptionOps(operations.SubArgs{
+//		Image:               testImage,
+//		Action:              action,
+//		ProjectID:           testProject,
+//		TopicID:             testTopicID,
+//		SubscriptionID:      testSubscriptionID,
+//		AckDeadline:         secs30,
+//		RetainAckedMessages: false,
+//		RetentionDuration:   days7,
+//		Secret:              secret,
+//		Owner:               owner,
+//	})
+//}
 
-func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) []runtime.Object {
-	days7 := 7 * 24 * time.Hour
-	secs30 := 30 * time.Second
-	job := operations.NewSubscriptionOps(operations.SubArgs{
-		Image:               testImage,
-		Action:              action,
-		ProjectID:           testProject,
-		TopicID:             testTopicID,
-		SubscriptionID:      testSubscriptionID,
-		AckDeadline:         secs30,
-		RetainAckedMessages: false,
-		RetentionDuration:   days7,
-		Owner:               owner,
-	})
-
-	if success {
-		job.Status.Active = 0
-		job.Status.Succeeded = 1
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionFalse,
-		}}
-	} else {
-		job.Status.Active = 0
-		job.Status.Succeeded = 0
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
-		}}
-	}
-
-	podTerminationMessage := fmt.Sprintf(`{"projectId":"%s"}`, testProject)
-	if !success {
-		podTerminationMessage = fmt.Sprintf(`{"projectId":"%s","reason":"%s"}`, testProject, testJobFailureMessage)
-	}
-
-	jobPod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "pubsub-s-source-pullsubscription-create-pod",
-			Namespace: testNS,
-			Labels:    map[string]string{"job-name": job.Name},
-		},
-		Status: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{
-				{
-					Name:  "job",
-					Ready: false,
-					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{
-							ExitCode: 1,
-							Message:  podTerminationMessage,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return []runtime.Object{job, jobPod}
-}
+//func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) []runtime.Object {
+//	days7 := 7 * 24 * time.Hour
+//	secs30 := 30 * time.Second
+//	job := operations.NewSubscriptionOps(operations.SubArgs{
+//		Image:               testImage,
+//		Action:              action,
+//		ProjectID:           testProject,
+//		TopicID:             testTopicID,
+//		SubscriptionID:      testSubscriptionID,
+//		AckDeadline:         secs30,
+//		RetainAckedMessages: false,
+//		RetentionDuration:   days7,
+//		Owner:               owner,
+//	})
+//
+//	if success {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 1
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionFalse,
+//		}}
+//	} else {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 0
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionTrue,
+//		}}
+//	}
+//
+//	podTerminationMessage := fmt.Sprintf(`{"projectId":"%s"}`, testProject)
+//	if !success {
+//		podTerminationMessage = fmt.Sprintf(`{"projectId":"%s","reason":"%s"}`, testProject, testJobFailureMessage)
+//	}
+//
+//	jobPod := &corev1.Pod{
+//		ObjectMeta: metav1.ObjectMeta{
+//			Name:      "pubsub-s-source-pullsubscription-create-pod",
+//			Namespace: testNS,
+//			Labels:    map[string]string{"job-name": job.Name},
+//		},
+//		Status: corev1.PodStatus{
+//			ContainerStatuses: []corev1.ContainerStatus{
+//				{
+//					Name:  "job",
+//					Ready: false,
+//					State: corev1.ContainerState{
+//						Terminated: &corev1.ContainerStateTerminated{
+//							ExitCode: 1,
+//							Message:  podTerminationMessage,
+//						},
+//					},
+//				},
+//			},
+//		},
+//	}
+//
+//	return []runtime.Object{job, jobPod}
+//}
 
 func TestFinalizers(t *testing.T) {
 	testCases := []struct {
