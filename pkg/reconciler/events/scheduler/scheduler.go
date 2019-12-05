@@ -32,9 +32,9 @@ import (
 	"knative.dev/pkg/logging"
 
 	"cloud.google.com/go/compute/metadata"
-	gscheduler "cloud.google.com/go/scheduler/apiv1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
@@ -57,6 +57,8 @@ type Reconciler struct {
 
 	// schedulerLister for reading schedulers.
 	schedulerLister listers.SchedulerLister
+
+	createClientFn gscheduler.CreateFn
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -188,11 +190,12 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 		scheduler.Spec.Project = project
 	}
 
-	client, err := gscheduler.NewCloudSchedulerClient(ctx)
+	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
 		return "", err
 	}
+	defer client.Close()
 
 	// Check if the job exists.
 	job, err := client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
@@ -238,11 +241,12 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.Schedule
 		return nil
 	}
 
-	client, err := gscheduler.NewCloudSchedulerClient(ctx)
+	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
 
 	err = client.DeleteJob(ctx, &schedulerpb.DeleteJobRequest{Name: scheduler.Status.JobName})
 	if err == nil {

@@ -28,6 +28,7 @@ import (
 	schedulerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/scheduler"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
 const (
@@ -56,6 +57,7 @@ func NewController(
 	c := &Reconciler{
 		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		schedulerLister: schedulerInformer.Lister(),
+		createClientFn:  gscheduler.NewClient,
 	}
 	impl := controller.NewImpl(c, c.Logger, reconcilerName)
 
