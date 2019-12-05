@@ -207,6 +207,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
 
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
@@ -239,6 +240,8 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
+
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {

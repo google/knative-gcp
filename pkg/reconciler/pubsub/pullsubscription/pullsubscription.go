@@ -220,6 +220,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return "", err
 	}
+	defer client.Close()
 
 	// Generate the subscription name
 	subID := resources.GenerateSubscriptionName(ps)
@@ -296,6 +297,7 @@ func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSu
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
 
 	// Load the subscription.
 	sub := client.Subscription(ps.Status.SubscriptionID)
