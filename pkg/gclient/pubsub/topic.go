@@ -34,3 +34,8 @@ var _ Topic = &pubsubTopic{}
 func (t *pubsubTopic) Exists(ctx context.Context) (bool, error) {
 	return t.topic.Exists(ctx)
 }
+
+// Delete implements pubsub.Topic.Delete
+func (t *pubsubTopic) Delete(ctx context.Context) error {
+	return t.topic.Delete(ctx)
+}

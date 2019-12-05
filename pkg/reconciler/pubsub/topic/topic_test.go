@@ -36,14 +36,13 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	gpubsubtesting "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
-
-	. "knative.dev/pkg/reconciler/testing"
-
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -559,6 +558,7 @@ func TestAllCases(t *testing.T) {
 			topicLister:    listers.GetTopicLister(),
 			serviceLister:  listers.GetV1ServiceLister(),
 			publisherImage: testImage,
+			createClientFn: gpubsubtesting.NewClient,
 		}
 	}))
 

@@ -75,6 +75,15 @@ func (c *pubsubClient) CreateSubscription(ctx context.Context, id string, cfg Su
 	return &pubsubSubscription{sub: sub}, nil
 }
 
+// CreateTopic implements pubsub.Client.CreateTopic
+func (c *pubsubClient) CreateTopic(ctx context.Context, id string) (Topic, error) {
+	topic, err := c.client.CreateTopic(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &pubsubTopic{topic: topic}, nil
+}
+
 // Topic implements pubsub.Client.Topic
 func (c *pubsubClient) Topic(id string) Topic {
 	return &pubsubTopic{topic: c.client.Topic(id)}

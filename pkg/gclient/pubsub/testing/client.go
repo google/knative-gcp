@@ -33,6 +33,9 @@ type TestClient struct {
 	Project string
 }
 
+// Verify that it satisfies the pubsub.Client interface.
+var _ pubsub.Client = &TestClient{}
+
 // Close implements client.Close
 func (c *TestClient) Close() error {
 	return nil
@@ -51,4 +54,9 @@ func (c *TestClient) Subscription(id string) pubsub.Subscription {
 // CreateSubscription implements Client.CreateSubscription.
 func (c *TestClient) CreateSubscription(ctx context.Context, id string, cfg pubsub.SubscriptionConfig) (pubsub.Subscription, error) {
 	return &TestSubscription{id: id}, nil
+}
+
+// CreateTopic implements pubsub.Client.CreateTopic
+func (c *TestClient) CreateTopic(ctx context.Context, id string) (pubsub.Topic, error) {
+	return &TestTopic{id: id}, nil
 }

@@ -29,6 +29,7 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
@@ -80,6 +81,7 @@ func NewController(
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceinformer.Lister(),
 		publisherImage: env.Publisher,
+		createClientFn: gpubsub.NewClient,
 	}
 
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)

@@ -27,6 +27,9 @@ type TestSubscription struct {
 	id string
 }
 
+// Verify that it satisfies the pubsub.Subscription interface.
+var _ pubsub.Subscription = &TestSubscription{}
+
 // Exists implements Subscription.Exists.
 func (s *TestSubscription) Exists(ctx context.Context) (bool, error) {
 	return true, nil

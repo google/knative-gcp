@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/compute/metadata"
-	gpubsub "cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/tracing"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -47,6 +46,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
 )
@@ -66,6 +66,10 @@ type Reconciler struct {
 
 	publisherImage string
 	tracingConfig  *tracingconfig.Config
+
+	// createClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
+	// This is needed so that we can inject a mock client for UTs purposes.
+	createClientFn gpubsub.CreateFn
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -198,11 +202,12 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := gpubsub.NewClient(ctx, topic.Spec.Project)
+	client, err := r.createClientFn(ctx, topic.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
 
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
@@ -230,11 +235,13 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) error {
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := gpubsub.NewClient(ctx, topic.Spec.Project)
+	client, err := r.createClientFn(ctx, topic.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
+
 	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
@@ -374,7 +381,6 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1alpha1.Top
 			logging.FromContext(ctx).Desugar().Error("Failed to create publisher", zap.Error(err))
 			return err, nil
 		}
-		logging.FromContext(ctx).Desugar().Info("Publisher created", zap.Any("publisher", svc))
 	} else if !equality.Semantic.DeepEqual(&existing.Spec, &desired.Spec) {
 		existing.Spec = desired.Spec
 		svc, err = r.ServingClientSet.ServingV1().Services(topic.Namespace).Update(existing)
@@ -382,11 +388,7 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1alpha1.Top
 			logging.FromContext(ctx).Desugar().Error("Failed to update publisher", zap.Any("publisher", existing), zap.Error(err))
 			return err, nil
 		}
-		logging.FromContext(ctx).Desugar().Info("Publisher updated", zap.Any("publisher", svc))
-	} else {
-		logging.FromContext(ctx).Desugar().Info("Reusing existing publisher", zap.Any("publisher", existing))
 	}
-
 	return nil, svc
 }
 
