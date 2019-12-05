@@ -118,16 +118,13 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		return nil
 	}
 
-	if channel.Status.TopicID == "" {
-		channel.Status.TopicID = resources.GenerateTopicID(channel.UID)
-	}
-
 	// 1. Create the Topic.
 	topic, err := r.createTopic(ctx, channel)
 	if err != nil {
 		channel.Status.MarkNoTopic("TopicCreateFailed", "Error when attempting to create Topic.")
 		return err
 	}
+	channel.Status.TopicID = topic.Spec.Topic
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
 
 	// 2. Sync all subscriptions.
@@ -377,7 +374,7 @@ func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel)
 		Name:    resources.GeneratePublisherName(channel),
 		Project: channel.Spec.Project,
 		Secret:  channel.Spec.Secret,
-		Topic:   channel.Status.TopicID,
+		Topic:   resources.GenerateTopicID(channel.UID),
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 	})
 
