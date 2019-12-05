@@ -44,6 +44,9 @@ const (
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
 
+	// defaultResyncPeriod sets the period between reconciliations in case nothing we are watching within the
+	// cluster changed. This is needed because a Pub/Sub topic could have been deleted outside the cluster,
+	// and we want to properly update our Topic status.
 	defaultResyncPeriod = 5 * time.Minute
 )
 
