@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -151,16 +150,6 @@ const (
 	ModePushCompatible ModeType = "PushCompatible"
 )
 
-// PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
-func PubSubEventSource(googleCloudProject, topic string) string {
-	return fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s", googleCloudProject, topic)
-}
-
-const (
-	// PullSubscription CloudEvent type
-	PubSubPublish = "com.google.cloud.pubsub.topic.publish"
-)
-
 const (
 	// PullSubscriptionConditionReady has status True when the PullSubscription is
 	// ready to send events.
@@ -178,6 +167,10 @@ const (
 	// Pub/Sub Subscription has been created pointing at the created receive
 	// adapter deployment.
 	PullSubscriptionConditionSubscribed apis.ConditionType = "Subscribed"
+
+	// PullSubscriptionConditionTransformerProvided has status True when the
+	// PullSubscription has been configured with a transformer target.
+	PullSubscriptionConditionTransformerProvided apis.ConditionType = "TransformerProvided"
 )
 
 var pullSubscriptionCondSet = apis.NewLivingConditionSet(
@@ -197,6 +190,11 @@ type PullSubscriptionStatus struct {
 	// PullSubscription.
 	// +optional
 	SinkURI string `json:"sinkUri,omitempty"`
+
+	// TransformerURI is the current active transformer URI that has been
+	// configured for the PullSubscription.
+	// +optional
+	TransformerURI string `json:"transformerUri,omitempty"`
 
 	// ProjectID is the resolved project ID in use by the PullSubscription.
 	// +optional

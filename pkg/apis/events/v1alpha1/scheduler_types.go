@@ -105,7 +105,7 @@ func (s *Scheduler) PubSubStatus() *duckv1alpha1.PubSubStatus {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Scheduler) ConditionSet() *apis.ConditionSet {
-	return &StorageCondSet
+	return &storageCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -103,7 +103,7 @@ func StorageEventSource(bucket string) string {
 	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
-var StorageCondSet = apis.NewLivingConditionSet(
+var storageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 	duckv1alpha1.TopicReady,
 	NotificationReady)
@@ -137,7 +137,7 @@ func (s *Storage) PubSubStatus() *duckv1alpha1.PubSubStatus {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Storage) ConditionSet() *apis.ConditionSet {
-	return &StorageCondSet
+	return &storageCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

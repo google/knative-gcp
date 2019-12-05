@@ -24,46 +24,47 @@ import (
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return StorageCondSet.Manage(s).GetCondition(t)
+	return storageCondSet.Manage(s).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
 func (s *StorageStatus) IsReady() bool {
-	return StorageCondSet.Manage(s).IsHappy()
+	return storageCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (s *StorageStatus) InitializeConditions() {
-	StorageCondSet.Manage(s).InitializeConditions()
+	storageCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
 // source is not ready and why.
 func (s *StorageStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
-	StorageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
 func (s *StorageStatus) MarkPullSubscriptionReady() {
-	StorageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
+	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
 func (s *StorageStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
-	StorageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
+	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
 func (s *StorageStatus) MarkTopicReady() {
-	StorageCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
+	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 }
 
 // MarkNotificationNotReady sets the condition that the GCS has not been configured
 // to send Notifications and why.
 func (s *StorageStatus) MarkNotificationNotReady(reason, messageFormat string, messageA ...interface{}) {
-	StorageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
+	storageCondSet.Manage(s).MarkFalse(NotificationReady, reason, messageFormat, messageA...)
 }
 
-func (s *StorageStatus) MarkNotificationReady() {
-	StorageCondSet.Manage(s).MarkTrue(NotificationReady)
+func (s *StorageStatus) MarkNotificationReady(notificationID string) {
+	s.NotificationID = notificationID
+	storageCondSet.Manage(s).MarkTrue(NotificationReady)
 }

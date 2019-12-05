@@ -19,7 +19,6 @@ package pullsubscription
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -187,18 +186,16 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 
 	addFinalizer(ps)
 
-	ps.Status.SubscriptionID = resources.GenerateSubscriptionName(ps)
-
-	err = r.reconcileSubscription(ctx, ps)
+	subscriptionID, err := r.reconcileSubscription(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNoSubscription("SubscriptionReconcileFailed", "Failed to reconcile Subscription: %s", err.Error())
+		ps.Status.MarkNoSubscription("SubscriptionCreateFailed", "Failed to reconcile Subscription: %s", err.Error())
 		return err
 	}
-	ps.Status.MarkSubscribed()
+	ps.Status.MarkSubscribed(subscriptionID)
 
 	_, err = r.createOrUpdateReceiveAdapter(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNotDeployed("AdapterReconcileFailed", "Failed to reconcile Receive Adapter: %s", err.Error())
+		ps.Status.MarkNotDeployed("AdapterCreateFailed", "Failed to reconcile Receive Adapter: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkDeployed()
@@ -206,12 +203,12 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 	return nil
 }
 
-func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
+func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) (string, error) {
 	if ps.Spec.Project == "" {
 		project, err := metadata.ProjectID()
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
-			return err
+			return "", err
 		}
 		ps.Spec.Project = project
 	}
@@ -221,26 +218,29 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 	client, err := r.createClientFn(ctx, ps.Spec.Project)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+		return "", err
 	}
 
+	// Generate the subscription name
+	subID := resources.GenerateSubscriptionName(ps)
+
 	// Load the subscription.
-	sub := client.Subscription(ps.Status.SubscriptionID)
+	sub := client.Subscription(subID)
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		return err
+		return "", err
 	}
 
 	t := client.Topic(ps.Spec.Topic)
 	topicExists, err := t.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		return err
+		return "", err
 	}
 
 	if !topicExists {
-		return errors.New("topic does not exist")
+		return "", fmt.Errorf("Topic %q does not exist", ps.Spec.Topic)
 	}
 
 	// subConfig is the wanted config based on settings.
@@ -253,7 +253,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		ackDeadline, err := time.ParseDuration(*ps.Spec.AckDeadline)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Invalid ackDeadline", zap.String("ackDeadline", *ps.Spec.AckDeadline))
-			return fmt.Errorf("invalid ackDeadline: %s", err.Error())
+			return "", fmt.Errorf("invalid ackDeadline: %s", err.Error())
 		}
 		subConfig.AckDeadline = ackDeadline
 	}
@@ -262,7 +262,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		retentionDuration, err := time.ParseDuration(*ps.Spec.RetentionDuration)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Invalid retentionDuration", zap.String("retentionDuration", *ps.Spec.RetentionDuration))
-			return fmt.Errorf("invalid retentionDuration: %s", err.Error())
+			return "", fmt.Errorf("invalid retentionDuration: %s", err.Error())
 		}
 		subConfig.RetentionDuration = retentionDuration
 	}
@@ -270,19 +270,25 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 	// If the subscription doesn't exist, create it.
 	if !subExists {
 		// Create a new subscription to the previous topic with the given name.
-		sub, err = client.CreateSubscription(ctx, ps.Status.SubscriptionID, subConfig)
+		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create subscription", zap.Error(err))
-			return err
+			return "", err
 		}
 	}
 	// TODO update the subscription's config if needed.
 
-	return nil
-
+	return subID, nil
 }
 
+// deleteSubscription looks at the status.SubscriptionID and if non-empty,
+// hence indicating that we have created a subscription successfully
+// in the PullSubscription, remove it.
 func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) error {
+	if ps.Status.SubscriptionID == "" {
+		return nil
+	}
+
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
 	client, err := r.createClientFn(ctx, ps.Spec.Project)
@@ -448,17 +454,21 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 
 	if existing == nil {
 		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
-		logging.FromContext(ctx).Desugar().Debug("Receive Adapter created", zap.Error(err), zap.Any("receiveAdapter", ra))
-		return ra, err
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
+			return nil, err
+		}
+		return ra, nil
 	}
 	if diff := cmp.Diff(desired.Spec, existing.Spec); diff != "" {
 		existing.Spec = desired.Spec
 		ra, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
-		logging.FromContext(ctx).Desugar().Debug("Receive Adapter updated",
-			zap.Error(err), zap.Any("receiveAdapter", ra), zap.String("diff", diff))
-		return ra, err
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Error updating Receive Adapter", zap.Error(err))
+			return nil, err
+		}
+		return ra, nil
 	}
-	logging.FromContext(ctx).Desugar().Debug("Reusing existing Receive Adapter", zap.Any("receiveAdapter", existing))
 	return existing, nil
 }
 

@@ -56,24 +56,17 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 func (ts *TopicStatus) PropagatePublisherStatus(ready *apis.Condition) {
 	switch {
 	case ready == nil:
-		ts.MarkDeploying("PublisherStatus", "Publisher has no Ready type status.")
+		ts.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status.")
 	case ready.IsTrue():
 		ts.MarkDeployed()
 	case ready.IsFalse():
 		ts.MarkNotDeployed(ready.Reason, ready.Message)
-	default:
-		ts.MarkDeploying(ready.Reason, ready.Message)
 	}
 }
 
 // MarkDeployed sets the condition that the publisher has been deployed.
 func (ts *TopicStatus) MarkDeployed() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherReady)
-}
-
-// MarkDeploying sets the condition that the publisher is deploying.
-func (ts *TopicStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
 // MarkNotDeployed sets the condition that the publisher has not been deployed.

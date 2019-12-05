@@ -50,14 +50,24 @@ func (s *PullSubscriptionStatus) MarkNoSink(reason, messageFormat string, messag
 	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionSinkProvided, reason, messageFormat, messageA...)
 }
 
+// MarkTransformer sets the condition that the source has a transformer configured.
+func (s *PullSubscriptionStatus) MarkTransformer(uri string) {
+	s.TransformerURI = uri
+	if len(uri) > 0 {
+		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionTransformerProvided)
+	} else {
+		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionTransformerProvided, "TransformerEmpty", "Transformer has resolved to empty.")
+	}
+}
+
+// MarkNoTransformer sets the condition that the source does not have a transformer configured.
+func (s *PullSubscriptionStatus) MarkNoTransformer(reason, messageFormat string, messageA ...interface{}) {
+	pullSubscriptionCondSet.Manage(s).MarkFalse(PullSubscriptionConditionTransformerProvided, reason, messageFormat, messageA...)
+}
+
 // MarkDeployed sets the condition that the source has been deployed.
 func (s *PullSubscriptionStatus) MarkDeployed() {
 	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionDeployed)
-}
-
-// MarkDeploying sets the condition that the source is deploying.
-func (s *PullSubscriptionStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionDeployed, reason, messageFormat, messageA...)
 }
 
 // MarkNotDeployed sets the condition that the source has not been deployed.
@@ -66,7 +76,8 @@ func (s *PullSubscriptionStatus) MarkNotDeployed(reason, messageFormat string, m
 }
 
 // MarkSubscribed sets the condition that the subscription has been created.
-func (s *PullSubscriptionStatus) MarkSubscribed() {
+func (s *PullSubscriptionStatus) MarkSubscribed(subscriptionID string) {
+	s.SubscriptionID = subscriptionID
 	pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionSubscribed)
 }
 

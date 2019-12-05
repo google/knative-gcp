@@ -116,7 +116,7 @@ const (
 	PubSubConditionReady = apis.ConditionReady
 )
 
-var PubSubCondSet = apis.NewLivingConditionSet(
+var pubSubCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 )
 
@@ -149,5 +149,5 @@ func (ps *PubSub) PubSubSpec() *duckv1alpha1.PubSubSpec {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (ps *PubSub) ConditionSet() *apis.ConditionSet {
-	return &PubSubCondSet
+	return &pubSubCondSet
 }
