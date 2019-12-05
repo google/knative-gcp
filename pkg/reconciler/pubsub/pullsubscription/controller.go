@@ -48,7 +48,7 @@ const (
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
 
-	defaultPullSubscriptionResyncPeriod = 5 * time.Minute
+	defaultResyncPeriod = 5 * time.Minute
 )
 
 type envConfig struct {
@@ -88,7 +88,7 @@ func NewController(
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), defaultPullSubscriptionResyncPeriod)
+	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), defaultResyncPeriod)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
