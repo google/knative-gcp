@@ -18,6 +18,7 @@ package topic
 
 import (
 	"context"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -42,6 +43,8 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-topic-controller"
+
+	defaultTopicResyncPeriod = 5 * time.Minute
 )
 
 type envConfig struct {
@@ -79,7 +82,7 @@ func NewController(
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	topicInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), defaultTopicResyncPeriod)
 
 	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
