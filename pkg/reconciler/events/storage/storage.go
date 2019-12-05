@@ -31,9 +31,10 @@ import (
 	"knative.dev/pkg/logging"
 
 	"cloud.google.com/go/compute/metadata"
-	gstorage "cloud.google.com/go/storage"
+	. "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"google.golang.org/grpc/codes"
@@ -65,6 +66,10 @@ type Reconciler struct {
 
 	// storageLister for reading storages.
 	storageLister listers.StorageLister
+
+	// createClientFn is the function used to create the Storage client that interacts with GCS.
+	// This is needed so that we can inject a mock client for UTs purposes.
+	createClientFn gstorage.CreateFn
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -197,11 +202,12 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		storage.Spec.Project = project
 	}
 
-	client, err := gstorage.NewClient(ctx)
+	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Storage client", zap.Error(err))
 		return "", err
 	}
+	defer client.Close()
 
 	// Load the Bucket.
 	bucket := client.Bucket(storage.Spec.Bucket)
@@ -223,10 +229,10 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	// Add our own event type here...
 	customAttributes["knative-gcp"] = "com.google.cloud.storage"
 
-	nc := &gstorage.Notification{
+	nc := &Notification{
 		TopicProjectID:   storage.Spec.Project,
 		TopicID:          storage.Status.TopicID,
-		PayloadFormat:    gstorage.JSONPayload,
+		PayloadFormat:    JSONPayload,
 		EventTypes:       r.toStorageEventTypes(storage.Spec.EventTypes),
 		ObjectNamePrefix: storage.Spec.ObjectNamePrefix,
 		CustomAttributes: customAttributes,
@@ -258,11 +264,12 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.S
 
 	// At this point the project should have been populated.
 	// Querying Storage as the notification could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := gstorage.NewClient(ctx)
+	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Storage client", zap.Error(err))
 		return err
 	}
+	defer client.Close()
 
 	// Load the Bucket.
 	bucket := client.Bucket(storage.Spec.Bucket)

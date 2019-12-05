@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -54,8 +55,9 @@ func NewController(
 	storageInformer := storageinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		storageLister: storageInformer.Lister(),
+		PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		storageLister:  storageInformer.Lister(),
+		createClientFn: gstorage.NewClient,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
