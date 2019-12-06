@@ -320,7 +320,15 @@ func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.
 	if destination.Ref != nil {
 		destination.Ref.Namespace = ps.Namespace
 	}
-	return r.uriResolver.URIFromDestinationV1(destination, ps)
+	url, err := r.uriResolver.URIFromDestinationV1(destination, ps)
+	if err != nil {
+		return "", err
+	}
+	if url != nil {
+		return url.String(), nil
+	}
+	return "", nil
+
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
