@@ -21,16 +21,13 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
-
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/pkg/apis"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -38,8 +35,6 @@ import (
 
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -700,80 +695,80 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	if action == "create" {
-		j, _ := operations.NewJobOps(operations.JobArgs{
-			UID:      schedulerUID,
-			JobName:  jobName,
-			Image:    testImage,
-			Action:   ops.ActionCreate,
-			TopicID:  testTopicID,
-			Secret:   secret,
-			Owner:    owner,
-			Data:     testData,
-			Schedule: onceAMinuteSchedule,
-		})
-		return j
-	}
-	j, _ := operations.NewJobOps(operations.JobArgs{
-		UID:     schedulerUID,
-		Image:   testImage,
-		JobName: jobName,
-		Action:  ops.ActionDelete,
-		Secret:  secret,
-		Owner:   owner,
-	})
-	return j
-}
-
-func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	var job *batchv1.Job
-	if action == "create" {
-		job, _ = operations.NewJobOps(operations.JobArgs{
-			UID:      schedulerUID,
-			JobName:  jobName,
-			Image:    testImage,
-			Action:   ops.ActionCreate,
-			TopicID:  testTopicID,
-			Secret:   secret,
-			Data:     testData,
-			Owner:    owner,
-			Schedule: onceAMinuteSchedule,
-		})
-	} else {
-		job, _ = operations.NewJobOps(operations.JobArgs{
-			UID:    schedulerUID,
-			Image:  testImage,
-			Action: ops.ActionDelete,
-			Secret: secret,
-			Owner:  owner,
-		})
-	}
-
-	if success {
-		job.Status.Active = 0
-		job.Status.Succeeded = 1
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionFalse,
-		}}
-	} else {
-		job.Status.Active = 0
-		job.Status.Succeeded = 0
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionFalse,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
-		}}
-	}
-
-	return job
-}
+//func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+//	if action == "create" {
+//		j, _ := operations.NewJobOps(operations.JobArgs{
+//			UID:      schedulerUID,
+//			JobName:  jobName,
+//			Image:    testImage,
+//			Action:   ops.ActionCreate,
+//			TopicID:  testTopicID,
+//			Secret:   secret,
+//			Owner:    owner,
+//			Data:     testData,
+//			Schedule: onceAMinuteSchedule,
+//		})
+//		return j
+//	}
+//	j, _ := operations.NewJobOps(operations.JobArgs{
+//		UID:     schedulerUID,
+//		Image:   testImage,
+//		JobName: jobName,
+//		Action:  ops.ActionDelete,
+//		Secret:  secret,
+//		Owner:   owner,
+//	})
+//	return j
+//}
+//
+//func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+//	var job *batchv1.Job
+//	if action == "create" {
+//		job, _ = operations.NewJobOps(operations.JobArgs{
+//			UID:      schedulerUID,
+//			JobName:  jobName,
+//			Image:    testImage,
+//			Action:   ops.ActionCreate,
+//			TopicID:  testTopicID,
+//			Secret:   secret,
+//			Data:     testData,
+//			Owner:    owner,
+//			Schedule: onceAMinuteSchedule,
+//		})
+//	} else {
+//		job, _ = operations.NewJobOps(operations.JobArgs{
+//			UID:    schedulerUID,
+//			Image:  testImage,
+//			Action: ops.ActionDelete,
+//			Secret: secret,
+//			Owner:  owner,
+//		})
+//	}
+//
+//	if success {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 1
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionFalse,
+//		}}
+//	} else {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 0
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionFalse,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionTrue,
+//		}}
+//	}
+//
+//	return job
+//}
 
 func newPod(msg string) runtime.Object {
 	labels := map[string]string{

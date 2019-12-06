@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"testing"
 
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -32,13 +31,10 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
-	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	ops "github.com/google/knative-gcp/pkg/operations"
-	"github.com/google/knative-gcp/pkg/operations/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -764,85 +760,85 @@ func TestAllCases(t *testing.T) {
 
 }
 
-func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-	if action == "create" {
-		j, _ := operations.NewNotificationOps(operations.NotificationArgs{
-			UID:        storageUID,
-			Image:      testImage,
-			Action:     ops.ActionCreate,
-			ProjectID:  testProject,
-			Bucket:     bucket,
-			TopicID:    testTopicID,
-			EventTypes: []string{"finalize"},
-			Secret:     secret,
-			Owner:      owner,
-		})
-		return j
-	}
-	j, _ := operations.NewNotificationOps(operations.NotificationArgs{
-		UID:            storageUID,
-		Image:          testImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      testProject,
-		Bucket:         bucket,
-		NotificationId: notificationId,
-		Secret:         secret,
-		Owner:          owner,
-	})
-	return j
-}
-
-func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-	var job *batchv1.Job
-	if action == "create" {
-		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:        storageUID,
-			Image:      testImage,
-			Action:     ops.ActionCreate,
-			ProjectID:  testProject,
-			Bucket:     bucket,
-			TopicID:    testTopicID,
-			EventTypes: []string{"finalize"},
-			Secret:     secret,
-			Owner:      owner,
-		})
-	} else {
-		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
-			UID:            storageUID,
-			Image:          testImage,
-			Action:         ops.ActionDelete,
-			ProjectID:      testProject,
-			Bucket:         bucket,
-			NotificationId: notificationId,
-			Secret:         secret,
-			Owner:          owner,
-		})
-	}
-
-	if success {
-		job.Status.Active = 0
-		job.Status.Succeeded = 1
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionTrue,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionFalse,
-		}}
-	} else {
-		job.Status.Active = 0
-		job.Status.Succeeded = 0
-		job.Status.Conditions = []batchv1.JobCondition{{
-			Type:   batchv1.JobComplete,
-			Status: corev1.ConditionFalse,
-		}, {
-			Type:   batchv1.JobFailed,
-			Status: corev1.ConditionTrue,
-		}}
-	}
-
-	return job
-}
+//func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
+//	if action == "create" {
+//		j, _ := operations.NewNotificationOps(operations.NotificationArgs{
+//			UID:        storageUID,
+//			Image:      testImage,
+//			Action:     ops.ActionCreate,
+//			ProjectID:  testProject,
+//			Bucket:     bucket,
+//			TopicID:    testTopicID,
+//			EventTypes: []string{"finalize"},
+//			Secret:     secret,
+//			Owner:      owner,
+//		})
+//		return j
+//	}
+//	j, _ := operations.NewNotificationOps(operations.NotificationArgs{
+//		UID:            storageUID,
+//		Image:          testImage,
+//		Action:         ops.ActionDelete,
+//		ProjectID:      testProject,
+//		Bucket:         bucket,
+//		NotificationId: notificationId,
+//		Secret:         secret,
+//		Owner:          owner,
+//	})
+//	return j
+//}
+//
+//func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
+//	var job *batchv1.Job
+//	if action == "create" {
+//		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
+//			UID:        storageUID,
+//			Image:      testImage,
+//			Action:     ops.ActionCreate,
+//			ProjectID:  testProject,
+//			Bucket:     bucket,
+//			TopicID:    testTopicID,
+//			EventTypes: []string{"finalize"},
+//			Secret:     secret,
+//			Owner:      owner,
+//		})
+//	} else {
+//		job, _ = operations.NewNotificationOps(operations.NotificationArgs{
+//			UID:            storageUID,
+//			Image:          testImage,
+//			Action:         ops.ActionDelete,
+//			ProjectID:      testProject,
+//			Bucket:         bucket,
+//			NotificationId: notificationId,
+//			Secret:         secret,
+//			Owner:          owner,
+//		})
+//	}
+//
+//	if success {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 1
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionTrue,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionFalse,
+//		}}
+//	} else {
+//		job.Status.Active = 0
+//		job.Status.Succeeded = 0
+//		job.Status.Conditions = []batchv1.JobCondition{{
+//			Type:   batchv1.JobComplete,
+//			Status: corev1.ConditionFalse,
+//		}, {
+//			Type:   batchv1.JobFailed,
+//			Status: corev1.ConditionTrue,
+//		}}
+//	}
+//
+//	return job
+//}
 
 func newPod(msg string) runtime.Object {
 	labels := map[string]string{
