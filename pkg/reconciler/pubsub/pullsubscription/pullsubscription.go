@@ -324,11 +324,7 @@ func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.
 	if err != nil {
 		return "", err
 	}
-	if url != nil {
-		return url.String(), nil
-	}
-	return "", nil
-
+	return url.String(), nil
 }
 
 func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, error) {
