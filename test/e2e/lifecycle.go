@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/operations"
 	"github.com/google/knative-gcp/test/e2e/metrics"
+	"github.com/google/knative-gcp/test/operations"
 	"google.golang.org/api/iterator"
 	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	corev1 "k8s.io/api/core/v1"
