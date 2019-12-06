@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
@@ -38,6 +39,16 @@ type CloudAuditLog struct {
 
 var (
 	_ runtime.Object = (*CloudAuditLog)(nil)
+)
+
+const (
+	SinkReady apis.ConditionType = "SinkReady"
+)
+
+var CloudAuditLogCondSet = apis.NewLivingConditionSet(
+	duckv1alpha1.PullSubscriptionReady,
+	duckv1alpha1.TopicReady,
+	SinkReady,
 )
 
 type CloudAuditLogSpec struct {
@@ -68,6 +79,23 @@ type CloudAuditLogStatus struct {
 // GetGroupVersionKind ...
 func (_ *CloudAuditLog) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("CloudAuditLog")
+}
+
+///Methods for pubsubable interface
+
+// PubSubSpec returns the PubSubSpec portion of the Spec.
+func (s *CloudAuditLog) PubSubSpec() *duckv1alpha1.PubSubSpec {
+	return &s.Spec.PubSubSpec
+}
+
+// PubSubStatus returns the PubSubStatus portion of the Status.
+func (s *CloudAuditLog) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &s.Status.PubSubStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *CloudAuditLog) ConditionSet() *apis.ConditionSet {
+	return &CloudAuditLogCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
