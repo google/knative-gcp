@@ -208,9 +208,10 @@
   revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
 
 [[projects]]
-  digest = "1:cfdc68359fe51bce2896509a3367674d91eaf7baee5e69af3ae5731d3d6e0a23"
+  digest = "1:4e4f04a3bfa41f937e65e444b48a8903c656550a99ab9621c9efc0cdbe7ea604"
   name = "github.com/golang/protobuf"
   packages = [
+    "jsonpb",
     "proto",
     "protoc-gen-go",
     "protoc-gen-go/descriptor",
@@ -1485,7 +1486,12 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
+    "github.com/golang/protobuf/jsonpb",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
+    "github.com/golang/protobuf/ptypes/any",
     "github.com/golang/protobuf/ptypes/duration",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
@@ -1505,7 +1511,9 @@
     "golang.org/x/net/http2/h2c",
     "google.golang.org/api/iterator",
     "google.golang.org/api/option",
+    "google.golang.org/genproto/googleapis/cloud/audit",
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
+    "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",

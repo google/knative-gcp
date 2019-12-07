@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -55,7 +56,7 @@ func NewController(
 	cloudauditlogInformer := cloudauditloginformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:          pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, "", cmw),
+		PubSubBase:          pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogAdapterType, cmw),
 		cloudauditlogLister: cloudauditlogInformer.Lister(),
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)

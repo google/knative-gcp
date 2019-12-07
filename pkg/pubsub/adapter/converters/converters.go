@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package converters contains pubsub message to cloudevent converters
+// used by pubsub-based source.
 package converters
 
 import (
@@ -50,6 +52,7 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
+		CloudAuditLogAdapterType:   convertCloudAuditLog,
 		"com.google.cloud.storage": convertStorage,
 	}
 }
