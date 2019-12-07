@@ -52,7 +52,7 @@ const (
 	bucket         = "my-test-bucket"
 	sinkName       = "sink"
 	notificationId = "135"
-
+	v
 	testNS       = "testnamespace"
 	testImage    = "notification-ops-image"
 	testProject  = "test-project-id"
@@ -788,7 +788,7 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
-			PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, "", cmw),
 			storageLister:  listers.GetStorageLister(),
 			createClientFn: gstorage.TestClientCreator(testData["storage"]),
 		}

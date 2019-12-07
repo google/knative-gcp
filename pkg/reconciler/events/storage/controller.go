@@ -56,7 +56,7 @@ func NewController(
 	storageInformer := storageinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, "", cmw),
 		storageLister:  storageInformer.Lister(),
 		createClientFn: gstorage.NewClient,
 	}

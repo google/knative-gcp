@@ -56,7 +56,7 @@ func NewController(
 	schedulerInformer := schedulerinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, "", cmw),
 		schedulerLister: schedulerInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,
 	}

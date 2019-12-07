@@ -57,9 +57,12 @@ func init() {
 // Convert converts a message off the pubsub format to a source specific if
 // there's a registered handler for the type in the converters map.
 // If there's no registered handler, a default Pubsub one will be used.
-func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, adapterType string) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
+	}
+	if c, ok := converters[adapterType]; ok {
+		return c(ctx, msg, sendMode)
 	}
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["knative-gcp"]; ok {

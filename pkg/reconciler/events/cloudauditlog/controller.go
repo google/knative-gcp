@@ -55,7 +55,7 @@ func NewController(
 	cloudauditlogInformer := cloudauditloginformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:          pubsub.NewPubSubBase(ctx, controllerAgentName, "cloudauditlog.events.cloud.google.com", cmw),
+		PubSubBase:          pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, "", cmw),
 		cloudauditlogLister: cloudauditlogInformer.Lister(),
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)

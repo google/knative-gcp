@@ -59,6 +59,9 @@ type Adapter struct {
 	// Environment variable containing the transformer URI.
 	Transformer string `envconfig:"TRANSFORMER_URI"`
 
+	// Environment variable containing the event type to emit.
+	AdapterType string `envconfig:"ADAPTER_TYPE"`
+
 	// Topic is the environment variable containing the PubSub Topic being
 	// subscribed to's name. In the form that is unique within the project.
 	// E.g. 'laconia', not 'projects/my-gcp-project/topics/laconia'.
@@ -237,7 +240,7 @@ func (a *Adapter) convert(ctx context.Context, m transport.Message, err error) (
 	logger.Debug("Converting event from transport.")
 
 	if msg, ok := m.(*cepubsub.Message); ok {
-		return converters.Convert(ctx, msg, a.SendMode)
+		return converters.Convert(ctx, msg, a.SendMode, a.AdapterType)
 	}
 	return nil, err
 }
