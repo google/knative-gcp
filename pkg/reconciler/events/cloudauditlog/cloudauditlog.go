@@ -144,7 +144,6 @@ func (c *Reconciler) reconcile(ctx context.Context, cal *v1alpha1.CloudAuditLog)
 
 	sink, err := c.reconcileSink(ctx, cal)
 	if err != nil {
-		cal.Status.MarkSinkNotReady("SinkNotReady", err.Error())
 		return err
 	}
 	cal.Status.SinkID = sink
@@ -157,11 +156,13 @@ func (c *Reconciler) reconcile(ctx context.Context, cal *v1alpha1.CloudAuditLog)
 func (c *Reconciler) reconcileSink(ctx context.Context, cal *v1alpha1.CloudAuditLog) (string, error) {
 	sink, err := c.ensureSinkCreated(ctx, cal)
 	if err != nil {
-		return "", fmt.Errorf("failed to ensure creation of logging sink: %v", err)
+		cal.Status.MarkSinkNotReady("SinkCreateFailed", "failed to ensure creation of logging sink: %v", err)
+		return "", err
 	}
 	err = c.ensureSinkIsPublisher(ctx, cal, sink)
 	if err != nil {
-		return "", fmt.Errorf("failed to ensure sink has pubsub.publisher permission on source topic: %v", err)
+		cal.Status.MarkSinkNotReady("SinkNotReady", "failed to ensure sink has pubsub.publisher permission on source topic: %v", err)
+		return "", err
 	}
 	return sink.ID, nil
 }
@@ -254,10 +255,10 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudAu
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("Stackdriver %q became ready after %v", source.Name, duration)
+		c.Logger.Infof("CloudAuditLog %q became ready after %v", source.Name, duration)
 
-		if err := c.StatsReporter.ReportReady("Stackdriver", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for Stackdriver, %v", err)
+		if err := c.StatsReporter.ReportReady("CloudAuditLog", source.Namespace, source.Name, duration); err != nil {
+			logging.FromContext(ctx).Infof("failed to record ready for CloudAuditLog, %v", err)
 		}
 	}
 
