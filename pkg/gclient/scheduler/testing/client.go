@@ -26,30 +26,32 @@ import (
 )
 
 // TestClientCreator returns a scheduler.CreateFn used to construct the test Scheduler client.
-func TestClientCreator(data *TestClientData) scheduler.CreateFn {
-	if data == nil {
-		data = &TestClientData{}
+func TestClientCreator(value interface{}) scheduler.CreateFn {
+	var data TestClientData
+	var ok bool
+	if data, ok = value.(TestClientData); !ok {
+		data = TestClientData{}
 	}
-	if data.createClientErr != nil {
+	if data.CreateClientErr != nil {
 		return func(_ context.Context, _ ...option.ClientOption) (scheduler.Client, error) {
-			return nil, data.createClientErr
+			return nil, data.CreateClientErr
 		}
 	}
 
 	return func(_ context.Context, _ ...option.ClientOption) (scheduler.Client, error) {
 		return &testClient{
-			data: *data,
+			data: data,
 		}, nil
 	}
 }
 
 // TestClientData is the data used to configure the test Scheduler client.
 type TestClientData struct {
-	createClientErr error
-	createJobErr    error
-	deleteJobErr    error
-	getJobErr       error
-	closeErr        error
+	CreateClientErr error
+	CreateJobErr    error
+	DeleteJobErr    error
+	GetJobErr       error
+	CloseErr        error
 }
 
 // testClient is the test Scheduler client.
@@ -62,13 +64,13 @@ var _ scheduler.Client = &testClient{}
 
 // Close implements client.Close
 func (c *testClient) Close() error {
-	return c.data.closeErr
+	return c.data.CloseErr
 }
 
 // CreateJob implements client.CreateJob
 func (c *testClient) CreateJob(ctx context.Context, req *schedulerpb.CreateJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
-	if c.data.createJobErr != nil {
-		return nil, c.data.createJobErr
+	if c.data.CreateJobErr != nil {
+		return nil, c.data.CreateJobErr
 	}
 	return &schedulerpb.Job{
 		Name: "jobName",
@@ -77,13 +79,13 @@ func (c *testClient) CreateJob(ctx context.Context, req *schedulerpb.CreateJobRe
 
 // CreateJob implements client.DeleteJob
 func (c *testClient) DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRequest, opts ...gax.CallOption) error {
-	return c.data.deleteJobErr
+	return c.data.DeleteJobErr
 }
 
 // GetJob implements client.GetJob
 func (c *testClient) GetJob(ctx context.Context, req *schedulerpb.GetJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
-	if c.data.deleteJobErr != nil {
-		return nil, c.data.deleteJobErr
+	if c.data.DeleteJobErr != nil {
+		return nil, c.data.DeleteJobErr
 	}
 	return &schedulerpb.Job{
 		Name: "jobName",

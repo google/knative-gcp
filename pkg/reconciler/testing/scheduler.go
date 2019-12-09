@@ -65,6 +65,12 @@ func WithSchedulerLocation(location string) SchedulerOption {
 	}
 }
 
+func WithSchedulerProject(project string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Project = project
+	}
+}
+
 func WithSchedulerSchedule(schedule string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Schedule = schedule

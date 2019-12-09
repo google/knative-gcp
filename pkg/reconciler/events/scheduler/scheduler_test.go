@@ -18,6 +18,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -35,6 +36,7 @@ import (
 
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -79,6 +81,7 @@ var (
 	// Message for when the topic and pullsubscription with the above variables are not ready.
 	topicNotReadyMsg            = `Topic "my-test-scheduler" not ready`
 	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-scheduler" not ready`
+	failedToCreateJobMsg        = `Failed to create Scheduler job`
 )
 
 func init() {
@@ -139,7 +142,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
-	// schedulerSinkURL := sinkURL(t, sinkURI)
+	schedulerSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
 		Name: "bad workqueue key",
@@ -405,45 +408,51 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", schedulerName),
 		},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job created",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithSchedulerData(testData),
-		//			WithSchedulerSchedule(onceAMinuteSchedule),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithSchedulerData(testData),
-		//			WithSchedulerSchedule(onceAMinuteSchedule),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", jobNotCompletedMsg),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//	WantCreates: []runtime.Object{
-		//		newJob(NewScheduler(schedulerName, testNS), ops.ActionCreate),
-		//	},
+	}, {
+		Name: "topic and pullsubscription exist and ready, scheduler client creation failed",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				CreateClientErr: errors.New("create-client-induced-error"),
+			},
+		},
+		Key:     testNS + "/" + schedulerName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "create-client-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+		},
 		//}, {
 		//	Name: "topic and pullsubscription exist and ready, scheduler job not finished",
 		//	Objects: []runtime.Object{
@@ -690,6 +699,7 @@ func TestAllCases(t *testing.T) {
 		return &Reconciler{
 			PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
 			schedulerLister: listers.GetSchedulerLister(),
+			createClientFn:  gscheduler.TestClientCreator(testData["scheduler"]),
 		}
 	}))
 
