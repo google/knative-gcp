@@ -62,8 +62,16 @@ func TestMakePullSubscription(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		Subscriber: duckv1alpha1.SubscriberSpec{
-			SubscriberURI: "http://subscriber/",
-			ReplyURI:      "http://reply/",
+			SubscriberURI: &apis.URL{
+				Scheme: "http",
+				Path:   "/",
+				Host:   "subscriber",
+			},
+			ReplyURI: &apis.URL{
+				Scheme: "http",
+				Path:   "/",
+				Host:   "reply",
+			},
 		},
 	})
 
@@ -143,7 +151,11 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		Subscriber: duckv1alpha1.SubscriberSpec{
-			SubscriberURI: "http://subscriber/",
+			SubscriberURI: &apis.URL{
+				Scheme: "http",
+				Path:   "/",
+				Host:   "subscriber",
+			},
 		},
 	})
 
@@ -220,7 +232,11 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		Subscriber: duckv1alpha1.SubscriberSpec{
-			ReplyURI: "http://reply/",
+			ReplyURI: &apis.URL{
+				Scheme: "http",
+				Path:   "/",
+				Host:   "reply",
+			},
 		},
 	})
 
