@@ -19,6 +19,7 @@ package converters
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -93,7 +94,8 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	// Attributes are extensions.
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
-			event.SetExtension(k, v)
+			// V1 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9').
+			event.SetExtension(strings.ToLower(k), v)
 		}
 	}
 	return &event, nil
