@@ -68,7 +68,7 @@ You should see log lines similar to:
 ☁️  cloudevents.Event
 Validation: valid
 Context Attributes,
-  specversion: 0.3
+  specversion: 1.0
   type: com.google.cloud.pubsub.topic.publish
   source: //pubsub.googleapis.com/projects/quantum-reducer-434/topics/scheduler-a424c4a6-c9e2-11e9-a541-42010aa8000b
   id: 714614529367848

@@ -145,7 +145,7 @@ You should see log lines similar to:
 ☁️  cloudevents.Event
 Validation: valid
 Context Attributes,
-  specversion: 0.3
+  specversion: 1.0
   type: com.google.cloud.storage.object.finalize
   source: //storage.googleapis.com/buckets/vaikasvaikas-notification-test
   subject: testfilehere
