@@ -17,18 +17,18 @@ limitations under the License.
 package converters
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
+	"github.com/google/go-cmp/cmp"
 	"testing"
 
-	"cloud.google.com/go/pubsub"
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-func TestConvertPubSub(t *testing.T) {
+func TestConvertStorage(t *testing.T) {
 
 	tests := []struct {
 		name        string
@@ -37,46 +37,91 @@ func TestConvertPubSub(t *testing.T) {
 		wantEventFn func() *cloudevents.Event
 		wantErr     bool
 	}{{
-		name: "valid attributes",
+		name: "no attributes",
+		message: &cepubsub.Message{
+			Data: []byte("test data"),
+		},
+		sendMode: Binary,
+		wantEventFn: func() *cloudevents.Event {
+			return storageCloudEvent(map[string]string{})
+		},
+		wantErr: true,
+	}, {
+		name: "no bucketId attribute",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
+				"eventType":  "OBJECT_FINALIZE",
 				"attribute1": "value1",
 				"attribute2": "value2",
 			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return storageCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
 			})
 		},
+		wantErr: true,
 	}, {
-		name: "invalid upper case attributes",
+		name: "no eventType attribute",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
+				"bucketId": "my-bucket",
+			},
+		},
+		sendMode: Binary,
+		wantEventFn: func() *cloudevents.Event {
+			return storageCloudEvent(map[string]string{})
+		},
+		wantErr: true,
+	}, {
+		name: "set subject",
+		message: &cepubsub.Message{
+			Data: []byte("test data"),
+			Attributes: map[string]string{
+				"bucketId":   "my-bucket",
+				"eventType":  "OBJECT_FINALIZE",
+				"objectId":   "myfile.jpg",
 				"AttriBUte1": "value1",
 				"AttrIbuTe2": "value2",
 			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{})
+			return storageCloudEvent(map[string]string{}, "myfile.jpg")
+		},
+	}, {
+		name: "not setting invalid upper case attributes",
+		message: &cepubsub.Message{
+			Data: []byte("test data"),
+			Attributes: map[string]string{
+				"bucketId":   "my-bucket",
+				"eventType":  "OBJECT_FINALIZE",
+				"AttriBUte1": "value1",
+				"AttrIbuTe2": "value2",
+			},
+		},
+		sendMode: Binary,
+		wantEventFn: func() *cloudevents.Event {
+			return storageCloudEvent(map[string]string{})
 		},
 	}, {
 		name: "only setting valid alphanumeric attribute",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
+				"bucketId":          "my-bucket",
+				"eventType":         "OBJECT_FINALIZE",
 				"attribute1":        "value1",
 				"Invalid-Attrib#$^": "value2",
 			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return storageCloudEvent(map[string]string{
 				"attribute1": "value1",
 			})
 		},
@@ -94,28 +139,31 @@ func TestConvertPubSub(t *testing.T) {
 				},
 			))
 
-			gotEvent, err := convertPubsub(ctx, test.message, test.sendMode)
+			gotEvent, err := convertStorage(ctx, test.message, test.sendMode)
 
 			if err != nil {
 				if !test.wantErr {
-					t.Errorf("converters.convertPubsub got error %v want error=%v", err, test.wantErr)
+					t.Fatalf("converters.convertStorage got error %v want error=%v", err, test.wantErr)
 				}
 			} else {
 				if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-					t.Errorf("converters.convertPubsub got unexpeceted cloudevents.Event (-want +got) %s", diff)
+					t.Fatalf("converters.convertStorage got unexpeceted cloudevents.Event (-want +got) %s", diff)
 				}
 			}
 		})
 	}
 }
 
-func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
+func storageCloudEvent(extensions map[string]string, subject ...string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
-	e.SetSource(v1alpha1.PubSubEventSource("testproject", "testtopic"))
-	e.SetDataContentType("application/octet-stream")
-	e.SetType(v1alpha1.PubSubPublish)
-	e.SetExtension("knativecemode", string(Binary))
+	e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
+	e.SetDataSchema(storageSchemaUrl)
+	e.SetSource(v1alpha1.StorageEventSource("my-bucket"))
+	e.SetType(v1alpha1.StorageFinalize)
+	if len(subject) > 0 {
+		e.SetSubject(subject[0])
+	}
 	e.Data = []byte("test data")
 	e.DataEncoded = true
 	for k, v := range extensions {

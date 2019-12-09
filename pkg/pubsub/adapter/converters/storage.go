@@ -18,13 +18,14 @@ package converters
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -50,7 +51,7 @@ const (
 
 func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
-		return nil, fmt.Errorf("nil pubsub message")
+		return nil, errors.New("nil pubsub message")
 	}
 
 	tx := pubsubcontext.TransportContextFrom(ctx)
@@ -59,35 +60,35 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
 	event.SetDataSchema(storageSchemaUrl)
-	if msg.Attributes != nil {
-		if val, ok := msg.Attributes["bucketId"]; ok {
-			delete(msg.Attributes, "bucketId")
-			event.SetSource(v1alpha1.StorageEventSource(val))
-		} else {
-			return nil, fmt.Errorf("received event did not have bucketId")
-		}
-		if val, ok := msg.Attributes["objectId"]; ok {
-			delete(msg.Attributes, "objectId")
-			event.SetSubject(val)
-		} else {
-			// Not setting subject, as it's optional
-			logging.FromContext(ctx).Desugar().Debug("received event did not have objectId")
-		}
-		if val, ok := msg.Attributes["eventType"]; ok {
-			delete(msg.Attributes, "eventType")
-			if eventType, ok := storageEventTypes[val]; ok {
-				event.SetType(eventType)
-			} else {
-				logging.FromContext(ctx).Desugar().Debug("Unknown eventType, using default", zap.String("eventType", eventType), zap.String("default", storageDefaultEventType))
-				event.SetType(storageDefaultEventType)
-			}
-		} else {
-			return nil, fmt.Errorf("received event did not have eventType")
-		}
-		if _, ok := msg.Attributes["eventTime"]; ok {
-			delete(msg.Attributes, "eventTime")
-		}
+
+	if val, ok := msg.Attributes["bucketId"]; ok {
+		delete(msg.Attributes, "bucketId")
+		event.SetSource(v1alpha1.StorageEventSource(val))
+	} else {
+		return nil, errors.New("received event did not have bucketId")
 	}
+	if val, ok := msg.Attributes["objectId"]; ok {
+		delete(msg.Attributes, "objectId")
+		event.SetSubject(val)
+	} else {
+		// Not setting subject, as it's optional
+		logging.FromContext(ctx).Desugar().Debug("received event did not have objectId")
+	}
+	if val, ok := msg.Attributes["eventType"]; ok {
+		delete(msg.Attributes, "eventType")
+		if eventType, ok := storageEventTypes[val]; ok {
+			event.SetType(eventType)
+		} else {
+			logging.FromContext(ctx).Desugar().Debug("Unknown eventType, using default", zap.String("eventType", eventType), zap.String("default", storageDefaultEventType))
+			event.SetType(storageDefaultEventType)
+		}
+	} else {
+		return nil, errors.New("received event did not have eventType")
+	}
+	if _, ok := msg.Attributes["eventTime"]; ok {
+		delete(msg.Attributes, "eventTime")
+	}
+
 	event.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	event.Data = msg.Data
 	event.DataEncoded = true
@@ -95,7 +96,10 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
 			// V1 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9').
-			event.SetExtension(strings.ToLower(k), v)
+			// Only setting them if the attributes are valid alphanumeric, otherwise the sdk will panic.
+			if IsAlphaNumericLowercaseLetters(k) {
+				event.SetExtension(strings.ToLower(k), v)
+			}
 		}
 	}
 	return &event, nil
