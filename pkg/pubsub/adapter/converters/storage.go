@@ -19,12 +19,11 @@ package converters
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go"
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
@@ -98,7 +97,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 			// V1 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9').
 			// Only setting them if the attributes are valid alphanumeric, otherwise the sdk will panic.
 			if IsAlphaNumericLowercaseLetters(k) {
-				event.SetExtension(strings.ToLower(k), v)
+				event.SetExtension(k, v)
 			}
 		}
 	}
