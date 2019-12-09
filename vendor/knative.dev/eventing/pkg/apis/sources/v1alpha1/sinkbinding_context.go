@@ -18,27 +18,26 @@ package v1alpha1
 
 import (
 	"context"
-	"fmt"
 
 	"knative.dev/pkg/apis"
 )
 
-func (imc *InMemoryChannel) Validate(ctx context.Context) *apis.FieldError {
-	return imc.Spec.Validate(ctx).ViaField("spec")
+// sinkURIKey is used as the key for associating information
+// with a context.Context.
+type sinkURIKey struct{}
+
+// WithSinkURI notes on the context for binding that the resolved SinkURI
+// is the provided apis.URL.
+func WithSinkURI(ctx context.Context, uri *apis.URL) context.Context {
+	return context.WithValue(ctx, sinkURIKey{}, uri)
 }
 
-func (imcs *InMemoryChannelSpec) Validate(ctx context.Context) *apis.FieldError {
-	var errs *apis.FieldError
-
-	if imcs.Subscribable != nil {
-		for i, subscriber := range imcs.Subscribable.Subscribers {
-			if subscriber.ReplyURI == nil && subscriber.SubscriberURI == nil {
-				fe := apis.ErrMissingField("replyURI", "subscriberURI")
-				fe.Details = "expected at least one of, got none"
-				errs = errs.Also(fe.ViaField(fmt.Sprintf("subscriber[%d]", i)).ViaField("subscribable"))
-			}
-		}
+// GetSinkURI accesses the apis.URL for the Sink URI that has been associated
+// with this context.
+func GetSinkURI(ctx context.Context) *apis.URL {
+	value := ctx.Value(sinkURIKey{})
+	if value == nil {
+		return nil
 	}
-
-	return errs
+	return value.(*apis.URL)
 }

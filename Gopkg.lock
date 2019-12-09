@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4e3f9d5cda677f4a71a8aec93f04a4aa823295a257265e2ddb437b45b4e174eb"
+  digest = "1:85e715992cb45c816b84a7ed2778df9cd060b9b57edba446535cb8b30372a075"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1211,6 +1211,7 @@
     "pkg/configmap",
     "pkg/kncloudevents",
     "pkg/logconfig",
+    "pkg/logging",
     "pkg/tracing",
     "test/base",
     "test/base/resources",
@@ -1219,7 +1220,7 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "82475968a0507db6ad48fb1246839c1c7160070a"
+  revision = "e4aea0ee926748e421766b977cdb61bb88ed3f98"
 
 [[projects]]
   branch = "release-0.11"
