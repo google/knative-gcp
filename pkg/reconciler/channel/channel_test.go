@@ -74,10 +74,10 @@ var (
 	}
 
 	subscriberDNS = "subscriber.mynamespace.svc.cluster.local"
-	subscriberURI = "http://" + subscriberDNS
+	subscriberURI = apis.HTTP(subscriberDNS)
 
 	replyDNS = "reply.mynamespace.svc.cluster.local"
-	replyURI = "http://" + replyDNS
+	replyURI = apis.HTTP(replyDNS)
 )
 
 func init() {
@@ -241,7 +241,7 @@ func TestAllCases(t *testing.T) {
 				}),
 			),
 			newReadyTopic(),
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: "http://wrong/", ReplyURI: "http://wrong/"}),
+			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: apis.HTTP("wrong"), ReplyURI: apis.HTTP("wrong")}),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
