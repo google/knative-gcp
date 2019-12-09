@@ -49,8 +49,8 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	// Attributes are extensions.
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
-			// V1 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9').
-			// Only setting them if the attributes are valid alphanumeric, otherwise the sdk will panic.
+			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
+			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
 			if IsAlphaNumericLowercaseLetters(k) {
 				event.SetExtension(k, v)
 			}
