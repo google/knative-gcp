@@ -20,7 +20,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
@@ -50,24 +49,8 @@ func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription
 		Topic:   args.Topic,
 	}
 
-	var reply *apis.URL
-	var subscriber *apis.URL
-
-	if args.Subscriber.ReplyURI != "" {
-		var err error
-		reply, err = apis.ParseURL(args.Subscriber.ReplyURI)
-		if err != nil {
-			reply = nil
-		}
-	}
-
-	if args.Subscriber.SubscriberURI != "" {
-		var err error
-		subscriber, err = apis.ParseURL(args.Subscriber.SubscriberURI)
-		if err != nil {
-			subscriber = nil
-		}
-	}
+	reply := args.Subscriber.ReplyURI
+	subscriber := args.Subscriber.SubscriberURI
 
 	// If subscriber and reply is used, map:
 	//   pull.transformer to sub.subscriber
