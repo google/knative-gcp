@@ -18,9 +18,9 @@ package converters
 
 import (
 	"context"
-	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -50,7 +50,10 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
 			// V1 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9').
-			event.SetExtension(strings.ToLower(k), v)
+			// Only setting them if the attributes are valid alphanumeric, otherwise the sdk will panic.
+			if IsAlphaNumericLowercaseLetters(k) {
+				event.SetExtension(k, v)
+			}
 		}
 	}
 	return &event, nil
