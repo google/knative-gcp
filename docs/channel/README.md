@@ -90,7 +90,7 @@ You should see log lines similar to:
 ☁️  cloudevents.Event
 Validation: valid
 Context Attributes,
-  specversion: 0.3
+  specversion: 1.0
   type: dev.knative.cronjob.event
   source: /apis/v1/namespaces/default/cronjobsources/hello-world
   id: 37a8a186-acc0-4c63-b1ad-a8dac9caf288

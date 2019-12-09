@@ -1220,7 +1220,7 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "e4aea0ee926748e421766b977cdb61bb88ed3f98"
+  revision = "838d60123a18cf9239f1c7b316b75692321ce0ef"
 
 [[projects]]
   branch = "release-0.11"
@@ -1300,7 +1300,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b1c00a39e3510f336768f16e184a9f1080c4b81d914ba0bb01cfdcc893c9d881"
+  digest = "1:42a487b51d3ba3f128ccdd44644968cfc06c8cf3ff6c31b0ebf7f2512bfbd0a7"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1351,7 +1351,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "509d53052bdad12a2ea8ef0a1cd99c2aefabd07d"
+  revision = "e502c2959b0659f7218e7a6eda2aa72654692a7e"
 
 [[projects]]
   branch = "master"
@@ -1382,6 +1382,7 @@
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go",
+    "github.com/cloudevents/sdk-go/pkg/cloudevents",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/observability",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",

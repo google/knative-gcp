@@ -111,7 +111,7 @@ func TestInboundConvert(t *testing.T) {
 			},
 		},
 		wantMessageFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV03)
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetID("abc")
 			e.SetSource(v1alpha1.PubSubEventSource("proj", "topic"))
 			e.SetDataContentType("application/octet-stream")
@@ -143,7 +143,7 @@ func TestInboundConvert(t *testing.T) {
 			},
 		},
 		wantMessageFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent(cloudevents.VersionV03)
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetID("abc")
 			e.SetSource(v1alpha1.StorageEventSource("my-bucket"))
 			e.SetSubject("my-obj")
@@ -217,7 +217,7 @@ func TestReceive(t *testing.T) {
 	}{{
 		name: "success without responding event",
 		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent("0.3")
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetSource("source")
 			e.SetType("unit.testing")
 			e.SetID("abc")
@@ -230,7 +230,7 @@ func TestReceive(t *testing.T) {
 		wantHeader: map[string][]string{
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"0.3"},
+			"Ce-Specversion": {"1.0"},
 			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
@@ -249,7 +249,7 @@ func TestReceive(t *testing.T) {
 	}, {
 		name: "success without responding event and from source",
 		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent("0.3")
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetSource("source")
 			e.SetType("unit.testing")
 			e.SetID("abc")
@@ -262,7 +262,7 @@ func TestReceive(t *testing.T) {
 		wantHeader: map[string][]string{
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"0.3"},
+			"Ce-Specversion": {"1.0"},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
@@ -279,7 +279,7 @@ func TestReceive(t *testing.T) {
 	}, {
 		name: "success with responding event",
 		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent("0.3")
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetSource("source")
 			e.SetType("unit.testing")
 			e.SetID("abc")
@@ -292,7 +292,7 @@ func TestReceive(t *testing.T) {
 		returnHeader: map[string][]string{
 			"Ce-Id":          {"def"},
 			"Ce-Source":      {"reply-source"},
-			"Ce-Specversion": {"0.3"},
+			"Ce-Specversion": {"1.0"},
 			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing.reply"},
 			"Content-Type":   {"application/json"},
@@ -301,7 +301,7 @@ func TestReceive(t *testing.T) {
 		wantHeader: map[string][]string{
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"0.3"},
+			"Ce-Specversion": {"1.0"},
 			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
@@ -311,7 +311,7 @@ func TestReceive(t *testing.T) {
 		},
 		wantBody: []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event {
-			e := cloudevents.NewEvent("0.3")
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetSource("reply-source")
 			e.SetType("unit.testing.reply")
 			e.SetID("def")
@@ -331,7 +331,7 @@ func TestReceive(t *testing.T) {
 	}, {
 		name: "receiver internal error",
 		eventFn: func() cloudevents.Event {
-			e := cloudevents.NewEvent("0.3")
+			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetSource("source")
 			e.SetType("unit.testing")
 			e.SetID("abc")
@@ -344,7 +344,7 @@ func TestReceive(t *testing.T) {
 		wantHeader: map[string][]string{
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
-			"Ce-Specversion": {"0.3"},
+			"Ce-Specversion": {"1.0"},
 			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
