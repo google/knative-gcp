@@ -40,11 +40,11 @@ type Scheduler struct {
 }
 
 var (
-	_ apis.Validatable             = (*Storage)(nil)
-	_ apis.Defaultable             = (*Storage)(nil)
-	_ runtime.Object               = (*Storage)(nil)
-	_ kmeta.OwnerRefable           = (*Storage)(nil)
-	_ resourcesemantics.GenericCRD = (*Storage)(nil)
+	_ apis.Validatable             = (*Scheduler)(nil)
+	_ apis.Defaultable             = (*Scheduler)(nil)
+	_ runtime.Object               = (*Scheduler)(nil)
+	_ kmeta.OwnerRefable           = (*Scheduler)(nil)
+	_ resourcesemantics.GenericCRD = (*Scheduler)(nil)
 )
 
 // SchedulerSpec is the spec for a Scheduler resource
