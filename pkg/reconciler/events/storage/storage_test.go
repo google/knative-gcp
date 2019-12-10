@@ -751,9 +751,9 @@ func TestAllCases(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
-			PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, "storage.events.cloud.google.com", cmw),
+			PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			storageLister: listers.GetStorageLister(),
 		}
 	}))

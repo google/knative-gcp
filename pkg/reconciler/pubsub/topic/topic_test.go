@@ -39,7 +39,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	gpubsubtesting "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
@@ -549,7 +548,7 @@ func TestAllCases(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		pubsubBase := &pubsub.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
@@ -558,7 +557,6 @@ func TestAllCases(t *testing.T) {
 			topicLister:    listers.GetTopicLister(),
 			serviceLister:  listers.GetV1ServiceLister(),
 			publisherImage: testImage,
-			createClientFn: gpubsubtesting.NewClient,
 		}
 	}))
 
