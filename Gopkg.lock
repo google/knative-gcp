@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:85e715992cb45c816b84a7ed2778df9cd060b9b57edba446535cb8b30372a075"
+  digest = "1:d2cd0185ac1738318c1e46e8e4119c1bb0b449163e1ae7a0079c896c0974e77e"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1220,11 +1220,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "838d60123a18cf9239f1c7b316b75692321ce0ef"
+  revision = "1832d93dd9a7c09871fb4be92fc19aa341b83250"
 
 [[projects]]
-  branch = "other-test"
-  digest = "1:d5572e9908014f7f0958a2998bc6c29439656fcb7385b8ee84e8b88196da88bd"
+  branch = "master"
+  digest = "1:9bab40f65d3222335ff45678d0062b00f47f8649c45004c4b1578048fd145c64"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1296,8 +1296,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "337c67ac3b5e3e847f1620047016c635c5c99a3d"
-  source = "github.com/nachocano/pkg"
+  revision = "d5d6ec46971dd72ae07ca6c3fac39b4699445618"
 
 [[projects]]
   branch = "master"
@@ -1352,7 +1351,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "e502c2959b0659f7218e7a6eda2aa72654692a7e"
+  revision = "96cffffa16ac26f52252bf0fee4f746fbd9fc293"
 
 [[projects]]
   branch = "master"
