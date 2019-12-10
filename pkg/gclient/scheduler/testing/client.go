@@ -84,8 +84,8 @@ func (c *testClient) DeleteJob(ctx context.Context, req *schedulerpb.DeleteJobRe
 
 // GetJob implements client.GetJob
 func (c *testClient) GetJob(ctx context.Context, req *schedulerpb.GetJobRequest, opts ...gax.CallOption) (*schedulerpb.Job, error) {
-	if c.data.DeleteJobErr != nil {
-		return nil, c.data.DeleteJobErr
+	if c.data.GetJobErr != nil {
+		return nil, c.data.GetJobErr
 	}
 	return &schedulerpb.Job{
 		Name: "jobName",

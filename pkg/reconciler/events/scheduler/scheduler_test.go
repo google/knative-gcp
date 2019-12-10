@@ -39,6 +39,8 @@ import (
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 	. "knative.dev/pkg/reconciler/testing"
 )
 
@@ -409,7 +411,7 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", schedulerName),
 		},
 	}, {
-		Name: "topic and pullsubscription exist and ready, scheduler client creation failed",
+		Name: "topic and pullsubscription exist and ready, create client fails",
 		Objects: []runtime.Object{
 			NewScheduler(schedulerName, testNS,
 				WithSchedulerProject(testProject),
@@ -453,6 +455,143 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
+	}, {
+		Name: "topic and pullsubscription exist and ready, get job fails with non-grpc",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				GetJobErr: errors.New("get-job-induced-error"),
+			},
+		},
+		Key:     testNS + "/" + schedulerName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "get-job-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "get-job-induced-error"),
+		},
+	}, {
+		Name: "topic and pullsubscription exist and ready, get job fails with grpc unknown error",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				GetJobErr: gstatus.Error(codes.Unknown, "get-job-induced-error"),
+			},
+		},
+		Key:     testNS + "/" + schedulerName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToCreateJobMsg, codes.Unknown, "get-job-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", fmt.Sprintf("rpc error: code = %s desc = %s", codes.Unknown, "get-job-induced-error")),
+		},
+	}, {
+		Name: "topic and pullsubscription exist and ready, get job fails with grpc not found error, create job fails",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				GetJobErr:    gstatus.Error(codes.NotFound, "get-job-induced-error"),
+				CreateJobErr: errors.New("create-job-induced-error"),
+			},
+		},
+		Key:     testNS + "/" + schedulerName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "create-job-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "create-job-induced-error"),
+		},
+
 		//}, {
 		//	Name: "topic and pullsubscription exist and ready, scheduler job not finished",
 		//	Objects: []runtime.Object{
