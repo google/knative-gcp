@@ -591,356 +591,98 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-job-induced-error"),
 		},
-
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job not finished",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJob(NewScheduler(schedulerName, testNS), ops.ActionCreate),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", jobNotCompletedMsg),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job failed",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, false),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", jobFailedMsg),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job finished, no pods found",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, true),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", jobPodNotFoundMsg),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job finished, no termination msg on pod",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, true),
-		//		newPod(""),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler Job: did not find termination message for pod "test-pod"`),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job finished, invalid termination msg on pod",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, true),
-		//		newPod("invalid msg"),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", `Failed to create Scheduler Job: failed to unmarshal terminationmessage: "invalid msg" : "invalid character 'i' looking for beginning of value"`),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job finished, job creation failed",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, true),
-		//		newPod(string(failureMsg)),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobNotReady("JobNotReady", "Failed to create Scheduler Job: operation failed: test induced failure"),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, scheduler job finished, job created successfully",
-		//	Objects: []runtime.Object{
-		//		NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerData(testData),
-		//			WithSchedulerSchedule(onceAMinuteSchedule),
-		//			WithSchedulerFinalizers(finalizerName),
-		//		),
-		//		NewTopic(schedulerName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//		newJobFinished(NewScheduler(schedulerName, testNS), ops.ActionCreate, true),
-		//		newPod(string(successMsg)),
-		//	},
-		//	Key:     testNS + "/" + schedulerName,
-		//	WantErr: false,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewScheduler(schedulerName, testNS,
-		//			WithSchedulerSink(sinkGVK, sinkName),
-		//			WithSchedulerLocation(location),
-		//			WithSchedulerFinalizers(finalizerName),
-		//			WithSchedulerData(testData),
-		//			WithSchedulerSchedule(onceAMinuteSchedule),
-		//			WithInitSchedulerConditions,
-		//			WithSchedulerTopicReady(testTopicID, testProject),
-		//			WithSchedulerPullSubscriptionReady(),
-		//			WithSchedulerJobReady(jobName),
-		//			WithSchedulerSinkURI(schedulerSinkURL),
-		//		),
-		//	}},
+	}, {
+		Name: "topic and pullsubscription exist and ready, get job fails with grpc not found error, create job succeeds",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				GetJobErr: gstatus.Error(codes.NotFound, "get-job-induced-error"),
+			},
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobReady(jobName),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
+		},
+	}, {
+		Name: "topic and pullsubscription exist and ready, job exists",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobReady(jobName),
+				WithSchedulerSinkURI(schedulerSinkURL)),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
+		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
-			PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, "scheduler.events.cloud.google.com", cmw),
+			PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			schedulerLister: listers.GetSchedulerLister(),
 			createClientFn:  gscheduler.TestClientCreator(testData["scheduler"]),
 		}
 	}))
 
-}
-
-//func newJob(owner kmeta.OwnerRefable, action string) runtime.Object {
-//	if action == "create" {
-//		j, _ := operations.NewJobOps(operations.JobArgs{
-//			UID:      schedulerUID,
-//			JobName:  jobName,
-//			Image:    testImage,
-//			Action:   ops.ActionCreate,
-//			TopicID:  testTopicID,
-//			Secret:   secret,
-//			Owner:    owner,
-//			Data:     testData,
-//			Schedule: onceAMinuteSchedule,
-//		})
-//		return j
-//	}
-//	j, _ := operations.NewJobOps(operations.JobArgs{
-//		UID:     schedulerUID,
-//		Image:   testImage,
-//		JobName: jobName,
-//		Action:  ops.ActionDelete,
-//		Secret:  secret,
-//		Owner:   owner,
-//	})
-//	return j
-//}
-//
-//func newJobFinished(owner kmeta.OwnerRefable, action string, success bool) runtime.Object {
-//	var job *batchv1.Job
-//	if action == "create" {
-//		job, _ = operations.NewJobOps(operations.JobArgs{
-//			UID:      schedulerUID,
-//			JobName:  jobName,
-//			Image:    testImage,
-//			Action:   ops.ActionCreate,
-//			TopicID:  testTopicID,
-//			Secret:   secret,
-//			Data:     testData,
-//			Owner:    owner,
-//			Schedule: onceAMinuteSchedule,
-//		})
-//	} else {
-//		job, _ = operations.NewJobOps(operations.JobArgs{
-//			UID:    schedulerUID,
-//			Image:  testImage,
-//			Action: ops.ActionDelete,
-//			Secret: secret,
-//			Owner:  owner,
-//		})
-//	}
-//
-//	if success {
-//		job.Status.Active = 0
-//		job.Status.Succeeded = 1
-//		job.Status.Conditions = []batchv1.JobCondition{{
-//			Type:   batchv1.JobComplete,
-//			Status: corev1.ConditionTrue,
-//		}, {
-//			Type:   batchv1.JobFailed,
-//			Status: corev1.ConditionFalse,
-//		}}
-//	} else {
-//		job.Status.Active = 0
-//		job.Status.Succeeded = 0
-//		job.Status.Conditions = []batchv1.JobCondition{{
-//			Type:   batchv1.JobComplete,
-//			Status: corev1.ConditionFalse,
-//		}, {
-//			Type:   batchv1.JobFailed,
-//			Status: corev1.ConditionTrue,
-//		}}
-//	}
-//
-//	return job
-//}
-
-func newPod(msg string) runtime.Object {
-	labels := map[string]string{
-		"resource-uid": schedulerUID,
-		"action":       "create",
-	}
-
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: testNS,
-			Labels:    labels,
-		},
-		Status: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{
-				{
-					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{
-							Message: msg,
-						},
-					},
-				},
-			},
-		},
-	}
 }

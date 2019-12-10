@@ -73,7 +73,7 @@ func (c *testClient) CreateJob(ctx context.Context, req *schedulerpb.CreateJobRe
 		return nil, c.data.CreateJobErr
 	}
 	return &schedulerpb.Job{
-		Name: "jobName",
+		Name: req.Job.Name,
 	}, nil
 }
 
@@ -88,6 +88,6 @@ func (c *testClient) GetJob(ctx context.Context, req *schedulerpb.GetJobRequest,
 		return nil, c.data.GetJobErr
 	}
 	return &schedulerpb.Job{
-		Name: "jobName",
+		Name: req.Name,
 	}, nil
 }
