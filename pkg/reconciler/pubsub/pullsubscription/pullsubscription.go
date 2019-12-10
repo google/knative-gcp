@@ -111,48 +111,48 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	// Don't modify the informers copy
-	source := original.DeepCopy()
+	ps := original.DeepCopy()
 
-	// Reconcile this copy of the source and then write back any status
+	// Reconcile this copy of the PullSubscription and then write back any status
 	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = r.reconcile(ctx, source)
+	var reconcileErr = r.reconcile(ctx, ps)
 
 	// If no error is returned, mark the observed generation.
 	// This has to be done before updateStatus is called.
 	if reconcileErr == nil {
-		source.Status.ObservedGeneration = source.Generation
+		ps.Status.ObservedGeneration = ps.Generation
 	}
 
-	if equality.Semantic.DeepEqual(original.Finalizers, source.Finalizers) {
+	if equality.Semantic.DeepEqual(original.Finalizers, ps.Finalizers) {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
-	} else if _, updated, fErr := r.updateFinalizers(ctx, source); fErr != nil {
+	} else if _, updated, fErr := r.updateFinalizers(ctx, ps); fErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update PullSubscription finalizers", zap.Error(fErr))
-		r.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update finalizers for PullSubscription %q: %v", source.Name, fErr)
+		r.Recorder.Eventf(ps, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update finalizers for PullSubscription %q: %v", ps.Name, fErr)
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", source.Name)
+		r.Recorder.Eventf(ps, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", ps.Name)
 	}
 
-	if equality.Semantic.DeepEqual(original.Status, source.Status) {
+	if equality.Semantic.DeepEqual(original.Status, ps.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := r.updateStatus(ctx, source); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update source status", zap.Error(uErr))
-		r.Recorder.Eventf(source, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for PullSubscription %q: %v", source.Name, uErr)
+	} else if _, uErr := r.updateStatus(ctx, ps); uErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update ps status", zap.Error(uErr))
+		r.Recorder.Eventf(ps, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for PullSubscription %q: %v", ps.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(source, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", source.Name)
+		r.Recorder.Eventf(ps, corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", ps.Name)
 	}
 	if reconcileErr != nil {
-		r.Recorder.Event(source, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+		r.Recorder.Event(ps, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
 
 	return reconcileErr

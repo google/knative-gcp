@@ -161,9 +161,6 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		return nil
 	}
 
-	// Set the topic being used.
-	topic.Status.TopicID = topic.Spec.Topic
-
 	// Add the finalizer.
 	addFinalizer(topic)
 
@@ -172,6 +169,8 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 		return err
 	}
 	topic.Status.MarkTopicReady()
+	// Set the topic being used.
+	topic.Status.TopicID = topic.Spec.Topic
 	// Set the project being used.
 	topic.Status.ProjectID = topic.Spec.Project
 
@@ -232,7 +231,14 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 	return nil
 }
 
+// deleteTopic looks at the status.TopicID and if non-empty,
+// hence indicating that we have created a topic successfully,
+// remove it.
 func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) error {
+	if topic.Status.TopicID == "" {
+		return nil
+	}
+
 	// At this point the project should have been populated.
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
 	client, err := r.createClientFn(ctx, topic.Spec.Project)
