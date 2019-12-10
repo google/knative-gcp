@@ -27,12 +27,12 @@ required = [
 # This is a preemptive override.
 [[override]]
   name = "knative.dev/eventing"
-  branch = "master"
+  branch = "release-0.11"
 
 # This is a preemptive override.
 [[override]]
   name = "knative.dev/serving"
-  branch = "master"
+  branch = "release-0.11"
 
 [[override]]
   name = "go.uber.org/zap"
