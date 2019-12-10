@@ -26,10 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
-	"knative.dev/pkg/apis"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -84,6 +85,7 @@ var (
 	topicNotReadyMsg            = `Topic "my-test-scheduler" not ready`
 	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-scheduler" not ready`
 	failedToCreateJobMsg        = `Failed to create Scheduler job`
+	failedToDeleteJobMsg        = `Failed to delete Scheduler job`
 )
 
 func init() {
@@ -672,6 +674,179 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
+		},
+	}, {
+		Name: "scheduler job fails to delete with no-grpc error",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobReady(jobName),
+				WithSchedulerSinkURI(schedulerSinkURL),
+				WithSchedulerDeletionTimestamp,
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobName(jobName),
+				WithSchedulerJobNotReady("JobDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteJobMsg, "delete-job-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL),
+				WithSchedulerDeletionTimestamp,
+			),
+		}},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				DeleteJobErr: errors.New("delete-job-induced-error"),
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "delete-job-induced-error"),
+		},
+	}, {
+		Name: "scheduler job fails to delete with Unknown grpc error",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobReady(jobName),
+				WithSchedulerSinkURI(schedulerSinkURL),
+				WithSchedulerDeletionTimestamp,
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobName(jobName),
+				WithSchedulerJobNotReady("JobDeleteFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToDeleteJobMsg, codes.Unknown, "delete-job-induced-error")),
+				WithSchedulerSinkURI(schedulerSinkURL),
+				WithSchedulerDeletionTimestamp,
+			),
+		}},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				DeleteJobErr: gstatus.Error(codes.Unknown, "delete-job-induced-error"),
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", fmt.Sprintf("rpc error: code = %s desc = %s", codes.Unknown, "delete-job-induced-error")),
+		},
+	}, {
+		Name: "scheduler successfully deleted with NotFound grpc error",
+		Objects: []runtime.Object{
+			NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerTopicReady(testTopicID, testProject),
+				WithSchedulerPullSubscriptionReady(),
+				WithSchedulerJobReady(jobName),
+				WithSchedulerSinkURI(schedulerSinkURL),
+				WithSchedulerDeletionTimestamp,
+			),
+			NewTopic(schedulerName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewScheduler(schedulerName, testNS,
+				WithSchedulerProject(testProject),
+				WithSchedulerSink(sinkGVK, sinkName),
+				WithSchedulerLocation(location),
+				WithSchedulerFinalizers(finalizerName),
+				WithSchedulerData(testData),
+				WithSchedulerSchedule(onceAMinuteSchedule),
+				WithInitSchedulerConditions,
+				WithSchedulerJobNotReady("JobDeleted", fmt.Sprintf("Successfully deleted Scheduler job: %s", jobName)),
+				WithSchedulerTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", schedulerName)),
+				WithSchedulerPullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", schedulerName)),
+				WithSchedulerDeletionTimestamp,
+			),
+		}},
+		WantDeletes: []clientgotesting.DeleteActionImpl{
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Name: schedulerName,
+			},
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Name: schedulerName,
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, false),
+		},
+		OtherTestData: map[string]interface{}{
+			"scheduler": gscheduler.TestClientData{
+				DeleteJobErr: gstatus.Error(codes.NotFound, "delete-job-induced-error"),
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q finalizers", schedulerName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
 		},
 	}}

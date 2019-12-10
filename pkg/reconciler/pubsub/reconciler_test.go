@@ -18,6 +18,7 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -99,7 +100,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: "topic not ready",
+		expectedErr: fmt.Sprintf("Topic %q not ready", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -138,7 +139,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: "topic not ready",
+		expectedErr: fmt.Sprintf("Topic %q not ready", name),
 	}, {
 		name: "topic exists and is ready but no projectid",
 		objects: []runtime.Object{
@@ -170,7 +171,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: "topic did not expose projectid",
+		expectedErr: fmt.Sprintf("Topic %q did not expose projectid", name),
 	}, {
 		name: "topic exists and is ready but no topicid",
 		objects: []runtime.Object{
@@ -204,7 +205,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: "topic did not expose topicid",
+		expectedErr: fmt.Sprintf("Topic %q did not expose topicid", name),
 	}, {
 		name: "topic exists and is ready, pullsubscription created",
 		objects: []runtime.Object{
@@ -250,7 +251,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-		expectedErr: "pullsubscription not ready",
+		expectedErr: fmt.Sprintf("PullSubscription %q not ready", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
@@ -324,8 +325,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-
-		expectedErr: "pullsubscription not ready",
+		expectedErr: fmt.Sprintf("PullSubscription %q not ready", name),
 	}, {
 		name: "topic exists and is ready, pullsubscription exists and is ready",
 		objects: []runtime.Object{
@@ -386,7 +386,6 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionReady("http://example.com"),
 		),
-
 		expectedErr: "",
 	}}
 
@@ -481,7 +480,7 @@ func TestDeletes(t *testing.T) {
 		psBase.Logger = logtesting.TestLogger(t)
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		err := psBase.DeletePubSub(context.Background(), testNS, name)
+		err := psBase.DeletePubSub(context.Background(), pubsubable)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||

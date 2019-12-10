@@ -166,7 +166,7 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 		storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted Storage notification: %s", storage.Status.NotificationID)
 		storage.Status.NotificationID = ""
 
-		if err := r.PubSubBase.DeletePubSub(ctx, storage.Namespace, storage.Name); err != nil {
+		if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
 			return err
 		}
 		removeFinalizer(storage)

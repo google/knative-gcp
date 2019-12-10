@@ -155,7 +155,7 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 		scheduler.Status.MarkJobNotReady("JobDeleted", "Successfully deleted Scheduler job: %s", scheduler.Status.JobName)
 		scheduler.Status.JobName = ""
 
-		if err := r.PubSubBase.DeletePubSub(ctx, scheduler.Namespace, scheduler.Name); err != nil {
+		if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
 			return err
 		}
 		removeFinalizer(scheduler)
