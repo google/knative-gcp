@@ -86,6 +86,18 @@ func WithChannelTopic(topicID string) ChannelOption {
 	}
 }
 
+func WithChannelTopicID(topicID string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.TopicID = topicID
+	}
+}
+
+func WithChannelNoTopic(reason, message string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Status.MarkNoTopic(reason, message)
+	}
+}
+
 func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Spec = spec

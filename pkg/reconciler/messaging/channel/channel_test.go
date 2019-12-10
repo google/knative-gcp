@@ -104,8 +104,8 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 			Eventf(corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", testTopicName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
@@ -117,7 +117,8 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithInitChannelConditions,
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
-				WithChannelTopic(testTopicID),
+				WithChannelTopicID(testTopicID),
+				WithChannelNoTopic("TopicNotReady", "Topic has no Ready type status"),
 			),
 		}},
 		WantCreates: []runtime.Object{

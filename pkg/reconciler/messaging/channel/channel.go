@@ -124,8 +124,8 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		channel.Status.MarkNoTopic("TopicCreateFailed", "Error when attempting to create Topic.")
 		return err
 	}
-	channel.Status.TopicID = topic.Spec.Topic
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
+	channel.Status.TopicID = topic.Spec.Topic
 
 	// 2. Sync all subscriptions.
 	//   a. create all subscriptions that are in spec and not in status.
