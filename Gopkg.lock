@@ -1188,8 +1188,8 @@
   revision = "69764acb6e8e900b7c05296c5d3c9c19545475f9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:85e715992cb45c816b84a7ed2778df9cd060b9b57edba446535cb8b30372a075"
+  branch = "release-0.11"
+  digest = "1:fec39a496b00aeaf10e7c0ee94f58e98001b9c9d888174d40ef046722f29bae5"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1220,7 +1220,7 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "838d60123a18cf9239f1c7b316b75692321ce0ef"
+  revision = "3bf804593d69a0b01b8b6b00de0228d960a0083b"
 
 [[projects]]
   branch = "release-0.11"
@@ -1299,7 +1299,7 @@
   revision = "94a34e416c4486376a21d934f4bfebd730c82c12"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.11"
   digest = "1:42a487b51d3ba3f128ccdd44644968cfc06c8cf3ff6c31b0ebf7f2512bfbd0a7"
   name = "knative.dev/serving"
   packages = [
@@ -1351,7 +1351,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "e502c2959b0659f7218e7a6eda2aa72654692a7e"
+  revision = "96cffffa16ac26f52252bf0fee4f746fbd9fc293"
 
 [[projects]]
   branch = "master"
