@@ -72,7 +72,7 @@ spec:
               description: "The name of the service method or operation. For API calls, this should be the name of the API method."
             resource:
               type: string
-              description: "The resource or collection that is the target of the operation. The name is a scheme-less URI, not including the API service name. If omitted, audit log events matching service and method will be pulled for all resources.
+              description: "The resource or collection that is the target of the operation. The name is a scheme-less URI, not including the API service name. If omitted, audit log events matching service and method will be pulled for all resources."
             sink:
               type: object
               description: "Sink which receives the notifications."
