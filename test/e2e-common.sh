@@ -30,6 +30,12 @@ which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
+readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
+
+# Constants used for creating ServiceAccount for the Control-Plane if it's not running on Prow.
+readonly CONTROL_PLANE_SERVICE_ACCOUNT="e2e-cloud-run-events-test-$(random6)"
+readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY="$(mktemp)"
+readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 
 # Constants used for creating ServiceAccount for Pub/Sub Admin if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
@@ -43,6 +49,7 @@ function knative_setup() {
 
 # Setup resources common to all eventing tests.
 function test_setup() {
+  control_plane_setup || return 1
   pubsub_setup || return 1
   storage_setup || return 1
   echo "Sleep 2 min to wait for all resources to setup"
@@ -55,6 +62,24 @@ function test_setup() {
 # Tear down resources common to all eventing tests.
 function test_teardown() {
   teardown
+}
+
+# Create resources required for the Control Plane setup
+function control_plane_setup() {
+  local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
+  # When not running on Prow we need to set up a service account for managing resources
+  if (( ! IS_PROW )); then
+    echo "Set up ServiceAccount used by the Control Plane"
+    gcloud iam service-accounts create ${CONTROL_PLANE_SERVICE_ACCOUNT}
+    # TODO give finer grained permissions.
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/editor
+    gcloud iam service-accounts keys create ${CONTROL_PLANE_SERVICE_ACCOUNT_KEY} \
+      --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    service_account_key="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY}"
+  fi
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
 # Create resources required for Pub/Sub Admin setup
@@ -118,7 +143,14 @@ function teardown() {
       --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
       --role roles/pubsub.publisher
     gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    echo "Tear down ServiceAccount for Control Plane"
+    gcloud iam service-accounts keys delete -q ${CONTROL_PLANE_SERVICE_ACCOUNT_KEY} \
+      --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/editor
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
+  # TODO delete control plane secret?
 }
 
