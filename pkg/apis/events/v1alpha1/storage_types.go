@@ -53,7 +53,7 @@ var (
 type StorageSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
@@ -112,7 +112,7 @@ var storageCondSet = apis.NewLivingConditionSet(
 type StorageStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubStatus
+	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional

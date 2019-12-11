@@ -51,7 +51,7 @@ var (
 type SchedulerSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Location where to create the Job in.
 	Location string `json:"location"`
@@ -81,7 +81,7 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 type SchedulerStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubStatus
+	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// JobName is the name of the created scheduler Job on success.
 	// +optional
