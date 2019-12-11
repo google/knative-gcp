@@ -54,20 +54,20 @@ var CloudAuditLogCondSet = apis.NewLivingConditionSet(
 type CloudAuditLogSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// The CloudAuditLog event source will pull events matching
 	// the following parameters:
 
 	// The GCP service providing audit logs. Required.
-	Service string
+	ServiceName string `json:"service_name"`
 	// The name of the service method or operation. For API calls,
 	// this should be the name of the API method. Required.
-	Method string
+	MethodName string `json:"method_name"`
 	// The resource or collection that is the target of the
 	// operation. The name is a scheme-less URI, not including the
 	// API service name.
-	Resource string
+	ResourceName string `json:"resource_name,omitempty"`
 }
 
 type CloudAuditLogStatus struct {

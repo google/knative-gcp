@@ -178,10 +178,15 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, cal *v1alpha1.CloudA
 	}
 	sink, err := logadminClient.Sink(ctx, sinkID)
 	if status.Code(err) == codes.NotFound {
+		filterBuilder := FilterBuilder{
+			serviceName:  cal.Spec.ServiceName,
+			methodName:   cal.Spec.MethodName,
+			resourceName: cal.Spec.ResourceName}
+		filterQuery := filterBuilder.GetFilterQuery()
 		sink = &logadmin.Sink{
 			ID:          sinkID,
 			Destination: fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", cal.Status.ProjectID, cal.Status.TopicID),
-			//Filter:
+			Filter:      filterQuery,
 		}
 		sink, err = logadminClient.CreateSinkOpt(ctx, sink, logadmin.SinkOptions{UniqueWriterIdentity: true})
 		if status.Code(err) == codes.AlreadyExists {
