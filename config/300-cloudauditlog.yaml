@@ -64,13 +64,13 @@ spec:
             project:
               type: string
               description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
-            service_name:
+            serviceName:
               type: string
               description: "The GCP service providing audit logs."
-            method_name:
+            methodName:
               type: string
               description: "The name of the service method or operation. For API calls, this should be the name of the API method."
-            resource_name:
+            resourceName:
               type: string
               description: "The resource or collection that is the target of the operation. The name is a scheme-less URI, not including the API service name. If omitted, audit log events matching service and method will be pulled for all resources."
             sink:

@@ -60,14 +60,14 @@ type CloudAuditLogSpec struct {
 	// the following parameters:
 
 	// The GCP service providing audit logs. Required.
-	ServiceName string `json:"service_name"`
+	ServiceName string `json:"serviceName"`
 	// The name of the service method or operation. For API calls,
 	// this should be the name of the API method. Required.
-	MethodName string `json:"method_name"`
+	MethodName string `json:"methodName"`
 	// The resource or collection that is the target of the
 	// operation. The name is a scheme-less URI, not including the
 	// API service name.
-	ResourceName string `json:"resource_name,omitempty"`
+	ResourceName string `json:"resourceName,omitempty"`
 }
 
 type CloudAuditLogStatus struct {
