@@ -60,9 +60,6 @@ const (
 	channelComponent = "channel"
 
 	finalizerName = controllerAgentName
-
-	// Custom secret finalizer requires at least one slash
-	secretFinalizerName = controllerAgentName + "/secret"
 )
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
@@ -188,14 +185,14 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 
 	subscriptionID, err := r.reconcileSubscription(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNoSubscription("SubscriptionCreateFailed", "Failed to reconcile Subscription: %s", err.Error())
+		ps.Status.MarkNoSubscription("SubscriptionCreateFailed", "Failed to create Pub/Sub subscription: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkSubscribed(subscriptionID)
 
 	_, err = r.createOrUpdateReceiveAdapter(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNotDeployed("AdapterCreateFailed", "Failed to reconcile Receive Adapter: %s", err.Error())
+		ps.Status.MarkNotDeployed("AdapterCreateFailed", "Failed to create Receive Adapter: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkDeployed()

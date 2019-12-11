@@ -58,12 +58,10 @@ const (
 	testTopicID  = "cloud-run-topic-" + testNS + "-" + topicName + "-" + topicUID
 	testTopicURI = "http://" + topicName + "-topic." + testNS + ".svc.cluster.local"
 
-	secretName            = "testing-secret"
-	testJobFailureMessage = "job failed"
+	secretName = "testing-secret"
 
-	failedToCreateTopicMsg     = `Failed to create Pub/Sub topic`
-	failedToCreatePublisherMsg = `Failed to create Publisher`
-	failedToDeleteTopicMsg     = `Failed to delete Pub/Sub topic`
+	failedToCreateTopicMsg = `Failed to create Pub/Sub topic`
+	failedToDeleteTopicMsg = `Failed to delete Pub/Sub topic`
 )
 
 var (

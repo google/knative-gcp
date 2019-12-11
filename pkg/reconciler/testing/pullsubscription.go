@@ -112,17 +112,20 @@ func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionMarkSubscribed(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSubscribed(subscriptionID)
 	}
 }
 
-func WithPullSubscriptionMarkNoSubscription(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionMarkNoSubscription(reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkNoSubscription("Deleted", "Successfully deleted Subscription %q.", subscriptionID)
-		s.Status.SubscriptionID = ""
+		s.Status.MarkNoSubscription(reason, message)
 	}
+}
+
+func WithPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
+	ps.Status.MarkDeployed()
 }
 
 func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
