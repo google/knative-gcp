@@ -154,7 +154,7 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 				topic.Status.MarkNoTopic("TopicDeleteFailed", "Failed to delete Pub/Sub topic: %s", err.Error())
 				return err
 			}
-			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted Pub/Sub topic %q.", topic.Status.TopicID)
+			topic.Status.MarkNoTopic("TopicDeleted", "Successfully deleted Pub/Sub topic: %s", topic.Status.TopicID)
 			topic.Status.TopicID = ""
 		}
 		removeFinalizer(topic)
