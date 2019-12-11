@@ -118,6 +118,12 @@ func WithPullSubscriptionMarkSubscribed(subscriptionID string) PullSubscriptionO
 	}
 }
 
+func WithPullSubscriptionSubscriptionID(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithPullSubscriptionMarkNoSubscription(reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkNoSubscription(reason, message)
