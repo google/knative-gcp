@@ -22,30 +22,39 @@ import (
 	"github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
 
-// TestSubscription is a test Pub/Sub subscription.
-type TestSubscription struct {
-	id string
+// testSubscription is a test Pub/Sub subscription.
+type testSubscription struct {
+	data TestSubscriptionData
+}
+
+// TestSubscriptionData is the data used to configure the test Subscription.
+type TestSubscriptionData struct {
+	ExistsErr error
+	Exists    bool
+	ConfigErr error
+	UpdateErr error
+	DeleteErr error
 }
 
 // Verify that it satisfies the pubsub.Subscription interface.
-var _ pubsub.Subscription = &TestSubscription{}
+var _ pubsub.Subscription = &testSubscription{}
 
 // Exists implements Subscription.Exists.
-func (s *TestSubscription) Exists(ctx context.Context) (bool, error) {
-	return true, nil
+func (s *testSubscription) Exists(ctx context.Context) (bool, error) {
+	return s.data.Exists, s.data.ExistsErr
 }
 
 // Config implements Subscription.Config.
-func (s *TestSubscription) Config(ctx context.Context) (pubsub.SubscriptionConfig, error) {
-	return pubsub.SubscriptionConfig{}, nil
+func (s *testSubscription) Config(ctx context.Context) (pubsub.SubscriptionConfig, error) {
+	return pubsub.SubscriptionConfig{}, s.data.ConfigErr
 }
 
 // Update implements Subscription.Update.
-func (s *TestSubscription) Update(ctx context.Context, cfg pubsub.SubscriptionConfig) (pubsub.SubscriptionConfig, error) {
-	return cfg, nil
+func (s *testSubscription) Update(ctx context.Context, cfg pubsub.SubscriptionConfig) (pubsub.SubscriptionConfig, error) {
+	return cfg, s.data.UpdateErr
 }
 
 // Delete implements Subscription.Delete.
-func (s *TestSubscription) Delete(ctx context.Context) error {
-	return nil
+func (s *testSubscription) Delete(ctx context.Context) error {
+	return s.data.DeleteErr
 }

@@ -23,18 +23,25 @@ import (
 )
 
 // TestTopic is a test Pub/Sub topic.
-type TestTopic struct {
-	id string
+type testTopic struct {
+	data TestTopicData
+}
+
+// TestTopicData is the data used to configure the test Topic.
+type TestTopicData struct {
+	ExistsErr error
+	Exists    bool
+	DeleteErr error
 }
 
 // Verify that it satisfies the pubsub.Topic interface.
-var _ pubsub.Topic = &TestTopic{}
+var _ pubsub.Topic = &testTopic{}
 
 // Exists implements Topic.Exists.
-func (t *TestTopic) Exists(ctx context.Context) (bool, error) {
-	return true, nil
+func (t *testTopic) Exists(ctx context.Context) (bool, error) {
+	return t.data.Exists, t.data.ExistsErr
 }
 
-func (t *TestTopic) Delete(ctx context.Context) error {
-	return nil
+func (t *testTopic) Delete(ctx context.Context) error {
+	return t.data.DeleteErr
 }

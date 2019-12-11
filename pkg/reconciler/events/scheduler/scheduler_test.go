@@ -60,6 +60,12 @@ const (
 	jobName             = parentName + "/jobs/cre-scheduler-" + schedulerUID
 	testData            = "mytestdata"
 	onceAMinuteSchedule = "* * * * *"
+
+	// Message for when the topic and pullsubscription with the above variables are not ready.
+	topicNotReadyMsg            = `Topic "my-test-scheduler" not ready`
+	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-scheduler" not ready`
+	failedToCreateJobMsg        = `Failed to create Scheduler job`
+	failedToDeleteJobMsg        = `Failed to delete Scheduler job`
 )
 
 var (
@@ -80,12 +86,6 @@ var (
 		},
 		Key: "key.json",
 	}
-
-	// Message for when the topic and pullsubscription with the above variables are not ready.
-	topicNotReadyMsg            = `Topic "my-test-scheduler" not ready`
-	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-scheduler" not ready`
-	failedToCreateJobMsg        = `Failed to create Scheduler job`
-	failedToDeleteJobMsg        = `Failed to delete Scheduler job`
 )
 
 func init() {

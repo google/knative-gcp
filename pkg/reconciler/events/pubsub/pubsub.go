@@ -124,7 +124,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.PubSub) err
 
 	ps, err := r.reconcilePullSubscription(ctx, pubsub)
 	if err != nil {
-		pubsub.Status.MarkPullSubscriptionNotReady("PullSubscriptionReconcileFailed", "Failed to reconcile PullSubscription: %s", err.Error())
+		pubsub.Status.MarkPullSubscriptionNotReady("PullSubscriptionCreateFailed", "Failed to reconcile PullSubscription: %s", err.Error())
 		return err
 	}
 	pubsub.Status.PropagatePullSubscriptionStatus(ps.Status.GetCondition(apis.ConditionReady))

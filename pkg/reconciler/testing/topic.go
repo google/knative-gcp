@@ -105,6 +105,12 @@ func WithTopicDeployed(s *v1alpha1.Topic) {
 	s.Status.MarkDeployed()
 }
 
+func WithTopicNotDeployed(reason, message string) TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkNotDeployed(reason, message)
+	}
+}
+
 func WithTopicProjectID(projectID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.ProjectID = projectID
@@ -120,9 +126,9 @@ func WithTopicReady(topicID string) TopicOption {
 	}
 }
 
-func WithTopicDeleted(s *v1alpha1.Topic) {
-	t := metav1.NewTime(time.Unix(1e9, 0))
-	s.ObjectMeta.SetDeletionTimestamp(&t)
+func WithTopicDeleted(t *v1alpha1.Topic) {
+	tt := metav1.NewTime(time.Unix(1e9, 0))
+	t.ObjectMeta.SetDeletionTimestamp(&tt)
 }
 
 func WithTopicOwnerReferences(ownerReferences []metav1.OwnerReference) TopicOption {
@@ -134,6 +140,12 @@ func WithTopicOwnerReferences(ownerReferences []metav1.OwnerReference) TopicOpti
 func WithTopicLabels(labels map[string]string) TopicOption {
 	return func(c *v1alpha1.Topic) {
 		c.ObjectMeta.Labels = labels
+	}
+}
+
+func WithTopicNoTopic(reason, message string) TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkNoTopic(reason, message)
 	}
 }
 

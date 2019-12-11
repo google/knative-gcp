@@ -56,7 +56,7 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 func (ts *TopicStatus) PropagatePublisherStatus(ready *apis.Condition) {
 	switch {
 	case ready == nil:
-		ts.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status.")
+		ts.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	case ready.IsTrue():
 		ts.MarkDeployed()
 	case ready.IsFalse():
