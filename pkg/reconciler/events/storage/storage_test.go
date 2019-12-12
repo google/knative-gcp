@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ import (
 
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -53,6 +55,12 @@ const (
 	testTopicID  = "storage-" + storageUID
 	testTopicURI = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
 	generation   = 1
+
+	// Message for when the topic and pullsubscription with the above variables are not ready.
+	topicNotReadyMsg              = `Topic "my-test-storage" not ready`
+	pullSubscriptionNotReadyMsg   = `PullSubscription "my-test-storage" not ready`
+	failedToCreateNotificationMsg = `Failed to create Storage notification`
+	failedToDeleteNotificationMsg = `Failed to delete Storage notification`
 )
 
 var (
@@ -73,10 +81,6 @@ var (
 		},
 		Key: "key.json",
 	}
-
-	// Message for when the topic and pullsubscription with the above variables are not ready.
-	topicNotReadyMsg            = `Topic "my-test-storage" not ready`
-	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-storage" not ready`
 )
 
 func init() {
@@ -137,7 +141,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
-	//storageSinkURL := sinkURL(t, sinkURI)
+	storageSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
 		Name: "bad workqueue key",
@@ -391,48 +395,154 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", storageName),
 		},
-		//}, {
-		//	Name: "topic and pullsubscription exist and ready, notification job created",
-		//	Objects: []runtime.Object{
-		//		NewStorage(storageName, testNS,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{"finalize"}),
-		//			WithStorageFinalizers(finalizerName),
-		//		),
-		//		NewTopic(storageName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(storageName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//	},
-		//	Key:     testNS + "/" + storageName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewStorage(storageName, testNS,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageStatusObservedGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{"finalize"}),
-		//			WithStorageFinalizers(finalizerName),
-		//			WithInitStorageConditions,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageTopicReady(testTopicID),
-		//			WithStorageProjectID(testProject),
-		//			WithStoragePullSubscriptionReady(),
-		//			WithStorageNotificationNotReady("NotificationNotReady", jobNotCompletedMsg),
-		//			WithStorageSinkURI(storageSinkURL),
-		//		),
-		//	}},
-		//	WantCreates: []runtime.Object{
-		//		newJob(NewStorage(storageName, testNS), ops.ActionCreate),
-		//	},
+	}, {
+		Name: "client create fails",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				CreateClientErr: errors.New("create-client-induced-error"),
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageTopicReady(testTopicID),
+				WithStorageProjectID(testProject),
+				WithStoragePullSubscriptionReady(),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "create-client-induced-error")),
+			),
+		}},
+	}, {
+		Name: "bucket notifications fails",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				BucketData: gstorage.TestBucketData{
+					NotificationsErr: errors.New("bucket-notifications-induced-error"),
+				},
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "bucket-notifications-induced-error"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageTopicReady(testTopicID),
+				WithStorageProjectID(testProject),
+				WithStoragePullSubscriptionReady(),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "bucket-notifications-induced-error")),
+			),
+		}},
+	}, {
+		Name: "bucket add notification fails",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				BucketData: gstorage.TestBucketData{
+					AddNotificationErr: errors.New("bucket-add-notification-induced-error"),
+				},
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "bucket-add-notification-induced-error"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageTopicReady(testTopicID),
+				WithStorageProjectID(testProject),
+				WithStoragePullSubscriptionReady(),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "bucket-add-notification-induced-error")),
+			),
+		}},
 		//}, {
 		//	Name: "topic and pullsubscription exist and ready, notification job not finished",
 		//	Objects: []runtime.Object{
@@ -751,10 +861,11 @@ func TestAllCases(t *testing.T) {
 	}}
 
 	defer logtesting.ClearAll()
-	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
+	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
-			PubSubBase:    pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			storageLister: listers.GetStorageLister(),
+			PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			storageLister:  listers.GetStorageLister(),
+			createClientFn: gstorage.TestClientCreator(testData["storage"]),
 		}
 	}))
 

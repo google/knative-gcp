@@ -54,6 +54,12 @@ func WithStorageBucket(bucket string) StorageOption {
 	}
 }
 
+func WithStorageProject(project string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Spec.Project = project
+	}
+}
+
 func WithStorageEventTypes(eventTypes []string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Spec.EventTypes = eventTypes
