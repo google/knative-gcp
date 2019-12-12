@@ -18,14 +18,18 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"testing"
 
+	"cloud.google.com/go/storage"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -592,105 +596,192 @@ func TestAllCases(t *testing.T) {
 				WithStorageSinkURI(storageSinkURL),
 				WithStorageNotificationReady(notificationId)),
 		}},
-		//}, {
-		//	Name: "delete fails with non grpc error",
-		//	Objects: []runtime.Object{
-		//		NewStorage(storageName, testNS,
-		//			WithStorageProject(testProject),
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
-		//			WithStorageFinalizers(finalizerName),
-		//			WithStorageSinkURI(storageSinkURL),
-		//			WithStorageNotificationReady(notificationId),
-		//			WithDeletionTimestamp(),
-		//		),
-		//		NewTopic(storageName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(storageName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//	},
-		//	Key: testNS + "/" + storageName,
-		//	OtherTestData: map[string]interface{}{
-		//		"storage": gstorage.TestClientData{
-		//			BucketData: gstorage.TestBucketData{
-		//				DeleteErr: errors.New("delete-notification-induced-error"),
-		//			},
-		//		},
-		//	},
-		//	WantEvents: []string{
-		//		Eventf(corev1.EventTypeWarning, "InternalError", "delete-notification-induced-error"),
-		//	},
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewStorage(storageName, testNS,
-		//			WithStorageProject(testProject),
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageStatusObservedGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
-		//			WithStorageFinalizers(finalizerName),
-		//			WithInitStorageConditions,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageTopicReady(testTopicID),
-		//			WithStorageProjectID(testProject),
-		//			WithStoragePullSubscriptionReady(),
-		//			WithStorageSinkURI(storageSinkURL),
-		//			WithStorageNotificationNotReady("NotificationDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteNotificationMsg, "delete-notification-induced-error"))),
-		//	}},
-		//}, {
-		//	Name: "deletion timestamp set, all ready, delete job created",
-		//	Objects: []runtime.Object{
-		//		NewStorage(storageName, testNS,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageProjectID(testProject),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{"finalize"}),
-		//			WithStorageTopicReady(testTopicID),
-		//			WithStoragePullSubscriptionReady(),
-		//			WithStorageNotificationReady(),
-		//			WithStorageFinalizers(finalizerName),
-		//			WithStorageNotificationID(notificationId),
-		//			WithDeletionTimestamp(),
-		//		),
-		//		NewTopic(storageName, testNS,
-		//			WithTopicReady(testTopicID),
-		//			WithTopicAddress(testTopicURI),
-		//			WithTopicProjectID(testProject),
-		//		),
-		//		NewPullSubscriptionWithNoDefaults(storageName, testNS,
-		//			WithPullSubscriptionReady(sinkURI),
-		//		),
-		//		newSink(),
-		//	},
-		//	Key:     testNS + "/" + storageName,
-		//	WantErr: true,
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewStorage(storageName, testNS,
-		//			WithStorageObjectMetaGeneration(generation),
-		//			WithStorageStatusObservedGeneration(generation),
-		//			WithStorageBucket(bucket),
-		//			WithStorageProjectID(testProject),
-		//			WithStorageSink(sinkGVK, sinkName),
-		//			WithStorageEventTypes([]string{"finalize"}),
-		//			WithStorageTopicReady(testTopicID),
-		//			WithStoragePullSubscriptionReady(),
-		//			WithStorageNotificationReady(),
-		//			WithStorageFinalizers(finalizerName),
-		//			WithStorageNotificationID(notificationId),
-		//			WithDeletionTimestamp(),
-		//		),
-		//	}},
-		//	WantCreates: []runtime.Object{
-		//		newJob(NewStorage(storageName, testNS), ops.ActionDelete),
-		//	},
+	}, {
+		Name: "delete fails with non grpc error",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationReady(notificationId),
+				WithStorageTopicReady(testTopicID),
+				WithDeletionTimestamp(),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				BucketData: gstorage.TestBucketData{
+					Notifications: map[string]*storage.Notification{
+						notificationId: {
+							ID: notificationId,
+						},
+					},
+					DeleteErr: errors.New("delete-notification-induced-error"),
+				},
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "delete-notification-induced-error"),
+		},
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationNotReady("NotificationDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteNotificationMsg, "delete-notification-induced-error")),
+				WithStorageNotificationID(notificationId),
+				WithStorageTopicReady(testTopicID),
+				WithDeletionTimestamp()),
+		}},
+	}, {
+		Name: "delete fails with Unknown grpc error",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationReady(notificationId),
+				WithStorageTopicReady(testTopicID),
+				WithDeletionTimestamp(),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				BucketData: gstorage.TestBucketData{
+					Notifications: map[string]*storage.Notification{
+						notificationId: {
+							ID: notificationId,
+						},
+					},
+					DeleteErr: gstatus.Error(codes.Unknown, "delete-notification-induced-error"),
+				},
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "rpc error: code = %s desc = %s", codes.Unknown, "delete-notification-induced-error"),
+		},
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationNotReady("NotificationDeleteFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToDeleteNotificationMsg, codes.Unknown, "delete-notification-induced-error")),
+				WithStorageNotificationID(notificationId),
+				WithStorageTopicReady(testTopicID),
+				WithDeletionTimestamp()),
+		}},
+	}, {
+		Name: "successfully deleted storage",
+		Objects: []runtime.Object{
+			NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithStorageSinkURI(storageSinkURL),
+				WithStorageNotificationReady(notificationId),
+				WithStorageTopicReady(testTopicID),
+				WithDeletionTimestamp(),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				BucketData: gstorage.TestBucketData{
+					Notifications: map[string]*storage.Notification{
+						notificationId: {
+							ID: notificationId,
+						},
+					},
+				},
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Storage %q finalizers", storageName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated Storage %q", storageName),
+		},
+		WantDeletes: []clientgotesting.DeleteActionImpl{
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Name: storageName,
+			},
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Name: storageName,
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, false),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewStorage(storageName, testNS,
+				WithStorageProject(testProject),
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageStatusObservedGeneration(generation),
+				WithStorageBucket(bucket),
+				WithStorageSink(sinkGVK, sinkName),
+				WithStorageEventTypes([]string{storagev1alpha1.StorageFinalize}),
+				WithStorageFinalizers(finalizerName),
+				WithInitStorageConditions,
+				WithStorageObjectMetaGeneration(generation),
+				WithStorageNotificationNotReady("NotificationDeleted", fmt.Sprintf("Successfully deleted Storage notification: %s", notificationId)),
+				WithStorageTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", storageName)),
+				WithStoragePullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", storageName)),
+				WithDeletionTimestamp()),
+		}},
 	}}
 
 	defer logtesting.ClearAll()

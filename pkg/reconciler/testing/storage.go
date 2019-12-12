@@ -100,6 +100,12 @@ func WithStorageTopicReady(topicID string) StorageOption {
 	}
 }
 
+func WithStorageTopicID(topicID string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.TopicID = topicID
+	}
+}
+
 // WithStoragePullSubscriptionNotReady marks the condition that the
 // topic is not ready
 func WithStoragePullSubscriptionNotReady(reason, message string) StorageOption {
