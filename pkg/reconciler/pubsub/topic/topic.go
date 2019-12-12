@@ -243,7 +243,7 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
 	client, err := r.createClientFn(ctx, topic.Spec.Project)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub client", zap.Error(err))
 		return err
 	}
 	defer client.Close()
