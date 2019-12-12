@@ -31,6 +31,7 @@ type testBucket struct {
 // TestBucketData is the data used to configure the test Bucket.
 type TestBucketData struct {
 	Notifications      map[string]*Notification
+	AddNotificationID  string
 	NotificationsErr   error
 	AddNotificationErr error
 	DeleteErr          error
@@ -44,6 +45,7 @@ func (b *testBucket) AddNotification(ctx context.Context, n *Notification) (*Not
 	if b.data.AddNotificationErr != nil {
 		return nil, b.data.AddNotificationErr
 	}
+	n.ID = b.data.AddNotificationID
 	return n, nil
 }
 

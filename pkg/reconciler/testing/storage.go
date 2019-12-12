@@ -126,9 +126,9 @@ func WithStorageNotificationNotReady(reason, message string) StorageOption {
 
 // WithStorageNotificationReady marks the condition that the GCS
 // Notification is ready.
-func WithStorageNotificationReady() StorageOption {
+func WithStorageNotificationReady(notificationID string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.MarkNotificationReady("notificationID")
+		s.Status.MarkNotificationReady(notificationID)
 	}
 }
 
