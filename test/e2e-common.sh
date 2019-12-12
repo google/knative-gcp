@@ -79,7 +79,7 @@ function control_plane_setup() {
       --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY}"
   fi
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key}
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} patch secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
 # Create resources required for Pub/Sub Admin setup
