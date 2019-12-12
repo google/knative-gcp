@@ -1395,7 +1395,6 @@
     "github.com/googleapis/gax-go/v2",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
-    "github.com/pkg/errors",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
