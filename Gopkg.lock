@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d2cd0185ac1738318c1e46e8e4119c1bb0b449163e1ae7a0079c896c0974e77e"
+  digest = "1:0d1e4134788fdb4ac7a39ff07a088232fc4ccbe7c4824e8e06b984f0c226cee0"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1220,11 +1220,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "1832d93dd9a7c09871fb4be92fc19aa341b83250"
+  revision = "82195a527997afe1d35f6159ee721917db1fd92b"
 
 [[projects]]
   branch = "master"
-  digest = "1:9bab40f65d3222335ff45678d0062b00f47f8649c45004c4b1578048fd145c64"
+  digest = "1:88d6902d81d05b65381231b5b9682afc7fd420a4dc1f196d91fd6e94a7e87d66"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1296,11 +1296,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "d5d6ec46971dd72ae07ca6c3fac39b4699445618"
+  revision = "a55e24e80c91c3187189641c6ad1651283d05db5"
 
 [[projects]]
   branch = "master"
-  digest = "1:42a487b51d3ba3f128ccdd44644968cfc06c8cf3ff6c31b0ebf7f2512bfbd0a7"
+  digest = "1:6a4d4700955ddbbc81323b6abecd067009757d7b475073d59da9499d5bebc958"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1351,7 +1351,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "96cffffa16ac26f52252bf0fee4f746fbd9fc293"
+  revision = "b3079512daae9708f11c7b8ea41ef54023c91725"
 
 [[projects]]
   branch = "master"
@@ -1395,6 +1395,7 @@
     "github.com/googleapis/gax-go/v2",
     "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
+    "github.com/pkg/errors",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/plugin/ochttp",
     "go.opencensus.io/plugin/ochttp/propagation/b3",
