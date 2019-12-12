@@ -80,7 +80,13 @@ function control_plane_setup() {
     service_account_key="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY}"
   fi
   # Overwrite the dummy secret
+  echo "Overwriting secret"
   kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key} --dry-run -o yaml | kubectl apply --filename -
+  # As it may take a while until it is refreshed by the controller, we restart the controller and wait.
+  echo "Restarting controller"
+  kubectl delete pod -n ${CONTROL_PLANE_NAMESPACE} --selector role=controller
+  echo "Sleeping 20 seconds until controller gets back up"
+  sleep 20
 }
 
 # Create resources required for Pub/Sub Admin setup
