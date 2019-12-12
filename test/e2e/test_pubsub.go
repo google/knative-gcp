@@ -77,7 +77,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 	}
 }
 
-// PubSubWithTargetTestImpl tests we can receive an event from PubSubBase. If assertMetrics is set to true, we also assert
+// PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
 // for StackDriver metrics.
 func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
 	topicName, deleteTopic := makeTopicOrDie(t)
