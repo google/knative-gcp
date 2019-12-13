@@ -61,7 +61,7 @@ func main() {
 }
 
 func dummyCloudEvent() cloudevents.Event {
-	event := cloudevents.NewEvent(cloudevents.VersionV03)
+	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID("dummy")
 	event.SetType("e2e-testing-dummy")
 	event.SetSource("e2e-testing")
