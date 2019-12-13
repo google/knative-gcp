@@ -35,18 +35,27 @@ func (fb *FilterBuilder) SetResourceName(resourceName string) {
 func (fb *FilterBuilder) GetFilterQuery() string {
 	var filters []string
 	if fb.methodName != "" {
-		filters = append(filters, fmt.Sprintf("%s=%q", methodKey, fb.methodName))
+		filters = append(filters, filter{methodKey, fb.methodName}.String())
 	}
 
 	if fb.serviceName != "" {
-		filters = append(filters, fmt.Sprintf("%s=%q", serviceKey, fb.serviceName))
+		filters = append(filters, filter{serviceKey, fb.serviceName}.String())
 	}
 
 	if fb.resourceName != "" {
-		filters = append(filters, fmt.Sprintf("%s=%q", resourceKey, fb.resourceName))
+		filters = append(filters, filter{resourceKey, fb.resourceName}.String())
 	}
 
-	filters = append(filters, fmt.Sprintf("%s=%q", typeKey, typeValue))
+	filters = append(filters, filter{typeKey, typeValue}.String())
 	filter := strings.Join(filters, " AND ")
 	return filter
+}
+
+type filter struct {
+	key  string
+	value string
+}
+
+func (f filter) String() string {
+	return fmt.Sprintf("%s=%q", f.key, f.value)
 }
