@@ -44,12 +44,12 @@ readonly PUBSUB_SECRET_NAME="google-cloud-key"
 global GCS_SERVICE_ACCOUNT
 
 function knative_setup() {
+  control_plane_setup || return 1
   start_knative_gcp
 }
 
 # Setup resources common to all eventing tests.
 function test_setup() {
-  control_plane_setup || return 1
   pubsub_setup || return 1
   storage_setup || return 1
   echo "Sleep 2 min to wait for all resources to setup"
@@ -79,14 +79,8 @@ function control_plane_setup() {
       --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY}"
   fi
-  # Overwrite the dummy secret
-  echo "Overwriting secret"
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key} --dry-run -o yaml | kubectl apply --filename -
-  # As it may take a while until it is refreshed by the controller, we restart the controller and wait.
-  echo "Restarting controller"
-  kubectl delete pod -n ${CONTROL_PLANE_NAMESPACE} --selector role=controller
-  echo "Sleeping 20 seconds until controller gets back up"
-  sleep 20
+  echo "Create the control plane secret"
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
 # Create resources required for Pub/Sub Admin setup
