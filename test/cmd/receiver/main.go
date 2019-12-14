@@ -46,7 +46,7 @@ func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *c
 	// If it is, send back a response CloudEvent.
 	if event.ID() == "dummy" {
 		resp.Status = http.StatusAccepted
-		event = cloudevents.NewEvent(cloudevents.VersionV03)
+		event = cloudevents.NewEvent(cloudevents.VersionV1)
 		event.SetID("target")
 		event.SetType("e2e-testing-resp")
 		event.SetSource("e2e-testing")
