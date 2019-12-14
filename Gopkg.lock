@@ -112,7 +112,8 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:fb24112bc1feb181830ac075229cf6da2d80608bbe75ce5bd9c15f3e7fedc203"
+  branch = "master"
+  digest = "1:a29ee51f5892f8407b4a62f7e35961e3d8766c8afb09ecda4c7b4ac0e9944dcf"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -132,8 +133,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "2fa4bb1fbb4aac4d906b0173a2a408f701439b82"
-  version = "v0.10.0"
+  revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0d1e4134788fdb4ac7a39ff07a088232fc4ccbe7c4824e8e06b984f0c226cee0"
+  digest = "1:27bba4a181f132a90bda8572663426d4e6e7e92aac0a37f53d7ddc8dea033fe3"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1213,6 +1213,7 @@
     "pkg/logconfig",
     "pkg/logging",
     "pkg/tracing",
+    "pkg/utils",
     "test/base",
     "test/base/resources",
     "test/common",
@@ -1220,11 +1221,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "82195a527997afe1d35f6159ee721917db1fd92b"
+  revision = "e33dba28965dcadc339c62102f9cc34dde2eea57"
 
 [[projects]]
   branch = "master"
-  digest = "1:88d6902d81d05b65381231b5b9682afc7fd420a4dc1f196d91fd6e94a7e87d66"
+  digest = "1:dcbc166f09bb3890df7a3fc5eb5181d8e6153d817884359c6787343046d140fb"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1296,7 +1297,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "a55e24e80c91c3187189641c6ad1651283d05db5"
+  revision = "9d8b936ca0621af5762916bc899d4973363a2dc4"
 
 [[projects]]
   branch = "master"
@@ -1351,7 +1352,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "b3079512daae9708f11c7b8ea41ef54023c91725"
+  revision = "3446c9d7d42efad0d08170441a06ddb73d08dbcd"
 
 [[projects]]
   branch = "master"
