@@ -31,6 +31,7 @@ import (
 
 	"cloud.google.com/go/logging/logadmin"
 	"cloud.google.com/go/pubsub"
+	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -49,7 +50,8 @@ const (
 type Reconciler struct {
 	*pubsubreconciler.PubSubBase
 
-	cloudauditlogLister listers.CloudAuditLogLister
+	cloudauditlogLister    listers.CloudAuditLogLister
+	logadminClientProvider glogadmin.CreateFn
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -172,7 +174,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, cal *v1alpha1.CloudA
 	if sinkID == "" {
 		sinkID = fmt.Sprintf("sink-%s", string(cal.UID))
 	}
-	logadminClient, err := logadmin.NewClient(ctx, cal.Status.ProjectID)
+	logadminClient, err := c.logadminClientProvider(ctx, cal.Status.ProjectID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +225,7 @@ func (c *Reconciler) deleteSink(ctx context.Context, cal *v1alpha1.CloudAuditLog
 	if cal.Status.SinkID == "" {
 		return nil
 	}
-	logadminClient, err := logadmin.NewClient(ctx, cal.Status.ProjectID)
+	logadminClient, err := c.logadminClientProvider(ctx, cal.Status.ProjectID)
 	if err != nil {
 		return err
 	}

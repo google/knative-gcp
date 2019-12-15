@@ -30,6 +30,7 @@ import (
 	cloudauditloginformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlog"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 )
 
 const (
@@ -56,8 +57,9 @@ func NewController(
 	cloudauditlogInformer := cloudauditloginformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:          pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogAdapterType, cmw),
-		cloudauditlogLister: cloudauditlogInformer.Lister(),
+		PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogAdapterType, cmw),
+		cloudauditlogLister:    cloudauditlogInformer.Lister(),
+		logadminClientProvider: glogadmin.NewClient,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
