@@ -186,9 +186,10 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	}
 
 	// If a transformer has been configured, then transform the message.
+	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
+	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.
+	// TODO consider renaming transformer as it is confusing.
 	if a.transformer != nil {
-		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
-		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
 		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
@@ -196,8 +197,11 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 			return err
 		}
 		if transformedEvent == nil {
+			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
+			// Report the returned Status Code and return.
 			logger.Warnf("cloud event %q was not transformed", event.ID())
-			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
+			rtctx := cloudevents.HTTPTransportContextFrom(transformedCTX)
+			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return nil
 		}
 		// Update the event with the transformed one.
@@ -223,7 +227,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	if err != nil {
 		return err
 	} else if r != nil {
-		resp.RespondWith(200, r)
+		resp.RespondWith(nethttp.StatusOK, r)
 	}
 	return nil
 }
