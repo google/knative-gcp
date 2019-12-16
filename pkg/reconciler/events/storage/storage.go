@@ -30,13 +30,13 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
-	"cloud.google.com/go/compute/metadata"
 	. "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/utils"
 	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/types"
@@ -143,18 +143,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
-	// If notification / topic has been already configured, stash them here
-	// since right below we remove them.
-	notificationID := storage.Status.NotificationID
-	topic := storage.Status.TopicID
-
 	storage.Status.InitializeConditions()
-
-	// And restore them.
-	storage.Status.NotificationID = notificationID
-	if topic == "" {
-		topic = resources.GenerateTopicName(storage)
-	}
 
 	// See if the source has been deleted.
 	if storage.DeletionTimestamp != nil {
@@ -164,11 +153,14 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 			return err
 		}
 		storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted Storage notification: %s", storage.Status.NotificationID)
-		storage.Status.NotificationID = ""
 
 		if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
 			return err
 		}
+
+		// Only set the notificationID to empty after we successfully deleted the PubSub resources.
+		// Otherwise, we may leak them.
+		storage.Status.NotificationID = ""
 		removeFinalizer(storage)
 		return nil
 	}
@@ -177,6 +169,7 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 	// change external state with the topic, so we need to clean it up.
 	addFinalizer(storage)
 
+	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
 		return err
@@ -193,13 +186,14 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.Storage) e
 }
 
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.Storage) (string, error) {
-	if storage.Spec.Project == "" {
-		project, err := metadata.ProjectID()
+	if storage.Status.ProjectID == "" {
+		projectID, err := utils.ProjectID(storage.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err
 		}
-		storage.Spec.Project = project
+		// Set the projectID in the status.
+		storage.Status.ProjectID = projectID
 	}
 
 	client, err := r.createClientFn(ctx)
@@ -230,7 +224,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	customAttributes["knative-gcp"] = "com.google.cloud.storage"
 
 	nc := &Notification{
-		TopicProjectID:   storage.Spec.Project,
+		TopicProjectID:   storage.Status.ProjectID,
 		TopicID:          storage.Status.TopicID,
 		PayloadFormat:    JSONPayload,
 		EventTypes:       r.toStorageEventTypes(storage.Spec.EventTypes),

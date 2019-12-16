@@ -31,12 +31,12 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/utils"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -132,18 +132,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("scheduler", scheduler)))
 
-	// If jobName / topic has been already configured, stash them here
-	// since right below we remove them.
-	jobName := scheduler.Status.JobName
-	topic := scheduler.Status.TopicID
-
 	scheduler.Status.InitializeConditions()
-
-	// And restore them.
-	scheduler.Status.JobName = jobName
-	if topic == "" {
-		topic = resources.GenerateTopicName(scheduler)
-	}
 
 	// See if the source has been deleted.
 	if scheduler.DeletionTimestamp != nil {
@@ -153,11 +142,14 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 			return err
 		}
 		scheduler.Status.MarkJobNotReady("JobDeleted", "Successfully deleted Scheduler job: %s", scheduler.Status.JobName)
-		scheduler.Status.JobName = ""
 
 		if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
 			return err
 		}
+
+		// Only set the jobName to empty after we successfully deleted the PubSub resources.
+		// Otherwise, we may leak them.
+		scheduler.Status.JobName = ""
 		removeFinalizer(scheduler)
 		return nil
 	}
@@ -166,12 +158,14 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	// change external state with the topic, so we need to clean it up.
 	addFinalizer(scheduler)
 
+	topic := resources.GenerateTopicName(scheduler)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, scheduler, topic, resourceGroup)
 	if err != nil {
 		return err
 	}
 
-	jobName, err = r.reconcileJob(ctx, scheduler, topic, resources.GenerateJobName(scheduler))
+	jobName := resources.GenerateJobName(scheduler)
+	err = r.reconcileJob(ctx, scheduler, topic, jobName)
 	if err != nil {
 		scheduler.Status.MarkJobNotReady("JobCreateFailed", "Failed to create Scheduler job: %s", err.Error())
 		return err
@@ -180,41 +174,42 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	return nil
 }
 
-func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) (string, error) {
-	if scheduler.Spec.Project == "" {
-		project, err := metadata.ProjectID()
+func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) error {
+	if scheduler.Status.ProjectID == "" {
+		projectID, err := utils.ProjectID(scheduler.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
-			return "", err
+			return err
 		}
-		scheduler.Spec.Project = project
+		// Set the projectID in the status.
+		scheduler.Status.ProjectID = projectID
 	}
 
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
-		return "", err
+		return err
 	}
 	defer client.Close()
 
 	// Check if the job exists.
-	job, err := client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
+	_, err = client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
 	if err != nil {
 		if st, ok := gstatus.FromError(err); !ok {
 			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Error(err))
-			return "", err
+			return err
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist.
 			// For create we need a Parent, which from the jobName projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID,
 			// is: projects/PROJECT_ID/locations/LOCATION_ID
 			parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
-			job, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
+			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
 				Job: &schedulerpb.Job{
 					Name: jobName,
 					Target: &schedulerpb.Job_PubsubTarget{
 						PubsubTarget: &schedulerpb.PubsubTarget{
-							TopicName: fmt.Sprintf("projects/%s/topics/%s", scheduler.Spec.Project, topic),
+							TopicName: fmt.Sprintf("projects/%s/topics/%s", scheduler.Status.ProjectID, topic),
 							Data:      []byte(scheduler.Spec.Data),
 						},
 					},
@@ -223,14 +218,14 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 			})
 			if err != nil {
 				logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler job", zap.String("jobName", jobName), zap.Error(err))
-				return "", err
+				return err
 			}
 		} else {
 			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Any("errorCode", st.Code()), zap.Error(err))
-			return "", err
+			return err
 		}
 	}
-	return job.Name, nil
+	return nil
 }
 
 // deleteJob looks at the status.JobName and if non-empty,

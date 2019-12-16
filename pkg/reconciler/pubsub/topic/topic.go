@@ -22,9 +22,10 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,6 +50,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
+	gstatus "google.golang.org/grpc/status"
 )
 
 const (
@@ -171,8 +173,6 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	topic.Status.MarkTopicReady()
 	// Set the topic being used.
 	topic.Status.TopicID = topic.Spec.Topic
-	// Set the project being used.
-	topic.Status.ProjectID = topic.Spec.Project
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
@@ -190,25 +190,26 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 }
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) error {
-	if topic.Spec.Project == "" {
-		project, err := metadata.ProjectID()
+	if topic.Status.ProjectID == "" {
+		projectID, err := utils.ProjectID(topic.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err
 		}
-		topic.Spec.Project = project
+		// Set the projectID in the status.
+		topic.Status.ProjectID = projectID
 	}
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := r.createClientFn(ctx, topic.Spec.Project)
+	client, err := r.createClientFn(ctx, topic.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
 	defer client.Close()
 
-	t := client.Topic(topic.Spec.Topic)
+	t := client.Topic(topic.Status.ProjectID)
 	exists, err := t.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
@@ -223,8 +224,17 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 			// Create a new topic with the given name.
 			t, err = client.CreateTopic(ctx, topic.Spec.Topic)
 			if err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to create topic", zap.Error(err))
-				return err
+				// For some reason (maybe some cache invalidation thing), sometimes t.Exists returns that the topic
+				// doesn't exist but it actually does. When we try to create it again, it fails with an AlreadyExists
+				// reason. We check for that error here. If it happens, then return nil.
+				if st, ok := gstatus.FromError(err); !ok {
+					logging.FromContext(ctx).Desugar().Error("Failed from Pub/Sub client while creating topic", zap.Error(err))
+					return err
+				} else if st.Code() != codes.AlreadyExists {
+					logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub topic", zap.Error(err))
+					return err
+				}
+				return nil
 			}
 		}
 	}

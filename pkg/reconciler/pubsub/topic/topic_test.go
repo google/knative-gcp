@@ -160,6 +160,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -204,6 +205,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -241,6 +243,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -283,6 +286,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,

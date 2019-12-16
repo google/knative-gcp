@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 
+	"github.com/google/knative-gcp/pkg/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -211,18 +211,19 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 }
 
 func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.PullSubscription) (string, error) {
-	if ps.Spec.Project == "" {
-		project, err := metadata.ProjectID()
+	if ps.Status.ProjectID == "" {
+		projectID, err := utils.ProjectID(ps.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return "", err
 		}
-		ps.Spec.Project = project
+		// Set the projectID in the status.
+		ps.Status.ProjectID = projectID
 	}
 
 	// Auth to GCP is handled by having the GOOGLE_APPLICATION_CREDENTIALS environment variable
 	// pointing at a credential file.
-	client, err := r.createClientFn(ctx, ps.Spec.Project)
+	client, err := r.createClientFn(ctx, ps.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return "", err
