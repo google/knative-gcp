@@ -297,9 +297,9 @@ func (r *Reconciler) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSu
 		return nil
 	}
 
-	// At this point the project should have been populated.
+	// At this point the project ID should have been populated in the status.
 	// Querying Pub/Sub as the subscription could have been deleted outside the cluster (e.g, through gcloud).
-	client, err := r.createClientFn(ctx, ps.Spec.Project)
+	client, err := r.createClientFn(ctx, ps.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
