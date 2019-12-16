@@ -181,6 +181,16 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 		ps.Status.MarkSink(sinkURI)
 	}
 
+	// Transformer is optional.
+	if ps.Spec.Transformer != nil {
+		transformerURI, err := r.resolveDestination(ctx, *ps.Spec.Transformer, ps)
+		if err != nil {
+			ps.Status.MarkNoTransformer("InvalidTransformer", err.Error())
+		} else {
+			ps.Status.MarkTransformer(transformerURI)
+		}
+	}
+
 	addFinalizer(ps)
 
 	subscriptionID, err := r.reconcileSubscription(ctx, ps)
@@ -450,6 +460,7 @@ func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1al
 		Labels:         resources.GetLabels(controllerAgentName, src.Name),
 		SubscriptionID: src.Status.SubscriptionID,
 		SinkURI:        src.Status.SinkURI,
+		TransformerURI: src.Status.TransformerURI,
 		LoggingConfig:  loggingConfig,
 		MetricsConfig:  metricsConfig,
 		TracingConfig:  tracingConfig,
