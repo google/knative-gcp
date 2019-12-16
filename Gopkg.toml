@@ -63,6 +63,8 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
+  # HEAD as of 2019-12-13. Needed the master for this fix: https://github.com/cloudevents/sdk-go/pull/272.
+  # Should be switched back to a release, once a new one is available.
   branch = "master"
 
 [prune]
