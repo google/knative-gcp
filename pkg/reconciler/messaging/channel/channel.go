@@ -159,7 +159,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 	ch, err := r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("Channel became ready after", zap.Any("duration", duration))
+		logging.FromContext(ctx).Desugar().Info("Channel became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("Channel", channel.Namespace, channel.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Channel", zap.Error(err))

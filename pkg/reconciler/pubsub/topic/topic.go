@@ -243,12 +243,12 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	// Querying Pub/Sub as the topic could have been deleted outside the cluster (e.g, through gcloud).
 	client, err := r.createClientFn(ctx, topic.Spec.Project)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub client", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to create Pub/Sub client", zap.Error(err))
 		return err
 	}
 	defer client.Close()
 
-	t := client.Topic(topic.Spec.Topic)
+	t := client.Topic(topic.Status.TopicID)
 	exists, err := t.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
@@ -257,7 +257,7 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	if exists {
 		// Delete the topic.
 		if err := t.Delete(ctx); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to delete topic", zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Pub/Sub topic", zap.Error(err))
 			return err
 		}
 	}
@@ -281,7 +281,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 	ch, err := r.RunClientSet.PubsubV1alpha1().Topics(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("Topic became ready after", zap.Any("duration", duration))
+		logging.FromContext(ctx).Desugar().Info("Topic became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Topic", zap.Error(err))

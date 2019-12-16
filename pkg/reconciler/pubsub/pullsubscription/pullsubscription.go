@@ -351,7 +351,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 	src, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("PullSubscription became ready after", zap.Any("duration", duration))
+		logging.FromContext(ctx).Desugar().Info("PullSubscription became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Info("Failed to record ready for PullSubscription", zap.Error(err))
