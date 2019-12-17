@@ -43,6 +43,7 @@ const (
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	auditLogSchema = "type.googleapis.com/google.cloud.audit.AuditLog"
 	loggingSource  = "logging.googleapis.com"
+	EventType = "AuditLog"
 )
 
 var (
@@ -122,7 +123,7 @@ func convertCloudAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode M
 			logger.Info("Processing AuditLog.")
 			event.SetSource(proto.ServiceName)
 			event.SetSubject(proto.MethodName)
-			event.SetType("AuditLog")
+			event.SetType(EventType)
 			event.SetDataSchema(auditLogSchema)
 			event.SetDataContentType(cloudevents.ApplicationJSON)
 			payload, err := json.Marshal(proto)
