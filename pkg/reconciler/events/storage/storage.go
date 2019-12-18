@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -326,7 +327,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Storage became ready", zap.Any("after", duration))
-
+		r.Recorder.Event(source, corev1.EventTypeNormal, "StorageReadinessChanged", fmt.Sprintf("Storage %q became ready", source.Name))
 		if err := r.StatsReporter.ReportReady("Storage", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Storage", zap.Error(err))
 		}

@@ -424,6 +424,7 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReadinessChanged", "PullSubscription %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 		},
 		OtherTestData: map[string]interface{}{
@@ -485,6 +486,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReadinessChanged", "PullSubscription %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -533,6 +535,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReadinessChanged", "PullSubscription %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{

@@ -160,7 +160,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 	if err == nil && becomesReady {
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Channel became ready", zap.Any("after", duration))
-
+		r.Recorder.Event(channel, corev1.EventTypeNormal, "ChannelReadinessChanged", fmt.Sprintf("Channel %q became ready", channel.Name))
 		if err := r.StatsReporter.ReportReady("Channel", channel.Namespace, channel.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Channel", zap.Error(err))
 		}

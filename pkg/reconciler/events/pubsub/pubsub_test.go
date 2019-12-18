@@ -226,6 +226,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "PubSubReadinessChanged", "PubSub %q became ready", pubsubName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsubName),
 		},
 	}}
