@@ -354,7 +354,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "TopicReadinessChanged", "Topic %q became ready", topicName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
 		},
 		WithReactors: []clientgotesting.ReactionFunc{
@@ -403,7 +403,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "TopicReadinessChanged", "Topic %q became ready", topicName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
 		},
 		WithReactors: []clientgotesting.ReactionFunc{},

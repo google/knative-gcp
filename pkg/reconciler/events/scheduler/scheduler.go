@@ -289,7 +289,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Scheduler became ready", zap.Any("after", duration))
-		r.Recorder.Event(source, corev1.EventTypeNormal, "SchedulerReadinessChanged", fmt.Sprintf("Scheduler %q became ready", source.Name))
+		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Scheduler %q became ready", source.Name))
 		if err := r.StatsReporter.ReportReady("Scheduler", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Scheduler", zap.Error(err))
 		}

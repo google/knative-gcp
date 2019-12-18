@@ -140,7 +140,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ChannelReadinessChanged", "Channel %q became ready", channelName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Channel %q became ready", channelName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{

@@ -577,7 +577,7 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "StorageReadinessChanged", "Storage %q became ready", storageName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Storage %q became ready", storageName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Storage %q", storageName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{

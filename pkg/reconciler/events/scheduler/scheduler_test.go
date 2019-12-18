@@ -635,7 +635,7 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SchedulerReadinessChanged", "Scheduler %q became ready", schedulerName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Scheduler %q became ready", schedulerName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
 		},
 	}, {
@@ -675,7 +675,7 @@ func TestAllCases(t *testing.T) {
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SchedulerReadinessChanged", "Scheduler %q became ready", schedulerName),
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Scheduler %q became ready", schedulerName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", schedulerName),
 		},
 	}, {
