@@ -200,7 +200,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		if transformedEvent == nil {
 			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
 			// Report the returned Status Code and return.
-			logger.Debug("cloud event %q was not transformed", event.ID())
+			logger.Debugf("cloud event %q was not transformed", event.ID())
 			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return nil
 		}
