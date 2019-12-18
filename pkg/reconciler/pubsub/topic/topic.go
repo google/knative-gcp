@@ -294,7 +294,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 		logging.FromContext(ctx).Desugar().Info("Topic became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); err != nil {
-			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Topic", zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Topic", zap.Error(err))
 		}
 	}
 

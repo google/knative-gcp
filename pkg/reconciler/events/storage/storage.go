@@ -328,7 +328,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Storage
 		logging.FromContext(ctx).Desugar().Info("Storage became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("Storage", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Desugar().Info("Failed to record ready for Storage", zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Storage", zap.Error(err))
 		}
 	}
 

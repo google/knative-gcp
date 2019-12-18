@@ -291,7 +291,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 		logging.FromContext(ctx).Desugar().Info("Scheduler became ready", zap.Any("after", duration))
 
 		if err := r.StatsReporter.ReportReady("Scheduler", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Desugar().Info("Railed to record ready for Scheduler", zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Scheduler", zap.Error(err))
 		}
 	}
 	return src, err

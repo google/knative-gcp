@@ -191,16 +191,16 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	// TODO consider renaming transformer as it is confusing.
 	if a.transformer != nil {
 		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
+		rtctx := cloudevents.HTTPTransportContextFrom(transformedCTX)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
-			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
+			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return err
 		}
 		if transformedEvent == nil {
 			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
 			// Report the returned Status Code and return.
-			logger.Warnf("cloud event %q was not transformed", event.ID())
-			rtctx := cloudevents.HTTPTransportContextFrom(transformedCTX)
+			logger.Debug("cloud event %q was not transformed", event.ID())
 			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return nil
 		}
