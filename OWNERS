@@ -4,6 +4,7 @@ approvers:
 - nachocano
 - capri-xiyue
 - ian-mi
+- yolocs
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -14,4 +15,5 @@ reviewers:
 - nachocano
 - capri-xiyue
 - ian-mi
+- yolocs
 # Add reviewers below
