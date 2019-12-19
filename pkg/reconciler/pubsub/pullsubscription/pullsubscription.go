@@ -190,8 +190,9 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 			ps.Status.MarkTransformer(transformerURI)
 		}
 	} else {
-		// If the transformer is nil, clean up the URI and mark is as empty.
-		ps.Status.MarkTransformer("")
+		// If the transformer is nil, mark is as nil and clean up the URI.
+		ps.Status.MarkNoTransformer("TransformerNil", "Transformer is nil")
+		ps.Status.TransformerURI = ""
 	}
 
 	addFinalizer(ps)

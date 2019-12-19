@@ -130,6 +130,12 @@ func WithPullSubscriptionMarkTransformer(uri string) PullSubscriptionOption {
 	}
 }
 
+func WithPullSubscriptionMarkNoTransformer(reason, message string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkNoTransformer(reason, message)
+	}
+}
+
 func WithPullSubscriptionMarkSubscribed(subscriptionID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSubscribed(subscriptionID)
@@ -145,6 +151,12 @@ func WithPullSubscriptionSubscriptionID(subscriptionID string) PullSubscriptionO
 func WithPullSubscriptionProjectID(projectID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.ProjectID = projectID
+	}
+}
+
+func WithPullSubscriptionTransformerURI(uri string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.TransformerURI = uri
 	}
 }
 
