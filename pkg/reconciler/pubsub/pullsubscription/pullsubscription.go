@@ -189,6 +189,9 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 		} else {
 			ps.Status.MarkTransformer(transformerURI)
 		}
+	} else {
+		// If the transformer is nil, clean up the URI and mark is as empty.
+		ps.Status.MarkTransformer("")
 	}
 
 	addFinalizer(ps)
@@ -521,7 +524,7 @@ func (r *Reconciler) UpdateFromLoggingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.loggingConfig = logcfg
 	r.Logger.Debugw("Update from logging ConfigMap", zap.Any("loggingCfg", cfg))
-	// TODO: requeue all PullSubscriptions
+	// TODO: requeue all PullSubscriptions. See https://github.com/google/knative-gcp/issues/457.
 }
 
 func (r *Reconciler) UpdateFromMetricsConfigMap(cfg *corev1.ConfigMap) {
@@ -553,5 +556,5 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.tracingConfig = tracingCfg
 	r.Logger.Debugw("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
-	// TODO: requeue all PullSubscriptions.
+	// TODO: requeue all PullSubscriptions. See https://github.com/google/knative-gcp/issues/457.
 }

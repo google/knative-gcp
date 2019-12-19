@@ -51,8 +51,9 @@ import (
 )
 
 const (
-	sourceName = "source"
-	sinkName   = "sink"
+	sourceName      = "source"
+	sinkName        = "sink"
+	transformerName = "transformer"
 
 	testNS = "testnamespace"
 
@@ -75,10 +76,19 @@ var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS
 
+	transformerDNS = transformerName + ".mynamespace.svc.cluster.local"
+	transformerURI = "http://" + transformerDNS
+
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Sink",
+	}
+
+	transformerGVK = metav1.GroupVersionKind{
+		Group:   "testing.cloud.google.com",
+		Version: "v1alpha1",
+		Kind:    "Transformer",
 	}
 
 	secret = corev1.SecretKeySelector{
@@ -118,6 +128,24 @@ func newSink() *unstructured.Unstructured {
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
 					"url": sinkURI,
+				},
+			},
+		},
+	}
+}
+
+func newTransformer() *unstructured.Unstructured {
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "testing.cloud.google.com/v1alpha1",
+			"kind":       "Transformer",
+			"metadata": map[string]interface{}{
+				"namespace": testNS,
+				"name":      transformerName,
+			},
+			"status": map[string]interface{}{
+				"address": map[string]interface{}{
+					"url": transformerURI,
 				},
 			},
 		},
@@ -209,6 +237,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -259,6 +288,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
 		}},
 	}, {
@@ -306,6 +336,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
 		}},
 	}, {
@@ -353,6 +384,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
 		}},
 	}, {
@@ -401,6 +433,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
 		}},
 	}, {
@@ -450,6 +483,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -505,6 +539,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
 				WithPullSubscriptionMarkDeployed,
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(""),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 			),
 		}},
@@ -521,8 +556,10 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionTransformer(transformerGVK, transformerName),
 			),
 			newSink(),
+			newTransformer(),
 			newSecret(),
 			newReceiveAdapter(context.Background(), "old"+testImage),
 		},
@@ -544,7 +581,7 @@ func TestAllCases(t *testing.T) {
 				Verb:      "update",
 				Resource:  receiveAdapterGVR(),
 			},
-			Object: newReceiveAdapter(context.Background(), testImage),
+			Object: newReceiveAdapter(context.Background(), testImage, transformerURI),
 		}},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -559,9 +596,11 @@ func TestAllCases(t *testing.T) {
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionTransformer(transformerGVK, transformerName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
 				WithPullSubscriptionMarkDeployed,
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(transformerURI),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 			),
 		}},
@@ -694,7 +733,7 @@ func TestAllCases(t *testing.T) {
 	}))
 }
 
-func newReceiveAdapter(ctx context.Context, image string) runtime.Object {
+func newReceiveAdapter(ctx context.Context, image string, transformer ...string) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -702,12 +741,17 @@ func newReceiveAdapter(ctx context.Context, image string) runtime.Object {
 			Topic:   testTopicID,
 			Secret:  &secret,
 		}))
+	transformerURI := ""
+	if len(transformer) > 0 {
+		transformerURI = transformer[0]
+	}
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,
 		Source:         source,
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
+		TransformerURI: transformerURI,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }

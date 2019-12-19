@@ -106,9 +106,27 @@ func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubs
 	}
 }
 
+func WithPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.Transformer = &duckv1.Destination{
+			Ref: &corev1.ObjectReference{
+				APIVersion: apiVersion(gvk),
+				Kind:       gvk.Kind,
+				Name:       name,
+			},
+		}
+	}
+}
+
 func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSink(uri)
+	}
+}
+
+func WithPullSubscriptionMarkTransformer(uri string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkTransformer(uri)
 	}
 }
 
