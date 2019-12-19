@@ -234,7 +234,7 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist", testTopicID),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist and the topic policy doesn't allow creation", testTopicID),
 		},
 		WantErr: true,
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -252,7 +252,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileTopicMsg, testTopicID))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID))),
 		}},
 	}, {
 		Name: "create topic fails",

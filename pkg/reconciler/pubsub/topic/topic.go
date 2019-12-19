@@ -150,8 +150,8 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	topic.Status.InitializeConditions()
 
 	if topic.DeletionTimestamp != nil {
-		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
+			logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 			if err := r.deleteTopic(ctx, topic); err != nil {
 				topic.Status.MarkNoTopic("TopicDeleteFailed", "Failed to delete Pub/Sub topic: %s", err.Error())
 				return err
@@ -218,8 +218,8 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 
 	if !exists {
 		if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyNoCreateNoDelete {
-			logging.FromContext(ctx).Desugar().Error("Topic does not exist")
-			return fmt.Errorf("Topic %q does not exist", topic.Spec.Topic)
+			logging.FromContext(ctx).Desugar().Error("Topic does not exist and the topic policy doesn't allow creation")
+			return fmt.Errorf("Topic %q does not exist and the topic policy doesn't allow creation", topic.Spec.Topic)
 		} else {
 			// Create a new topic with the given name.
 			t, err = client.CreateTopic(ctx, topic.Spec.Topic)
@@ -375,8 +375,8 @@ func (r *Reconciler) reconcilePublisher(ctx context.Context, topic *v1alpha1.Top
 		existing = nil
 	} else if !metav1.IsControlledBy(existing, topic) {
 		p, _ := json.Marshal(existing)
-		logging.FromContext(ctx).Desugar().Error("Got a pre-owned publisher", zap.Any("publisher", p))
-		return fmt.Errorf("Topic %q does not own service: %q", topic.Name, name), nil
+		logging.FromContext(ctx).Desugar().Error("Topic does not own publisher service", zap.Any("publisher", p))
+		return fmt.Errorf("Topic %q does not own publisher service: %q", topic.Name, name), nil
 	}
 
 	tracingCfg, err := tracing.ConfigToJSON(r.tracingConfig)
@@ -438,5 +438,5 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	}
 	r.tracingConfig = tracingCfg
 	r.Logger.Debugw("Updated Tracing config", zap.Any("tracingCfg", r.tracingConfig))
-	// TODO: requeue all Topics.
+	// TODO: requeue all Topics. See https://github.com/google/knative-gcp/issues/457.
 }
