@@ -355,8 +355,8 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PullSub
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("PullSubscription became ready", zap.Any("after", duration))
 		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("PullSubscription %q became ready", source.Name))
-		if err := r.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for PullSubscription", zap.Error(err))
+		if metricErr := r.StatsReporter.ReportReady("PullSubscription", source.Namespace, source.Name, duration); metricErr != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for PullSubscription", zap.Error(metricErr))
 		}
 	}
 

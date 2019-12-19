@@ -294,8 +294,8 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) 
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Topic became ready", zap.Any("after", duration))
 		r.Recorder.Event(topic, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Topic %q became ready", topic.Name))
-		if err := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Topic", zap.Error(err))
+		if metricErr := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); metricErr != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Topic", zap.Error(metricErr))
 		}
 	}
 
