@@ -167,7 +167,7 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	jobName := resources.GenerateJobName(scheduler)
 	err = r.reconcileJob(ctx, scheduler, topic, jobName)
 	if err != nil {
-		scheduler.Status.MarkJobNotReady("JobCreateFailed", "Failed to create Scheduler job: %s", err.Error())
+		scheduler.Status.MarkJobNotReady("JobReconcileFailed", "Failed to reconcile Scheduler job: %s", err.Error())
 		return err
 	}
 	scheduler.Status.MarkJobReady(jobName)

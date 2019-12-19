@@ -60,8 +60,8 @@ const (
 
 	secretName = "testing-secret"
 
-	failedToCreateTopicMsg = `Failed to create Pub/Sub topic`
-	failedToDeleteTopicMsg = `Failed to delete Pub/Sub topic`
+	failedToReconcileTopicMsg = `Failed to reconcile Pub/Sub topic`
+	failedToDeleteTopicMsg    = `Failed to delete Pub/Sub topic`
 )
 
 var (
@@ -169,7 +169,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicCreateFailed", fmt.Sprintf("%s: %s", failedToCreateTopicMsg, "create-client-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error"))),
 		}},
 	}, {
 		Name: "verify topic exists fails",
@@ -214,7 +214,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicCreateFailed", fmt.Sprintf("%s: %s", failedToCreateTopicMsg, "topic-exists-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error"))),
 		}},
 	}, {
 		Name: "topic does not exist and propagation policy is NoCreateNoDelete",
@@ -252,7 +252,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicCreateFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToCreateTopicMsg, testTopicID))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileTopicMsg, testTopicID))),
 		}},
 	}, {
 		Name: "create topic fails",
@@ -295,7 +295,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicNoTopic("TopicCreateFailed", fmt.Sprintf("%s: %s", failedToCreateTopicMsg, "create-topic-induced-error"))),
+				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
 		Name: "publisher has no ready type status",

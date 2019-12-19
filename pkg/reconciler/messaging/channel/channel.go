@@ -119,9 +119,9 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	}
 
 	// 1. Create the Topic.
-	topic, err := r.createTopic(ctx, channel)
+	topic, err := r.reconcileTopic(ctx, channel)
 	if err != nil {
-		channel.Status.MarkNoTopic("TopicCreateFailed", "Error when attempting to create Topic.")
+		channel.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
@@ -355,7 +355,7 @@ func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha
 	return nil
 }
 
-func (r *Reconciler) createTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
+func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Channel) (*pubsubv1alpha1.Topic, error) {
 	topic, err := r.getTopic(ctx, channel)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Unable to get a Topic", zap.Error(err))

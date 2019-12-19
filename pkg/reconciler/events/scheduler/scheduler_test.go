@@ -64,7 +64,7 @@ const (
 	// Message for when the topic and pullsubscription with the above variables are not ready.
 	topicNotReadyMsg            = `Topic "my-test-scheduler" not ready`
 	pullSubscriptionNotReadyMsg = `PullSubscription "my-test-scheduler" not ready`
-	failedToCreateJobMsg        = `Failed to create Scheduler job`
+	failedToReconcileJobMsg     = `Failed to reconcile Scheduler job`
 	failedToDeleteJobMsg        = `Failed to delete Scheduler job`
 )
 
@@ -451,7 +451,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "create-client-induced-error")),
+				WithSchedulerJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-client-induced-error")),
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
@@ -496,7 +496,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "get-job-induced-error")),
+				WithSchedulerJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "get-job-induced-error")),
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
@@ -541,7 +541,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToCreateJobMsg, codes.Unknown, "get-job-induced-error")),
+				WithSchedulerJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToReconcileJobMsg, codes.Unknown, "get-job-induced-error")),
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{
@@ -587,7 +587,7 @@ func TestAllCases(t *testing.T) {
 				WithInitSchedulerConditions,
 				WithSchedulerTopicReady(testTopicID, testProject),
 				WithSchedulerPullSubscriptionReady(),
-				WithSchedulerJobNotReady("JobCreateFailed", fmt.Sprintf("%s: %s", failedToCreateJobMsg, "create-job-induced-error")),
+				WithSchedulerJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-job-induced-error")),
 				WithSchedulerSinkURI(schedulerSinkURL)),
 		}},
 		WantEvents: []string{

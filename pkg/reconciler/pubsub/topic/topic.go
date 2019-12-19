@@ -167,7 +167,7 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 	addFinalizer(topic)
 
 	if err := r.reconcileTopic(ctx, topic); err != nil {
-		topic.Status.MarkNoTopic("TopicCreateFailed", "Failed to create Pub/Sub topic: %s", err.Error())
+		topic.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Pub/Sub topic: %s", err.Error())
 		return err
 	}
 	topic.Status.MarkTopicReady()
@@ -176,7 +176,7 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
-		topic.Status.MarkNotDeployed("PublisherCreateFailed", "Failed to create Publisher: %s", err.Error())
+		topic.Status.MarkNotDeployed("PublisherReconcileFailed", "Failed to reconcile Publisher: %s", err.Error())
 		return err
 	}
 

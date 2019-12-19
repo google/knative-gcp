@@ -67,8 +67,8 @@ const (
 
 	secretName = "testing-secret"
 
-	failedToCreateSubscriptionMsg = `Failed to create Pub/Sub subscription`
-	failedToDeleteSubscriptionMsg = `Failed to delete Pub/Sub subscription`
+	failedToReconcileSubscriptionMsg = `Failed to reconcile Pub/Sub subscription`
+	failedToDeleteSubscriptionMsg    = `Failed to delete Pub/Sub subscription`
 )
 
 var (
@@ -209,7 +209,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionCreateFailed", fmt.Sprintf("%s: %s", failedToCreateSubscriptionMsg, "client-create-induced-error"))),
+				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, finalizerName),
@@ -259,7 +259,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionCreateFailed", fmt.Sprintf("%s: %s", failedToCreateSubscriptionMsg, "topic-exists-induced-error"))),
+				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
 		}},
 	}, {
 		Name: "topic does not exist",
@@ -306,7 +306,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionCreateFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToCreateSubscriptionMsg, testTopicID))),
+				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
 		}},
 	}, {
 		Name: "subscription exists fails",
@@ -353,7 +353,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionCreateFailed", fmt.Sprintf("%s: %s", failedToCreateSubscriptionMsg, "subscription-exists-induced-error"))),
+				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
 		}},
 	}, {
 		Name: "create subscription fails",
@@ -401,7 +401,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionProjectID(testProject),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionCreateFailed", fmt.Sprintf("%s: %s", failedToCreateSubscriptionMsg, "subscription-create-induced-error"))),
+				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
 		}},
 	}, {
 		Name: "successfully created subscription",

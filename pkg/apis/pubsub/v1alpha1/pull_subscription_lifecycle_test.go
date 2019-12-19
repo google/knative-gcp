@@ -319,7 +319,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
-			s.MarkNoSink("Testing", "hi%s", "")
+			s.MarkNoSink("Testing", "hi")
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
@@ -337,7 +337,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			s.MarkSink("uri://example")
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
-			s.MarkNotDeployed("Testing", "hi%s", "")
+			s.MarkNotDeployed("Testing", "hi")
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,

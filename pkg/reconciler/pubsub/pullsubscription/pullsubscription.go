@@ -195,14 +195,14 @@ func (r *Reconciler) reconcile(ctx context.Context, ps *v1alpha1.PullSubscriptio
 
 	subscriptionID, err := r.reconcileSubscription(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNoSubscription("SubscriptionCreateFailed", "Failed to create Pub/Sub subscription: %s", err.Error())
+		ps.Status.MarkNoSubscription("SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkSubscribed(subscriptionID)
 
-	_, err = r.createOrUpdateReceiveAdapter(ctx, ps)
+	_, err = r.reconcileReceiveAdapter(ctx, ps)
 	if err != nil {
-		ps.Status.MarkNotDeployed("AdapterCreateFailed", "Failed to create Receive Adapter: %s", err.Error())
+		ps.Status.MarkNotDeployed("AdapterReconcileFailed", "Failed to reconcile Receive Adapter: %s", err.Error())
 		return err
 	}
 	ps.Status.MarkDeployed()
@@ -424,7 +424,7 @@ func removeFinalizer(s *v1alpha1.PullSubscription) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) createOrUpdateReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
+func (r *Reconciler) reconcileReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
 	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Unable to get an existing receive adapter", zap.Error(err))

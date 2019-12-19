@@ -61,10 +61,10 @@ const (
 	generation   = 1
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
-	topicNotReadyMsg              = `Topic "my-test-storage" not ready`
-	pullSubscriptionNotReadyMsg   = `PullSubscription "my-test-storage" not ready`
-	failedToCreateNotificationMsg = `Failed to create Storage notification`
-	failedToDeleteNotificationMsg = `Failed to delete Storage notification`
+	topicNotReadyMsg                 = `Topic "my-test-storage" not ready`
+	pullSubscriptionNotReadyMsg      = `PullSubscription "my-test-storage" not ready`
+	failedToReconcileNotificationMsg = `Failed to reconcile Storage notification`
+	failedToDeleteNotificationMsg    = `Failed to delete Storage notification`
 )
 
 var (
@@ -444,7 +444,7 @@ func TestAllCases(t *testing.T) {
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
 				WithStorageSinkURI(storageSinkURL),
-				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "create-client-induced-error")),
+				WithStorageNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
 			),
 		}},
 	}, {
@@ -494,7 +494,7 @@ func TestAllCases(t *testing.T) {
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
 				WithStorageSinkURI(storageSinkURL),
-				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "bucket-notifications-induced-error")),
+				WithStorageNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
 			),
 		}},
 	}, {
@@ -544,7 +544,7 @@ func TestAllCases(t *testing.T) {
 				WithStorageProjectID(testProject),
 				WithStoragePullSubscriptionReady(),
 				WithStorageSinkURI(storageSinkURL),
-				WithStorageNotificationNotReady("NotificationCreateFailed", fmt.Sprintf("%s: %s", failedToCreateNotificationMsg, "bucket-add-notification-induced-error")),
+				WithStorageNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
 			),
 		}},
 	}, {
