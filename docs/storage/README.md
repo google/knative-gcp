@@ -9,9 +9,9 @@ both Pub/Sub resources as well as GCS resources.
 
 ## Prerequisites
 
-1. [Create a Pub/Sub enabled Service Account](../pubsub)
+1. [Install Knative with GCP](../install/README.md).
 
-1. [Install Knative with GCP](../install).
+1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Storage API` on your project:
 

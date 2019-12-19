@@ -7,9 +7,9 @@ intended to provide a durable messaging solution.
 
 ## Prerequisites
 
-1. [Create a Pub/Sub enabled Service Account](../pubsub)
-
 1. [Install Knative with GCP](../install). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part
+
+1. [Create a Pub/Sub enabled Service Account](../pubsub)
 
 ## Deployment
 
