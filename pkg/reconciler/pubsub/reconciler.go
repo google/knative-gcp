@@ -137,8 +137,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	cs := pubsubable.ConditionSet()
 
 	// Delete the topic
-	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
-	err := topics.Delete(name, nil)
+	err := psb.pubsubClient.PubsubV1alpha1().Topics(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
 		status.MarkTopicNotReady(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
@@ -149,8 +148,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	status.ProjectID = ""
 
 	// Delete the pullsubscription
-	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
-	err = pullSubscriptions.Delete(name, nil)
+	err = psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
 		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
