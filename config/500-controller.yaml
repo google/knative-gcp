@@ -37,20 +37,12 @@ spec:
         image: github.com/google/knative-gcp/cmd/controller
         imagePullPolicy: Always
         env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
         - name: PUBSUB_RA_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
         - name: PUBSUB_PUBLISHER_IMAGE
           value: github.com/google/knative-gcp/cmd/pubsub/publisher
-        - name: PUBSUB_TOPIC_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/topic
-        - name: PUBSUB_SUB_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/subscription
-        - name: DECORATOR_IMAGE
-          value: github.com/google/knative-gcp/cmd/decorator
-        - name: STORAGE_NOTIFICATION_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/notification
-        - name: SCHEDULER_JOB_IMAGE
-          value: github.com/google/knative-gcp/cmd/operations/scheduler
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
@@ -62,6 +54,8 @@ spec:
         - name: METRICS_DOMAIN
           value: cloud.google.com/events
         volumeMounts:
+        - name: google-cloud-key
+          mountPath: /var/secrets/google
         - name: config-logging
           mountPath: /etc/config-logging
         resources:
@@ -78,5 +72,8 @@ spec:
       - name: config-logging
         configMap:
           name: config-logging
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
       serviceAccount: controller
       terminationGracePeriodSeconds: 10

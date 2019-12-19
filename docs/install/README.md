@@ -13,7 +13,6 @@ Applying the `config` dir will:
 - create a new namespace, `cloud-run-events`.
 - install new CRDs,
   - `channel.messaging.cloud.google.com`
-  - `decorator.messaging.cloud.google.com`
   - `storages.events.cloud.google.com`
   - `pullsubscriptions.pubsub.cloud.google.com`
   - `topics.pubsub.cloud.google.com`
@@ -41,7 +40,6 @@ Applying the `config` dir will:
 - create a new namespace, `cloud-run-events`.
 - install new CRDs,
   - `channel.messaging.cloud.google.com`
-  - `decorator.messaging.cloud.google.com`
   - `storages.events.cloud.google.com`
   - `pullsubscriptions.pubsub.cloud.google.com`
   - `topics.pubsub.cloud.google.com`

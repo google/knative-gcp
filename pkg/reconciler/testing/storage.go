@@ -54,6 +54,12 @@ func WithStorageBucket(bucket string) StorageOption {
 	}
 }
 
+func WithStorageProject(project string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Spec.Project = project
+	}
+}
+
 func WithStorageEventTypes(eventTypes []string) StorageOption {
 	return func(s *v1alpha1.Storage) {
 		s.Spec.EventTypes = eventTypes
@@ -94,6 +100,12 @@ func WithStorageTopicReady(topicID string) StorageOption {
 	}
 }
 
+func WithStorageTopicID(topicID string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.TopicID = topicID
+	}
+}
+
 // WithStoragePullSubscriptionNotReady marks the condition that the
 // topic is not ready
 func WithStoragePullSubscriptionNotReady(reason, message string) StorageOption {
@@ -120,9 +132,9 @@ func WithStorageNotificationNotReady(reason, message string) StorageOption {
 
 // WithStorageNotificationReady marks the condition that the GCS
 // Notification is ready.
-func WithStorageNotificationReady() StorageOption {
+func WithStorageNotificationReady(notificationID string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.MarkNotificationReady()
+		s.Status.MarkNotificationReady(notificationID)
 	}
 }
 

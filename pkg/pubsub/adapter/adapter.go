@@ -20,11 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	"go.opencensus.io/trace"
-
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
-
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	nethttp "net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -33,8 +32,8 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	decoratorresources "github.com/google/knative-gcp/pkg/reconciler/decorator/resources"
-	"go.uber.org/zap"
+	"github.com/google/knative-gcp/pkg/utils"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
@@ -127,8 +126,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	}
 
 	// Convert base64 encoded json map to extensions map.
-	// This implementation comes from the Decorator object.
-	a.extensions, err = decoratorresources.Base64ToMap(a.ExtensionsBase64)
+	a.extensions, err = utils.Base64ToMap(a.ExtensionsBase64)
 	if err != nil {
 		fmt.Printf("[warn] failed to convert base64 extensions to map: %v", err)
 	}
@@ -136,14 +134,14 @@ func (a *Adapter) Start(ctx context.Context) error {
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
 		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
-			return fmt.Errorf("failed to create inbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create inbound cloudevent client: %w", err)
 		}
 	}
 
 	// Send events on HTTP.
 	if a.outbound == nil {
 		if a.outbound, err = a.newHTTPClient(ctx, a.Sink); err != nil {
-			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create outbound cloudevent client: %w", err)
 		}
 	}
 
@@ -155,7 +153,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	if a.Transformer != "" {
 		if a.transformer == nil {
 			if a.transformer, err = kncloudevents.NewDefaultClient(a.Transformer); err != nil {
-				return fmt.Errorf("failed to create transformer cloudevent client: %s", err.Error())
+				return fmt.Errorf("failed to create transformer cloudevent client: %w", err)
 			}
 		}
 	}
@@ -188,18 +186,22 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	}
 
 	// If a transformer has been configured, then transform the message.
+	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
+	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.
+	// TODO consider renaming transformer as it is confusing.
 	if a.transformer != nil {
-		// TODO: I do not like the transformer as it is. It would be better to pass the transport context and the
-		// message to the transformer function as a transform request. Better yet, only do it for conversion issues?
 		transformedCTX, transformedEvent, err := a.transformer.Send(ctx, event)
+		rtctx := cloudevents.HTTPTransportContextFrom(transformedCTX)
 		if err != nil {
 			logger.Errorf("error transforming cloud event %q", event.ID())
-			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
+			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return err
 		}
 		if transformedEvent == nil {
-			logger.Warnf("cloud event %q was not transformed", event.ID())
-			a.reporter.ReportEventCount(args, nethttp.StatusInternalServerError)
+			// This doesn't mean there was an error. E.g., the Broker filter pod might not return a response.
+			// Report the returned Status Code and return.
+			logger.Debugf("cloud event %q was not transformed", event.ID())
+			a.reporter.ReportEventCount(args, rtctx.StatusCode)
 			return nil
 		}
 		// Update the event with the transformed one.
@@ -225,7 +227,7 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	if err != nil {
 		return err
 	} else if r != nil {
-		resp.RespondWith(200, r)
+		resp.RespondWith(nethttp.StatusOK, r)
 	}
 	return nil
 }

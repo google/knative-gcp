@@ -18,221 +18,143 @@ package pubsub
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"time"
+	"fmt"
 
-	"go.uber.org/zap"
-	v1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/kmeta"
-
-	ops "github.com/google/knative-gcp/pkg/operations"
-	operations "github.com/google/knative-gcp/pkg/operations/pubsub"
+	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"go.uber.org/zap"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
 )
 
-const (
-	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "PubSub"
-)
-
-// Reconciler implements controller.Reconciler for Channel resources.
 type PubSubBase struct {
 	*reconciler.Base
 
-	TopicOpsImage        string
-	SubscriptionOpsImage string
+	// For dealing with Topics and Pullsubscriptions
+	pubsubClient pubsubsourceclientset.Interface
+
+	// What do we tag receive adapter as.
+	receiveAdapterName string
 }
 
-func (c *PubSubBase) EnsureSubscriptionExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (ops.OpsJobStatus, error) {
-	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
-		Image:          c.SubscriptionOpsImage,
-		Action:         ops.ActionExists,
-		ProjectID:      project,
-		TopicID:        topic,
-		SubscriptionID: subscription,
-		Secret:         secret,
-		Owner:          owner,
-	})
-}
-
-func (c *PubSubBase) EnsureSubscriptionCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string, ackDeadline time.Duration, retainAcked bool, retainDuration time.Duration) (ops.OpsJobStatus, error) {
-	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
-		Image:               c.SubscriptionOpsImage,
-		Action:              ops.ActionCreate,
-		ProjectID:           project,
-		TopicID:             topic,
-		SubscriptionID:      subscription,
-		AckDeadline:         ackDeadline,
-		RetainAckedMessages: retainAcked,
-		RetentionDuration:   retainDuration,
-		Secret:              secret,
-		Owner:               owner,
-	})
-}
-
-func (c *PubSubBase) EnsureSubscriptionDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic, subscription string) (ops.OpsJobStatus, error) {
-	return c.ensureSubscriptionJob(ctx, operations.SubArgs{
-		Image:          c.SubscriptionOpsImage,
-		Action:         ops.ActionDelete,
-		ProjectID:      project,
-		TopicID:        topic,
-		SubscriptionID: subscription,
-		Secret:         secret,
-		Owner:          owner,
-	})
-}
-
-func (c *PubSubBase) EnsureTopicExists(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
-	return c.ensureTopicJob(ctx, operations.TopicArgs{
-		Image:     c.TopicOpsImage,
-		Action:    ops.ActionExists,
-		ProjectID: project,
-		TopicID:   topic,
-		Secret:    secret,
-		Owner:     owner,
-	})
-}
-
-func (c *PubSubBase) EnsureTopicCreated(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
-	return c.ensureTopicJob(ctx, operations.TopicArgs{
-		Image:     c.TopicOpsImage,
-		Action:    ops.ActionCreate,
-		ProjectID: project,
-		TopicID:   topic,
-		Secret:    secret,
-		Owner:     owner,
-	})
-}
-
-func (c *PubSubBase) EnsureTopicDeleted(ctx context.Context, owner kmeta.OwnerRefable, secret corev1.SecretKeySelector, project, topic string) (ops.OpsJobStatus, error) {
-	return c.ensureTopicJob(ctx, operations.TopicArgs{
-		Image:     c.TopicOpsImage,
-		Action:    ops.ActionDelete,
-		ProjectID: project,
-		TopicID:   topic,
-		Secret:    secret,
-		Owner:     owner,
-	})
-}
-
-func (c *PubSubBase) ensureTopicJob(ctx context.Context, args operations.TopicArgs) (ops.OpsJobStatus, error) {
-	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.TopicJobLabels(args.Owner, args.Action)))
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		c.Logger.Debugw("Job not found, creating.")
-
-		job = operations.NewTopicOps(args)
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			c.Logger.Errorw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, err
-		}
-
-		c.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		c.Logger.Errorw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
+// ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
+// Sets the following Conditions in the Status field appropriately:
+// "TopicReady", and "PullSubscriptionReady"
+// Also sets the following fields in the pubsubable.Status upon success
+// TopicID, ProjectID, and SinkURI
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+	if pubsubable == nil {
+		return nil, nil, fmt.Errorf("nil pubsubable passed in")
 	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	spec := pubsubable.PubSubSpec()
+	status := pubsubable.PubSubStatus()
 
-	if ops.IsJobFailed(job) {
-		c.Logger.Debugw("Job has failed.")
-		var tar operations.TopicActionResult
-		if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &tar); err != nil {
-			c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
-		return ops.OpsJobCompleteFailed, errors.New(tar.Reason)
-	}
+	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
+	t, err := topics.Get(name, v1.GetOptions{})
 
-	if ops.IsJobComplete(job) {
-		c.Logger.Debugw("Job is complete.")
-		return ops.OpsJobCompleteSuccessful, nil
-	}
-
-	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
-}
-
-func (c *PubSubBase) ensureSubscriptionJob(ctx context.Context, args operations.SubArgs) (ops.OpsJobStatus, error) {
-	job, err := c.getJob(ctx, args.Owner.GetObjectMeta(), labels.SelectorFromSet(operations.SubscriptionJobLabels(args.Owner, args.Action)))
-	// If the resource doesn't exist, we'll create it
-	if apierrs.IsNotFound(err) {
-		c.Logger.Debugw("Job not found, creating.")
-
-		args.Image = c.SubscriptionOpsImage
-
-		job = operations.NewSubscriptionOps(args)
-
-		job, err := c.KubeClientSet.BatchV1().Jobs(args.Owner.GetObjectMeta().GetNamespace()).Create(job)
-		if err != nil || job == nil {
-			c.Logger.Errorw("Failed to create Job.", zap.Error(err))
-			return ops.OpsJobCreateFailed, err
-		}
-
-		c.Logger.Debugw("Created Job.")
-		return ops.OpsJobCreated, nil
-	} else if err != nil {
-		c.Logger.Errorw("Failed to get Job.", zap.Error(err))
-		return ops.OpsJobGetFailed, err
-	}
-
-	if ops.IsJobFailed(job) {
-		c.Logger.Debugw("Job has failed.")
-		var sar operations.SubActionResult
-		if err := c.UnmarshalJobTerminationMessage(ctx, job.Namespace, job.Name, &sar); err != nil {
-			c.Logger.Debugw("Failed to unmarshal termination message.", zap.Error(err))
-			return ops.OpsJobCompleteFailed, errors.New(ops.JobFailedMessage(job))
-		}
-		return ops.OpsJobCompleteFailed, errors.New(sar.Reason)
-	}
-
-	if ops.IsJobComplete(job) {
-		c.Logger.Debugw("Job is complete.")
-		return ops.OpsJobCompleteSuccessful, nil
-	}
-
-	c.Logger.Debug("Job still active.", zap.Any("job", job))
-	return ops.OpsJobOngoing, nil
-}
-
-// UnmarshalJobTerminationMessage unmarshals the job pod termination message.
-func (c *PubSubBase) UnmarshalJobTerminationMessage(ctx context.Context, namespace, name string, v interface{}) error {
-	jobPod, err := ops.GetJobPodByJobName(ctx, c.KubeClientSet, namespace, name)
 	if err != nil {
-		return err
-	}
-	if jobPod != nil {
-		terminationMessage := ops.GetFirstTerminationMessage(jobPod)
-		if terminationMessage != "" {
-			if err := json.Unmarshal([]byte(terminationMessage), v); err != nil {
-				return err
-			}
+		if !apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
+		}
+		newTopic := resources.MakeTopic(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
+		t, err = topics.Create(newTopic)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
+			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 	}
+
+	cs := pubsubable.ConditionSet()
+	if !t.Status.IsReady() {
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q not ready", t.Name)
+		return t, nil, fmt.Errorf("Topic %q not ready", t.Name)
+	}
+
+	if t.Status.ProjectID == "" {
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q did not expose projectid", t.Name)
+		return t, nil, fmt.Errorf("Topic %q did not expose projectid", t.Name)
+	}
+
+	if t.Status.TopicID == "" {
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q did not expose topicid", t.Name)
+		return t, nil, fmt.Errorf("Topic %q did not expose topicid", t.Name)
+	}
+
+	if t.Status.TopicID != topic {
+		status.MarkTopicNotReady(cs, "TopicNotReady", "Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
+		return t, nil, fmt.Errorf("Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
+	}
+
+	status.TopicID = t.Status.TopicID
+	status.ProjectID = t.Status.ProjectID
+	status.MarkTopicReady(cs)
+
+	// Ok, so the Topic is ready, let's reconcile PullSubscription.
+	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
+	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
+	if err != nil {
+		if !apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
+			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
+		}
+		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, resourceGroup)
+		ps, err = pullSubscriptions.Create(newPS)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
+			return t, nil, fmt.Errorf("failed to create PullSubscription: %w", err)
+		}
+	}
+
+	if !ps.Status.IsReady() {
+		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionNotReady", "PullSubscription %q not ready", ps.Name)
+		return t, ps, fmt.Errorf("PullSubscription %q not ready", ps.Name)
+	} else {
+		status.MarkPullSubscriptionReady(cs)
+	}
+	uri, err := apis.ParseURL(ps.Status.SinkURI)
+	if err != nil {
+		return t, ps, fmt.Errorf("failed to parse url %q: %w", ps.Status.SinkURI, err)
+	}
+	status.SinkURI = uri
+	return t, ps, nil
+}
+
+func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSubable) error {
+	if pubsubable == nil {
+		return fmt.Errorf("nil pubsubable passed in")
+	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	status := pubsubable.PubSubStatus()
+	cs := pubsubable.ConditionSet()
+
+	// Delete the topic
+	err := psb.pubsubClient.PubsubV1alpha1().Topics(namespace).Delete(name, nil)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
+		status.MarkTopicNotReady(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
+		return fmt.Errorf("failed to delete topic: %w", err)
+	}
+	status.MarkTopicNotReady(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
+	status.TopicID = ""
+	status.ProjectID = ""
+
+	// Delete the pullsubscription
+	err = psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace).Delete(name, nil)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
+		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
+		return fmt.Errorf("failed to delete PullSubscription: %w", err)
+	}
+	status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
+	status.SinkURI = nil
 	return nil
-}
-
-func (r *PubSubBase) getJob(ctx context.Context, owner metav1.Object, ls labels.Selector) (*v1.Job, error) {
-	list, err := r.KubeClientSet.BatchV1().Jobs(owner.GetNamespace()).List(metav1.ListOptions{
-		LabelSelector: ls.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, i := range list.Items {
-		if metav1.IsControlledBy(&i, owner) {
-			return &i, nil
-		}
-	}
-
-	return nil, apierrs.NewNotFound(schema.GroupResource{}, "")
 }

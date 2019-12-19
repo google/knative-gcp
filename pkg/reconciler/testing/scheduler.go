@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,6 +66,12 @@ func WithSchedulerLocation(location string) SchedulerOption {
 	}
 }
 
+func WithSchedulerProject(project string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Spec.Project = project
+	}
+}
+
 func WithSchedulerSchedule(schedule string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Schedule = schedule
@@ -75,6 +82,11 @@ func WithSchedulerData(data string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Spec.Data = data
 	}
+}
+
+func WithSchedulerDeletionTimestamp(s *v1alpha1.Scheduler) {
+	t := metav1.NewTime(time.Unix(1e9, 0))
+	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
 // WithInitSchedulerConditions initializes the Schedulers's conditions.
@@ -134,6 +146,13 @@ func WithSchedulerJobReady(jobName string) SchedulerOption {
 func WithSchedulerSinkURI(url *apis.URL) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Status.SinkURI = url
+	}
+}
+
+// WithSchedulerJobName sets the status for job Name
+func WithSchedulerJobName(jobName string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Status.JobName = jobName
 	}
 }
 

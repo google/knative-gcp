@@ -18,11 +18,6 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
-  annotations:
-    registry.knative.dev/eventTypes: |
-      [
-        { "type": "com.google.cloud.pubsub.topic.publish", "description": "This event is sent when a message is published to a Cloud Pub/Sub topic."}
-      ]
   name: pullsubscriptions.pubsub.cloud.google.com
 spec:
   group: pubsub.cloud.google.com
@@ -58,10 +53,10 @@ spec:
           properties:
             secret:
               type: object
-              description: "Credential to use to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).  Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              description: "Credential to use to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
             project:
               type: string
-              description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'."
+              description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
             sink:
               type: object
               description: "Reference to an object that will resolve to a domain name to use as the sink."
@@ -89,17 +84,6 @@ spec:
                         name:
                           type: string
                           minLength: 1
-                - type: object
-                  properties:
-                    apiVersion:
-                      type: string
-                      minLength: 1
-                    kind:
-                      type: string
-                      minLength: 1
-                    name:
-                      type: string
-                      minLength: 1
             transformer:
               type: object
               description: "Reference to an object that will resolve to a domain name to use as the transformer."

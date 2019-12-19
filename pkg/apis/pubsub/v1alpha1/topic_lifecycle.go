@@ -56,13 +56,11 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 func (ts *TopicStatus) PropagatePublisherStatus(ready *apis.Condition) {
 	switch {
 	case ready == nil:
-		ts.MarkDeploying("PublisherStatus", "Publisher has no Ready type status.")
+		ts.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	case ready.IsTrue():
 		ts.MarkDeployed()
 	case ready.IsFalse():
 		ts.MarkNotDeployed(ready.Reason, ready.Message)
-	default:
-		ts.MarkDeploying(ready.Reason, ready.Message)
 	}
 }
 
@@ -71,28 +69,14 @@ func (ts *TopicStatus) MarkDeployed() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherReady)
 }
 
-// MarkDeploying sets the condition that the publisher is deploying.
-func (ts *TopicStatus) MarkDeploying(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
-}
-
 // MarkNotDeployed sets the condition that the publisher has not been deployed.
 func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
 }
 
-func (ts *TopicStatus) MarkPublisherNotOwned(messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, "NotOwned", messageFormat, messageA...)
-}
-
 // MarkTopicReady sets the condition that the topic has been created.
 func (ts *TopicStatus) MarkTopicReady() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)
-}
-
-// MarkTopicOperating sets the condition that the topic is currently involved in an operation.
-func (ts *TopicStatus) MarkTopicOperating(reason, messageFormat string, messageA ...interface{}) {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionTopicExists, reason, messageFormat, messageA...)
 }
 
 // MarkNoTopic sets the condition that signals there is not a topic for this
