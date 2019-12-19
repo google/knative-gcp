@@ -145,14 +145,14 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return nil, fmt.Errorf("failed to get PullSubscription: %v", err)
+			return nil, fmt.Errorf("failed to get PullSubscription: %w", err)
 		}
 		newPS := resources.MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, source.Spec.Topic, r.receiveAdapterName, resourceGroup)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Error(err))
-			return nil, fmt.Errorf("failed to create PullSubscription: %v", err)
+			return nil, fmt.Errorf("failed to create PullSubscription: %w", err)
 		}
 	}
 	return ps, nil

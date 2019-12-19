@@ -62,13 +62,13 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to get Topics: %s", err.Error())
+			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
 		newTopic := resources.MakeTopic(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to create Topic: %s", err.Error())
+			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 	}
 
@@ -103,13 +103,13 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return t, nil, fmt.Errorf("failed to get Pullsubscription: %s", err.Error())
+			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
 		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, resourceGroup)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
-			return t, nil, fmt.Errorf("failed to create PullSubscription: %s", err.Error())
+			return t, nil, fmt.Errorf("failed to create PullSubscription: %w", err)
 		}
 	}
 
@@ -121,7 +121,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 	uri, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
-		return t, ps, fmt.Errorf("failed to parse url %q: %s", ps.Status.SinkURI, err.Error())
+		return t, ps, fmt.Errorf("failed to parse url %q: %w", ps.Status.SinkURI, err)
 	}
 	status.SinkURI = uri
 	return t, ps, nil
@@ -141,7 +141,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
 		status.MarkTopicNotReady(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
-		return fmt.Errorf("failed to delete topic: %s", err.Error())
+		return fmt.Errorf("failed to delete topic: %w", err)
 	}
 	status.MarkTopicNotReady(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
 	status.TopicID = ""
@@ -152,7 +152,7 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
 		status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
-		return fmt.Errorf("failed to delete PullSubscription: %s", err.Error())
+		return fmt.Errorf("failed to delete PullSubscription: %w", err)
 	}
 	status.MarkPullSubscriptionNotReady(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
 	status.SinkURI = nil

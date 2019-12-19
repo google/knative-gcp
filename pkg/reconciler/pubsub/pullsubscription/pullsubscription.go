@@ -266,7 +266,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		ackDeadline, err := time.ParseDuration(*ps.Spec.AckDeadline)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Invalid ackDeadline", zap.String("ackDeadline", *ps.Spec.AckDeadline))
-			return "", fmt.Errorf("invalid ackDeadline: %s", err.Error())
+			return "", fmt.Errorf("invalid ackDeadline: %w", err)
 		}
 		subConfig.AckDeadline = ackDeadline
 	}
@@ -275,7 +275,7 @@ func (r *Reconciler) reconcileSubscription(ctx context.Context, ps *v1alpha1.Pul
 		retentionDuration, err := time.ParseDuration(*ps.Spec.RetentionDuration)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Invalid retentionDuration", zap.String("retentionDuration", *ps.Spec.RetentionDuration))
-			return "", fmt.Errorf("invalid retentionDuration: %s", err.Error())
+			return "", fmt.Errorf("invalid retentionDuration: %w", err)
 		}
 		subConfig.RetentionDuration = retentionDuration
 	}

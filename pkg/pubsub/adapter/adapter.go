@@ -134,14 +134,14 @@ func (a *Adapter) Start(ctx context.Context) error {
 	// Receive Events on Pub/Sub.
 	if a.inbound == nil {
 		if a.inbound, err = a.newPubSubClient(ctx); err != nil {
-			return fmt.Errorf("failed to create inbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create inbound cloudevent client: %w", err)
 		}
 	}
 
 	// Send events on HTTP.
 	if a.outbound == nil {
 		if a.outbound, err = a.newHTTPClient(ctx, a.Sink); err != nil {
-			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create outbound cloudevent client: %w", err)
 		}
 	}
 
@@ -153,7 +153,7 @@ func (a *Adapter) Start(ctx context.Context) error {
 	if a.Transformer != "" {
 		if a.transformer == nil {
 			if a.transformer, err = kncloudevents.NewDefaultClient(a.Transformer); err != nil {
-				return fmt.Errorf("failed to create transformer cloudevent client: %s", err.Error())
+				return fmt.Errorf("failed to create transformer cloudevent client: %w", err)
 			}
 		}
 	}
