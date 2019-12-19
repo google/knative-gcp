@@ -112,7 +112,6 @@
   version = "v0.2.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:a29ee51f5892f8407b4a62f7e35961e3d8766c8afb09ecda4c7b4ac0e9944dcf"
   name = "github.com/cloudevents/sdk-go"
   packages = [
@@ -134,6 +133,7 @@
   ]
   pruneopts = "NUT"
   revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
+  version = "v0.10.2"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1189,7 +1189,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:27bba4a181f132a90bda8572663426d4e6e7e92aac0a37f53d7ddc8dea033fe3"
+  digest = "1:16d722dfe52d385b9e8aa3585d47bd436c73d8f2ce42880ddba6f74fbedcbeb5"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1221,11 +1221,11 @@
     "test/conformance/helpers/tracing",
   ]
   pruneopts = "NUT"
-  revision = "e33dba28965dcadc339c62102f9cc34dde2eea57"
+  revision = "b53d3fdb4b5e5ba736072a7a971f495ec09d16fa"
 
 [[projects]]
   branch = "master"
-  digest = "1:dcbc166f09bb3890df7a3fc5eb5181d8e6153d817884359c6787343046d140fb"
+  digest = "1:2a1f47dba842efe06d9fa10c0323f7b8f39a6b6e86e944a40668679f102f413e"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1297,11 +1297,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "9d8b936ca0621af5762916bc899d4973363a2dc4"
+  revision = "0094d3a89242cddcd8532df4632fb619b2d7da09"
 
 [[projects]]
   branch = "master"
-  digest = "1:6a4d4700955ddbbc81323b6abecd067009757d7b475073d59da9499d5bebc958"
+  digest = "1:3f002deeefd836d5572a7c0be40f2d8de0cdd5f88661ba40fa6b93e1a9fe9fa5"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1352,7 +1352,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "3446c9d7d42efad0d08170441a06ddb73d08dbcd"
+  revision = "191785c54f36e57a129c451f1561a7582a120c8f"
 
 [[projects]]
   branch = "master"
