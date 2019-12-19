@@ -158,6 +158,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Channel
 
 	ch, err := r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
 	if err == nil && becomesReady {
+		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Channel became ready", zap.Any("after", duration))
 		r.Recorder.Event(channel, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Channel %q became ready", channel.Name))

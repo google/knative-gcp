@@ -175,6 +175,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub)
 	src, err := r.RunClientSet.EventsV1alpha1().PubSubs(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
+		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("PubSub became ready", zap.Any("after", duration))
 		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("PubSub %q became ready", source.Name))

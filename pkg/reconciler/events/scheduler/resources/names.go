@@ -18,6 +18,8 @@ package resources
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
@@ -26,8 +28,19 @@ func GenerateJobName(scheduler *v1alpha1.Scheduler) string {
 	return fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, string(scheduler.UID))
 }
 
+// ExtractParentName extracts the parent from the job name.
+// Example: given projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID, returns projects/PROJECT_ID/locations/LOCATION_ID.
+func ExtractParentName(jobName string) string {
+	return jobName[0:strings.LastIndex(jobName, "/jobs/")]
+}
+
 // GenerateTopicName generates a topic name for the scheduler. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
 func GenerateTopicName(scheduler *v1alpha1.Scheduler) string {
 	return fmt.Sprintf("scheduler-%s", string(scheduler.UID))
+}
+
+// GeneratePubSubTarget generates a topic name for the PubsubTarget used to create the Scheduler job.
+func GeneratePubSubTargetTopic(scheduler *v1alpha1.Scheduler, topic string) string {
+	return fmt.Sprintf("projects/%s/topics/%s", scheduler.Status.ProjectID, topic)
 }

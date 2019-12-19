@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -199,17 +198,15 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Error(err))
 			return err
 		} else if st.Code() == codes.NotFound {
-			// Create the job as it does not exist.
-			// For create we need a Parent, which from the jobName projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID,
-			// is: projects/PROJECT_ID/locations/LOCATION_ID
-			parent := jobName[0:strings.LastIndex(jobName, "/jobs/")]
+			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
+			parent := resources.ExtractParentName(jobName)
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
 				Job: &schedulerpb.Job{
 					Name: jobName,
 					Target: &schedulerpb.Job_PubsubTarget{
 						PubsubTarget: &schedulerpb.PubsubTarget{
-							TopicName: fmt.Sprintf("projects/%s/topics/%s", scheduler.Status.ProjectID, topic),
+							TopicName: resources.GeneratePubSubTargetTopic(scheduler, topic),
 							Data:      []byte(scheduler.Spec.Data),
 						},
 					},
@@ -287,6 +284,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	src, err := r.RunClientSet.EventsV1alpha1().Schedulers(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
+		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
 		logging.FromContext(ctx).Desugar().Info("Scheduler became ready", zap.Any("after", duration))
 		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Scheduler %q became ready", source.Name))
