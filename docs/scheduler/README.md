@@ -3,9 +3,7 @@
 ## Overview
 
 This sample shows how to Configure `Scheduler` resource for receiving scheduled
-events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/) This
-is a simple example that uses a single Service Account for manipulating both
-Pub/Sub resources as well as Scheduler resources.
+events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
@@ -19,22 +17,15 @@ Pub/Sub resources as well as Scheduler resources.
    gcloud services enable cloudscheduler.googleapis.com
    ```
 
-1. Give that Service Account the `Cloud Scheduler Admin` role on your Google
-   Cloud project:
-
-   ```shell
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-   --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/cloudscheduler.admin
-   ```
-
 ## Deployment
 
-```shell
-kubectl apply --filename scheduler.yaml
-```
+1. Create a [scheduler](./scheduler.yaml)
 
-1. Create a service that the Scheduler notifications will sink into:
+    ```shell
+    kubectl apply --filename scheduler.yaml
+    ```
+
+1. Create a [service](./event-display.yaml) that the Scheduler notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -73,9 +64,8 @@ Context Attributes,
   source: //pubsub.googleapis.com/projects/quantum-reducer-434/topics/scheduler-a424c4a6-c9e2-11e9-a541-42010aa8000b
   id: 714614529367848
   time: 2019-08-28T22:29:00.979Z
-  datacontenttype: application/json
+  datacontenttype: application/octet-stream
 Extensions,
-  error: unexpected end of JSON input
   knativecemode: binary
 Data,
   my test data
@@ -83,7 +73,7 @@ Data,
 
 ## What's Next
 
-The Scheduler implements what Knative Eventing considers to be an `importer`.
+The Scheduler implements what Knative Eventing considers to be an `Source`.
 This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
@@ -94,6 +84,6 @@ the cluster.
 kubectl delete -f ./scheduler.yaml
 kubectl delete -f ./event-display.yaml
 gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
+  --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
   --role roles/cloudscheduler.admin
 ```

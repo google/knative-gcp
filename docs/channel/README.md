@@ -13,7 +13,7 @@ intended to provide a durable messaging solution.
 
 ## Deployment
 
-1. Create a `Channel`.
+1. Create the `Channel` in [channel.yaml](./channel.yaml).
 
    **Note**: _Update `project` and `secret` if you are not using defaults._
 
@@ -24,16 +24,16 @@ intended to provide a durable messaging solution.
    After a moment, the demo channel should become ready.
 
    ```shell
-   kubectl get pschan demo
+   kubectl get channels.messaging.cloud.google.com demo
    ```
 
-1. Create a subscriber, `event-display`.
+1. Create a subscriber from [event-display.yaml](./event-display.yaml).
 
    ```shell
    kubectl apply --filename event-display.yaml
    ```
 
-1. Create a `Subscription`.
+1. Create a [`Subscription`](./subscription.yaml).
 
    ```shell
    kubectl apply --filename subscription.yaml
@@ -42,17 +42,16 @@ intended to provide a durable messaging solution.
    After a moment, the subscription will become ready.
 
    ```shell
-   kubectl get Subscription demo
+   kubectl get subscription demo
    ```
 
-1. Create an event source.
+1. Create an Event Source, in this case, a CronJobSource from [source.yaml](./source.yaml).
 
    ```shell
    kubectl apply --filename source.yaml
    ```
 
-   This will send an event through the `demo` channel every minute on the
-   minute.
+   This will send an event through the `demo` channel every minute on the minute.
 
 ## Verify
 
@@ -86,13 +85,13 @@ Data,
   }
 ```
 
-These events are generated from the `hello-world` CronJobSource, sent through
-the `demo` Channel and delivered to the `event-display` via the `demo`
-Subscription.
+These events are generated from the `hello-world` `CronJobSource`, sent through
+the `demo` `Channel` and delivered to the `event-display` via the `demo`
+`Subscription`.
 
 ## What's Next
 
-The `Channel` implements what Knative Eventing considers to be a `channelable`.
+The `Channel` implements what Knative Eventing considers to be a `Channelable`.
 This component can work alone, but it also works well when
 [Knative Serving and Eventing](https://github.com/knative/docs) are installed in
 the cluster.
