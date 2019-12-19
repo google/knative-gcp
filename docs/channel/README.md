@@ -1,4 +1,4 @@
-# Cloud Pub/Sub Channel
+# Cloud Pub/Sub Channel Example
 
 This sample shows how to configure a Channel backed by Cloud Pub/Sub. This is an
 implementation of a
@@ -9,23 +9,7 @@ intended to provide a durable messaging solution.
 
 1. [Create a Pub/Sub enabled Service Account](../pubsub)
 
-1. [Install Knative with GCP](../install).
-
-1. Install Knative Eventing,
-
-   1. To install Knative Eventing, first install the CRDs by running the kubectl
-      apply command once with the -l knative.dev/crd-install=true flag. This
-      prevents race conditions during the install, which cause intermittent
-      errors:
-
-   ```shell
-      kubectl apply --selector knative.dev/crd-install=true \
-      --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
-   ```
-
-   ```shell
-      kubectl apply  --filename https://github.com/knative/eventing/releases/download/v0.8.0/release.yaml
-   ```
+1. [Install Knative with GCP](../install). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part
 
 ## Deployment
 
