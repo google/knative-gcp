@@ -126,6 +126,10 @@ func (l *Listers) GetJobLister() batchv1listers.JobLister {
 	return batchv1listers.NewJobLister(l.indexerFor(&batchv1.Job{}))
 }
 
+func (l *Listers) GetCloudAuditLogLister() eventslisters.CloudAuditLogLister {
+	return eventslisters.NewCloudAuditLogLister(l.indexerFor(&EventsV1alpha1.CloudAuditLog{}))
+}
+
 func (l *Listers) GetStorageLister() eventslisters.StorageLister {
 	return eventslisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
 }
