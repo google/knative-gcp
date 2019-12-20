@@ -31,6 +31,7 @@ import (
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
 
 const (
@@ -60,6 +61,7 @@ func NewController(
 		PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogAdapterType, cmw),
 		cloudauditlogLister:    cloudauditlogInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
+		pubsubClientProvider:   gpubsub.NewClient,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 

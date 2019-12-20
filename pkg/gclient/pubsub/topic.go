@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
+	"github.com/google/knative-gcp/pkg/gclient/iam"
 )
 
 // pubsubTopic wraps pubsub.Topic. Is the topic that will be used everywhere except unit tests.
@@ -38,4 +39,8 @@ func (t *pubsubTopic) Exists(ctx context.Context) (bool, error) {
 // Delete implements pubsub.Topic.Delete
 func (t *pubsubTopic) Delete(ctx context.Context) error {
 	return t.topic.Delete(ctx)
+}
+
+func (t *pubsubTopic) IAM() iam.Handle {
+	return iam.NewIamHandle(t.topic.IAM())
 }

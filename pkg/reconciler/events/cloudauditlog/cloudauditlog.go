@@ -30,8 +30,8 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"cloud.google.com/go/logging/logadmin"
-	"cloud.google.com/go/pubsub"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -52,6 +52,7 @@ type Reconciler struct {
 
 	cloudauditlogLister    listers.CloudAuditLogLister
 	logadminClientProvider glogadmin.CreateFn
+	pubsubClientProvider   gpubsub.CreateFn
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -200,7 +201,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, cal *v1alpha1.CloudA
 
 // Ensures that the sink has been granted the pubsub.publisher role on the source topic.
 func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, cal *v1alpha1.CloudAuditLog, sink *logadmin.Sink) error {
-	pubsubClient, err := pubsub.NewClient(ctx, cal.Status.ProjectID)
+	pubsubClient, err := c.pubsubClientProvider(ctx, cal.Status.ProjectID)
 	if err != nil {
 		return err
 	}
