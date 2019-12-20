@@ -7,7 +7,9 @@ events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install/README.md).
+1. [Install Knative with GCP](../install/README.md). Note that your project needs to be created with
+   an App Engine application. Refer to this [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
+   for more details.
 
 1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
 
@@ -73,17 +75,19 @@ Data,
 
 ## What's Next
 
-The Scheduler implements what Knative Eventing considers to be an `Source`.
-This component can work alone, but it also works well when
-[Knative Serving and Eventing](https://github.com/knative/docs) are installed in
-the cluster.
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-```shell
-kubectl delete -f ./scheduler.yaml
-kubectl delete -f ./event-display.yaml
-gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
-  --role roles/cloudscheduler.admin
-```
+1. Delete the Scheduler
+
+    ```shell
+    kubectl delete -f ./scheduler.yaml
+    ```
+1. Delete the Service    
+    
+    ```shell
+    kubectl delete -f ./event-display.yaml
+    ```

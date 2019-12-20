@@ -50,10 +50,24 @@ to configure such Pub/Sub enabled Service Account.
         --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
         ```
 
-    1.  Create a secret on the Kubernetes cluster with the downloaded key:
+    1.  Create a secret on the Kubernetes cluster with the downloaded key. Remember to create the secret in the namespace 
+        your resources will reside. The example below does so in the `default` namespace.
 
         ```shell
         kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-pubsub.json
         ```
 
         `google-cloud-key` and `key.json` are default values expected by our resources.
+
+## Cleaning Up
+
+1. Delete the secret
+
+    ```shell
+    kubectl --namespace default delete secret google-cloud-key
+    ```
+1. Delete the service account
+
+    ```shell
+    gcloud iam service-accounts delete cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    ```

@@ -164,17 +164,20 @@ Data,
 
 ## What's Next
 
-The Storage object implements what Knative Eventing considers to be a Source.
-This component can work alone, but it also works well when
-[Knative Serving and Eventing](https://github.com/knative/docs) are installed in
-the cluster.
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-```shell
-kubectl delete -f ./storage.yaml
-kubectl delete -f ./event-display.yaml
-gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:$GCS_SERVICE_ACCOUNT \
-  --role roles/pubsub.publisher
-```
+1. Delete the Storage
+
+    ```shell
+    kubectl delete -f ./storage.yaml
+    ```
+1. Delete the Service    
+    
+    ```shell
+    kubectl delete -f ./event-display.yaml
+    ```
+
