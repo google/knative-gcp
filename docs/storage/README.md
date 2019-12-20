@@ -1,32 +1,21 @@
-# Cloud Storage Object Notification
+# Cloud Storage Example
 
 ## Overview
 
 This sample shows how to Configure a `Storage` resource to deliver Object
-Notifications for when a new object is added to Google Cloud Storage (GCS). This
-is a simple example that uses a single Google Service Account for manipulating
-both Pub/Sub resources as well as GCS resources.
+Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 ## Prerequisites
 
-1. [Create a Pub/Sub enabled Service Account](../pubsub)
+1. [Install Knative with GCP](../install/README.md).
 
-1. [Install Knative with GCP](../install).
+1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Storage API` on your project:
 
    ```shell
    gcloud services enable storage-component.googleapis.com
    gcloud services enable storage-api.googleapis.com
-   ```
-
-1. Give that Service Account the `Storage Admin` role on your Google Cloud
-   project:
-
-   ```shell
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-   --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/storage.admin
    ```
 
 1. Use an existing GCS Bucket, or create a new one. You can create a bucket
@@ -82,9 +71,9 @@ both Pub/Sub resources as well as GCS resources.
    ```
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
-   project, uncomment and replace the
-   [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-   in [`storage.yaml`](storage.yaml) and apply it.
+   project, uncomment and replace the `MY_PROJECT` placeholder in [`storage.yaml`](storage.yaml) and apply it.
+   Note that the Service Account during the [installation](../install/README.md) step should be able to manage
+   [multiple projects](../install/managing-multiple-projects.md).   
 
    If you're in the storage directory, you can replace `MY_PROJECT` and `BUCKET`
    and then apply in one command:
@@ -102,7 +91,7 @@ both Pub/Sub resources as well as GCS resources.
    kubectl apply --filename storage.yaml
    ```
 
-1. Create a service that the Storage notifications will sink into:
+1. Create a [service](./event-display.yaml) that the Storage notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -110,8 +99,7 @@ both Pub/Sub resources as well as GCS resources.
 
 ## Publish
 
-Upload a file to your `Bucket`, either using the
-[Cloud Console](https://cloud.google.com/console) or gsutil:
+Upload a file to your BUCKET, either using the [Cloud Console](https://cloud.google.com/console) or gsutil:
 
 ```shell
 gsutil cp storage.yaml gs://$BUCKET/testfilehere'
@@ -124,14 +112,13 @@ that this Storage notification sinks to.
 
 1. To ensure the downstream pods to get started and receive our event, wait 60
    seconds.
-
-   - You can check the status of the downstream pods with:
+   
+   You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display
      ```
-
-     You should see at least one.
+    You should see at least one.
 
 1. Inspect the logs of the service:
 
@@ -153,11 +140,6 @@ Context Attributes,
   time: 2019-08-27T16:35:03.742Z
   schemaurl: https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json
   datacontenttype: application/json
-Extensions,
-  error: unexpected end of JSON input
-  notificationconfig: projects/_/buckets/vaikasvaikas-notification-test/notificationConfigs/174
-  objectgeneration: 1566923702760643
-  payloadformat: JSON_API_V1
 Data,
   {
     "kind": "storage#object",
@@ -182,20 +164,20 @@ Data,
 
 ## What's Next
 
-The Storage object implements what Knative Eventing considers to be an
-"importer". This component can work alone, but it also works well when
-[Knative Serving and Eventing](https://github.com/knative/docs) are installed in
-the cluster.
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-```shell
-kubectl delete -f ./storage.yaml
-kubectl delete -f ./event-display.yaml
-gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-  --role roles/storage.admin
-gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:$GCS_SERVICE_ACCOUNT \
-  --role roles/pubsub.publisher
-```
+1. Delete the Storage
+
+    ```shell
+    kubectl delete -f ./storage.yaml
+    ```
+1. Delete the Service    
+    
+    ```shell
+    kubectl delete -f ./event-display.yaml
+    ```
+

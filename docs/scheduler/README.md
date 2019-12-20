@@ -3,15 +3,15 @@
 ## Overview
 
 This sample shows how to Configure `Scheduler` resource for receiving scheduled
-events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/) This
-is a simple example that uses a single Service Account for manipulating both
-Pub/Sub resources as well as Scheduler resources.
+events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
-1. [Create a Pub/Sub enabled Service Account](../pubsub)
+1. [Install Knative with GCP](../install/README.md). Note that your project needs to be created with
+   an App Engine application. Refer to this [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
+   for more details.
 
-1. [Install Knative with GCP](../install).
+1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Scheduler API` on your project:
 
@@ -19,22 +19,15 @@ Pub/Sub resources as well as Scheduler resources.
    gcloud services enable cloudscheduler.googleapis.com
    ```
 
-1. Give that Service Account the `Cloud Scheduler Admin` role on your Google
-   Cloud project:
-
-   ```shell
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-   --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/cloudscheduler.admin
-   ```
-
 ## Deployment
 
-```shell
-kubectl apply --filename scheduler.yaml
-```
+1. Create a [scheduler](./scheduler.yaml)
 
-1. Create a service that the Scheduler notifications will sink into:
+    ```shell
+    kubectl apply --filename scheduler.yaml
+    ```
+
+1. Create a [service](./event-display.yaml) that the Scheduler notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -73,9 +66,8 @@ Context Attributes,
   source: //pubsub.googleapis.com/projects/quantum-reducer-434/topics/scheduler-a424c4a6-c9e2-11e9-a541-42010aa8000b
   id: 714614529367848
   time: 2019-08-28T22:29:00.979Z
-  datacontenttype: application/json
+  datacontenttype: application/octet-stream
 Extensions,
-  error: unexpected end of JSON input
   knativecemode: binary
 Data,
   my test data
@@ -83,17 +75,19 @@ Data,
 
 ## What's Next
 
-The Scheduler implements what Knative Eventing considers to be an `importer`.
-This component can work alone, but it also works well when
-[Knative Serving and Eventing](https://github.com/knative/docs) are installed in
-the cluster.
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-```shell
-kubectl delete -f ./scheduler.yaml
-kubectl delete -f ./event-display.yaml
-gcloud projects remove-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-  --role roles/cloudscheduler.admin
-```
+1. Delete the Scheduler
+
+    ```shell
+    kubectl delete -f ./scheduler.yaml
+    ```
+1. Delete the Service    
+    
+    ```shell
+    kubectl delete -f ./event-display.yaml
+    ```
