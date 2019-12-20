@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package duck contains Cloud Run Events API versions for duck components
 package duck
 
 const (

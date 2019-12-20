@@ -44,7 +44,7 @@ const (
 )
 
 // Ctor functions create a k8s controller with given params.
-type Ctor func(context.Context, *Listers, configmap.Watcher) controller.Reconciler
+type Ctor func(context.Context, *Listers, configmap.Watcher, map[string]interface{}) controller.Reconciler
 
 // MakeFactory creates a reconciler factory with fake clients and controller created by `ctor`.
 func MakeFactory(ctor Ctor) Factory {
@@ -82,7 +82,7 @@ func MakeFactory(ctor Ctor) Factory {
 		PrependGenerateNameReactor(&dynamicClient.Fake)
 
 		// Set up our Controller from the fakes.
-		c := ctor(ctx, &ls, configmap.NewStaticWatcher())
+		c := ctor(ctx, &ls, configmap.NewStaticWatcher(), r.OtherTestData)
 
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)

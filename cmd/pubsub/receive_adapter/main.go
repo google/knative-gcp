@@ -66,7 +66,11 @@ func main() {
 		logger.Error("Failed to process metrics options", zap.Error(err))
 	}
 
-	mainMetrics(logger, metricsConfig)
+	if metricsConfig != nil {
+		if err := metrics.UpdateExporter(*metricsConfig, logger.Sugar()); err != nil {
+			logger.Fatal("Failed to create the metrics exporter", zap.Error(err))
+		}
+	}
 
 	tracingConfig, err := tracingconfig.JSONToConfig(startable.TracingConfigJson)
 	if err != nil {
@@ -88,34 +92,6 @@ func main() {
 	if err := startable.Start(ctx); err != nil {
 		logger.Fatal("failed to start adapter: ", zap.Error(err))
 	}
-}
-
-func mainMetrics(logger *zap.Logger, opts *metrics.ExporterOptions) {
-	if opts == nil {
-		logger.Info("metrics disabled")
-		return
-	}
-
-	if err := metrics.UpdateExporter(*opts, logger.Sugar()); err != nil {
-		logger.Fatal("Failed to create the metrics exporter", zap.Error(err))
-	}
-
-	// TODO metrics are API surface, so make sure we need to expose this before doing so.
-	//  These seem to be private ones and more profiling related ones.
-	//  Commenting them for now, as we will use pkg/source stats_reporter.
-	// Register the views.
-	//if err := view.Register(
-	//	client.LatencyView,
-	//	transporthttp.LatencyView,
-	//	json.LatencyView,
-	//	xml.LatencyView,
-	//	datacodec.LatencyView,
-	//  adapter.LatencyView,
-	//); err != nil {
-	//  logger.Fatal("Failed to register views", zap.Error(err))
-	//}
-	//
-	//view.SetReportingPeriod(2 * time.Second)
 }
 
 func flush(logger *zap.Logger) {

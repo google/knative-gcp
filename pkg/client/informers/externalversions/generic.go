@@ -65,8 +65,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=messaging.cloud.google.com, Version=v1alpha1
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
-	case messagingv1alpha1.SchemeGroupVersion.WithResource("decorators"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Decorators().Informer()}, nil
 
 		// Group=pubsub.cloud.google.com, Version=v1alpha1
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):

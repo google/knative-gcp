@@ -57,9 +57,15 @@ func (cs *ChannelStatus) MarkTopicReady() {
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionTopicReady)
 }
 
-// MarkTopicOperating sets the condition that the topic is being created.
-func (cs *ChannelStatus) MarkTopicOperating(reason, messageFormat string, messageA ...interface{}) {
-	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionTopicReady, reason, messageFormat, messageA...)
+func (cs *ChannelStatus) PropagateTopicStatus(ready *apis.Condition) {
+	switch {
+	case ready == nil:
+		cs.MarkNoTopic("TopicNotReady", "Topic has no Ready type status")
+	case ready.IsTrue():
+		cs.MarkTopicReady()
+	case ready.IsFalse():
+		cs.MarkNoTopic(ready.Reason, ready.Message)
+	}
 }
 
 // MarkNoTopic sets the condition that signals there is not a topic for this

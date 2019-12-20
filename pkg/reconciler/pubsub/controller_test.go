@@ -22,23 +22,15 @@ import (
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
-
-	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/pubsub/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
-	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
-	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
 )
 
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewController(ctx, configmap.NewStaticWatcher())
+	c := NewPubSubBase(ctx, "test-controller", "test-ra", configmap.NewStaticWatcher())
 
 	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
+		t.Fatal("Expected NewPubSubBase to return a non-nil value")
 	}
 }

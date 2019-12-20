@@ -24,28 +24,28 @@ import (
 
 // GetCondition returns the condition currently associated with the given type, or nil.
 func (ps *PubSubStatus) GetCondition(t apis.ConditionType) *apis.Condition {
-	return PubSubCondSet.Manage(ps).GetCondition(t)
+	return pubSubCondSet.Manage(ps).GetCondition(t)
 }
 
 // IsReady returns true if the resource is ready overall.
 func (ps *PubSubStatus) IsReady() bool {
-	return PubSubCondSet.Manage(ps).IsHappy()
+	return pubSubCondSet.Manage(ps).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (ps *PubSubStatus) InitializeConditions() {
-	PubSubCondSet.Manage(ps).InitializeConditions()
+	pubSubCondSet.Manage(ps).InitializeConditions()
 }
 
 // MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
 // source is not ready and why.
 func (ps *PubSubStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
-	PubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
 func (ps *PubSubStatus) MarkPullSubscriptionReady() {
-	PubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
+	pubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {

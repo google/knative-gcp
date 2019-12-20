@@ -40,18 +40,18 @@ type Scheduler struct {
 }
 
 var (
-	_ apis.Validatable             = (*Storage)(nil)
-	_ apis.Defaultable             = (*Storage)(nil)
-	_ runtime.Object               = (*Storage)(nil)
-	_ kmeta.OwnerRefable           = (*Storage)(nil)
-	_ resourcesemantics.GenericCRD = (*Storage)(nil)
+	_ apis.Validatable             = (*Scheduler)(nil)
+	_ apis.Defaultable             = (*Scheduler)(nil)
+	_ runtime.Object               = (*Scheduler)(nil)
+	_ kmeta.OwnerRefable           = (*Scheduler)(nil)
+	_ resourcesemantics.GenericCRD = (*Scheduler)(nil)
 )
 
 // SchedulerSpec is the spec for a Scheduler resource
 type SchedulerSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Location where to create the Job in.
 	Location string `json:"location"`
@@ -81,7 +81,7 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 type SchedulerStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubStatus
+	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// JobName is the name of the created scheduler Job on success.
 	// +optional
@@ -105,7 +105,7 @@ func (s *Scheduler) PubSubStatus() *duckv1alpha1.PubSubStatus {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Scheduler) ConditionSet() *apis.ConditionSet {
-	return &StorageCondSet
+	return &schedulerCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -1,17 +1,14 @@
-# Cloud Pub/Sub PullSubscription
+# PullSubscription Example
 
-This sample shows how to configure the Cloud Pub/Sub Pull Subscription. This
-event source is most useful as a bridge from other Google Cloud services from a
-Pub/Sub topic, such as
-[Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications),
-[IoT Core](https://cloud.google.com/iot/docs/how-tos/devices) and
-[Cloud Scheduler](https://cloud.google.com/scheduler/docs/creating#).
+This sample shows how to configure `PullSubscriptions`. This
+can be considered an implementation detail of the [PubSub Source](../pubsub/README.md), and users should rather 
+use the latter if they want to bridge events from other Google Cloud services using Pub/Sub into their clusters.
 
 ## Prerequisites
 
-1. [Create a Pub/Sub enabled Service Account](../pubsub)
+1. [Install Knative with GCP](../install/README.md).
 
-1. [Install Knative with GCP](../install).
+1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
 
 ## Deployment
 
@@ -40,10 +37,10 @@ Pub/Sub topic, such as
    kubectl apply --filename pullsubscription.yaml
    ```
 
-1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
-   project, uncomment and replace the
-   [`MY_PROJECT` placeholder](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
-   in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it.
+1. **[Optional]** If you are not using GKE, or want to use a Pub/Sub topic from another
+   project, uncomment and replace the `MY_PROJECT` placeholder in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it. 
+   Note that the Service Account during the [installation](../install/README.md) step should be able to manage
+   [multiple projects](../install/managing-multiple-projects.md).
 
    If you're in the pullsubscription directory, you can replace `MY_PROJECT` and
    `TOPIC_NAME` and then apply in one command:
@@ -61,7 +58,7 @@ Pub/Sub topic, such as
    kubectl apply --filename pullsubscription.yaml
    ```
 
-1. Create a service that the Pub/Sub Subscription will sink into:
+1. Create a [service](./event-display.yaml) that the `PullSubscription` will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -78,7 +75,7 @@ gcloud pubsub topics publish testing --message='{"Hello": "world"}'
 ## Verify
 
 We will verify that the published message was sent by looking at the logs of the
-service that this PullSubscription sinks to.
+service that this `PullSubscription` sinks to.
 
 1. We need to wait for the downstream pods to get started and receive our event,
    wait 60 seconds.
@@ -108,48 +105,44 @@ Validation: valid
    source: //pubsub.googleapis.com/PROJECT_ID/topics/TOPIC_NAME
    id: 9f9b0968-a15f-4e74-ac58-e8a1c4fa587d
    time: 2019-06-10T17:52:36.73Z
-   contenttype: application/json
+   contenttype: application/octet-stream
  Data,
    {
      "Hello": "world"
    }
 ```
 
-For more information about the format of the `Data,` second of the message, see
-the `data` field of
-[PubsubMessage documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage).
+For more information about the format of the `Data` see the `data` field of
+[PubsubMessage documentation](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage). 
 
-For more information about CloudEvents, see the
-[HTTP transport bindings documentation](https://github.com/cloudevents/spec).
+## What's next
 
-## What's Next
-
-The Pub/Sub PullSubscription implements what Knative Eventing considers to be a
-`source`. This component can work alone, but it also works well when
-[Knative Serving and Eventing](https://github.com/knative/docs) are installed in
-the cluster.
+1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-1. Delete the Pub/Sub PullSubscription:
+1. Delete the `PullSubscription`
 
-If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and
-delete in one command:
-
-```shell
- sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
-     kubectl delete --filename -
-```
-
-If you are replaced `TOPIC_NAME` manually, then make sure you delete the
-resulting YAML:
-
-```shell
-kubectl apply --filename pullsubscription.yaml
-```
+    If you're in the pullsubscription directory, you can replace `TOPIC_NAME` and
+    delete in one command:
+    
+    ```shell
+     sed "s/\TOPIC_NAME/$TOPIC_NAME/g" pullsubscription.yaml | \
+         kubectl delete --filename -
+    ```
+    
+    If you replaced `TOPIC_NAME` manually, then make sure you delete the
+    resulting YAML:
+    
+    ```shell
+    kubectl delete --filename pullsubscription.yaml
+    ```
 
 1. Delete the service used as the sink:
 
-```shell
-kubectl delete --filename event-display.yaml
-```
+    ```shell
+    kubectl delete --filename event-display.yaml
+    ```

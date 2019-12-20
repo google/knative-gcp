@@ -106,37 +106,68 @@ func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubs
 	}
 }
 
+func WithPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.Transformer = &duckv1.Destination{
+			Ref: &corev1.ObjectReference{
+				APIVersion: apiVersion(gvk),
+				Kind:       gvk.Kind,
+				Name:       name,
+			},
+		}
+	}
+}
+
 func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSink(uri)
 	}
 }
 
-func WithPullSubscriptionSubscription(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionMarkTransformer(uri string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscribed()
+		s.Status.MarkTransformer(uri)
+	}
+}
+
+func WithPullSubscriptionMarkNoTransformer(reason, message string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkNoTransformer(reason, message)
+	}
+}
+
+func WithPullSubscriptionMarkSubscribed(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkSubscribed(subscriptionID)
+	}
+}
+
+func WithPullSubscriptionSubscriptionID(subscriptionID string) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
 		s.Status.SubscriptionID = subscriptionID
 	}
 }
 
-func WithPullSubscriptionMarkSubscribing(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionProjectID(projectID string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscriptionOperation("Creating", "Created Job to create Subscription %q.", subscriptionID)
-		s.Status.SubscriptionID = subscriptionID
+		s.Status.ProjectID = projectID
 	}
 }
 
-func WithPullSubscriptionMarkUnsubscribing(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionTransformerURI(uri string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkSubscriptionOperation("Deleting", "Created Job to delete Subscription %q.", subscriptionID)
+		s.Status.TransformerURI = uri
 	}
 }
 
-func WithPullSubscriptionMarkNoSubscription(subscriptionID string) PullSubscriptionOption {
+func WithPullSubscriptionMarkNoSubscription(reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Status.MarkNoSubscription("Deleted", "Successfully deleted Subscription %q.", subscriptionID)
-		s.Status.SubscriptionID = ""
+		s.Status.MarkNoSubscription(reason, message)
 	}
+}
+
+func WithPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
+	ps.Status.MarkDeployed()
 }
 
 func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
@@ -158,15 +189,9 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
 		s.Status.MarkDeployed()
-		s.Status.MarkSubscribed()
+		s.Status.MarkSubscribed("subID")
 	}
 }
-
-//func WithPullSubscriptionProjectResolved(projectID string) PullSubscriptionOption {
-//	return func(s *v1alpha1.PullSubscription) {
-//		s.Status.ProjectID = projectID
-//	}
-//}
 
 func WithPullSubscriptionJobFailure(subscriptionID, reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {

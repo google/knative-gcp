@@ -53,7 +53,7 @@ var (
 type StorageSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account
 	// as which the underlying K8s resources should be run. If unspecified
@@ -103,7 +103,7 @@ func StorageEventSource(bucket string) string {
 	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
-var StorageCondSet = apis.NewLivingConditionSet(
+var storageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 	duckv1alpha1.TopicReady,
 	NotificationReady)
@@ -112,7 +112,7 @@ var StorageCondSet = apis.NewLivingConditionSet(
 type StorageStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
-	duckv1alpha1.PubSubStatus
+	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
@@ -137,7 +137,7 @@ func (s *Storage) PubSubStatus() *duckv1alpha1.PubSubStatus {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Storage) ConditionSet() *apis.ConditionSet {
-	return &StorageCondSet
+	return &storageCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

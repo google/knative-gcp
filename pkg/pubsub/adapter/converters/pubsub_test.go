@@ -25,7 +25,7 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 func TestConvertPubSub(t *testing.T) {

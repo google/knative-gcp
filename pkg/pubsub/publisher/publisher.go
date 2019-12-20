@@ -47,14 +47,14 @@ func (a *Publisher) Start(ctx context.Context) error {
 	// Receive events on HTTP.
 	if a.inbound == nil {
 		if a.inbound, err = kncloudevents.NewDefaultClient(); err != nil {
-			return fmt.Errorf("failed to create inbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create inbound cloudevent client: %w", err)
 		}
 	}
 
 	// Send Events on Pub/Sub.
 	if a.outbound == nil {
 		if a.outbound, err = a.newPubSubClient(ctx); err != nil {
-			return fmt.Errorf("failed to create outbound cloudevent client: %s", err.Error())
+			return fmt.Errorf("failed to create outbound cloudevent client: %w", err)
 		}
 	}
 

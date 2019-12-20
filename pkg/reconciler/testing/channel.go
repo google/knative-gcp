@@ -86,10 +86,15 @@ func WithChannelTopic(topicID string) ChannelOption {
 	}
 }
 
-func WithChannelMarkTopicCreating(topicID string) ChannelOption {
+func WithChannelTopicID(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
-		s.Status.MarkTopicOperating("", "")
 		s.Status.TopicID = topicID
+	}
+}
+
+func WithChannelNoTopic(reason, message string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Status.MarkNoTopic(reason, message)
 	}
 }
 

@@ -52,7 +52,7 @@ var _ = duck.VerifyType(&PubSub{}, &duckv1.Conditions{})
 type PubSubSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
-	duckv1alpha1.PubSubSpec
+	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
 	// be in the form of the unique identifier within the project, not the
@@ -116,14 +116,14 @@ const (
 	PubSubConditionReady = apis.ConditionReady
 )
 
-var PubSubCondSet = apis.NewLivingConditionSet(
+var pubSubCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 )
 
 // PubSubStatus defines the observed state of PubSub.
 type PubSubStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1.SourceStatus
+	duckv1.SourceStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -149,5 +149,5 @@ func (ps *PubSub) PubSubSpec() *duckv1alpha1.PubSubSpec {
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (ps *PubSub) ConditionSet() *apis.ConditionSet {
-	return &PubSubCondSet
+	return &pubSubCondSet
 }

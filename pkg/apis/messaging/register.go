@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package events contains Cloud Run Events API versions
+// Package messaging contains Cloud Run Events API versions for messaging components
 package messaging
 
 const (

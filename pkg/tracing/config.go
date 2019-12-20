@@ -34,7 +34,7 @@ func JSONToConfig(jsonConfig string) (*tracingconfig.Config, error) {
 	}
 
 	if err := json.Unmarshal([]byte(jsonConfig), &cfg); err != nil {
-		return nil, fmt.Errorf("unmarshaling tracing config json: %v", err)
+		return nil, fmt.Errorf("unmarshaling tracing config json: %w", err)
 	}
 
 	return &cfg, nil

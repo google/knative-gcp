@@ -74,14 +74,13 @@ func TestTopicStatusIsReady(t *testing.T) {
 		}(),
 		want: false,
 	}, {
-		name: "mark not deployed then deploying then deployed",
+		name: "mark not deployed then deployed",
 		s: func() *TopicStatus {
 			s := &TopicStatus{}
 			s.InitializeConditions()
 			s.MarkTopicReady()
 			s.SetAddress(&apis.URL{})
 			s.MarkNotDeployed("MarkNotDeployed", "")
-			s.MarkDeploying("MarkDeploying", "")
 			s.MarkDeployed()
 			return s
 		}(),
@@ -159,21 +158,6 @@ func TestTopicStatusGetCondition(t *testing.T) {
 		want: &apis.Condition{
 			Type:    TopicConditionTopicExists,
 			Status:  corev1.ConditionFalse,
-			Reason:  "reason",
-			Message: "message",
-		},
-	}, {
-		name: "mark topic operating",
-		s: func() *TopicStatus {
-			s := &TopicStatus{}
-			s.InitializeConditions()
-			s.MarkTopicOperating("reason", "%s", "message")
-			return s
-		}(),
-		condQuery: TopicConditionTopicExists,
-		want: &apis.Condition{
-			Type:    TopicConditionTopicExists,
-			Status:  corev1.ConditionUnknown,
 			Reason:  "reason",
 			Message: "message",
 		},
