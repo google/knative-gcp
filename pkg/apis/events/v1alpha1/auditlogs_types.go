@@ -71,12 +71,12 @@ type AuditLogsSourceSpec struct {
 }
 
 type AuditLogsSourceStatus struct {
-	duckv1alpha1.PubSubStatus
+	duckv1alpha1.PubSubStatus `json:",inline"`
 
-	SinkID string
+	// ID of the Stackdriver sink used to publish audit log messages.
+	SinkID string `json:"sinkId,omitempty"`
 }
 
-// GetGroupVersionKind ...
 func (*AuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("AuditLogsSource")
 }
