@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
@@ -38,7 +39,9 @@ type AuditLogsSource struct {
 }
 
 var (
-	_ runtime.Object = (*AuditLogsSource)(nil)
+	_ apis.Defaultable   = (*AuditLogsSource)(nil)
+	_ runtime.Object     = (*AuditLogsSource)(nil)
+	_ kmeta.OwnerRefable = (*AuditLogsSource)(nil)
 )
 
 const (
@@ -53,7 +56,6 @@ var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 
 type AuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// The AuditLogsSource will pull events matching the following
