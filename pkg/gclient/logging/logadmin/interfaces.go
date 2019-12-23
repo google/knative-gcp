@@ -20,16 +20,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/logging/logadmin"
-	"google.golang.org/api/option"
 )
-
-// CreateFn is a factory function to create a logadmin client.
-// Matches the signature of https://godoc.org/cloud.google.com/go/logging/logadmin#NewClient.
-type CreateFn func(ctx context.Context, parent string, opts ...option.ClientOption) (Client, error)
-
-func NewClient(ctx context.Context, parent string, opts ...option.ClientOption) (Client, error) {
-	return logadmin.NewClient(ctx, parent, opts...)
-}
 
 // Client matches the interface exposed by logadmin.Client
 // see https://godoc.org/cloud.google.com/go/logging/logadmin#Client
