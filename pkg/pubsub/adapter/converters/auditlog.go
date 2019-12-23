@@ -54,6 +54,7 @@ var (
 	jsonpbMarshaler = jsonpb.Marshaler{}
 )
 
+// Resolver function type that can be used to resolve Any fields in a jsonpb.Unmarshaler.
 type resolver func(turl string) (proto.Message, error)
 
 func (r resolver) Resolve(turl string) (proto.Message, error) {
@@ -74,6 +75,7 @@ func (m *UnknownMsg) String() string {
 	return "Unknown message"
 }
 
+// Resolver type which resolves unknown message types to empty.Empty.
 func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	// Only the part of typeUrl after the last slash is relevant.
 	mname := typeURL

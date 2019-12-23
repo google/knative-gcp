@@ -59,7 +59,7 @@ type Adapter struct {
 	// Environment variable containing the transformer URI.
 	Transformer string `envconfig:"TRANSFORMER_URI"`
 
-	// Environment variable containing the event type to emit.
+	// Environment variable specifying the type of adapter to use.
 	AdapterType string `envconfig:"ADAPTER_TYPE"`
 
 	// Topic is the environment variable containing the PubSub Topic being
