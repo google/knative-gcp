@@ -80,14 +80,14 @@ type sinkMap struct {
 	sinks map[string]logadmin.Sink
 }
 
-// testClient is the test Scheduler client.
+// testClient is the test logadmin client.
 type testClient struct {
 	sinks  *sinkMap
 	data   TestClientConfiguration
 	closed bool
 }
 
-// Verify that it satisfies the scheduler.Client interface.
+// Verify that it satisfies the logadmin.Client interface.
 var _ glogadmin.Client = &testClient{}
 
 // Close implements client.Close

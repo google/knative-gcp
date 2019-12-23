@@ -57,5 +57,6 @@ type Topic interface {
 	Exists(ctx context.Context) (bool, error)
 	// Delete see https://godoc.org/cloud.google.com/go/pubsub#Topic.Delete
 	Delete(ctx context.Context) error
+	// IAM see https://godoc.org/cloud.google.com/go/pubsub#Topic.IAM
 	IAM() iam.Handle
 }
