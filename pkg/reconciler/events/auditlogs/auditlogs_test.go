@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cloudauditlog
+package auditlogs
 
 import (
 	"context"
@@ -47,14 +47,14 @@ import (
 )
 
 const (
-	calName           = "test-cloudauditlog"
-	calUID            = "test-cloudauditlog-uid"
+	sourceName        = "test-auditlogssource"
+	sourceUID         = "test-auditlogssource-uid"
 	testNS            = "testnamespace"
 	testProject       = "test-project-id"
-	testTopicID       = "cloudauditlog-" + calUID
+	testTopicID       = "auditlogssource-" + sourceUID
 	testTopicResource = "pubsub.googleapis.com/projects/" + testProject + "/topics/" + testTopicID
-	testTopicURI      = "http://" + calName + "-topic." + testNS + ".svc.cluster.local"
-	testSinkID        = "sink-" + calUID
+	testTopicURI      = "http://" + sourceName + "-topic." + testNS + ".svc.cluster.local"
+	testSinkID        = "sink-" + sourceUID
 
 	testServiceName = "test-service"
 	testMethodName  = "test-method"
@@ -64,8 +64,8 @@ const (
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI  = "http://" + sinkDNS + "/"
 
-	topicNotReadyMsg            = `Topic "test-cloudauditlog" not ready`
-	pullSubscriptionNotReadyMsg = `PullSubscription "test-cloudauditlog" not ready`
+	topicNotReadyMsg            = `Topic "test-auditlogssource" not ready`
+	pullSubscriptionNotReadyMsg = `PullSubscription "test-auditlogssource" not ready`
 	failedToCreateSinkMsg       = `failed to ensure creation of logging sink`
 	failedToSetPermissionsMsg   = `failed to ensure sink has pubsub.publisher permission on source topic`
 	failedToDeleteSinkMsg       = `Failed to delete Stackdriver sink`
@@ -88,10 +88,10 @@ var (
 	}
 )
 
-func calOwnerRef(name string, uid types.UID) metav1.OwnerReference {
+func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
 	return metav1.OwnerReference{
 		APIVersion:         "events.cloud.google.com/v1alpha1",
-		Kind:               "CloudAuditLog",
+		Kind:               "AuditLogsSource",
 		Name:               name,
 		UID:                uid,
 		Controller:         &trueVal,
@@ -121,137 +121,137 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS),
+			NewAuditLogsSource(sourceName, testNS),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicNotReady("TopicNotReady", topicNotReadyMsg)),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicNotReady("TopicNotReady", topicNotReadyMsg)),
 		}},
 		WantCreates: []runtime.Object{
-			NewTopic(calName, testNS,
+			NewTopic(sourceName, testNS,
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Topic:             "cloudauditlog-" + calUID,
+					Topic:             "auditlogssource-" + sourceUID,
 					PropagationPolicy: "CreateDelete",
 				}),
 				WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
 				}),
-				WithTopicOwnerReferences([]metav1.OwnerReference{calOwnerRef(calName, calUID)}),
+				WithTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", sourceName),
 		},
 	}, {
 		Name: "topic exists, topic not ready",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS),
+			NewTopic(sourceName, testNS,
 				WithTopicTopicID(testTopicID),
 			),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicNotReady("TopicNotReady", topicNotReadyMsg)),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicNotReady("TopicNotReady", topicNotReadyMsg)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicNotReady("TopicNotReady", `Topic "test-cloudauditlog" did not expose projectid`),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose projectid`),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose projectid", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose projectid", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicNotReady("TopicNotReady", `Topic "test-cloudauditlog" did not expose topicid`),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose topicid`),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose topicid", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose topicid", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS),
+			NewTopic(sourceName, testNS,
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicNotReady("TopicNotReady", `Topic "test-cloudauditlog" mismatch: expected "cloudauditlog-test-cloudauditlog-uid" got "garbaaaaage"`),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `Topic %q mismatch: expected "cloudauditlog-test-cloudauditlog-uid" got "garbaaaaage"`, calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", `Topic %q mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`, sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
 					Topic:       testTopicID,
 					Secret:      &secret,
-					AdapterType: converters.CloudAuditLogAdapterType,
+					AdapterType: converters.AuditLogAdapterType,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
@@ -260,51 +260,51 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
 				}),
-				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{calOwnerRef(calName, calUID)}),
+				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS),
 		},
-		Key:     testNS + "/" + calName,
+		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", calName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", sourceName),
 		},
 	}, {
 		Name: "logging client create fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"logadmin": glogadmintesting.TestClientConfiguration{
 				CreateClientErr: errors.New("create-client-induced-error"),
@@ -315,30 +315,30 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "get sink fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"logadmin": glogadmintesting.TestClientConfiguration{
 				SinkErr: errors.New("create-client-induced-error"),
@@ -349,30 +349,30 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "create sink fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"logadmin": glogadmintesting.TestClientConfiguration{
 				CreateSinkErr: errors.New("create-client-induced-error"),
@@ -383,30 +383,30 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkCreateFailed", "%s: %s", failedToCreateSinkMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "sink created, pubsub client create fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"pubsub": gpubsub.TestClientData{
 				CreateClientErr: errors.New("create-client-induced-error"),
@@ -417,33 +417,33 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "sink created, get pubsub IAM policy fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"pubsub": gpubsub.TestClientData{
 				HandleData: testiam.TestHandleData{
@@ -462,35 +462,35 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "sink created, set pubsub IAM policy fails",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"pubsub": gpubsub.TestClientData{
 				HandleData: testiam.TestHandleData{
@@ -509,35 +509,35 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
 		Name: "sink created",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"expectedSinks": map[string]*logadmin.Sink{
 				testSinkID: {
@@ -547,36 +547,36 @@ func TestAllCases(t *testing.T) {
 				}},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLog %q", calName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogServiceName(testServiceName),
-				WithCloudAuditLogMethodName(testMethodName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkReady(),
-				WithCloudAuditLogSinkID(testSinkID),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceServiceName(testServiceName),
+				WithAuditLogsSourceMethodName(testMethodName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkReady(),
+				WithAuditLogsSourceSinkID(testSinkID),
 			),
 		}},
 	}, {
 		Name: "sink exists",
 		Objects: []runtime.Object{
-			NewCloudAuditLog(calName, testNS, WithCloudAuditLogSink(sinkGVK, sinkName)),
-			NewTopic(calName, testNS,
+			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(calName, testNS,
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionReady(sinkURI),
 			),
 		},
-		Key: testNS + "/" + calName,
+		Key: testNS + "/" + sourceName,
 		OtherTestData: map[string]interface{}{
 			"existingSinks": []logadmin.Sink{{
 				ID:          testSinkID,
@@ -591,18 +591,18 @@ func TestAllCases(t *testing.T) {
 				}},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLog %q", calName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLog(calName, testNS,
-				WithCloudAuditLogSink(sinkGVK, sinkName),
-				WithCloudAuditLogProjectID(testProject),
-				WithInitCloudAuditLogConditions,
-				WithCloudAuditLogTopicReady(testTopicID),
-				WithCloudAuditLogPullSubscriptionReady(),
-				WithCloudAuditLogSinkURI(calSinkURL),
-				WithCloudAuditLogSinkReady(),
-				WithCloudAuditLogSinkID(testSinkID),
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkReady(),
+				WithAuditLogsSourceSinkID(testSinkID),
 			),
 		}},
 	}}
@@ -617,8 +617,8 @@ func TestAllCases(t *testing.T) {
 			tt.Test(t, MakeFactory(
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					return &Reconciler{
-						PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogAdapterType, cmw),
-						cloudauditlogLister:    listers.GetCloudAuditLogLister(),
+						PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, converters.AuditLogAdapterType, cmw),
+						auditLogsSourceLister:  listers.GetAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),
 					}

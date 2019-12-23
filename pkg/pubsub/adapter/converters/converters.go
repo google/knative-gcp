@@ -52,7 +52,7 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
-		CloudAuditLogAdapterType:   convertCloudAuditLog,
+		AuditLogAdapterType:        convertAuditLog,
 		"com.google.cloud.storage": convertStorage,
 	}
 }

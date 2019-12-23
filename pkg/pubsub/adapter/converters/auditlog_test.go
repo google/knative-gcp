@@ -38,7 +38,7 @@ var (
 	}
 )
 
-func TestConvertCloudAuditLog(t *testing.T) {
+func TestConvertAuditLog(t *testing.T) {
 	ctx := pubsubcontext.WithTransportContext(context.Background(), tctx)
 	auditLog := auditpb.AuditLog{
 		ServiceName:  "test-service-name",
@@ -65,7 +65,7 @@ func TestConvertCloudAuditLog(t *testing.T) {
 		Data: buf.Bytes(),
 	}
 
-	e, err := convertCloudAuditLog(ctx, &msg, "")
+	e, err := convertAuditLog(ctx, &msg, "")
 
 	if err != nil {
 		t.Errorf("conversion failed: %v", err)

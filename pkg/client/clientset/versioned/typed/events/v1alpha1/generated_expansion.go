@@ -18,7 +18,7 @@ limitations under the License.
 
 package v1alpha1
 
-type CloudAuditLogExpansion interface{}
+type AuditLogsSourceExpansion interface{}
 
 type PubSubExpansion interface{}
 

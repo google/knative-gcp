@@ -23,7 +23,7 @@ metadata:
     registry.cloud.google.com/eventTypes: |
       [
       ]
-  name: cloudauditlogs.events.cloud.google.com
+  name: auditlogssources.events.cloud.google.com
 spec:
   group: events.cloud.google.com
   version: v1alpha1
@@ -31,9 +31,9 @@ spec:
     categories:
     - all
     - knative
-    - cloudauditlog
-    kind: CloudAuditLog
-    plural: cloudauditlogs
+    - auditlogssource
+    kind: AuditLogsSource
+    plural: auditlogssources
   scope: Namespaced
   subresources:
     status: {}

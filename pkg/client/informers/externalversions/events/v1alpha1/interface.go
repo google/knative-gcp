@@ -24,8 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// CloudAuditLogs returns a CloudAuditLogInformer.
-	CloudAuditLogs() CloudAuditLogInformer
+	// AuditLogsSources returns a AuditLogsSourceInformer.
+	AuditLogsSources() AuditLogsSourceInformer
 	// PubSubs returns a PubSubInformer.
 	PubSubs() PubSubInformer
 	// Schedulers returns a SchedulerInformer.
@@ -45,9 +45,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// CloudAuditLogs returns a CloudAuditLogInformer.
-func (v *version) CloudAuditLogs() CloudAuditLogInformer {
-	return &cloudAuditLogInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// AuditLogsSources returns a AuditLogsSourceInformer.
+func (v *version) AuditLogsSources() AuditLogsSourceInformer {
+	return &auditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // PubSubs returns a PubSubInformer.

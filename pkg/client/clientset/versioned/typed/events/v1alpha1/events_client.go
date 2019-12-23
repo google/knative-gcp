@@ -26,7 +26,7 @@ import (
 
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	CloudAuditLogsGetter
+	AuditLogsSourcesGetter
 	PubSubsGetter
 	SchedulersGetter
 	StoragesGetter
@@ -37,8 +37,8 @@ type EventsV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *EventsV1alpha1Client) CloudAuditLogs(namespace string) CloudAuditLogInterface {
-	return newCloudAuditLogs(c, namespace)
+func (c *EventsV1alpha1Client) AuditLogsSources(namespace string) AuditLogsSourceInterface {
+	return newAuditLogsSources(c, namespace)
 }
 
 func (c *EventsV1alpha1Client) PubSubs(namespace string) PubSubInterface {

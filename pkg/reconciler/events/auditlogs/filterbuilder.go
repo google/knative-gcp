@@ -1,4 +1,4 @@
-package cloudauditlog
+package auditlogs
 
 import (
 	"fmt"
@@ -52,7 +52,7 @@ func (fb *FilterBuilder) GetFilterQuery() string {
 }
 
 type filter struct {
-	key  string
+	key   string
 	value string
 }
 

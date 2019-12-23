@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cloudauditlog
+package auditlogs
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ import (
 	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlog/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/auditlogssource/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"

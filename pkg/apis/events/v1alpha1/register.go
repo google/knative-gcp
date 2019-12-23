@@ -45,8 +45,8 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&CloudAuditLog{},
-		&CloudAuditLogList{},
+		&AuditLogsSource{},
+		&AuditLogsSourceList{},
 		&Storage{},
 		&StorageList{},
 		&Scheduler{},

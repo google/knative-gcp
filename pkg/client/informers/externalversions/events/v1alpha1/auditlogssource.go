@@ -31,59 +31,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// CloudAuditLogInformer provides access to a shared informer and lister for
-// CloudAuditLogs.
-type CloudAuditLogInformer interface {
+// AuditLogsSourceInformer provides access to a shared informer and lister for
+// AuditLogsSources.
+type AuditLogsSourceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.CloudAuditLogLister
+	Lister() v1alpha1.AuditLogsSourceLister
 }
 
-type cloudAuditLogInformer struct {
+type auditLogsSourceInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewCloudAuditLogInformer constructs a new informer for CloudAuditLog type.
+// NewAuditLogsSourceInformer constructs a new informer for AuditLogsSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewCloudAuditLogInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredCloudAuditLogInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewAuditLogsSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredAuditLogsSourceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredCloudAuditLogInformer constructs a new informer for CloudAuditLog type.
+// NewFilteredAuditLogsSourceInformer constructs a new informer for AuditLogsSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredCloudAuditLogInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredAuditLogsSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().CloudAuditLogs(namespace).List(options)
+				return client.EventsV1alpha1().AuditLogsSources(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().CloudAuditLogs(namespace).Watch(options)
+				return client.EventsV1alpha1().AuditLogsSources(namespace).Watch(options)
 			},
 		},
-		&eventsv1alpha1.CloudAuditLog{},
+		&eventsv1alpha1.AuditLogsSource{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *cloudAuditLogInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredCloudAuditLogInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *auditLogsSourceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredAuditLogsSourceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *cloudAuditLogInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventsv1alpha1.CloudAuditLog{}, f.defaultInformer)
+func (f *auditLogsSourceInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&eventsv1alpha1.AuditLogsSource{}, f.defaultInformer)
 }
 
-func (f *cloudAuditLogInformer) Lister() v1alpha1.CloudAuditLogLister {
-	return v1alpha1.NewCloudAuditLogLister(f.Informer().GetIndexer())
+func (f *auditLogsSourceInformer) Lister() v1alpha1.AuditLogsSourceLister {
+	return v1alpha1.NewAuditLogsSourceLister(f.Informer().GetIndexer())
 }

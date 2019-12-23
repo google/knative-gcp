@@ -23,14 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestCloudAuditLogGetGroupVersionKind(t *testing.T) {
+func TestAuditLogsGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
-		Kind:    "CloudAuditLog",
+		Kind:    "AuditLogsSource",
 	}
 
-	c := &CloudAuditLog{}
+	c := &AuditLogsSource{}
 
 	got := c.GetGroupVersionKind()
 

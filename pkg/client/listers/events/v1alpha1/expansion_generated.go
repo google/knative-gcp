@@ -18,13 +18,13 @@ limitations under the License.
 
 package v1alpha1
 
-// CloudAuditLogListerExpansion allows custom methods to be added to
-// CloudAuditLogLister.
-type CloudAuditLogListerExpansion interface{}
+// AuditLogsSourceListerExpansion allows custom methods to be added to
+// AuditLogsSourceLister.
+type AuditLogsSourceListerExpansion interface{}
 
-// CloudAuditLogNamespaceListerExpansion allows custom methods to be added to
-// CloudAuditLogNamespaceLister.
-type CloudAuditLogNamespaceListerExpansion interface{}
+// AuditLogsSourceNamespaceListerExpansion allows custom methods to be added to
+// AuditLogsSourceNamespaceLister.
+type AuditLogsSourceNamespaceListerExpansion interface{}
 
 // PubSubListerExpansion allows custom methods to be added to
 // PubSubLister.

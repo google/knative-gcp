@@ -38,12 +38,12 @@ import (
 )
 
 const (
-	CloudAuditLogAdapterType = "google.cloudauditlog"
+	AuditLogAdapterType = "google.auditlog"
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	auditLogSchema = "type.googleapis.com/google.cloud.audit.AuditLog"
 	loggingSource  = "logging.googleapis.com"
-	EventType = "AuditLog"
+	EventType      = "AuditLog"
 )
 
 var (
@@ -87,7 +87,7 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
-func convertCloudAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	logger := logging.FromContext(ctx)
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")

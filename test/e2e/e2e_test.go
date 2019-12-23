@@ -38,7 +38,7 @@ import (
 var packages = []string{
 	"github.com/google/knative-gcp/test/cmd/target",
 	"github.com/google/knative-gcp/test/cmd/storage_target",
-	"github.com/google/knative-gcp/test/cmd/cloudauditlog_target",
+	"github.com/google/knative-gcp/test/cmd/auditlogs_target",
 	"github.com/google/knative-gcp/test/cmd/sender",
 	"github.com/google/knative-gcp/test/cmd/receiver",
 }
@@ -180,9 +180,9 @@ func TestStorageStackDriverMetrics(t *testing.T) {
 	StorageWithTestImpl(t, packageToImageConfig, true /*assertMetrics */)
 }
 
-// TestCloudAuditLog tests we can knock down a target from a CloudAuditLog.
-func TestCloudAuditLog(t *testing.T) {
+// TestAuditLogsSource tests we can knock down a target from an AuditLogsSource.
+func TestAuditLogsSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudAuditLogWithTestImpl(t, packageToImageConfig)
+	AuditLogsSourceWithTestImpl(t, packageToImageConfig)
 }

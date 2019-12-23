@@ -28,8 +28,8 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeEventsV1alpha1) CloudAuditLogs(namespace string) v1alpha1.CloudAuditLogInterface {
-	return &FakeCloudAuditLogs{c, namespace}
+func (c *FakeEventsV1alpha1) AuditLogsSources(namespace string) v1alpha1.AuditLogsSourceInterface {
+	return &FakeAuditLogsSources{c, namespace}
 }
 
 func (c *FakeEventsV1alpha1) PubSubs(namespace string) v1alpha1.PubSubInterface {

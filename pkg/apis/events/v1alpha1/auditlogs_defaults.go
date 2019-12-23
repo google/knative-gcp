@@ -24,12 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-func (cal *CloudAuditLog) SetDefaults(ctx context.Context) {
-	cal.Spec.SetDefaults(ctx)
+func (s *AuditLogsSource) SetDefaults(ctx context.Context) {
+	s.Spec.SetDefaults(ctx)
 }
 
-func (cs *CloudAuditLogSpec) SetDefaults(ctx context.Context) {
-	if cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{}) {
-		cs.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+func (s *AuditLogsSourceSpec) SetDefaults(ctx context.Context) {
+	if s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{}) {
+		s.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }

@@ -28,36 +28,36 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// CloudAuditLog is a specification for a Cloud Audit Log event source.
-type CloudAuditLog struct {
+// AuditLogsSource is a specification for a Cloud Audit Log event source.
+type AuditLogsSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CloudAuditLogSpec   `json:"spec"`
-	Status CloudAuditLogStatus `json:"status"`
+	Spec   AuditLogsSourceSpec   `json:"spec"`
+	Status AuditLogsSourceStatus `json:"status"`
 }
 
 var (
-	_ runtime.Object = (*CloudAuditLog)(nil)
+	_ runtime.Object = (*AuditLogsSource)(nil)
 )
 
 const (
 	SinkReady apis.ConditionType = "SinkReady"
 )
 
-var CloudAuditLogCondSet = apis.NewLivingConditionSet(
+var auditLogsSourceCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 	duckv1alpha1.TopicReady,
 	SinkReady,
 )
 
-type CloudAuditLogSpec struct {
+type AuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
-	// The CloudAuditLog event source will pull events matching
-	// the following parameters:
+	// The AuditLogsSource will pull events matching the following
+	// parameters:
 
 	// The GCP service providing audit logs. Required.
 	ServiceName string `json:"serviceName"`
@@ -70,38 +70,38 @@ type CloudAuditLogSpec struct {
 	ResourceName string `json:"resourceName,omitempty"`
 }
 
-type CloudAuditLogStatus struct {
+type AuditLogsSourceStatus struct {
 	duckv1alpha1.PubSubStatus
 
 	SinkID string
 }
 
 // GetGroupVersionKind ...
-func (_ *CloudAuditLog) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("CloudAuditLog")
+func (*AuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("AuditLogsSource")
 }
 
 ///Methods for pubsubable interface
 
 // PubSubSpec returns the PubSubSpec portion of the Spec.
-func (s *CloudAuditLog) PubSubSpec() *duckv1alpha1.PubSubSpec {
+func (s *AuditLogsSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &s.Spec.PubSubSpec
 }
 
 // PubSubStatus returns the PubSubStatus portion of the Status.
-func (s *CloudAuditLog) PubSubStatus() *duckv1alpha1.PubSubStatus {
+func (s *AuditLogsSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
-func (s *CloudAuditLog) ConditionSet() *apis.ConditionSet {
-	return &CloudAuditLogCondSet
+func (*AuditLogsSource) ConditionSet() *apis.ConditionSet {
+	return &auditLogsSourceCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type CloudAuditLogList struct {
+type AuditLogsSourceList struct {
 	metav1.TypeMeta
 	metav1.ListMeta
 
-	Items []CloudAuditLog `json:"items"`
+	Items []AuditLogsSource `json:"items"`
 }

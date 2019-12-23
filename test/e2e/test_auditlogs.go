@@ -37,34 +37,34 @@ const (
 	methodName  = " google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func CloudAuditLogWithTestImpl(t *testing.T, packages map[string]string) {
+func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 	project := os.Getenv(ProwProjectKey)
 
-	calName := helpers.AppendRandomString("cal-e2e-test")
-	targetName := helpers.AppendRandomString(calName + "-target")
-	topicName := helpers.AppendRandomString(calName + "-topic")
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	targetName := helpers.AppendRandomString(auditlogsName + "-target")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
 	client := Setup(t, true)
 	defer TearDown(client)
 
 	config := map[string]string{
-		"namespace":     client.Namespace,
-		"cloudauditlog": calName,
-		"serviceName":   serviceName,
-		"methodName":    methodName,
-		"resourceName":  resourceName,
-		"targetName":    targetName,
-		"targetUID":     uuid.New().String(),
-		"type":          converters.EventType,
-		"source":        serviceName,
-		"subject":       methodName,
+		"namespace":       client.Namespace,
+		"auditlogssource": auditlogsName,
+		"serviceName":     serviceName,
+		"methodName":      methodName,
+		"resourceName":    resourceName,
+		"targetName":      targetName,
+		"targetUID":       uuid.New().String(),
+		"type":            converters.EventType,
+		"source":          serviceName,
+		"subject":         methodName,
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
 	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml([]string{"cloudauditlog_test", "istio"})...)
+		EndToEndConfigYaml([]string{"auditlogs_test", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -84,7 +84,7 @@ func CloudAuditLogWithTestImpl(t *testing.T, packages map[string]string) {
 	gvr := schema.GroupVersionResource{
 		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
-		Resource: "cloudauditlogs",
+		Resource: "auditlogssources",
 	}
 
 	jobGVR := schema.GroupVersionResource{
@@ -93,11 +93,11 @@ func CloudAuditLogWithTestImpl(t *testing.T, packages map[string]string) {
 		Resource: "jobs",
 	}
 
-	if err := client.WaitForResourceReady(client.Namespace, calName, gvr); err != nil {
+	if err := client.WaitForResourceReady(client.Namespace, auditlogsName, gvr); err != nil {
 		t.Error(err)
 	}
 
-	//CAL source misses the topic which gets created shortly after CAL source becomes ready. Need to wait for a few seconds
+	//audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds
 	time.Sleep(45 * time.Second)
 	topicName, deleteTopic := makeTopicOrDieWithTopicName(t, topicName)
 	defer deleteTopic()
@@ -115,11 +115,11 @@ func CloudAuditLogWithTestImpl(t *testing.T, packages map[string]string) {
 			t.Error(err)
 		}
 		if !out.Success {
-			// Log the output cloudauditlog pods.
-			if logs, err := client.LogsFor(client.Namespace, calName, gvr); err != nil {
+			// Log the output auditlogssource pods.
+			if logs, err := client.LogsFor(client.Namespace, auditlogsName, gvr); err != nil {
 				t.Error(err)
 			} else {
-				t.Logf("cloudauditlog: %+v", logs)
+				t.Logf("auditlogssource: %+v", logs)
 			}
 			// Log the output of the target job pods.
 			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {

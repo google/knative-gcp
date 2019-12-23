@@ -21,13 +21,13 @@ package fake
 import (
 	"context"
 
-	cloudauditlog "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlog"
+	auditlogssource "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/auditlogssource"
 	fake "github.com/google/knative-gcp/pkg/client/injection/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
 
-var Get = cloudauditlog.Get
+var Get = auditlogssource.Get
 
 func init() {
 	injection.Fake.RegisterInformer(withInformer)
@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Events().V1alpha1().CloudAuditLogs()
-	return context.WithValue(ctx, cloudauditlog.Key{}, inf), inf.Informer()
+	inf := f.Events().V1alpha1().AuditLogsSources()
+	return context.WithValue(ctx, auditlogssource.Key{}, inf), inf.Informer()
 }
