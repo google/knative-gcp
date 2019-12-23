@@ -25,7 +25,15 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
-func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, adapterType string, cmw configmap.Watcher) *PubSubBase {
+func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *PubSubBase {
+	return &PubSubBase{
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		pubsubClient:       pubsubClient.Get(ctx),
+		receiveAdapterName: receiveAdapterName,
+	}
+}
+
+func NewPubSubBaseWithAdapter(ctx context.Context, controllerAgentName, receiveAdapterName string, adapterType string, cmw configmap.Watcher) *PubSubBase {
 	return &PubSubBase{
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 		pubsubClient:       pubsubClient.Get(ctx),
