@@ -31,10 +31,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	"go.uber.org/zap"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
-	"knative.dev/pkg/logging"
 )
 
 const (
@@ -90,7 +88,6 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 }
 
 func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
-	logger := logging.FromContext(ctx)
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}
@@ -98,8 +95,6 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
 		return nil, fmt.Errorf("failed to decode LogEntry: %q", err)
 	}
-	logger = logger.With(zap.Any("LogEntry.LogName", entry.LogName), zap.Any("LogEntry.Resource", entry.Resource))
-	logger.Info("Processing Stackdriver LogEntry.")
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
@@ -118,11 +113,6 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			logger = logger.With(
-				zap.Any("AuditLog.ServiceName", proto.ServiceName),
-				zap.Any("AuditLog.ResourceName", proto.ResourceName),
-				zap.Any("AuditLog.MethodName", proto.MethodName))
-			logger.Info("Processing AuditLog.")
 			event.SetSource(proto.ServiceName)
 			event.SetSubject(proto.MethodName)
 			event.SetType(EventType)
@@ -139,6 +129,5 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	default:
 		return nil, fmt.Errorf("non-AuditLog log entry")
 	}
-	logger.Debug("Created Stackdriver event: %v", event)
 	return &event, nil
 }
