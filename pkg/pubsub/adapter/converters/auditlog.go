@@ -43,7 +43,7 @@ const (
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	auditLogSchema = "type.googleapis.com/google.cloud.audit.AuditLog"
 	loggingSource  = "logging.googleapis.com"
-	EventType      = "AuditLog"
+	EventType      = "com.google.cloud.auditlog.event"
 )
 
 var (
