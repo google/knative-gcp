@@ -125,3 +125,9 @@ func WithAuditLogsSourceMethodName(methodName string) AuditLogsSourceOption {
 		s.Spec.MethodName = methodName
 	}
 }
+
+func WithAuditLogsSourceFinalizers(finalizers ...string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Finalizers = finalizers
+	}
+}

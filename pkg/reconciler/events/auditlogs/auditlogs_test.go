@@ -19,6 +19,7 @@ package auditlogs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"cloud.google.com/go/logging/logadmin"
@@ -99,6 +100,19 @@ func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
 	}
 }
 
+func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	var fname string
+	if add {
+		fname = fmt.Sprintf("%q", finalizerName)
+	}
+	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
+}
+
 // turn string into URL or terminate with t.Fatalf
 func sinkURL(t *testing.T, url string) *apis.URL {
 	u, err := apis.ParseURL(url)
@@ -142,13 +156,19 @@ func TestAllCases(t *testing.T) {
 				WithTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", sourceName),
 			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", sourceName),
 		},
 	}, {
 		Name: "topic exists, topic not ready",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicTopicID(testTopicID),
 			),
@@ -157,6 +177,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicNotReady("TopicNotReady", topicNotReadyMsg)),
 		}},
@@ -166,7 +187,9 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -176,6 +199,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose projectid`),
 			),
@@ -186,7 +210,9 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
@@ -197,6 +223,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose topicid`),
 			),
@@ -207,7 +234,9 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
@@ -218,6 +247,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`),
 			),
@@ -228,7 +258,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -239,6 +272,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -269,7 +303,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic exists and ready, pullsubscription exists but is not ready",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -281,6 +318,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -294,7 +332,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "logging client create fails",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -316,6 +357,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -328,7 +370,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "get sink fails",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -350,6 +395,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -362,7 +408,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "create sink fails",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -384,6 +433,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -396,7 +446,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "sink created, pubsub client create fails",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -418,6 +471,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
@@ -431,6 +485,7 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created, get pubsub IAM policy fails",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName)),
@@ -463,6 +518,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName),
@@ -478,6 +534,7 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created, set pubsub IAM policy fails",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName)),
@@ -510,6 +567,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName),
@@ -525,6 +583,7 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName)),
@@ -551,6 +610,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceServiceName(testServiceName),
 				WithAuditLogsSourceMethodName(testMethodName),
@@ -566,7 +626,10 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "sink exists",
 		Objects: []runtime.Object{
-			NewAuditLogsSource(sourceName, testNS, WithAuditLogsSourceSink(sinkGVK, sinkName)),
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -595,6 +658,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,

@@ -18,6 +18,7 @@ package auditlogs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -28,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	"cloud.google.com/go/logging/logadmin"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
@@ -87,6 +89,14 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// If no error is returned, mark the observed generation.
 	if reconcileErr == nil {
 		s.Status.ObservedGeneration = s.Generation
+	}
+
+	if _, updated, err := c.updateFinalizers(ctx, s); err != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update AuditLogsSource finalizers", zap.Error(err))
+		c.Recorder.Eventf(s, corev1.EventTypeWarning, "UpdateFailed", "Failed to update finalizers for AuditLogsSource %q: %v", s.Name, err)
+		return err
+	} else if updated {
+		c.Recorder.Eventf(s, corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", s.Name)
 	}
 
 	// If we didn't change anything then don't call updateStatus.
@@ -271,4 +281,54 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.AuditLo
 	}
 
 	return src, err
+}
+
+// updateFinalizers is a generic method for future compatibility with a
+// reconciler SDK.
+func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, bool, error) {
+	s, err := r.auditLogsSourceLister.AuditLogsSources(desired.Namespace).Get(desired.Name)
+	if err != nil {
+		return nil, false, err
+	}
+
+	// Don't modify the informers copy.
+	existing := s.DeepCopy()
+
+	var finalizers []string
+
+	// If there's nothing to update, just return.
+	existingFinalizers := sets.NewString(existing.Finalizers...)
+	desiredFinalizers := sets.NewString(desired.Finalizers...)
+
+	if desiredFinalizers.Has(finalizerName) {
+		if existingFinalizers.Has(finalizerName) {
+			// Nothing to do.
+			return desired, false, nil
+		}
+		// Add the finalizer.
+		finalizers = append(existing.Finalizers, finalizerName)
+	} else {
+		if !existingFinalizers.Has(finalizerName) {
+			// Nothing to do.
+			return desired, false, nil
+		}
+		// Remove the finalizer.
+		existingFinalizers.Delete(finalizerName)
+		finalizers = existingFinalizers.List()
+	}
+
+	mergePatch := map[string]interface{}{
+		"metadata": map[string]interface{}{
+			"finalizers":      finalizers,
+			"resourceVersion": existing.ResourceVersion,
+		},
+	}
+
+	patch, err := json.Marshal(mergePatch)
+	if err != nil {
+		return desired, false, err
+	}
+
+	update, err := r.RunClientSet.EventsV1alpha1().AuditLogsSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	return update, true, err
 }
