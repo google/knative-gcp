@@ -73,8 +73,8 @@ func TestConvertAuditLog(t *testing.T) {
 	if e.Source() != "test-service-name" {
 		t.Errorf("Source '%s' != 'test-service-name'", e.Source())
 	}
-	if e.Type() != "AuditLog" {
-		t.Errorf("Type '%s' != 'AuditLog'", e.Type())
+	if e.Type() != "com.google.cloud.auditlog.event" {
+		t.Errorf(`Type %q != "com.google.cloud.auditlog.event"`, e.Type())
 	}
 	if e.Subject() != "test-method-name" {
 		t.Errorf("Subject '%s' != 'test-method-name'", e.Subject())
