@@ -240,7 +240,10 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource
 	if err != nil {
 		return err
 	}
-	return logadminClient.DeleteSink(ctx, s.Status.SinkID)
+	if err = logadminClient.DeleteSink(ctx, s.Status.SinkID); status.Code(err) != codes.NotFound {
+		return err
+	}
+	return nil
 }
 
 func (c *Reconciler) ensureFinalizer(s *v1alpha1.AuditLogsSource) {

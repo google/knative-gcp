@@ -38,6 +38,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/apis"
@@ -669,6 +670,186 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceSinkID(testSinkID),
 			),
 		}},
+	}, {
+		Name: "sink delete fails",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkReady(),
+				WithAuditLogsSourceSinkID(testSinkID),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+		},
+		Key: testNS + "/" + sourceName,
+		OtherTestData: map[string]interface{}{
+			"existingSinks": []logadmin.Sink{{
+				ID:          testSinkID,
+				Filter:      testFilter,
+				Destination: testTopicResource,
+			}},
+			"expectedSinks": map[string]*logadmin.Sink{
+				testSinkID: {
+					ID:          testSinkID,
+					Filter:      testFilter,
+					Destination: testTopicResource,
+				}},
+			"logadmin": glogadmintesting.TestClientConfiguration{
+				DeleteSinkErr: errors.New("delete-sink-induced-error"),
+			},
+		},
+		WantErr: true,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "failed to delete Stackdriver sink: delete-sink-induced-error"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkNotReady("SinkDeleteFailed", "%s: %s", failedToDeleteSinkMsg, "delete-sink-induced-error"),
+				WithAuditLogsSourceSinkID(testSinkID),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+		}},
+	}, {
+		Name: "sink delete succeeds",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkReady(),
+				WithAuditLogsSourceSinkID(testSinkID),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+		},
+		Key: testNS + "/" + sourceName,
+		OtherTestData: map[string]interface{}{
+			"existingSinks": []logadmin.Sink{{
+				ID:          testSinkID,
+				Filter:      testFilter,
+				Destination: testTopicResource,
+			}},
+			"expectedSinks": map[string]*logadmin.Sink{
+				testSinkID: nil,
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
+				WithAuditLogsSourceTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
+				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+		}},
+		WantDeletes: []clientgotesting.DeleteActionImpl{
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Name: sourceName,
+			},
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Name: sourceName,
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, false),
+		},
+	}, {
+		Name: "delete succeeds, sink does not exist",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionReady(),
+				WithAuditLogsSourceSinkURI(calSinkURL),
+				WithAuditLogsSourceSinkReady(),
+				WithAuditLogsSourceSinkID(testSinkID),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPullSubscriptionReady(sinkURI),
+			),
+		},
+		Key: testNS + "/" + sourceName,
+		OtherTestData: map[string]interface{}{
+			"expectedSinks": map[string]*logadmin.Sink{
+				testSinkID: nil,
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
+				WithAuditLogsSourceTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
+				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
+				WithAuditLogsSourceDeletionTimestamp,
+			),
+		}},
+		WantDeletes: []clientgotesting.DeleteActionImpl{
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+				Name: sourceName,
+			},
+			{ActionImpl: clientgotesting.ActionImpl{
+				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+				Name: sourceName,
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, false),
+		},
 	}}
 
 	defer logtesting.ClearAll()
@@ -711,7 +892,7 @@ func expectSinks(t *testing.T, clientProvider glogadmin.CreateFn, sinks map[stri
 	}
 	for sinkID, sink := range sinks {
 		actual, err := logadminClient.Sink(context.Background(), sinkID)
-		if err != nil && !(status.Code(err) != codes.NotFound && sink == nil) {
+		if err != nil && !(status.Code(err) == codes.NotFound && sink == nil) {
 			t.Errorf("failed to get expected sink %s: %v", sinkID, err)
 		}
 		if diff := cmp.Diff(sink, actual, cmpopts.IgnoreFields(logadmin.Sink{}, "WriterIdentity")); diff != "" {

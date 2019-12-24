@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -130,4 +131,9 @@ func WithAuditLogsSourceFinalizers(finalizers ...string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
 		s.Finalizers = finalizers
 	}
+}
+
+func WithAuditLogsSourceDeletionTimestamp(s *v1alpha1.AuditLogsSource) {
+	t := metav1.NewTime(time.Unix(1e9, 0))
+	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
