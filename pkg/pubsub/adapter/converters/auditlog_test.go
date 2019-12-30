@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -30,16 +30,13 @@ import (
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 )
 
-var (
-	tctx = pubsubcontext.TransportContext{
-		ID:      "test-id",
-		Project: "test-project",
-		Topic:   "test-topic",
-	}
+const (
+	insertID = "test-insert-id"
+	logName  = "test-log-name"
+	testTs   = "2006-01-02T15:04:05Z"
 )
 
 func TestConvertAuditLog(t *testing.T) {
-	ctx := pubsubcontext.WithTransportContext(context.Background(), tctx)
 	auditLog := auditpb.AuditLog{
 		ServiceName:  "test-service-name",
 		MethodName:   "test-method-name",
@@ -50,12 +47,23 @@ func TestConvertAuditLog(t *testing.T) {
 		t.Fatalf("Failed to marshal proto payload: %v", err)
 	}
 	logEntry := logpb.LogEntry{
+		InsertId: insertID,
+		LogName:  logName,
 		Timestamp: &timestamp.Timestamp{
 			Seconds: 12345,
 		},
 		Payload: &logpb.LogEntry_ProtoPayload{
 			ProtoPayload: payload,
 		},
+	}
+	testTime, err := time.Parse(time.RFC3339, testTs)
+	if err != nil {
+		t.Fatalf("Unable to parse test timestamp: %q", err)
+	}
+	if ts, err := ptypes.TimestampProto(testTime); err != nil {
+		t.Fatalf("Invalid test timestamp: %q", err)
+	} else {
+		logEntry.Timestamp = ts
 	}
 	var buf bytes.Buffer
 	if err := new(jsonpb.Marshaler).Marshal(&buf, &logEntry); err != nil {
@@ -65,10 +73,16 @@ func TestConvertAuditLog(t *testing.T) {
 		Data: buf.Bytes(),
 	}
 
-	e, err := convertAuditLog(ctx, &msg, "")
+	e, err := convertAuditLog(context.Background(), &msg, "")
 
 	if err != nil {
 		t.Errorf("conversion failed: %v", err)
+	}
+	if e.ID() != insertID+logName+testTs {
+		t.Errorf("ID '%s' != '%s%s%s'", e.ID(), insertID, logName, testTs)
+	}
+	if !e.Time().Equal(testTime) {
+		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
 	if e.Source() != "test-service-name" {
 		t.Errorf("Source '%s' != 'test-service-name'", e.Source())

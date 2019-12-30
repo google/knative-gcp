@@ -26,7 +26,6 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -95,16 +94,16 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
 		return nil, fmt.Errorf("failed to decode LogEntry: %q", err)
 	}
-	tx := pubsubcontext.TransportContextFrom(ctx)
+
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	//TODO: Derive ID from entry
-	event.SetID(tx.ID)
+	event.SetID(entry.InsertId + entry.LogName + ptypes.TimestampString(entry.Timestamp))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
 		return nil, fmt.Errorf("invalid LogEntry timestamp: %q", err)
 	} else {
 		event.SetTime(timestamp)
 	}
+
 	switch payload := entry.Payload.(type) {
 	case *logpb.LogEntry_ProtoPayload:
 		var unpacked ptypes.DynamicAny
