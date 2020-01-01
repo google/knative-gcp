@@ -42,7 +42,7 @@ spec:
               value: {{ .subject }}
             - name: TIME
               value: "240"
-          image: {{ .auditLogs_targetImage }}
+          image: {{ .auditlogs_targetImage }}
           imagePullPolicy: Always
       restartPolicy: Never
 
