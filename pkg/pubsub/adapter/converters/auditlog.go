@@ -19,7 +19,6 @@ package converters
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -38,7 +37,6 @@ const (
 	AuditLogAdapterType = "google.auditlog"
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
-	auditLogSchema = "type.googleapis.com/google.cloud.audit.AuditLog"
 	loggingSource  = "logging.googleapis.com"
 	EventType      = "com.google.cloud.auditlog.event"
 )
@@ -103,6 +101,9 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	} else {
 		event.SetTime(timestamp)
 	}
+	event.SetData(msg.Data)
+	event.SetDataSchema(logEntrySchema)
+	event.SetDataContentType(cloudevents.ApplicationJSON)
 
 	switch payload := entry.Payload.(type) {
 	case *logpb.LogEntry_ProtoPayload:
@@ -115,13 +116,6 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 			event.SetSource(proto.ServiceName)
 			event.SetSubject(proto.MethodName)
 			event.SetType(EventType)
-			event.SetDataSchema(auditLogSchema)
-			event.SetDataContentType(cloudevents.ApplicationJSON)
-			payload, err := json.Marshal(proto)
-			if err != nil {
-				return nil, fmt.Errorf("error marshalling AuditLog payload: %v", err)
-			}
-			event.SetData(payload)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}

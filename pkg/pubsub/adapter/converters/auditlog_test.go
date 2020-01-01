@@ -26,6 +26,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/google/go-cmp/cmp"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 )
@@ -93,10 +94,16 @@ func TestConvertAuditLog(t *testing.T) {
 	if e.Subject() != "test-method-name" {
 		t.Errorf("Subject '%s' != 'test-method-name'", e.Subject())
 	}
-	t.Logf("Data: %s", e.Data)
-	var actualAuditLog auditpb.AuditLog
-	e.DataAs(&actualAuditLog)
-	if actualAuditLog.ResourceName != "test-resource-name" {
-		t.Errorf("AuditLog.ResourceName '%s' != 'test-resource-name'", actualAuditLog.ResourceName)
+	if data, err := e.DataBytes(); err != nil {
+		t.Errorf("Unable to get event data: %q", err)
+	} else {
+		var actualLogEntry logpb.LogEntry
+		if err = jsonpb.Unmarshal(bytes.NewReader(data), &actualLogEntry); err != nil {
+			t.Errorf("Unable to unmarshal event data to LogEntry: %q", err)
+		} else {
+			if diff := cmp.Diff(logEntry, actualLogEntry); diff != "" {
+				t.Errorf("unexpected LogEntry (-want, +got) = %v", diff)
+			}
+		}
 	}
 }

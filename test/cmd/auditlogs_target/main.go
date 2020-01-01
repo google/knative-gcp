@@ -34,9 +34,10 @@ const (
 	eventType    = "type"
 	eventSource  = "source"
 	eventSubject = "subject"
-	serviceName  = "service_name"
-	methodName   = "method_name"
-	resourceName = "resource_name"
+	protoPayload = "protoPayload"
+	serviceName  = "serviceName"
+	methodName   = "methodName"
+	resourceName = "resourceName"
 )
 
 func main() {
@@ -100,11 +101,12 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
 		fmt.Printf("failed unmarshall event.Data %s.\n", err.Error())
 	}
-	eventDataServiceName := eventData[serviceName].(string)
+	payload := eventData[protoPayload].(map[string]interface{})
+	eventDataServiceName := payload[serviceName].(string)
 	fmt.Printf("event.Data.%s is %s \n", serviceName, eventDataServiceName)
-	eventDataMethodName := eventData[methodName].(string)
+	eventDataMethodName := payload[methodName].(string)
 	fmt.Printf("event.Data.%s is %s \n", methodName, eventDataMethodName)
-	eventDataResourceName := eventData[resourceName].(string)
+	eventDataResourceName := payload[resourceName].(string)
 	fmt.Printf("event.Data.%s is %s \n", resourceName, eventDataResourceName)
 	unmatchedProps := make(map[string]propPair)
 
