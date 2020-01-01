@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 Google LLC.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,45 +25,48 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestStorage_SetDefaults(t *testing.T) {
+func TestAuditLogsSource_SetDefaults(t *testing.T) {
 	testCases := map[string]struct {
-		orig     *StorageSpec
-		expected *StorageSpec
+		orig     *AuditLogsSource
+		expected *AuditLogsSource
 	}{
 		"missing defaults": {
-			orig: &StorageSpec{},
-			expected: &StorageSpec{
-				EventTypes: allEventTypes,
-				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "google-cloud-key",
+			orig: &AuditLogsSource{},
+			expected: &AuditLogsSource{
+				Spec: AuditLogsSourceSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "google-cloud-key",
+							},
+							Key: "key.json",
 						},
-						Key: "key.json",
 					},
 				},
 			},
 		},
 		"defaults present": {
-			orig: &StorageSpec{
-				EventTypes: []string{StorageFinalize, StorageDelete},
-				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "secret-name",
+			orig: &AuditLogsSource{
+				Spec: AuditLogsSourceSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "secret-name",
+							},
+							Key: "secret-key.json",
 						},
-						Key: "secret-key.json",
 					},
 				},
 			},
-			expected: &StorageSpec{
-				EventTypes: []string{StorageFinalize, StorageDelete},
-				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "secret-name",
+			expected: &AuditLogsSource{
+				Spec: AuditLogsSourceSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "secret-name",
+							},
+							Key: "secret-key.json",
 						},
-						Key: "secret-key.json",
 					},
 				},
 			},

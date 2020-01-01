@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2019 Google LLC.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 )
 
-var allEventTypes = []string{StorageFinalize, StorageDelete, StorageArchive, StorageMetadataUpdate}
-
-func (s *Storage) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
-}
-
-func (ss *StorageSpec) SetDefaults(ctx context.Context) {
-	ss.SetPubSubDefaults()
-	if len(ss.EventTypes) == 0 {
-		ss.EventTypes = allEventTypes
+func (s *PubSubSpec) SetPubSubDefaults() {
+	if s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{}) {
+		s.Secret = DefaultGoogleCloudSecretSelector()
 	}
 }
