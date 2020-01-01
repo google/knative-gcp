@@ -21,6 +21,7 @@ spec:
   serviceName: {{ .serviceName }}
   methodName:  {{ .methodName }}
   resourceName:  {{ .resourceName }}
+  project: {{ .project }}
   sink:
     ref:
       apiVersion: v1

@@ -51,6 +51,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 	config := map[string]string{
 		"namespace":       client.Namespace,
 		"auditlogssource": auditlogsName,
+		"project":         project,
 		"serviceName":     serviceName,
 		"methodName":      methodName,
 		"resourceName":    resourceName,
