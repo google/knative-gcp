@@ -74,7 +74,7 @@ func TestConvertAuditLog(t *testing.T) {
 		Data: buf.Bytes(),
 	}
 
-	e, err := convertAuditLog(context.Background(), &msg, "")
+	e, err := Convert(context.Background(), &msg, "", AuditLogAdapterType)
 
 	if err != nil {
 		t.Errorf("conversion failed: %v", err)
@@ -105,5 +105,40 @@ func TestConvertAuditLog(t *testing.T) {
 				t.Errorf("unexpected LogEntry (-want, +got) = %v", diff)
 			}
 		}
+	}
+}
+
+func TestConvertTextPayload(t *testing.T) {
+	logEntry := logpb.LogEntry{
+		InsertId: insertID,
+		LogName:  logName,
+		Timestamp: &timestamp.Timestamp{
+			Seconds: 12345,
+		},
+		Payload: &logpb.LogEntry_TextPayload{
+			TextPayload: "test payload",
+		},
+	}
+	testTime, err := time.Parse(time.RFC3339, testTs)
+	if err != nil {
+		t.Fatalf("Unable to parse test timestamp: %q", err)
+	}
+	if ts, err := ptypes.TimestampProto(testTime); err != nil {
+		t.Fatalf("Invalid test timestamp: %q", err)
+	} else {
+		logEntry.Timestamp = ts
+	}
+	var buf bytes.Buffer
+	if err := new(jsonpb.Marshaler).Marshal(&buf, &logEntry); err != nil {
+		t.Fatalf("Failed to marshal AuditLog pb: %v", err)
+	}
+	msg := cepubsub.Message{
+		Data: buf.Bytes(),
+	}
+
+	_, err = Convert(context.Background(), &msg, "", AuditLogAdapterType)
+
+	if err == nil {
+		t.Errorf("Expected error when converting non-AuditLog LogEntry.")
 	}
 }
