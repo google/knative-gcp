@@ -106,6 +106,14 @@ func TestConvertAuditLog(t *testing.T) {
 			}
 		}
 	}
+	wantExtensions := map[string]interface{}{
+		"servicename":  "test-service-name",
+		"methodname":   "test-method-name",
+		"resourcename": "test-resource-name",
+	}
+	if diff := cmp.Diff(wantExtensions, e.Extensions()); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
 }
 
 func TestConvertTextPayload(t *testing.T) {

@@ -43,6 +43,10 @@ const (
 	loggingSource  = "logging.googleapis.com"
 
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
+
+	serviceNameExtension  = "servicename"
+	methodNameExtension   = "methodname"
+	resourceNameExtension = "resourcename"
 )
 
 var (
@@ -133,6 +137,9 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 			event.SetSource(fmt.Sprintf("%s/%s", proto.ServiceName, parentResource))
 			event.SetSubject(fmt.Sprintf("%s/%s", proto.ServiceName, proto.ResourceName))
 			event.SetType(v1alpha1.AuditLogEventType)
+			event.SetExtension(serviceNameExtension, proto.ServiceName)
+			event.SetExtension(methodNameExtension, proto.MethodName)
+			event.SetExtension(resourceNameExtension, proto.ResourceName)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}
