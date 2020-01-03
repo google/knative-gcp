@@ -41,6 +41,9 @@ func TestConvertStorage(t *testing.T) {
 		name: "no attributes",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
+			Attributes: map[string]string{
+				"knative-gcp": "com.google.cloud.storage",
+			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
@@ -52,9 +55,10 @@ func TestConvertStorage(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"eventType":  "OBJECT_FINALIZE",
-				"attribute1": "value1",
-				"attribute2": "value2",
+				"knative-gcp": "com.google.cloud.storage",
+				"eventType":   "OBJECT_FINALIZE",
+				"attribute1":  "value1",
+				"attribute2":  "value2",
 			},
 		},
 		sendMode: Binary,
@@ -70,7 +74,8 @@ func TestConvertStorage(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"bucketId": "my-bucket",
+				"knative-gcp": "com.google.cloud.storage",
+				"bucketId":    "my-bucket",
 			},
 		},
 		sendMode: Binary,
@@ -83,11 +88,12 @@ func TestConvertStorage(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"bucketId":   "my-bucket",
-				"eventType":  "OBJECT_FINALIZE",
-				"objectId":   "myfile.jpg",
-				"AttriBUte1": "value1",
-				"AttrIbuTe2": "value2",
+				"knative-gcp": "com.google.cloud.storage",
+				"bucketId":    "my-bucket",
+				"eventType":   "OBJECT_FINALIZE",
+				"objectId":    "myfile.jpg",
+				"AttriBUte1":  "value1",
+				"AttrIbuTe2":  "value2",
 			},
 		},
 		sendMode: Binary,
@@ -99,10 +105,11 @@ func TestConvertStorage(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"bucketId":   "my-bucket",
-				"eventType":  "OBJECT_FINALIZE",
-				"AttriBUte1": "value1",
-				"AttrIbuTe2": "value2",
+				"knative-gcp": "com.google.cloud.storage",
+				"bucketId":    "my-bucket",
+				"eventType":   "OBJECT_FINALIZE",
+				"AttriBUte1":  "value1",
+				"AttrIbuTe2":  "value2",
 			},
 		},
 		sendMode: Binary,
@@ -114,6 +121,7 @@ func TestConvertStorage(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
+				"knative-gcp":       "com.google.cloud.storage",
 				"bucketId":          "my-bucket",
 				"eventType":         "OBJECT_FINALIZE",
 				"attribute1":        "value1",
@@ -140,7 +148,7 @@ func TestConvertStorage(t *testing.T) {
 				},
 			))
 
-			gotEvent, err := convertStorage(ctx, test.message, test.sendMode)
+			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
 
 			if err != nil {
 				if !test.wantErr {
