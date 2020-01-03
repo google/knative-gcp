@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"reflect"
+	"regexp"
 	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -39,6 +41,8 @@ const (
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	loggingSource  = "logging.googleapis.com"
 	EventType      = "com.google.cloud.auditlog.event"
+
+	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
 )
 
 var (
@@ -46,8 +50,16 @@ var (
 		AllowUnknownFields: true,
 		AnyResolver:        resolver(resolveAnyUnknowns),
 	}
-	jsonpbMarshaler = jsonpb.Marshaler{}
+	jsonpbMarshaler      = jsonpb.Marshaler{}
+	parentResourceRegexp *regexp.Regexp
 )
+
+func init() {
+	var err error
+	if parentResourceRegexp, err = regexp.Compile(parentResourcePattern); err != nil {
+		log.Fatal(err)
+	}
+}
 
 // Resolver function type that can be used to resolve Any fields in a jsonpb.Unmarshaler.
 type resolver func(turl string) (proto.Message, error)
@@ -93,6 +105,11 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 		return nil, fmt.Errorf("failed to decode LogEntry: %q", err)
 	}
 
+	parentResource := parentResourceRegexp.FindString(entry.LogName)
+	if parentResource == "" {
+		return nil, fmt.Errorf("invalid LogName: %q", entry.LogName)
+	}
+
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID(entry.InsertId + entry.LogName + ptypes.TimestampString(entry.Timestamp))
@@ -113,8 +130,8 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetSource(proto.ServiceName)
-			event.SetSubject(proto.MethodName)
+			event.SetSource(fmt.Sprintf("%s/%s", proto.ServiceName, parentResource))
+			event.SetSubject(fmt.Sprintf("%s/%s", proto.ServiceName, proto.ResourceName))
 			event.SetType(EventType)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)

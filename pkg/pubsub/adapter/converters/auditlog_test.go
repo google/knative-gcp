@@ -33,7 +33,7 @@ import (
 
 const (
 	insertID = "test-insert-id"
-	logName  = "test-log-name"
+	logName  = "projects/test-project/test-log-name"
 	testTs   = "2006-01-02T15:04:05Z"
 )
 
@@ -77,7 +77,7 @@ func TestConvertAuditLog(t *testing.T) {
 	e, err := Convert(context.Background(), &msg, "", AuditLogAdapterType)
 
 	if err != nil {
-		t.Errorf("conversion failed: %v", err)
+		t.Fatalf("conversion failed: %v", err)
 	}
 	if e.ID() != insertID+logName+testTs {
 		t.Errorf("ID '%s' != '%s%s%s'", e.ID(), insertID, logName, testTs)
@@ -85,14 +85,14 @@ func TestConvertAuditLog(t *testing.T) {
 	if !e.Time().Equal(testTime) {
 		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
-	if e.Source() != "test-service-name" {
-		t.Errorf("Source '%s' != 'test-service-name'", e.Source())
+	if want := "test-service-name/projects/test-project"; e.Source() != want {
+		t.Errorf("Source %q != %q", e.Source(), want)
 	}
 	if e.Type() != "com.google.cloud.auditlog.event" {
 		t.Errorf(`Type %q != "com.google.cloud.auditlog.event"`, e.Type())
 	}
-	if e.Subject() != "test-method-name" {
-		t.Errorf("Subject '%s' != 'test-method-name'", e.Subject())
+	if want := "test-service-name/test-resource-name"; e.Subject() != want {
+		t.Errorf("Subject %q != %q", e.Subject(), want)
 	}
 	if data, err := e.DataBytes(); err != nil {
 		t.Errorf("Unable to get event data: %q", err)

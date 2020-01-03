@@ -58,8 +58,8 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 		"targetName":      targetName,
 		"targetUID":       uuid.New().String(),
 		"type":            converters.EventType,
-		"source":          serviceName,
-		"subject":         methodName,
+		"source":          fmt.Sprintf("%s/projects/%s", serviceName, project),
+		"subject":         fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}
 	for k, v := range packages {
 		config[k] = v
