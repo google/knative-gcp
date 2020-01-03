@@ -607,6 +607,7 @@ func TestAllCases(t *testing.T) {
 				}},
 		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "AuditLogsSource %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -655,6 +656,7 @@ func TestAllCases(t *testing.T) {
 				}},
 		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "AuditLogsSource %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -713,7 +715,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantErr: true,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "failed to delete Stackdriver sink: delete-sink-induced-error"),
+			Eventf(corev1.EventTypeWarning, "InternalError", "delete-sink-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,

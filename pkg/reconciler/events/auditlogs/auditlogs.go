@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
 	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -36,7 +37,6 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
@@ -46,7 +46,8 @@ import (
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "stackdrivers.events.cloud.google.com"
+	resourceGroup = "auditlogssources.events.cloud.google.com"
+	publisherRole = "roles/pubsub.publisher"
 )
 
 type Reconciler struct {
@@ -67,7 +68,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		runtime.HandleError(fmt.Errorf("invalid resource key: %s", key))
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
 
@@ -75,7 +76,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	original, err := c.auditLogsSourceLister.AuditLogsSources(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The AuditLogsSource resource may no longer exist, in which case we stop processing.
-		runtime.HandleError(fmt.Errorf("AuditLogsSource '%s' in work queue no longer exists", key))
+		logging.FromContext(ctx).Desugar().Error("AuditLogsSource in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -121,10 +122,8 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 }
 
 func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource) error {
-	topic := s.Status.TopicID
-	if topic == "" {
-		topic = fmt.Sprintf("auditlogssource-%s", string(s.UID))
-	}
+	ctx = logging.WithLogger(ctx, c.Logger.With(zap.Any("auditlogsource", s)))
+
 	s.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -132,15 +131,15 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 		err := c.deleteSink(ctx, s)
 		if err != nil {
 			s.Status.MarkSinkNotReady("SinkDeleteFailed", "Failed to delete Stackdriver sink: %s", err.Error())
-			return fmt.Errorf("failed to delete Stackdriver sink: %v", err)
+			return err
 		}
 		s.Status.MarkSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", s.Status.SinkID)
-		s.Status.SinkID = ""
 
 		err = c.PubSubBase.DeletePubSub(ctx, s)
 		if err != nil {
-			return fmt.Errorf("failed to delete pubsub resources: %s", err)
+			return err
 		}
+		s.Status.SinkID = ""
 		c.removeFinalizer(s)
 		return nil
 	}
@@ -148,7 +147,8 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 	// Ensure the finalizer's there, since we're about to attempt
 	// to change external state with the topic, so we need to
 	// clean it up.
-	c.ensureFinalizer(s)
+	c.addFinalizer(s)
+	topic := resources.GenerateTopicName(s)
 	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic, resourceGroup)
 	if err != nil {
 		return err
@@ -183,25 +183,28 @@ func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.AuditLogsSou
 func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLogsSource) (*logadmin.Sink, error) {
 	sinkID := s.Status.SinkID
 	if sinkID == "" {
-		sinkID = fmt.Sprintf("sink-%s", string(s.UID))
+		sinkID = resources.GenerateSinkName(s)
 	}
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
 		return nil, err
 	}
 	sink, err := logadminClient.Sink(ctx, sinkID)
 	if status.Code(err) == codes.NotFound {
-		filterBuilder := FilterBuilder{
-			serviceName:  s.Spec.ServiceName,
-			methodName:   s.Spec.MethodName,
-			resourceName: s.Spec.ResourceName}
-		filterQuery := filterBuilder.GetFilterQuery()
+		filterBuilder := resources.FilterBuilder{}
+		filterBuilder.SetServiceName(s.Spec.ServiceName)
+		filterBuilder.SetMethodName(s.Spec.MethodName)
+		if s.Spec.ResourceName != "" {
+			filterBuilder.SetResourceName(s.Spec.ResourceName)
+		}
 		sink = &logadmin.Sink{
 			ID:          sinkID,
-			Destination: fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", s.Status.ProjectID, s.Status.TopicID),
-			Filter:      filterQuery,
+			Destination: resources.GenerateTopicResourceName(s),
+			Filter:      filterBuilder.GetFilterQuery(),
 		}
 		sink, err = logadminClient.CreateSinkOpt(ctx, sink, logadmin.SinkOptions{UniqueWriterIdentity: true})
+		// Handle AlreadyExists in-case of a race between another create call.
 		if status.Code(err) == codes.AlreadyExists {
 			sink, err = logadminClient.Sink(ctx, sinkID)
 		}
@@ -213,6 +216,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLog
 func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.AuditLogsSource, sink *logadmin.Sink) error {
 	pubsubClient, err := c.pubsubClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create PubSub client", zap.Error(err))
 		return err
 	}
 	topicIam := pubsubClient.Topic(s.Status.TopicID).IAM()
@@ -220,12 +224,15 @@ func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.Audi
 	if err != nil {
 		return err
 	}
-	if !topicPolicy.HasRole(sink.WriterIdentity, "roles/pubsub.publisher") {
-		topicPolicy.Add(sink.WriterIdentity, "roles/pubsub.publisher")
+	if !topicPolicy.HasRole(sink.WriterIdentity, publisherRole) {
+		topicPolicy.Add(sink.WriterIdentity, publisherRole)
 		if err = topicIam.SetPolicy(ctx, topicPolicy); err != nil {
 			return err
 		}
-		c.Logger.Infof("Gave writer identify '%s' roles/pubsub.publisher on topic '%s'.", sink.WriterIdentity, s.Status.TopicID)
+		logging.FromContext(ctx).Desugar().Debug(
+			"Granted the Stackdriver Sink writer identity roles/pubsub.publisher on PubSub Topic.",
+			zap.String("writerIdentity", sink.WriterIdentity),
+			zap.String("topicID", s.Status.TopicID))
 	}
 	return nil
 }
@@ -238,6 +245,7 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource
 	}
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
 		return err
 	}
 	if err = logadminClient.DeleteSink(ctx, s.Status.SinkID); status.Code(err) != codes.NotFound {
@@ -246,7 +254,7 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource
 	return nil
 }
 
-func (c *Reconciler) ensureFinalizer(s *v1alpha1.AuditLogsSource) {
+func (c *Reconciler) addFinalizer(s *v1alpha1.AuditLogsSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Insert(finalizerName)
 	s.Finalizers = finalizers.List()
@@ -276,8 +284,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.AuditLo
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		c.Logger.Infof("AuditLogsSource %q became ready after %v", source.Name, duration)
-
+		logging.FromContext(ctx).Desugar().Info("AuditLogsSource became ready", zap.Any("after", duration))
+		c.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("AuditLogsSource %q became ready", source.Name))
 		if err := c.StatsReporter.ReportReady("AuditLogsSource", source.Namespace, source.Name, duration); err != nil {
 			logging.FromContext(ctx).Infof("failed to record ready for AuditLogsSource, %v", err)
 		}

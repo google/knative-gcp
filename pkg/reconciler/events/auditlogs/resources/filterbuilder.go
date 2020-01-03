@@ -1,4 +1,4 @@
-package auditlogs
+package resources
 
 import (
 	"fmt"
