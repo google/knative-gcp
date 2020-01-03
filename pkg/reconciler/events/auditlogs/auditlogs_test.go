@@ -479,7 +479,7 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceTopicReady(testTopicID),
 				WithAuditLogsSourcePullSubscriptionReady(),
 				WithAuditLogsSourceSinkURI(calSinkURL),
-				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+				WithAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
@@ -528,7 +528,7 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceTopicReady(testTopicID),
 				WithAuditLogsSourcePullSubscriptionReady(),
 				WithAuditLogsSourceSinkURI(calSinkURL),
-				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+				WithAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {
@@ -577,7 +577,7 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceTopicReady(testTopicID),
 				WithAuditLogsSourcePullSubscriptionReady(),
 				WithAuditLogsSourceSinkURI(calSinkURL),
-				WithAuditLogsSourceSinkNotReady("SinkNotReady", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
+				WithAuditLogsSourceSinkNotReady("SinkNotPublisher", "%s: %s", failedToSetPermissionsMsg, "create-client-induced-error"),
 			),
 		}},
 	}, {

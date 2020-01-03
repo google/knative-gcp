@@ -174,7 +174,7 @@ func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.AuditLogsSou
 	}
 	err = c.ensureSinkIsPublisher(ctx, s, sink)
 	if err != nil {
-		s.Status.MarkSinkNotReady("SinkNotReady", "failed to ensure sink has pubsub.publisher permission on source topic: %v", err)
+		s.Status.MarkSinkNotReady("SinkNotPublisher", "failed to ensure sink has pubsub.publisher permission on source topic: %v", err)
 		return "", err
 	}
 	return sink.ID, nil
