@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -66,7 +67,8 @@ func NewController(
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
 	r.Logger.Info("Setting up event handlers")
-	auditlogssourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	auditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("AuditLogSource")),
