@@ -31,6 +31,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
 )
@@ -40,7 +41,6 @@ const (
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	loggingSource  = "logging.googleapis.com"
-	EventType      = "com.google.cloud.auditlog.event"
 
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
 )
@@ -132,7 +132,7 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 		case *auditpb.AuditLog:
 			event.SetSource(fmt.Sprintf("%s/%s", proto.ServiceName, parentResource))
 			event.SetSubject(fmt.Sprintf("%s/%s", proto.ServiceName, proto.ResourceName))
-			event.SetType(EventType)
+			event.SetType(v1alpha1.AuditLogEventType)
 		default:
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}

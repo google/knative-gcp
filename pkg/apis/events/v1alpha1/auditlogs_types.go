@@ -47,7 +47,8 @@ var (
 )
 
 const (
-	SinkReady apis.ConditionType = "SinkReady"
+	SinkReady         apis.ConditionType = "SinkReady"
+	AuditLogEventType                    = "com.google.cloud.auditlog.event"
 )
 
 var auditLogsSourceCondSet = apis.NewLivingConditionSet(
