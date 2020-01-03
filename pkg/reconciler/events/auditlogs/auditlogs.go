@@ -153,7 +153,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 	if err != nil {
 		return err
 	}
-	c.Logger.Infof("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
+	c.Logger.Debugf("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
 
 	sink, err := c.reconcileSink(ctx, s)
 	if err != nil {
@@ -161,7 +161,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 	}
 	s.Status.SinkID = sink
 	s.Status.MarkSinkReady()
-	c.Logger.Infof("Reconciled Stackdriver sink: %+v", sink)
+	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
 	return nil
 }
