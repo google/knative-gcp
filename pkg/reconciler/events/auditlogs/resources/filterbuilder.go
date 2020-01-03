@@ -14,6 +14,9 @@ const (
 	typeValue   = "type.googleapis.com/google.cloud.audit.AuditLog"
 )
 
+// Stackdriver query builder for querying audit logs. Currently
+// supports querying by the AuditLog serviceName, methodName, and
+// resourceName.
 type FilterBuilder struct {
 	serviceName  string
 	methodName   string
