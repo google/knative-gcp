@@ -20,7 +20,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
 )
 
 func TestAuditLogsGetGroupVersionKind(t *testing.T) {
@@ -35,6 +38,32 @@ func TestAuditLogsGetGroupVersionKind(t *testing.T) {
 	got := c.GetGroupVersionKind()
 
 	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestAuditLogsConditionSet(t *testing.T) {
+	want := []apis.Condition{{
+		Type: SinkReady,
+	}, {
+		Type: duckv1alpha1.TopicReady,
+	}, {
+		Type: duckv1alpha1.PullSubscriptionReady,
+	}, {
+		Type: apis.ConditionReady,
+	}}
+	c := &AuditLogsSource{}
+
+	c.ConditionSet().Manage(&c.Status).InitializeConditions()
+	var got []apis.Condition = c.Status.GetConditions()
+
+	compareConditionTypes := cmp.Transformer("ConditionType", func(c apis.Condition) apis.ConditionType {
+		return c.Type
+	})
+	sortConditionTypes := cmpopts.SortSlices(func(a, b apis.Condition) bool {
+		return a.Type < b.Type
+	})
+	if diff := cmp.Diff(want, got, sortConditionTypes, compareConditionTypes); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }

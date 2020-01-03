@@ -24,6 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/duck"
 )
 
 // +genclient
@@ -42,6 +43,7 @@ var (
 	_ apis.Defaultable   = (*AuditLogsSource)(nil)
 	_ runtime.Object     = (*AuditLogsSource)(nil)
 	_ kmeta.OwnerRefable = (*AuditLogsSource)(nil)
+	_ duck.PubSubable    = (*AuditLogsSource)(nil)
 )
 
 const (
