@@ -17,6 +17,8 @@
 source $(dirname $0)/e2e-common.sh
 
 # Script entry point.
+#export GCP_PROJECT="joyceyutest-knative-boskos-1"
+#echo "GCP_PROJECT (test/e2e-tests.sh): ${GCP_PROJECT}"
 
 initialize $@
 
