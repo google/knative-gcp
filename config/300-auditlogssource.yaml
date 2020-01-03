@@ -22,7 +22,7 @@ metadata:
   annotations:
     registry.cloud.google.com/eventTypes: |
       [
-        {"type", "com.google.cloud.auditlog.event", "schema", "type.googleapis.com/google.cloud.audit.AuditLog", "description", "Common audit log event type for all Google Cloud Platform API operations." }
+        {"type", "com.google.cloud.auditlog.event", "schema", "type.googleapis.com/google.logging.v2.LogEntry", "description", "Common audit log event type for all Google Cloud Platform API operations." }
       ]
   name: auditlogssources.events.cloud.google.com
 spec:
