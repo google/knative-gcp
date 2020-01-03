@@ -19,11 +19,11 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/test/helpers"
@@ -57,7 +57,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 		"resourceName":    resourceName,
 		"targetName":      targetName,
 		"targetUID":       uuid.New().String(),
-		"type":            converters.EventType,
+		"type":            v1alpha1.AuditLogEventType,
 		"source":          fmt.Sprintf("%s/projects/%s", serviceName, project),
 		"subject":         fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}
