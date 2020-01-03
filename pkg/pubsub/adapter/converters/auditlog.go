@@ -19,6 +19,7 @@ package converters
 import (
 	"bytes"
 	"context"
+	errors "errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -106,7 +107,7 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	}
 	entry := logpb.LogEntry{}
 	if err := jsonpbUnmarshaller.Unmarshal(bytes.NewReader(msg.Data), &entry); err != nil {
-		return nil, fmt.Errorf("failed to decode LogEntry: %q", err)
+		return nil, fmt.Errorf("failed to decode LogEntry: %w", err)
 	}
 
 	parentResource := parentResourceRegexp.FindString(entry.LogName)
@@ -118,7 +119,7 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID(entry.InsertId + entry.LogName + ptypes.TimestampString(entry.Timestamp))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
-		return nil, fmt.Errorf("invalid LogEntry timestamp: %q", err)
+		return nil, fmt.Errorf("invalid LogEntry timestamp: %w", err)
 	} else {
 		event.SetTime(timestamp)
 	}
@@ -130,7 +131,7 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 	case *logpb.LogEntry_ProtoPayload:
 		var unpacked ptypes.DynamicAny
 		if err := ptypes.UnmarshalAny(payload.ProtoPayload, &unpacked); err != nil {
-			return nil, fmt.Errorf("unrecognized proto payload: %q", err)
+			return nil, fmt.Errorf("unrecognized proto payload: %w", err)
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
@@ -144,7 +145,7 @@ func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeTy
 			return nil, fmt.Errorf("unhandled proto payload type: %T", proto)
 		}
 	default:
-		return nil, fmt.Errorf("non-AuditLog log entry")
+		return nil, errors.New("non-AuditLog log entry")
 	}
 	return &event, nil
 }
