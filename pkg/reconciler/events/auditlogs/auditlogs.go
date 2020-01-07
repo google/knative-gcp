@@ -128,15 +128,13 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 
 	// See if the source has been deleted.
 	if s.DeletionTimestamp != nil {
-		err := c.deleteSink(ctx, s)
-		if err != nil {
+		if err := c.deleteSink(ctx, s); err != nil {
 			s.Status.MarkSinkNotReady("SinkDeleteFailed", "Failed to delete Stackdriver sink: %s", err.Error())
 			return err
 		}
 		s.Status.MarkSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", s.Status.StackdriverSink)
 
-		err = c.PubSubBase.DeletePubSub(ctx, s)
-		if err != nil {
+		if err := c.PubSubBase.DeletePubSub(ctx, s); err != nil {
 			return err
 		}
 		s.Status.StackdriverSink = ""
