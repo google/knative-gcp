@@ -1,0 +1,13 @@
+# This is a very simple Knative Service that writes the input request to its log.
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: event-display
+spec:
+  template:
+    spec:
+      containers:
+        - # This corresponds to
+          # https://github.com/knative/eventing-contrib/blob/release-0.11/cmd/event_display/main.go
+          image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display@sha256:070f31589d919779a83adf3cc0f0b0e3f5f063eb57a67d53e5e8d0c5eefb57ba
