@@ -23,15 +23,15 @@ type FilterBuilder struct {
 	resourceName string
 }
 
-func (fb *FilterBuilder) SetServiceName(serviceName string) {
+func (fb *FilterBuilder) WithServiceName(serviceName string) {
 	fb.serviceName = serviceName
 }
 
-func (fb *FilterBuilder) SetMethodName(methodName string) {
+func (fb *FilterBuilder) WithMethodName(methodName string) {
 	fb.methodName = methodName
 }
 
-func (fb *FilterBuilder) SetResourceName(resourceName string) {
+func (fb *FilterBuilder) WithResourceName(resourceName string) {
 	fb.resourceName = resourceName
 }
 
