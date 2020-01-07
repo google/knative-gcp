@@ -133,13 +133,13 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 			s.Status.MarkSinkNotReady("SinkDeleteFailed", "Failed to delete Stackdriver sink: %s", err.Error())
 			return err
 		}
-		s.Status.MarkSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", s.Status.SinkID)
+		s.Status.MarkSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", s.Status.StackdriverSink)
 
 		err = c.PubSubBase.DeletePubSub(ctx, s)
 		if err != nil {
 			return err
 		}
-		s.Status.SinkID = ""
+		s.Status.StackdriverSink = ""
 		c.removeFinalizer(s)
 		return nil
 	}
@@ -159,7 +159,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 	if err != nil {
 		return err
 	}
-	s.Status.SinkID = sink
+	s.Status.StackdriverSink = sink
 	s.Status.MarkSinkReady()
 	c.Logger.Debugf("Reconciled Stackdriver sink: %+v", sink)
 
@@ -181,7 +181,7 @@ func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.AuditLogsSou
 }
 
 func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLogsSource) (*logadmin.Sink, error) {
-	sinkID := s.Status.SinkID
+	sinkID := s.Status.StackdriverSink
 	if sinkID == "" {
 		sinkID = resources.GenerateSinkName(s)
 	}
@@ -240,7 +240,7 @@ func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.Audi
 // deleteSink looks at status.SinkID and if non-empty will delete the
 // previously created stackdriver sink.
 func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource) error {
-	if s.Status.SinkID == "" {
+	if s.Status.StackdriverSink == "" {
 		return nil
 	}
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
@@ -248,7 +248,7 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
 		return err
 	}
-	if err = logadminClient.DeleteSink(ctx, s.Status.SinkID); status.Code(err) != codes.NotFound {
+	if err = logadminClient.DeleteSink(ctx, s.Status.StackdriverSink); status.Code(err) != codes.NotFound {
 		return err
 	}
 	return nil

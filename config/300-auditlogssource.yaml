@@ -115,7 +115,7 @@ spec:
               type: string
             topicId:
               type: string
-            sinkId:
+            stackdriverSink:
               type: string
             subscriptionId:
               type: string

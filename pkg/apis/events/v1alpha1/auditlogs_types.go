@@ -79,7 +79,7 @@ type AuditLogsSourceStatus struct {
 	duckv1alpha1.PubSubStatus `json:",inline"`
 
 	// ID of the Stackdriver sink used to publish audit log messages.
-	SinkID string `json:"sinkId,omitempty"`
+	StackdriverSink string `json:"stackdriverSink,omitempty"`
 }
 
 func (*AuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {

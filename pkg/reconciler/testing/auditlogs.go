@@ -111,7 +111,7 @@ func WithAuditLogsSourceProjectID(projectID string) AuditLogsSourceOption {
 
 func WithAuditLogsSourceSinkID(sinkID string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
-		s.Status.SinkID = sinkID
+		s.Status.StackdriverSink = sinkID
 	}
 }
 
