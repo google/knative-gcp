@@ -21,20 +21,19 @@ in CloudEvents format.
 
 ## Deployment
 
-1. Create a [auditlogssource](./auditlogssource.yaml). 
-   
-   ```shell
-      kubectl apply --filename auditlogssource.yaml
-   ```    
-   
+1. Create a [auditlogssource](./auditlogssource.yaml).
    This `AuditLogsSource` will get Cloud Audit Log Entries for topic creation.  
-      You can change the `serviceName`, `methodName` and `resourceName` to select the Cloud Audit Log Entries you want to view.
+   You can change the `serviceName`, `methodName` and `resourceName` to select the Cloud Audit Log Entries you want to view.
        
-              |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
-              |  :-------------------:  |  :--------------------------:  |
-              |      serviceName        |     protoPayload.serviceName   |
-              |      methodName         |     protoPayload.methodName    |
-              |     resourceName        |     protoPayload.resourceName  |
+   |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
+   |  :-------------------:  |  :--------------------------:  |
+   |      serviceName        |     protoPayload.serviceName   |
+   |      methodName         |     protoPayload.methodName    |
+   |     resourceName        |     protoPayload.resourceName  |
+   
+    ```shell
+    kubectl apply --filename auditlogssource.yaml
+    ```   
 
 1. Create a [service](./event-display.yaml) that the AuditLogsSource will sink into:
 
