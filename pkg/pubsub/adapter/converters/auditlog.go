@@ -87,7 +87,9 @@ func (m *UnknownMsg) String() string {
 	return "Unknown message"
 }
 
-// Resolver type which resolves unknown message types to empty.Empty.
+// Resolves type URLs such as
+// type.googleapis.com/google.profile.Person to a proto message
+// type. Resolves unknown message types to empty.Empty.
 func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	// Only the part of typeUrl after the last slash is relevant.
 	mname := typeURL
