@@ -24,14 +24,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
+	"github.com/google/uuid"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -47,7 +47,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
-	installer := NewInstaller(client.Dynamic, map[string]string{
+	installer := NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
 		"topic":     topic,
 		"pubsub":    psName,
@@ -103,7 +103,7 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		config[k] = v
 	}
 
-	installer := NewInstaller(client.Dynamic, config,
+	installer := NewInstaller(client.Core.Dynamic, config,
 		EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
 
 	// Create the resources for the test.

@@ -1492,7 +1492,6 @@
     "knative.dev/pkg/resolver",
     "knative.dev/pkg/signals",
     "knative.dev/pkg/system",
-    "knative.dev/pkg/test",
     "knative.dev/pkg/test/helpers",
     "knative.dev/pkg/test/logstream",
     "knative.dev/pkg/test/zipkin",

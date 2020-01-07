@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -31,7 +30,7 @@ func SmokeTestChannelImpl(t *testing.T) {
 	client := Setup(t, true)
 	defer TearDown(client)
 
-	installer := NewInstaller(client.Dynamic, map[string]string{
+	installer := NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
 	}, EndToEndConfigYaml([]string{"smoke_test", "istio"})...)
 

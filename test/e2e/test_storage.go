@@ -26,13 +26,14 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/metrics"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -110,7 +111,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	for k, v := range packages {
 		config[k] = v
 	}
-	installer := NewInstaller(client.Dynamic, config,
+	installer := NewInstaller(client.Core.Dynamic, config,
 		EndToEndConfigYaml([]string{"storage_test", "istio"})...)
 
 	// Create the resources for the test.
@@ -119,7 +120,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		return
 	}
 
-	//Delete deferred.
+	// Delete deferred.
 	defer func() {
 		if err := installer.Do("delete"); err != nil {
 			t.Errorf("failed to delete, %s", err)

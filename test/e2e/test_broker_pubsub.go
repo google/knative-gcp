@@ -110,7 +110,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 
 	// Get broker URL.
 	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, common.BrokerTypeMeta)
-	u, err := base.GetAddressableURI(client.Dynamic, metaAddressable)
+	u, err := base.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -141,7 +141,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 }
 
 func createResource(client *Client, config map[string]string, folders []string, t *testing.T) *Installer {
-	installer := NewInstaller(client.Dynamic, config,
+	installer := NewInstaller(client.Core.Dynamic, config,
 		EndToEndConfigYaml(folders)...)
 	if err := installer.Do("create"); err != nil {
 		t.Errorf("failed to create, %s", err)
