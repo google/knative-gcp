@@ -68,11 +68,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "events.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pubsubs",
-	}); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, pubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
@@ -121,6 +117,10 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		time.Sleep(10 * time.Second)
 	}()
 
+	if err := client.Core.WaitForResourceReady(psName, pubsubTypeMeta); err != nil {
+		t.Error(err)
+	}
+
 	gvr := schema.GroupVersionResource{
 		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
@@ -131,10 +131,6 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		Group:    "batch",
 		Version:  "v1",
 		Resource: "jobs",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
-		t.Error(err)
 	}
 
 	topic := getTopic(t, topicName)

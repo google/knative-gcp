@@ -129,6 +129,10 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		time.Sleep(60 * time.Second)
 	}()
 
+	if err := client.Core.WaitForResourceReady(storageName, storageTypeMeta); err != nil {
+		t.Error(err)
+	}
+
 	gvr := schema.GroupVersionResource{
 		Group:    "events.cloud.google.com",
 		Version:  "v1alpha1",
@@ -139,10 +143,6 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		Group:    "batch",
 		Version:  "v1",
 		Resource: "jobs",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, storageName, gvr); err != nil {
-		t.Error(err)
 	}
 
 	// Add a random name file in the bucket

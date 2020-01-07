@@ -77,34 +77,18 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	defer deleteResource(brokerInstaller, t)
 
 	// Wait for broker, trigger, ksvc ready.
-	brokerGVR := schema.GroupVersionResource{
-		Group:    "eventing.knative.dev",
-		Version:  "v1alpha1",
-		Resource: "brokers",
-	}
-	if err := client.WaitForResourceReady(client.Namespace, brokerName, brokerGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(brokerName, common.BrokerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	triggerGVR := schema.GroupVersionResource{
-		Group:    "eventing.knative.dev",
-		Version:  "v1alpha1",
-		Resource: "triggers",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, dummyTriggerName, triggerGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(dummyTriggerName, common.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
-	if err := client.WaitForResourceReady(client.Namespace, respTriggerName, triggerGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(respTriggerName, common.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	ksvcGVR := schema.GroupVersionResource{
-		Group:    "serving.knative.dev",
-		Version:  "v1",
-		Resource: "services",
-	}
-	if err := client.WaitForResourceReady(client.Namespace, kserviceName, ksvcGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(kserviceName, ksvcTypeMeta); err != nil {
 		t.Error(err)
 	}
 

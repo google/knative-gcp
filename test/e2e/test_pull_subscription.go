@@ -61,11 +61,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "pubsub.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
-	}); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, pullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
@@ -110,6 +106,10 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		time.Sleep(10 * time.Second)
 	}()
 
+	if err := client.Core.WaitForResourceReady(psName, pullSubscriptionTypeMeta); err != nil {
+		t.Error(err)
+	}
+
 	gvr := schema.GroupVersionResource{
 		Group:    "pubsub.cloud.google.com",
 		Version:  "v1alpha1",
@@ -120,10 +120,6 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		Group:    "batch",
 		Version:  "v1",
 		Resource: "jobs",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
-		t.Error(err)
 	}
 
 	topic := getTopic(t, topicName)

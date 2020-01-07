@@ -31,13 +31,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/pkg/apis"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
 	"knative.dev/eventing/test/common"
+	pkgTest "knative.dev/pkg/test"
+
+	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 
 	"github.com/google/knative-gcp/test/e2e/metrics"
 	"github.com/google/knative-gcp/test/operations"
@@ -45,13 +44,29 @@ import (
 
 // Setup runs the Setup in the common eventing test framework.
 func Setup(t *testing.T, runInParallel bool) *Client {
-	coreClient := common.Setup(t, runInParallel)
-	client := &Client{
-		Core:      coreClient,
-		Namespace: coreClient.Namespace,
+	client, err := newClient(pkgTest.Flags.Kubeconfig, pkgTest.Flags.Cluster)
+	if err != nil {
+		t.Fatalf("Failed to initialize client for Knative GCP: %v", err)
 	}
+
+	coreClient := common.Setup(t, runInParallel)
+	client.Core = coreClient
+	client.Namespace = coreClient.Namespace
 	client.DuplicateSecret(t, "google-cloud-key", "default")
 	return client
+}
+
+func newClient(configPath string, clusterName string) (*Client, error) {
+	config, err := pkgTest.BuildClientConfig(configPath, clusterName)
+	if err != nil {
+		return nil, err
+	}
+
+	kgc, err := knativegcp.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{KnativeGCP:kgc}, nil
 }
 
 // TearDown runs the TearDown in the common eventing test framework.
@@ -63,6 +78,7 @@ func TearDown(client *Client) {
 type Client struct {
 	Core *common.Client
 
+	KnativeGCP *knativegcp.Clientset
 	Namespace string
 }
 
@@ -106,41 +122,6 @@ const (
 	interval = 1 * time.Second
 	timeout  = 5 * time.Minute
 )
-
-// WaitForResourceReady waits until the specified resource in the given namespace are ready.
-func (c *Client) WaitForResourceReady(namespace, name string, gvr schema.GroupVersionResource) error {
-	lastMsg := ""
-	like := &duckv1.KResource{}
-	return wait.PollImmediate(interval, timeout, func() (bool, error) {
-
-		us, err := c.Core.Dynamic.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				log.Println(namespace, name, "not found", err)
-				// keep polling
-				return false, nil
-			}
-			return false, err
-		}
-		obj := like.DeepCopy()
-		if err = runtime.DefaultUnstructuredConverter.FromUnstructured(us.Object, obj); err != nil {
-			log.Fatalf("Error DefaultUnstructuree.Dynamiconverter. %v", err)
-		}
-		obj.ResourceVersion = gvr.Version
-		obj.APIVersion = gvr.GroupVersion().String()
-
-		ready := obj.Status.GetCondition(apis.ConditionReady)
-		if ready != nil && !ready.IsTrue() {
-			msg := fmt.Sprintf("%s is not ready, %s: %s", name, ready.Reason, ready.Message)
-			if msg != lastMsg {
-				log.Println(msg)
-				lastMsg = msg
-			}
-		}
-
-		return ready.IsTrue(), nil
-	})
-}
 
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
@@ -192,6 +173,7 @@ func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 	return operations.GetFirstTerminationMessage(pod), nil
 }
 
+// TODO(chizhg): change to use typemeta instead of gvr.
 func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {
 	cc := c.Core
 	// Get all pods in this namespace.
@@ -204,7 +186,7 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 
 	// Look for a pod with the name that was passed in inside the pod name.
 	for _, pod := range pods.Items {
-		if strings.Contains(pod.Name, name) {
+		if strings.HasPrefix(pod.Name, name) {
 			// Collect all the logs from all the containers for this pod.
 			if l, err := cc.Kube.Kube.CoreV1().Pods(namespace).GetLogs(pod.Name, &corev1.PodLogOptions{}).DoRaw(); err != nil {
 				logs = append(logs, err.Error())

@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -49,11 +48,7 @@ func SmokeTestChannelImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.WaitForResourceReady(client.Namespace, "e2e-smoke-test", schema.GroupVersionResource{
-		Group:    "messaging.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "channels",
-	}); err != nil {
+	if err := client.Core.WaitForResourceReady("e2e-smoke-test", channelTypeMeta); err != nil {
 		t.Error(err)
 	}
 }

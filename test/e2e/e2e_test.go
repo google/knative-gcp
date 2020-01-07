@@ -25,14 +25,15 @@ import (
 	"strings"
 	"testing"
 
-	"knative.dev/pkg/test/zipkin"
-
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/test/common"
 	"knative.dev/eventing/test/conformance/helpers"
+	"knative.dev/pkg/test/zipkin"
+
 	"knative.dev/pkg/test/logstream"
+
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
 var packages = []string{

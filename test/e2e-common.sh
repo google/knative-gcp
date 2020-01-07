@@ -33,7 +33,7 @@ readonly E2E_TEST_NAMESPACE="default"
 readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 
 # Constants used for creating ServiceAccount for the Control-Plane if it's not running on Prow.
-readonly CONTROL_PLANE_SERVICE_ACCOUNT="e2e-cloud-run-events-test-$(random6)"
+readonly CONTROL_PLANE_SERVICE_ACCOUNT="e2e-cr-events-test-$(random6)"
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 
@@ -41,7 +41,7 @@ readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
-global GCS_SERVICE_ACCOUNT
+#global GCS_SERVICE_ACCOUNT
 
 function knative_setup() {
   control_plane_setup || return 1
