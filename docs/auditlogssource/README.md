@@ -3,7 +3,7 @@
 ## Overview
 
 This sample shows how to Configure a `AuditLogsSource` resource to 
-read data from [Cloud Audit Logs](https://cloud.google.com/logging/docs/audit/) and directly publishes to the underlying transport (Pub/Sub), 
+read data from [Cloud Audit Logs](https://cloud.google.com/logging/docs/audit/) and directly publish to the underlying transport (Pub/Sub), 
 in CloudEvents format.
 
 ## Prerequisites
@@ -21,19 +21,20 @@ in CloudEvents format.
 
 ## Deployment
 
-1. Create a [auditlogssource](./auditlogssource.yaml). This `AuditLogsSource` will get Cloud Audit Log Entries for topic creation.  
-   You can change the `serviceName`, `methodName` and `resourceName` to select the Cloud Audit Log Entries you want to view.
-    
-           |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
-           |:----------------------: |:-----------------------------: |
-           |      serviceName        |     protoPayload.serviceName   |
-           |      methodName         |     protoPayload.methodName    |
-           |     resourceName        |     protoPayload.resourceName  |
+1. Create a [auditlogssource](./auditlogssource.yaml). 
    
    ```shell
       kubectl apply --filename auditlogssource.yaml
    ```    
-
+   
+   This `AuditLogsSource` will get Cloud Audit Log Entries for topic creation.  
+      You can change the `serviceName`, `methodName` and `resourceName` to select the Cloud Audit Log Entries you want to view.
+       
+              |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
+              |  :-------------------:  |  :--------------------------:  |
+              |      serviceName        |     protoPayload.serviceName   |
+              |      methodName         |     protoPayload.methodName    |
+              |     resourceName        |     protoPayload.resourceName  |
 
 1. Create a [service](./event-display.yaml) that the AuditLogsSource will sink into:
 
