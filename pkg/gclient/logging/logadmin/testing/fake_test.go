@@ -167,9 +167,7 @@ func TestGetSink(t *testing.T) {
 			}
 			if err == nil && tt.errCode == codes.OK {
 				if diff := cmp.Diff(tt.existing, got, cmpopts.IgnoreFields(*got, "WriterIdentity")); diff != "" {
-					t.Log("Unexpected diff between created sink and returned sink:")
-					t.Log(diff)
-					t.Fail()
+					t.Errorf("Unexpected diff between created sink and returned sink: %v", diff)
 				}
 			}
 		})
