@@ -23,11 +23,13 @@ import (
 
 	"knative.dev/eventing/test/base"
 	"knative.dev/eventing/test/base/resources"
-	"knative.dev/eventing/test/common"
+	eventingCommon "knative.dev/eventing/test/common"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 /*
@@ -54,8 +56,8 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	targetName := helpers.AppendRandomString("target")
 	clusterRoleName := helpers.AppendRandomString("e2e-pubsub")
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
 	config := map[string]string{
 		"namespace":        client.Namespace,
@@ -76,23 +78,23 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	defer deleteResource(brokerInstaller, t)
 
 	// Wait for broker, trigger, ksvc ready.
-	if err := client.Core.WaitForResourceReady(brokerName, common.BrokerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(brokerName, eventingCommon.BrokerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	if err := client.Core.WaitForResourceReady(dummyTriggerName, common.TriggerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(dummyTriggerName, eventingCommon.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
-	if err := client.Core.WaitForResourceReady(respTriggerName, common.TriggerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(respTriggerName, eventingCommon.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	if err := client.Core.WaitForResourceReady(kserviceName, ksvcTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(kserviceName, lib.KsvcTypeMeta); err != nil {
 		t.Error(err)
 	}
 
 	// Get broker URL.
-	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, common.BrokerTypeMeta)
+	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, eventingCommon.BrokerTypeMeta)
 	u, err := base.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
@@ -118,9 +120,9 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	}
 }
 
-func createResource(client *Client, config map[string]string, folders []string, t *testing.T) *Installer {
-	installer := NewInstaller(client.Core.Dynamic, config,
-		EndToEndConfigYaml(folders)...)
+func createResource(client *lib.Client, config map[string]string, folders []string, t *testing.T) *lib.Installer {
+	installer := lib.NewInstaller(client.Core.Dynamic, config,
+		lib.EndToEndConfigYaml(folders)...)
 	if err := installer.Do("create"); err != nil {
 		t.Errorf("failed to create, %s", err)
 		return nil
@@ -128,7 +130,7 @@ func createResource(client *Client, config map[string]string, folders []string, 
 	return installer
 }
 
-func deleteResource(installer *Installer, t *testing.T) {
+func deleteResource(installer *lib.Installer, t *testing.T) {
 	if err := installer.Do("delete"); err != nil {
 		t.Errorf("failed to delete, %s", err)
 	}
@@ -136,7 +138,7 @@ func deleteResource(installer *Installer, t *testing.T) {
 	time.Sleep(15 * time.Second)
 }
 
-func jobDone(client *Client, podName string, t *testing.T) bool {
+func jobDone(client *lib.Client, podName string, t *testing.T) bool {
 	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
 	if err != nil {
 		t.Error(err)
@@ -146,13 +148,13 @@ func jobDone(client *Client, podName string, t *testing.T) bool {
 		t.Error("No terminating message from the pod")
 		return false
 	} else {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 			return false
 		}
 		if !out.Success {
-			if logs, err := client.LogsFor(client.Namespace, podName, jobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

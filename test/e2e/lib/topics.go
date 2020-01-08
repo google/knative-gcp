@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package lib
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-func makeTopicOrDie(t *testing.T) (string, func()) {
+func MakeTopicOrDie(t *testing.T) (string, func()) {
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -56,7 +56,7 @@ func makeTopicOrDie(t *testing.T) (string, func()) {
 	}
 }
 
-func getTopic(t *testing.T, topicName string) *pubsub.Topic {
+func GetTopic(t *testing.T, topicName string) *pubsub.Topic {
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)

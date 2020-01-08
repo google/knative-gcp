@@ -22,16 +22,18 @@ import (
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 // SmokeTestChannelImpl makes sure we can run tests.
 func SmokeTestChannelImpl(t *testing.T) {
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	installer := NewInstaller(client.Core.Dynamic, map[string]string{
+	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
-	}, EndToEndConfigYaml([]string{"smoke_test", "istio"})...)
+	}, lib.EndToEndConfigYaml([]string{"smoke_test", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -48,7 +50,7 @@ func SmokeTestChannelImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady("e2e-smoke-test", channelTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady("e2e-smoke-test", lib.ChannelTypeMeta); err != nil {
 		t.Error(err)
 	}
 }

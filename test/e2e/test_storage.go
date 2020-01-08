@@ -32,7 +32,8 @@ import (
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -41,7 +42,7 @@ import (
 // makeBucket retrieves the bucket name for the test. If it does not exist, it will create it.
 func makeBucket(ctx context.Context, t *testing.T, project string) string {
 	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+		t.Fatalf("failed to find %q in envvars", lib.ProwProjectKey)
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -74,7 +75,7 @@ func makeBucket(ctx context.Context, t *testing.T, project string) string {
 func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, project string) *storage.BucketHandle {
 	// Prow sticks the project in this key
 	if project == "" {
-		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+		t.Fatalf("failed to find %q in envvars", lib.ProwProjectKey)
 	}
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -85,17 +86,17 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, proje
 
 func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
 	ctx := context.Background()
-	project := os.Getenv(ProwProjectKey)
+	project := os.Getenv(lib.ProwProjectKey)
 
 	bucketName := makeBucket(ctx, t, project)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
-	client := Setup(t, true)
+	client := lib.Setup(t, true)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-	defer TearDown(client)
+	defer lib.TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
@@ -110,8 +111,8 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	for k, v := range packages {
 		config[k] = v
 	}
-	installer := NewInstaller(client.Core.Dynamic, config,
-		EndToEndConfigYaml([]string{"storage_test", "istio"})...)
+	installer := lib.NewInstaller(client.Core.Dynamic, config,
+		lib.EndToEndConfigYaml([]string{"storage_test", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -128,7 +129,7 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		time.Sleep(60 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady(storageName, storageTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(storageName, lib.StorageTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -159,19 +160,19 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, storageTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, storageName, lib.StorageTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
@@ -186,11 +187,11 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		time.Sleep(sleepTime)
 
 		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(ProwProjectKey)
+		projectID := os.Getenv(lib.ProwProjectKey)
 		f := map[string]interface{}{
-			"metric.type":                 eventCountMetricType,
-			"resource.type":               globalMetricResourceType,
-			"metric.label.resource_group": storageResourceGroup,
+			"metric.type":                 lib.EventCountMetricType,
+			"resource.type":               lib.GlobalMetricResourceType,
+			"metric.label.resource_group": lib.StorageResourceGroup,
 			"metric.label.event_type":     v1alpha1.StorageFinalize,
 			"metric.label.event_source":   v1alpha1.StorageEventSource(bucketName),
 			"metric.label.namespace_name": client.Namespace,

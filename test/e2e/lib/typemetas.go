@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package lib
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-var jobTypeMeta = batchTypeMeta("Job")
+var JobTypeMeta = batchTypeMeta("Job")
 
 func batchTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{
@@ -27,7 +27,7 @@ func batchTypeMeta(kind string) *metav1.TypeMeta {
     }
 }
 
-var ksvcTypeMeta = servingTypeMeta("Service")
+var KsvcTypeMeta = servingTypeMeta("Service")
 
 func servingTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{
@@ -36,7 +36,7 @@ func servingTypeMeta(kind string) *metav1.TypeMeta {
     }
 }
 
-var channelTypeMeta = gcloudMessagingTypeMeta("Channel")
+var ChannelTypeMeta = gcloudMessagingTypeMeta("Channel")
 
 func gcloudMessagingTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{
@@ -45,9 +45,9 @@ func gcloudMessagingTypeMeta(kind string) *metav1.TypeMeta {
     }
 }
 
-var storageTypeMeta = gcloudEventsTypeMeta("Storage")
+var StorageTypeMeta = gcloudEventsTypeMeta("Storage")
 
-var pubsubTypeMeta = gcloudEventsTypeMeta("PubSub")
+var PubsubTypeMeta = gcloudEventsTypeMeta("PubSub")
 
 func gcloudEventsTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{
@@ -56,7 +56,7 @@ func gcloudEventsTypeMeta(kind string) *metav1.TypeMeta {
     }
 }
 
-var pullSubscriptionTypeMeta = gcloudPubsubTypeMeta("PullSubscription")
+var PullSubscriptionTypeMeta = gcloudPubsubTypeMeta("PullSubscription")
 
 func gcloudPubsubTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{

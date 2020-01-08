@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package lib
 
 import (
 	"context"
@@ -37,8 +37,8 @@ import (
 
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 
-	"github.com/google/knative-gcp/test/e2e/metrics"
-	"github.com/google/knative-gcp/test/operations"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/operations"
 )
 
 // Setup runs the Setup in the common eventing test framework.

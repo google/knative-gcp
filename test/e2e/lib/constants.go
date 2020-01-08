@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package lib
 
 const (
 	ProwProjectKey = "E2E_PROJECT_ID"
 
-	eventCountMetricType     = "custom.googleapis.com/cloud.google.com/source/event_count"
-	globalMetricResourceType = "global"
-	storageResourceGroup     = "storages.events.cloud.google.com"
-	pubsubResourceGroup      = "pubsubs.events.cloud.google.com"
+	EventCountMetricType     = "custom.googleapis.com/cloud.google.com/source/event_count"
+	GlobalMetricResourceType = "global"
+	StorageResourceGroup     = "storages.events.cloud.google.com"
+	PubsubResourceGroup      = "pubsubs.events.cloud.google.com"
 )

@@ -34,6 +34,7 @@ import (
 	"knative.dev/pkg/test/logstream"
 
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 var packages = []string{
@@ -48,7 +49,7 @@ var packageToImageConfigDone bool
 
 func TestMain(m *testing.M) {
 	for _, pack := range packages {
-		image, err := KoPublish(pack)
+		image, err := lib.KoPublish(pack)
 		if err != nil {
 			fmt.Printf("error attempting to ko publish: %s\n", err)
 			panic(err)

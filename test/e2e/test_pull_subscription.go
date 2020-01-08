@@ -26,23 +26,25 @@ import (
 	"github.com/google/uuid"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
 func SmokePullSubscriptionTestImpl(t *testing.T) {
-	topic, deleteTopic := makeTopicOrDie(t)
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-sub"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	installer := NewInstaller(client.Core.Dynamic, map[string]string{
+	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace":    client.Namespace,
 		"topic":        topic,
 		"subscription": psName,
-	}, EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
+	}, lib.EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -59,21 +61,21 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady(psName, pullSubscriptionTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
-	topicName, deleteTopic := makeTopicOrDie(t)
+	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
 	config := map[string]string{
 		"namespace":    client.Namespace,
@@ -86,8 +88,8 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		config[k] = v
 	}
 
-	installer := NewInstaller(client.Core.Dynamic, config,
-		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+	installer := lib.NewInstaller(client.Core.Dynamic, config,
+		lib.EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -104,11 +106,11 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady(psName, pullSubscriptionTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	topic := getTopic(t, topicName)
+	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
 		Attributes: map[string]string{
@@ -128,19 +130,19 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 		}
 		if !out.Success {
 			// Log the output pull subscription pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, pullSubscriptionTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.PullSubscriptionTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pullsubscription: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

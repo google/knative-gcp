@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package e2e
+package lib
 
 import (
 	"fmt"
@@ -60,7 +60,7 @@ func EndToEndConfigYaml(paths []string, options ...YamlPathsOptionFunc) []string
 
 	yamls := make([]string, 0, len(paths))
 	for _, path := range paths {
-		yamls = append(yamls, fmt.Sprintf("%s/config/%s/", dir, path))
+		yamls = append(yamls, fmt.Sprintf("%s/../config/%s/", dir, path))
 	}
 
 	for _, o := range options {

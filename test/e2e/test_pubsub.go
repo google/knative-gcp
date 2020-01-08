@@ -30,27 +30,27 @@ import (
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
-
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // SmokePubSubTestImpl tests we can create a pubsub to ready state.
 func SmokePubSubTestImpl(t *testing.T) {
-	topic, deleteTopic := makeTopicOrDie(t)
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-pubsub"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	installer := NewInstaller(client.Core.Dynamic, map[string]string{
+	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
 		"topic":     topic,
 		"pubsub":    psName,
-	}, EndToEndConfigYaml([]string{"pubsub_test", "istio", "event_display"})...)
+	}, lib.EndToEndConfigYaml([]string{"pubsub_test", "istio", "event_display"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -67,7 +67,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady(psName, pubsubTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
@@ -75,17 +75,17 @@ func SmokePubSubTestImpl(t *testing.T) {
 // PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
 // for StackDriver metrics.
 func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
-	topicName, deleteTopic := makeTopicOrDie(t)
+	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := Setup(t, true)
+	client := lib.Setup(t, true)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-	defer TearDown(client)
+	defer lib.TearDown(client)
 
 	config := map[string]string{
 		"namespace":  client.Namespace,
@@ -98,8 +98,8 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		config[k] = v
 	}
 
-	installer := NewInstaller(client.Core.Dynamic, config,
-		EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
+	installer := lib.NewInstaller(client.Core.Dynamic, config,
+		lib.EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -116,11 +116,11 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		time.Sleep(10 * time.Second)
 	}()
 
-	if err := client.Core.WaitForResourceReady(psName, pubsubTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	topic := getTopic(t, topicName)
+	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
 		Attributes: map[string]string{
@@ -140,19 +140,19 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, pubsubTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.PubsubTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
@@ -168,11 +168,11 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		time.Sleep(sleepTime)
 
 		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(ProwProjectKey)
+		projectID := os.Getenv(lib.ProwProjectKey)
 		f := map[string]interface{}{
-			"metric.type":                 eventCountMetricType,
-			"resource.type":               globalMetricResourceType,
-			"metric.label.resource_group": pubsubResourceGroup,
+			"metric.type":                 lib.EventCountMetricType,
+			"resource.type":               lib.GlobalMetricResourceType,
+			"metric.label.resource_group": lib.PubsubResourceGroup,
 			"metric.label.event_type":     v1alpha1.PubSubPublish,
 			"metric.label.event_source":   v1alpha1.PubSubEventSource(projectID, topicName),
 			"metric.label.namespace_name": client.Namespace,
