@@ -54,6 +54,7 @@ func init() {
 	converters = map[string]converterFn{
 		AuditLogAdapterType:        convertAuditLog,
 		"com.google.cloud.storage": convertStorage,
+		SchedulerAdapterType:       convertScheduler,
 	}
 }
 
