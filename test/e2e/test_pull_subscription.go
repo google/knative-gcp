@@ -24,8 +24,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -110,18 +108,6 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		t.Error(err)
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
-	}
-
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
-
 	topic := getTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
@@ -148,13 +134,13 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 		}
 		if !out.Success {
 			// Log the output pull subscription pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, pullSubscriptionTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pullsubscription: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

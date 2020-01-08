@@ -28,7 +28,6 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
@@ -133,18 +132,6 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		t.Error(err)
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "storages",
-	}
-
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
-
 	// Add a random name file in the bucket
 	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
 	wc := bucketHandle.Object(fileName).NewWriter(ctx)
@@ -178,13 +165,13 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, gvr); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, storageName, storageTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

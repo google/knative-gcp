@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/test/base"
 	"knative.dev/eventing/test/base/resources"
 	"knative.dev/eventing/test/common"
@@ -107,18 +106,13 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	senderInstaller := createResource(client, config, []string{"pubsub_sender"}, t)
 	defer deleteResource(senderInstaller, t)
 
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
 	// Check if dummy CloudEvent is sent out.
-	if done := jobDone(client, senderName, t, jobGVR); !done {
+	if done := jobDone(client, senderName, t); !done {
 		t.Error("dummy event wasn't sent to broker")
 		t.Failed()
 	}
 	// Check if resp CloudEvent hits the target Service.
-	if done := jobDone(client, targetName, t, jobGVR); !done {
+	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
 	}
@@ -142,7 +136,7 @@ func deleteResource(installer *Installer, t *testing.T) {
 	time.Sleep(15 * time.Second)
 }
 
-func jobDone(client *Client, podName string, t *testing.T, jobGVR schema.GroupVersionResource) bool {
+func jobDone(client *Client, podName string, t *testing.T) bool {
 	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
 	if err != nil {
 		t.Error(err)
@@ -158,7 +152,7 @@ func jobDone(client *Client, podName string, t *testing.T, jobGVR schema.GroupVe
 			return false
 		}
 		if !out.Success {
-			if logs, err := client.LogsFor(client.Namespace, podName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, podName, jobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

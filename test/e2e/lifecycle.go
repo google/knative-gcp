@@ -31,7 +31,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"knative.dev/eventing/test/common"
 	pkgTest "knative.dev/pkg/test"
@@ -123,6 +122,7 @@ const (
 	timeout  = 5 * time.Minute
 )
 
+// TODO(chizhg): move this function to knative/pkg/test
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 	cc := c.Core
@@ -173,8 +173,7 @@ func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 	return operations.GetFirstTerminationMessage(pod), nil
 }
 
-// TODO(chizhg): change to use typemeta instead of gvr.
-func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource) (string, error) {
+func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, error) {
 	cc := c.Core
 	// Get all pods in this namespace.
 	pods, err := cc.Kube.Kube.CoreV1().Pods(namespace).List(metav1.ListOptions{})
@@ -198,7 +197,7 @@ func (c *Client) LogsFor(namespace, name string, gvr schema.GroupVersionResource
 
 	// Did we find a match like the given name?
 	if len(logs) == 0 {
-		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, gvr.String())
+		return "", fmt.Errorf(`pod for "%s/%s" [%s] not found`, namespace, name, tm.String())
 	}
 
 	return strings.Join(logs, "\n"), nil

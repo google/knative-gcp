@@ -68,5 +68,5 @@ func GetJobPodByJobName(ctx context.Context, kubeClientset kubernetes.Interface,
 		logger.Infof("Found pod: %q", pod.Name)
 		return &pod, nil
 	}
-	return nil, fmt.Errorf("Pod not found")
+	return nil, fmt.Errorf("pod not found")
 }

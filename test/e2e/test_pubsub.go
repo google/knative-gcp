@@ -26,7 +26,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
@@ -121,18 +120,6 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		t.Error(err)
 	}
 
-	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pubsubs",
-	}
-
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
-
 	topic := getTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
@@ -159,13 +146,13 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, pubsubTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, jobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
