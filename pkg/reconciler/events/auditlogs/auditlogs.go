@@ -191,8 +191,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLog
 	sink, err := logadminClient.Sink(ctx, sinkID)
 	if status.Code(err) == codes.NotFound {
 		filterBuilder := resources.FilterBuilder{}
-		filterBuilder.WithServiceName(s.Spec.ServiceName)
-		filterBuilder.WithMethodName(s.Spec.MethodName)
+		filterBuilder.WithServiceName(s.Spec.ServiceName).WithMethodName(s.Spec.MethodName)
 		if s.Spec.ResourceName != "" {
 			filterBuilder.WithResourceName(s.Spec.ResourceName)
 		}
