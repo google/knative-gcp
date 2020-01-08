@@ -19,6 +19,7 @@ package testing
 import (
 	"context"
 
+	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	"github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"google.golang.org/api/option"
 )
@@ -51,6 +52,7 @@ type TestClientData struct {
 	CloseErr              error
 	TopicData             TestTopicData
 	SubscriptionData      TestSubscriptionData
+	HandleData            testiam.TestHandleData
 }
 
 // testClient is a test Pub/Sub client.
@@ -68,7 +70,7 @@ func (c *testClient) Close() error {
 
 // Topic implements Client.Topic.
 func (c *testClient) Topic(id string) pubsub.Topic {
-	return &testTopic{data: c.data.TopicData}
+	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData}
 }
 
 // Subscription implements Client.Subscription.
@@ -83,5 +85,5 @@ func (c *testClient) CreateSubscription(ctx context.Context, id string, cfg pubs
 
 // CreateTopic implements pubsub.Client.CreateTopic
 func (c *testClient) CreateTopic(ctx context.Context, id string) (pubsub.Topic, error) {
-	return &testTopic{data: c.data.TopicData}, c.data.CreateTopicErr
+	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData}, c.data.CreateTopicErr
 }

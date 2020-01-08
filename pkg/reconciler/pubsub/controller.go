@@ -32,3 +32,12 @@ func NewPubSubBase(ctx context.Context, controllerAgentName, receiveAdapterName 
 		receiveAdapterName: receiveAdapterName,
 	}
 }
+
+func NewPubSubBaseWithAdapter(ctx context.Context, controllerAgentName, receiveAdapterName string, adapterType string, cmw configmap.Watcher) *PubSubBase {
+	return &PubSubBase{
+		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
+		pubsubClient:       pubsubClient.Get(ctx),
+		receiveAdapterName: receiveAdapterName,
+		adapterType:        adapterType,
+	}
+}

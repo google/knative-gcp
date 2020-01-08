@@ -94,7 +94,7 @@ func TestConvertPubSub(t *testing.T) {
 				},
 			))
 
-			gotEvent, err := convertPubsub(ctx, test.message, test.sendMode)
+			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
 
 			if err != nil {
 				if !test.wantErr {

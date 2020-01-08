@@ -40,6 +40,9 @@ type PubSubBase struct {
 
 	// What do we tag receive adapter as.
 	receiveAdapterName string
+
+	// What type of receive adapter to use.
+	adapterType string
 }
 
 // ReconcilePubSub reconciles Topic / PullSubscription given a PubSubSpec.
@@ -105,7 +108,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, resourceGroup)
+		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, psb.adapterType, resourceGroup)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))

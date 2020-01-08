@@ -19,12 +19,15 @@ package testing
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/gclient/iam"
+	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	"github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
 
 // TestTopic is a test Pub/Sub topic.
 type testTopic struct {
-	data TestTopicData
+	data       TestTopicData
+	handleData testiam.TestHandleData
 }
 
 // TestTopicData is the data used to configure the test Topic.
@@ -44,4 +47,8 @@ func (t *testTopic) Exists(ctx context.Context) (bool, error) {
 
 func (t *testTopic) Delete(ctx context.Context) error {
 	return t.data.DeleteErr
+}
+
+func (t *testTopic) IAM() iam.Handle {
+	return testiam.NewTestHandle(t.handleData)
 }
