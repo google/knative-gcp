@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: user-container
-        image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display@sha256:bf45b3eb1e7fc4cb63d6a5a6416cf696295484a7662e0cf9ccdf5c080542c21d
+        image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display@sha256:070f31589d919779a83adf3cc0f0b0e3f5f063eb57a67d53e5e8d0c5eefb57ba
         ports:
         - containerPort: 8080
 
