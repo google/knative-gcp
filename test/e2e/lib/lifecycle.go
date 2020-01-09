@@ -51,6 +51,8 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 	coreClient := common.Setup(t, runInParallel)
 	client.Core = coreClient
 	client.Namespace = coreClient.Namespace
+	client.Tracker = coreClient.Tracker
+	client.T = t
 	client.DuplicateSecret(t, "google-cloud-key", "default")
 	return client
 }
@@ -78,7 +80,9 @@ type Client struct {
 	Core *common.Client
 
 	KnativeGCP *knativegcp.Clientset
-	Namespace string
+	Namespace  string
+	T          *testing.T
+	Tracker    *common.Tracker
 }
 
 var setStackDriverConfigOnce = sync.Once{}
