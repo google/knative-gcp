@@ -62,6 +62,7 @@ rules:
 - apiGroups:
     - events.cloud.google.com
   resources:
+    - auditlogssources
     - storages
     - schedulers
     - pubsubs
@@ -70,6 +71,7 @@ rules:
 - apiGroups:
     - events.cloud.google.com
   resources:
+    - auditlogssources/status
     - storages/status
     - schedulers/status
     - pubsubs/status

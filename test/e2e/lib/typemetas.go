@@ -49,6 +49,8 @@ var StorageTypeMeta = gcloudEventsTypeMeta("Storage")
 
 var PubsubTypeMeta = gcloudEventsTypeMeta("PubSub")
 
+var AuditLogsSourceTypeMeta = gcloudEventsTypeMeta("AuditLogsSource")
+
 func gcloudEventsTypeMeta(kind string) *metav1.TypeMeta {
     return &metav1.TypeMeta{
         Kind:       kind,

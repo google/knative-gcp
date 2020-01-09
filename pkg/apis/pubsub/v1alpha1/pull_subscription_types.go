@@ -102,6 +102,11 @@ type PullSubscriptionSpec struct {
 	// PullSubscription invokes the sink.
 	// +optional
 	Mode ModeType `json:"mode,omitempty"`
+
+	// AdapterType determines the type of receive adapter that a
+	// PullSubscription uses.
+	// +optional
+	AdapterType string `json:"adapterType,omitempty"`
 }
 
 // CloudEventOverrides defines arguments for a Source that control the output

@@ -134,6 +134,9 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 							Name:  "TRANSFORMER_URI",
 							Value: args.TransformerURI,
 						}, {
+							Name:  "ADAPTER_TYPE",
+							Value: args.Source.Spec.AdapterType,
+						}, {
 							Name:  "SEND_MODE",
 							Value: string(mode),
 						}, {

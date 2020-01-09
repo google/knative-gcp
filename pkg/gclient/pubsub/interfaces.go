@@ -18,6 +18,8 @@ package pubsub
 
 import (
 	"context"
+
+	"github.com/google/knative-gcp/pkg/gclient/iam"
 )
 
 // Client matches the interface exposed by pubsub.Client
@@ -55,4 +57,6 @@ type Topic interface {
 	Exists(ctx context.Context) (bool, error)
 	// Delete see https://godoc.org/cloud.google.com/go/pubsub#Topic.Delete
 	Delete(ctx context.Context) error
+	// IAM see https://godoc.org/cloud.google.com/go/pubsub#Topic.IAM
+	IAM() iam.Handle
 }

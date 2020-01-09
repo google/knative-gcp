@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package converters contains pubsub message to cloudevent converters
+// used by pubsub-based source.
 package converters
 
 import (
@@ -50,6 +52,7 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
+		AuditLogAdapterType:        convertAuditLog,
 		"com.google.cloud.storage": convertStorage,
 	}
 }
@@ -57,9 +60,12 @@ func init() {
 // Convert converts a message off the pubsub format to a source specific if
 // there's a registered handler for the type in the converters map.
 // If there's no registered handler, a default Pubsub one will be used.
-func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, converterType string) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
+	}
+	if c, ok := converters[converterType]; ok {
+		return c(ctx, msg, sendMode)
 	}
 	if msg.Attributes != nil {
 		if val, ok := msg.Attributes["knative-gcp"]; ok {

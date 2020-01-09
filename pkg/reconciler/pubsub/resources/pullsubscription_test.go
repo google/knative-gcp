@@ -63,7 +63,7 @@ func TestMakePullSubscription(t *testing.T) {
 		},
 	}
 
-	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com", "storages.events.cloud.google.com")
+	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com", "google.storage", "storages.events.cloud.google.com")
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
@@ -92,8 +92,9 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 				Key: "eventing-secret-key",
 			},
-			Project: "project-123",
-			Topic:   "topic-abc",
+			Project:     "project-123",
+			Topic:       "topic-abc",
+			AdapterType: "google.storage",
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
 					Ref: &corev1.ObjectReference{

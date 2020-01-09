@@ -21,10 +21,6 @@ import (
 	"time"
 
 	"knative.dev/pkg/ptr"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const (
@@ -37,6 +33,8 @@ func (ps *PubSub) SetDefaults(ctx context.Context) {
 }
 
 func (pss *PubSubSpec) SetDefaults(ctx context.Context) {
+	pss.SetPubSubDefaults()
+
 	if pss.AckDeadline == nil {
 		ackDeadline := defaultAckDeadline
 		pss.AckDeadline = ptr.String(ackDeadline.String())
@@ -45,9 +43,5 @@ func (pss *PubSubSpec) SetDefaults(ctx context.Context) {
 	if pss.RetentionDuration == nil {
 		retentionDuration := defaultRetentionDuration
 		pss.RetentionDuration = ptr.String(retentionDuration.String())
-	}
-
-	if pss.Secret == nil || equality.Semantic.DeepEqual(pss.Secret, &corev1.SecretKeySelector{}) {
-		pss.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
 }
