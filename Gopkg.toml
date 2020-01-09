@@ -2,6 +2,13 @@
 # for detailed Gopkg.toml documentation.
 
 required = [
+  "knative.dev/test-infra/scripts",
+  "knative.dev/test-infra/tools/dep-collector",
+  # for integration tests
+  "knative.dev/eventing/test/test_images/logevents",
+  "knative.dev/eventing/test/test_images/sendevents",
+  "knative.dev/eventing/test/test_images/transformevents",
+
   "k8s.io/apimachinery/pkg/util/sets/types",
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/defaulter-gen",
@@ -10,8 +17,6 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "knative.dev/pkg/codegen/cmd/injection-gen",
   "knative.dev/pkg/testutils/clustermanager/perf-tests",
-  "knative.dev/test-infra/scripts",
-  "knative.dev/test-infra/tools/dep-collector",
   "golang.org/x/net/http2/h2c",
   "go.opencensus.io/metric/metricexport"
 ]
@@ -77,6 +82,10 @@ required = [
 
 [[prune.project]]
   name = "knative.dev/test-infra"
+  non-go = false
+
+[[prune.project]]
+  name = "knative.dev/eventing"
   non-go = false
 
 [[prune.project]]

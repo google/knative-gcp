@@ -28,6 +28,9 @@ function random6() {
 # If gcloud is not available make it a no-op, not an error.
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
+# Vendored eventing test iamges.
+readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_images/"
+
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
@@ -54,8 +57,11 @@ function test_setup() {
   storage_setup || return 1
   echo "Sleep 2 min to wait for all resources to setup"
   sleep 120
-  # TODO: Publish test images.
-  # echo ">> Publishing test images"
+
+  # Publish test images.
+  echo ">> Publishing test images"
+  sed -i 's@knative.dev/eventing/test/test_images@github.com/google/knative-gcp/vendor/knative.dev/eventing/test/test_images@g' "${VENDOR_EVENTING_TEST_IMAGES}"/*/*.yaml
+  $(dirname $0)/upload-test-images.sh ${VENDOR_EVENTING_TEST_IMAGES} e2e || fail_test "Error uploading test images"
   # $(dirname $0)/upload-test-images.sh e2e || fail_test "Error uploading test images"
 }
 

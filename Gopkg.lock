@@ -1286,7 +1286,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:16d722dfe52d385b9e8aa3585d47bd436c73d8f2ce42880ddba6f74fbedcbeb5"
+  digest = "1:46bff3264a2ef8d9335a2b4202a7b015b2f5adaeea7a129e17d328b53414b049"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1316,8 +1316,11 @@
     "test/common",
     "test/conformance/helpers",
     "test/conformance/helpers/tracing",
+    "test/test_images/logevents",
+    "test/test_images/sendevents",
+    "test/test_images/transformevents",
   ]
-  pruneopts = "NUT"
+  pruneopts = "UT"
   revision = "b53d3fdb4b5e5ba736072a7a971f495ec09d16fa"
 
 [[projects]]
@@ -1566,6 +1569,9 @@
     "knative.dev/eventing/test/base/resources",
     "knative.dev/eventing/test/common",
     "knative.dev/eventing/test/conformance/helpers",
+    "knative.dev/eventing/test/test_images/logevents",
+    "knative.dev/eventing/test/test_images/sendevents",
+    "knative.dev/eventing/test/test_images/transformevents",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
     "knative.dev/pkg/apis/duck/v1",

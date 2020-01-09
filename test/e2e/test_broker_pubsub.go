@@ -82,10 +82,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 		t.Error(err)
 	}
 
-	if err := client.Core.WaitForResourceReady(dummyTriggerName, eventingCommon.TriggerTypeMeta); err != nil {
-		t.Error(err)
-	}
-	if err := client.Core.WaitForResourceReady(respTriggerName, eventingCommon.TriggerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourcesReady(eventingCommon.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
 

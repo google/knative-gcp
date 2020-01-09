@@ -26,10 +26,15 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/eventing/test/base/resources"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
+	"knative.dev/eventing/test/common"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -42,15 +47,27 @@ func SmokePubSubTestImpl(t *testing.T) {
 	defer deleteTopic()
 
 	psName := topic + "-pubsub"
+	svcName := "event_display"
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
+
+	// create logger service as the subscriber
+	pod := resources.EventLoggerPod(svcName)
+	client.Core.CreatePodOrFail(pod, common.WithService(svcName))
+
+	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
+		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
+		Version: "v1",
+		Kind:    "Service"}, svcName),
+		kngcptesting.WithPubSubTopic(topic))
+	client.CreatePubSubOrFail(eventsPubsub)
 
 	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
 		"topic":     topic,
 		"pubsub":    psName,
-	}, lib.EndToEndConfigYaml([]string{"pubsub_test", "istio", "event_display"})...)
+	}, lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
