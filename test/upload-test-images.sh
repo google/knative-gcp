@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2020 The Knative Authors
+# Copyright 2018 The Knative Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ function upload_test_images() {
   # Script needs to be executed from the root directory
   # to pickup .ko.yaml
   cd "$( dirname "$0")/.."
-  local image_dir="test/test_images"
-  local docker_tag=$1
+  local image_dir=$1
+  local docker_tag=$2
   local tag_option=""
   if [ -n "${docker_tag}" ]; then
     tag_option="--tags $docker_tag,latest"

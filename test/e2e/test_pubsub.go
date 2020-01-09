@@ -47,7 +47,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 	defer deleteTopic()
 
 	psName := topic + "-pubsub"
-	svcName := "event_display"
+	svcName := "event-display"
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
@@ -136,6 +136,8 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
+
+	time.Sleep(1 * time.Minute)
 
 	topic := lib.GetTopic(t, topicName)
 
