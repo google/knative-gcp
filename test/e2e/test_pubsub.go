@@ -25,9 +25,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/test/base/resources"
+	eventingtestresources "knative.dev/eventing/test/base/resources"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
@@ -37,6 +36,7 @@ import (
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -52,10 +52,11 @@ func SmokePubSubTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	// create logger service as the subscriber
-	pod := resources.EventLoggerPod(svcName)
+	// Create logger service to receive the events.
+	pod := eventingtestresources.EventLoggerPod(svcName)
 	client.Core.CreatePodOrFail(pod, common.WithService(svcName))
 
+	// Create the PubSub source.
 	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
 		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
 		Version: "v1",
@@ -65,8 +66,6 @@ func SmokePubSubTestImpl(t *testing.T) {
 
 	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace": client.Namespace,
-		"topic":     topic,
-		"pubsub":    psName,
 	}, lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
@@ -104,19 +103,27 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	}
 	defer lib.TearDown(client)
 
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName)
+	client.CreateJobOrFail(job, lib.WithService(targetName))
+
+	// Create the PubSub source.
+	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
+		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, targetName),
+		kngcptesting.WithPubSubTopic(topicName))
+	client.CreatePubSubOrFail(eventsPubsub)
+
 	config := map[string]string{
 		"namespace":  client.Namespace,
-		"topic":      topicName,
-		"pubsub":     psName,
-		"targetName": targetName,
-		"targetUID":  uuid.New().String(),
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
 
 	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
+		lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
