@@ -22,6 +22,7 @@ import (
 
     eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
     messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+    pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func (c *Client) CreateChannelOrFail(channel *messagingv1alpha1.Channel) {
@@ -49,6 +50,15 @@ func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.Storage) {
         c.T.Fatalf("Failed to create storage %q: %v", storage.Name, err)
     }
     c.Tracker.AddObj(storage)
+}
+
+func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *pubsubv1alpha1.PullSubscription) {
+    pullsubscriptions := c.KnativeGCP.PubsubV1alpha1().PullSubscriptions(c.Namespace)
+    _, err := pullsubscriptions.Create(pullsubscription)
+    if err != nil {
+        c.T.Fatalf("Failed to create pullsubscription %q: %v", pullsubscription.Name, err)
+    }
+    c.Tracker.AddObj(pullsubscription)
 }
 
 // WithServiceForJob returns an option that creates a Service binded with the given job.

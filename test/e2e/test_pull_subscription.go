@@ -23,11 +23,16 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/google/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	eventingtestresources "knative.dev/eventing/test/base/resources"
+	"knative.dev/eventing/test/common"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
@@ -36,15 +41,28 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	defer deleteTopic()
 
 	psName := topic + "-sub"
+	svcName := "event-display"
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
+	// Create logger service to receive the events.
+	pod := eventingtestresources.EventLoggerPod(svcName)
+	client.Core.CreatePodOrFail(pod, common.WithService(svcName))
+
+	// Create PullSubscription.
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+			Topic: topic,
+		}),
+		kngcptesting.WithPullSubscriptionSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, svcName))
+	client.CreatePullSubscriptionOrFail(pullsubscription)
+
 	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
 		"namespace":    client.Namespace,
-		"topic":        topic,
-		"subscription": psName,
-	}, lib.EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
+	}, lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
@@ -77,19 +95,28 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName)
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+
+	// Create PullSubscription.
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+			Topic: topicName,
+		}), kngcptesting.WithPullSubscriptionSink(metav1.GroupVersionKind{
+		Version: "v1",
+		Kind:    "Service"}, targetName))
+	client.CreatePullSubscriptionOrFail(pullsubscription)
+
 	config := map[string]string{
 		"namespace":    client.Namespace,
-		"topic":        topicName,
-		"subscription": psName,
-		"targetName":   targetName,
-		"targetUID":    uuid.New().String(),
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
 
 	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+		lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {

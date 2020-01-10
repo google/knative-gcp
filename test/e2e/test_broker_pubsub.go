@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/test/base"
 	eventingtestresources "knative.dev/eventing/test/base/resources"
@@ -125,7 +126,10 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	time.Sleep(5 * time.Second)
 
 	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, u.String())
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: u.String(),
+	}})
 	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.

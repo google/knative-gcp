@@ -26,7 +26,7 @@ import (
     pkgTest "knative.dev/pkg/test"
 )
 
-func StorageTargetJob(name, subject string) *batchv1.Job {
+func StorageTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
     const imageName = "storage_target"
     return &batchv1.Job{
         ObjectMeta: metav1.ObjectMeta{
@@ -46,13 +46,7 @@ func StorageTargetJob(name, subject string) *batchv1.Job {
                         Name:            name,
                         Image:           pkgTest.ImagePath(imageName),
                         ImagePullPolicy: corev1.PullAlways,
-                        Env: []v1.EnvVar{{
-                            Name:  "SUBJECT",
-                            Value: subject,
-                        }, {
-                            Name: "TIME",
-                            Value: "120",
-                        }},
+                        Env: envVars,
                     }},
                     RestartPolicy: corev1.RestartPolicyNever,
                 },
@@ -93,7 +87,7 @@ func TargetJob(name string) *batchv1.Job {
     }
 }
 
-func SenderJob(name, url string) *batchv1.Job {
+func SenderJob(name string, envVars []v1.EnvVar) *batchv1.Job {
     const imageName = "sender"
     return &batchv1.Job{
         ObjectMeta: metav1.ObjectMeta{
@@ -113,10 +107,7 @@ func SenderJob(name, url string) *batchv1.Job {
                         Name:            imageName,
                         Image:           pkgTest.ImagePath(imageName),
                         ImagePullPolicy: corev1.PullAlways,
-                        Env: []v1.EnvVar{{
-                            Name:  "BROKER_URL",
-                            Value: url,
-                        }},
+                        Env: envVars,
                     }},
                     RestartPolicy: corev1.RestartPolicyNever,
                 },

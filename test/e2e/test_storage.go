@@ -27,6 +27,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
@@ -103,7 +104,13 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
 	// Create a storage_target Job to receive the events.
-	job := resources.StorageTargetJob(targetName, fileName)
+	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
+		Name:  "SUBJECT",
+		Value: fileName,
+	}, {
+		Name: "TIME",
+		Value: "120",
+	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the Storage source.
