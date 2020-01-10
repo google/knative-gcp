@@ -42,6 +42,10 @@ func SenderJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 	return baseJob(name, "sender", envVars)
 }
 
+func SchedulerJob(name string, envVars []v1.EnvVar) *batchv1.Job {
+	return baseJob(name, "scheduler_target", envVars)
+}
+
 // baseJob will return a base Job that has imageName and envVars set for its PodTemplateSpec.
 func baseJob(name, imageName string, envVars []v1.EnvVar) *batchv1.Job {
 	return &batchv1.Job{

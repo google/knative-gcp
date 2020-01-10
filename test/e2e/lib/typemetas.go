@@ -55,6 +55,8 @@ var PubsubTypeMeta = eventsTypeMeta(resources.PubSubKind)
 
 var AuditLogsSourceTypeMeta = eventsTypeMeta(resources.AuditLogsSourceKind)
 
+var SchedulerSourceTypeMeta = eventsTypeMeta(resources.Scheduler)
+
 func eventsTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
