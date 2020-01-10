@@ -26,14 +26,16 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -100,34 +102,17 @@ func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
-	config := map[string]string{
-		"namespace":   client.Namespace,
-		"storage":     storageName,
-		"bucket":      bucketName,
-		"targetName":  targetName,
-		"targetUID":   uuid.New().String(),
-		"subjectName": fileName,
-	}
-	for k, v := range packages {
-		config[k] = v
-	}
-	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"storage_test", "istio"})...)
+	// Create a storage_target Job to receive the events.
+	job := resources.StorageTargetJob(targetName, fileName)
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to delete, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(60 * time.Second)
-	}()
+	// Create the Storage source.
+	eventsStorage := kngcptesting.NewStorage(storageName, client.Namespace,
+		kngcptesting.WithStorageBucket(bucketName),
+		kngcptesting.WithStorageSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, targetName))
+	client.CreateStorageOrFail(eventsStorage)
 
 	if err := client.Core.WaitForResourceReady(storageName, lib.StorageTypeMeta); err != nil {
 		t.Error(err)

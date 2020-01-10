@@ -105,7 +105,7 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 
 	// Create a target Job to receive the events.
 	job := resources.TargetJob(targetName)
-	client.CreateJobOrFail(job, lib.WithService(targetName))
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
 	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,

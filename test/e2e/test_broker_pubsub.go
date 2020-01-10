@@ -78,7 +78,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 
 	// Create a target Job to receive the events.
 	job := resources.TargetJob(targetName)
-	client.CreateJobOrFail(job, lib.WithService(targetName))
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	client.Core.CreateTriggerOrFail(
 		respTriggerName,

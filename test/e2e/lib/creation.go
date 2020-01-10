@@ -42,8 +42,17 @@ func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.PubSub) {
     c.Tracker.AddObj(pubsub)
 }
 
-// WithService returns an option that creates a Service binded with the given job.
-func WithService(name string) func(*batchv1.Job, *Client) error {
+func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.Storage) {
+    storages := c.KnativeGCP.EventsV1alpha1().Storages(c.Namespace)
+    _, err := storages.Create(storage)
+    if err != nil {
+        c.T.Fatalf("Failed to create storage %q: %v", storage.Name, err)
+    }
+    c.Tracker.AddObj(storage)
+}
+
+// WithServiceForJob returns an option that creates a Service binded with the given job.
+func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
     return func(job *batchv1.Job, client *Client) error {
         namespace := job.Namespace
         svc := resources.ServiceDefaultHTTP(name, job.Spec.Template.Labels)
