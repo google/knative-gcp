@@ -25,6 +25,7 @@ import (
 	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 )
 

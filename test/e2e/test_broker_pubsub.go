@@ -21,15 +21,19 @@ import (
 	"testing"
 	"time"
 
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/test/base"
-	"knative.dev/eventing/test/base/resources"
+	eventingtestresources "knative.dev/eventing/test/base/resources"
 	eventingCommon "knative.dev/eventing/test/common"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 /*
@@ -54,20 +58,40 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	kserviceName := helpers.AppendRandomString("kservice")
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
-	clusterRoleName := helpers.AppendRandomString("e2e-pubsub")
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
+	// Create a new broker.
+	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
+	client.Core.CreateRBACResourcesForBrokers()
+	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
+
+	client.Core.CreateTriggerOrFail(
+		dummyTriggerName,
+		eventingtestresources.WithBroker(brokerName),
+		eventingtestresources.WithAttributesTriggerFilter(
+			"", "",
+			map[string]interface{}{"type": "e2e-testing-dummy"}),
+		withSubscriberKServiceRefForTrigger(kserviceName),
+	)
+
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName)
+	client.CreateJobOrFail(job, lib.WithService(targetName))
+
+	client.Core.CreateTriggerOrFail(
+		respTriggerName,
+		eventingtestresources.WithBroker(brokerName),
+		eventingtestresources.WithAttributesTriggerFilter(
+			"", "",
+			map[string]interface{}{"type": "e2e-testing-resp"}),
+		eventingtestresources.WithSubscriberRefForTrigger(targetName),
+	)
+
 	config := map[string]string{
 		"namespace":        client.Namespace,
-		"brokerName":       brokerName,
-		"dummyTriggerName": dummyTriggerName,
-		"respTriggerName":  respTriggerName,
 		"kserviceName":     kserviceName,
-		"senderName":       senderName,
-		"targetName":       targetName,
-		"clusterRoleName":  clusterRoleName,
 	}
 	for k, v := range packages {
 		config[k] = v
@@ -91,19 +115,18 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	}
 
 	// Get broker URL.
-	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, eventingCommon.BrokerTypeMeta)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingCommon.BrokerTypeMeta)
 	u, err := base.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	config["brokerURL"] = u.String()
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Send a dummy CloudEvent to broker.
-	senderInstaller := createResource(client, config, []string{"pubsub_sender"}, t)
-	defer deleteResource(senderInstaller, t)
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, u.String())
+	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.
 	if done := jobDone(client, senderName, t); !done {
@@ -114,6 +137,18 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
+	}
+}
+
+// TODO(chizhg): move this to eventing
+// withSubscriberKServiceRefForTrigger returns an option that adds a Subscriber Knative Service Ref for the given Trigger.
+func withSubscriberKServiceRefForTrigger(name string) eventingtestresources.TriggerOption {
+	return func(t *eventingv1alpha1.Trigger) {
+		if name != "" {
+			t.Spec.Subscriber = duckv1.Destination{
+				Ref: pkgTest.CoreV1ObjectReference("Service", "serving.knative.dev/v1", name),
+			}
+		}
 	}
 }
 

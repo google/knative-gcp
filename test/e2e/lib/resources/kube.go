@@ -31,7 +31,6 @@ func TargetJob(name string) *batchv1.Job {
     return &batchv1.Job{
         ObjectMeta: metav1.ObjectMeta{
             Name:   name,
-            Labels: map[string]string{"e2etest": string(uuid.NewUUID())},
         },
         Spec: batchv1.JobSpec{
             Parallelism:             proto.Int32(1),
@@ -50,6 +49,38 @@ func TargetJob(name string) *batchv1.Job {
                         Env: []v1.EnvVar{{
                             Name:  "TARGET",
                             Value: "falldown",
+                        }},
+                    }},
+                    RestartPolicy: corev1.RestartPolicyNever,
+                },
+            },
+        },
+    }
+}
+
+func SenderJob(name, url string) *batchv1.Job {
+    const imageName = "sender"
+    return &batchv1.Job{
+        ObjectMeta: metav1.ObjectMeta{
+            Name:   name,
+        },
+        Spec: batchv1.JobSpec{
+            Parallelism:             proto.Int32(1),
+            BackoffLimit:            proto.Int32(0),
+            Template:                v1.PodTemplateSpec{
+                ObjectMeta: metav1.ObjectMeta{
+                    Labels: map[string]string{
+                        "e2etest": string(uuid.NewUUID()),
+                    },
+                },
+                Spec: corev1.PodSpec{
+                    Containers: []v1.Container{{
+                        Name:            imageName,
+                        Image:           pkgTest.ImagePath(imageName),
+                        ImagePullPolicy: corev1.PullAlways,
+                        Env: []v1.EnvVar{{
+                            Name:  "BROKER_URL",
+                            Value: url,
                         }},
                     }},
                     RestartPolicy: corev1.RestartPolicyNever,

@@ -12,24 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: eventing.knative.dev/v1alpha1
-kind: Trigger
-metadata:
-  name: {{ .dummyTriggerName }}
-  namespace: {{ .namespace }}
-spec:
-  filter:
-    attributes:
-      type: e2e-testing-dummy
-  broker: {{ .brokerName }}
-  subscriber:
-    ref:
-      apiVersion: serving.knative.dev/v1
-      kind: Service
-      name: {{ .kserviceName }}
-
----
-
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
@@ -40,63 +22,3 @@ spec:
     spec:
       containers:
         - image: {{ .receiverImage }}
-
----
-
-apiVersion: eventing.knative.dev/v1alpha1
-kind: Trigger
-metadata:
-  name: {{ .respTriggerName }}
-  namespace: {{ .namespace }}
-spec:
-  filter:
-    attributes:
-      type: e2e-testing-resp
-  broker: {{ .brokerName }}
-  subscriber:
-    ref:
-      apiVersion: v1
-      kind: Service
-      name: {{ .targetName }}
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .targetName }}
-  namespace: {{ .namespace }}
-spec:
-  selector:
-    app: {{ .targetName }}
-  ports:
-    - name: http
-      port: 80
-      protocol: TCP
-      targetPort: 8080
-  sessionAffinity: None
-  type: ClusterIP
-
----
-
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: {{ .targetName}}
-  namespace: {{ .namespace}}
-spec:
-  backoffLimit: 0
-  parallelism: 1
-  template:
-    metadata:
-      labels:
-        app: {{ .targetName }}
-    spec:
-      containers:
-        - name: target
-          env:
-            - name: TARGET
-              value: falldown
-          image: {{ .targetImage }}
-          imagePullPolicy: Always
-      restartPolicy: Never
