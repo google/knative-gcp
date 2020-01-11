@@ -38,11 +38,8 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
+// TODO(chizhg): only this image is used by the Knative service in broker_pubsub_test.
 var packages = []string{
-	"github.com/google/knative-gcp/test/cmd/target",
-	"github.com/google/knative-gcp/test/cmd/storage_target",
-	"github.com/google/knative-gcp/test/cmd/auditlogs_target",
-	"github.com/google/knative-gcp/test/cmd/sender",
 	"github.com/google/knative-gcp/test/cmd/receiver",
 }
 

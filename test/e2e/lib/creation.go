@@ -34,6 +34,15 @@ func (c *Client) CreateChannelOrFail(channel *messagingv1alpha1.Channel) {
     c.Tracker.AddObj(channel)
 }
 
+func (c *Client) CreateAuditLogsOrFail(auditlogs *eventsv1alpha1.AuditLogsSource) {
+    auditlogses := c.KnativeGCP.EventsV1alpha1().AuditLogsSources(c.Namespace)
+    _, err := auditlogses.Create(auditlogs)
+    if err != nil {
+        c.T.Fatalf("Failed to create auditlogs %q: %v", auditlogs.Name, err)
+    }
+    c.Tracker.AddObj(auditlogs)
+}
+
 func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.PubSub) {
     pubsubs := c.KnativeGCP.EventsV1alpha1().PubSubs(c.Namespace)
     _, err := pubsubs.Create(pubsub)

@@ -35,36 +35,6 @@ func StorageTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 }
 
 func TargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
-    // const imageName = "target"
-    // return &batchv1.Job{
-    //     ObjectMeta: metav1.ObjectMeta{
-    //         Name:   name,
-    //     },
-    //     Spec: batchv1.JobSpec{
-    //         Parallelism:             proto.Int32(1),
-    //         BackoffLimit:            proto.Int32(0),
-    //         Template:                v1.PodTemplateSpec{
-    //             ObjectMeta: metav1.ObjectMeta{
-    //                 Labels: map[string]string{
-    //                     "e2etest": string(uuid.NewUUID()),
-    //                 },
-    //             },
-    //             Spec: corev1.PodSpec{
-    //                 Containers: []v1.Container{{
-    //                     Name:            imageName,
-    //                     Image:           pkgTest.ImagePath(imageName),
-    //                     ImagePullPolicy: corev1.PullAlways,
-    //                     Env: []v1.EnvVar{{
-    //                         Name:  "TARGET",
-    //                         Value: "falldown",
-    //                     }},
-    //                 }},
-    //                 RestartPolicy: corev1.RestartPolicyNever,
-    //             },
-    //         },
-    //     },
-    // }
-
     return baseJob(name, "target", envVars)
 }
 
@@ -88,7 +58,7 @@ func baseJob(name, imageName string, envVars []v1.EnvVar) *batchv1.Job {
                 },
                 Spec: corev1.PodSpec{
                     Containers: []v1.Container{{
-                        Name:            imageName,
+                        Name:            name,
                         Image:           pkgTest.ImagePath(imageName),
                         ImagePullPolicy: corev1.PullAlways,
                         Env: envVars,

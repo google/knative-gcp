@@ -23,10 +23,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/lib"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/google/uuid"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
+
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -49,24 +53,49 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
+	// Create a target Job to receive the events.
+	job := resources.AuditLogsTargetJob(targetName, []v1.EnvVar{{
+		Name:  "SERVICENAME",
+		Value: serviceName,
+	}, {
+		Name: "METHODNAME",
+		Value: methodName,
+	}, {
+		Name: "RESOURCENAME",
+		Value: resourceName,
+	}, {
+		Name: "TYPE",
+		Value: v1alpha1.AuditLogEventType,
+	}, {
+		Name: "SOURCE",
+		Value: fmt.Sprintf("%s/projects/%s", serviceName, project),
+	}, {
+		Name: "SUBJECT",
+		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
+	}, {
+		Name: "TIME",
+		Value: "360",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+
+	eventsAuditLogs := kngcptesting.NewAuditLogsSource(auditlogsName, client.Namespace,
+		kngcptesting.WithAuditLogsSourceServiceName(serviceName),
+		kngcptesting.WithAuditLogsSourceMethodName(methodName),
+		kngcptesting.WithAuditLogsSourceProject(project),
+		kngcptesting.WithAuditLogsSourceResourceName(resourceName),
+		kngcptesting.WithAuditLogsSourceSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, targetName))
+	client.CreateAuditLogsOrFail(eventsAuditLogs)
+
 	config := map[string]string{
 		"namespace":       client.Namespace,
-		"auditlogssource": auditlogsName,
-		"project":         project,
-		"serviceName":     serviceName,
-		"methodName":      methodName,
-		"resourceName":    resourceName,
-		"targetName":      targetName,
-		"targetUID":       uuid.New().String(),
-		"type":            v1alpha1.AuditLogEventType,
-		"source":          fmt.Sprintf("%s/projects/%s", serviceName, project),
-		"subject":         fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}
 	for k, v := range packages {
 		config[k] = v
 	}
 	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"auditlogs_test", "istio"})...)
+		lib.EndToEndConfigYaml([]string{"istio"})...)
 
 	// Create the resources for the test.
 	if err := installer.Do("create"); err != nil {
