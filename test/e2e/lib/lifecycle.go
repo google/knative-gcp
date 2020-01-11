@@ -32,7 +32,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"knative.dev/eventing/test/common"
+	"knative.dev/eventing/test/lib"
 	pkgTest "knative.dev/pkg/test"
 
 	knativegcp "github.com/google/knative-gcp/pkg/client/clientset/versioned"
@@ -48,7 +48,7 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 		t.Fatalf("Failed to initialize client for Knative GCP: %v", err)
 	}
 
-	coreClient := common.Setup(t, runInParallel)
+	coreClient := lib.Setup(t, runInParallel)
 	client.Core = coreClient
 	client.Namespace = coreClient.Namespace
 	client.Tracker = coreClient.Tracker
@@ -72,17 +72,17 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 
 // TearDown runs the TearDown in the common eventing test framework.
 func TearDown(client *Client) {
-	common.TearDown(client.Core)
+	lib.TearDown(client.Core)
 }
 
 // Client holds instances of interfaces for making requests to Knative.
 type Client struct {
-	Core *common.Client
+	Core *lib.Client
 
 	KnativeGCP *knativegcp.Clientset
 	Namespace  string
 	T          *testing.T
-	Tracker    *common.Tracker
+	Tracker    *lib.Tracker
 }
 
 var setStackDriverConfigOnce = sync.Once{}

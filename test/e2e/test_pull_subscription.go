@@ -23,9 +23,10 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingtestresources "knative.dev/eventing/test/base/resources"
-	"knative.dev/eventing/test/common"
+	eventingtestlib "knative.dev/eventing/test/lib"
+	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -48,7 +49,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 
 	// Create logger service to receive the events.
 	pod := eventingtestresources.EventLoggerPod(svcName)
-	client.Core.CreatePodOrFail(pod, common.WithService(svcName))
+	client.Core.CreatePodOrFail(pod, eventingtestlib.WithService(svcName))
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
@@ -96,7 +97,10 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName)
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create PullSubscription.

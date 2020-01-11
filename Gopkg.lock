@@ -1286,7 +1286,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:46bff3264a2ef8d9335a2b4202a7b015b2f5adaeea7a129e17d328b53414b049"
+  digest = "1:83d8d74bd8800c02a9a87a1232e2e31f488b77a702cb083023f01ca9cd7af968"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1295,6 +1295,8 @@
     "pkg/apis/eventing/v1alpha1",
     "pkg/apis/flows",
     "pkg/apis/flows/v1alpha1",
+    "pkg/apis/legacysources",
+    "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
     "pkg/apis/sources",
@@ -1307,25 +1309,29 @@
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/configmap",
     "pkg/kncloudevents",
+    "pkg/legacyclient/clientset/versioned",
+    "pkg/legacyclient/clientset/versioned/scheme",
+    "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
     "pkg/tracing",
     "pkg/utils",
-    "test/base",
-    "test/base/resources",
-    "test/common",
     "test/conformance/helpers",
     "test/conformance/helpers/tracing",
     "test/test_images/logevents",
     "test/test_images/sendevents",
     "test/test_images/transformevents",
+    "test/lib",
+    "test/lib/cloudevents",
+    "test/lib/duck",
+    "test/lib/resources",
   ]
-  pruneopts = "UT"
-  revision = "b53d3fdb4b5e5ba736072a7a971f495ec09d16fa"
+  pruneopts = "NUT"
+  revision = "e1b5a33c1a102d72005a971a57be86c998fb0270"
 
 [[projects]]
   branch = "master"
-  digest = "1:2a1f47dba842efe06d9fa10c0323f7b8f39a6b6e86e944a40668679f102f413e"
+  digest = "1:b21a3ea7ad9b920c6d1c2b26d11eba1d2ed4ee5d88b03f20f1efd46a6eaab902"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1397,7 +1403,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "0094d3a89242cddcd8532df4632fb619b2d7da09"
+  revision = "8c62412074275c22632e23fbe726555bf970ba6c"
 
 [[projects]]
   branch = "master"
@@ -1567,13 +1573,13 @@
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
-    "knative.dev/eventing/test/base",
-    "knative.dev/eventing/test/base/resources",
-    "knative.dev/eventing/test/common",
     "knative.dev/eventing/test/conformance/helpers",
     "knative.dev/eventing/test/test_images/logevents",
     "knative.dev/eventing/test/test_images/sendevents",
     "knative.dev/eventing/test/test_images/transformevents",
+    "knative.dev/eventing/test/lib",
+    "knative.dev/eventing/test/lib/duck",
+    "knative.dev/eventing/test/lib/resources",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
     "knative.dev/pkg/apis/duck/v1",

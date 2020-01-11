@@ -18,7 +18,7 @@ package lib
 
 import (
     batchv1 "k8s.io/api/batch/v1"
-    "knative.dev/eventing/test/base/resources"
+    "knative.dev/eventing/test/lib/resources"
 
     eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
     messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"

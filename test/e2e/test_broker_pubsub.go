@@ -22,12 +22,9 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
-	"knative.dev/eventing/test/base"
-	eventingtestresources "knative.dev/eventing/test/base/resources"
-	eventingCommon "knative.dev/eventing/test/common"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	pkgTest "knative.dev/pkg/test"
+	eventingtestlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/duck"
+	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -74,11 +71,14 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 		eventingtestresources.WithAttributesTriggerFilter(
 			"", "",
 			map[string]interface{}{"type": "e2e-testing-dummy"}),
-		withSubscriberKServiceRefForTrigger(kserviceName),
+		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
 	)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName)
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	client.Core.CreateTriggerOrFail(
@@ -87,7 +87,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 		eventingtestresources.WithAttributesTriggerFilter(
 			"", "",
 			map[string]interface{}{"type": "e2e-testing-resp"}),
-		eventingtestresources.WithSubscriberRefForTrigger(targetName),
+		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
 	)
 
 	config := map[string]string{
@@ -103,11 +103,11 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	defer deleteResource(brokerInstaller, t)
 
 	// Wait for broker, trigger, ksvc ready.
-	if err := client.Core.WaitForResourceReady(brokerName, eventingCommon.BrokerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(brokerName, eventingtestlib.BrokerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	if err := client.Core.WaitForResourcesReady(eventingCommon.TriggerTypeMeta); err != nil {
+	if err := client.Core.WaitForResourcesReady(eventingtestlib.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -116,8 +116,8 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	}
 
 	// Get broker URL.
-	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingCommon.BrokerTypeMeta)
-	u, err := base.GetAddressableURI(client.Core.Dynamic, metaAddressable)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
+	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
 	}
@@ -141,18 +141,6 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
-	}
-}
-
-// TODO(chizhg): move this to eventing
-// withSubscriberKServiceRefForTrigger returns an option that adds a Subscriber Knative Service Ref for the given Trigger.
-func withSubscriberKServiceRefForTrigger(name string) eventingtestresources.TriggerOption {
-	return func(t *eventingv1alpha1.Trigger) {
-		if name != "" {
-			t.Spec.Subscriber = duckv1.Destination{
-				Ref: pkgTest.CoreV1ObjectReference("Service", "serving.knative.dev/v1", name),
-			}
-		}
 	}
 }
 

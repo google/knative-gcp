@@ -25,12 +25,13 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingtestresources "knative.dev/eventing/test/base/resources"
+	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"knative.dev/eventing/test/common"
+	eventingtestlib "knative.dev/eventing/test/lib"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -54,7 +55,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 
 	// Create logger service to receive the events.
 	pod := eventingtestresources.EventLoggerPod(svcName)
-	client.Core.CreatePodOrFail(pod, common.WithService(svcName))
+	client.Core.CreatePodOrFail(pod, eventingtestlib.WithService(svcName))
 
 	// Create the PubSub source.
 	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
@@ -104,7 +105,10 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName)
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
