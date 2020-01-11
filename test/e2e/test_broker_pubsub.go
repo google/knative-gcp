@@ -25,6 +25,7 @@ import (
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
+	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -49,7 +50,7 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	brokerName := helpers.AppendRandomString("pubsub")
 	dummyTriggerName := "dummy-broker-" + brokerName
 	respTriggerName := "resp-broker-" + brokerName
@@ -91,11 +92,9 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	)
 
 	config := map[string]string{
-		"namespace":        client.Namespace,
-		"kserviceName":     kserviceName,
-	}
-	for k, v := range packages {
-		config[k] = v
+		"namespace":     client.Namespace,
+		"kserviceName":  kserviceName,
+		"receiverImage": pkgTest.ImagePath("receiver"),
 	}
 
 	// Create resources.

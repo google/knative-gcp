@@ -87,7 +87,7 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, proje
 	return client.Bucket(bucketName)
 }
 
-func StorageWithTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
+func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 

@@ -103,10 +103,16 @@ function pubsub_setup() {
     gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.admin
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/monitoring.editor
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/monitoring.editor
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/logging.configWriter
     gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
       --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
@@ -162,4 +168,3 @@ function teardown() {
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
   # TODO delete control plane secret?
 }
-

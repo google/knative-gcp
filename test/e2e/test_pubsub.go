@@ -91,7 +91,7 @@ func SmokePubSubTestImpl(t *testing.T) {
 
 // PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
 // for StackDriver metrics.
-func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
+func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -121,9 +121,6 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 
 	config := map[string]string{
 		"namespace":  client.Namespace,
-	}
-	for k, v := range packages {
-		config[k] = v
 	}
 
 	installer := lib.NewInstaller(client.Core.Dynamic, config,

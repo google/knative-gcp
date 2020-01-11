@@ -86,7 +86,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
+func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -114,9 +114,6 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 
 	config := map[string]string{
 		"namespace":    client.Namespace,
-	}
-	for k, v := range packages {
-		config[k] = v
 	}
 
 	installer := lib.NewInstaller(client.Core.Dynamic, config,

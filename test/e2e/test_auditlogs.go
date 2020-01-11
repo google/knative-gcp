@@ -42,7 +42,7 @@ const (
 	methodName  = " google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
+func AuditLogsSourceWithTestImpl(t *testing.T) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -74,7 +74,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}, {
 		Name: "TIME",
-		Value: "360",
+		Value: "240",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
@@ -90,9 +90,6 @@ func AuditLogsSourceWithTestImpl(t *testing.T, packages map[string]string) {
 
 	config := map[string]string{
 		"namespace":       client.Namespace,
-	}
-	for k, v := range packages {
-		config[k] = v
 	}
 	installer := lib.NewInstaller(client.Core.Dynamic, config,
 		lib.EndToEndConfigYaml([]string{"istio"})...)
