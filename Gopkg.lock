@@ -1286,7 +1286,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:83d8d74bd8800c02a9a87a1232e2e31f488b77a702cb083023f01ca9cd7af968"
+  digest = "1:7a39cdefdced6ea8a3c76d5abf9b0c142e43211c919a11cd93dad07f82cdc76a"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1318,15 +1318,15 @@
     "pkg/utils",
     "test/conformance/helpers",
     "test/conformance/helpers/tracing",
-    "test/test_images/logevents",
-    "test/test_images/sendevents",
-    "test/test_images/transformevents",
     "test/lib",
     "test/lib/cloudevents",
     "test/lib/duck",
     "test/lib/resources",
+    "test/test_images/logevents",
+    "test/test_images/sendevents",
+    "test/test_images/transformevents",
   ]
-  pruneopts = "NUT"
+  pruneopts = "UT"
   revision = "e1b5a33c1a102d72005a971a57be86c998fb0270"
 
 [[projects]]
@@ -1569,17 +1569,16 @@
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
-    "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
     "knative.dev/eventing/test/conformance/helpers",
-    "knative.dev/eventing/test/test_images/logevents",
-    "knative.dev/eventing/test/test_images/sendevents",
-    "knative.dev/eventing/test/test_images/transformevents",
     "knative.dev/eventing/test/lib",
     "knative.dev/eventing/test/lib/duck",
     "knative.dev/eventing/test/lib/resources",
+    "knative.dev/eventing/test/test_images/logevents",
+    "knative.dev/eventing/test/test_images/sendevents",
+    "knative.dev/eventing/test/test_images/transformevents",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
     "knative.dev/pkg/apis/duck/v1",
