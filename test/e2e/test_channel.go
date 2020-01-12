@@ -18,8 +18,6 @@ package e2e
 
 import (
 	"testing"
-	"time"
-
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -34,25 +32,6 @@ func SmokeTestChannelImpl(t *testing.T) {
 
 	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace)
 	client.CreateChannelOrFail(channel)
-
-	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
-		"namespace": client.Namespace,
-	}, lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
 
 	if err := client.Core.WaitForResourceReady("e2e-smoke-test", lib.ChannelTypeMeta); err != nil {
 		t.Error(err)

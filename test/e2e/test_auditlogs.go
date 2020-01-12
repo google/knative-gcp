@@ -58,26 +58,27 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 		Name:  "SERVICENAME",
 		Value: serviceName,
 	}, {
-		Name: "METHODNAME",
+		Name:  "METHODNAME",
 		Value: methodName,
 	}, {
-		Name: "RESOURCENAME",
+		Name:  "RESOURCENAME",
 		Value: resourceName,
 	}, {
-		Name: "TYPE",
+		Name:  "TYPE",
 		Value: v1alpha1.AuditLogEventType,
 	}, {
-		Name: "SOURCE",
+		Name:  "SOURCE",
 		Value: fmt.Sprintf("%s/projects/%s", serviceName, project),
 	}, {
-		Name: "SUBJECT",
+		Name:  "SUBJECT",
 		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}, {
-		Name: "TIME",
+		Name:  "TIME",
 		Value: "360",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
+	// Create the AuditLogsSource.
 	eventsAuditLogs := kngcptesting.NewAuditLogsSource(auditlogsName, client.Namespace,
 		kngcptesting.WithAuditLogsSourceServiceName(serviceName),
 		kngcptesting.WithAuditLogsSourceMethodName(methodName),
@@ -88,26 +89,10 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 			Kind:    "Service"}, targetName))
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
-	config := map[string]string{
-		"namespace":       client.Namespace,
-	}
-	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to delete, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(60 * time.Second)
-	}()
+	// Create the Istio ServiceEntry.
+	istioServiceEntry := resources.IstioServiceEntry(
+		"cloud-run-events-googleapis-ext", client.Namespace)
+	client.CreateUnstructuredObjOrFail(istioServiceEntry)
 
 	if err := client.Core.WaitForResourceReady(auditlogsName, lib.AuditLogsSourceTypeMeta); err != nil {
 		t.Error(err)

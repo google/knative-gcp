@@ -27,11 +27,8 @@ import (
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
-
-	eventingtestlib "knative.dev/eventing/test/lib"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -53,36 +50,13 @@ func SmokePubSubTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	// Create logger service to receive the events.
-	pod := eventingtestresources.EventLoggerPod(svcName)
-	client.Core.CreatePodOrFail(pod, eventingtestlib.WithService(svcName))
-
 	// Create the PubSub source.
 	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
 		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, svcName),
+			Version: "v1",
+			Kind:    "Service"}, svcName),
 		kngcptesting.WithPubSubTopic(topic))
 	client.CreatePubSubOrFail(eventsPubsub)
-
-	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
-		"namespace": client.Namespace,
-	}, lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
@@ -119,27 +93,10 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 		kngcptesting.WithPubSubTopic(topicName))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	config := map[string]string{
-		"namespace":  client.Namespace,
-	}
-
-	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
+	// Create the Istio ServiceEntry.
+	istioServiceEntry := resources.IstioServiceEntry(
+		"cloud-run-events-googleapis-ext", client.Namespace)
+	client.CreateUnstructuredObjOrFail(istioServiceEntry)
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)

@@ -61,11 +61,12 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	// Create a new broker.
+	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
 	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
 
+	// Create a Trigger with the Knative Service subscriber.
 	client.Core.CreateTriggerOrFail(
 		dummyTriggerName,
 		eventingtestresources.WithBroker(brokerName),
@@ -82,6 +83,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
+	// Create a Trigger with the target Service subscriber.
 	client.Core.CreateTriggerOrFail(
 		respTriggerName,
 		eventingtestresources.WithBroker(brokerName),
@@ -91,6 +93,11 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
 	)
 
+	// Create the Istio ServiceEntry.
+	istioServiceEntry := resources.IstioServiceEntry(
+		"cloud-run-events-googleapis-ext", client.Namespace)
+	client.CreateUnstructuredObjOrFail(istioServiceEntry)
+
 	config := map[string]string{
 		"namespace":     client.Namespace,
 		"kserviceName":  kserviceName,
@@ -98,7 +105,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 
 	// Create resources.
-	brokerInstaller := createResource(client, config, []string{"pubsub_broker", "istio"}, t)
+	brokerInstaller := createResource(client, config, []string{"pubsub_broker"}, t)
 	defer deleteResource(brokerInstaller, t)
 
 	// Wait for broker, trigger, ksvc ready.

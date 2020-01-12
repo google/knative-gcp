@@ -20,13 +20,10 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	eventingtestlib "knative.dev/eventing/test/lib"
-	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -47,10 +44,6 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	// Create logger service to receive the events.
-	pod := eventingtestresources.EventLoggerPod(svcName)
-	client.Core.CreatePodOrFail(pod, eventingtestlib.WithService(svcName))
-
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
@@ -60,25 +53,6 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 			Version: "v1",
 			Kind:    "Service"}, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
-
-	installer := lib.NewInstaller(client.Core.Dynamic, map[string]string{
-		"namespace":    client.Namespace,
-	}, lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
@@ -108,31 +82,14 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
 		}), kngcptesting.WithPullSubscriptionSink(metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, targetName))
+			Version: "v1",
+			Kind:    "Service"}, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	config := map[string]string{
-		"namespace":    client.Namespace,
-	}
-
-	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml([]string{"istio"})...)
-
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
+	// Create the Istio ServiceEntry.
+	istioServiceEntry := resources.IstioServiceEntry(
+		"cloud-run-events-googleapis-ext", client.Namespace)
+	client.CreateUnstructuredObjOrFail(istioServiceEntry)
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)

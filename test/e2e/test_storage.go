@@ -108,7 +108,7 @@ func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 		Name:  "SUBJECT",
 		Value: fileName,
 	}, {
-		Name: "TIME",
+		Name:  "TIME",
 		Value: "120",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))

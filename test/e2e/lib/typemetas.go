@@ -21,28 +21,28 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 var JobTypeMeta = batchTypeMeta("Job")
 
 func batchTypeMeta(kind string) *metav1.TypeMeta {
-    return &metav1.TypeMeta{
-        Kind:       kind,
-        APIVersion: "batch/v1",
-    }
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: "batch/v1",
+	}
 }
 
 var KsvcTypeMeta = servingTypeMeta("Service")
 
 func servingTypeMeta(kind string) *metav1.TypeMeta {
-    return &metav1.TypeMeta{
-        Kind:       kind,
-        APIVersion: "serving.knative.dev/v1",
-    }
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: "serving.knative.dev/v1",
+	}
 }
 
 var ChannelTypeMeta = gcloudMessagingTypeMeta("Channel")
 
 func gcloudMessagingTypeMeta(kind string) *metav1.TypeMeta {
-    return &metav1.TypeMeta{
-        Kind:       kind,
-        APIVersion: "messaging.cloud.google.com/v1alpha1",
-    }
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: "messaging.cloud.google.com/v1alpha1",
+	}
 }
 
 var StorageTypeMeta = gcloudEventsTypeMeta("Storage")
@@ -52,17 +52,17 @@ var PubsubTypeMeta = gcloudEventsTypeMeta("PubSub")
 var AuditLogsSourceTypeMeta = gcloudEventsTypeMeta("AuditLogsSource")
 
 func gcloudEventsTypeMeta(kind string) *metav1.TypeMeta {
-    return &metav1.TypeMeta{
-        Kind:       kind,
-        APIVersion: "events.cloud.google.com/v1alpha1",
-    }
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: "events.cloud.google.com/v1alpha1",
+	}
 }
 
 var PullSubscriptionTypeMeta = gcloudPubsubTypeMeta("PullSubscription")
 
 func gcloudPubsubTypeMeta(kind string) *metav1.TypeMeta {
-    return &metav1.TypeMeta{
-        Kind:       kind,
-        APIVersion: "pubsub.cloud.google.com/v1alpha1",
-    }
+	return &metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: "pubsub.cloud.google.com/v1alpha1",
+	}
 }

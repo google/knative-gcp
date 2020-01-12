@@ -67,7 +67,7 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{KnativeGCP:kgc}, nil
+	return &Client{KnativeGCP: kgc}, nil
 }
 
 // TearDown runs the TearDown in the common eventing test framework.
