@@ -44,7 +44,6 @@ readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
-#global GCS_SERVICE_ACCOUNT
 
 function knative_setup() {
   control_plane_setup || return 1
@@ -129,8 +128,7 @@ function storage_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/storage.admin
-    GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
-    echo $GCS_SERVICE_ACCOUNT
+    export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
       --role roles/pubsub.publisher

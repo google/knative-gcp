@@ -39,7 +39,7 @@ import (
 
 const (
 	serviceName = "pubsub.googleapis.com"
-	methodName  = " google.pubsub.v1.Publisher.CreateTopic"
+	methodName  = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
 func AuditLogsSourceWithTestImpl(t *testing.T) {
@@ -74,7 +74,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
 	}, {
 		Name: "TIME",
-		Value: "240",
+		Value: "360",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
