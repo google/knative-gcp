@@ -40,8 +40,7 @@ import (
 
 var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group messaging.cloud.google.com.
-	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"):   &messagingv1alpha1.Channel{},
-	messagingv1alpha1.SchemeGroupVersion.WithKind("Decorator"): &messagingv1alpha1.Decorator{},
+	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
 
 	// For group events.cloud.google.com.
 	eventsv1alpha1.SchemeGroupVersion.WithKind("Storage"):   &eventsv1alpha1.Storage{},

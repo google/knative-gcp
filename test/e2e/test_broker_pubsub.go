@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/eventing/test/base"
-	"knative.dev/eventing/test/base/resources"
-	"knative.dev/eventing/test/common"
+	"knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/duck"
+	"knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -109,8 +109,8 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
 	}
 
 	// Get broker URL.
-	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, common.BrokerTypeMeta)
-	u, err := base.GetAddressableURI(client.Dynamic, metaAddressable)
+	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
+	u, err := duck.GetAddressableURI(client.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
 	}

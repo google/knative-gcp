@@ -21,23 +21,26 @@ import (
 	"net/http"
 	"testing"
 
+	ce "github.com/cloudevents/sdk-go"
 	"github.com/openzipkin/zipkin-go/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
-	"knative.dev/eventing/test/base/resources"
-	"knative.dev/eventing/test/common"
 	tracinghelper "knative.dev/eventing/test/conformance/helpers/tracing"
+	"knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/cloudevents"
+	"knative.dev/eventing/test/lib/resources"
 )
 
 // BrokerTracingTestHelperWithChannelTestRunner runs the Broker tracing tests for all Channels in
 // the ChannelTestRunner.
 func BrokerTracingTestHelperWithChannelTestRunner(
 	t *testing.T,
-	channelTestRunner common.ChannelTestRunner,
+	channelTestRunner lib.ChannelTestRunner,
 	setupClient SetupClientFunc,
 ) {
-	channelTestRunner.RunTests(t, common.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
+	channelTestRunner.RunTests(t, lib.FeatureBasic, func(st *testing.T, channel metav1.TypeMeta) {
 		// Don't accidentally use t, use st instead. To ensure this, shadow 't' to a useless type.
 		t := struct{}{}
 		_ = fmt.Sprintf("%s", t)
@@ -71,7 +74,7 @@ func BrokerTracingTestHelper(t *testing.T, channel metav1.TypeMeta, setupClient 
 func setupBrokerTracing(
 	t *testing.T,
 	channel *metav1.TypeMeta,
-	client *common.Client,
+	client *lib.Client,
 	loggerPodName string,
 	tc TracingTestCase,
 ) (tracinghelper.TestSpanTree, string) {
@@ -85,29 +88,31 @@ func setupBrokerTracing(
 
 	// Create a logger (EventDetails) Pod and a K8s Service that points to it.
 	logPod := resources.EventDetailsPod(loggerPodName)
-	client.CreatePodOrFail(logPod, common.WithService(loggerPodName))
+	client.CreatePodOrFail(logPod, lib.WithService(loggerPodName))
 
 	// Create a Trigger that receives events (type=bar) and sends them to the logger Pod.
 	loggerTrigger := client.CreateTriggerOrFail(
 		"logger",
 		resources.WithBroker(broker.Name),
 		resources.WithAttributesTriggerFilter(v1alpha1.TriggerAnyFilter, etLogger, map[string]interface{}{}),
-		resources.WithSubscriberRefForTrigger(loggerPodName),
+		resources.WithSubscriberServiceRefForTrigger(loggerPodName),
 	)
 
 	// Create a transformer (EventTransfrmer) Pod that replies with the same event as the input,
 	// except the reply's event's type is changed to bar.
-	eventTransformerPod := resources.EventTransformationPod("transformer", &resources.CloudEvent{
-		Type: etLogger,
+	eventTransformerPod := resources.EventTransformationPod("transformer", &cloudevents.CloudEvent{
+		EventContextV1: ce.EventContextV1{
+			Type: etLogger,
+		},
 	})
-	client.CreatePodOrFail(eventTransformerPod, common.WithService(eventTransformerPod.Name))
+	client.CreatePodOrFail(eventTransformerPod, lib.WithService(eventTransformerPod.Name))
 
 	// Create a Trigger that receives events (type=foo) and sends them to the transformer Pod.
 	transformerTrigger := client.CreateTriggerOrFail(
 		"transformer",
 		resources.WithBroker(broker.Name),
 		resources.WithAttributesTriggerFilter(v1alpha1.TriggerAnyFilter, etTransformer, map[string]interface{}{}),
-		resources.WithSubscriberRefForTrigger(eventTransformerPod.Name),
+		resources.WithSubscriberServiceRefForTrigger(eventTransformerPod.Name),
 	)
 
 	// Wait for all test resources to be ready, so that we can start sending events.
@@ -119,20 +124,19 @@ func setupBrokerTracing(
 	senderName := "sender"
 	eventID := fmt.Sprintf("%s", uuid.NewUUID())
 	body := fmt.Sprintf("TestBrokerTracing %s", eventID)
-	event := &resources.CloudEvent{
-		ID:       eventID,
-		Source:   senderName,
-		Type:     etTransformer,
-		Data:     fmt.Sprintf(`{"msg":%q}`, body),
-		Encoding: resources.CloudEventEncodingBinary,
-	}
+	event := cloudevents.New(
+		fmt.Sprintf(`{"msg":%q}`, body),
+		cloudevents.WithSource(senderName),
+		cloudevents.WithID(eventID),
+		cloudevents.WithType(etTransformer),
+	)
 
 	// Send the CloudEvent (either with or without tracing inside the SendEvents Pod).
 	sendEvent := client.SendFakeEventToAddressable
 	if tc.IncomingTraceId {
 		sendEvent = client.SendFakeEventWithTracingToAddressable
 	}
-	if err := sendEvent(senderName, broker.Name, common.BrokerTypeMeta, event); err != nil {
+	if err := sendEvent(senderName, broker.Name, lib.BrokerTypeMeta, event); err != nil {
 		t.Fatalf("Failed to send fake CloudEvent to the broker %q", broker.Name)
 	}
 
@@ -153,23 +157,20 @@ func setupBrokerTracing(
 	// 9. Broker Filter for the "transformer" trigger sends the event to the transformer pod.
 	// 10. Transformer pod receives the event from the Broker Filter for the "transformer" trigger.
 	// 11. Broker Filter for the "transformer" sends the transformer pod's reply to the Broker
-	//     InChannel (Ingress Channel).
-	// 12. Broker InChannel receives the event from the Broker Filter for the "transformer" trigger.
-	// 13. Broker InChannel sends the event to the Broker Ingress.
-	// 14. Broker Ingress receives the event from the Broker InChannel.
-	// 15. Broker Ingress sends the event to the Broker's TrChannel.
-	// 16. Broker TrChannel receives the event from the Broker Ingress.
-	// 17. Broker TrChannel sends the event to the Broker Filter for the "transformer" trigger.
-	//     18. Broker Filter for the "transformer" trigger receives the event from the Broker
+	//     Ingress.
+	// 12. Broker Ingress receives the event from the Broker Filter for the "transformer" trigger.
+	// 13. Broker Ingress sends the event to the Broker's TrChannel.
+	// 14. Broker TrChannel receives the event from the Broker Ingress.
+	// 15. Broker TrChannel sends the event to the Broker Filter for the "transformer" trigger.
+	//     16. Broker Filter for the "transformer" trigger receives the event from the Broker
 	//        TrChannel. This does not pass the filter, so this 'branch' ends here.
-	// 19. Broker TrChannel sends the event to the Broker Filter for the "logger" trigger.
-	// 20. Broker Filter for the "logger" trigger receives the event from the Broker TrChannel.
-	// 21. Broker Filter for the "logger" trigger sends the event to the logger pod.
-	// 22. Logger pod receives the event from the Broker Filter for the "logger" trigger.
+	// 17. Broker TrChannel sends the event to the Broker Filter for the "logger" trigger.
+	// 18. Broker Filter for the "logger" trigger receives the event from the Broker TrChannel.
+	// 19. Broker Filter for the "logger" trigger sends the event to the logger pod.
+	// 20. Logger pod receives the event from the Broker Filter for the "logger" trigger.
 
 	// Useful constants we will use below.
 	ingressHost := brokerIngressHost(domain, *broker)
-	ingressChanHost := brokerIngressChannelHost(domain, *broker)
 	triggerChanHost := brokerTriggerChannelHost(domain, *broker)
 	filterHost := brokerFilterHost(domain, *broker)
 	loggerTriggerPath := triggerPath(*loggerTrigger)
@@ -179,9 +180,9 @@ func setupBrokerTracing(
 
 	// This is very hard to read when written directly, so we will build piece by piece.
 
-	// Steps 17-18: 'logger' event being sent to the 'transformer' Trigger.
+	// Steps 15-16: 'logger' event being sent to the 'transformer' Trigger.
 	loggerEventSentFromTrChannelToTransformer := tracinghelper.TestSpanTree{
-		Note: "17. Broker TrChannel sends the event to the Broker Filter for the 'transformer' trigger.",
+		Note: "15. Broker TrChannel sends the event to the Broker Filter for the 'transformer' trigger.",
 		Kind: model.Client,
 		Tags: map[string]string{
 			"http.method":      http.MethodPost,
@@ -190,7 +191,7 @@ func setupBrokerTracing(
 		},
 		Children: []tracinghelper.TestSpanTree{
 			{
-				Note: "18. Broker Filter for the 'transformer' trigger receives the event from the Broker TrChannel. This does not pass the filter, so this 'branch' ends here.",
+				Note: "16. Broker Filter for the 'transformer' trigger receives the event from the Broker TrChannel. This does not pass the filter, so this 'branch' ends here.",
 				Kind: model.Server,
 				Tags: map[string]string{
 					"http.method":      http.MethodPost,
@@ -202,9 +203,9 @@ func setupBrokerTracing(
 		},
 	}
 
-	// Steps 19-22: 'logger' event being sent to the 'logger' Trigger.
+	// Steps 17-20: 'logger' event being sent to the 'logger' Trigger.
 	loggerEventSentFromTrChannelToLogger := tracinghelper.TestSpanTree{
-		Note: "19. Broker TrChannel sends the event to the Broker Filter for the 'logger' trigger.",
+		Note: "17. Broker TrChannel sends the event to the Broker Filter for the 'logger' trigger.",
 		Kind: model.Client,
 		Tags: map[string]string{
 			"http.method":      http.MethodPost,
@@ -213,7 +214,7 @@ func setupBrokerTracing(
 		},
 		Children: []tracinghelper.TestSpanTree{
 			{
-				Note: "20. Broker Filter for the 'logger' trigger receives the event from the Broker TrChannel.",
+				Note: "18. Broker Filter for the 'logger' trigger receives the event from the Broker TrChannel.",
 				Kind: model.Server,
 				Tags: map[string]string{
 					"http.method":      http.MethodPost,
@@ -223,7 +224,7 @@ func setupBrokerTracing(
 				},
 				Children: []tracinghelper.TestSpanTree{
 					{
-						Note: "21. Broker Filter for the 'logger' trigger sends the event to the logger pod.",
+						Note: "19. Broker Filter for the 'logger' trigger sends the event to the logger pod.",
 						Kind: model.Client,
 						Tags: map[string]string{
 							"http.method":      http.MethodPost,
@@ -232,7 +233,7 @@ func setupBrokerTracing(
 						},
 						Children: []tracinghelper.TestSpanTree{
 							{
-								Note: "22. Logger pod receives the event from the Broker Filter for the 'logger' trigger.",
+								Note: "20. Logger pod receives the event from the Broker Filter for the 'logger' trigger.",
 								Kind: model.Server,
 								Tags: map[string]string{
 									"http.method":      http.MethodPost,
@@ -248,55 +249,30 @@ func setupBrokerTracing(
 		},
 	}
 
-	// Steps 13-22. Directly steps 13-16. 17-22 are included as children.
-	// Steps 13-16: Event in the Broker InChannel sent to the Broker Ingress to the Trigger Channel.
+	// Steps 13-20. Directly steps 15-16. 17-20 are included as children.
 	loggerEventIngressToTrigger := tracinghelper.TestSpanTree{
-		Note: "13. Broker InChannel sends the event to the Broker Ingress.",
+		Note: "13. Broker Ingress sends the event to the Broker's TrChannel.",
 		Kind: model.Client,
 		Tags: map[string]string{
 			"http.method":      http.MethodPost,
 			"http.status_code": "202",
-			"http.url":         fmt.Sprintf("http://%s/", ingressHost),
+			"http.url":         fmt.Sprintf("http://%s/", triggerChanHost),
 		},
 		Children: []tracinghelper.TestSpanTree{
 			{
-				Note: "14. Broker Ingress receives the event from the Broker InChannel.",
+				Note: "14. Broker TrChannel receives the event from the Broker Ingress.",
 				Kind: model.Server,
 				Tags: map[string]string{
-
 					"http.method":      http.MethodPost,
-					"http.path":        "/",
 					"http.status_code": "202",
-					"http.host":        ingressHost,
+					"http.host":        triggerChanHost,
+					"http.path":        "/",
 				},
 				Children: []tracinghelper.TestSpanTree{
-					{
-						Note: "15. Broker Ingress sends the event to the Broker's TrChannel.",
-						Kind: model.Client,
-						Tags: map[string]string{
-							"http.method":      http.MethodPost,
-							"http.status_code": "202",
-							"http.url":         fmt.Sprintf("http://%s/", triggerChanHost),
-						},
-						Children: []tracinghelper.TestSpanTree{
-							{
-								Note: "16. Broker TrChannel receives the event from the Broker Ingress.",
-								Kind: model.Server,
-								Tags: map[string]string{
-									"http.method":      http.MethodPost,
-									"http.status_code": "202",
-									"http.host":        triggerChanHost,
-									"http.path":        "/",
-								},
-								Children: []tracinghelper.TestSpanTree{
-									// Steps 17-18.
-									loggerEventSentFromTrChannelToTransformer,
-									// Steps 19-22.
-									loggerEventSentFromTrChannelToLogger,
-								},
-							},
-						},
-					},
+					// Steps 15-16.
+					loggerEventSentFromTrChannelToTransformer,
+					// Steps 17-20.
+					loggerEventSentFromTrChannelToLogger,
 				},
 			},
 		},
@@ -347,29 +323,30 @@ func setupBrokerTracing(
 		},
 	}
 
-	// Step 11-22. Directly steps 11-12. Steps 13-22 are children.
+	// Step 11-20. Directly steps 11-12. Steps 13-20 are children.
 	// Steps 11-12 Reply from the 'transformer' is sent by the Broker TrChannel to the Broker
-	// InChannel.
+	// Ingress.
 	transformerEventResponseFromTrChannel := tracinghelper.TestSpanTree{
-		Note: "11. Broker TrChannel for the 'transformer' sends the transformer pod's reply to the Broker InChannel.",
+		Note: "11. Broker TrChannel for the 'transformer' sends the transformer pod's reply to the Broker Ingress.",
 		Kind: model.Client,
 		Tags: map[string]string{
 			"http.method":      http.MethodPost,
 			"http.status_code": "202",
-			"http.url":         fmt.Sprintf("http://%s", ingressChanHost),
+			"http.url":         fmt.Sprintf("http://%s", ingressHost),
 		},
 		Children: []tracinghelper.TestSpanTree{
 			{
-				Note: "12. Broker InChannel receives the event from the Broker TrChannel for the 'transformer' trigger.",
+				Note: "12. Broker Ingress receives the event from the Broker Filter for the 'transformer' trigger.",
 				Kind: model.Server,
 				Tags: map[string]string{
+
 					"http.method":      http.MethodPost,
-					"http.status_code": "202",
-					"http.host":        ingressChanHost,
 					"http.path":        "/",
+					"http.status_code": "202",
+					"http.host":        ingressHost,
 				},
 				Children: []tracinghelper.TestSpanTree{
-					// Steps 13-22.
+					// Steps 13-20.
 					loggerEventIngressToTrigger,
 				},
 			},

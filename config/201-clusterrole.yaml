@@ -48,14 +48,12 @@ rules:
     - messaging.cloud.google.com
   resources:
     - channels
-    - decorators
   verbs: *everything
 
 - apiGroups:
     - messaging.cloud.google.com
   resources:
     - channels/status
-    - decorators/status
   verbs:
     - get
     - update
@@ -64,6 +62,7 @@ rules:
 - apiGroups:
     - events.cloud.google.com
   resources:
+    - auditlogssources
     - storages
     - schedulers
     - pubsubs
@@ -72,6 +71,7 @@ rules:
 - apiGroups:
     - events.cloud.google.com
   resources:
+    - auditlogssources/status
     - storages/status
     - schedulers/status
     - pubsubs/status
@@ -104,16 +104,6 @@ rules:
   resources:
     - services
   verbs: *everything
-
-- apiGroups:
-    - ""
-  resources:
-    - secrets # TODO: Does it really need global secrets access?
-  verbs:
-    - get
-    - list
-    - watch
-    - finalize
 
 - apiGroups:
     - ""

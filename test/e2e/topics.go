@@ -56,6 +56,33 @@ func makeTopicOrDie(t *testing.T) (string, func()) {
 	}
 }
 
+func makeTopicOrDieWithTopicName(t *testing.T, topicName string) (string, func()) {
+	ctx := context.Background()
+	// Prow sticks the project in this key
+	project := os.Getenv(ProwProjectKey)
+	if project == "" {
+		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+	}
+	client, err := pubsub.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create pubsub client, %s", err.Error())
+	}
+	topic := client.Topic(topicName)
+	if exists, err := topic.Exists(ctx); err != nil {
+		t.Fatalf("failed to verify topic exists, %s", err)
+	} else if exists {
+		t.Fatalf("topic already exists: %q", topicName)
+	} else {
+		topic, err = client.CreateTopic(ctx, topicName)
+		if err != nil {
+			t.Fatalf("failed to create topic, %s", err)
+		}
+	}
+	return topicName, func() {
+		deleteTopicOrDie(t, topicName)
+	}
+}
+
 func getTopic(t *testing.T, topicName string) *pubsub.Topic {
 	ctx := context.Background()
 	// Prow sticks the project in this key

@@ -26,16 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestPubSubEventSource(t *testing.T) {
-	want := "//pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
-
-	got := PubSubEventSource("PROJECT", "TOPIC")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
 func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "pubsub.cloud.google.com",

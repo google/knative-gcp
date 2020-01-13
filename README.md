@@ -10,8 +10,9 @@ independently, but is best mixed with [Knative](https://knative.dev).
 
 To get started, [install Knative with GCP](./docs/install/README.md).
 
-Then use one of the implemented `Source` resource,
+Then use one of the implemented Sources:
 
+- [PubSub (events.cloud.google.com)](docs/pubsub/README.md)
 - [Storage (events.cloud.google.com)](docs/storage/README.md)
 - [Scheduler (events.cloud.google.com)](docs/scheduler/README.md)
 
@@ -19,10 +20,10 @@ To use a Knative Eventing Channel backed by Pub/Sub:
 
 - [Channel (messaging.cloud.google.com)](docs/channel/README.md)
 
-To leverage Pub/Sub directly, Pub/Sub resources:
+To leverage Pub/Sub directly, use one of the Pub/Sub resources:
 
 - [PullSubscription (pubsub.cloud.google.com)](docs/pullsubscription/README.md)
 - [Topic (pubsub.cloud.google.com)](docs/topic/README.md)
 
-_Note:_ This repo is still in development apis and resource names are subject to
-change in the future.
+
+_Note:_ This repo is still in development, APIs and resource names are subject to change in the future.

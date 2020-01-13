@@ -18,20 +18,8 @@ package v1alpha1
 
 import (
 	"context"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (s *Scheduler) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
-}
-
-func (s *SchedulerSpec) SetDefaults(ctx context.Context) {
-	// TODO? What defaults?
-
-	if s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, corev1.SecretKeySelector{}) {
-		s.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
-	}
+	s.Spec.SetPubSubDefaults()
 }
