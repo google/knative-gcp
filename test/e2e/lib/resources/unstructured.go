@@ -16,7 +16,10 @@ limitations under the License.
 
 package resources
 
-import "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+import (
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	pkgTest "knative.dev/pkg/test"
+)
 
 func IstioServiceEntry(name, namespace string) *unstructured.Unstructured {
 	obj := map[string]interface{}{
@@ -39,6 +42,27 @@ func IstioServiceEntry(name, namespace string) *unstructured.Unstructured {
 			"location": "MESH_EXTERNAL",
 		},
 	}
+	return &unstructured.Unstructured{Object: obj}
+}
 
+func ReceiverKService(name, namespace string) *unstructured.Unstructured {
+	imageName := "receiver"
+	obj := map[string]interface{}{
+		"apiVersion": "serving.knative.dev/v1",
+		"kind":       "Service",
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": namespace,
+		},
+		"spec": map[string]interface{}{
+			"template": map[string]interface{}{
+				"spec": map[string]interface{}{
+					"containers": []map[string]interface{}{{
+						"image": pkgTest.ImagePath(imageName),
+					}},
+				},
+			},
+		},
+	}
 	return &unstructured.Unstructured{Object: obj}
 }

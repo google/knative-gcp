@@ -25,7 +25,6 @@ import (
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
-	pkgTest "knative.dev/pkg/test"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
@@ -98,15 +97,10 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 		"cloud-run-events-googleapis-ext", client.Namespace)
 	client.CreateUnstructuredObjOrFail(istioServiceEntry)
 
-	config := map[string]string{
-		"namespace":     client.Namespace,
-		"kserviceName":  kserviceName,
-		"receiverImage": pkgTest.ImagePath("receiver"),
-	}
-
-	// Create resources.
-	brokerInstaller := createResource(client, config, []string{"pubsub_broker"}, t)
-	defer deleteResource(brokerInstaller, t)
+	// Create the Knative Service.
+	kservice := resources.ReceiverKService(
+		kserviceName, client.Namespace)
+	client.CreateUnstructuredObjOrFail(kservice)
 
 	// Wait for broker, trigger, ksvc ready.
 	if err := client.Core.WaitForResourceReady(brokerName, eventingtestlib.BrokerTypeMeta); err != nil {
@@ -148,24 +142,6 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
 	}
-}
-
-func createResource(client *lib.Client, config map[string]string, folders []string, t *testing.T) *lib.Installer {
-	installer := lib.NewInstaller(client.Core.Dynamic, config,
-		lib.EndToEndConfigYaml(folders)...)
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return nil
-	}
-	return installer
-}
-
-func deleteResource(installer *lib.Installer, t *testing.T) {
-	if err := installer.Do("delete"); err != nil {
-		t.Errorf("failed to delete, %s", err)
-	}
-	// Wait for resources to be deleted.
-	time.Sleep(15 * time.Second)
 }
 
 func jobDone(client *lib.Client, podName string, t *testing.T) bool {
