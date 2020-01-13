@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2019 The Knative Authors
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -76,10 +76,24 @@ function control_plane_setup() {
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     gcloud iam service-accounts create ${CONTROL_PLANE_SERVICE_ACCOUNT}
-    # TODO give finer grained permissions.
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-      --role roles/editor
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.admin
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.editor
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/cloudscheduler.admin
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/logging.configWriter
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/logging.privateLogViewer
     gcloud iam service-accounts keys create ${CONTROL_PLANE_SERVICE_ACCOUNT_KEY} \
       --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY}"
@@ -102,16 +116,10 @@ function pubsub_setup() {
     gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-      --role roles/pubsub.admin
-    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.editor
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/monitoring.editor
-    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-      --role roles/logging.configWriter
     gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
       --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
@@ -137,7 +145,7 @@ function storage_setup() {
 
 # Delete resources that were used for setup
 function teardown() {
-  # When not running on Prow we need to delete the service account created
+  # When not running on Prow we need to delete the service accounts and namespaces created
   if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Pub/Sub Admin"
     gcloud iam service-accounts keys delete -q ${PUBSUB_SERVICE_ACCOUNT_KEY} \
@@ -161,8 +169,24 @@ function teardown() {
       --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-      --role roles/editor
+      --role roles/pubsub.admin
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/pubsub.editor
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/storage.admin
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/cloudscheduler.admin
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/logging.configWriter
+    gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/logging.privateLogViewer
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
-  # TODO delete control plane secret?
+  kubectl -n ${CONTROL_PLANE_NAMESPACE} delete secret ${CONTROL_PLANE_SECRET_NAME}
+  kubectl delete namespace ${CONTROL_PLANE_NAMESPACE}
 }
