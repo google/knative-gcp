@@ -89,11 +89,6 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 			Kind:    "Service"}, targetName))
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
-	// Create the Istio ServiceEntry.
-	istioServiceEntry := resources.IstioServiceEntry(
-		"cloud-run-events-googleapis-ext", client.Namespace)
-	client.CreateUnstructuredObjOrFail(istioServiceEntry)
-
 	if err := client.Core.WaitForResourceReady(auditlogsName, lib.AuditLogsSourceTypeMeta); err != nil {
 		t.Error(err)
 	}

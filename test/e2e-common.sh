@@ -188,5 +188,4 @@ function teardown() {
   fi
   kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
   kubectl -n ${CONTROL_PLANE_NAMESPACE} delete secret ${CONTROL_PLANE_SECRET_NAME}
-  kubectl delete namespace ${CONTROL_PLANE_NAMESPACE}
 }

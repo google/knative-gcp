@@ -93,11 +93,6 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 		kngcptesting.WithPubSubTopic(topicName))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	// Create the Istio ServiceEntry.
-	istioServiceEntry := resources.IstioServiceEntry(
-		"cloud-run-events-googleapis-ext", client.Namespace)
-	client.CreateUnstructuredObjOrFail(istioServiceEntry)
-
 	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}

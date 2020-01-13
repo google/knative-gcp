@@ -86,11 +86,6 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 			Kind:    "Service"}, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	// Create the Istio ServiceEntry.
-	istioServiceEntry := resources.IstioServiceEntry(
-		"cloud-run-events-googleapis-ext", client.Namespace)
-	client.CreateUnstructuredObjOrFail(istioServiceEntry)
-
 	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
