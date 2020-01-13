@@ -59,6 +59,11 @@ const (
 	SchedulerReadyCountN = "scheduler_ready_count"
 	// SchedulerReadyLatencyN is the time it takes for a scheduler to become ready since the resource is created.
 	SchedulerReadyLatencyN = "scheduler_ready_latency"
+
+	// AuditLogsSourceReadyCountN is the number of AuditLogsSources that have become ready.
+	AuditLogsSourceReadyCountN = "auditlogssource_ready_count"
+	// AuditLogsSourceReadyLatencyN is the time it takes for an AuditLogsSource to become ready since the resource is created.
+	AuditLogsSourceReadyLatencyN = "auditlogssource_ready_latency"
 )
 
 var (
@@ -89,6 +94,10 @@ var (
 		"Scheduler": {
 			ReadyCountKey:   SchedulerReadyCountN,
 			ReadyLatencyKey: SchedulerReadyLatencyN,
+		},
+		"AuditLogsSource": {
+			ReadyCountKey:   AuditLogsSourceReadyCountN,
+			ReadyLatencyKey: AuditLogsSourceReadyLatencyN,
 		},
 	}
 

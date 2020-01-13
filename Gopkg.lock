@@ -2,9 +2,10 @@
 
 
 [[projects]]
-  digest = "1:52023b5403caa5774bf498748515cdbb74f300b2cb2bd7fc0ac6332b0fe4f942"
+  digest = "1:a9b445167089a8fbd072ce9586c977ecc385613a19e40603f116a8867d711bb3"
   name = "cloud.google.com/go"
   packages = [
+    ".",
     "compute/metadata",
     "container/apiv1",
     "iam",
@@ -12,6 +13,10 @@
     "internal/optional",
     "internal/trace",
     "internal/version",
+    "logging",
+    "logging/apiv2",
+    "logging/internal",
+    "logging/logadmin",
     "monitoring/apiv3",
     "pubsub",
     "pubsub/apiv1",
@@ -49,6 +54,14 @@
   pruneopts = "NUT"
   revision = "30f9fad5db2c8944c21d223496e2543aeb445d4c"
   version = "v0.1.1"
+
+[[projects]]
+  digest = "1:5d72bbcc9c8667b11c3dc3cbe681c5a6f71e5096744c0bf7726ab5c6425d5dc4"
+  name = "github.com/BurntSushi/toml"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
+  version = "v0.3.1"
 
 [[projects]]
   digest = "1:77dfd27299a11fa91e91c93e5155eda28e3e22897f20abd59be1bc5194315856"
@@ -195,11 +208,17 @@
   revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
 
 [[projects]]
-  digest = "1:f5a98770ab68c1146ee5cc14ed24aafa2bb1a2b3c89cbeadc9eb913b1f9d930a"
+  digest = "1:4e4f04a3bfa41f937e65e444b48a8903c656550a99ab9621c9efc0cdbe7ea604"
   name = "github.com/golang/protobuf"
   packages = [
+    "jsonpb",
     "proto",
+    "protoc-gen-go",
     "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/grpc",
+    "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -334,6 +353,18 @@
   pruneopts = "NUT"
   revision = "27518f6661eba504be5a7a9a9f6d9460d892ade3"
   version = "v1.1.7"
+
+[[projects]]
+  digest = "1:2aee2c81817d3334cf3e85e99ffe9515315b4cb35e90b45ae2164c3b68fd7dcf"
+  name = "github.com/jstemmer/go-junit-report"
+  packages = [
+    ".",
+    "formatter",
+    "parser",
+  ]
+  pruneopts = "NUT"
+  revision = "cc1f095d5cc5eca2844f5c5ea7bb37f6b9bf6cac"
+  version = "v0.9.1"
 
 [[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
@@ -556,6 +587,28 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:7b726e4be970ebfbdfd32a7b079cf4d53049e95b1b33ccd222af0d2dbef38617"
+  name = "golang.org/x/exp"
+  packages = [
+    "apidiff",
+    "cmd/apidiff",
+  ]
+  pruneopts = "NUT"
+  revision = "2f50522955873285d9bf17ec91e55aec8ae82edc"
+
+[[projects]]
+  branch = "master"
+  digest = "1:5b8b10c6c3a2c1b4131a1e05de506f8a544ff4ede7cd26cdfcdef4fc2a5b1510"
+  name = "golang.org/x/lint"
+  packages = [
+    ".",
+    "golint",
+  ]
+  pruneopts = "NUT"
+  revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
+
+[[projects]]
+  branch = "master"
   digest = "1:f2ee9e215c271a2bbaa7eec11f4e460be1edf63cb7c711df92cb086afd78269b"
   name = "golang.org/x/net"
   packages = [
@@ -643,14 +696,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:18c7b936326b4919be6de0a20be857fdd3112036cdb3febfa9a5b332a4f54e27"
+  digest = "1:8dde6641db51b44d850193359f2cd8c44cce1c150eeb8251c52fa75a62745b9c"
   name = "golang.org/x/tools"
   packages = [
+    "cmd/goimports",
+    "go/analysis",
+    "go/analysis/passes/inspect",
     "go/ast/astutil",
+    "go/ast/inspector",
+    "go/buildutil",
     "go/gcexportdata",
     "go/internal/gcimporter",
     "go/internal/packagesdriver",
     "go/packages",
+    "go/types/objectpath",
     "go/types/typeutil",
     "imports",
     "internal/fastwalk",
@@ -708,7 +767,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2700ab33e962cb13b54d8b542633d36e9d77f89fe31877b2fc2f15d50bef986b"
+  digest = "1:94725059b3a2f25d6e0ccf5bc251fff77bf2dc32f7ee757954601add74148988"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -717,10 +776,14 @@
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
+    "googleapis/appengine/logging/v1",
+    "googleapis/cloud/audit",
     "googleapis/cloud/scheduler/v1",
     "googleapis/container/v1",
     "googleapis/devtools/cloudtrace/v2",
     "googleapis/iam/v1",
+    "googleapis/logging/type",
+    "googleapis/logging/v2",
     "googleapis/monitoring/v3",
     "googleapis/pubsub/v1",
     "googleapis/rpc/code",
@@ -799,6 +862,40 @@
   pruneopts = "NUT"
   revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
   version = "v2.2.2"
+
+[[projects]]
+  digest = "1:41dcca9245f5ee3e71365b39b1eed7f4c8d8d50a4c5397cd3ac21a3c7a8866ef"
+  name = "honnef.co/go/tools"
+  packages = [
+    "arg",
+    "cmd/staticcheck",
+    "config",
+    "deprecated",
+    "facts",
+    "functions",
+    "go/types/typeutil",
+    "internal/cache",
+    "internal/passes/buildssa",
+    "internal/renameio",
+    "internal/sharedcheck",
+    "lint",
+    "lint/lintdsl",
+    "lint/lintutil",
+    "lint/lintutil/format",
+    "loader",
+    "printf",
+    "simple",
+    "ssa",
+    "ssautil",
+    "staticcheck",
+    "staticcheck/vrp",
+    "stylecheck",
+    "unused",
+    "version",
+  ]
+  pruneopts = "NUT"
+  revision = "afd67930eec2a9ed3e9b19f684d17a062285f16a"
+  version = "2019.2.3"
 
 [[projects]]
   digest = "1:2b55f57d7b6d9f0f23478f2432b03273073f1bf93aed18620472e7117eb4451e"
@@ -1189,7 +1286,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:16d722dfe52d385b9e8aa3585d47bd436c73d8f2ce42880ddba6f74fbedcbeb5"
+  digest = "1:83d8d74bd8800c02a9a87a1232e2e31f488b77a702cb083023f01ca9cd7af968"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1198,6 +1295,8 @@
     "pkg/apis/eventing/v1alpha1",
     "pkg/apis/flows",
     "pkg/apis/flows/v1alpha1",
+    "pkg/apis/legacysources",
+    "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
     "pkg/apis/sources",
@@ -1210,22 +1309,26 @@
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/configmap",
     "pkg/kncloudevents",
+    "pkg/legacyclient/clientset/versioned",
+    "pkg/legacyclient/clientset/versioned/scheme",
+    "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
     "pkg/tracing",
     "pkg/utils",
-    "test/base",
-    "test/base/resources",
-    "test/common",
     "test/conformance/helpers",
     "test/conformance/helpers/tracing",
+    "test/lib",
+    "test/lib/cloudevents",
+    "test/lib/duck",
+    "test/lib/resources",
   ]
   pruneopts = "NUT"
-  revision = "b53d3fdb4b5e5ba736072a7a971f495ec09d16fa"
+  revision = "e1b5a33c1a102d72005a971a57be86c998fb0270"
 
 [[projects]]
   branch = "master"
-  digest = "1:2a1f47dba842efe06d9fa10c0323f7b8f39a6b6e86e944a40668679f102f413e"
+  digest = "1:b21a3ea7ad9b920c6d1c2b26d11eba1d2ed4ee5d88b03f20f1efd46a6eaab902"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1297,7 +1400,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "0094d3a89242cddcd8532df4632fb619b2d7da09"
+  revision = "8c62412074275c22632e23fbe726555bf970ba6c"
 
 [[projects]]
   branch = "master"
@@ -1378,6 +1481,8 @@
   analyzer-version = 1
   input-imports = [
     "cloud.google.com/go/compute/metadata",
+    "cloud.google.com/go/iam",
+    "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
     "cloud.google.com/go/scheduler/apiv1",
@@ -1388,7 +1493,11 @@
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
+    "github.com/golang/protobuf/jsonpb",
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/duration",
+    "github.com/golang/protobuf/ptypes/empty",
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
@@ -1408,7 +1517,9 @@
     "golang.org/x/net/http2/h2c",
     "google.golang.org/api/iterator",
     "google.golang.org/api/option",
+    "google.golang.org/genproto/googleapis/cloud/audit",
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
+    "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
@@ -1457,10 +1568,10 @@
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
-    "knative.dev/eventing/test/base",
-    "knative.dev/eventing/test/base/resources",
-    "knative.dev/eventing/test/common",
     "knative.dev/eventing/test/conformance/helpers",
+    "knative.dev/eventing/test/lib",
+    "knative.dev/eventing/test/lib/duck",
+    "knative.dev/eventing/test/lib/resources",
     "knative.dev/pkg/apis",
     "knative.dev/pkg/apis/duck",
     "knative.dev/pkg/apis/duck/v1",

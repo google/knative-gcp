@@ -1,0 +1,65 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
+spec:
+  backoffLimit: 0
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        targetUID: {{ .targetUID }}
+    spec:
+      containers:
+        - name: target
+          env:
+            - name: SERVICENAME
+              value: {{ .serviceName }}
+            - name: METHODNAME
+              value: {{ .methodName }}
+            - name: RESOURCENAME
+              value: {{ .resourceName }}
+            - name: TYPE
+              value: {{ .type }}
+            - name: SOURCE
+              value: {{ .source }}
+            - name: SUBJECT
+              value: {{ .subject }}
+            - name: TIME
+              value: "240"
+          image: {{ .auditlogs_targetImage }}
+          imagePullPolicy: Always
+      restartPolicy: Never
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .targetName }}
+  namespace: {{ .namespace }}
+spec:
+  selector:
+    targetUID: {{ .targetUID }}
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  sessionAffinity: None
+  type: ClusterIP

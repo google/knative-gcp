@@ -52,13 +52,12 @@ const (
 	bucket         = "my-test-bucket"
 	sinkName       = "sink"
 	notificationId = "135"
-
-	testNS       = "testnamespace"
-	testImage    = "notification-ops-image"
-	testProject  = "test-project-id"
-	testTopicID  = "storage-" + storageUID
-	testTopicURI = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
-	generation   = 1
+	testNS         = "testnamespace"
+	testImage      = "notification-ops-image"
+	testProject    = "test-project-id"
+	testTopicID    = "storage-" + storageUID
+	testTopicURI   = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
+	generation     = 1
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
 	topicNotReadyMsg                 = `Topic "my-test-storage" not ready`

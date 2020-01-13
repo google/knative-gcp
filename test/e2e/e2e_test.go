@@ -25,19 +25,21 @@ import (
 	"strings"
 	"testing"
 
+	"knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
 
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/test/common"
 	"knative.dev/eventing/test/conformance/helpers"
 	"knative.dev/pkg/test/logstream"
+
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
 var packages = []string{
 	"github.com/google/knative-gcp/test/cmd/target",
 	"github.com/google/knative-gcp/test/cmd/storage_target",
+	"github.com/google/knative-gcp/test/cmd/auditlogs_target",
 	"github.com/google/knative-gcp/test/cmd/sender",
 	"github.com/google/knative-gcp/test/cmd/receiver",
 }
@@ -88,7 +90,7 @@ func TestChannelTracing(t *testing.T) {
 	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
 		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
-	}, func(client *common.Client) error {
+	}, func(client *lib.Client) error {
 		// This test is running based on code in knative/eventing, so it does not use the same
 		// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
 		// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
@@ -99,7 +101,7 @@ func TestChannelTracing(t *testing.T) {
 	})
 }
 
-func copySecret(client *common.Client) error {
+func copySecret(client *lib.Client) error {
 	secret, err := client.Kube.Kube.CoreV1().Secrets("default").Get("google-cloud-key", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("could not get secret: %v", err)
@@ -177,4 +179,11 @@ func TestStorageStackDriverMetrics(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	StorageWithTestImpl(t, packageToImageConfig, true /*assertMetrics */)
+}
+
+// TestAuditLogsSource tests we can knock down a target from an AuditLogsSource.
+func TestAuditLogsSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuditLogsSourceWithTestImpl(t, packageToImageConfig)
 }
