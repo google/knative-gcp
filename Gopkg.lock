@@ -324,14 +324,6 @@
   version = "v0.3.7"
 
 [[projects]]
-  digest = "1:b21d55dedeae51eb2af7d575d26cb280f97dc5187c81048445974bbb59dcf4bd"
-  name = "github.com/jcrossley3/manifestival"
-  packages = ["pkg/manifestival"]
-  pruneopts = "NUT"
-  revision = "dbd2aec45641ad6a8f9834242f6ae5616cdb7bb1"
-  source = "github.com/n3wscott/manifestival"
-
-[[projects]]
   digest = "1:1f2aebae7e7c856562355ec0198d8ca2fa222fb05e5b1b66632a1fce39631885"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
@@ -1505,7 +1497,6 @@
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/googleapis/gax-go/v2",
-    "github.com/jcrossley3/manifestival/pkg/manifestival",
     "github.com/kelseyhightower/envconfig",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/plugin/ochttp",
