@@ -23,7 +23,7 @@ in CloudEvents format.
 
 1. Create a [auditlogssource](./auditlogssource.yaml).
    This `AuditLogsSource` will get Cloud Audit Log Entries for topic creation.  
-   You can change the `serviceName`, `methodName` and `resourceName` to select the Cloud Audit Log Entries you want to view.
+   You can change the `serviceName`, `methodName` and `resourceName` ([detailed description](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
        
    |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
    |  :-------------------:  |  :--------------------------:  |
@@ -159,7 +159,7 @@ Data,
 
 ## Cleaning Up
 
-1. Delete the Scheduler
+1. Delete the AuditLogsSource
 
     ```shell
     kubectl delete -f ./auditlogssource.yaml

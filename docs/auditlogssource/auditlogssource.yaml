@@ -3,10 +3,8 @@ kind: AuditLogsSource
 metadata:
   name: auditlogssource-test
 spec:
-  serviceName:
-    pubsub.googleapis.com
-  methodName:
-    google.pubsub.v1.Publisher.CreateTopic
+  serviceName: pubsub.googleapis.com
+  methodName: google.pubsub.v1.Publisher.CreateTopic
   sink:
     ref:
       apiVersion: v1
