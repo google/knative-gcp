@@ -18,7 +18,6 @@ package scheduler
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -57,7 +56,7 @@ func NewController(
 	schedulerInformer := schedulerinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:      pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.SchedulerAdapterType, cmw),
+		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 		schedulerLister: schedulerInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,
 	}

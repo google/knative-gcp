@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"time"
 
 	"go.uber.org/zap"
@@ -200,9 +201,12 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
 			parent := resources.ExtractParentName(jobName)
-			customAttributes := make(map[string]string)
-			// Add our own jobName here...
-			customAttributes[v1alpha1.JobName] = jobName
+			// Add our own converter type, jobName and schedulerName here
+			customAttributes := map[string]string{
+				converters.ConverterType: converters.SchedulerAdapterType,
+				v1alpha1.JobName:         jobName,
+				v1alpha1.SchedulerName:   scheduler.GetName(),
+			}
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
 				Job: &schedulerpb.Job{

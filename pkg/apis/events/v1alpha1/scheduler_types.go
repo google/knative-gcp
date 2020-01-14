@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"fmt"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
@@ -39,12 +38,16 @@ type Scheduler struct {
 	Spec   SchedulerSpec   `json:"spec"`
 	Status SchedulerStatus `json:"status"`
 }
+
 const (
-	// Scheduler CloudEvent type
-	SchedulerEventType = "com.google.cloud.sheduler.job.execute"
-	//Attributes jobName key
+	// CloudEvent types used by Scheduler.
+	SchedulerExecute = "com.google.cloud.sheduler.job.execute"
+	//Attributes jobName key.
 	JobName = "jobName"
+	//Attributes schedulerName key.
+	SchedulerName = "schedulerName"
 )
+
 var (
 	_ apis.Validatable             = (*Scheduler)(nil)
 	_ apis.Defaultable             = (*Scheduler)(nil)
@@ -112,11 +115,6 @@ func (s *Scheduler) PubSubStatus() *duckv1alpha1.PubSubStatus {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Scheduler) ConditionSet() *apis.ConditionSet {
 	return &schedulerCondSet
-}
-
-// SchedulerEventSource returns the Cloud Scheduler CloudEvent source value.
-func SchedulerEventSource(jobName string) string {
-	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s", jobName)
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

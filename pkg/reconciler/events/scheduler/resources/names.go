@@ -34,6 +34,12 @@ func ExtractParentName(jobName string) string {
 	return jobName[0:strings.LastIndex(jobName, "/jobs/")]
 }
 
+// ExtractJobID extracts the JobID from the job name.
+// Example: given projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID, returns jobs/JOB_ID.
+func ExtractJobID(jobName string) string {
+	return jobName[strings.LastIndex(jobName, "/jobs/")+1:]
+}
+
 // GenerateTopicName generates a topic name for the scheduler. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
 func GenerateTopicName(scheduler *v1alpha1.Scheduler) string {

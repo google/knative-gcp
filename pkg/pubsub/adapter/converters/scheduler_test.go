@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -43,40 +43,47 @@ func TestConvertScheduler(t *testing.T) {
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"jobName":    "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
-				"attribute1": "value1",
-				"attribute2": "value2",
+				"knative-gcp":   "com.google.cloud.scheduler",
+				"jobName":       "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
+				"schedulerName": "scheduler-test",
+				"attribute1":    "value1",
+				"attribute2":    "value2",
 			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
 			return schedulerCloudEvent(map[string]string{
-				"jobName":    "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
 				"attribute1": "value1",
-				"attribute2": "value2",
-			}, "//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test", )
+				"attribute2": "value2",},
+				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
+				"jobs/cre-scheduler-test")
 		},
 	}, {
 		name: "invalid upper case attributes",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"jobName":    "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
-				"AttriBUte1": "value1",
-				"AttrIbuTe2": "value2",
+				"knative-gcp":   "com.google.cloud.scheduler",
+				"jobName":       "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
+				"schedulerName": "scheduler-test",
+				"AttriBUte1":    "value1",
+				"AttrIbuTe2":    "value2",
 			},
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return schedulerCloudEvent(map[string]string{"jobName": "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",},
-				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test")
+			return schedulerCloudEvent(map[string]string{},
+				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
+				"jobs/cre-scheduler-test")
 		},
 	}, {
 		name: "only setting valid alphanumeric attribute",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
+				"knative-gcp":       "com.google.cloud.scheduler",
 				"jobName":           "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
+				"schedulerName":     "scheduler-test",
 				"attribute1":        "value1",
 				"Invalid-Attrib#$^": "value2",
 			},
@@ -84,25 +91,41 @@ func TestConvertScheduler(t *testing.T) {
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
 			return schedulerCloudEvent(map[string]string{
-				"attribute1": "value1",
-			}, "//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test", )
+				"attribute1": "value1"},
+				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
+				"jobs/cre-scheduler-test")
 		},
 	}, {
 		name: "missing jobName attribute",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
-				"attribute1": "value1",
-				"attribute2": "value2",
+				"knative-gcp":   "com.google.cloud.scheduler",
+				"schedulerName": "scheduler-test",
+				"attribute1":    "value1",
+				"attribute2":    "value2",
 			},
 		},
 		sendMode: Binary,
 		wantErr:  "received event did not have jobName",
+	}, {
+		name: "missing schedulerName attribute",
+		message: &cepubsub.Message{
+			Data: []byte("test data"),
+			Attributes: map[string]string{
+				"knative-gcp": "com.google.cloud.scheduler",
+				"jobName":     "projects/knative-gcp-test/locations/us-east4/jobs/cre-scheduler-test",
+				"attribute1":  "value1",
+				"attribute2":  "value2",
+			},
+		},
+		sendMode: Binary,
+		wantErr:  "received event did not have schedulerName",
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
+			ctx := pubsubcontext.WithTransportContext(context.Background(), pubsubcontext.NewTransportContext(
 				"testproject",
 				"testtopic",
 				"testsubscription",
@@ -112,7 +135,7 @@ func TestConvertScheduler(t *testing.T) {
 				},
 			))
 
-			gotEvent, err := Convert(ctx, test.message, test.sendMode, SchedulerAdapterType)
+			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
 
 			if test.wantErr != "" || err != nil {
 				var gotErr string
@@ -133,13 +156,14 @@ func TestConvertScheduler(t *testing.T) {
 	}
 }
 
-func schedulerCloudEvent(extensions map[string]string, source string) *cloudevents.Event {
+func schedulerCloudEvent(extensions map[string]string, source, subject string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetDataContentType("application/octet-stream")
-	e.SetType(v1alpha1.SchedulerEventType)
+	e.SetType(v1alpha1.SchedulerExecute)
 	e.SetExtension("knativecemode", string(Binary))
 	e.SetSource(source)
+	e.SetSubject(subject)
 	e.Data = []byte("test data")
 	e.DataEncoded = true
 	for k, v := range extensions {

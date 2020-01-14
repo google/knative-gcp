@@ -19,11 +19,13 @@ package converters
 import (
 	"context"
 	"errors"
+	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go"
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 )
 
 const (
@@ -39,18 +41,29 @@ func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeT
 	// We do not know the content type and we do not want to inspect the payload,
 	// thus we set this generic one.
 	event.SetDataContentType("application/octet-stream")
-	event.SetType(v1alpha1.SchedulerEventType)
+	event.SetType(v1alpha1.SchedulerExecute)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")
 		event.SetDataSchema(val)
 	}
-	// Set the source if it comes as an attribute.
-	if val, ok := msg.Attributes[v1alpha1.JobName]; ok {
-		event.SetSource(v1alpha1.SchedulerEventSource(val))
+	// Set the source and subject if it comes as an attribute.
+	jobName, ok := msg.Attributes[v1alpha1.JobName]
+	if ok {
+		delete(msg.Attributes, v1alpha1.JobName)
 	} else {
 		return nil, errors.New("received event did not have jobName")
 	}
+	schedulerName, ok := msg.Attributes[v1alpha1.SchedulerName]
+	if ok {
+		delete(msg.Attributes, v1alpha1.SchedulerName)
+	} else {
+		return nil, errors.New("received event did not have schedulerName")
+	}
+	parentName := resources.ExtractParentName(jobName)
+	source := fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parentName, schedulerName)
+	event.SetSource(source)
+	event.SetSubject(resources.ExtractJobID(jobName))
 
 	// Set the mode to be an extension attribute.
 	event.SetExtension("knativecemode", string(sendMode))

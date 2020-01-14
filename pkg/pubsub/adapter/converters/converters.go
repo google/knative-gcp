@@ -38,6 +38,8 @@ const (
 	Push ModeType = "push"
 	// DefaultSendMode is the default choice.
 	DefaultSendMode = Binary
+	// The key used in the message attributes which defines the converter type.
+	ConverterType = "knative-gcp"
 )
 
 type converterFn func(context.Context, *cepubsub.Message, ModeType) (*cloudevents.Event, error)
@@ -52,9 +54,9 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
-		AuditLogAdapterType:        convertAuditLog,
-		"com.google.cloud.storage": convertStorage,
-		SchedulerAdapterType:       convertScheduler,
+		AuditLogAdapterType:  convertAuditLog,
+		StorageAdapterType:   convertStorage,
+		SchedulerAdapterType: convertScheduler,
 	}
 }
 
@@ -69,8 +71,8 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, conv
 		return c(ctx, msg, sendMode)
 	}
 	if msg.Attributes != nil {
-		if val, ok := msg.Attributes["knative-gcp"]; ok {
-			delete(msg.Attributes, "knative-gcp")
+		if val, ok := msg.Attributes[ConverterType]; ok {
+			delete(msg.Attributes, ConverterType)
 			if c, ok := converters[val]; ok {
 				return c(ctx, msg, sendMode)
 			}
