@@ -83,11 +83,19 @@ func WithInitStorageConditions(s *v1alpha1.Storage) {
 	s.Status.InitializeConditions()
 }
 
-// WithStorageTopicNotReady marks the condition that the
-// topic is not ready
-func WithStorageTopicNotReady(reason, message string) StorageOption {
+// WithStorageTopicFalse marks the condition that the
+// topic is False
+func WithStorageTopicFalse(reason, message string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.MarkTopicNotReady(reason, message)
+		s.Status.MarkTopicFalse(reason, message)
+	}
+}
+
+// WithStorageTopicUnknown marks the condition that the
+// topic is False
+func WithStorageTopicUnknown(reason, message string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
@@ -106,11 +114,19 @@ func WithStorageTopicID(topicID string) StorageOption {
 	}
 }
 
-// WithStoragePullSubscriptionNotReady marks the condition that the
-// topic is not ready
-func WithStoragePullSubscriptionNotReady(reason, message string) StorageOption {
+// WithStoragePullSubscriptionFalse marks the condition that the
+// status of topic is False
+func WithStoragePullSubscriptionFalse(reason, message string) StorageOption {
 	return func(s *v1alpha1.Storage) {
-		s.Status.MarkPullSubscriptionNotReady(reason, message)
+		s.Status.MarkPullSubscriptionFalse(reason, message)
+	}
+}
+
+// WithStoragePullSubscriptionUnknown marks the condition that the
+// status of topic is Unknown
+func WithStoragePullSubscriptionUnknown(reason, message string) StorageOption {
+	return func(s *v1alpha1.Storage) {
+		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 

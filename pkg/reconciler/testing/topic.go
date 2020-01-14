@@ -126,6 +126,19 @@ func WithTopicReady(topicID string) TopicOption {
 	}
 }
 
+func WithTopicFalse() TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.InitializeConditions()
+		s.Status.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
+	}
+}
+
+func WithTopicUnknown() TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.InitializeConditions()
+	}
+}
+
 func WithTopicDeleted(t *v1alpha1.Topic) {
 	tt := metav1.NewTime(time.Unix(1e9, 0))
 	t.ObjectMeta.SetDeletionTimestamp(&tt)

@@ -20,9 +20,14 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// MarkTopicNotReady sets the condition that the PubSub Topic is not ready and why.
-func (s *PubSubStatus) MarkTopicNotReady(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFalse sets the condition that the PubSub Topic is not ready and why.
+func (s *PubSubStatus) MarkTopicFalse(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
+}
+
+// MarkTopicUnknown sets the condition that the PubSub Topic is False and why.
+func (s *PubSubStatus) MarkTopicUnknown(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+	cs.Manage(s).MarkUnknown(TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the PubSub Topic is ready.
@@ -30,13 +35,29 @@ func (s *PubSubStatus) MarkTopicReady(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkTrue(TopicReady)
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the PubSub PullSUbscription is
-// not ready and why.
-func (s *PubSubStatus) MarkPullSubscriptionNotReady(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicNotConfigured sets the condition that the PubSub Topic has not yet been reconciled.
+func (s *PubSubStatus) MarkTopicNotConfigured(cs *apis.ConditionSet) {
+	cs.Manage(s).MarkUnknown(TopicReady, "TopicNotConfigured", "Topic has not yet been reconciled")
+}
+
+// MarkPullSubscriptionFalse sets the condition that the PubSub PullSubscription is
+// False and why.
+func (s *PubSubStatus) MarkPullSubscriptionFalse(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
+
+// MarkPullSubscriptionUnknown sets the condition that the PubSub PullSubscription is Unknown.
+func (s *PubSubStatus) MarkPullSubscriptionUnknown(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+	cs.Manage(s).MarkUnknown(PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
 
 // MarkPullSubscriptionReady sets the condition that the PubSub PullSubscription is ready.
 func (s *PubSubStatus) MarkPullSubscriptionReady(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkTrue(PullSubscriptionReady)
+}
+
+// MarkPullSubscriptionNotConfigured sets the condition that the PubSub PullSubscription has not yet been reconciled.
+func (s *PubSubStatus) MarkPullSubscriptionNotConfigured(cs *apis.ConditionSet) {
+	cs.Manage(s).MarkUnknown(PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }

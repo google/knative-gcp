@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -37,10 +38,16 @@ func (ps *PubSubStatus) InitializeConditions() {
 	pubSubCondSet.Manage(ps).InitializeConditions()
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
-// source is not ready and why.
-func (ps *PubSubStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkPullSubscriptionFalse sets the condition that the underlying PullSubscription
+// source is False and why.
+func (ps *PubSubStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
 	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
+// MarkPullSubscriptionNotConfigured sets the condition that the underlying PullSubscription
+// source has not been reconciled and why.
+func (ps *PubSubStatus) MarkPullSubscriptionNotConfigured() {
+	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
@@ -48,13 +55,25 @@ func (ps *PubSubStatus) MarkPullSubscriptionReady() {
 	pubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
+// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is Unknown and why.
+func (ps *PubSubStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
 func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
+	if ready == nil {
+		ps.MarkPullSubscriptionNotConfigured()
+		return
+	}
+
 	switch {
-	case ready == nil:
-		ps.MarkPullSubscriptionNotReady("PullSubscriptionNotReady", "PullSubscription has no Ready type status")
-	case ready.IsTrue():
+	case ready.Status == corev1.ConditionUnknown:
+		ps.MarkPullSubscriptionUnknown(ready.Reason, ready.Message)
+	case ready.Status == corev1.ConditionTrue:
 		ps.MarkPullSubscriptionReady()
-	case ready.IsFalse():
-		ps.MarkPullSubscriptionNotReady(ready.Reason, ready.Message)
+	case ready.Status == corev1.ConditionFalse:
+		ps.MarkPullSubscriptionFalse(ready.Reason, ready.Message)
+	default:
+		ps.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", ready.Status)
 	}
 }

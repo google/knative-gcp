@@ -36,10 +36,16 @@ func (s *AuditLogsSourceStatus) InitializeConditions() {
 	auditLogsSourceCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
-// source is not ready and why.
-func (s *AuditLogsSourceStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkPullSubscriptionNotReady sets the condition that the status of underlying PullSubscription
+// source is False and why.
+func (s *AuditLogsSourceStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
+// MarkPullSubscriptionUnknown sets the condition that the status of underlying PullSubscription
+// source is Unknown and why.
+func (s *AuditLogsSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+	auditLogsSourceCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
@@ -47,9 +53,14 @@ func (s *AuditLogsSourceStatus) MarkPullSubscriptionReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
-func (s *AuditLogsSourceStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFalse sets the condition that the status of PubSub topic is False and why.
+func (s *AuditLogsSourceStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
+}
+
+// MarkTopicUnknown sets the condition that the status of PubSub topic is Unknown and why.
+func (s *AuditLogsSourceStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+	auditLogsSourceCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.

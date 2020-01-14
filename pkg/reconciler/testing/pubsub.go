@@ -70,11 +70,19 @@ func WithInitPubSubConditions(ps *v1alpha1.PubSub) {
 	ps.Status.InitializeConditions()
 }
 
-// WithPubSubPullSubscriptionNotReady marks the condition that the
-// topic is not ready
-func WithPubSubPullSubscriptionNotReady(reason, message string) PubSubOption {
+// WithPubSubPullSubscriptionFalse marks the condition that the
+// topic is False
+func WithPubSubPullSubscriptionFalse(reason, message string) PubSubOption {
 	return func(ps *v1alpha1.PubSub) {
-		ps.Status.MarkPullSubscriptionNotReady(reason, message)
+		ps.Status.MarkPullSubscriptionFalse(reason, message)
+	}
+}
+
+// WithPubSubPullSubscriptionUnknown marks the condition that the
+// topic is Unknown
+func WithPubSubPullSubscriptionUnknown(reason, message string) PubSubOption {
+	return func(ps *v1alpha1.PubSub) {
+		ps.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 

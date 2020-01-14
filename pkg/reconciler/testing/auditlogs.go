@@ -48,9 +48,15 @@ func WithInitAuditLogsSourceConditions(s *v1alpha1.AuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
-func WithAuditLogsSourceTopicNotReady(reason, message string) AuditLogsSourceOption {
+func WithAuditLogsSourceTopicFalse(reason, message string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
-		s.Status.MarkTopicNotReady(reason, message)
+		s.Status.MarkTopicFalse(reason, message)
+	}
+}
+
+func WithAuditLogsSourceTopicUnknown(reason, message string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
@@ -61,9 +67,15 @@ func WithAuditLogsSourceTopicReady(topicID string) AuditLogsSourceOption {
 	}
 }
 
-func WithAuditLogsSourcePullSubscriptionNotReady(reason, message string) AuditLogsSourceOption {
+func WithAuditLogsSourcePullSubscriptionFalse(reason, message string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
-		s.Status.MarkPullSubscriptionNotReady(reason, message)
+		s.Status.MarkPullSubscriptionFalse(reason, message)
+	}
+}
+
+func WithAuditLogsSourcePullSubscriptionUnknown(reason, message string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 

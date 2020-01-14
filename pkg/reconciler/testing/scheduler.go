@@ -94,32 +94,48 @@ func WithInitSchedulerConditions(s *v1alpha1.Scheduler) {
 	s.Status.InitializeConditions()
 }
 
-// WithSchedulerTopicNotReady marks the condition that the
-// topic is not ready
-func WithSchedulerTopicNotReady(reason, message string) SchedulerOption {
+// WithSchedulerTopicFalse marks the condition that the
+// status of topic is False.
+func WithSchedulerTopicFalse(reason, message string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkTopicNotReady(reason, message)
+		s.Status.MarkTopicFalse(reason, message)
+	}
+}
+
+// WithSchedulerTopicUnknown marks the condition that the
+// status of topic is Unknown.
+func WithSchedulerTopicUnknown(reason, message string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
 // WithSchedulerTopicNotReady marks the condition that the
-// topic is not ready
+// topic is not ready.
 func WithSchedulerTopicReady(topicID, projectID string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Status.MarkTopicReady(topicID, projectID)
 	}
 }
 
-// WithSchedulerPullSubscriptionNotReady marks the condition that the
-// topic is not ready
-func WithSchedulerPullSubscriptionNotReady(reason, message string) SchedulerOption {
+// WithSchedulerPullSubscriptionFalse marks the condition that the
+// topic is False.
+func WithSchedulerPullSubscriptionFalse(reason, message string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkPullSubscriptionNotReady(reason, message)
+		s.Status.MarkPullSubscriptionFalse(reason, message)
 	}
 }
 
-// WithSchedulerPullSubscriptionNotReady marks the condition that the
-// topic is not ready
+// WithSchedulerPullSubscriptionUnknown marks the condition that the
+// topic is Unknown.
+func WithSchedulerPullSubscriptionUnknown(reason, message string) SchedulerOption {
+	return func(s *v1alpha1.Scheduler) {
+		s.Status.MarkPullSubscriptionUnknown(reason, message)
+	}
+}
+
+// WithSchedulerPullSubscriptionReady marks the condition that the
+// topic is ready.
 func WithSchedulerPullSubscriptionReady() SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
 		s.Status.MarkPullSubscriptionReady()

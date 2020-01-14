@@ -27,6 +27,11 @@ func (ts *TopicStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return topicCondSet.Manage(ts).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition
+func (ts *TopicStatus) GetTopLevelCondition() *apis.Condition {
+	return topicCondSet.Manage(ts).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (ts *TopicStatus) IsReady() bool {
 	return topicCondSet.Manage(ts).IsHappy()
@@ -79,7 +84,7 @@ func (ts *TopicStatus) MarkTopicReady() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)
 }
 
-// MarkNoTopic sets the condition that signals there is not a topic for this
+// MarkTopicFalse sets the condition that signals there is not a topic for this
 // Topic. This could be because of an error or the Topic is being deleted.
 func (ts *TopicStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionTopicExists, reason, messageFormat, messageA...)

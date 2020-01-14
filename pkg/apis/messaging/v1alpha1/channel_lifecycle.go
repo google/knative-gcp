@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -25,6 +26,11 @@ import (
 // or nil.
 func (cs *ChannelStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return channelCondSet.Manage(cs).GetCondition(t)
+}
+
+// GetTopLevelCondition returns the top level condition.
+func (cs *ChannelStatus) GetTopLevelCondition() *apis.Condition {
+	return channelCondSet.Manage(cs).GetTopLevelCondition()
 }
 
 // IsReady returns true if the resource is ready overall.
@@ -58,22 +64,38 @@ func (cs *ChannelStatus) MarkTopicReady() {
 }
 
 func (cs *ChannelStatus) PropagateTopicStatus(ready *apis.Condition) {
+	if ready == nil {
+		cs.MarkTopicNotConfigured()
+		return
+	}
+
 	switch {
-	case ready == nil:
-		cs.MarkNoTopic("TopicNotReady", "Topic has no Ready type status")
-	case ready.IsTrue():
+	case ready.Status == corev1.ConditionUnknown:
+		cs.MarkTopicUnknown(ready.Reason, ready.Message)
+	case ready.Status == corev1.ConditionTrue:
 		cs.MarkTopicReady()
-	case ready.IsFalse():
-		cs.MarkNoTopic(ready.Reason, ready.Message)
+	case ready.Status == corev1.ConditionFalse:
+		cs.MarkTopicFalse(ready.Reason, ready.Message)
+	default:
+		cs.MarkTopicUnknown("TopicUnknown", "The status of Topic is invalid: %v", ready.Status)
 	}
 }
 
-// MarkNoTopic sets the condition that signals there is not a topic for this
+// MarkTopicFalse sets the condition that signals there is not a topic for this
 // Channel. This could be because of an error or the Channel is being deleted.
-func (cs *ChannelStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
+func (cs *ChannelStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkFalse(ChannelConditionTopicReady, reason, messageFormat, messageA...)
 }
 
 func (cs *ChannelStatus) MarkTopicNotOwned(messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkFalse(ChannelConditionTopicReady, "NotOwned", messageFormat, messageA...)
+}
+
+func (cs *ChannelStatus) MarkTopicNotConfigured() {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionTopicReady,
+		"TopicNotConfigured", "Topic has not yet been reconciled")
+}
+
+func (cs *ChannelStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+	channelCondSet.Manage(cs).MarkUnknown(ChannelConditionTopicReady, reason, messageFormat, messageA...)
 }

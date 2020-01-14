@@ -149,25 +149,30 @@ func TestChannelInitializeConditions(t *testing.T) {
 
 func TestChannelIsReady(t *testing.T) {
 	tests := []struct {
-		name       string
-		setAddress bool
-		markTopic  bool
-		wantReady  bool
+		name                string
+		setAddress          bool
+		topicStatus         corev1.ConditionStatus
+		wantConditionStatus corev1.ConditionStatus
 	}{{
-		name:       "all happy",
-		setAddress: true,
-		markTopic:  true,
-		wantReady:  true,
+		name:                "all happy",
+		setAddress:          true,
+		topicStatus:         corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionTrue,
 	}, {
-		name:       "address not set",
-		setAddress: false,
-		markTopic:  true,
-		wantReady:  false,
+		name:                "address not set",
+		setAddress:          false,
+		topicStatus:         corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
-		name:       "topic not ready",
-		setAddress: true,
-		markTopic:  false,
-		wantReady:  false,
+		name:                "the status of topic is false",
+		setAddress:          true,
+		topicStatus:         corev1.ConditionFalse,
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "the status of topic is unknown",
+		setAddress:          true,
+		topicStatus:         corev1.ConditionUnknown,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -176,14 +181,17 @@ func TestChannelIsReady(t *testing.T) {
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
 			}
-			if test.markTopic {
+			if test.topicStatus == corev1.ConditionTrue {
 				cs.MarkTopicReady()
+			} else if test.topicStatus == corev1.ConditionUnknown {
+				cs.MarkTopicUnknown("The status of topic is unknown", "The status of topic is unknown: nil")
 			} else {
-				cs.MarkNoTopic("NoTopic", "UnitTest")
+				cs.MarkTopicFalse("The status of topic is false", "The status of topic is unknown: nil")
 			}
-			got := cs.IsReady()
-			if test.wantReady != got {
-				t.Errorf("unexpected readiness: want %v, got %v", test.wantReady, got)
+
+			got := cs.GetTopLevelCondition().Status
+			if test.wantConditionStatus != got {
+				t.Errorf("unexpected readiness: want %v, got %v", test.wantConditionStatus, got)
 			}
 		})
 	}
