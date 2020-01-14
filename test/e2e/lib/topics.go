@@ -56,7 +56,7 @@ func MakeTopicOrDie(t *testing.T) (string, func()) {
 	}
 }
 
-func MakeTopicOrDieWithTopicName(t *testing.T, topicName string) (string, func()) {
+func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ const (
 	timeout  = 5 * time.Minute
 )
 
-// TODO(chizhg): move this function to knative/pkg/test
+// TODO(chizhg): move this function to knative/pkg/test or knative/eventing/test
 // WaitForResourceReady waits until the specified resource in the given namespace are ready.
 func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 	cc := c.Core
@@ -177,6 +177,7 @@ func (c *Client) WaitUntilJobDone(namespace, name string) (string, error) {
 	return operations.GetFirstTerminationMessage(pod), nil
 }
 
+// TODO(chizhg): move this function to knative/pkg/test or knative/eventing/test
 func (c *Client) LogsFor(namespace, name string, tm *metav1.TypeMeta) (string, error) {
 	cc := c.Core
 	// Get all pods in this namespace.

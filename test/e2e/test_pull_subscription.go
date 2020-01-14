@@ -23,7 +23,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -49,9 +48,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
 		}),
-		kngcptesting.WithPullSubscriptionSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, svcName))
+		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
@@ -81,9 +78,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
-		}), kngcptesting.WithPullSubscriptionSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, targetName))
+		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {

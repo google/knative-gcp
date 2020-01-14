@@ -22,6 +22,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
@@ -37,10 +38,10 @@ import (
 /*
 PubSubWithBrokerTestImpl tests the following scenario:
 
-                          5                 4
+                              5                   4
                     ------------------   --------------------
                     |                 | |                    |
-              1     v	    2         | v        3           |
+          1         v	      2       | v         3          |
 (Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
@@ -65,12 +66,22 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client.Core.CreateRBACResourcesForBrokers()
 	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
 
+	// Create the Istio ServiceEntry.
+	istioServiceEntry := resources.IstioServiceEntry(
+		"cloud-run-events-googleapis-ext", client.Namespace)
+	client.CreateUnstructuredObjOrFail(istioServiceEntry)
+
+	// Create the Knative Service.
+	kservice := resources.ReceiverKService(
+		kserviceName, client.Namespace)
+	client.CreateUnstructuredObjOrFail(kservice)
+
 	// Create a Trigger with the Knative Service subscriber.
 	client.Core.CreateTriggerOrFail(
 		dummyTriggerName,
 		eventingtestresources.WithBroker(brokerName),
 		eventingtestresources.WithAttributesTriggerFilter(
-			"", "",
+			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
 			map[string]interface{}{"type": "e2e-testing-dummy"}),
 		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
 	)
@@ -87,20 +98,10 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 		respTriggerName,
 		eventingtestresources.WithBroker(brokerName),
 		eventingtestresources.WithAttributesTriggerFilter(
-			"", "",
+			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
 			map[string]interface{}{"type": "e2e-testing-resp"}),
 		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
 	)
-
-	// Create the Istio ServiceEntry.
-	// istioServiceEntry := resources.IstioServiceEntry(
-	// 	"cloud-run-events-googleapis-ext", client.Namespace)
-	// client.CreateUnstructuredObjOrFail(istioServiceEntry)
-
-	// Create the Knative Service.
-	kservice := resources.ReceiverKService(
-		kserviceName, client.Namespace)
-	client.CreateUnstructuredObjOrFail(kservice)
 
 	// Wait for broker, trigger, ksvc ready.
 	if err := client.Core.WaitForResourceReady(brokerName, eventingtestlib.BrokerTypeMeta); err != nil {

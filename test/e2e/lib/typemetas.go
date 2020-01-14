@@ -36,31 +36,31 @@ func servingTypeMeta(kind string) *metav1.TypeMeta {
 	}
 }
 
-var ChannelTypeMeta = gcloudMessagingTypeMeta("Channel")
+var ChannelTypeMeta = messagingTypeMeta("Channel")
 
-func gcloudMessagingTypeMeta(kind string) *metav1.TypeMeta {
+func messagingTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
 		APIVersion: "messaging.cloud.google.com/v1alpha1",
 	}
 }
 
-var StorageTypeMeta = gcloudEventsTypeMeta("Storage")
+var StorageTypeMeta = eventsTypeMeta("Storage")
 
-var PubsubTypeMeta = gcloudEventsTypeMeta("PubSub")
+var PubsubTypeMeta = eventsTypeMeta("PubSub")
 
-var AuditLogsSourceTypeMeta = gcloudEventsTypeMeta("AuditLogsSource")
+var AuditLogsSourceTypeMeta = eventsTypeMeta("AuditLogsSource")
 
-func gcloudEventsTypeMeta(kind string) *metav1.TypeMeta {
+func eventsTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
 		APIVersion: "events.cloud.google.com/v1alpha1",
 	}
 }
 
-var PullSubscriptionTypeMeta = gcloudPubsubTypeMeta("PullSubscription")
+var PullSubscriptionTypeMeta = pubsubTypeMeta("PullSubscription")
 
-func gcloudPubsubTypeMeta(kind string) *metav1.TypeMeta {
+func pubsubTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
 		APIVersion: "pubsub.cloud.google.com/v1alpha1",

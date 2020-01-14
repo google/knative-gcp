@@ -24,7 +24,6 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -84,9 +83,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 		kngcptesting.WithAuditLogsSourceMethodName(methodName),
 		kngcptesting.WithAuditLogsSourceProject(project),
 		kngcptesting.WithAuditLogsSourceResourceName(resourceName),
-		kngcptesting.WithAuditLogsSourceSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, targetName))
+		kngcptesting.WithAuditLogsSourceSink(lib.ServiceGVK, targetName))
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
 	if err := client.Core.WaitForResourceReady(auditlogsName, lib.AuditLogsSourceTypeMeta); err != nil {
@@ -95,7 +92,7 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 
 	// audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds
 	time.Sleep(45 * time.Second)
-	topicName, deleteTopic := lib.MakeTopicOrDieWithTopicName(t, topicName)
+	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)

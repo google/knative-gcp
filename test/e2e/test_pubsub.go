@@ -87,17 +87,13 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 
 	// Create the PubSub source.
 	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
-		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, targetName),
+		kngcptesting.WithPubSubSink(lib.ServiceGVK, targetName),
 		kngcptesting.WithPubSubTopic(topicName))
 	client.CreatePubSubOrFail(eventsPubsub)
 
 	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
-
-	time.Sleep(1 * time.Minute)
 
 	topic := lib.GetTopic(t, topicName)
 

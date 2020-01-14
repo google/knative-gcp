@@ -28,7 +28,6 @@ import (
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
@@ -116,9 +115,7 @@ func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 	// Create the Storage source.
 	eventsStorage := kngcptesting.NewStorage(storageName, client.Namespace,
 		kngcptesting.WithStorageBucket(bucketName),
-		kngcptesting.WithStorageSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, targetName))
+		kngcptesting.WithStorageSink(lib.ServiceGVK, targetName))
 	client.CreateStorageOrFail(eventsStorage)
 
 	if err := client.Core.WaitForResourceReady(storageName, lib.StorageTypeMeta); err != nil {

@@ -29,13 +29,12 @@ import (
 )
 
 func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
-	namespace := c.Namespace
 	gvr, _ := meta.UnsafeGuessKindToResource(spec.GroupVersionKind())
-	_, err := c.Core.Dynamic.Resource(gvr).Namespace(namespace).Create(spec, v1.CreateOptions{})
+	_, err := c.Core.Dynamic.Resource(gvr).Namespace(c.Namespace).Create(spec, v1.CreateOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to create object %q: %v", spec.GetName(), err)
 	}
-	c.Tracker.Add(gvr.Group, gvr.Version, gvr.Resource, namespace, spec.GetName())
+	c.Tracker.Add(gvr.Group, gvr.Version, gvr.Resource, c.Namespace, spec.GetName())
 }
 
 func (c *Client) CreateChannelOrFail(channel *messagingv1alpha1.Channel) {
@@ -86,22 +85,22 @@ func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *pubsubv1alpha1.P
 // WithServiceForJob returns an option that creates a Service binded with the given job.
 func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
 	return func(job *batchv1.Job, client *Client) error {
-		namespace := job.Namespace
 		svc := resources.ServiceDefaultHTTP(name, job.Spec.Template.Labels)
 
-		svcs := client.Core.Kube.Kube.CoreV1().Services(namespace)
+		svcs := client.Core.Kube.Kube.CoreV1().Services(job.Namespace)
 		if _, err := svcs.Create(svc); err != nil {
 			return err
 		}
-		client.Tracker.Add("", "v1", "services", namespace, name)
+		client.Tracker.Add("", "v1", "services", job.Namespace, name)
 		return nil
 	}
 }
 
 func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job, *Client) error) {
 	// set namespace for the job in case it's empty
-	namespace := c.Namespace
-	job.Namespace = namespace
+	if job.Namespace == "" {
+		job.Namespace = c.Namespace
+	}
 	// apply options on the job before creation
 	for _, option := range options {
 		if err := option(job, c); err != nil {
@@ -113,5 +112,5 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 	if _, err := jobs.Create(job); err != nil {
 		c.T.Fatalf("Failed to create job %q: %v", job.Name, err)
 	}
-	c.Tracker.Add("batch", "v1", "jobs", namespace, job.Name)
+	c.Tracker.Add("batch", "v1", "jobs", c.Namespace, job.Name)
 }

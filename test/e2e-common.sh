@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2020 Google LLC
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ readonly PUBSUB_SERVICE_ACCOUNT="e2e-pubsub-test-$(random6)"
 readonly PUBSUB_SERVICE_ACCOUNT_KEY="$(mktemp)"
 readonly PUBSUB_SECRET_NAME="google-cloud-key"
 
+# Setup Knative GCP.
 function knative_setup() {
   control_plane_setup || return 1
   start_knative_gcp
@@ -54,7 +55,7 @@ function knative_setup() {
 function test_setup() {
   pubsub_setup || return 1
   storage_setup || return 1
-  echo "Sleep 2 min to wait for all resources to setup"
+  echo "Sleep 2 mins to wait for all resources to setup"
   sleep 120
 
   # Publish test images.
@@ -64,15 +65,23 @@ function test_setup() {
   $(dirname $0)/upload-test-images.sh "test/test_images" e2e || fail_test "Error uploading test images from knative-gcp"
 }
 
-# Tear down resources common to all eventing tests.
-function test_teardown() {
-  teardown
+# Tear down Knative GCP.
+# Note we only delete the gcloud service account and iam policy bindings here, as if the cluster is deleted,
+# other resources created on the cluster will automatically be gone.
+function knative_teardown() {
+  control_plane_teardown
 }
 
-# Create resources required for the Control Plane setup
+# Tear down resources common to all eventing tests.
+function test_teardown() {
+  pubsub_teardown
+  storage_teardown
+}
+
+# Create resources required for the Control Plane setup.
 function control_plane_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
-  # When not running on Prow we need to set up a service account for managing resources
+  # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     gcloud iam service-accounts create ${CONTROL_PLANE_SERVICE_ACCOUNT}
@@ -104,7 +113,7 @@ function control_plane_setup() {
   kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
-# Create resources required for Pub/Sub Admin setup
+# Create resources required for Pub/Sub Admin setup.
 function pubsub_setup() {
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
   # Enable monitoring
@@ -127,7 +136,7 @@ function pubsub_setup() {
   kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${service_account_key}
 }
 
-# Create resources required for Storage Admin setup
+# Create resources required for Storage Admin setup.
 function storage_setup() {
   if (( ! IS_PROW )); then
     echo "Update ServiceAccount for Storage Admin"
@@ -143,9 +152,9 @@ function storage_setup() {
   fi
 }
 
-# Delete resources that were used for setup
-function teardown() {
-  # When not running on Prow we need to delete the service accounts and namespaces created
+# Tear down resources required for Pub/Sub Admin setup.
+function pubsub_teardown() {
+  # When not running on Prow we need to delete the service accounts and namespaces created.
   if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Pub/Sub Admin"
     gcloud iam service-accounts keys delete -q ${PUBSUB_SERVICE_ACCOUNT_KEY} \
@@ -156,6 +165,12 @@ function teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
     --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
     --role roles/monitoring.editor
+  fi
+}
+
+# Tear down resources required for Storage Admin setup.
+function storage_teardown() {
+  if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Storage Admin"
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
@@ -164,6 +179,13 @@ function teardown() {
       --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
       --role roles/pubsub.publisher
     gcloud iam service-accounts delete -q ${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+  fi
+}
+
+# Tear down resources required for Control Plane setup.
+function control_plane_teardown() {
+  # When not running on Prow we need to delete the service accounts and namespaces created
+  if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Control Plane"
     gcloud iam service-accounts keys delete -q ${CONTROL_PLANE_SERVICE_ACCOUNT_KEY} \
       --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
@@ -185,7 +207,6 @@ function teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/logging.privateLogViewer
+    gcloud iam service-accounts delete -q ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   fi
-  kubectl -n ${E2E_TEST_NAMESPACE} delete secret ${PUBSUB_SECRET_NAME}
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} delete secret ${CONTROL_PLANE_SECRET_NAME}
 }
