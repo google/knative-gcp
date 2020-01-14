@@ -2,6 +2,13 @@
 # for detailed Gopkg.toml documentation.
 
 required = [
+  "knative.dev/test-infra/scripts",
+  "knative.dev/test-infra/tools/dep-collector",
+  # for integration tests
+  "knative.dev/eventing/test/test_images/logevents",
+  "knative.dev/eventing/test/test_images/sendevents",
+  "knative.dev/eventing/test/test_images/transformevents",
+
   "k8s.io/apimachinery/pkg/util/sets/types",
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/defaulter-gen",
@@ -10,8 +17,6 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "knative.dev/pkg/codegen/cmd/injection-gen",
   "knative.dev/pkg/testutils/clustermanager/perf-tests",
-  "knative.dev/test-infra/scripts",
-  "knative.dev/test-infra/tools/dep-collector",
   "golang.org/x/net/http2/h2c",
   "go.opencensus.io/metric/metricexport"
 ]
@@ -54,13 +59,6 @@ required = [
   name = "k8s.io/client-go"
   version = "kubernetes-1.15.3"
 
-# manifestival is a testing only dep.
-[[constraint]]
-  name = "github.com/jcrossley3/manifestival"
-  # HEAD as of 2019-08-01
-  revision = "dbd2aec45641ad6a8f9834242f6ae5616cdb7bb1"
-  source = "github.com/n3wscott/manifestival"
-
 [[override]]
   name = "github.com/cloudevents/sdk-go"
   version = "0.10.2"
@@ -77,6 +75,10 @@ required = [
 
 [[prune.project]]
   name = "knative.dev/test-infra"
+  non-go = false
+
+[[prune.project]]
+  name = "knative.dev/eventing"
   non-go = false
 
 [[prune.project]]

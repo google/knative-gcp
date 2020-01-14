@@ -22,43 +22,21 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
-	"knative.dev/eventing/test/lib"
+	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/test/conformance/helpers"
+
 	"knative.dev/pkg/test/logstream"
 
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
 
-var packages = []string{
-	"github.com/google/knative-gcp/test/cmd/target",
-	"github.com/google/knative-gcp/test/cmd/storage_target",
-	"github.com/google/knative-gcp/test/cmd/auditlogs_target",
-	"github.com/google/knative-gcp/test/cmd/sender",
-	"github.com/google/knative-gcp/test/cmd/receiver",
-}
-
-var packageToImageConfig = map[string]string{}
-var packageToImageConfigDone bool
-
 func TestMain(m *testing.M) {
-	for _, pack := range packages {
-		image, err := KoPublish(pack)
-		if err != nil {
-			fmt.Printf("error attempting to ko publish: %s\n", err)
-			panic(err)
-		}
-		i := strings.Split(pack, "/")
-		packageToImageConfig[i[len(i)-1]+"Image"] = image
-	}
-	packageToImageConfigDone = true
-
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
@@ -67,14 +45,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// This test is more for debugging the ko publish process.
-func TestKoPublish(t *testing.T) {
-	for k, v := range packageToImageConfig {
-		t.Log(k, "-->", v)
-	}
-}
-
-// Rest of e2e tests go below:
+// All e2e tests go below:
 
 // TestSmoke makes sure we can run tests.
 func TestSmokeChannel(t *testing.T) {
@@ -90,7 +61,7 @@ func TestChannelTracing(t *testing.T) {
 	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
 		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
-	}, func(client *lib.Client) error {
+	}, func(client *eventingtestlib.Client) error {
 		// This test is running based on code in knative/eventing, so it does not use the same
 		// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
 		// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
@@ -101,7 +72,7 @@ func TestChannelTracing(t *testing.T) {
 	})
 }
 
-func copySecret(client *lib.Client) error {
+func copySecret(client *eventingtestlib.Client) error {
 	secret, err := client.Kube.Kube.CoreV1().Secrets("default").Get("google-cloud-key", metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("could not get secret: %v", err)
@@ -134,7 +105,7 @@ func TestSmokePullSubscription(t *testing.T) {
 func TestPullSubscriptionWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PullSubscriptionWithTargetTestImpl(t, packageToImageConfig)
+	PullSubscriptionWithTargetTestImpl(t)
 }
 
 // TestSmokePubSub makes sure we can run tests on PubSubs.
@@ -148,7 +119,7 @@ func TestSmokePubSub(t *testing.T) {
 func TestPubSubWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, packageToImageConfig, false /*assertMetrics */)
+	PubSubWithTargetTestImpl(t, false /*assertMetrics */)
 }
 
 // TestPubSubStackDriverMetrics tests we can knock down a target from a PubSub and that we send metrics to StackDriver.
@@ -156,21 +127,21 @@ func TestPubSubStackDriverMetrics(t *testing.T) {
 	t.Skip("See issues https://github.com/google/knative-gcp/issues/317 and https://github.com/cloudevents/sdk-go/pull/234")
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, packageToImageConfig, true /*assertMetrics */)
+	PubSubWithTargetTestImpl(t, true /*assertMetrics */)
 }
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t, packageToImageConfig)
+	BrokerWithPubSubChannelTestImpl(t)
 }
 
 // TestStorage tests we can knock down a target from a Storage.
 func TestStorage(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, packageToImageConfig, false /*assertMetrics */)
+	StorageWithTestImpl(t, false /*assertMetrics */)
 }
 
 // TestStorageStackDriverMetrics tests we can knock down a target from a Storage and that we send metrics to StackDriver.
@@ -178,12 +149,12 @@ func TestStorageStackDriverMetrics(t *testing.T) {
 	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, packageToImageConfig, true /*assertMetrics */)
+	StorageWithTestImpl(t, true /*assertMetrics */)
 }
 
 // TestAuditLogsSource tests we can knock down a target from an AuditLogsSource.
 func TestAuditLogsSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	AuditLogsSourceWithTestImpl(t, packageToImageConfig)
+	AuditLogsSourceWithTestImpl(t)
 }

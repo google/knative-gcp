@@ -21,23 +21,27 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/eventing/test/lib"
+	v1 "k8s.io/api/core/v1"
+	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
-	"knative.dev/eventing/test/lib/resources"
+	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 /*
 PubSubWithBrokerTestImpl tests the following scenario:
 
-                          5                 4
+                              5                   4
                     ------------------   --------------------
                     |                 | |                    |
-              1     v	    2         | v        3           |
+          1         v	      2       | v         3          |
 (Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
@@ -46,119 +50,97 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, packages map[string]string) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	brokerName := helpers.AppendRandomString("pubsub")
 	dummyTriggerName := "dummy-broker-" + brokerName
 	respTriggerName := "resp-broker-" + brokerName
 	kserviceName := helpers.AppendRandomString("kservice")
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
-	clusterRoleName := helpers.AppendRandomString("e2e-pubsub")
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	config := map[string]string{
-		"namespace":        client.Namespace,
-		"brokerName":       brokerName,
-		"dummyTriggerName": dummyTriggerName,
-		"respTriggerName":  respTriggerName,
-		"kserviceName":     kserviceName,
-		"senderName":       senderName,
-		"targetName":       targetName,
-		"clusterRoleName":  clusterRoleName,
-	}
-	for k, v := range packages {
-		config[k] = v
-	}
+	// Create a new Broker.
+	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
+	client.Core.CreateRBACResourcesForBrokers()
+	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
 
-	// Create resources.
-	brokerInstaller := createResource(client, config, []string{"pubsub_broker", "istio"}, t)
-	defer deleteResource(brokerInstaller, t)
+	// Create the Knative Service.
+	kservice := resources.ReceiverKService(
+		kserviceName, client.Namespace)
+	client.CreateUnstructuredObjOrFail(kservice)
+
+	// Create a Trigger with the Knative Service subscriber.
+	client.Core.CreateTriggerOrFail(
+		dummyTriggerName,
+		eventingtestresources.WithBroker(brokerName),
+		eventingtestresources.WithAttributesTriggerFilter(
+			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+			map[string]interface{}{"type": "e2e-testing-dummy"}),
+		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
+	)
+
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+
+	// Create a Trigger with the target Service subscriber.
+	client.Core.CreateTriggerOrFail(
+		respTriggerName,
+		eventingtestresources.WithBroker(brokerName),
+		eventingtestresources.WithAttributesTriggerFilter(
+			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+			map[string]interface{}{"type": "e2e-testing-resp"}),
+		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
+	)
 
 	// Wait for broker, trigger, ksvc ready.
-	brokerGVR := schema.GroupVersionResource{
-		Group:    "eventing.knative.dev",
-		Version:  "v1alpha1",
-		Resource: "brokers",
-	}
-	if err := client.WaitForResourceReady(client.Namespace, brokerName, brokerGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(brokerName, eventingtestlib.BrokerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	triggerGVR := schema.GroupVersionResource{
-		Group:    "eventing.knative.dev",
-		Version:  "v1alpha1",
-		Resource: "triggers",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, dummyTriggerName, triggerGVR); err != nil {
-		t.Error(err)
-	}
-	if err := client.WaitForResourceReady(client.Namespace, respTriggerName, triggerGVR); err != nil {
+	if err := client.Core.WaitForResourcesReady(eventingtestlib.TriggerTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	ksvcGVR := schema.GroupVersionResource{
-		Group:    "serving.knative.dev",
-		Version:  "v1",
-		Resource: "services",
-	}
-	if err := client.WaitForResourceReady(client.Namespace, kserviceName, ksvcGVR); err != nil {
+	if err := client.Core.WaitForResourceReady(kserviceName, lib.KsvcTypeMeta); err != nil {
 		t.Error(err)
 	}
 
 	// Get broker URL.
-	metaAddressable := resources.NewMetaResource(brokerName, client.Namespace, lib.BrokerTypeMeta)
-	u, err := duck.GetAddressableURI(client.Dynamic, metaAddressable)
+	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
+	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
 		t.Error(err.Error())
 	}
-	config["brokerURL"] = u.String()
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
-	// Send a dummy CloudEvent to broker.
-	senderInstaller := createResource(client, config, []string{"pubsub_sender"}, t)
-	defer deleteResource(senderInstaller, t)
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: u.String(),
+	}})
+	client.CreateJobOrFail(senderJob)
 
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
 	// Check if dummy CloudEvent is sent out.
-	if done := jobDone(client, senderName, t, jobGVR); !done {
+	if done := jobDone(client, senderName, t); !done {
 		t.Error("dummy event wasn't sent to broker")
 		t.Failed()
 	}
 	// Check if resp CloudEvent hits the target Service.
-	if done := jobDone(client, targetName, t, jobGVR); !done {
+	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
 	}
 }
 
-func createResource(client *Client, config map[string]string, folders []string, t *testing.T) *Installer {
-	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml(folders)...)
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return nil
-	}
-	return installer
-}
-
-func deleteResource(installer *Installer, t *testing.T) {
-	if err := installer.Do("delete"); err != nil {
-		t.Errorf("failed to delete, %s", err)
-	}
-	// Wait for resources to be deleted.
-	time.Sleep(15 * time.Second)
-}
-
-func jobDone(client *Client, podName string, t *testing.T, jobGVR schema.GroupVersionResource) bool {
+func jobDone(client *lib.Client, podName string, t *testing.T) bool {
 	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
 	if err != nil {
 		t.Error(err)
@@ -168,13 +150,13 @@ func jobDone(client *Client, podName string, t *testing.T, jobGVR schema.GroupVe
 		t.Error("No terminating message from the pod")
 		return false
 	} else {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 			return false
 		}
 		if !out.Success {
-			if logs, err := client.LogsFor(client.Namespace, podName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
