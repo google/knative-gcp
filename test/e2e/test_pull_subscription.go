@@ -20,114 +20,72 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-	"time"
-
-	"github.com/google/uuid"
 
 	"cloud.google.com/go/pubsub"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
+	v1 "k8s.io/api/core/v1"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
 func SmokePullSubscriptionTestImpl(t *testing.T) {
-	topic, deleteTopic := makeTopicOrDie(t)
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-sub"
+	svcName := "event-display"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	installer := NewInstaller(client.Dynamic, map[string]string{
-		"namespace":    client.Namespace,
-		"topic":        topic,
-		"subscription": psName,
-	}, EndToEndConfigYaml([]string{"pull_subscription_test", "istio", "event_display"})...)
+	// Create PullSubscription.
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+			Topic: topic,
+		}),
+		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
+	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "pubsub.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
-	}); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string) {
-	topicName, deleteTopic := makeTopicOrDie(t)
+func PullSubscriptionWithTargetTestImpl(t *testing.T) {
+	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	config := map[string]string{
-		"namespace":    client.Namespace,
-		"topic":        topicName,
-		"subscription": psName,
-		"targetName":   targetName,
-		"targetUID":    uuid.New().String(),
-	}
-	for k, v := range packages {
-		config[k] = v
-	}
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
-	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml([]string{"pull_subscription_target", "istio"})...)
+	// Create PullSubscription.
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+			Topic: topicName,
+		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
+	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
-
-	gvr := schema.GroupVersionResource{
-		Group:    "pubsub.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pullsubscriptions",
-	}
-
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	topic := getTopic(t, topicName)
+	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
 		Attributes: map[string]string{
@@ -147,19 +105,19 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, packages map[string]string
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 		}
 		if !out.Success {
 			// Log the output pull subscription pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.PullSubscriptionTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pullsubscription: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)

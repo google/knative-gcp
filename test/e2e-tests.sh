@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 The Knative Authors
+# Copyright 2019 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,6 @@ source $(dirname $0)/e2e-common.sh
 
 initialize $@
 
-go_test_e2e ./test/e2e || fail_test
+go_test_e2e -timeout=20m -parallel=12 ./test/e2e || fail_test
 
 success
