@@ -66,11 +66,6 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client.Core.CreateRBACResourcesForBrokers()
 	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
 
-	// Create the Istio ServiceEntry.
-	istioServiceEntry := resources.IstioServiceEntry(
-		"cloud-run-events-googleapis-ext", client.Namespace)
-	client.CreateUnstructuredObjOrFail(istioServiceEntry)
-
 	// Create the Knative Service.
 	kservice := resources.ReceiverKService(
 		kserviceName, client.Namespace)

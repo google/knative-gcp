@@ -18,10 +18,7 @@ set -o errexit
 
 function upload_test_images() {
   echo ">> Publishing test images"
-  # Script needs to be executed from the root directory
-  # to pickup .ko.yaml
-  cd "$( dirname "$0")/.."
-  local image_dir=$1
+  local image_dir="$(cd $1 && pwd -P)"
   local docker_tag=$2
   local tag_option=""
   if [ -n "${docker_tag}" ]; then

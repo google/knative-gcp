@@ -21,31 +21,6 @@ import (
 	pkgTest "knative.dev/pkg/test"
 )
 
-// IstioServiceEntry creates a ServiceEntry to add a few Google services to the service mesh.
-func IstioServiceEntry(name, namespace string) *unstructured.Unstructured {
-	obj := map[string]interface{}{
-		"apiVersion": "networking.istio.io/v1alpha3",
-		"kind":       "ServiceEntry",
-		"metadata": map[string]interface{}{
-			"name":      name,
-			"namespace": namespace,
-		},
-		"spec": map[string]interface{}{
-			"hosts": []string{
-				"*.googleapis.com",
-				"accounts.google.com",
-			},
-			"ports": []map[string]interface{}{{
-				"number":   "443",
-				"name":     "https",
-				"protocol": "HTTPS",
-			}},
-			"location": "MESH_EXTERNAL",
-		},
-	}
-	return &unstructured.Unstructured{Object: obj}
-}
-
 // ReceiverKService creates a Knative Service as an event receiver.
 func ReceiverKService(name, namespace string) *unstructured.Unstructured {
 	imageName := "receiver"

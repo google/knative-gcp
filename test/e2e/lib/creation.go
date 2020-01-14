@@ -108,9 +108,9 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 		}
 	}
 
-	jobs := c.Core.Kube.Kube.BatchV1().Jobs(c.Namespace)
+	jobs := c.Core.Kube.Kube.BatchV1().Jobs(job.Namespace)
 	if _, err := jobs.Create(job); err != nil {
 		c.T.Fatalf("Failed to create job %q: %v", job.Name, err)
 	}
-	c.Tracker.Add("batch", "v1", "jobs", c.Namespace, job.Name)
+	c.Tracker.Add("batch", "v1", "jobs", job.Namespace, job.Name)
 }
