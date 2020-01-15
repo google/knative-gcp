@@ -39,6 +39,15 @@ type Scheduler struct {
 	Status SchedulerStatus `json:"status"`
 }
 
+const (
+	// CloudEvent types used by Scheduler.
+	SchedulerExecute = "com.google.cloud.sheduler.job.execute"
+	//Attributes jobName key.
+	JobName = "jobName"
+	//Attributes schedulerName key.
+	SchedulerName = "schedulerName"
+)
+
 var (
 	_ apis.Validatable             = (*Scheduler)(nil)
 	_ apis.Defaultable             = (*Scheduler)(nil)
