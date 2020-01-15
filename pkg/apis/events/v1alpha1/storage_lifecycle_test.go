@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,60 +26,60 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestSchedulerStatusIsReady(t *testing.T) {
+func TestStorageStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name string
-		s    *SchedulerStatus
+		s    *StorageStatus
 		want bool
 	}{{
 		name: "uninitialized",
-		s:    &SchedulerStatus{},
+		s:    &StorageStatus{},
 		want: false,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
 	}, {
 		name: "topic not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
+			s.MarkNotificationReady("notificationID")
 			s.MarkTopicNotReady("NotReady", "topic not ready")
 			return s
 		}(),
 	}, {
 		name: "pullsubscription not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
+			s.MarkTopicReady()
 			s.MarkPullSubscriptionNotReady("NotReady", "ps not ready")
-			s.MarkJobReady("jobName")
+			s.MarkNotificationReady("notificationID")
 			return s
 		}(),
 	}, {
-		name: "job not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		name: "notification not ready",
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
+			s.MarkTopicReady()
 			s.MarkPullSubscriptionReady()
-			s.MarkJobNotReady("NotReady", "ps not ready")
+			s.MarkNotificationNotReady("NotReady", "notification not ready")
 			return s
 		}(),
 	}, {
 		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
+			s.MarkTopicReady()
 			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
+			s.MarkNotificationReady("notificationID")
 			return s
 		}(),
 		want: true,
@@ -95,55 +95,55 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestSchedulerStatusGetCondition(t *testing.T) {
+func TestStorageStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *SchedulerStatus
+		s         *StorageStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &SchedulerStatus{},
-		condQuery: SchedulerConditionReady,
+		s:         &StorageStatus{},
+		condQuery: StorageConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: SchedulerConditionReady,
+		condQuery: StorageConditionReady,
 		want: &apis.Condition{
-			Type:   SchedulerConditionReady,
+			Type:   StorageConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
-			s.MarkJobNotReady("NotReady", "test message")
+			s.MarkNotificationNotReady("NotReady", "test message")
 			return s
 		}(),
-		condQuery: JobReady,
+		condQuery: NotificationReady,
 		want: &apis.Condition{
-			Type:    JobReady,
+			Type:    NotificationReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
 			Message: "test message",
 		},
 	}, {
 		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
 			s.InitializeConditions()
-			s.MarkJobReady("jobName")
+			s.MarkNotificationReady("notificationID")
 			return s
 		}(),
-		condQuery: JobReady,
+		condQuery: NotificationReady,
 		want: &apis.Condition{
-			Type:   JobReady,
+			Type:   NotificationReady,
 			Status: corev1.ConditionTrue,
 		},
 	}}

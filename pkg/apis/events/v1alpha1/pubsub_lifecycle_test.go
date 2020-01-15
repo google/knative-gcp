@@ -23,63 +23,40 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestSchedulerStatusIsReady(t *testing.T) {
+func TestPubSubStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name string
-		s    *SchedulerStatus
+		s    *PubSubStatus
 		want bool
 	}{{
 		name: "uninitialized",
-		s:    &SchedulerStatus{},
+		s:    &PubSubStatus{},
 		want: false,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
 	}, {
-		name: "topic not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		name: "not ready",
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
-			s.MarkTopicNotReady("NotReady", "topic not ready")
-			return s
-		}(),
-	}, {
-		name: "pullsubscription not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
 			s.MarkPullSubscriptionNotReady("NotReady", "ps not ready")
-			s.MarkJobReady("jobName")
-			return s
-		}(),
-	}, {
-		name: "job not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
-			s.MarkPullSubscriptionReady()
-			s.MarkJobNotReady("NotReady", "ps not ready")
 			return s
 		}(),
 	}, {
 		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
 			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
 			return s
 		}(),
 		want: true,
@@ -95,55 +72,55 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestSchedulerStatusGetCondition(t *testing.T) {
+func TestPubSubStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *SchedulerStatus
+		s         *PubSubStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &SchedulerStatus{},
-		condQuery: SchedulerConditionReady,
+		s:         &PubSubStatus{},
+		condQuery: PubSubConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: SchedulerConditionReady,
+		condQuery: PubSubConditionReady,
 		want: &apis.Condition{
-			Type:   SchedulerConditionReady,
+			Type:   PubSubConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
-			s.MarkJobNotReady("NotReady", "test message")
+			s.MarkPullSubscriptionNotReady("NotReady", "test message")
 			return s
 		}(),
-		condQuery: JobReady,
+		condQuery: duckv1alpha1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:    JobReady,
+			Type:    duckv1alpha1.PullSubscriptionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
 			Message: "test message",
 		},
 	}, {
 		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *PubSubStatus {
+			s := &PubSubStatus{}
 			s.InitializeConditions()
-			s.MarkJobReady("jobName")
+			s.MarkPullSubscriptionReady()
 			return s
 		}(),
-		condQuery: JobReady,
+		condQuery: duckv1alpha1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:   JobReady,
+			Type:   duckv1alpha1.PullSubscriptionReady,
 			Status: corev1.ConditionTrue,
 		},
 	}}
