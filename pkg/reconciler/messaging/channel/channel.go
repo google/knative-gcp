@@ -124,7 +124,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		channel.Status.MarkTopicFailed("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
-	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
+	channel.Status.PropagateTopicStatus(&topic.Status)
 	channel.Status.TopicID = topic.Spec.Topic
 
 	// 2. Sync all subscriptions.

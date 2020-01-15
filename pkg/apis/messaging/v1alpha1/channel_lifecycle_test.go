@@ -187,7 +187,7 @@ func TestChannelIsReady(t *testing.T) {
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
 			}
-			cs.PropagateTopicStatus(test.topicStatus.GetTopLevelCondition())
+			cs.PropagateTopicStatus(test.topicStatus)
 			gotConditionStatus := cs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != gotConditionStatus {
 				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)

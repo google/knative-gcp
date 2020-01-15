@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -63,21 +64,22 @@ func (cs *ChannelStatus) MarkTopicReady() {
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionTopicReady)
 }
 
-func (cs *ChannelStatus) PropagateTopicStatus(ready *apis.Condition) {
-	if ready == nil {
+func (cs *ChannelStatus) PropagateTopicStatus(ts *v1alpha1.TopicStatus) {
+	tc := ts.GetTopLevelCondition()
+	if tc == nil {
 		cs.MarkTopicNotConfigured()
 		return
 	}
 
 	switch {
-	case ready.Status == corev1.ConditionUnknown:
-		cs.MarkTopicUnknown(ready.Reason, ready.Message)
-	case ready.Status == corev1.ConditionTrue:
+	case tc.Status == corev1.ConditionUnknown:
+		cs.MarkTopicUnknown(tc.Reason, tc.Message)
+	case tc.Status == corev1.ConditionTrue:
 		cs.MarkTopicReady()
-	case ready.Status == corev1.ConditionFalse:
-		cs.MarkTopicFailed(ready.Reason, ready.Message)
+	case tc.Status == corev1.ConditionFalse:
+		cs.MarkTopicFailed(tc.Reason, tc.Message)
 	default:
-		cs.MarkTopicUnknown("TopicUnknown", "The status of Topic is invalid: %v", ready.Status)
+		cs.MarkTopicUnknown("TopicUnknown", "The status of Topic is invalid: %v", tc.Status)
 	}
 }
 

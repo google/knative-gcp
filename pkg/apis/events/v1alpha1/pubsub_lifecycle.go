@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -65,20 +65,21 @@ func (ps *PubSubStatus) MarkPullSubscriptionUnknown(reason, messageFormat string
 	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
-	if ready == nil {
+func (ps *PubSubStatus) PropagatePullSubscriptionStatus(pss *v1alpha1.PullSubscriptionStatus) {
+	psc := pss.GetTopLevelCondition()
+	if psc == nil {
 		ps.MarkPullSubscriptionNotConfigured()
 		return
 	}
 
 	switch {
-	case ready.Status == corev1.ConditionUnknown:
-		ps.MarkPullSubscriptionUnknown(ready.Reason, ready.Message)
-	case ready.Status == corev1.ConditionTrue:
+	case psc.Status == corev1.ConditionUnknown:
+		ps.MarkPullSubscriptionUnknown(psc.Reason, psc.Message)
+	case psc.Status == corev1.ConditionTrue:
 		ps.MarkPullSubscriptionReady()
-	case ready.Status == corev1.ConditionFalse:
-		ps.MarkPullSubscriptionFailed(ready.Reason, ready.Message)
+	case psc.Status == corev1.ConditionFalse:
+		ps.MarkPullSubscriptionFailed(psc.Reason, psc.Message)
 	default:
-		ps.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", ready.Status)
+		ps.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", psc.Status)
 	}
 }

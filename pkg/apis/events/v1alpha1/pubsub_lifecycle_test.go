@@ -52,7 +52,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ps := &PubSubStatus{}
-			ps.PropagatePullSubscriptionStatus(test.pullsubscriptionStatus.GetTopLevelCondition())
+			ps.PropagatePullSubscriptionStatus(test.pullsubscriptionStatus)
 			gotConditionStatus := ps.GetTopLevelCondition().Status
 			got := ps.IsReady()
 			if gotConditionStatus != test.wantConditionStatus {
