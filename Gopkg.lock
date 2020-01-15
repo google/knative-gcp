@@ -30,6 +30,14 @@
   version = "v0.44.3"
 
 [[projects]]
+  digest = "1:0a936e17f4fc0c65615913199ce0a387a67a4c72e017747b6f38c898168b1b75"
+  name = "contrib.go.opencensus.io/exporter/ocagent"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "a8a6f458bbc1d5042322ad1f9b65eeb0b69be9ea"
+  version = "v0.6.0"
+
+[[projects]]
   digest = "1:642cf8e80572f9dc0677b0f241c8ab2e715c9dccc215270ea873c86ddca0062c"
   name = "contrib.go.opencensus.io/exporter/prometheus"
   packages = ["."]
@@ -113,19 +121,22 @@
   version = "v1.0.1"
 
 [[projects]]
-  digest = "1:e7d26760c4e7d67a443b082153c4b473ad0b8f7388302a2f788b1360f751abb8"
+  digest = "1:8f5acd4d4462b5136af644d25101f0968a7a94ee90fcb2059cec5b7cc42e0b20"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
     "gen-go/agent/common/v1",
+    "gen-go/agent/metrics/v1",
+    "gen-go/agent/trace/v1",
     "gen-go/metrics/v1",
     "gen-go/resource/v1",
+    "gen-go/trace/v1",
   ]
   pruneopts = "NUT"
   revision = "d89fa54de508111353cb0b06403c00569be780d8"
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:a29ee51f5892f8407b4a62f7e35961e3d8766c8afb09ecda4c7b4ac0e9944dcf"
+  digest = "1:6bc060944bc76d5a7e27f56bf377e0bf09d35cbe04c8ceb4fa1542ea0436b0c6"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -145,8 +156,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "423680168ea46409121b5ef13ad563d4f0539fcb"
-  version = "v0.10.2"
+  revision = "d289f68c35e89dd9b6a32b1d41faf60a0d9d090a"
+  version = "v0.11.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -208,9 +219,10 @@
   revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
 
 [[projects]]
-  digest = "1:4e4f04a3bfa41f937e65e444b48a8903c656550a99ab9621c9efc0cdbe7ea604"
+  digest = "1:6b3d0f402c88b60e78bca3ee8332a79f02e6964d2b4a44092620f1448e16cbb6"
   name = "github.com/golang/protobuf"
   packages = [
+    "descriptor",
     "jsonpb",
     "proto",
     "protoc-gen-go",
@@ -303,6 +315,18 @@
   pruneopts = "NUT"
   revision = "ab0dd09aa10e2952b28e12ecd35681b20463ebab"
   version = "v0.3.1"
+
+[[projects]]
+  digest = "1:e9c0bf861ea69dd6de1ff7ac2a0485e84743e163853ca973177fba7a50d1b769"
+  name = "github.com/grpc-ecosystem/grpc-gateway"
+  packages = [
+    "internal",
+    "runtime",
+    "utilities",
+  ]
+  pruneopts = "NUT"
+  revision = "f7120437bb4f6c71f7f5076ad65a45310de2c009"
+  version = "v1.12.1"
 
 [[projects]]
   digest = "1:ed860d2b2c1d066d36a89c982eefc7d019badd534f60e87ab65d3d94f0797ef0"
@@ -759,12 +783,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:94725059b3a2f25d6e0ccf5bc251fff77bf2dc32f7ee757954601add74148988"
+  digest = "1:0bc16e64dba11f01b4d0fde4411813f3569e49fde3ca248960ebb6b265a3324d"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
     "googleapis/api/annotations",
     "googleapis/api/distribution",
+    "googleapis/api/httpbody",
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
@@ -1296,7 +1321,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b5c86ee3f3d7aa4e4544ad585698a8ef7d538b76776d2bafd3e4342b4196fc69"
+  digest = "1:498305d17fb706457f834b446360fa0e9f17b35ff9085d055d72c887365c7db9"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1357,11 +1382,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "e1b5a33c1a102d72005a971a57be86c998fb0270"
+  revision = "b7c51d963ac0ab8bdc3cf23c906b690b87ccfb77"
 
 [[projects]]
-  branch = "master"
-  digest = "1:b21a3ea7ad9b920c6d1c2b26d11eba1d2ed4ee5d88b03f20f1efd46a6eaab902"
+  branch = "release-0.12"
+  digest = "1:048b68ed41f274d9f9c663076f987bb4be938273ba13bc68088910ad634a354b"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1433,7 +1458,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "8c62412074275c22632e23fbe726555bf970ba6c"
+  revision = "b8dc5fbc6d2f4717a69d15382921a51f93ab4cbb"
 
 [[projects]]
   branch = "master"

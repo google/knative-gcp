@@ -64,7 +64,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
-	client.Core.CreateBrokerOrFail(brokerName, lib.ChannelTypeMeta)
+	client.Core.CreateBrokerOrFail(brokerName, eventingtestresources.WithChannelTemplateForBroker(lib.ChannelTypeMeta))
 
 	// Create the Knative Service.
 	kservice := resources.ReceiverKService(

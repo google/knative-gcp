@@ -19,7 +19,6 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -31,11 +30,11 @@ import (
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/logstream"
 
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
@@ -77,37 +76,69 @@ func TestSmokeChannel(t *testing.T) {
 }
 
 func TestSingleBinaryEventForChannel(t *testing.T) {
-	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Binary, channelTestRunner)
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Binary, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
-	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Structured, channelTestRunner)
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Structured, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
-	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
-	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestEventTransformationForSubscription(t *testing.T) {
-	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelChain(t *testing.T) {
-	e2ehelpers.ChannelChainTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelChainTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
-	e2ehelpers.BrokerChannelFlowTestHelper(t, channelTestRunner)
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.BrokerChannelFlowTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
+func TestChannelDeadLetterSink(t *testing.T) {
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.ChannelDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
+func TestBrokerDeadLetterSink(t *testing.T) {
+	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
+	cancel := logstream.Start(t)
+	defer cancel()
+	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -117,37 +148,15 @@ func TestChannelTracing(t *testing.T) {
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
 		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
-	}, func(client *eventingtestlib.Client) error {
+	}, func(client *eventingtestlib.Client) {
 		// This test is running based on code in knative/eventing, so it does not use the same
 		// Client that tests in this repo use. Therefore, we need to duplicate the logic from this
 		// repo's Setup() here. See test/e2e/lifecycle.go's Setup() for the function used in this
 		// repo whose functionality we need to copy here.
 
 		// Copy the secret from the default namespace to the namespace used in the test.
-		return copySecret(client)
+		lib.DuplicatePubSubSecret(client)
 	})
-}
-
-func copySecret(client *eventingtestlib.Client) error {
-	secret, err := client.Kube.Kube.CoreV1().Secrets("default").Get("google-cloud-key", metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("could not get secret: %v", err)
-	}
-	newSecret, err := client.Kube.Kube.CoreV1().Secrets(client.Namespace).Create(&corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        secret.Name,
-			Labels:      secret.Labels,
-			Annotations: secret.Annotations,
-		},
-		Type:       secret.Type,
-		Data:       secret.Data,
-		StringData: secret.StringData,
-	})
-	if err != nil {
-		return fmt.Errorf("could not create secret: %v", err)
-	}
-	client.Tracker.Add(newSecret.GroupVersionKind().Group, newSecret.GroupVersionKind().Version, "secrets", newSecret.Namespace, newSecret.Name)
-	return nil
 }
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.

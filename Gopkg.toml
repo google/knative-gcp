@@ -25,9 +25,10 @@ required = [
   name = "gopkg.in/yaml.v2"
   version = "v2.2.1"
 
+# Our master branch tracks knative/pkg master or a release.
 [[override]]
   name = "knative.dev/pkg"
-  branch = "master"
+  branch = "release-0.12"
 
 # This is a preemptive override.
 [[override]]
@@ -65,7 +66,7 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  version = "0.10.2"
+  version = "0.11.0"
 
 [prune]
   go-tests = true

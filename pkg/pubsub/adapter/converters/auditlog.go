@@ -32,9 +32,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 const (
