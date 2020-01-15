@@ -27,6 +27,7 @@ var TestHelper = testHelper{}
 
 func (testHelper) ReadyPullSubscriptionStatus() *v1alpha1.PullSubscriptionStatus {
 	pss := &v1alpha1.PullSubscriptionStatus{}
+	pss.InitializeConditions()
 	pss.MarkSink("http://test.mynamespace.svc.cluster.local")
 	pss.MarkDeployed()
 	pss.MarkSubscribed("subID")
@@ -35,6 +36,7 @@ func (testHelper) ReadyPullSubscriptionStatus() *v1alpha1.PullSubscriptionStatus
 
 func (testHelper) FalsePullSubscriptionStatus() *v1alpha1.PullSubscriptionStatus {
 	pss := &v1alpha1.PullSubscriptionStatus{}
+	pss.InitializeConditions()
 	pss.MarkNotDeployed("not deployed", "not deployed")
 	return pss
 }
@@ -44,4 +46,3 @@ func (testHelper) UnknownPullSubscriptionStatus() *v1alpha1.PullSubscriptionStat
 	pss.InitializeConditions()
 	return pss
 }
-

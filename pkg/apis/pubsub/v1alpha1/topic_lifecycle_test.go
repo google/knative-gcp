@@ -27,9 +27,10 @@ import (
 
 func TestTopicStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name string
-		s    *TopicStatus
-		want bool
+		name                string
+		s                   *TopicStatus
+		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
 		name: "uninitialized",
 		s:    &TopicStatus{},
@@ -41,7 +42,8 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark deployed",
 		s: func() *TopicStatus {
@@ -50,7 +52,8 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.MarkDeployed()
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark addressable",
 		s: func() *TopicStatus {
@@ -61,7 +64,8 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.SetAddress(&apis.URL{})
 			return s
 		}(),
-		want: true,
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}, {
 		name: "mark nil addressable",
 		s: func() *TopicStatus {
@@ -72,7 +76,8 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.SetAddress(nil)
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name: "mark not deployed then deployed",
 		s: func() *TopicStatus {
@@ -84,14 +89,21 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.MarkDeployed()
 			return s
 		}(),
-		want: true,
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.wantConditionStatus != "" {
+				gotConditionStatus := test.s.GetTopLevelCondition().Status
+				if gotConditionStatus != test.wantConditionStatus {
+					t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+				}
+			}
 			got := test.s.IsReady()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("%s: unexpected condition (-want, +got) = %v", test.name, diff)
+			if got != test.want {
+				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
 			}
 		})
 	}

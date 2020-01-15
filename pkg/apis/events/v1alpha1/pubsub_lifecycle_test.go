@@ -33,15 +33,16 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		pullsubscriptionStatus *pubsubv1alpha1.PullSubscriptionStatus
 		wantConditionStatus    corev1.ConditionStatus
 		want                   bool
-	}{{
-		name:                   "the status of pullsubscription is false",
-		pullsubscriptionStatus: TestHelper.FalsePullSubscriptionStatus(),
-		wantConditionStatus:    corev1.ConditionFalse,
-	}, {
-		name:                   "the status of pullsubscription is unknown",
-		pullsubscriptionStatus: TestHelper.UnknownPullSubscriptionStatus(),
-		wantConditionStatus:    corev1.ConditionUnknown,
-	},
+	}{
+		{
+			name:                   "the status of pullsubscription is false",
+			pullsubscriptionStatus: TestHelper.FalsePullSubscriptionStatus(),
+			wantConditionStatus:    corev1.ConditionFalse,
+		}, {
+			name:                   "the status of pullsubscription is unknown",
+			pullsubscriptionStatus: TestHelper.UnknownPullSubscriptionStatus(),
+			wantConditionStatus:    corev1.ConditionUnknown,
+		},
 		{
 			name:                   "ready",
 			pullsubscriptionStatus: TestHelper.ReadyPullSubscriptionStatus(),

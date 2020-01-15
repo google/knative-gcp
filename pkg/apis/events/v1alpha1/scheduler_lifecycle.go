@@ -27,6 +27,11 @@ func (s *SchedulerStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return schedulerCondSet.Manage(s).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition.
+func (s *SchedulerStatus) GetTopLevelCondition() *apis.Condition {
+	return schedulerCondSet.Manage(s).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (s *SchedulerStatus) IsReady() bool {
 	return schedulerCondSet.Manage(s).IsHappy()

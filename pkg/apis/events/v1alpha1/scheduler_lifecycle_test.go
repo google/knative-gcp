@@ -28,9 +28,10 @@ import (
 
 func TestSchedulerStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name string
-		s    *SchedulerStatus
-		want bool
+		name                string
+		s                   *SchedulerStatus
+		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
 		name: "uninitialized",
 		s:    &SchedulerStatus{},
@@ -42,54 +43,92 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
-		name: "topic not ready",
+		name: "the status of topic is false",
 		s: func() *SchedulerStatus {
 			s := &SchedulerStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkJobReady("jobName")
-			s.MarkTopicFailed("NotReady", "topic not ready")
+			s.MarkTopicFailed("TopicFailed", "the status of topic is false")
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
-		name: "pullsubscription not ready",
+		name: "the status of topic is unknown",
 		s: func() *SchedulerStatus {
 			s := &SchedulerStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
-			s.MarkPullSubscriptionFailed("NotReady", "ps not ready")
-			s.MarkJobReady("jobName")
-			return s
-		}(),
-	}, {
-		name: "job not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
-			s.MarkPullSubscriptionReady()
-			s.MarkJobNotReady("NotReady", "ps not ready")
-			return s
-		}(),
-	}, {
-		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady("topicID", "projectID")
 			s.MarkPullSubscriptionReady()
 			s.MarkJobReady("jobName")
+			s.MarkTopicUnknown("TopicUnknown", "the status of topic is unknown")
 			return s
 		}(),
-		want: true,
-	}}
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
+	},
+		{
+			name: "the status pullsubscription is false",
+			s: func() *SchedulerStatus {
+				s := &SchedulerStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady("topicID", "projectID")
+				s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
+				s.MarkJobReady("jobName")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionFalse,
+			want:                false,
+		}, {
+			name: "the status pullsubscription is unknown",
+			s: func() *SchedulerStatus {
+				s := &SchedulerStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady("topicID", "projectID")
+				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
+				s.MarkJobReady("jobName")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionUnknown,
+			want:                false,
+		},
+		{
+			name: "job not ready",
+			s: func() *SchedulerStatus {
+				s := &SchedulerStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady("topicID", "projectID")
+				s.MarkPullSubscriptionReady()
+				s.MarkJobNotReady("NotReady", "ps not ready")
+				return s
+			}(),
+		}, {
+			name: "ready",
+			s: func() *SchedulerStatus {
+				s := &SchedulerStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady("topicID", "projectID")
+				s.MarkPullSubscriptionReady()
+				s.MarkJobReady("jobName")
+				return s
+			}(),
+			want: true,
+		}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.wantConditionStatus != "" {
+				gotConditionStatus := test.s.GetTopLevelCondition().Status
+				if gotConditionStatus != test.wantConditionStatus {
+					t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+				}
+			}
 			got := test.s.IsReady()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("%s: unexpected condition (-want, +got) = %v", test.name, diff)
+			if got != test.want {
+				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
 			}
 		})
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"sort"
 	"testing"
 
@@ -151,28 +152,33 @@ func TestChannelIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
 		setAddress          bool
-		topicStatus         corev1.ConditionStatus
+		topicStatus         *v1alpha1.TopicStatus
 		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
 		name:                "all happy",
 		setAddress:          true,
-		topicStatus:         corev1.ConditionTrue,
+		topicStatus:         ReadyTopicStatus(),
 		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}, {
 		name:                "address not set",
 		setAddress:          false,
-		topicStatus:         corev1.ConditionTrue,
+		topicStatus:         ReadyTopicStatus(),
 		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name:                "the status of topic is false",
 		setAddress:          true,
-		topicStatus:         corev1.ConditionFalse,
+		topicStatus:         FalseTopicStatus(),
 		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name:                "the status of topic is unknown",
 		setAddress:          true,
-		topicStatus:         corev1.ConditionUnknown,
+		topicStatus:         UnknownTopicStatus(),
 		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -181,17 +187,14 @@ func TestChannelIsReady(t *testing.T) {
 			if test.setAddress {
 				cs.SetAddress(&apis.URL{Scheme: "http", Host: "foo.bar"})
 			}
-			if test.topicStatus == corev1.ConditionTrue {
-				cs.MarkTopicReady()
-			} else if test.topicStatus == corev1.ConditionUnknown {
-				cs.MarkTopicUnknown("The status of topic is unknown", "The status of topic is unknown: nil")
-			} else {
-				cs.MarkTopicFailed("The status of topic is false", "The status of topic is unknown: nil")
+			cs.PropagateTopicStatus(test.topicStatus.GetTopLevelCondition())
+			gotConditionStatus := cs.GetTopLevelCondition().Status
+			if test.wantConditionStatus != gotConditionStatus {
+				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
 			}
-
-			got := cs.GetTopLevelCondition().Status
-			if test.wantConditionStatus != got {
-				t.Errorf("unexpected readiness: want %v, got %v", test.wantConditionStatus, got)
+			got := cs.IsReady()
+			if got != test.want {
+				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
 			}
 		})
 	}
@@ -250,4 +253,28 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ReadyTopicStatus() *v1alpha1.TopicStatus {
+	ts := &v1alpha1.TopicStatus{}
+	ts.InitializeConditions()
+	ts.MarkDeployed()
+	ts.MarkTopicReady()
+	url, _ := apis.ParseURL("http://testchannel.mynamespace.svc.cluster.local/")
+	ts.SetAddress(url)
+	ts.TopicID = "test"
+	return ts
+}
+
+func FalseTopicStatus() *v1alpha1.TopicStatus {
+	ts := &v1alpha1.TopicStatus{}
+	ts.InitializeConditions()
+	ts.MarkNoTopic("TopicNotFound", "topic not found")
+	return ts
+}
+
+func UnknownTopicStatus() *v1alpha1.TopicStatus {
+	ts := &v1alpha1.TopicStatus{}
+	ts.InitializeConditions()
+	return ts
 }

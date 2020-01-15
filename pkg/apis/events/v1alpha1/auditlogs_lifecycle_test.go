@@ -32,6 +32,10 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{{
+		name: "uninitialized",
+		s:    &AuditLogsSourceStatus{},
+		want: false,
+	}, {
 		name: "initialized",
 		s: func() *AuditLogsSourceStatus {
 			s := &AuditLogsSourceStatus{}
@@ -39,6 +43,7 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "the status of topic is false",
 		s: func() *AuditLogsSourceStatus {
@@ -50,6 +55,7 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name: "the status of topic is unknown",
 		s: func() *AuditLogsSourceStatus {
@@ -61,6 +67,7 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	},
 		{
 			name: "the status of pullsubscription is false",
@@ -84,6 +91,7 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 				return s
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,
+			want:                false,
 		},
 		{
 			name: "sink is not ready",
@@ -96,6 +104,7 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 				return s
 			}(),
 			wantConditionStatus: corev1.ConditionFalse,
+			want:                false,
 		}, {
 			name: "ready",
 			s: func() *AuditLogsSourceStatus {
@@ -107,15 +116,17 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 				return s
 			}(),
 			wantConditionStatus: corev1.ConditionTrue,
-			want:true,
+			want:                true,
 		}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotConditionStatus := test.s.GetTopLevelCondition().Status
-			got := test.s.IsReady()
-			if gotConditionStatus != test.wantConditionStatus {
-				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+			if test.wantConditionStatus != "" {
+				gotConditionStatus := test.s.GetTopLevelCondition().Status
+				if gotConditionStatus != test.wantConditionStatus {
+					t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+				}
 			}
+			got := test.s.IsReady()
 			if got != test.want {
 				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
 			}
