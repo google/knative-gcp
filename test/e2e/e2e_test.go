@@ -24,19 +24,41 @@ import (
 	"os"
 	"testing"
 
+	cloudevents "github.com/cloudevents/sdk-go"
+	eventingtest "knative.dev/eventing/test"
+	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
+	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/eventing/test/conformance/helpers"
-
 	"knative.dev/pkg/test/logstream"
 
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
+var channelTestRunner eventingtestlib.ChannelTestRunner
+
 func TestMain(m *testing.M) {
+	eventingtest.InitializeEventingFlags()
+	channelTestRunner = eventingtestlib.ChannelTestRunner{
+		// ChannelFeatureMap saves the channel-features mapping.
+		// Each pair means the channel support the given list of features.
+		ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
+			{
+				APIVersion: resources.MessagingAPIVersion,
+				Kind:       "Channel",
+			}: {
+				eventingtestlib.FeatureBasic,
+				eventingtestlib.FeatureRedelivery,
+				eventingtestlib.FeaturePersistence,
+			},
+		},
+		ChannelsToTest: eventingtest.EventingFlags.Channels,
+	}
+
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
@@ -54,11 +76,45 @@ func TestSmokeChannel(t *testing.T) {
 	SmokeTestChannelImpl(t)
 }
 
+func TestSingleBinaryEventForChannel(t *testing.T) {
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Binary, channelTestRunner)
+}
+
+func TestSingleStructuredEventForChannel(t *testing.T) {
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Structured, channelTestRunner)
+}
+
+func TestChannelClusterDefaulter(t *testing.T) {
+	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
+	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner)
+}
+
+func TestChannelNamespaceDefaulter(t *testing.T) {
+	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
+	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner)
+}
+
+func TestEventTransformationForSubscription(t *testing.T) {
+	e2ehelpers.EventTransformationForSubscriptionTestHelper(t, channelTestRunner)
+}
+
+func TestChannelChain(t *testing.T) {
+	e2ehelpers.ChannelChainTestHelper(t, channelTestRunner)
+}
+
+func TestEventTransformationForTrigger(t *testing.T) {
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, channelTestRunner)
+}
+
+func TestBrokerChannelFlow(t *testing.T) {
+	e2ehelpers.BrokerChannelFlowTestHelper(t, channelTestRunner)
+}
+
 func TestChannelTracing(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing/issues/2046 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
-	helpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
+	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
 		APIVersion: messagingv1alpha1.SchemeGroupVersion.String(),
 		Kind:       "Channel",
 	}, func(client *eventingtestlib.Client) error {

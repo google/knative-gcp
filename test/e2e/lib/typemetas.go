@@ -16,53 +16,57 @@ limitations under the License.
 
 package lib
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-var JobTypeMeta = batchTypeMeta("Job")
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
+)
+
+var JobTypeMeta = batchTypeMeta(resources.JobKind)
 
 func batchTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: "batch/v1",
+		APIVersion: resources.BatchAPIVersion,
 	}
 }
 
-var KsvcTypeMeta = servingTypeMeta("Service")
+var KsvcTypeMeta = servingTypeMeta(resources.KServiceKind)
 
 func servingTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: "serving.knative.dev/v1",
+		APIVersion: resources.ServingAPIVersion,
 	}
 }
 
-var ChannelTypeMeta = messagingTypeMeta("Channel")
+var ChannelTypeMeta = messagingTypeMeta(resources.ChannelKind)
 
 func messagingTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: "messaging.cloud.google.com/v1alpha1",
+		APIVersion: resources.MessagingAPIVersion,
 	}
 }
 
-var StorageTypeMeta = eventsTypeMeta("Storage")
+var StorageTypeMeta = eventsTypeMeta(resources.StorageKind)
 
-var PubsubTypeMeta = eventsTypeMeta("PubSub")
+var PubsubTypeMeta = eventsTypeMeta(resources.PubSubKind)
 
-var AuditLogsSourceTypeMeta = eventsTypeMeta("AuditLogsSource")
+var AuditLogsSourceTypeMeta = eventsTypeMeta(resources.AuditLogsSourceKind)
 
 func eventsTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: "events.cloud.google.com/v1alpha1",
+		APIVersion: resources.EventsAPIVersion,
 	}
 }
 
-var PullSubscriptionTypeMeta = pubsubTypeMeta("PullSubscription")
+var PullSubscriptionTypeMeta = pubsubTypeMeta(resources.PullSubscriptionKind)
 
 func pubsubTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: "pubsub.cloud.google.com/v1alpha1",
+		APIVersion: resources.PubSubAPIVersion,
 	}
 }

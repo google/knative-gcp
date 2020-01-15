@@ -936,6 +936,23 @@
   version = "kubernetes-1.15.3"
 
 [[projects]]
+  digest = "1:ef1ab64116addb4e8e9669c40b345996cb10272d2f18c81218b6add2af8c660e"
+  name = "k8s.io/apiextensions-apiserver"
+  packages = [
+    "pkg/apis/apiextensions",
+    "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset",
+    "pkg/client/clientset/clientset/fake",
+    "pkg/client/clientset/clientset/scheme",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake",
+    "pkg/client/listers/apiextensions/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "0dbe462fe92dfa8b56cc9facf0658a17d0c70fc5"
+  version = "kubernetes-1.15.3"
+
+[[projects]]
   digest = "1:1ca968c87584cd71611994e9cbcd2ca362ddeb1294d16320a14a6aba76077ea2"
   name = "k8s.io/apimachinery"
   packages = [
@@ -1266,11 +1283,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2d3f59daa4b479ff4e100a2e1d8fea6780040fdadc177869531fe4cc29407f55"
+  digest = "1:99dbf7ef753ca02399778c93a4ed4b689b28668317134ecd1fabeb07be70f354"
   name = "k8s.io/utils"
   packages = [
     "buffer",
     "integer",
+    "pointer",
     "trace",
   ]
   pruneopts = "NUT"
@@ -1278,7 +1296,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a39cdefdced6ea8a3c76d5abf9b0c142e43211c919a11cd93dad07f82cdc76a"
+  digest = "1:b5c86ee3f3d7aa4e4544ad585698a8ef7d538b76776d2bafd3e4342b4196fc69"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
@@ -1294,22 +1312,42 @@
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
     "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
+    "pkg/client/clientset/versioned/typed/eventing/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/flows/v1alpha1",
+    "pkg/client/clientset/versioned/typed/flows/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
+    "pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
+    "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
+    "pkg/client/injection/client",
+    "pkg/client/injection/client/fake",
+    "pkg/client/listers/eventing/v1alpha1",
+    "pkg/client/listers/flows/v1alpha1",
+    "pkg/client/listers/messaging/v1alpha1",
+    "pkg/client/listers/sources/v1alpha1",
     "pkg/configmap",
+    "pkg/defaultchannel",
     "pkg/kncloudevents",
     "pkg/legacyclient/clientset/versioned",
+    "pkg/legacyclient/clientset/versioned/fake",
     "pkg/legacyclient/clientset/versioned/scheme",
     "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1",
+    "pkg/legacyclient/clientset/versioned/typed/legacysources/v1alpha1/fake",
+    "pkg/legacyclient/injection/client",
+    "pkg/legacyclient/injection/client/fake",
+    "pkg/legacyclient/listers/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
+    "pkg/reconciler/testing",
     "pkg/tracing",
     "pkg/utils",
+    "test",
     "test/conformance/helpers",
     "test/conformance/helpers/tracing",
+    "test/e2e/helpers",
     "test/lib",
     "test/lib/cloudevents",
     "test/lib/duck",
@@ -1564,7 +1602,9 @@
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
+    "knative.dev/eventing/test",
     "knative.dev/eventing/test/conformance/helpers",
+    "knative.dev/eventing/test/e2e/helpers",
     "knative.dev/eventing/test/lib",
     "knative.dev/eventing/test/lib/duck",
     "knative.dev/eventing/test/lib/resources",
