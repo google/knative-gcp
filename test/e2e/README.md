@@ -4,65 +4,28 @@ Prow will run `./e2e-tests.sh`.
 
 ## Adding E2E Tests
 
-E2E tests are tagged with `// +build e2e` but tagging a go file this way will
+E2E tests are tagged with `// +build e2e` but tagging a Go file this way will
 prevent the compiler from compiling the test code. To work around this, for the
-SmokeTest we will have two files:
+test code we separate them into different files:
 
 ```shell
 test/e2e
-├── smoke.go
-└── smoke_test.go
+├── e2e_test.go
+└── test_xxx.go
 ```
 
-- `smoke_test.go` is the testing file entry point (tagged with e2e).
-- `smoke.go` is the test implementation (not tagged with e2e).
+- `e2e_test.go` is the testing file entry point (tagged with e2e).
+- `test_xxx.go` are the test implementations (not tagged with e2e).
 
-For SmokeTest, we will try an experimental way to implement e2e tests, we will
-use lightly templatized `yaml` files to create the testing setup. And then go to
-observe the results.
+We leverage the [test library in Eventing](https://github.com/knative/eventing/tree/master/test/lib)
+as much as possible for implementing the e2e tests. Logic specific to knative-gcp
+should be added under [knative-gcp e2e test lib](lib).
 
-SmokeTest uses `yaml` files in `config/smoke_test/*` like this:
-
-```shell
-test/e2e
-├── config
-│   └── smoke_test
-│       └── smoke-test.yaml
-├── smoke.go
-└── smoke_test.go
-```
-
-The SmokeTest test reads in all of these yamls and passes them through a golang
-template processor:
-
-```golang
-	yamls := fmt.Sprintf("%s/config/smoke_test/", filepath.Dir(filename))
-	installer := NewInstaller(client.Dynamic, map[string]string{
-		"namespace": client.Namespace,
-	}, yamls)
-```
-
-The `map[string]string` above is the template parameters that will be used for
-the `yaml` files.
-
-The test then uses `installer` like you might think about using `kubectl` to
-setup the test namespace:
-
-```golang
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-	}
-```
-
-This is similar to `kubectl create -f ./config/smoke_test` after the templates
-have been processed.
-
-After this point, you can write tests and interact with the cluster and
-resources like normal. SmokeTest uses a dynamic client, but you can add typed
-clients if you wish.
-
-## To run manually using `go test` and an existing cluster
+## Running E2E Tests on an existing cluster
+To run [the e2e tests](../e2e) with `go test` command, you need to have a running
+environment that meets
+[the e2e test environment requirements](#environment-requirements), and you need
+to specify the build tag `e2e`.
 
 ```shell
 go test --tags=e2e ./test/e2e/...
@@ -94,6 +57,54 @@ the `Monitoring Editor` role on your Google Cloud project:
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
---member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
---role roles/monitoring.editor
+  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
+  --role roles/monitoring.editor
 ```
+
+## Environment requirements
+
+There's couple of things you need to install before running e2e tests locally.
+
+1. A running Kubernetes cluster with [knative-gcp](../../docs/install) installed and configured
+1. A docker repo containing [the test images](#test-images)
+
+## Test images
+
+### Building the test images
+
+_Note: this is only required when you run e2e tests locally with `go test`
+commands. Running tests through e2e-tests.sh will publish the images
+automatically._
+
+The [`upload-test-images.sh`](./../upload-test-images.sh) script can be used to
+build and push the test images used by the e2e tests. It requires:
+
+- [`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
+  to be set
+- You need to be
+  [authenticated with your `KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
+- [`docker`](https://docs.docker.com/install/) to be installed
+
+To run the script for all end to end test images:
+
+```bash
+./test/upload-test-images.sh ./test/test_images
+./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/
+```
+
+For images deployed in GCR, a docker tag is mandatory to avoid issues with using
+`latest` tag:
+
+```bash
+./test/upload-test-images.sh ./test/test_images e2e
+./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/ e2e
+```
+
+### Adding new test images
+
+New test images should be placed in `./test/test_images`. For each image create
+a new sub-folder and include a Go file that will be an entry point to the
+application. This Go file should use the package `main` and include the function
+`main()`. It is a good practice to include a `README` file as well. When
+uploading test images, `ko` will build an image from this folder and upload to
+the Docker repository configured as [`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).

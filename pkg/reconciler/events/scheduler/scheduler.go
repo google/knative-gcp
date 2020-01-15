@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -200,14 +201,21 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
 			parent := resources.ExtractParentName(jobName)
+			// Add our own converter type, jobName, and schedulerName as customAttributes.
+			customAttributes := map[string]string{
+				converters.KnativeGCPConverter: converters.SchedulerConverter,
+				v1alpha1.SchedulerJobName:      jobName,
+				v1alpha1.SchedulerName:         scheduler.GetName(),
+			}
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
 				Job: &schedulerpb.Job{
 					Name: jobName,
 					Target: &schedulerpb.Job_PubsubTarget{
 						PubsubTarget: &schedulerpb.PubsubTarget{
-							TopicName: resources.GeneratePubSubTargetTopic(scheduler, topic),
-							Data:      []byte(scheduler.Spec.Data),
+							TopicName:  resources.GeneratePubSubTargetTopic(scheduler, topic),
+							Data:       []byte(scheduler.Spec.Data),
+							Attributes: customAttributes,
 						},
 					},
 					Schedule: scheduler.Spec.Schedule,

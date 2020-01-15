@@ -42,7 +42,49 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
+	}, {
+		name: "topic not ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkPullSubscriptionReady()
+			s.MarkJobReady("jobName")
+			s.MarkTopicFailed("NotReady", "topic not ready")
+			return s
+		}(),
+	}, {
+		name: "pullsubscription not ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkTopicReady("topicID", "projectID")
+			s.MarkPullSubscriptionFailed("NotReady", "ps not ready")
+			s.MarkJobReady("jobName")
+			return s
+		}(),
+	}, {
+		name: "job not ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkTopicReady("topicID", "projectID")
+			s.MarkPullSubscriptionReady()
+			s.MarkJobNotReady("NotReady", "ps not ready")
+			return s
+		}(),
+	}, {
+		name: "ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkTopicReady("topicID", "projectID")
+			s.MarkPullSubscriptionReady()
+			s.MarkJobReady("jobName")
+			return s
+		}(),
+		want: true,
 	}}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.s.IsReady()
@@ -53,7 +95,7 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestSchedulertatusGetCondition(t *testing.T) {
+func TestSchedulerStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
 		s         *SchedulerStatus
@@ -76,7 +118,36 @@ func TestSchedulertatusGetCondition(t *testing.T) {
 			Type:   SchedulerConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
+	}, {
+		name: "not ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkJobNotReady("NotReady", "test message")
+			return s
+		}(),
+		condQuery: JobReady,
+		want: &apis.Condition{
+			Type:    JobReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "NotReady",
+			Message: "test message",
+		},
+	}, {
+		name: "ready",
+		s: func() *SchedulerStatus {
+			s := &SchedulerStatus{}
+			s.InitializeConditions()
+			s.MarkJobReady("jobName")
+			return s
+		}(),
+		condQuery: JobReady,
+		want: &apis.Condition{
+			Type:   JobReady,
+			Status: corev1.ConditionTrue,
+		},
 	}}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.s.GetCondition(test.condQuery)

@@ -127,6 +127,18 @@ func WithAuditLogsSourceSinkID(sinkID string) AuditLogsSourceOption {
 	}
 }
 
+func WithAuditLogsSourceProject(project string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Spec.Project = project
+	}
+}
+
+func WithAuditLogsSourceResourceName(resourceName string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Spec.ResourceName = resourceName
+	}
+}
+
 func WithAuditLogsSourceServiceName(serviceName string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
 		s.Spec.ServiceName = serviceName

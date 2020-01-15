@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,17 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
-func TestPubSubSourceStatusIsReady(t *testing.T) {
+func TestPubSubStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                   string
 		pullsubscriptionStatus *pubsubv1alpha1.PullSubscriptionStatus
@@ -63,7 +63,7 @@ func TestPubSubSourceStatusIsReady(t *testing.T) {
 		})
 	}
 }
-func TestPubSubSourceGetCondition(t *testing.T) {
+func TestPubSubStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
 		s         *PubSubStatus
@@ -72,7 +72,7 @@ func TestPubSubSourceGetCondition(t *testing.T) {
 	}{{
 		name:      "uninitialized",
 		s:         &PubSubStatus{},
-		condQuery: v1alpha1.PullSubscriptionReady,
+		condQuery: PubSubConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
@@ -81,9 +81,9 @@ func TestPubSubSourceGetCondition(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: v1alpha1.PullSubscriptionReady,
+		condQuery: PubSubConditionReady,
 		want: &apis.Condition{
-			Type:   v1alpha1.PullSubscriptionReady,
+			Type:   PubSubConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
@@ -94,9 +94,9 @@ func TestPubSubSourceGetCondition(t *testing.T) {
 			s.MarkPullSubscriptionFailed("NotReady", "test message")
 			return s
 		}(),
-		condQuery: v1alpha1.PullSubscriptionReady,
+		condQuery: duckv1alpha1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:    v1alpha1.PullSubscriptionReady,
+			Type:    duckv1alpha1.PullSubscriptionReady,
 			Status:  corev1.ConditionFalse,
 			Reason:  "NotReady",
 			Message: "test message",
@@ -109,9 +109,9 @@ func TestPubSubSourceGetCondition(t *testing.T) {
 			s.MarkPullSubscriptionReady()
 			return s
 		}(),
-		condQuery: v1alpha1.PullSubscriptionReady,
+		condQuery: duckv1alpha1.PullSubscriptionReady,
 		want: &apis.Condition{
-			Type:   v1alpha1.PullSubscriptionReady,
+			Type:   duckv1alpha1.PullSubscriptionReady,
 			Status: corev1.ConditionTrue,
 		},
 	}}

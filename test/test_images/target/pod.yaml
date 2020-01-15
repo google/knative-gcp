@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: target
+spec:
+  containers:
+    - name: target
+      image: github.com/google/knative-gcp/test/test_images/target
+
