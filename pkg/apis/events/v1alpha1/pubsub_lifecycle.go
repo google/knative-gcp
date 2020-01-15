@@ -49,8 +49,8 @@ func (ps *PubSubStatus) MarkPullSubscriptionFailed(reason, messageFormat string,
 	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPullSubscriptionNotConfigured sets the condition that the underlying PullSubscription
-// source has not been reconciled and why.
+// MarkPullSubscriptionNotConfigured changes the PullSubscriptionReady condition to be unknown to reflect
+// that the PullSubscription does not yet have a Status.
 func (ps *PubSubStatus) MarkPullSubscriptionNotConfigured() {
 	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }

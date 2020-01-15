@@ -35,7 +35,8 @@ func (s *PubSubStatus) MarkTopicReady(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkTrue(TopicReady)
 }
 
-// MarkTopicNotConfigured sets the condition that the PubSub Topic has not yet been reconciled.
+// MarkTopicNotConfigured changes the TopicReady condition to be unknown to reflect
+// that the Topic does not yet have a Status.
 func (s *PubSubStatus) MarkTopicNotConfigured(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkUnknown(TopicReady, "TopicNotConfigured", "Topic has not yet been reconciled")
 }
@@ -57,7 +58,8 @@ func (s *PubSubStatus) MarkPullSubscriptionReady(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkTrue(PullSubscriptionReady)
 }
 
-// MarkPullSubscriptionNotConfigured sets the condition that the PubSub PullSubscription has not yet been reconciled.
+// MarkPullSubscriptionNotConfigured changes the PullSubscriptionReady condition to be unknown to reflect
+// that the PullSubscription does not yet have a Status.
 func (s *PubSubStatus) MarkPullSubscriptionNotConfigured(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkUnknown(PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }

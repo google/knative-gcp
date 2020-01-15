@@ -43,18 +43,18 @@ func (s *StorageStatus) InitializeConditions() {
 }
 
 // MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
-// source is False and why.
+// is False and why.
 func (s *StorageStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionUnknown sets the condition that the status of underlying PullSubscription
-// source is Unknown and why.
+// is Unknown and why.
 func (s *StorageStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
+// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
 func (s *StorageStatus) MarkPullSubscriptionReady() {
 	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }

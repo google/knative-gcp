@@ -17,14 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
+
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestPubSubStatusIsReady(t *testing.T) {
