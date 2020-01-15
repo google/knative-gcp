@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"time"
 
 	"go.uber.org/zap"
@@ -221,8 +222,8 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	// If the notification does not exist, then create it.
 
 	customAttributes := make(map[string]string)
-	// Add our own event type here...
-	customAttributes["knative-gcp"] = "com.google.cloud.storage"
+	// Add our own converter type here...
+	customAttributes[converters.ConverterType] = converters.StorageAdapterType
 
 	nc := &Notification{
 		TopicProjectID:   storage.Status.ProjectID,
