@@ -26,6 +26,7 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
@@ -59,7 +60,7 @@ func TestConvertScheduler(t *testing.T) {
 				"jobs/cre-scheduler-test")
 		},
 	}, {
-		name: "invalid upper case attributes",
+		name: "upper case attributes",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
@@ -72,7 +73,10 @@ func TestConvertScheduler(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return schedulerCloudEvent(map[string]string{},
+			return schedulerCloudEvent(map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+			},
 				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
 				"jobs/cre-scheduler-test")
 		},
