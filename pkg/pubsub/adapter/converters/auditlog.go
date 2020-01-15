@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	AuditLogAdapterType = "google.auditlog"
+	AuditLogConverter = "com.google.cloud.auditlogs"
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	loggingSource  = "logging.googleapis.com"
