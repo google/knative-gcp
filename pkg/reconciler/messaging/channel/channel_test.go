@@ -185,7 +185,7 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithChannelAddress(topicURI),
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
-				WithChannelTopicFalse("PublisherStatus", "Publisher has no Ready type status"),
+				WithChannelTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
 	},

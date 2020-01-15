@@ -37,9 +37,9 @@ func (s *StorageStatus) InitializeConditions() {
 	storageCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionFalse sets the condition that the status of underlying PullSubscription
+// MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
 // source is False and why.
-func (s *StorageStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
+func (s *StorageStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
@@ -54,8 +54,8 @@ func (s *StorageStatus) MarkPullSubscriptionReady() {
 	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicFalse sets the condition that the status of PubSub topic is False why.
-func (s *StorageStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the status of PubSub topic is False why.
+func (s *StorageStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 

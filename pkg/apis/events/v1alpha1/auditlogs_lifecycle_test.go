@@ -27,63 +27,97 @@ import (
 
 func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name string
-		s    *AuditLogsSourceStatus
-		want bool
+		name                string
+		s                   *AuditLogsSourceStatus
+		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
-		name: "uninitialized",
-		s:    &AuditLogsSourceStatus{},
-	}, {
 		name: "initialized",
 		s: func() *AuditLogsSourceStatus {
 			s := &AuditLogsSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
-		name: "topic not ready",
+		name: "the status of topic is false",
 		s: func() *AuditLogsSourceStatus {
 			s := &AuditLogsSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkSinkReady()
+			s.MarkTopicFailed("test", "the status of topic is false")
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionFalse,
 	}, {
-		name: "pullsubscription not ready",
+		name: "the status of topic is unknown",
 		s: func() *AuditLogsSourceStatus {
 			s := &AuditLogsSourceStatus{}
 			s.InitializeConditions()
-			s.MarkTopicReady()
-			s.MarkSinkReady()
-			return s
-		}(),
-	}, {
-		name: "not ready",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady()
-			s.MarkPullSubscriptionReady()
-			return s
-		}(),
-	}, {
-		name: "ready",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady()
 			s.MarkPullSubscriptionReady()
 			s.MarkSinkReady()
+			s.MarkTopicUnknown("test", "the status of topic is unknown")
 			return s
 		}(),
-		want: true,
-	}}
+		wantConditionStatus: corev1.ConditionUnknown,
+	},
+		{
+			name: "the status of pullsubscription is false",
+			s: func() *AuditLogsSourceStatus {
+				s := &AuditLogsSourceStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkSinkReady()
+				s.MarkPullSubscriptionFailed("test", "the status of pullsubscription is false")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionFalse,
+		}, {
+			name: "the status of pullsubscription is unknown",
+			s: func() *AuditLogsSourceStatus {
+				s := &AuditLogsSourceStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkSinkReady()
+				s.MarkPullSubscriptionUnknown("test", "the status of pullsubscription is unknown")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionUnknown,
+		},
+		{
+			name: "sink is not ready",
+			s: func() *AuditLogsSourceStatus {
+				s := &AuditLogsSourceStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkPullSubscriptionReady()
+				s.MarkSinkNotReady("test", "sink is not ready")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionFalse,
+		}, {
+			name: "ready",
+			s: func() *AuditLogsSourceStatus {
+				s := &AuditLogsSourceStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkPullSubscriptionReady()
+				s.MarkSinkReady()
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionTrue,
+			want:true,
+		}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			gotConditionStatus := test.s.GetTopLevelCondition().Status
 			got := test.s.IsReady()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("%s: unexpected condition (-want, +got) = %v", test.name, diff)
+			if gotConditionStatus != test.wantConditionStatus {
+				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+			}
+			if got != test.want {
+				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
 			}
 		})
 	}

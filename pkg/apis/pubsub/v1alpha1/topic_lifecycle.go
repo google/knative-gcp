@@ -84,7 +84,7 @@ func (ts *TopicStatus) MarkTopicReady() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionTopicExists)
 }
 
-// MarkTopicFalse sets the condition that signals there is not a topic for this
+// MarkNoTopic sets the condition that signals there is not a topic for this
 // Topic. This could be because of an error or the Topic is being deleted.
 func (ts *TopicStatus) MarkNoTopic(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionTopicExists, reason, messageFormat, messageA...)

@@ -125,7 +125,7 @@ func propagatePullSubscriptionStatus(ps *pubsubsourcev1alpha1.PullSubscription, 
 	case pc.Status == corev1.ConditionTrue:
 		status.MarkPullSubscriptionReady(cs)
 	case pc.Status == corev1.ConditionFalse:
-		status.MarkPullSubscriptionFalse(cs, pc.Reason, pc.Message)
+		status.MarkPullSubscriptionFailed(cs, pc.Reason, pc.Message)
 		return fmt.Errorf("the status of PullSubscription %q is False", ps.Name)
 	default:
 		status.MarkPullSubscriptionUnknown(cs, "PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", pc.Status)
@@ -144,7 +144,7 @@ func propagateTopicStatus(t *pubsubsourcev1alpha1.Topic, status *v1alpha1.PubSub
 		status.MarkTopicUnknown(cs, tc.Reason, tc.Message)
 		return fmt.Errorf("the status of Topic %q is Unknown", t.Name)
 	} else if tc.Status == corev1.ConditionFalse {
-		status.MarkTopicFalse(cs, tc.Reason, tc.Message)
+		status.MarkTopicFailed(cs, tc.Reason, tc.Message)
 		return fmt.Errorf("the status of Topic %q is False", t.Name)
 	} else if tc.Status != corev1.ConditionTrue {
 		status.MarkTopicUnknown(cs, "TopicUnknown", "The status of Topic is invalid: %v", tc.Status)
@@ -152,15 +152,15 @@ func propagateTopicStatus(t *pubsubsourcev1alpha1.Topic, status *v1alpha1.PubSub
 	}
 
 	if t.Status.ProjectID == "" {
-		status.MarkTopicFalse(cs, "TopicNotReady", "Topic %q did not expose projectid", t.Name)
+		status.MarkTopicFailed(cs, "TopicNotReady", "Topic %q did not expose projectid", t.Name)
 		return fmt.Errorf("Topic %q did not expose projectid", t.Name)
 	}
 	if t.Status.TopicID == "" {
-		status.MarkTopicFalse(cs, "TopicNotReady", "Topic %q did not expose topicid", t.Name)
+		status.MarkTopicFailed(cs, "TopicNotReady", "Topic %q did not expose topicid", t.Name)
 		return fmt.Errorf("Topic %q did not expose topicid", t.Name)
 	}
 	if t.Status.TopicID != topic {
-		status.MarkTopicFalse(cs, "TopicNotReady", "Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
+		status.MarkTopicFailed(cs, "TopicNotReady", "Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
 		return fmt.Errorf("Topic %q mismatch: expected %q got %q", t.Name, topic, t.Status.TopicID)
 	}
 	status.TopicID = t.Status.TopicID
@@ -182,10 +182,10 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	err := psb.pubsubClient.PubsubV1alpha1().Topics(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete Topic", zap.String("name", name), zap.Error(err))
-		status.MarkTopicFalse(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
+		status.MarkTopicFailed(cs, "TopicDeleteFailed", "Failed to delete Topic: %s", err.Error())
 		return fmt.Errorf("failed to delete topic: %w", err)
 	}
-	status.MarkTopicFalse(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
+	status.MarkTopicFailed(cs, "TopicDeleted", "Successfully deleted Topic: %s", name)
 	status.TopicID = ""
 	status.ProjectID = ""
 
@@ -193,10 +193,10 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	err = psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace).Delete(name, nil)
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Failed to delete PullSubscription", zap.String("name", name), zap.Error(err))
-		status.MarkPullSubscriptionFalse(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
+		status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleteFailed", "Failed to delete PullSubscription: %s", err.Error())
 		return fmt.Errorf("failed to delete PullSubscription: %w", err)
 	}
-	status.MarkPullSubscriptionFalse(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
+	status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
 	status.SinkURI = nil
 	return nil
 }

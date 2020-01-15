@@ -121,7 +121,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	// 1. Create the Topic.
 	topic, err := r.reconcileTopic(ctx, channel)
 	if err != nil {
-		channel.Status.MarkTopicFalse("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
+		channel.Status.MarkTopicFailed("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
 	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))

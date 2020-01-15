@@ -26,6 +26,11 @@ func (s *AuditLogsSourceStatus) GetCondition(t apis.ConditionType) *apis.Conditi
 	return auditLogsSourceCondSet.Manage(s).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition.
+func (s *AuditLogsSourceStatus) GetTopLevelCondition() *apis.Condition {
+	return auditLogsSourceCondSet.Manage(s).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (s *AuditLogsSourceStatus) IsReady() bool {
 	return auditLogsSourceCondSet.Manage(s).IsHappy()
@@ -36,9 +41,9 @@ func (s *AuditLogsSourceStatus) InitializeConditions() {
 	auditLogsSourceCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the status of underlying PullSubscription
+// MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
 // source is False and why.
-func (s *AuditLogsSourceStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
+func (s *AuditLogsSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
@@ -53,8 +58,8 @@ func (s *AuditLogsSourceStatus) MarkPullSubscriptionReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicFalse sets the condition that the status of PubSub topic is False and why.
-func (s *AuditLogsSourceStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the status of PubSub topic is False and why.
+func (s *AuditLogsSourceStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 

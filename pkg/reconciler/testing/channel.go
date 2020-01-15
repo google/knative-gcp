@@ -92,9 +92,9 @@ func WithChannelTopicID(topicID string) ChannelOption {
 	}
 }
 
-func WithChannelTopicFalse(reason, message string) ChannelOption {
+func WithChannelTopicFailed(reason, message string) ChannelOption {
 	return func(c *v1alpha1.Channel) {
-		c.Status.MarkTopicFalse(reason, message)
+		c.Status.MarkTopicFailed(reason, message)
 	}
 }
 

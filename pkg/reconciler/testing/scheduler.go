@@ -94,11 +94,11 @@ func WithInitSchedulerConditions(s *v1alpha1.Scheduler) {
 	s.Status.InitializeConditions()
 }
 
-// WithSchedulerTopicFalse marks the condition that the
+// WithSchedulerTopicFailed marks the condition that the
 // status of topic is False.
-func WithSchedulerTopicFalse(reason, message string) SchedulerOption {
+func WithSchedulerTopicFailed(reason, message string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkTopicFalse(reason, message)
+		s.Status.MarkTopicFailed(reason, message)
 	}
 }
 
@@ -118,11 +118,11 @@ func WithSchedulerTopicReady(topicID, projectID string) SchedulerOption {
 	}
 }
 
-// WithSchedulerPullSubscriptionFalse marks the condition that the
+// WithSchedulerPullSubscriptionFailed marks the condition that the
 // topic is False.
-func WithSchedulerPullSubscriptionFalse(reason, message string) SchedulerOption {
+func WithSchedulerPullSubscriptionFailed(reason, message string) SchedulerOption {
 	return func(s *v1alpha1.Scheduler) {
-		s.Status.MarkPullSubscriptionFalse(reason, message)
+		s.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 

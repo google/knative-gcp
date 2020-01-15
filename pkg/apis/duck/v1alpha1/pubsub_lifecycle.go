@@ -20,12 +20,12 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// MarkTopicFalse sets the condition that the PubSub Topic is not ready and why.
-func (s *PubSubStatus) MarkTopicFalse(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the PubSub Topic is False and why.
+func (s *PubSubStatus) MarkTopicFailed(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(TopicReady, reason, messageFormat, messageA...)
 }
 
-// MarkTopicUnknown sets the condition that the PubSub Topic is False and why.
+// MarkTopicUnknown sets the condition that the PubSub Topic is Unknown and why.
 func (s *PubSubStatus) MarkTopicUnknown(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkUnknown(TopicReady, reason, messageFormat, messageA...)
 }
@@ -40,9 +40,9 @@ func (s *PubSubStatus) MarkTopicNotConfigured(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkUnknown(TopicReady, "TopicNotConfigured", "Topic has not yet been reconciled")
 }
 
-// MarkPullSubscriptionFalse sets the condition that the PubSub PullSubscription is
+// MarkPullSubscriptionFailed sets the condition that the PubSub PullSubscription is
 // False and why.
-func (s *PubSubStatus) MarkPullSubscriptionFalse(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+func (s *PubSubStatus) MarkPullSubscriptionFailed(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 

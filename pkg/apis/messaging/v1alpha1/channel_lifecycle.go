@@ -75,15 +75,15 @@ func (cs *ChannelStatus) PropagateTopicStatus(ready *apis.Condition) {
 	case ready.Status == corev1.ConditionTrue:
 		cs.MarkTopicReady()
 	case ready.Status == corev1.ConditionFalse:
-		cs.MarkTopicFalse(ready.Reason, ready.Message)
+		cs.MarkTopicFailed(ready.Reason, ready.Message)
 	default:
 		cs.MarkTopicUnknown("TopicUnknown", "The status of Topic is invalid: %v", ready.Status)
 	}
 }
 
-// MarkTopicFalse sets the condition that signals there is not a topic for this
+// MarkTopicFailed sets the condition that signals there is not a topic for this
 // Channel. This could be because of an error or the Channel is being deleted.
-func (cs *ChannelStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
+func (cs *ChannelStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	channelCondSet.Manage(cs).MarkFalse(ChannelConditionTopicReady, reason, messageFormat, messageA...)
 }
 

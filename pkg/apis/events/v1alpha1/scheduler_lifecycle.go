@@ -37,9 +37,9 @@ func (s *SchedulerStatus) InitializeConditions() {
 	schedulerCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionFalse sets the condition that the underlying PullSubscription
+// MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
 // is False and why.
-func (s *SchedulerStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
+func (s *SchedulerStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
@@ -54,8 +54,8 @@ func (s *SchedulerStatus) MarkPullSubscriptionReady() {
 	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicFalse sets the condition that the Topic was not created and why.
-func (s *SchedulerStatus) MarkTopicFalse(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the Topic was not created and why.
+func (s *SchedulerStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 

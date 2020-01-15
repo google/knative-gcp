@@ -191,7 +191,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubFinalizers(finalizerName),
 				WithInitPubSubConditions,
 				WithPubSubObjectMetaGeneration(generation),
-				WithPubSubPullSubscriptionFalse("PullSubscriptionFalse", "status false test message"),
+				WithPubSubPullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
 			),
 		}},
 		WantEvents: []string{

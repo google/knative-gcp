@@ -186,7 +186,7 @@ func TestChannelIsReady(t *testing.T) {
 			} else if test.topicStatus == corev1.ConditionUnknown {
 				cs.MarkTopicUnknown("The status of topic is unknown", "The status of topic is unknown: nil")
 			} else {
-				cs.MarkTopicFalse("The status of topic is false", "The status of topic is unknown: nil")
+				cs.MarkTopicFailed("The status of topic is false", "The status of topic is unknown: nil")
 			}
 
 			got := cs.GetTopLevelCondition().Status

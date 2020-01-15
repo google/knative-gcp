@@ -126,7 +126,7 @@ func WithTopicReady(topicID string) TopicOption {
 	}
 }
 
-func WithTopicFalse() TopicOption {
+func WithTopicFailed() TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")

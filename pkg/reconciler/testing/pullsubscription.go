@@ -193,7 +193,7 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionFalse() PullSubscriptionOption {
+func WithPullSubscriptionFailed() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.InitializeConditions()
 		s.Status.MarkNoSink("InvalidSink",

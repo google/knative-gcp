@@ -70,11 +70,11 @@ func WithInitPubSubConditions(ps *v1alpha1.PubSub) {
 	ps.Status.InitializeConditions()
 }
 
-// WithPubSubPullSubscriptionFalse marks the condition that the
-// topic is False
-func WithPubSubPullSubscriptionFalse(reason, message string) PubSubOption {
+// WithPubSubPullSubscriptionFailed marks the condition that the
+// status of PullSubscription is False
+func WithPubSubPullSubscriptionFailed(reason, message string) PubSubOption {
 	return func(ps *v1alpha1.PubSub) {
-		ps.Status.MarkPullSubscriptionFalse(reason, message)
+		ps.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 

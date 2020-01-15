@@ -28,6 +28,11 @@ func (ps *PubSubStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return pubSubCondSet.Manage(ps).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition.
+func (ps *PubSubStatus) GetTopLevelCondition() *apis.Condition {
+	return pubSubCondSet.Manage(ps).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (ps *PubSubStatus) IsReady() bool {
 	return pubSubCondSet.Manage(ps).IsHappy()
@@ -38,9 +43,9 @@ func (ps *PubSubStatus) InitializeConditions() {
 	pubSubCondSet.Manage(ps).InitializeConditions()
 }
 
-// MarkPullSubscriptionFalse sets the condition that the underlying PullSubscription
+// MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
 // source is False and why.
-func (ps *PubSubStatus) MarkPullSubscriptionFalse(reason, messageFormat string, messageA ...interface{}) {
+func (ps *PubSubStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
@@ -72,7 +77,7 @@ func (ps *PubSubStatus) PropagatePullSubscriptionStatus(ready *apis.Condition) {
 	case ready.Status == corev1.ConditionTrue:
 		ps.MarkPullSubscriptionReady()
 	case ready.Status == corev1.ConditionFalse:
-		ps.MarkPullSubscriptionFalse(ready.Reason, ready.Message)
+		ps.MarkPullSubscriptionFailed(ready.Reason, ready.Message)
 	default:
 		ps.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", ready.Status)
 	}
