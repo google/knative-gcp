@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package converters
 import (
 	"context"
 	"errors"
-	"fmt"
-	cloudevents "github.com/cloudevents/sdk-go"
+
+	"github.com/cloudevents/sdk-go"
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	SchedulerAdapterType = "com.google.cloud.scheduler"
+	SchedulerConverter = "com.google.cloud.scheduler"
 )
 
 func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
@@ -48,9 +48,9 @@ func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeT
 		event.SetDataSchema(val)
 	}
 	// Set the source and subject if it comes as an attribute.
-	jobName, ok := msg.Attributes[v1alpha1.JobName]
+	jobName, ok := msg.Attributes[v1alpha1.SchedulerJobName]
 	if ok {
-		delete(msg.Attributes, v1alpha1.JobName)
+		delete(msg.Attributes, v1alpha1.SchedulerJobName)
 	} else {
 		return nil, errors.New("received event did not have jobName")
 	}
@@ -61,8 +61,7 @@ func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeT
 		return nil, errors.New("received event did not have schedulerName")
 	}
 	parentName := resources.ExtractParentName(jobName)
-	source := fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parentName, schedulerName)
-	event.SetSource(source)
+	event.SetSource(v1alpha1.SchedulerEventSource(parentName, schedulerName))
 	event.SetSubject(resources.ExtractJobID(jobName))
 
 	// Set the mode to be an extension attribute.

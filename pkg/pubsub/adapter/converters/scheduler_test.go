@@ -54,7 +54,7 @@ func TestConvertScheduler(t *testing.T) {
 		wantEventFn: func() *cloudevents.Event {
 			return schedulerCloudEvent(map[string]string{
 				"attribute1": "value1",
-				"attribute2": "value2",},
+				"attribute2": "value2"},
 				"//cloudscheduler.googleapis.com/projects/knative-gcp-test/locations/us-east4/schedulers/scheduler-test",
 				"jobs/cre-scheduler-test")
 		},
@@ -167,7 +167,7 @@ func schedulerCloudEvent(extensions map[string]string, source, subject string) *
 	e.Data = []byte("test data")
 	e.DataEncoded = true
 	for k, v := range extensions {
-		if k != v1alpha1.JobName {
+		if k != v1alpha1.SchedulerJobName {
 			e.SetExtension(k, v)
 		}
 	}

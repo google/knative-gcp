@@ -59,7 +59,7 @@ func NewController(
 	auditlogssourceInformer := auditlogssourceinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.AuditLogAdapterType, cmw),
+		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.AuditLogConverter, cmw),
 		auditLogsSourceLister:  auditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
 		pubsubClientProvider:   gpubsub.NewClient,

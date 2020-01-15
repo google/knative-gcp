@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,11 +44,15 @@ type Scheduler struct {
 const (
 	// CloudEvent types used by Scheduler.
 	SchedulerExecute = "com.google.cloud.sheduler.job.execute"
-	//Attributes jobName key.
-	JobName = "jobName"
-	//Attributes schedulerName key.
+	// SchedulerJobName is the Pub/Sub message attribute key with the Scheduler's job name.
+	SchedulerJobName = "jobName"
+	// SchedulerName is the Pub/Sub message attribute key with the Scheduler's name.
 	SchedulerName = "schedulerName"
 )
+
+func SchedulerEventSource(parent, scheduler string) string {
+	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parent, scheduler)
+}
 
 var (
 	_ apis.Validatable             = (*Scheduler)(nil)
