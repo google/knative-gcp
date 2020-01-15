@@ -37,3 +37,13 @@ func TestSchedulerGetGroupVersionKind(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestSchedulerEventSource(t *testing.T) {
+	want := "//cloudscheduler.googleapis.com/PARENT/schedulers/SCHEDULER"
+
+	got := SchedulerEventSource("PARENT", "SCHEDULER")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
