@@ -118,7 +118,7 @@ func TestAllCases(t *testing.T) {
 				WithInitChannelConditions,
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
 				WithChannelTopicID(testTopicID),
-				WithChannelNoTopic("TopicNotReady", "Topic has no Ready type status"),
+				WithChannelTopicUnknown("TopicNotConfigured", "Topic has not yet been reconciled"),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -134,7 +134,6 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithInitChannelConditions,
 				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
 			),
 			newReadyTopic(),
 		},
@@ -158,7 +157,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "new subscriber",
+		Name: "the status of topic is false",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -167,17 +166,11 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithInitChannelConditions,
 				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
 			),
-			newReadyTopic(),
+			newFalseTopic(),
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -189,225 +182,264 @@ func TestAllCases(t *testing.T) {
 				WithInitChannelConditions,
 				WithChannelDefaults,
 				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
 				// Updates
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
-				}),
+				WithChannelAddress(topicURI),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
-		WantCreates: []runtime.Object{
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-	}, {
-		Name: "update subscriber",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 1},
-				}),
-			),
-			newReadyTopic(),
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: apis.HTTP("wrong"), ReplyURI: apis.HTTP("wrong")}),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				// Updates
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
-				}),
-			),
-		}},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		}},
-	}, {
-		Name: "subscriber already exists owned by other channel",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-			),
-			newReadyTopic(),
-			newPullSubscriptionWithOwner(
-				eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
-			),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				// Updates
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-		WantErr: true,
-	}, {
-		Name: "subscriber already exists in status owned by other channel",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 1},
-				}),
-			),
-			newReadyTopic(),
-			newPullSubscriptionWithOwner(
-				eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
-			),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
-		},
-		WantCreates: []runtime.Object{
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-		WantErr: true,
-	}, {
-		Name: "update - subscriber missing",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{
-					{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
-				}),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
-				}),
-			),
-			newReadyTopic(),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
-		},
-		WantCreates: []runtime.Object{
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-	}, {
-		Name: "delete subscriber",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
-					{UID: subscriptionUID},
-				}),
-			),
-			newReadyTopic(),
-			newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				WithChannelAddress(topicURI),
-				WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
-				// Updates
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
-			),
-		}},
-		WantDeletes: []clientgotesting.DeleteActionImpl{
-			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
-				Name: "cre-sub-testsubscription-abc-123",
+	},
+		{
+			Name: "new subscriber",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+				),
+				newReadyTopic(),
 			},
-		},
-	}}
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					// Updates
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
+					}),
+				),
+			}},
+			WantCreates: []runtime.Object{
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+		}, {
+			Name: "update subscriber",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID, ObservedGeneration: 1},
+					}),
+				),
+				newReadyTopic(),
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: apis.HTTP("wrong"), ReplyURI: apis.HTTP("wrong")}),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					// Updates
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
+					}),
+				),
+			}},
+			WantUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			}},
+		}, {
+			Name: "subscriber already exists owned by other channel",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+				),
+				newReadyTopic(),
+				newPullSubscriptionWithOwner(
+					eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					// Updates
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+				),
+			}},
+			WantCreates: []runtime.Object{
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantErr: true,
+		}, {
+			Name: "subscriber already exists in status owned by other channel",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID, ObservedGeneration: 1},
+					}),
+				),
+				newReadyTopic(),
+				newPullSubscriptionWithOwner(
+					eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					NewChannel("other-channel", testNS, WithChannelUID("other-id"), WithInitChannelConditions),
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+			},
+			WantCreates: []runtime.Object{
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantErr: true,
+		}, {
+			Name: "update - subscriber missing",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{
+						{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
+					}),
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
+					}),
+				),
+				newReadyTopic(),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
+			},
+			WantCreates: []runtime.Object{
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+		}, {
+			Name: "delete subscriber",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+						{UID: subscriptionUID},
+					}),
+				),
+				newReadyTopic(),
+				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelTopic(testTopicID),
+					WithChannelAddress(topicURI),
+					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
+					// Updates
+					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+				),
+			}},
+			WantDeletes: []clientgotesting.DeleteActionImpl{
+				{ActionImpl: clientgotesting.ActionImpl{
+					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+					Name: "cre-sub-testsubscription-abc-123",
+				},
+			},
+		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
@@ -447,6 +479,14 @@ func newReadyTopic() *pubsubv1alpha1.Topic {
 	topic.Status.SetAddress(url)
 	topic.Status.MarkDeployed()
 	topic.Status.MarkTopicReady()
+	return topic
+}
+
+func newFalseTopic() *pubsubv1alpha1.Topic {
+	topic := newTopic()
+	url, _ := apis.ParseURL(topicURI)
+	topic.Status.SetAddress(url)
+	topic.Status.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	return topic
 }
 

@@ -87,7 +87,7 @@ func TestCreates(t *testing.T) {
 		expectedErr   string
 		wantCreates   []runtime.Object
 	}{{
-		name: "topic does not exist, created, not ready",
+		name: "topic does not exist, created, not yet been reconciled",
 		expectedTopic: rectesting.NewTopic(name, testNS,
 			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
 				Secret:            &secret,
@@ -100,7 +100,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: fmt.Sprintf("Topic %q not ready", name),
+		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -114,7 +114,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 	}, {
-		name: "topic exists but is not ready",
+		name: "topic exists but is not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -139,7 +139,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
-		expectedErr: fmt.Sprintf("Topic %q not ready", name),
+		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
 	}, {
 		name: "topic exists and is ready but no projectid",
 		objects: []runtime.Object{
@@ -173,6 +173,70 @@ func TestCreates(t *testing.T) {
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose projectid", name),
 	}, {
+		name: "topic exists and the status of topic is false",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicFailed(),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicFailed(),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS:  nil,
+		expectedErr: fmt.Sprintf("the status of Topic %q is False", name),
+	}, {
+		name: "topic exists and the status of topic is unknown",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicUnknown(),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicUnknown(),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS:  nil,
+		expectedErr: fmt.Sprintf("the status of Topic %q is Unknown", name),
+	},{
 		name: "topic exists and is ready but no topicid",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
@@ -207,7 +271,7 @@ func TestCreates(t *testing.T) {
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose topicid", name),
 	}, {
-		name: "topic exists and is ready, pullsubscription created",
+		name: "topic exists and is ready, pullsubscription created, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -251,7 +315,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-		expectedErr: fmt.Sprintf("PullSubscription %q not ready", name),
+		expectedErr: fmt.Sprintf("PullSubscription %q has not yet been reconciled", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
@@ -268,7 +332,7 @@ func TestCreates(t *testing.T) {
 			),
 		},
 	}, {
-		name: "topic exists and is ready, pullsubscription exists, not ready",
+		name: "topic exists and is ready, pullsubscription exists, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -325,9 +389,9 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-		expectedErr: fmt.Sprintf("PullSubscription %q not ready", name),
+		expectedErr: fmt.Sprintf("PullSubscription %q has not yet been reconciled", name),
 	}, {
-		name: "topic exists and is ready, pullsubscription exists and is ready",
+		name: "topic exists and is ready, pullsubscription exists and the status is false",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
@@ -354,7 +418,7 @@ func TestCreates(t *testing.T) {
 					"metrics-resource-group": resourceGroup,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-				rectesting.WithPullSubscriptionReady("http://example.com"),
+				rectesting.WithPullSubscriptionFailed(),
 			),
 		},
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -384,9 +448,70 @@ func TestCreates(t *testing.T) {
 				"metrics-resource-group": resourceGroup,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-			rectesting.WithPullSubscriptionReady("http://example.com"),
+			rectesting.WithPullSubscriptionFailed(),
 		),
-		expectedErr: "",
+		expectedErr: fmt.Sprintf("the status of PullSubscription %q is False", name),
+	},{
+		name: "topic exists and is ready, pullsubscription exists and the status is unknown",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+					Topic:  testTopicID,
+					Secret: &secret,
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": resourceGroup,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithPullSubscriptionUnknown(),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(pubsubsourcev1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
+				Topic:  testTopicID,
+				Secret: &secret,
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter": receiveAdapterName,
+			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group": resourceGroup,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithPullSubscriptionUnknown(),
+		),
+		expectedErr: fmt.Sprintf("the status of PullSubscription %q is Unknown", name),
 	}}
 
 	defer logtesting.ClearAll()
@@ -407,13 +532,13 @@ func TestCreates(t *testing.T) {
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
 			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
-			t.Errorf("Error mismatch, want: %q got: %q", tc.expectedErr, err)
+			t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
 		}
 		if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("unexpected topic (-want, +got) = %v", diff)
+			t.Errorf("Test case %q, unexpected topic (-want, +got) = %v", tc.name, diff)
 		}
 		if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("unexpected pullsubscription (-want, +got) = %v", diff)
+			t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
 		}
 
 		// Validate creates.

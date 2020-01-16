@@ -28,9 +28,10 @@ import (
 
 func TestStorageStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name string
-		s    *StorageStatus
-		want bool
+		name                string
+		s                   *StorageStatus
+		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
 		name: "uninitialized",
 		s:    &StorageStatus{},
@@ -42,54 +43,92 @@ func TestStorageStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
-		name: "topic not ready",
+		name: "the status of topic is false",
 		s: func() *StorageStatus {
 			s := &StorageStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkNotificationReady("notificationID")
-			s.MarkTopicNotReady("NotReady", "topic not ready")
+			s.MarkTopicFailed("TopicFailed", "the status of topic is false")
 			return s
 		}(),
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
-		name: "pullsubscription not ready",
+		name: "the status of topic is unknown",
+		s: func() *StorageStatus {
+			s := &StorageStatus{}
+			s.InitializeConditions()
+			s.MarkPullSubscriptionReady()
+			s.MarkNotificationReady("notificationID")
+			s.MarkTopicUnknown("TopicUnknown", "the status of topic is unknown")
+			return s
+		}(),
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
+	}, {
+		name: "the status of pullsubscription is false",
 		s: func() *StorageStatus {
 			s := &StorageStatus{}
 			s.InitializeConditions()
 			s.MarkTopicReady()
-			s.MarkPullSubscriptionNotReady("NotReady", "ps not ready")
+			s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
 			s.MarkNotificationReady("notificationID")
 			return s
 		}(),
-	}, {
-		name: "notification not ready",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady()
-			s.MarkPullSubscriptionReady()
-			s.MarkNotificationNotReady("NotReady", "notification not ready")
-			return s
-		}(),
-	}, {
-		name: "ready",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady()
-			s.MarkPullSubscriptionReady()
-			s.MarkNotificationReady("notificationID")
-			return s
-		}(),
-		want: true,
-	}}
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
+	},
+		{
+			name: "the status of pullsubscription is unknown",
+			s: func() *StorageStatus {
+				s := &StorageStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
+				s.MarkNotificationReady("notificationID")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionUnknown,
+			want:                false,
+		}, {
+			name: "notification not ready",
+			s: func() *StorageStatus {
+				s := &StorageStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkPullSubscriptionReady()
+				s.MarkNotificationNotReady("NotReady", "notification not ready")
+				return s
+			}(),
+		}, {
+			name: "ready",
+			s: func() *StorageStatus {
+				s := &StorageStatus{}
+				s.InitializeConditions()
+				s.MarkTopicReady()
+				s.MarkPullSubscriptionReady()
+				s.MarkNotificationReady("notificationID")
+				return s
+			}(),
+			wantConditionStatus: corev1.ConditionTrue,
+			want:                true,
+		}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.wantConditionStatus != "" {
+				gotConditionStatus := test.s.GetTopLevelCondition().Status
+				if gotConditionStatus != test.wantConditionStatus {
+					t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+				}
+			}
 			got := test.s.IsReady()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("%s: unexpected condition (-want, +got) = %v", test.name, diff)
+			if got != test.want {
+				t.Errorf("unexpected readiness: want %v, got %v", test.want, got)
 			}
 		})
 	}

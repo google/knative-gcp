@@ -66,11 +66,13 @@ const (
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI  = "http://" + sinkDNS + "/"
 
-	topicNotReadyMsg            = `Topic "test-auditlogssource" not ready`
-	pullSubscriptionNotReadyMsg = `PullSubscription "test-auditlogssource" not ready`
-	failedToCreateSinkMsg       = `failed to ensure creation of logging sink`
-	failedToSetPermissionsMsg   = `failed to ensure sink has pubsub.publisher permission on source topic`
-	failedToDeleteSinkMsg       = `Failed to delete Stackdriver sink`
+	topicNotReadyMsg                     = `Topic "test-auditlogssource" not ready`
+	pullSubscriptionNotReadyMsg          = `PullSubscription "test-auditlogssource" not ready`
+	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
+	failedToCreateSinkMsg                = `failed to ensure creation of logging sink`
+	failedToSetPermissionsMsg            = `failed to ensure sink has pubsub.publisher permission on source topic`
+	failedToDeleteSinkMsg                = `Failed to delete Stackdriver sink`
 )
 
 var (
@@ -134,7 +136,7 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "topic created, not ready",
+		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS),
 		},
@@ -143,7 +145,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewAuditLogsSource(sourceName, testNS,
 				WithInitAuditLogsSourceConditions,
-				WithAuditLogsSourceTopicNotReady("TopicNotReady", topicNotReadyMsg)),
+				WithAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
 		}},
 		WantCreates: []runtime.Object{
 			NewTopic(sourceName, testNS,
@@ -162,10 +164,10 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", sourceName),
 		},
 	}, {
-		Name: "topic exists, topic not ready",
+		Name: "topic exists, topic has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
@@ -180,10 +182,10 @@ func TestAllCases(t *testing.T) {
 			Object: NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
-				WithAuditLogsSourceTopicNotReady("TopicNotReady", topicNotReadyMsg)),
+				WithAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q not ready", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
@@ -202,7 +204,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
-				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose projectid`),
+				WithAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-auditlogssource" did not expose projectid`),
 			),
 		}},
 		WantEvents: []string{
@@ -226,7 +228,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
-				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" did not expose topicid`),
+				WithAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-auditlogssource" did not expose topicid`),
 			),
 		}},
 		WantEvents: []string{
@@ -250,11 +252,55 @@ func TestAllCases(t *testing.T) {
 			Object: NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
 				WithInitAuditLogsSourceConditions,
-				WithAuditLogsSourceTopicNotReady("TopicNotReady", `Topic "test-auditlogssource" mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`),
+				WithAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-auditlogssource" mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`),
 			),
 		}},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "InternalError", `Topic %q mismatch: expected "auditlogssource-test-auditlogssource-uid" got "garbaaaaage"`, sourceName),
+		},
+	}, {
+		Name: "topic exists and the status of topic is false",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicFailed(),
+				WithTopicTopicID(testTopicID),
+			),
+		},
+		Key:     testNS + "/" + sourceName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status")),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is False", sourceName),
+		},
+	}, {
+		Name: "topic exists and the status of topic is unknown",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicUnknown(),
+				WithTopicTopicID(testTopicID),
+			),
+		},
+		Key:     testNS + "/" + sourceName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicUnknown("", "")),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
@@ -278,7 +324,7 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicReady(testTopicID),
-				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+				WithAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
 		WantCreates: []runtime.Object{
@@ -299,10 +345,10 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", sourceName),
 		},
 	}, {
-		Name: "topic exists and ready, pullsubscription exists but is not ready",
+		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
 				WithAuditLogsSourceFinalizers(finalizerName),
@@ -324,13 +370,71 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceProjectID(testProject),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceTopicReady(testTopicID),
-				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionNotReady", pullSubscriptionNotReadyMsg),
+				WithAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q not ready", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", sourceName),
 		},
 	}, {
+		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionFailed()),
+		},
+		Key:     testNS + "/" + sourceName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+			),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is False", sourceName),
+		},
+	},  {
+		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
+		Objects: []runtime.Object{
+			NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+			),
+			NewTopic(sourceName, testNS,
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionUnknown()),
+		},
+		Key:     testNS + "/" + sourceName,
+		WantErr: true,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewAuditLogsSource(sourceName, testNS,
+				WithAuditLogsSourceFinalizers(finalizerName),
+				WithAuditLogsSourceSink(sinkGVK, sinkName),
+				WithAuditLogsSourceProjectID(testProject),
+				WithInitAuditLogsSourceConditions,
+				WithAuditLogsSourceTopicReady(testTopicID),
+				WithAuditLogsSourcePullSubscriptionUnknown("", ""),
+			),
+		}},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is Unknown", sourceName),
+		},
+	},{
 		Name: "logging client create fails",
 		Objects: []runtime.Object{
 			NewAuditLogsSource(sourceName, testNS,
@@ -776,8 +880,8 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
-				WithAuditLogsSourceTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
-				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
+				WithAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
+				WithAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithAuditLogsSourceDeletionTimestamp,
 			),
 		}},
@@ -834,8 +938,8 @@ func TestAllCases(t *testing.T) {
 				WithAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitAuditLogsSourceConditions,
 				WithAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
-				WithAuditLogsSourceTopicNotReady("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
-				WithAuditLogsSourcePullSubscriptionNotReady("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
+				WithAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
+				WithAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithAuditLogsSourceDeletionTimestamp,
 			),
 		}},

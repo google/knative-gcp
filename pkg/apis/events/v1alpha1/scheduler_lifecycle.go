@@ -27,6 +27,11 @@ func (s *SchedulerStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return schedulerCondSet.Manage(s).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition.
+func (s *SchedulerStatus) GetTopLevelCondition() *apis.Condition {
+	return schedulerCondSet.Manage(s).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (s *SchedulerStatus) IsReady() bool {
 	return schedulerCondSet.Manage(s).IsHappy()
@@ -37,20 +42,31 @@ func (s *SchedulerStatus) InitializeConditions() {
 	schedulerCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
-// is not ready and why
-func (s *SchedulerStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
+// is False and why.
+func (s *SchedulerStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready
+// MarkPullSubscriptionUnknown sets the condition that the underlying PullSubscription
+// is Unknown and why.
+func (s *SchedulerStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+	schedulerCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
+// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
 func (s *SchedulerStatus) MarkPullSubscriptionReady() {
 	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicNotReady sets the condition that the Topic was not created and why
-func (s *SchedulerStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the Topic was not created and why.
+func (s *SchedulerStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
+}
+
+// MarkTopicUnknown sets the condition that the status of Topic is Unknown and why.
+func (s *SchedulerStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+	schedulerCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying Topic was created

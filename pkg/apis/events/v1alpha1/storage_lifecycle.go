@@ -27,6 +27,11 @@ func (s *StorageStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return storageCondSet.Manage(s).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition.
+func (s *StorageStatus) GetTopLevelCondition() *apis.Condition {
+	return storageCondSet.Manage(s).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (s *StorageStatus) IsReady() bool {
 	return storageCondSet.Manage(s).IsHappy()
@@ -37,20 +42,31 @@ func (s *StorageStatus) InitializeConditions() {
 	storageCondSet.Manage(s).InitializeConditions()
 }
 
-// MarkPullSubscriptionNotReady sets the condition that the underlying PullSubscription
-// source is not ready and why.
-func (s *StorageStatus) MarkPullSubscriptionNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
+// is False and why.
+func (s *StorageStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-// MarkPullSubscriptionReady sets the condition that the underlying PubSub source is ready.
+// MarkPullSubscriptionUnknown sets the condition that the status of underlying PullSubscription
+// is Unknown and why.
+func (s *StorageStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+	storageCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
+}
+
+// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
 func (s *StorageStatus) MarkPullSubscriptionReady() {
 	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
-// MarkTopicNotReady sets the condition that the PubSub topic was not created and why.
-func (s *StorageStatus) MarkTopicNotReady(reason, messageFormat string, messageA ...interface{}) {
+// MarkTopicFailed sets the condition that the status of PubSub topic is False why.
+func (s *StorageStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
+}
+
+// MarkTopicUnknown sets the condition that the status of PubSub topic is Unknown why.
+func (s *StorageStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+	storageCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
