@@ -36,16 +36,16 @@ func TestPubSubStatusIsReady(t *testing.T) {
 	}{
 		{
 			name:                   "the status of pullsubscription is false",
-			pullsubscriptionStatus: FalsePullSubscriptionStatus(),
+			pullsubscriptionStatus: falsePullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionFalse,
 		}, {
 			name:                   "the status of pullsubscription is unknown",
-			pullsubscriptionStatus: UnknownPullSubscriptionStatus(),
+			pullsubscriptionStatus: unknownPullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionUnknown,
 		},
 		{
 			name:                   "ready",
-			pullsubscriptionStatus: ReadyPullSubscriptionStatus(),
+			pullsubscriptionStatus: readyPullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionTrue,
 			want:                   true,
 		}}
@@ -128,7 +128,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 	}
 }
 
-func ReadyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+func readyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
 	pss.InitializeConditions()
 	pss.MarkSink("http://test.mynamespace.svc.cluster.local")
@@ -137,14 +137,14 @@ func ReadyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	return pss
 }
 
-func FalsePullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+func falsePullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
 	pss.InitializeConditions()
 	pss.MarkNotDeployed("not deployed", "not deployed")
 	return pss
 }
 
-func UnknownPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+func unknownPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
 	pss.InitializeConditions()
 	return pss

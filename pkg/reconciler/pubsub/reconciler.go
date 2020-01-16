@@ -145,6 +145,7 @@ func propagateTopicStatus(t *pubsubv1alpha1.Topic, status *duckv1alpha1.PubSubSt
 		status.MarkTopicUnknown(cs, tc.Reason, tc.Message)
 		return fmt.Errorf("the status of Topic %q is Unknown", t.Name)
 	case tc.Status == corev1.ConditionTrue:
+		// When the status of Topic is ConditionTrue, break here since we also need to check the ProjectID and TopicID before we make the Topic to be Ready.
 		break
 	case tc.Status == corev1.ConditionFalse:
 		status.MarkTopicFailed(cs, tc.Reason, tc.Message)
