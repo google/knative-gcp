@@ -19,10 +19,10 @@ package pubsub
 import (
 	"context"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 
-	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubsourceclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
@@ -38,7 +38,7 @@ type PubSubBase struct {
 	*reconciler.Base
 
 	// For dealing with Topics and Pullsubscriptions
-	pubsubClient pubsubsourceclientset.Interface
+	pubsubClient clientset.Interface
 
 	// What do we tag receive adapter as.
 	receiveAdapterName string
@@ -52,7 +52,7 @@ type PubSubBase struct {
 // "TopicReady", and "PullSubscriptionReady"
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubsourcev1alpha1.Topic, *pubsubsourcev1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubv1alpha1.Topic, *pubsubv1alpha1.PullSubscription, error) {
 	if pubsubable == nil {
 		return nil, nil, fmt.Errorf("nil pubsubable passed in")
 	}
@@ -83,7 +83,6 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		return t, nil, err
 	}
 
-
 	// Ok, so the Topic is ready, let's reconcile PullSubscription.
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
@@ -112,7 +111,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	return t, ps, nil
 }
 
-func propagatePullSubscriptionStatus(ps *pubsubsourcev1alpha1.PullSubscription, status *v1alpha1.PubSubStatus, cs *apis.ConditionSet)  error {
+func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
 	pc := ps.Status.GetTopLevelCondition()
 	if pc == nil {
 		status.MarkPullSubscriptionNotConfigured(cs)
@@ -134,23 +133,26 @@ func propagatePullSubscriptionStatus(ps *pubsubsourcev1alpha1.PullSubscription, 
 	return nil
 }
 
-func propagateTopicStatus(t *pubsubsourcev1alpha1.Topic, status *v1alpha1.PubSubStatus, cs *apis.ConditionSet, topic string ) error {
+func propagateTopicStatus(t *pubsubv1alpha1.Topic, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, topic string) error {
 	tc := t.Status.GetTopLevelCondition()
 	if tc == nil {
 		status.MarkTopicNotConfigured(cs)
 		return fmt.Errorf("Topic %q has not yet been reconciled", t.Name)
 	}
-	if tc.Status == corev1.ConditionUnknown {
+
+	switch {
+	case tc.Status == corev1.ConditionUnknown:
 		status.MarkTopicUnknown(cs, tc.Reason, tc.Message)
 		return fmt.Errorf("the status of Topic %q is Unknown", t.Name)
-	} else if tc.Status == corev1.ConditionFalse {
+	case tc.Status == corev1.ConditionTrue:
+		break
+	case tc.Status == corev1.ConditionFalse:
 		status.MarkTopicFailed(cs, tc.Reason, tc.Message)
 		return fmt.Errorf("the status of Topic %q is False", t.Name)
-	} else if tc.Status != corev1.ConditionTrue {
+	default:
 		status.MarkTopicUnknown(cs, "TopicUnknown", "The status of Topic is invalid: %v", tc.Status)
 		return fmt.Errorf("the status of Topic %q is invalid: %v", t.Name, tc.Status)
 	}
-
 	if t.Status.ProjectID == "" {
 		status.MarkTopicFailed(cs, "TopicNotReady", "Topic %q did not expose projectid", t.Name)
 		return fmt.Errorf("Topic %q did not expose projectid", t.Name)

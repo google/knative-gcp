@@ -174,7 +174,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			}
 			got := test.s.IsReady()
 			if got != test.want {
-				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
+				t.Errorf("unexpected readiness: want %v, got %v", test.want, got)
 			}
 		})
 	}

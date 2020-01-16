@@ -44,7 +44,7 @@ func (ps *PubSubStatus) InitializeConditions() {
 }
 
 // MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
-// source is False and why.
+// is False and why.
 func (ps *PubSubStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }

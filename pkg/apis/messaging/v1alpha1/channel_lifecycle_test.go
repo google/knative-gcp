@@ -17,12 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -194,7 +194,7 @@ func TestChannelIsReady(t *testing.T) {
 			}
 			got := cs.IsReady()
 			if got != test.want {
-				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
+				t.Errorf("unexpected readiness: want %v, got %v", test.want, got)
 			}
 		})
 	}

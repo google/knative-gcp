@@ -36,16 +36,16 @@ func TestPubSubStatusIsReady(t *testing.T) {
 	}{
 		{
 			name:                   "the status of pullsubscription is false",
-			pullsubscriptionStatus: TestHelper.FalsePullSubscriptionStatus(),
+			pullsubscriptionStatus: FalsePullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionFalse,
 		}, {
 			name:                   "the status of pullsubscription is unknown",
-			pullsubscriptionStatus: TestHelper.UnknownPullSubscriptionStatus(),
+			pullsubscriptionStatus: UnknownPullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionUnknown,
 		},
 		{
 			name:                   "ready",
-			pullsubscriptionStatus: TestHelper.ReadyPullSubscriptionStatus(),
+			pullsubscriptionStatus: ReadyPullSubscriptionStatus(),
 			wantConditionStatus:    corev1.ConditionTrue,
 			want:                   true,
 		}}
@@ -59,7 +59,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 				t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
 			}
 			if got != test.want {
-				t.Errorf("unexpected readiniess: want %v, got %v", test.want, got)
+				t.Errorf("unexpected readiness: want %v, got %v", test.want, got)
 			}
 		})
 	}
@@ -126,4 +126,26 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			}
 		})
 	}
+}
+
+func ReadyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
+	pss.InitializeConditions()
+	pss.MarkSink("http://test.mynamespace.svc.cluster.local")
+	pss.MarkDeployed()
+	pss.MarkSubscribed("subID")
+	return pss
+}
+
+func FalsePullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
+	pss.InitializeConditions()
+	pss.MarkNotDeployed("not deployed", "not deployed")
+	return pss
+}
+
+func UnknownPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
+	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
+	pss.InitializeConditions()
+	return pss
 }
