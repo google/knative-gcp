@@ -426,9 +426,7 @@ function start_knative_monitoring() {
   # mentioned in
   # https://github.com/knative/serving/blob/4202efc0dc12052edc0630515b101cbf8068a609/config/monitoring/tracing/zipkin/100-zipkin.yaml#L21
   kubectl create namespace istio-system 2>/dev/null
-  echo "Installing Monitoring CRDs from $1"
-  kubectl apply --selector knative.dev/crd-install=true -f "$1" || return 1
-  echo "Installing the rest of monitoring components from $1"
+  echo "Installing Monitoring from $1"
   kubectl apply -f "$1" || return 1
   wait_until_pods_running knative-monitoring || return 1
   wait_until_pods_running istio-system || return 1
@@ -443,6 +441,29 @@ function start_release_knative_serving() {
 # Install the latest stable Knative Serving in the current cluster.
 function start_latest_knative_serving() {
   start_knative_serving "${KNATIVE_SERVING_RELEASE}"
+}
+
+# Install Knative Eventing in the current cluster.
+# Parameters: $1 - Knative Eventing manifest.
+function start_knative_eventing() {
+  header "Starting Knative Eventing"
+  subheader "Installing Knative Eventing"
+  echo "Installing Eventing CRDs from $1"
+  kubectl apply --selector knative.dev/crd-install=true -f "$1"
+  echo "Installing the rest of eventing components from $1"
+  kubectl apply -f "$1"
+  wait_until_pods_running knative-eventing || return 1
+}
+
+# Install the stable release Knative/eventing in the current cluster.
+# Parameters: $1 - Knative Eventing version number, e.g. 0.6.0.
+function start_release_knative_eventing() {
+  start_knative_eventing "https://storage.googleapis.com/knative-releases/eventing/previous/v$1/release.yaml"
+}
+
+# Install the latest stable Knative Eventing in the current cluster.
+function start_latest_knative_eventing() {
+  start_knative_eventing "${KNATIVE_EVENTING_RELEASE}"
 }
 
 # Run a go tool, installing it first if necessary.
@@ -617,5 +638,5 @@ readonly REPO_NAME_FORMATTED="Knative $(capitalize ${REPO_NAME//-/ })"
 
 # Public latest nightly or release yaml files.
 readonly KNATIVE_SERVING_RELEASE="$(get_latest_knative_yaml_source "serving" "serving")"
-readonly KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "release")"
+readonly KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "eventing")"
 readonly KNATIVE_MONITORING_RELEASE="$(get_latest_knative_yaml_source "serving" "monitoring")"
