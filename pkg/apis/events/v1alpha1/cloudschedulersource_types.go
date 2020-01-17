@@ -20,11 +20,13 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -55,11 +57,10 @@ func CloudSchedulerSourceEventSource(parent, scheduler string) string {
 }
 
 var (
-	_ apis.Validatable             = (*CloudSchedulerSource)(nil)
-	_ apis.Defaultable             = (*CloudSchedulerSource)(nil)
-	_ runtime.Object               = (*CloudSchedulerSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
 )
 
 // CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource

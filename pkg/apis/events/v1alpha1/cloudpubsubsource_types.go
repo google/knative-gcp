@@ -21,11 +21,14 @@ import (
 	"time"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/webhook/resourcesemantics"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -42,11 +45,12 @@ type CloudPubSubSource struct {
 	Status CloudPubSubSourceStatus `json:"status,omitempty"`
 }
 
-// Check that CloudPubSubSource can be validated and can be defaulted.
-var _ runtime.Object = (*CloudPubSubSource)(nil)
-
-// Check that CloudPubSubSource implements the Conditions duck type.
-var _ = duck.VerifyType(&CloudPubSubSource{}, &duckv1.Conditions{})
+var (
+	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
+)
 
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
 type CloudPubSubSourceSpec struct {

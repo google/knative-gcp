@@ -43,9 +43,10 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	messagingv1alpha1.SchemeGroupVersion.WithKind("Channel"): &messagingv1alpha1.Channel{},
 
 	// For group events.cloud.google.com.
-	eventsv1alpha1.SchemeGroupVersion.WithKind("Storage"):   &eventsv1alpha1.Storage{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("Scheduler"): &eventsv1alpha1.Scheduler{},
-	eventsv1alpha1.SchemeGroupVersion.WithKind("PubSub"):    &eventsv1alpha1.PubSub{},
+	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource"):   &eventsv1alpha1.CloudStorageSource{},
+	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource"): &eventsv1alpha1.CloudSchedulerSource{},
+	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
+	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
 
 	// For group pubsub.cloud.google.com.
 	pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},

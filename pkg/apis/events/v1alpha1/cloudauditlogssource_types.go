@@ -18,13 +18,15 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/webhook/resourcesemantics"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/duck"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // +genclient
@@ -40,10 +42,10 @@ type CloudAuditLogsSource struct {
 }
 
 var (
-	_ apis.Defaultable   = (*CloudAuditLogsSource)(nil)
-	_ runtime.Object     = (*CloudAuditLogsSource)(nil)
-	_ kmeta.OwnerRefable = (*CloudAuditLogsSource)(nil)
-	_ duck.PubSubable    = (*CloudAuditLogsSource)(nil)
+	_ kmeta.OwnerRefable           = (*CloudAuditLogsSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
+	_                              = duck.VerifyType(&CloudAuditLogsSource{}, &duckv1.Conditions{})
 )
 
 const (
