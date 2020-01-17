@@ -27,6 +27,11 @@ func (ts *TopicStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return topicCondSet.Manage(ts).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level condition
+func (ts *TopicStatus) GetTopLevelCondition() *apis.Condition {
+	return topicCondSet.Manage(ts).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (ts *TopicStatus) IsReady() bool {
 	return topicCondSet.Manage(ts).IsHappy()

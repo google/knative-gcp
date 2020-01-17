@@ -53,7 +53,7 @@ func TestConvertPubSub(t *testing.T) {
 			})
 		},
 	}, {
-		name: "invalid upper case attributes",
+		name: "upper case attributes",
 		message: &cepubsub.Message{
 			Data: []byte("test data"),
 			Attributes: map[string]string{
@@ -63,7 +63,10 @@ func TestConvertPubSub(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{})
+			return pubSubCloudEvent(map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+			})
 		},
 	}, {
 		name: "only setting valid alphanumeric attribute",

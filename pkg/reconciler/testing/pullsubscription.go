@@ -193,6 +193,21 @@ func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
 	}
 }
 
+func WithPullSubscriptionFailed() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.InitializeConditions()
+		s.Status.MarkNoSink("InvalidSink",
+			`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`)
+
+	}
+}
+
+func WithPullSubscriptionUnknown() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.InitializeConditions()
+	}
+}
+
 func WithPullSubscriptionJobFailure(subscriptionID, reason, message string) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.SubscriptionID = subscriptionID

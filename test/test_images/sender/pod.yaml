@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sender
+spec:
+  containers:
+    - name: sender
+      image: github.com/google/knative-gcp/test/test_images/sender
+

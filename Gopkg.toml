@@ -2,6 +2,13 @@
 # for detailed Gopkg.toml documentation.
 
 required = [
+  "knative.dev/test-infra/scripts",
+  "knative.dev/test-infra/tools/dep-collector",
+  # for integration tests
+  "knative.dev/eventing/test/test_images/logevents",
+  "knative.dev/eventing/test/test_images/sendevents",
+  "knative.dev/eventing/test/test_images/transformevents",
+
   "k8s.io/apimachinery/pkg/util/sets/types",
   "k8s.io/code-generator/cmd/deepcopy-gen",
   "k8s.io/code-generator/cmd/defaulter-gen",
@@ -10,8 +17,6 @@ required = [
   "k8s.io/code-generator/cmd/informer-gen",
   "knative.dev/pkg/codegen/cmd/injection-gen",
   "knative.dev/pkg/testutils/clustermanager/perf-tests",
-  "knative.dev/test-infra/scripts",
-  "knative.dev/test-infra/tools/dep-collector",
   "golang.org/x/net/http2/h2c",
   "go.opencensus.io/metric/metricexport"
 ]
@@ -20,9 +25,10 @@ required = [
   name = "gopkg.in/yaml.v2"
   version = "v2.2.1"
 
+# Our master branch tracks knative/pkg master or a release.
 [[override]]
   name = "knative.dev/pkg"
-  branch = "master"
+  branch = "release-0.12"
 
 # This is a preemptive override.
 [[override]]
@@ -40,30 +46,27 @@ required = [
 
 [[override]]
   name = "k8s.io/api"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
+
+[[override]]
+  name = "k8s.io/apiextensions-apiserver"
+  version = "kubernetes-1.16.4"
 
 [[override]]
   name = "k8s.io/code-generator"
-  version = "kubernetes-1.15.3"
+  version = "kubernetes-1.16.4"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.15.3"
-
-# manifestival is a testing only dep.
-[[constraint]]
-  name = "github.com/jcrossley3/manifestival"
-  # HEAD as of 2019-08-01
-  revision = "dbd2aec45641ad6a8f9834242f6ae5616cdb7bb1"
-  source = "github.com/n3wscott/manifestival"
+  version = "kubernetes-1.16.4"
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  version = "0.10.2"
+  version = "0.11.0"
 
 [prune]
   go-tests = true
@@ -77,6 +80,10 @@ required = [
 
 [[prune.project]]
   name = "knative.dev/test-infra"
+  non-go = false
+
+[[prune.project]]
+  name = "knative.dev/eventing"
   non-go = false
 
 [[prune.project]]

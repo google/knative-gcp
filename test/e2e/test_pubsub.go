@@ -24,120 +24,78 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
-
 	"cloud.google.com/go/pubsub"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/test/e2e/metrics"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // SmokePubSubTestImpl tests we can create a pubsub to ready state.
 func SmokePubSubTestImpl(t *testing.T) {
-	topic, deleteTopic := makeTopicOrDie(t)
+	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-pubsub"
+	svcName := "event-display"
 
-	client := Setup(t, true)
-	defer TearDown(client)
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
 
-	installer := NewInstaller(client.Dynamic, map[string]string{
-		"namespace": client.Namespace,
-		"topic":     topic,
-		"pubsub":    psName,
-	}, EndToEndConfigYaml([]string{"pubsub_test", "istio", "event_display"})...)
+	// Create the PubSub source.
+	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
+		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, svcName),
+		kngcptesting.WithPubSubTopic(topic))
+	client.CreatePubSubOrFail(eventsPubsub)
 
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, schema.GroupVersionResource{
-		Group:    "events.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pubsubs",
-	}); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
 
 // PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
 // for StackDriver metrics.
-func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMetrics bool) {
-	topicName, deleteTopic := makeTopicOrDie(t)
+func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
+	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := Setup(t, true)
+	client := lib.Setup(t, true)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-	defer TearDown(client)
+	defer lib.TearDown(client)
 
-	config := map[string]string{
-		"namespace":  client.Namespace,
-		"topic":      topicName,
-		"pubsub":     psName,
-		"targetName": targetName,
-		"targetUID":  uuid.New().String(),
-	}
-	for k, v := range packages {
-		config[k] = v
-	}
+	// Create a target Job to receive the events.
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
-	installer := NewInstaller(client.Dynamic, config,
-		EndToEndConfigYaml([]string{"pubsub_target", "istio"})...)
+	// Create the PubSub source.
+	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
+		kngcptesting.WithPubSubSink(lib.ServiceGVK, targetName),
+		kngcptesting.WithPubSubTopic(topicName))
+	client.CreatePubSubOrFail(eventsPubsub)
 
-	// Create the resources for the test.
-	if err := installer.Do("create"); err != nil {
-		t.Errorf("failed to create, %s", err)
-		return
-	}
-
-	// Delete deferred.
-	defer func() {
-		if err := installer.Do("delete"); err != nil {
-			t.Errorf("failed to create, %s", err)
-		}
-		// Just chill for tick.
-		time.Sleep(10 * time.Second)
-	}()
-
-	gvr := schema.GroupVersionResource{
-		Group:    "events.cloud.google.com",
-		Version:  "v1alpha1",
-		Resource: "pubsubs",
-	}
-
-	jobGVR := schema.GroupVersionResource{
-		Group:    "batch",
-		Version:  "v1",
-		Resource: "jobs",
-	}
-
-	if err := client.WaitForResourceReady(client.Namespace, psName, gvr); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
 		t.Error(err)
 	}
 
-	topic := getTopic(t, topicName)
+	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
 		Attributes: map[string]string{
@@ -157,19 +115,19 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 	t.Logf("Last term message => %s", msg)
 
 	if msg != "" {
-		out := &TargetOutput{}
+		out := &lib.TargetOutput{}
 		if err := json.Unmarshal([]byte(msg), out); err != nil {
 			t.Error(err)
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, gvr); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.PubsubTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)
 			}
 			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, jobGVR); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("job: %s\n", logs)
@@ -185,11 +143,11 @@ func PubSubWithTargetTestImpl(t *testing.T, packages map[string]string, assertMe
 		time.Sleep(sleepTime)
 
 		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(ProwProjectKey)
+		projectID := os.Getenv(lib.ProwProjectKey)
 		f := map[string]interface{}{
-			"metric.type":                 eventCountMetricType,
-			"resource.type":               globalMetricResourceType,
-			"metric.label.resource_group": pubsubResourceGroup,
+			"metric.type":                 lib.EventCountMetricType,
+			"resource.type":               lib.GlobalMetricResourceType,
+			"metric.label.resource_group": lib.PubsubResourceGroup,
 			"metric.label.event_type":     v1alpha1.PubSubPublish,
 			"metric.label.event_source":   v1alpha1.PubSubEventSource(projectID, topicName),
 			"metric.label.namespace_name": client.Namespace,

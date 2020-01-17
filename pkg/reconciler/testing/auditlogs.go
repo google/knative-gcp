@@ -48,9 +48,15 @@ func WithInitAuditLogsSourceConditions(s *v1alpha1.AuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
-func WithAuditLogsSourceTopicNotReady(reason, message string) AuditLogsSourceOption {
+func WithAuditLogsSourceTopicFailed(reason, message string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
-		s.Status.MarkTopicNotReady(reason, message)
+		s.Status.MarkTopicFailed(reason, message)
+	}
+}
+
+func WithAuditLogsSourceTopicUnknown(reason, message string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
@@ -61,9 +67,15 @@ func WithAuditLogsSourceTopicReady(topicID string) AuditLogsSourceOption {
 	}
 }
 
-func WithAuditLogsSourcePullSubscriptionNotReady(reason, message string) AuditLogsSourceOption {
+func WithAuditLogsSourcePullSubscriptionFailed(reason, message string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
-		s.Status.MarkPullSubscriptionNotReady(reason, message)
+		s.Status.MarkPullSubscriptionFailed(reason, message)
+	}
+}
+
+func WithAuditLogsSourcePullSubscriptionUnknown(reason, message string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 
@@ -112,6 +124,18 @@ func WithAuditLogsSourceProjectID(projectID string) AuditLogsSourceOption {
 func WithAuditLogsSourceSinkID(sinkID string) AuditLogsSourceOption {
 	return func(s *v1alpha1.AuditLogsSource) {
 		s.Status.StackdriverSink = sinkID
+	}
+}
+
+func WithAuditLogsSourceProject(project string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Spec.Project = project
+	}
+}
+
+func WithAuditLogsSourceResourceName(resourceName string) AuditLogsSourceOption {
+	return func(s *v1alpha1.AuditLogsSource) {
+		s.Spec.ResourceName = resourceName
 	}
 }
 

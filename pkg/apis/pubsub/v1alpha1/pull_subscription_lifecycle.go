@@ -25,6 +25,11 @@ func (s *PullSubscriptionStatus) GetCondition(t apis.ConditionType) *apis.Condit
 	return pullSubscriptionCondSet.Manage(s).GetCondition(t)
 }
 
+// GetTopLevelCondition returns the top level Condition.
+func (s *PullSubscriptionStatus) GetTopLevelCondition() *apis.Condition {
+	return pullSubscriptionCondSet.Manage(s).GetTopLevelCondition()
+}
+
 // IsReady returns true if the resource is ready overall.
 func (s *PullSubscriptionStatus) IsReady() bool {
 	return pullSubscriptionCondSet.Manage(s).IsHappy()
