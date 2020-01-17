@@ -23,9 +23,13 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
+const (
+	JobPrefix = "jobs/cre-scheduler"
+)
+
 // GenerateJobName generates a job name like this: projects/PROJECT_ID/locations/LOCATION_ID/jobs/JOB_ID.
 func GenerateJobName(scheduler *v1alpha1.Scheduler) string {
-	return fmt.Sprintf("projects/%s/locations/%s/jobs/cre-scheduler-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, string(scheduler.UID))
+	return fmt.Sprintf("projects/%s/locations/%s/%s-%s", scheduler.Status.ProjectID, scheduler.Spec.Location, JobPrefix, string(scheduler.UID))
 }
 
 // ExtractParentName extracts the parent from the job name.

@@ -223,3 +223,17 @@ func TestAuditLogsSource(t *testing.T) {
 	defer cancel()
 	AuditLogsSourceWithTestImpl(t)
 }
+
+// TestSmokeSchedulerSetup tests if we can create a Scheduler resource and get it to a ready state.
+func TestSmokeSchedulerSetup(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeSchedulerSetup(t)
+}
+
+// TestSchedulerWithTargetTestImpl tests if we can receive an event on a bespoke sink from a Scheduler source.
+func TestSchedulerWithTargetTestImpl(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SchedulerWithTargetTestImpl(t)
+}
