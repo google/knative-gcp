@@ -23,14 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestSchedulerGetGroupVersionKind(t *testing.T) {
+func TestCloudSchedulerSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
-		Kind:    "Scheduler",
+		Kind:    "CloudSchedulerSource",
 	}
 
-	s := &Scheduler{}
+	s := &CloudSchedulerSource{}
 	got := s.GetGroupVersionKind()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -38,10 +38,10 @@ func TestSchedulerGetGroupVersionKind(t *testing.T) {
 	}
 }
 
-func TestSchedulerEventSource(t *testing.T) {
+func TestCloudSchedulerSourceEventSource(t *testing.T) {
 	want := "//cloudscheduler.googleapis.com/PARENT/schedulers/SCHEDULER"
 
-	got := SchedulerEventSource("PARENT", "SCHEDULER")
+	got := CloudSchedulerSourceEventSource("PARENT", "SCHEDULER")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

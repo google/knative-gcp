@@ -23,70 +23,70 @@ import (
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *SchedulerStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+func (s *CloudSchedulerSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return schedulerCondSet.Manage(s).GetCondition(t)
 }
 
 // GetTopLevelCondition returns the top level condition.
-func (s *SchedulerStatus) GetTopLevelCondition() *apis.Condition {
+func (s *CloudSchedulerSourceStatus) GetTopLevelCondition() *apis.Condition {
 	return schedulerCondSet.Manage(s).GetTopLevelCondition()
 }
 
 // IsReady returns true if the resource is ready overall.
-func (s *SchedulerStatus) IsReady() bool {
+func (s *CloudSchedulerSourceStatus) IsReady() bool {
 	return schedulerCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (s *SchedulerStatus) InitializeConditions() {
+func (s *CloudSchedulerSourceStatus) InitializeConditions() {
 	schedulerCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
 // is False and why.
-func (s *SchedulerStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudSchedulerSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionUnknown sets the condition that the underlying PullSubscription
 // is Unknown and why.
-func (s *SchedulerStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudSchedulerSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
-func (s *SchedulerStatus) MarkPullSubscriptionReady() {
+func (s *CloudSchedulerSourceStatus) MarkPullSubscriptionReady() {
 	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkTopicFailed sets the condition that the Topic was not created and why.
-func (s *SchedulerStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudSchedulerSourceStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicUnknown sets the condition that the status of Topic is Unknown and why.
-func (s *SchedulerStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudSchedulerSourceStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying Topic was created
 // successfully and sets the Status.TopicID to the specified topic
 // and Status.ProjectID to the specified project.
-func (s *SchedulerStatus) MarkTopicReady(topicID, projectID string) {
+func (s *CloudSchedulerSourceStatus) MarkTopicReady(topicID, projectID string) {
 	schedulerCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 	s.TopicID = topicID
 	s.ProjectID = projectID
 }
 
-// MarkJobNotReady sets the condition that the Scheduler Job has not been
+// MarkJobNotReady sets the condition that the CloudSchedulerSource Job has not been
 // successfully created.
-func (s *SchedulerStatus) MarkJobNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudSchedulerSourceStatus) MarkJobNotReady(reason, messageFormat string, messageA ...interface{}) {
 	schedulerCondSet.Manage(s).MarkFalse(JobReady, reason, messageFormat, messageA...)
 }
 
-// MarkJobReady sets the condition for Scheduler Job as Read and sets the
+// MarkJobReady sets the condition for CloudSchedulerSource Job as Read and sets the
 // Status.JobName to jobName
-func (s *SchedulerStatus) MarkJobReady(jobName string) {
+func (s *CloudSchedulerSourceStatus) MarkJobReady(jobName string) {
 	schedulerCondSet.Manage(s).MarkTrue(JobReady)
 	s.JobName = jobName
 }

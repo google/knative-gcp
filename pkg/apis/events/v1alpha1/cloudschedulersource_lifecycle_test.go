@@ -26,20 +26,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestSchedulerStatusIsReady(t *testing.T) {
+func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
-		s                   *SchedulerStatus
+		s                   *CloudSchedulerSourceStatus
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{{
 		name: "uninitialized",
-		s:    &SchedulerStatus{},
+		s:    &CloudSchedulerSourceStatus{},
 		want: false,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
@@ -47,8 +47,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is false",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkJobReady("jobName")
@@ -59,8 +59,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkJobReady("jobName")
@@ -72,8 +72,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 	},
 		{
 			name: "the status pullsubscription is false",
-			s: func() *SchedulerStatus {
-				s := &SchedulerStatus{}
+			s: func() *CloudSchedulerSourceStatus {
+				s := &CloudSchedulerSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady("topicID", "projectID")
 				s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
@@ -84,8 +84,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 			want:                false,
 		}, {
 			name: "the status pullsubscription is unknown",
-			s: func() *SchedulerStatus {
-				s := &SchedulerStatus{}
+			s: func() *CloudSchedulerSourceStatus {
+				s := &CloudSchedulerSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady("topicID", "projectID")
 				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
@@ -97,8 +97,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 		},
 		{
 			name: "job not ready",
-			s: func() *SchedulerStatus {
-				s := &SchedulerStatus{}
+			s: func() *CloudSchedulerSourceStatus {
+				s := &CloudSchedulerSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady("topicID", "projectID")
 				s.MarkPullSubscriptionReady()
@@ -107,8 +107,8 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 			}(),
 		}, {
 			name: "ready",
-			s: func() *SchedulerStatus {
-				s := &SchedulerStatus{}
+			s: func() *CloudSchedulerSourceStatus {
+				s := &CloudSchedulerSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady("topicID", "projectID")
 				s.MarkPullSubscriptionReady()
@@ -134,33 +134,33 @@ func TestSchedulerStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestSchedulerStatusGetCondition(t *testing.T) {
+func TestCloudSchedulerSourceStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *SchedulerStatus
+		s         *CloudSchedulerSourceStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &SchedulerStatus{},
-		condQuery: SchedulerConditionReady,
+		s:         &CloudSchedulerSourceStatus{},
+		condQuery: CloudSchedulerSourceConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: SchedulerConditionReady,
+		condQuery: CloudSchedulerSourceConditionReady,
 		want: &apis.Condition{
-			Type:   SchedulerConditionReady,
+			Type:   CloudSchedulerSourceConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			s.MarkJobNotReady("NotReady", "test message")
 			return s
@@ -174,8 +174,8 @@ func TestSchedulerStatusGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "ready",
-		s: func() *SchedulerStatus {
-			s := &SchedulerStatus{}
+		s: func() *CloudSchedulerSourceStatus {
+			s := &CloudSchedulerSourceStatus{}
 			s.InitializeConditions()
 			s.MarkJobReady("jobName")
 			return s

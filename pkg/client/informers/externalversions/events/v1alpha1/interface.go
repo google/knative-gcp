@@ -28,8 +28,8 @@ type Interface interface {
 	CloudAuditLogsSources() CloudAuditLogsSourceInformer
 	// PubSubs returns a PubSubInformer.
 	PubSubs() PubSubInformer
-	// Schedulers returns a SchedulerInformer.
-	Schedulers() SchedulerInformer
+	// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+	CloudSchedulerSources() CloudSchedulerSourceInformer
 	// CloudStorageSources returns a CloudStorageSourceInformer.
 	CloudStorageSources() CloudStorageSourceInformer
 }
@@ -55,8 +55,8 @@ func (v *version) PubSubs() PubSubInformer {
 	return &pubSubInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Schedulers returns a SchedulerInformer.
-func (v *version) Schedulers() SchedulerInformer {
+// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+func (v *version) CloudSchedulerSources() CloudSchedulerSourceInformer {
 	return &schedulerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 

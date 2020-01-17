@@ -34,7 +34,7 @@ import (
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "Scheduler"
+	reconcilerName = "CloudSchedulerSource"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
@@ -66,12 +66,12 @@ func NewController(
 	schedulerInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Scheduler")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Scheduler")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

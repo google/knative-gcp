@@ -60,7 +60,7 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case v1alpha1.SchemeGroupVersion.WithResource("pubsubs"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().PubSubs().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("schedulers"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().Schedulers().Informer()}, nil
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudSchedulerSources().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("storages"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Events().V1alpha1().CloudStorageSources().Informer()}, nil
 

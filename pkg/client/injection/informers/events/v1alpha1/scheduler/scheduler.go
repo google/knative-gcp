@@ -37,16 +37,16 @@ type Key struct{}
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := factory.Get(ctx)
-	inf := f.Events().V1alpha1().Schedulers()
+	inf := f.Events().V1alpha1().CloudSchedulerSources()
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context) v1alpha1.SchedulerInformer {
+func Get(ctx context.Context) v1alpha1.CloudSchedulerSourceInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1.SchedulerInformer from context.")
+			"Unable to fetch github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1.CloudSchedulerSourceInformer from context.")
 	}
-	return untyped.(v1alpha1.SchedulerInformer)
+	return untyped.(v1alpha1.CloudSchedulerSourceInformer)
 }

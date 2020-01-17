@@ -30,7 +30,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-func TestConvertScheduler(t *testing.T) {
+func TestConvertCloudSchedulerSource(t *testing.T) {
 
 	tests := []struct {
 		name        string
@@ -154,7 +154,7 @@ func TestConvertScheduler(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-				t.Errorf("converters.convertScheduler got unexpeceted cloudevents.Event (-want +got) %s", diff)
+				t.Errorf("converters.convertCloudSchedulerSource got unexpeceted cloudevents.Event (-want +got) %s", diff)
 			}
 		})
 	}
@@ -164,14 +164,14 @@ func schedulerCloudEvent(extensions map[string]string, source, subject string) *
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetDataContentType("application/octet-stream")
-	e.SetType(v1alpha1.SchedulerExecute)
+	e.SetType(v1alpha1.CloudSchedulerSourceExecute)
 	e.SetExtension("knativecemode", string(Binary))
 	e.SetSource(source)
 	e.SetSubject(subject)
 	e.Data = []byte("test data")
 	e.DataEncoded = true
 	for k, v := range extensions {
-		if k != v1alpha1.SchedulerJobName {
+		if k != v1alpha1.CloudSchedulerSourceJobName {
 			e.SetExtension(k, v)
 		}
 	}

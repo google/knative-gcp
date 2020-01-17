@@ -28,31 +28,31 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeSchedulers implements SchedulerInterface
-type FakeSchedulers struct {
+// FakeCloudSchedulerSources implements CloudSchedulerSourceInterface
+type FakeCloudSchedulerSources struct {
 	Fake *FakeEventsV1alpha1
 	ns   string
 }
 
 var schedulersResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "schedulers"}
 
-var schedulersKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "Scheduler"}
+var schedulersKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "CloudSchedulerSource"}
 
 // Get takes name of the scheduler, and returns the corresponding scheduler object, and an error if there is any.
-func (c *FakeSchedulers) Get(name string, options v1.GetOptions) (result *v1alpha1.Scheduler, err error) {
+func (c *FakeCloudSchedulerSources) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(schedulersResource, c.ns, name), &v1alpha1.Scheduler{})
+		Invokes(testing.NewGetAction(schedulersResource, c.ns, name), &v1alpha1.CloudSchedulerSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.Scheduler), err
+	return obj.(*v1alpha1.CloudSchedulerSource), err
 }
 
-// List takes label and field selectors, and returns the list of Schedulers that match those selectors.
-func (c *FakeSchedulers) List(opts v1.ListOptions) (result *v1alpha1.SchedulerList, err error) {
+// List takes label and field selectors, and returns the list of CloudSchedulerSources that match those selectors.
+func (c *FakeCloudSchedulerSources) List(opts v1.ListOptions) (result *v1alpha1.CloudSchedulerSourceList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(schedulersResource, schedulersKind, c.ns, opts), &v1alpha1.SchedulerList{})
+		Invokes(testing.NewListAction(schedulersResource, schedulersKind, c.ns, opts), &v1alpha1.CloudSchedulerSourceList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeSchedulers) List(opts v1.ListOptions) (result *v1alpha1.SchedulerLi
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.SchedulerList{ListMeta: obj.(*v1alpha1.SchedulerList).ListMeta}
-	for _, item := range obj.(*v1alpha1.SchedulerList).Items {
+	list := &v1alpha1.CloudSchedulerSourceList{ListMeta: obj.(*v1alpha1.CloudSchedulerSourceList).ListMeta}
+	for _, item := range obj.(*v1alpha1.CloudSchedulerSourceList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -72,69 +72,69 @@ func (c *FakeSchedulers) List(opts v1.ListOptions) (result *v1alpha1.SchedulerLi
 }
 
 // Watch returns a watch.Interface that watches the requested schedulers.
-func (c *FakeSchedulers) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudSchedulerSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(schedulersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a scheduler and creates it.  Returns the server's representation of the scheduler, and an error, if there is any.
-func (c *FakeSchedulers) Create(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Scheduler, err error) {
+func (c *FakeCloudSchedulerSources) Create(scheduler *v1alpha1.CloudSchedulerSource) (result *v1alpha1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(schedulersResource, c.ns, scheduler), &v1alpha1.Scheduler{})
+		Invokes(testing.NewCreateAction(schedulersResource, c.ns, scheduler), &v1alpha1.CloudSchedulerSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.Scheduler), err
+	return obj.(*v1alpha1.CloudSchedulerSource), err
 }
 
 // Update takes the representation of a scheduler and updates it. Returns the server's representation of the scheduler, and an error, if there is any.
-func (c *FakeSchedulers) Update(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Scheduler, err error) {
+func (c *FakeCloudSchedulerSources) Update(scheduler *v1alpha1.CloudSchedulerSource) (result *v1alpha1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(schedulersResource, c.ns, scheduler), &v1alpha1.Scheduler{})
+		Invokes(testing.NewUpdateAction(schedulersResource, c.ns, scheduler), &v1alpha1.CloudSchedulerSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.Scheduler), err
+	return obj.(*v1alpha1.CloudSchedulerSource), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSchedulers) UpdateStatus(scheduler *v1alpha1.Scheduler) (*v1alpha1.Scheduler, error) {
+func (c *FakeCloudSchedulerSources) UpdateStatus(scheduler *v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(schedulersResource, "status", c.ns, scheduler), &v1alpha1.Scheduler{})
+		Invokes(testing.NewUpdateSubresourceAction(schedulersResource, "status", c.ns, scheduler), &v1alpha1.CloudSchedulerSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.Scheduler), err
+	return obj.(*v1alpha1.CloudSchedulerSource), err
 }
 
 // Delete takes name of the scheduler and deletes it. Returns an error if one occurs.
-func (c *FakeSchedulers) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudSchedulerSources) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(schedulersResource, c.ns, name), &v1alpha1.Scheduler{})
+		Invokes(testing.NewDeleteAction(schedulersResource, c.ns, name), &v1alpha1.CloudSchedulerSource{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeSchedulers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *FakeCloudSchedulerSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(schedulersResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &v1alpha1.SchedulerList{})
+	_, err := c.Fake.Invokes(action, &v1alpha1.CloudSchedulerSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched scheduler.
-func (c *FakeSchedulers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Scheduler, err error) {
+func (c *FakeCloudSchedulerSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudSchedulerSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(schedulersResource, c.ns, name, pt, data, subresources...), &v1alpha1.Scheduler{})
+		Invokes(testing.NewPatchSubresourceAction(schedulersResource, c.ns, name, pt, data, subresources...), &v1alpha1.CloudSchedulerSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.Scheduler), err
+	return obj.(*v1alpha1.CloudSchedulerSource), err
 }

@@ -25,15 +25,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestScheduler_SetDefaults(t *testing.T) {
+func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 	testCases := map[string]struct {
-		orig     *Scheduler
-		expected *Scheduler
+		orig     *CloudSchedulerSource
+		expected *CloudSchedulerSource
 	}{
 		"missing defaults": {
-			orig: &Scheduler{},
-			expected: &Scheduler{
-				Spec: SchedulerSpec{
+			orig: &CloudSchedulerSource{},
+			expected: &CloudSchedulerSource{
+				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{
@@ -46,8 +46,8 @@ func TestScheduler_SetDefaults(t *testing.T) {
 			},
 		},
 		"defaults present": {
-			orig: &Scheduler{
-				Spec: SchedulerSpec{
+			orig: &CloudSchedulerSource{
+				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{
@@ -58,8 +58,8 @@ func TestScheduler_SetDefaults(t *testing.T) {
 					},
 				},
 			},
-			expected: &Scheduler{
-				Spec: SchedulerSpec{
+			expected: &CloudSchedulerSource{
+				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{

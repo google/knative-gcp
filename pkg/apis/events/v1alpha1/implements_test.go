@@ -29,8 +29,8 @@ func TestTypesImplements(t *testing.T) {
 		{instance: &CloudAuditLogsSource{}, iface: &v1beta1.Conditions{}},
 		{instance: &CloudStorageSource{}, iface: &v1beta1.Source{}},
 		{instance: &CloudStorageSource{}, iface: &v1beta1.Conditions{}},
-		{instance: &Scheduler{}, iface: &v1beta1.Source{}},
-		{instance: &Scheduler{}, iface: &v1beta1.Conditions{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1beta1.Source{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1beta1.Conditions{}},
 		{instance: &PubSub{}, iface: &v1beta1.Source{}},
 		{instance: &PubSub{}, iface: &v1beta1.Conditions{}},
 	}

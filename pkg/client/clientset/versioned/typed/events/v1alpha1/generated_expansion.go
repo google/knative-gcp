@@ -22,6 +22,6 @@ type CloudAuditLogsSourceExpansion interface{}
 
 type PubSubExpansion interface{}
 
-type SchedulerExpansion interface{}
+type CloudSchedulerSourceExpansion interface{}
 
 type CloudStorageSourceExpansion interface{}

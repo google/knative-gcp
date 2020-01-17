@@ -32,38 +32,38 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Scheduler is a specification for a Scheduler resource
-type Scheduler struct {
+// CloudSchedulerSource is a specification for a CloudSchedulerSource resource
+type CloudSchedulerSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SchedulerSpec   `json:"spec"`
-	Status SchedulerStatus `json:"status"`
+	Spec   CloudSchedulerSourceSpec   `json:"spec"`
+	Status CloudSchedulerSourceStatus `json:"status"`
 }
 
 const (
-	// CloudEvent types used by Scheduler.
-	SchedulerExecute = "com.google.cloud.scheduler.job.execute"
-	// SchedulerJobName is the Pub/Sub message attribute key with the Scheduler's job name.
-	SchedulerJobName = "jobName"
-	// SchedulerName is the Pub/Sub message attribute key with the Scheduler's name.
-	SchedulerName = "schedulerName"
+	// CloudEvent types used by CloudSchedulerSource.
+	CloudSchedulerSourceExecute = "com.google.cloud.scheduler.job.execute"
+	// CloudSchedulerSourceJobName is the Pub/Sub message attribute key with the CloudSchedulerSource's job name.
+	CloudSchedulerSourceJobName = "jobName"
+	// CloudSchedulerSourceName is the Pub/Sub message attribute key with the CloudSchedulerSource's name.
+	CloudSchedulerSourceName = "schedulerName"
 )
 
-func SchedulerEventSource(parent, scheduler string) string {
+func CloudSchedulerSourceEventSource(parent, scheduler string) string {
 	return fmt.Sprintf("//cloudscheduler.googleapis.com/%s/schedulers/%s", parent, scheduler)
 }
 
 var (
-	_ apis.Validatable             = (*Scheduler)(nil)
-	_ apis.Defaultable             = (*Scheduler)(nil)
-	_ runtime.Object               = (*Scheduler)(nil)
-	_ kmeta.OwnerRefable           = (*Scheduler)(nil)
-	_ resourcesemantics.GenericCRD = (*Scheduler)(nil)
+	_ apis.Validatable             = (*CloudSchedulerSource)(nil)
+	_ apis.Defaultable             = (*CloudSchedulerSource)(nil)
+	_ runtime.Object               = (*CloudSchedulerSource)(nil)
+	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
 )
 
-// SchedulerSpec is the spec for a Scheduler resource
-type SchedulerSpec struct {
+// CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource
+type CloudSchedulerSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
@@ -80,10 +80,10 @@ type SchedulerSpec struct {
 }
 
 const (
-	// SchedulerConditionReady has status True when Scheduler is ready to send events.
-	SchedulerConditionReady = apis.ConditionReady
+	// CloudSchedulerSourceConditionReady has status True when CloudSchedulerSource is ready to send events.
+	CloudSchedulerSourceConditionReady = apis.ConditionReady
 
-	// JobReady has status True when Scheduler Job has been successfully created.
+	// JobReady has status True when CloudSchedulerSource Job has been successfully created.
 	JobReady apis.ConditionType = "JobReady"
 )
 
@@ -92,8 +92,8 @@ var schedulerCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.TopicReady,
 	JobReady)
 
-// SchedulerStatus is the status for a Scheduler resource
-type SchedulerStatus struct {
+// CloudSchedulerSourceStatus is the status for a CloudSchedulerSource resource
+type CloudSchedulerSourceStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
 	duckv1alpha1.PubSubStatus `json:",inline"`
@@ -103,32 +103,32 @@ type SchedulerStatus struct {
 	JobName string `json:"jobName,omitempty"`
 }
 
-func (scheduler *Scheduler) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Scheduler")
+func (scheduler *CloudSchedulerSource) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("CloudSchedulerSource")
 }
 
 // Methods for pubsubable interface
 // PubSubSpec returns the PubSubSpec portion of the Spec.
-func (s *Scheduler) PubSubSpec() *duckv1alpha1.PubSubSpec {
+func (s *CloudSchedulerSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &s.Spec.PubSubSpec
 }
 
 // PubSubStatus returns the PubSubStatus portion of the Status.
-func (s *Scheduler) PubSubStatus() *duckv1alpha1.PubSubStatus {
+func (s *CloudSchedulerSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
-func (s *Scheduler) ConditionSet() *apis.ConditionSet {
+func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
 	return &schedulerCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// SchedulerList is a list of Scheduler resources
-type SchedulerList struct {
+// CloudSchedulerSourceList is a list of CloudSchedulerSource resources
+type CloudSchedulerSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Scheduler `json:"items"`
+	Items []CloudSchedulerSource `json:"items"`
 }

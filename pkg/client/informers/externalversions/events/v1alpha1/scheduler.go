@@ -31,11 +31,11 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// SchedulerInformer provides access to a shared informer and lister for
-// Schedulers.
-type SchedulerInformer interface {
+// CloudSchedulerSourceInformer provides access to a shared informer and lister for
+// CloudSchedulerSources.
+type CloudSchedulerSourceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.SchedulerLister
+	Lister() v1alpha1.CloudSchedulerSourceLister
 }
 
 type schedulerInformer struct {
@@ -44,46 +44,46 @@ type schedulerInformer struct {
 	namespace        string
 }
 
-// NewSchedulerInformer constructs a new informer for Scheduler type.
+// NewCloudSchedulerSourceInformer constructs a new informer for CloudSchedulerSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewSchedulerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredSchedulerInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewCloudSchedulerSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredCloudSchedulerSourceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredSchedulerInformer constructs a new informer for Scheduler type.
+// NewFilteredCloudSchedulerSourceInformer constructs a new informer for CloudSchedulerSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredSchedulerInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredCloudSchedulerSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().Schedulers(namespace).List(options)
+				return client.EventsV1alpha1().CloudSchedulerSources(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().Schedulers(namespace).Watch(options)
+				return client.EventsV1alpha1().CloudSchedulerSources(namespace).Watch(options)
 			},
 		},
-		&eventsv1alpha1.Scheduler{},
+		&eventsv1alpha1.CloudSchedulerSource{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
 func (f *schedulerInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredSchedulerInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredCloudSchedulerSourceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *schedulerInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventsv1alpha1.Scheduler{}, f.defaultInformer)
+	return f.factory.InformerFor(&eventsv1alpha1.CloudSchedulerSource{}, f.defaultInformer)
 }
 
-func (f *schedulerInformer) Lister() v1alpha1.SchedulerLister {
-	return v1alpha1.NewSchedulerLister(f.Informer().GetIndexer())
+func (f *schedulerInformer) Lister() v1alpha1.CloudSchedulerSourceLister {
+	return v1alpha1.NewCloudSchedulerSourceLister(f.Informer().GetIndexer())
 }

@@ -49,8 +49,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CloudAuditLogsSourceList{},
 		&CloudStorageSource{},
 		&CloudStorageSourceList{},
-		&Scheduler{},
-		&SchedulerList{},
+		&CloudSchedulerSource{},
+		&CloudSchedulerSourceList{},
 		&PubSub{},
 		&PubSubList{},
 	)

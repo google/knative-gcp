@@ -20,6 +20,6 @@ import (
 	"context"
 )
 
-func (s *Scheduler) SetDefaults(ctx context.Context) {
+func (s *CloudSchedulerSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetPubSubDefaults()
 }

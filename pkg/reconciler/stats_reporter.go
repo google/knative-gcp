@@ -55,10 +55,10 @@ const (
 	// PubSubReadyLatencyN is the time it takes for a pubsub to become ready since the resource is created.
 	PubSubReadyLatencyN = "pubsub_ready_latency"
 
-	// SchedulerReadyCountN is the number of schedulers that have become ready.
-	SchedulerReadyCountN = "scheduler_ready_count"
-	// SchedulerReadyLatencyN is the time it takes for a scheduler to become ready since the resource is created.
-	SchedulerReadyLatencyN = "scheduler_ready_latency"
+	// CloudSchedulerSourceReadyCountN is the number of schedulers that have become ready.
+	CloudSchedulerSourceReadyCountN = "scheduler_ready_count"
+	// CloudSchedulerSourceReadyLatencyN is the time it takes for a scheduler to become ready since the resource is created.
+	CloudSchedulerSourceReadyLatencyN = "scheduler_ready_latency"
 
 	// CloudAuditLogsSourceReadyCountN is the number of CloudAuditLogsSources that have become ready.
 	CloudAuditLogsSourceReadyCountN = "cloudauditlogssource_ready_count"
@@ -91,9 +91,9 @@ var (
 			ReadyCountKey:   PubSubReadyCountN,
 			ReadyLatencyKey: PubSubReadyLatencyN,
 		},
-		"Scheduler": {
-			ReadyCountKey:   SchedulerReadyCountN,
-			ReadyLatencyKey: SchedulerReadyLatencyN,
+		"CloudSchedulerSource": {
+			ReadyCountKey:   CloudSchedulerSourceReadyCountN,
+			ReadyLatencyKey: CloudSchedulerSourceReadyLatencyN,
 		},
 		"CloudAuditLogsSource": {
 			ReadyCountKey:   CloudAuditLogsSourceReadyCountN,

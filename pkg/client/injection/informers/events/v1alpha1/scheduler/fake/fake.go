@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Events().V1alpha1().Schedulers()
+	inf := f.Events().V1alpha1().CloudSchedulerSources()
 	return context.WithValue(ctx, scheduler.Key{}, inf), inf.Informer()
 }

@@ -29,7 +29,7 @@ import (
 
 var (
 	// Bare minimum is Location, Schedule, Data, and Sink
-	minimalSchedulerSpec = SchedulerSpec{
+	minimalCloudSchedulerSourceSpec = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
@@ -48,7 +48,7 @@ var (
 	}
 
 	// Location, Schedule, Data, Sink and Secret
-	schedulerWithSecret = SchedulerSpec{
+	schedulerWithSecret = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
@@ -73,7 +73,7 @@ var (
 	}
 
 	// Location, Schedule, Data, Sink, Secret, and PubSubSecret
-	shcedulerWithPubSubSecret = SchedulerSpec{
+	shcedulerWithPubSubSecret = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",
@@ -104,35 +104,35 @@ var (
 	}
 )
 
-func TestSchedulerValidationFields(t *testing.T) {
+func TestCloudSchedulerSourceValidationFields(t *testing.T) {
 	testCases := []struct {
 		name string
-		s    *Scheduler
+		s    *CloudSchedulerSource
 		want *apis.FieldError
 	}{{
 		name: "empty",
-		s:    &Scheduler{Spec: SchedulerSpec{}},
+		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.location", "spec.data", "spec.schedule", "spec.sink")
 			return fe
 		}(),
 	}, {
 		name: "missing data, schedule, and sink",
-		s:    &Scheduler{Spec: SchedulerSpec{Location: "location"}},
+		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.data", "spec.schedule", "spec.sink")
 			return fe
 		}(),
 	}, {
 		name: "missing schedule, and sink",
-		s:    &Scheduler{Spec: SchedulerSpec{Location: "location", Data: "data"}},
+		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location", Data: "data"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.schedule", "spec.sink")
 			return fe
 		}(),
 	}, {
 		name: "missing sink",
-		s:    &Scheduler{Spec: SchedulerSpec{Location: "location", Data: "data", Schedule: "* * * * *"}},
+		s:    &CloudSchedulerSource{Spec: CloudSchedulerSourceSpec{Location: "location", Data: "data", Schedule: "* * * * *"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.sink")
 			return fe
@@ -142,34 +142,34 @@ func TestSchedulerValidationFields(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.s.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Errorf("%s: Validate SchedulerSpec (-want, +got) = %v", test.name, diff)
+				t.Errorf("%s: Validate CloudSchedulerSourceSpec (-want, +got) = %v", test.name, diff)
 			}
 		})
 	}
 }
 
-func TestSchedulerSpecValidationFields(t *testing.T) {
+func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 	testCases := []struct {
 		name string
-		spec *SchedulerSpec
+		spec *CloudSchedulerSourceSpec
 		want *apis.FieldError
 	}{{
 		name: "empty",
-		spec: &SchedulerSpec{},
+		spec: &CloudSchedulerSourceSpec{},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("data", "location", "schedule", "sink")
 			return fe
 		}(),
 	}, {
 		name: "missing data, schedule, and sink",
-		spec: &SchedulerSpec{Location: "location"},
+		spec: &CloudSchedulerSourceSpec{Location: "location"},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("data", "schedule", "sink")
 			return fe
 		}(),
 	}, {
 		name: "missing schedule and data",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "location",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
@@ -190,7 +190,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "missing data",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "location",
 			Schedule: "* * * * *",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -212,7 +212,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid secret, missing name",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
@@ -239,7 +239,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid gcs secret, missing key",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
@@ -265,7 +265,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid pubsub secret, missing name",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
@@ -292,7 +292,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid secret, missing key",
-		spec: &SchedulerSpec{
+		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
@@ -321,7 +321,7 @@ func TestSchedulerSpecValidationFields(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.spec.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Errorf("%s: Validate SchedulerSpec (-want, +got) = %v", test.name, diff)
+				t.Errorf("%s: Validate CloudSchedulerSourceSpec (-want, +got) = %v", test.name, diff)
 			}
 		})
 	}

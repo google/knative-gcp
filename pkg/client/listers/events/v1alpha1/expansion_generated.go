@@ -34,13 +34,13 @@ type PubSubListerExpansion interface{}
 // PubSubNamespaceLister.
 type PubSubNamespaceListerExpansion interface{}
 
-// SchedulerListerExpansion allows custom methods to be added to
-// SchedulerLister.
-type SchedulerListerExpansion interface{}
+// CloudSchedulerSourceListerExpansion allows custom methods to be added to
+// CloudSchedulerSourceLister.
+type CloudSchedulerSourceListerExpansion interface{}
 
-// SchedulerNamespaceListerExpansion allows custom methods to be added to
-// SchedulerNamespaceLister.
-type SchedulerNamespaceListerExpansion interface{}
+// CloudSchedulerSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudSchedulerSourceNamespaceLister.
+type CloudSchedulerSourceNamespaceListerExpansion interface{}
 
 // CloudStorageSourceListerExpansion allows custom methods to be added to
 // CloudStorageSourceLister.

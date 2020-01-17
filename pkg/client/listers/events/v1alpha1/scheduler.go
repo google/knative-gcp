@@ -25,64 +25,64 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// SchedulerLister helps list Schedulers.
-type SchedulerLister interface {
-	// List lists all Schedulers in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.Scheduler, err error)
-	// Schedulers returns an object that can list and get Schedulers.
-	Schedulers(namespace string) SchedulerNamespaceLister
-	SchedulerListerExpansion
+// CloudSchedulerSourceLister helps list CloudSchedulerSources.
+type CloudSchedulerSourceLister interface {
+	// List lists all CloudSchedulerSources in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudSchedulerSource, err error)
+	// CloudSchedulerSources returns an object that can list and get CloudSchedulerSources.
+	CloudSchedulerSources(namespace string) CloudSchedulerSourceNamespaceLister
+	CloudSchedulerSourceListerExpansion
 }
 
-// schedulerLister implements the SchedulerLister interface.
+// schedulerLister implements the CloudSchedulerSourceLister interface.
 type schedulerLister struct {
 	indexer cache.Indexer
 }
 
-// NewSchedulerLister returns a new SchedulerLister.
-func NewSchedulerLister(indexer cache.Indexer) SchedulerLister {
+// NewCloudSchedulerSourceLister returns a new CloudSchedulerSourceLister.
+func NewCloudSchedulerSourceLister(indexer cache.Indexer) CloudSchedulerSourceLister {
 	return &schedulerLister{indexer: indexer}
 }
 
-// List lists all Schedulers in the indexer.
-func (s *schedulerLister) List(selector labels.Selector) (ret []*v1alpha1.Scheduler, err error) {
+// List lists all CloudSchedulerSources in the indexer.
+func (s *schedulerLister) List(selector labels.Selector) (ret []*v1alpha1.CloudSchedulerSource, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Scheduler))
+		ret = append(ret, m.(*v1alpha1.CloudSchedulerSource))
 	})
 	return ret, err
 }
 
-// Schedulers returns an object that can list and get Schedulers.
-func (s *schedulerLister) Schedulers(namespace string) SchedulerNamespaceLister {
+// CloudSchedulerSources returns an object that can list and get CloudSchedulerSources.
+func (s *schedulerLister) CloudSchedulerSources(namespace string) CloudSchedulerSourceNamespaceLister {
 	return schedulerNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// SchedulerNamespaceLister helps list and get Schedulers.
-type SchedulerNamespaceLister interface {
-	// List lists all Schedulers in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.Scheduler, err error)
-	// Get retrieves the Scheduler from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.Scheduler, error)
-	SchedulerNamespaceListerExpansion
+// CloudSchedulerSourceNamespaceLister helps list and get CloudSchedulerSources.
+type CloudSchedulerSourceNamespaceLister interface {
+	// List lists all CloudSchedulerSources in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudSchedulerSource, err error)
+	// Get retrieves the CloudSchedulerSource from the indexer for a given namespace and name.
+	Get(name string) (*v1alpha1.CloudSchedulerSource, error)
+	CloudSchedulerSourceNamespaceListerExpansion
 }
 
-// schedulerNamespaceLister implements the SchedulerNamespaceLister
+// schedulerNamespaceLister implements the CloudSchedulerSourceNamespaceLister
 // interface.
 type schedulerNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
-// List lists all Schedulers in the indexer for a given namespace.
-func (s schedulerNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Scheduler, err error) {
+// List lists all CloudSchedulerSources in the indexer for a given namespace.
+func (s schedulerNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.CloudSchedulerSource, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Scheduler))
+		ret = append(ret, m.(*v1alpha1.CloudSchedulerSource))
 	})
 	return ret, err
 }
 
-// Get retrieves the Scheduler from the indexer for a given namespace and name.
-func (s schedulerNamespaceLister) Get(name string) (*v1alpha1.Scheduler, error) {
+// Get retrieves the CloudSchedulerSource from the indexer for a given namespace and name.
+func (s schedulerNamespaceLister) Get(name string) (*v1alpha1.CloudSchedulerSource, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -90,5 +90,5 @@ func (s schedulerNamespaceLister) Get(name string) (*v1alpha1.Scheduler, error) 
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("scheduler"), name)
 	}
-	return obj.(*v1alpha1.Scheduler), nil
+	return obj.(*v1alpha1.CloudSchedulerSource), nil
 }

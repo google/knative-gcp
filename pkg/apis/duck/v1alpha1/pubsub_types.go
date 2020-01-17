@@ -50,7 +50,7 @@ type PubSubSpec struct {
 	// This brings in CloudEventOverrides and Sink.
 	duckv1.SourceSpec `json:",inline"`
 
-	// Secret is the credential to use to create the Scheduler Job.
+	// Secret is the credential to use to create the "entity" in GCP.
 	// If not specified, defaults to:
 	// Name: google-cloud-key
 	// Key: key.json

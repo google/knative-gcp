@@ -134,8 +134,8 @@ func (l *Listers) GetCloudStorageSourceLister() eventslisters.CloudStorageSource
 	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1alpha1.CloudStorageSource{}))
 }
 
-func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
-	return eventslisters.NewSchedulerLister(l.indexerFor(&EventsV1alpha1.Scheduler{}))
+func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSourceLister {
+	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1alpha1.CloudSchedulerSource{}))
 }
 
 func (l *Listers) GetPubSubLister() eventslisters.PubSubLister {

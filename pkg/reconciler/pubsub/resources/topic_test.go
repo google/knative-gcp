@@ -96,14 +96,14 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 	}
 }
 
-func TestMakeTopicWithScheduler(t *testing.T) {
-	source := &v1alpha1.Scheduler{
+func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
+	source := &v1alpha1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
 		},
-		Spec: v1alpha1.SchedulerSpec{
+		Spec: v1alpha1.CloudSchedulerSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
@@ -137,7 +137,7 @@ func TestMakeTopicWithScheduler(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "Scheduler",
+				Kind:               "CloudSchedulerSource",
 				Name:               "scheduler-name",
 				UID:                "scheduler-uid",
 				Controller:         &yes,
@@ -162,14 +162,14 @@ func TestMakeTopicWithScheduler(t *testing.T) {
 	}
 }
 
-func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
-	source := &v1alpha1.Scheduler{
+func TestMakeTopicWithCloudSchedulerSourceWithPubSubSecret(t *testing.T) {
+	source := &v1alpha1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
 		},
-		Spec: v1alpha1.SchedulerSpec{
+		Spec: v1alpha1.CloudSchedulerSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
@@ -209,7 +209,7 @@ func TestMakeTopicWithSchedulerWithPubSubSecret(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "Scheduler",
+				Kind:               "CloudSchedulerSource",
 				Name:               "scheduler-name",
 				UID:                "scheduler-uid",
 				Controller:         &yes,

@@ -29,34 +29,34 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// SchedulersGetter has a method to return a SchedulerInterface.
+// CloudSchedulerSourcesGetter has a method to return a CloudSchedulerSourceInterface.
 // A group's client should implement this interface.
-type SchedulersGetter interface {
-	Schedulers(namespace string) SchedulerInterface
+type CloudSchedulerSourcesGetter interface {
+	CloudSchedulerSources(namespace string) CloudSchedulerSourceInterface
 }
 
-// SchedulerInterface has methods to work with Scheduler resources.
-type SchedulerInterface interface {
-	Create(*v1alpha1.Scheduler) (*v1alpha1.Scheduler, error)
-	Update(*v1alpha1.Scheduler) (*v1alpha1.Scheduler, error)
-	UpdateStatus(*v1alpha1.Scheduler) (*v1alpha1.Scheduler, error)
+// CloudSchedulerSourceInterface has methods to work with CloudSchedulerSource resources.
+type CloudSchedulerSourceInterface interface {
+	Create(*v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, error)
+	Update(*v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, error)
+	UpdateStatus(*v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Scheduler, error)
-	List(opts v1.ListOptions) (*v1alpha1.SchedulerList, error)
+	Get(name string, options v1.GetOptions) (*v1alpha1.CloudSchedulerSource, error)
+	List(opts v1.ListOptions) (*v1alpha1.CloudSchedulerSourceList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Scheduler, err error)
-	SchedulerExpansion
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudSchedulerSource, err error)
+	CloudSchedulerSourceExpansion
 }
 
-// schedulers implements SchedulerInterface
+// schedulers implements CloudSchedulerSourceInterface
 type schedulers struct {
 	client rest.Interface
 	ns     string
 }
 
-// newSchedulers returns a Schedulers
-func newSchedulers(c *EventsV1alpha1Client, namespace string) *schedulers {
+// newCloudSchedulerSources returns a CloudSchedulerSources
+func newCloudSchedulerSources(c *EventsV1alpha1Client, namespace string) *schedulers {
 	return &schedulers{
 		client: c.RESTClient(),
 		ns:     namespace,
@@ -64,8 +64,8 @@ func newSchedulers(c *EventsV1alpha1Client, namespace string) *schedulers {
 }
 
 // Get takes name of the scheduler, and returns the corresponding scheduler object, and an error if there is any.
-func (c *schedulers) Get(name string, options v1.GetOptions) (result *v1alpha1.Scheduler, err error) {
-	result = &v1alpha1.Scheduler{}
+func (c *schedulers) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudSchedulerSource, err error) {
+	result = &v1alpha1.CloudSchedulerSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("schedulers").
@@ -76,13 +76,13 @@ func (c *schedulers) Get(name string, options v1.GetOptions) (result *v1alpha1.S
 	return
 }
 
-// List takes label and field selectors, and returns the list of Schedulers that match those selectors.
-func (c *schedulers) List(opts v1.ListOptions) (result *v1alpha1.SchedulerList, err error) {
+// List takes label and field selectors, and returns the list of CloudSchedulerSources that match those selectors.
+func (c *schedulers) List(opts v1.ListOptions) (result *v1alpha1.CloudSchedulerSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha1.SchedulerList{}
+	result = &v1alpha1.CloudSchedulerSourceList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("schedulers").
@@ -109,8 +109,8 @@ func (c *schedulers) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a scheduler and creates it.  Returns the server's representation of the scheduler, and an error, if there is any.
-func (c *schedulers) Create(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Scheduler, err error) {
-	result = &v1alpha1.Scheduler{}
+func (c *schedulers) Create(scheduler *v1alpha1.CloudSchedulerSource) (result *v1alpha1.CloudSchedulerSource, err error) {
+	result = &v1alpha1.CloudSchedulerSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("schedulers").
@@ -121,8 +121,8 @@ func (c *schedulers) Create(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Sch
 }
 
 // Update takes the representation of a scheduler and updates it. Returns the server's representation of the scheduler, and an error, if there is any.
-func (c *schedulers) Update(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Scheduler, err error) {
-	result = &v1alpha1.Scheduler{}
+func (c *schedulers) Update(scheduler *v1alpha1.CloudSchedulerSource) (result *v1alpha1.CloudSchedulerSource, err error) {
+	result = &v1alpha1.CloudSchedulerSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("schedulers").
@@ -136,8 +136,8 @@ func (c *schedulers) Update(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Sch
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
-func (c *schedulers) UpdateStatus(scheduler *v1alpha1.Scheduler) (result *v1alpha1.Scheduler, err error) {
-	result = &v1alpha1.Scheduler{}
+func (c *schedulers) UpdateStatus(scheduler *v1alpha1.CloudSchedulerSource) (result *v1alpha1.CloudSchedulerSource, err error) {
+	result = &v1alpha1.CloudSchedulerSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("schedulers").
@@ -177,8 +177,8 @@ func (c *schedulers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.
 }
 
 // Patch applies the patch and returns the patched scheduler.
-func (c *schedulers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Scheduler, err error) {
-	result = &v1alpha1.Scheduler{}
+func (c *schedulers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudSchedulerSource, err error) {
+	result = &v1alpha1.CloudSchedulerSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("schedulers").

@@ -25,11 +25,11 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func (current *Scheduler) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudSchedulerSource) Validate(ctx context.Context) *apis.FieldError {
 	return current.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (current *SchedulerSpec) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudSchedulerSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
 	// Sink [required]
