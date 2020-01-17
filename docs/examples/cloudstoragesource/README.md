@@ -2,14 +2,14 @@
 
 ## Overview
 
-This sample shows how to Configure a `Storage` resource to deliver Object
+This sample shows how to Configure a `CloudStorageSource` resource to deliver Object
 Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install/README.md).
+1. [Install Knative with GCP](../../install/README.md).
 
-1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Storage API` on your project:
 
@@ -53,13 +53,13 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 ## Deployment
 
-1. Update `BUCKET` in the [`storage.yaml`](storage.yaml) and apply it.
+1. Update `BUCKET` in the [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it.
 
    If you're in the storage directory, you can replace `BUCKET` and apply in one
    command:
 
    ```shell
-   sed "s/\BUCKET/$BUCKET/g" storage.yaml | \
+   sed "s/\BUCKET/$BUCKET/g" cloudstoragesource.yaml | \
        kubectl apply --filename -
    ```
 
@@ -67,13 +67,13 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    resulting YAML:
 
    ```shell
-   kubectl apply --filename storage.yaml
+   kubectl apply --filename cloudstoragesource.yaml
    ```
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
-   project, uncomment and replace the `MY_PROJECT` placeholder in [`storage.yaml`](storage.yaml) and apply it.
-   Note that the Service Account during the [installation](../install/README.md) step should be able to manage
-   [multiple projects](../install/managing-multiple-projects.md).   
+   project, uncomment and replace the `MY_PROJECT` placeholder in [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it.
+   Note that the Service Account during the [installation](../../install/README.md) step should be able to manage
+   [multiple projects](../../install/managing-multiple-projects.md).   
 
    If you're in the storage directory, you can replace `MY_PROJECT` and `BUCKET`
    and then apply in one command:
@@ -88,10 +88,10 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    resulting YAML:
 
    ```shell
-   kubectl apply --filename storage.yaml
+   kubectl apply --filename cloudstoragesource.yaml
    ```
 
-1. Create a [service](./event-display.yaml) that the Storage notifications will sink into:
+1. Create a [service](event-display.yaml) that the Storage notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -102,7 +102,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 Upload a file to your BUCKET, either using the [Cloud Console](https://cloud.google.com/console) or gsutil:
 
 ```shell
-gsutil cp storage.yaml gs://$BUCKET/testfilehere'
+gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere'
 ```
 
 ## Verify
@@ -164,8 +164,9 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
-1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
+1. For integrating with Cloud Pub/Sub, see the [CloudPubSubSource example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Scheduler see the [CloudSchedulerSource example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Audit Logs see the [CloudAuditLogsSource example](../../examples/cloudauditlogssource/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
@@ -173,7 +174,7 @@ Data,
 1. Delete the Storage
 
     ```shell
-    kubectl delete -f ./storage.yaml
+    kubectl delete -f ./cloudstoragesource.yaml
     ```
 1. Delete the Service    
     

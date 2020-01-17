@@ -7,14 +7,14 @@ intended to provide a durable messaging solution.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part of 
+1. [Install Knative with GCP](../../install). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part of 
    the installation procedure.
 
-1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
 ## Deployment
 
-1. Create the `Channel` in [channel.yaml](./channel.yaml).
+1. Create the `Channel` in [channel.yaml](channel.yaml).
 
    **Note**: _Update `project` and `secret` if you are not using defaults._
 
@@ -28,13 +28,13 @@ intended to provide a durable messaging solution.
    kubectl get channels.messaging.cloud.google.com demo
    ```
 
-1. Create a subscriber from [event-display.yaml](./event-display.yaml).
+1. Create a subscriber from [event-display.yaml](event-display.yaml).
 
    ```shell
    kubectl apply --filename event-display.yaml
    ```
 
-1. Create a [`Subscription`](./subscription.yaml).
+1. Create a [`Subscription`](subscription.yaml).
 
    ```shell
    kubectl apply --filename subscription.yaml
@@ -46,7 +46,7 @@ intended to provide a durable messaging solution.
    kubectl get subscription demo
    ```
 
-1. Create an Event Source, in this case, a CronJobSource from [source.yaml](./source.yaml).
+1. Create an Event Source, in this case, a CronJobSource from [source.yaml](source.yaml).
 
    ```shell
    kubectl apply --filename source.yaml

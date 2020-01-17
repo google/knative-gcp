@@ -1,14 +1,14 @@
 # PullSubscription Example
 
 This sample shows how to configure `PullSubscriptions`. This
-can be considered an implementation detail of the [PubSub Source](../pubsub/README.md), and users should rather 
+can be considered an implementation detail of the [PubSub Source](../../pubsub/README.md), and users should rather 
 use the latter if they want to bridge events from other Google Cloud services using Pub/Sub into their clusters.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install/README.md).
+1. [Install Knative with GCP](../../install/README.md).
 
-1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
 ## Deployment
 
@@ -39,8 +39,8 @@ use the latter if they want to bridge events from other Google Cloud services us
 
 1. **[Optional]** If you are not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the `MY_PROJECT` placeholder in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it. 
-   Note that the Service Account during the [installation](../install/README.md) step should be able to manage
-   [multiple projects](../install/managing-multiple-projects.md).
+   Note that the Service Account during the [installation](../../install/README.md) step should be able to manage
+   [multiple projects](../../install/managing-multiple-projects.md).
 
    If you're in the pullsubscription directory, you can replace `MY_PROJECT` and
    `TOPIC_NAME` and then apply in one command:
@@ -58,7 +58,7 @@ use the latter if they want to bridge events from other Google Cloud services us
    kubectl apply --filename pullsubscription.yaml
    ```
 
-1. Create a [service](./event-display.yaml) that the `PullSubscription` will sink into:
+1. Create a [service](event-display.yaml) that the `PullSubscription` will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -117,7 +117,7 @@ For more information about the format of the `Data` see the `data` field of
 
 ## What's next
 
-1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../../pubsub/README.md).
 1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
 1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).

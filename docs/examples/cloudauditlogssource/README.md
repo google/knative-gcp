@@ -8,9 +8,9 @@ in CloudEvents format.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install/README.md).
+1. [Install Knative with GCP](../../install/README.md).
 
-1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Audit Logs API` on your project:
 
@@ -21,7 +21,7 @@ in CloudEvents format.
 
 ## Deployment
 
-1. Create an [CloudAuditLogsSource](./cloudauditlogssource.yaml).
+1. Create a [CloudAuditLogsSource](cloudauditlogssource.yaml).
    This `CloudAuditLogsSource` will emit Cloud Audit Log Entries for the creation of Pub/Sub topics.  
    You can change the `serviceName`, `methodName` and `resourceName` (see detailed description [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
        
@@ -35,7 +35,7 @@ in CloudEvents format.
     kubectl apply --filename cloudauditlogssource.yaml
     ```   
 
-1. Create a [service](./event-display.yaml) that the CloudAuditLogsSource will sink into:
+1. Create a [Service](event-display.yaml) that the CloudAuditLogsSource will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -153,8 +153,9 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up

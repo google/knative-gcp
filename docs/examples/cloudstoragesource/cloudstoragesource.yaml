@@ -17,9 +17,9 @@
 #   MY_PROJECT: Replace with the Google Cloud Project's ID.
 
 apiVersion: events.cloud.google.com/v1alpha1
-kind: Storage
+kind: CloudStorageSource
 metadata:
-  name: storage-source
+  name: cloud-storage-source
 spec:
   bucket: BUCKET
   sink:

@@ -2,16 +2,16 @@
 
 ## Overview
 
-This sample shows how to Configure `Scheduler` resource for receiving scheduled
+This sample shows how to Configure `CloudSchedulerSource` resource for receiving scheduled
 events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../install/README.md). Note that your project needs to be created with
+1. [Install Knative with GCP](../../install/README.md). Note that your project needs to be created with
    an App Engine application. Refer to this [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
    for more details.
 
-1. [Create a Pub/Sub enabled Service Account](../install/pubsub-service-account.md)
+1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
 1. Enable the `Cloud Scheduler API` on your project:
 
@@ -21,13 +21,13 @@ events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Deployment
 
-1. Create a [scheduler](./scheduler.yaml)
+1. Create a [CloudSchedulerSource](../scheduler.yaml)
 
     ```shell
     kubectl apply --filename scheduler.yaml
     ```
 
-1. Create a [service](./event-display.yaml) that the Scheduler notifications will sink into:
+1. Create a [service](event-display.yaml) that the Scheduler notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -76,7 +76,7 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../pubsub/README.md).
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../pubsub/README.md).
 1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
