@@ -26,7 +26,7 @@ import (
 	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/storage/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudstoragesource/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"

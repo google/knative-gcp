@@ -26,7 +26,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	schedulerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/scheduler"
+	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
@@ -53,17 +53,17 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
-	schedulerInformer := schedulerinformers.Get(ctx)
+	cloudschedulersourceInformer := cloudschedulersourceinformers.Get(ctx)
 
 	c := &Reconciler{
 		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		schedulerLister: schedulerInformer.Lister(),
+		schedulerLister: cloudschedulersourceInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,
 	}
 	impl := controller.NewImpl(c, c.Logger, reconcilerName)
 
 	c.Logger.Info("Setting up event handlers")
-	schedulerInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	cloudschedulersourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
