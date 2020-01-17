@@ -51,8 +51,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CloudStorageSourceList{},
 		&CloudSchedulerSource{},
 		&CloudSchedulerSourceList{},
-		&PubSub{},
-		&PubSubList{},
+		&CloudPubSubSource{},
+		&CloudPubSubSourceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

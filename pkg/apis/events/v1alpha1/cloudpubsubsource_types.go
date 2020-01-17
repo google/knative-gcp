@@ -32,24 +32,24 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PubSub is the Schema for the gcp pubsub API.
+// CloudPubSubSource is a specification for a CloudPubSubSource resource
 // +k8s:openapi-gen=true
-type PubSub struct {
+type CloudPubSubSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PubSubSpec   `json:"spec,omitempty"`
-	Status PubSubStatus `json:"status,omitempty"`
+	Spec   CloudPubSubSourceSpec   `json:"spec,omitempty"`
+	Status CloudPubSubSourceStatus `json:"status,omitempty"`
 }
 
-// Check that PubSub can be validated and can be defaulted.
-var _ runtime.Object = (*PubSub)(nil)
+// Check that CloudPubSubSource can be validated and can be defaulted.
+var _ runtime.Object = (*CloudPubSubSource)(nil)
 
-// Check that PubSub implements the Conditions duck type.
-var _ = duck.VerifyType(&PubSub{}, &duckv1.Conditions{})
+// Check that CloudPubSubSource implements the Conditions duck type.
+var _ = duck.VerifyType(&CloudPubSubSource{}, &duckv1.Conditions{})
 
-// PubSubSpec defines the desired state of the PubSub.
-type PubSubSpec struct {
+// CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
+type CloudPubSubSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
@@ -81,7 +81,7 @@ type PubSubSpec struct {
 }
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
-func (ps PubSubSpec) GetAckDeadline() time.Duration {
+func (ps CloudPubSubSourceSpec) GetAckDeadline() time.Duration {
 	if ps.AckDeadline != nil {
 		if duration, err := time.ParseDuration(*ps.AckDeadline); err == nil {
 			return duration
@@ -91,7 +91,7 @@ func (ps PubSubSpec) GetAckDeadline() time.Duration {
 }
 
 // GetRetentionDuration parses RetentionDuration and returns the default if an error occurs.
-func (ps PubSubSpec) GetRetentionDuration() time.Duration {
+func (ps CloudPubSubSourceSpec) GetRetentionDuration() time.Duration {
 	if ps.RetentionDuration != nil {
 		if duration, err := time.ParseDuration(*ps.RetentionDuration); err == nil {
 			return duration
@@ -100,54 +100,54 @@ func (ps PubSubSpec) GetRetentionDuration() time.Duration {
 	return defaultRetentionDuration
 }
 
-// PubSubEventSource returns the Cloud Pub/Sub CloudEvent source value.
-func PubSubEventSource(googleCloudProject, topic string) string {
+// CloudPubSubSourceEventSource returns the Cloud Pub/Sub CloudEvent source value.
+func CloudPubSubSourceEventSource(googleCloudProject, topic string) string {
 	return fmt.Sprintf("//pubsub.googleapis.com/projects/%s/topics/%s", googleCloudProject, topic)
 }
 
 const (
-	// PubSub CloudEvent type
-	PubSubPublish = "com.google.cloud.pubsub.topic.publish"
+	// CloudPubSubSource CloudEvent type
+	CloudPubSubSourcePublish = "com.google.cloud.pubsub.topic.publish"
 )
 
 const (
-	// PubSubConditionReady has status True when the PubSub is
+	// CloudPubSubSourceConditionReady has status True when the CloudPubSubSource is
 	// ready to send events.
-	PubSubConditionReady = apis.ConditionReady
+	CloudPubSubSourceConditionReady = apis.ConditionReady
 )
 
 var pubSubCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.PullSubscriptionReady,
 )
 
-// PubSubStatus defines the observed state of PubSub.
-type PubSubStatus struct {
+// CloudPubSubSourceStatus defines the observed state of CloudPubSubSource.
+type CloudPubSubSourceStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
 	duckv1.SourceStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PubSubList contains a list of PubSubs.
-type PubSubList struct {
+// CloudPubSubSourceList contains a list of CloudPubSubSources.
+type CloudPubSubSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []PubSub `json:"items"`
+	Items           []CloudPubSubSource `json:"items"`
 }
 
 // GetGroupVersionKind returns the GroupVersionKind.
-func (s *PubSub) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("PubSub")
+func (s *CloudPubSubSource) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("CloudPubSubSource")
 }
 
 // Methods for pubsubable interface
 
-// PubSubSpec returns the PubSubSpec portion of the Spec.
-func (ps *PubSub) PubSubSpec() *duckv1alpha1.PubSubSpec {
+// CloudPubSubSourceSpec returns the CloudPubSubSourceSpec portion of the Spec.
+func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
-func (ps *PubSub) ConditionSet() *apis.ConditionSet {
+func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }

@@ -29,19 +29,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestPubSubDefaults(t *testing.T) {
+func TestCloudPubSubSourceDefaults(t *testing.T) {
 
 	defaultRetentionDuration := defaultRetentionDuration
 	defaultAckDeadline := defaultAckDeadline
 
 	tests := []struct {
 		name  string
-		start *PubSub
-		want  *PubSub
+		start *CloudPubSubSource
+		want  *CloudPubSubSource
 	}{{
 		name: "non-nil",
-		start: &PubSub{
-			Spec: PubSubSpec{
+		start: &CloudPubSubSource{
+			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -54,8 +54,8 @@ func TestPubSubDefaults(t *testing.T) {
 				},
 			},
 		},
-		want: &PubSub{
-			Spec: PubSubSpec{
+		want: &CloudPubSubSource{
+			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -70,12 +70,12 @@ func TestPubSubDefaults(t *testing.T) {
 		},
 	}, {
 		name: "nil",
-		start: &PubSub{
+		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       PubSubSpec{},
+			Spec:       CloudPubSubSourceSpec{},
 		},
-		want: &PubSub{
-			Spec: PubSubSpec{
+		want: &CloudPubSubSource{
+			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -97,11 +97,11 @@ func TestPubSubDefaults(t *testing.T) {
 	}
 }
 
-func TestPubSubDefaults_NoChange(t *testing.T) {
+func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	days2 := 2 * 24 * time.Hour
 	secs60 := 60 * time.Second
-	want := &PubSub{
-		Spec: PubSubSpec{
+	want := &CloudPubSubSource{
+		Spec: CloudPubSubSourceSpec{
 			AckDeadline:       ptr.String(secs60.String()),
 			RetentionDuration: ptr.String(days2.String()),
 			PubSubSpec: duckv1alpha1.PubSubSpec{

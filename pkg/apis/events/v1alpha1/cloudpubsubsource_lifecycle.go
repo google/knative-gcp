@@ -24,48 +24,48 @@ import (
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (ps *PubSubStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+func (ps *CloudPubSubSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return pubSubCondSet.Manage(ps).GetCondition(t)
 }
 
 // GetTopLevelCondition returns the top level condition.
-func (ps *PubSubStatus) GetTopLevelCondition() *apis.Condition {
+func (ps *CloudPubSubSourceStatus) GetTopLevelCondition() *apis.Condition {
 	return pubSubCondSet.Manage(ps).GetTopLevelCondition()
 }
 
 // IsReady returns true if the resource is ready overall.
-func (ps *PubSubStatus) IsReady() bool {
+func (ps *CloudPubSubSourceStatus) IsReady() bool {
 	return pubSubCondSet.Manage(ps).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (ps *PubSubStatus) InitializeConditions() {
+func (ps *CloudPubSubSourceStatus) InitializeConditions() {
 	pubSubCondSet.Manage(ps).InitializeConditions()
 }
 
 // MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
 // is False and why.
-func (ps *PubSubStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
+func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionNotConfigured changes the PullSubscriptionReady condition to be unknown to reflect
 // that the PullSubscription does not yet have a Status.
-func (ps *PubSubStatus) MarkPullSubscriptionNotConfigured() {
+func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionNotConfigured() {
 	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
-func (ps *PubSubStatus) MarkPullSubscriptionReady() {
+func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionReady() {
 	pubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is Unknown and why.
-func (ps *PubSubStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
 	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-func (ps *PubSubStatus) PropagatePullSubscriptionStatus(pss *v1alpha1.PullSubscriptionStatus) {
+func (ps *CloudPubSubSourceStatus) PropagatePullSubscriptionStatus(pss *v1alpha1.PullSubscriptionStatus) {
 	psc := pss.GetTopLevelCondition()
 	if psc == nil {
 		ps.MarkPullSubscriptionNotConfigured()

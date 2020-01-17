@@ -37,11 +37,11 @@ const (
 	maxAckDeadline = 10 * time.Minute // 10 minutes.
 )
 
-func (current *PubSub) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudPubSubSource) Validate(ctx context.Context) *apis.FieldError {
 	return current.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 	// Topic [required]
 	if current.Topic == "" {
@@ -77,14 +77,14 @@ func (current *PubSubSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
-func (current *PubSub) CheckImmutableFields(ctx context.Context, original *PubSub) *apis.FieldError {
+func (current *CloudPubSubSource) CheckImmutableFields(ctx context.Context, original *CloudPubSubSource) *apis.FieldError {
 	if original == nil {
 		return nil
 	}
 
 	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
-		cmpopts.IgnoreFields(PubSubSpec{},
+		cmpopts.IgnoreFields(CloudPubSubSourceSpec{},
 			"Sink", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",

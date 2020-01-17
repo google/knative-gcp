@@ -73,7 +73,7 @@ var (
 	}
 
 	// Location, Schedule, Data, Sink, Secret, and PubSubSecret
-	shcedulerWithPubSubSecret = CloudSchedulerSourceSpec{
+	schedulerWithPubSubSecret = CloudSchedulerSourceSpec{
 		Location: "mylocation",
 		Schedule: "* * * * *",
 		Data:     "mydata",

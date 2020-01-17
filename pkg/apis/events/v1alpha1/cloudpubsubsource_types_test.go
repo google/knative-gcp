@@ -26,24 +26,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func TestPubSubEventSource(t *testing.T) {
+func TestCloudPubSubSourceEventSource(t *testing.T) {
 	want := "//pubsub.googleapis.com/projects/PROJECT/topics/TOPIC"
 
-	got := PubSubEventSource("PROJECT", "TOPIC")
+	got := CloudPubSubSourceEventSource("PROJECT", "TOPIC")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
 
-func TestPubSubGetGroupVersionKind(t *testing.T) {
+func TestCloudPubSubSourceGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
-		Kind:    "PubSub",
+		Kind:    "CloudPubSubSource",
 	}
 
-	c := &PubSub{}
+	c := &CloudPubSubSource{}
 	got := c.GetGroupVersionKind()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -53,7 +53,7 @@ func TestPubSubGetGroupVersionKind(t *testing.T) {
 
 func TestGetAckDeadline(t *testing.T) {
 	want := 10 * time.Second
-	s := &PubSubSpec{AckDeadline: ptr.String("10s")}
+	s := &CloudPubSubSourceSpec{AckDeadline: ptr.String("10s")}
 	got := s.GetAckDeadline()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -63,7 +63,7 @@ func TestGetAckDeadline(t *testing.T) {
 
 func TestGetRetentionDuration(t *testing.T) {
 	want := 10 * time.Second
-	s := &PubSubSpec{RetentionDuration: ptr.String("10s")}
+	s := &CloudPubSubSourceSpec{RetentionDuration: ptr.String("10s")}
 	got := s.GetRetentionDuration()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -73,7 +73,7 @@ func TestGetRetentionDuration(t *testing.T) {
 
 func TestGetAckDeadline_default(t *testing.T) {
 	want := defaultAckDeadline
-	s := &PubSubSpec{}
+	s := &CloudPubSubSourceSpec{}
 	got := s.GetAckDeadline()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -83,7 +83,7 @@ func TestGetAckDeadline_default(t *testing.T) {
 
 func TestGetRetentionDuration_default(t *testing.T) {
 	want := defaultRetentionDuration
-	s := &PubSubSpec{}
+	s := &CloudPubSubSourceSpec{}
 	got := s.GetRetentionDuration()
 
 	if diff := cmp.Diff(want, got); diff != "" {

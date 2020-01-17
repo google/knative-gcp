@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	pullSubscriptionSpec = PubSubSpec{
+	pullSubscriptionSpec = CloudPubSubSourceSpec{
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -52,9 +52,9 @@ var (
 	}
 )
 
-func TestPubSubCheckValidationFields(t *testing.T) {
+func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 	testCases := map[string]struct {
-		spec  PubSubSpec
+		spec  CloudPubSubSourceSpec
 		error bool
 	}{
 		"ok": {
@@ -62,7 +62,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: false,
 		},
 		"bad RetentionDuration": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.RetentionDuration = ptr.String("wrong")
 				return *obj
@@ -70,7 +70,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad RetentionDuration, range": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.RetentionDuration = ptr.String("10000h")
 				return *obj
@@ -78,7 +78,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad AckDeadline": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.AckDeadline = ptr.String("wrong")
 				return *obj
@@ -86,7 +86,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad AckDeadline, range": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.AckDeadline = ptr.String("10000h")
 				return *obj
@@ -94,7 +94,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, name": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink.Ref.Name = ""
 				return *obj
@@ -102,7 +102,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, apiVersion": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink.Ref.APIVersion = ""
 				return *obj
@@ -110,7 +110,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, kind": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink.Ref.Kind = ""
 				return *obj
@@ -118,7 +118,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, empty": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{}
 				return *obj
@@ -126,7 +126,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, uri scheme": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
@@ -138,7 +138,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, uri host": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
@@ -150,7 +150,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			error: true,
 		},
 		"bad sink, uri and ref": {
-			spec: func() PubSubSpec {
+			spec: func() CloudPubSubSourceSpec {
 				obj := pullSubscriptionSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
@@ -176,10 +176,10 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 	}
 }
 
-func TestPubSubCheckImmutableFields(t *testing.T) {
+func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
 		orig    interface{}
-		updated PubSubSpec
+		updated CloudPubSubSourceSpec
 		allowed bool
 	}{
 		"nil orig": {
@@ -188,7 +188,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Secret.Name changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -207,7 +207,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Secret.Key changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -226,7 +226,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Project changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -245,7 +245,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Topic changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -264,7 +264,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.APIVersion changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -290,7 +290,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Kind changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -316,7 +316,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Namespace changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -342,7 +342,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		},
 		"Sink.Name changed": {
 			orig: &pullSubscriptionSpec,
-			updated: PubSubSpec{
+			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -380,16 +380,16 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			var orig *PubSub
+			var orig *CloudPubSubSource
 
 			if tc.orig != nil {
-				if spec, ok := tc.orig.(*PubSubSpec); ok {
-					orig = &PubSub{
+				if spec, ok := tc.orig.(*CloudPubSubSourceSpec); ok {
+					orig = &CloudPubSubSource{
 						Spec: *spec,
 					}
 				}
 			}
-			updated := &PubSub{
+			updated := &CloudPubSubSource{
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

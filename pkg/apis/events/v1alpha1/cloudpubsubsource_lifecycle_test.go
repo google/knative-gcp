@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestPubSubStatusIsReady(t *testing.T) {
+func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                   string
 		pullsubscriptionStatus *pubsubv1alpha1.PullSubscriptionStatus
@@ -51,7 +51,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ps := &PubSubStatus{}
+			ps := &CloudPubSubSourceStatus{}
 			ps.PropagatePullSubscriptionStatus(test.pullsubscriptionStatus)
 			gotConditionStatus := ps.GetTopLevelCondition().Status
 			got := ps.IsReady()
@@ -64,33 +64,33 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		})
 	}
 }
-func TestPubSubStatusGetCondition(t *testing.T) {
+func TestCloudPubSubSourceStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *PubSubStatus
+		s         *CloudPubSubSourceStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &PubSubStatus{},
-		condQuery: PubSubConditionReady,
+		s:         &CloudPubSubSourceStatus{},
+		condQuery: CloudPubSubSourceConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *PubSubStatus {
-			s := &PubSubStatus{}
+		s: func() *CloudPubSubSourceStatus {
+			s := &CloudPubSubSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: PubSubConditionReady,
+		condQuery: CloudPubSubSourceConditionReady,
 		want: &apis.Condition{
-			Type:   PubSubConditionReady,
+			Type:   CloudPubSubSourceConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *PubSubStatus {
-			s := &PubSubStatus{}
+		s: func() *CloudPubSubSourceStatus {
+			s := &CloudPubSubSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionFailed("NotReady", "test message")
 			return s
@@ -104,8 +104,8 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "ready",
-		s: func() *PubSubStatus {
-			s := &PubSubStatus{}
+		s: func() *CloudPubSubSourceStatus {
+			s := &CloudPubSubSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			return s

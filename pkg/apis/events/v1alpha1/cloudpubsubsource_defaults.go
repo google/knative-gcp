@@ -28,11 +28,11 @@ const (
 	defaultAckDeadline       = 30 * time.Second
 )
 
-func (ps *PubSub) SetDefaults(ctx context.Context) {
+func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
 	ps.Spec.SetDefaults(ctx)
 }
 
-func (pss *PubSubSpec) SetDefaults(ctx context.Context) {
+func (pss *CloudPubSubSourceSpec) SetDefaults(ctx context.Context) {
 	pss.SetPubSubDefaults()
 
 	if pss.AckDeadline == nil {
