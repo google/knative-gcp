@@ -28,16 +28,16 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-// PubSubOption enables further configuration of a PubSub.
-type PubSubOption func(*v1alpha1.PubSub)
+// CloudPubSubSourceOption enables further configuration of a CloudPubSubSource.
+type CloudPubSubSourceOption func(*v1alpha1.CloudPubSubSource)
 
-// NewPubSub creates a PubSub with PubSubOptions
-func NewPubSub(name, namespace string, so ...PubSubOption) *v1alpha1.PubSub {
-	ps := &v1alpha1.PubSub{
+// NewCloudPubSubSource creates a CloudPubSubSource with CloudPubSubSourceOptions
+func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption) *v1alpha1.CloudPubSubSource {
+	ps := &v1alpha1.CloudPubSubSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-pubsub-uid",
+			UID:       "test-CloudPubSubSource-uid",
 		},
 	}
 	for _, opt := range so {
@@ -47,8 +47,8 @@ func NewPubSub(name, namespace string, so ...PubSubOption) *v1alpha1.PubSub {
 	return ps
 }
 
-func WithPubSubSink(gvk metav1.GroupVersionKind, name string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
@@ -59,62 +59,62 @@ func WithPubSubSink(gvk metav1.GroupVersionKind, name string) PubSubOption {
 	}
 }
 
-func WithPubSubTopic(topicID string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourceTopic(topicID string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.Topic = topicID
 	}
 }
 
-// WithInitPubSubConditions initializes the PubSub's conditions.
-func WithInitPubSubConditions(ps *v1alpha1.PubSub) {
+// WithInitCloudPubSubSourceConditions initializes the CloudPubSubSource's conditions.
+func WithInitCloudPubSubSourceConditions(ps *v1alpha1.CloudPubSubSource) {
 	ps.Status.InitializeConditions()
 }
 
-// WithPubSubPullSubscriptionFailed marks the condition that the
+// WithCloudPubSubSourcePullSubscriptionFailed marks the condition that the
 // status of PullSubscription is False
-func WithPubSubPullSubscriptionFailed(reason, message string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 
-// WithPubSubPullSubscriptionUnknown marks the condition that the
+// WithCloudPubSubSourcePullSubscriptionUnknown marks the condition that the
 // topic is Unknown
-func WithPubSubPullSubscriptionUnknown(reason, message string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 
-// WithPubSubPullSubscriptionReady marks the condition that the
+// WithCloudPubSubSourcePullSubscriptionReady marks the condition that the
 // topic is not ready
-func WithPubSubPullSubscriptionReady() PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourcePullSubscriptionReady() CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Status.MarkPullSubscriptionReady()
 	}
 }
 
-// WithPubSubSinkURI sets the status for sink URI
-func WithPubSubSinkURI(url *apis.URL) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+// WithCloudPubSubSourceSinkURI sets the status for sink URI
+func WithCloudPubSubSourceSinkURI(url *apis.URL) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Status.SinkURI = url
 	}
 }
 
-func WithPubSubFinalizers(finalizers ...string) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourceFinalizers(finalizers ...string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Finalizers = finalizers
 	}
 }
 
-func WithPubSubStatusObservedGeneration(generation int64) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourceStatusObservedGeneration(generation int64) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Status.Status.ObservedGeneration = generation
 	}
 }
 
-func WithPubSubObjectMetaGeneration(generation int64) PubSubOption {
-	return func(ps *v1alpha1.PubSub) {
+func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.ObjectMeta.Generation = generation
 	}
 }

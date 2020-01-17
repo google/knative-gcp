@@ -42,15 +42,15 @@ import (
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "pubsubs.events.cloud.google.com"
+	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
 )
 
-// Reconciler is the controller implementation for the PubSub source.
+// Reconciler is the controller implementation for the CloudPubSubSource source.
 type Reconciler struct {
 	*reconciler.Base
 
-	// pubsubLister for reading pubsubs.
-	pubsubLister listers.PubSubLister
+	// pubsubLister for reading cloudpubsubsources.
+	pubsubLister listers.CloudPubSubSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 
@@ -61,7 +61,7 @@ type Reconciler struct {
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the PubSub resource
+// converge the two. It then updates the Status block of the CloudPubSubSource resource
 // with the current status of the resource.
 func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
@@ -71,11 +71,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the PubSub resource with this namespace/name
-	original, err := r.pubsubLister.PubSubs(namespace).Get(name)
+	// Get the CloudPubSubSource resource with this namespace/name
+	original, err := r.pubsubLister.CloudPubSubSources(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
-		// The PubSub resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("PubSub in work queue no longer exists")
+		// The CloudPubSubSource resource may no longer exist, in which case we stop processing.
+		logging.FromContext(ctx).Desugar().Error("CloudPubSubSource in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -98,13 +98,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 
 	} else if _, uErr := r.updateStatus(ctx, pubsub); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update PubSub status", zap.Error(uErr))
+		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudPubSubSource status", zap.Error(uErr))
 		r.Recorder.Eventf(pubsub, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for PubSub %q: %v", pubsub.Name, uErr)
+			"Failed to update status for CloudPubSubSource %q: %v", pubsub.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(pubsub, corev1.EventTypeNormal, "Updated", "Updated PubSub %q", pubsub.Name)
+		r.Recorder.Eventf(pubsub, corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsub.Name)
 	}
 	if reconcileErr != nil {
 		r.Recorder.Event(pubsub, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
@@ -112,7 +112,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.PubSub) error {
+func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
 
 	pubsub.Status.InitializeConditions()
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.PubSub) err
 	return nil
 }
 
-func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.PubSub) (*pubsubv1alpha1.PullSubscription, error) {
+func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.CloudPubSubSource) (*pubsubv1alpha1.PullSubscription, error) {
 	ps, err := r.pullsubscriptionLister.PullSubscriptions(source.Namespace).Get(source.Name)
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
@@ -158,8 +158,8 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 	return ps, nil
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub) (*v1alpha1.PubSub, error) {
-	source, err := r.pubsubLister.PubSubs(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudPubSubSource) (*v1alpha1.CloudPubSubSource, error) {
+	source, err := r.pubsubLister.CloudPubSubSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -172,15 +172,15 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.PubSub)
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := r.RunClientSet.EventsV1alpha1().PubSubs(desired.Namespace).UpdateStatus(existing)
+	src, err := r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("PubSub became ready", zap.Any("after", duration))
-		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("PubSub %q became ready", source.Name))
-		if metricErr := r.StatsReporter.ReportReady("PubSub", source.Namespace, source.Name, duration); metricErr != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for PubSub", zap.Error(metricErr))
+		logging.FromContext(ctx).Desugar().Info("CloudPubSubSource became ready", zap.Any("after", duration))
+		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudPubSubSource %q became ready", source.Name))
+		if metricErr := r.StatsReporter.ReportReady("CloudPubSubSource", source.Namespace, source.Name, duration); metricErr != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudPubSubSource", zap.Error(metricErr))
 		}
 	}
 

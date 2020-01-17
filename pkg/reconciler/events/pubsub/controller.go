@@ -30,14 +30,14 @@ import (
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "PubSub"
+	reconcilerName = "CloudPubSubSource"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "pubsub.events.cloud.google.com"
+	receiveAdapterName = "cloudpubsubsource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -62,7 +62,7 @@ func NewController(
 	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
