@@ -21,9 +21,9 @@ in CloudEvents format.
 
 ## Deployment
 
-1. Create a [auditlogssource](./auditlogssource.yaml).
-   This `AuditLogsSource` will get Cloud Audit Log Entries for topic creation.  
-   You can change the `serviceName`, `methodName` and `resourceName` ([detailed description](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
+1. Create an [auditlogssource](./auditlogssource.yaml).
+   This `AuditLogsSource` will emit Cloud Audit Log Entries for the creation of Pub/Sub topics.  
+   You can change the `serviceName`, `methodName` and `resourceName` (see detailed description [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
        
    |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
    |  :-------------------:  |  :--------------------------:  |

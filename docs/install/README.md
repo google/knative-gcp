@@ -39,7 +39,7 @@
         | PullSubscription 	|     roles/pubsub.editor    	|
         |       Topic      	|     roles/pubsub.editor    	|
        
-       In this guide, and for the sake of simplicity, we will just grant `roles/editor` privileges to the Service Account,
+       In this guide, and for the sake of simplicity, we will just grant `roles/owner` privileges to the Service Account,
        which encompasses all of the above plus some other permissions. Note that if you prefer finer-grained privileges,
        you can just grant the ones described in the Table. Also, you can refer to [managing multiple projects](../install/managing-multiple-projects.md)
        in case you want your Service Account to manage multiple projects.
@@ -47,7 +47,7 @@
         ```shell
         gcloud projects add-iam-policy-binding $PROJECT_ID \
           --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
-          --role roles/editor
+          --role roles/owner
         ```
 
     1.  Download a new JSON private key for that Service Account. **Be sure not to check this key into source control!**
