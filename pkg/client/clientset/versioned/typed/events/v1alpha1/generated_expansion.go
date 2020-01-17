@@ -20,7 +20,7 @@ package v1alpha1
 
 type CloudAuditLogsSourceExpansion interface{}
 
-type PubSubExpansion interface{}
+type CloudPubSubSourceExpansion interface{}
 
 type CloudSchedulerSourceExpansion interface{}
 

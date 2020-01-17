@@ -26,8 +26,8 @@ import (
 type Interface interface {
 	// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
 	CloudAuditLogsSources() CloudAuditLogsSourceInformer
-	// PubSubs returns a PubSubInformer.
-	PubSubs() PubSubInformer
+	// CloudPubSubSources returns a CloudPubSubSourceInformer.
+	CloudPubSubSources() CloudPubSubSourceInformer
 	// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
 	CloudSchedulerSources() CloudSchedulerSourceInformer
 	// CloudStorageSources returns a CloudStorageSourceInformer.
@@ -47,20 +47,20 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
 func (v *version) CloudAuditLogsSources() CloudAuditLogsSourceInformer {
-	return &auditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &cloudAuditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// PubSubs returns a PubSubInformer.
-func (v *version) PubSubs() PubSubInformer {
-	return &pubSubInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// CloudPubSubSources returns a CloudPubSubSourceInformer.
+func (v *version) CloudPubSubSources() CloudPubSubSourceInformer {
+	return &cloudPubSubSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CloudSchedulerSources returns a CloudSchedulerSourceInformer.
 func (v *version) CloudSchedulerSources() CloudSchedulerSourceInformer {
-	return &schedulerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &cloudSchedulerSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // CloudStorageSources returns a CloudStorageSourceInformer.
 func (v *version) CloudStorageSources() CloudStorageSourceInformer {
-	return &storageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &cloudStorageSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
