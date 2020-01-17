@@ -43,7 +43,7 @@ type Scheduler struct {
 
 const (
 	// CloudEvent types used by Scheduler.
-	SchedulerExecute = "com.google.cloud.sheduler.job.execute"
+	SchedulerExecute = "com.google.cloud.scheduler.job.execute"
 	// SchedulerJobName is the Pub/Sub message attribute key with the Scheduler's job name.
 	SchedulerJobName = "jobName"
 	// SchedulerName is the Pub/Sub message attribute key with the Scheduler's name.
