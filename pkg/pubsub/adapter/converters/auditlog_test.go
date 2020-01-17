@@ -74,7 +74,7 @@ func TestConvertAuditLog(t *testing.T) {
 		Data: buf.Bytes(),
 	}
 
-	e, err := Convert(context.Background(), &msg, "", AuditLogAdapterType)
+	e, err := Convert(context.Background(), &msg, "", AuditLogConverter)
 
 	if err != nil {
 		t.Fatalf("conversion failed: %v", err)
@@ -144,7 +144,7 @@ func TestConvertTextPayload(t *testing.T) {
 		Data: buf.Bytes(),
 	}
 
-	_, err = Convert(context.Background(), &msg, "", AuditLogAdapterType)
+	_, err = Convert(context.Background(), &msg, "", AuditLogConverter)
 
 	if err == nil {
 		t.Errorf("Expected error when converting non-AuditLog LogEntry.")

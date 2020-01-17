@@ -82,6 +82,15 @@ func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *pubsubv1alpha1.P
 	c.Tracker.AddObj(pullsubscription)
 }
 
+func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1alpha1.Scheduler) {
+	schedulers := c.KnativeGCP.EventsV1alpha1().Schedulers(c.Namespace)
+	_, err := schedulers.Create(scheduler)
+	if err != nil {
+		c.T.Fatalf("Failed to create schedulers %q: %v", scheduler.Name, err)
+	}
+	c.Tracker.AddObj(scheduler)
+}
+
 // WithServiceForJob returns an option that creates a Service binded with the given job.
 func WithServiceForJob(name string) func(*batchv1.Job, *Client) error {
 	return func(job *batchv1.Job, client *Client) error {

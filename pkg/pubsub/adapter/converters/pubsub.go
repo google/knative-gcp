@@ -23,6 +23,7 @@ import (
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
@@ -51,7 +52,8 @@ func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 		for k, v := range msg.Attributes {
 			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
 			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
-			if IsAlphaNumericLowercaseLetters(k) {
+			// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
+			if IsAlphaNumeric(k) {
 				event.SetExtension(k, v)
 			}
 		}

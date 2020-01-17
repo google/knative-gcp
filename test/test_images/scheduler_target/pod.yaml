@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: scheduler_target
+spec:
+  containers:
+    - name: scheduler_target
+      image: github.com/google/knative-gcp/test/test_images/scheduler_target
+

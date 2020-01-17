@@ -28,9 +28,10 @@ import (
 
 func TestPubSubStatusIsReady(t *testing.T) {
 	tests := []struct {
-		name string
-		s    *PullSubscriptionStatus
-		want bool
+		name                string
+		s                   *PullSubscriptionStatus
+		wantConditionStatus corev1.ConditionStatus
+		want                bool
 	}{{
 		name: "uninitialized",
 		s:    &PullSubscriptionStatus{},
@@ -42,7 +43,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark deployed",
 		s: func() *PullSubscriptionStatus {
@@ -51,7 +53,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkDeployed()
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark sink",
 		s: func() *PullSubscriptionStatus {
@@ -60,7 +63,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkSink("uri://example")
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark subscribed",
 		s: func() *PullSubscriptionStatus {
@@ -69,7 +73,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkSubscribed("subID")
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark sink and deployed",
 		s: func() *PullSubscriptionStatus {
@@ -79,7 +84,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkDeployed()
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark sink and deployed and subscribed",
 		s: func() *PullSubscriptionStatus {
@@ -90,7 +96,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkSubscribed("subID")
 			return s
 		}(),
-		want: true,
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}, {
 		name: "mark sink and deployed and subscribed, then no sink",
 		s: func() *PullSubscriptionStatus {
@@ -102,7 +109,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkNoSink("Testing", "")
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name: "mark sink and deployed and subscribed then not deployed",
 		s: func() *PullSubscriptionStatus {
@@ -114,7 +122,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkNotDeployed("Testing", "")
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionFalse,
+		want:                false,
 	}, {
 		name: "mark sink and subscribed and not deployed then deployed",
 		s: func() *PullSubscriptionStatus {
@@ -126,7 +135,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkDeployed()
 			return s
 		}(),
-		want: true,
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}, {
 		name: "mark sink empty and deployed and subscribed",
 		s: func() *PullSubscriptionStatus {
@@ -137,7 +147,8 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkSubscribed("subID")
 			return s
 		}(),
-		want: false,
+		wantConditionStatus: corev1.ConditionUnknown,
+		want:                false,
 	}, {
 		name: "mark sink empty and deployed and subscribed then sink",
 		s: func() *PullSubscriptionStatus {
@@ -149,14 +160,21 @@ func TestPubSubStatusIsReady(t *testing.T) {
 			s.MarkSink("uri://example")
 			return s
 		}(),
-		want: true,
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.wantConditionStatus != "" {
+				gotConditionStatus := test.s.GetTopLevelCondition().Status
+				if gotConditionStatus != test.wantConditionStatus {
+					t.Errorf("unexpected condition status: want %v, got %v", test.wantConditionStatus, gotConditionStatus)
+				}
+			}
 			got := test.s.IsReady()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("%s: unexpected condition (-want, +got) = %v", test.name, diff)
+			if got != test.want {
+				t.Errorf("unexpected readiness: want %v, got %v", test.want, got)
 			}
 		})
 	}

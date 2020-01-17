@@ -62,8 +62,9 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.pubsub.topic.publish
-  source: //pubsub.googleapis.com/projects/quantum-reducer-434/topics/scheduler-a424c4a6-c9e2-11e9-a541-42010aa8000b
+  type: com.google.cloud.sheduler.job.execute
+  source: //cloudscheduler.googleapis.com/projects/knative-gcp/locations/us-east4/schedulers/scheduler-test
+  subject: jobs/cre-scheduler-bfc82b00-11fd-42ec-b21a-011dddc2170b
   id: 714614529367848
   time: 2019-08-28T22:29:00.979Z
   datacontenttype: application/octet-stream

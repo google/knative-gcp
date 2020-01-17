@@ -98,7 +98,11 @@ func TestConvertStorage(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{}, "myfile.jpg")
+			return storageCloudEvent(map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+			},
+				"myfile.jpg")
 		},
 	}, {
 		name: "not setting invalid upper case attributes",
@@ -114,7 +118,10 @@ func TestConvertStorage(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return storageCloudEvent(map[string]string{})
+			return storageCloudEvent(map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+			})
 		},
 	}, {
 		name: "only setting valid alphanumeric attribute",

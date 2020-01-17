@@ -121,10 +121,10 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	// 1. Create the Topic.
 	topic, err := r.reconcileTopic(ctx, channel)
 	if err != nil {
-		channel.Status.MarkNoTopic("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
+		channel.Status.MarkTopicFailed("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
 		return err
 	}
-	channel.Status.PropagateTopicStatus(topic.Status.GetCondition(pubsubv1alpha1.TopicConditionReady))
+	channel.Status.PropagateTopicStatus(&topic.Status)
 	channel.Status.TopicID = topic.Spec.Topic
 
 	// 2. Sync all subscriptions.

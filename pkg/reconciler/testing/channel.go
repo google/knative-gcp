@@ -92,9 +92,15 @@ func WithChannelTopicID(topicID string) ChannelOption {
 	}
 }
 
-func WithChannelNoTopic(reason, message string) ChannelOption {
+func WithChannelTopicFailed(reason, message string) ChannelOption {
 	return func(c *v1alpha1.Channel) {
-		c.Status.MarkNoTopic(reason, message)
+		c.Status.MarkTopicFailed(reason, message)
+	}
+}
+
+func WithChannelTopicUnknown(reason, message string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.Status.MarkTopicUnknown(reason, message)
 	}
 }
 

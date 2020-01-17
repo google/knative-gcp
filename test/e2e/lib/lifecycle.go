@@ -53,7 +53,7 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 	client.Namespace = coreClient.Namespace
 	client.Tracker = coreClient.Tracker
 	client.T = t
-	client.DuplicateSecret(t, "google-cloud-key", "default")
+	DuplicatePubSubSecret(coreClient)
 	return client
 }
 
@@ -99,26 +99,6 @@ func (c *Client) SetupStackDriverMetrics(t *testing.T) {
 			t.Fatalf("Unable to set the ConfigMap: %v", err)
 		}
 	})
-}
-
-// DuplicateSecret duplicates a secret from a namespace to a new namespace.
-func (c *Client) DuplicateSecret(t *testing.T, name, namespace string) {
-	cc := c.Core
-	secret, err := cc.Kube.Kube.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		t.Fatalf("Failed to find Secret: %q in Namespace: %q: %s", name, namespace, err)
-		return
-	}
-	newSecret := &corev1.Secret{}
-	newSecret.Name = name
-	newSecret.Namespace = c.Namespace
-	newSecret.Data = secret.Data
-	newSecret.StringData = secret.StringData
-	newSecret.Type = secret.Type
-	newSecret, err = cc.Kube.Kube.CoreV1().Secrets(c.Namespace).Create(newSecret)
-	if err != nil {
-		t.Fatalf("Failed to create Secret: %s; %v", c.Namespace, err)
-	}
 }
 
 const (
