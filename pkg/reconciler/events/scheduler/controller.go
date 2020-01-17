@@ -41,7 +41,7 @@ const (
 	controllerAgentName = "cloud-run-events-scheduler-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "scheduler.events.cloud.google.com"
+	receiveAdapterName = "cloudschedulersource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code

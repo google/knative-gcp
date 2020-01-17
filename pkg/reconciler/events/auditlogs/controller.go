@@ -44,7 +44,7 @@ const (
 	controllerAgentName = "cloud-run-events-cloudauditlogssource-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "auditlogs.events.cloud.google.com"
+	receiveAdapterName = "cloudauditlogssource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code

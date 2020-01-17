@@ -48,7 +48,7 @@ import (
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "storages.events.cloud.google.com"
+	resourceGroup = "cloudstoragesources.events.cloud.google.com"
 )
 
 var (

@@ -41,7 +41,7 @@ const (
 	controllerAgentName = "cloud-run-events-storage-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "storage.events.cloud.google.com"
+	receiveAdapterName = "cloudstoragesource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code
