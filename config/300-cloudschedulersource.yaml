@@ -23,7 +23,7 @@ metadata:
     # TODO properly define type, schema, and description.
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.sheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
+        { "type": "com.google.cloud.scheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
       ]
   name: cloudschedulersources.events.cloud.google.com
 spec:
