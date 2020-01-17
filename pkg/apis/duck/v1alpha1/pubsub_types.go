@@ -81,7 +81,7 @@ type PubSubStatus struct {
 	// +optional
 	TopicID string `json:"topicId,omitempty"`
 
-	// SubscriptionID is the created subscription ID used by Storage.
+	// SubscriptionID is the created subscription ID.
 	// +optional
 	SubscriptionID string `json:"subscriptionId,omitempty"`
 }

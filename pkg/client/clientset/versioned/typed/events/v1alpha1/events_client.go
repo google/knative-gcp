@@ -26,10 +26,10 @@ import (
 
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	AuditLogsSourcesGetter
+	CloudAuditLogsSourcesGetter
 	PubSubsGetter
 	SchedulersGetter
-	StoragesGetter
+	CloudStorageSourcesGetter
 }
 
 // EventsV1alpha1Client is used to interact with features provided by the events.cloud.google.com group.
@@ -37,8 +37,8 @@ type EventsV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *EventsV1alpha1Client) AuditLogsSources(namespace string) AuditLogsSourceInterface {
-	return newAuditLogsSources(c, namespace)
+func (c *EventsV1alpha1Client) CloudAuditLogsSources(namespace string) CloudAuditLogsSourceInterface {
+	return newCloudAuditLogsSources(c, namespace)
 }
 
 func (c *EventsV1alpha1Client) PubSubs(namespace string) PubSubInterface {
@@ -49,8 +49,8 @@ func (c *EventsV1alpha1Client) Schedulers(namespace string) SchedulerInterface {
 	return newSchedulers(c, namespace)
 }
 
-func (c *EventsV1alpha1Client) Storages(namespace string) StorageInterface {
-	return newStorages(c, namespace)
+func (c *EventsV1alpha1Client) CloudStorageSources(namespace string) CloudStorageSourceInterface {
+	return newCloudStorageSources(c, namespace)
 }
 
 // NewForConfig creates a new EventsV1alpha1Client for the given config.

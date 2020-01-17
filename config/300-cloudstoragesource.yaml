@@ -20,12 +20,14 @@ metadata:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
-    # TODO properly define type, schema, and description.
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.sheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
+        { "type": "com.google.cloud.storage.object.finalize", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
+        { "type": "com.google.cloud.storage.object.delete", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
+        { "type": "com.google.cloud.storage.object.archive", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
+        { "type": "com.google.cloud.storage.object.metadataUpdate", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when the metadata of an existing object changes." }
       ]
-  name: schedulers.events.cloud.google.com
+  name: cloudstoragesources.events.cloud.google.com
 spec:
   group: events.cloud.google.com
   version: v1alpha1
@@ -33,10 +35,10 @@ spec:
     categories:
     - all
     - knative
-    - scheduler
+    - cloudstoragesource
     - sources
-    kind: Scheduler
-    plural: schedulers
+    kind: CloudStorageSource
+    plural: cloudstoragesources
   scope: Namespaced
   subresources:
     status: {}
@@ -57,22 +59,25 @@ spec:
           properties:
             secret:
               type: object
-              description: "Credential to use for managing Scheduler Jobs. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."
+              description: "Credential to use for managing GCS notifications. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."
             pubSubSecret:
               type: object
               description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses secret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+            serviceAccountName:
+              type: string
+              description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
             project:
               type: string
-              description: "Google Cloud Project ID of the project into which the Scheduler job should be created. If omitted uses the Project ID from the GKE cluster metadata service."
-            location:
+              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
+            bucket:
               type: string
-              description: "Location to create the Scheduler job in."
-            schedule:
+              description: "GCS bucket to subscribe to. For example my-test-bucket"
+            objectNamePrefix:
               type: string
-              description: "Frequency using the unix-cron format. Or App Engine Cron format."
-            data:
+              description: "Optional prefix to only notify when objects match this prefix."
+            payloadFormat:
               type: string
-              description: "Data to send in the payload of the Event."
+              description: "Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1."
             sink:
               type: object
               description: "Sink which receives the notifications."
@@ -107,15 +112,28 @@ spec:
                 extensions:
                   type: object
                   description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
-          required:
-          - location
-          - schedule
-          - sink
-          - data
-        status:
-          properties:
-            conditions:
+            eventTypes:
+              type: array
               items:
+                type: string
+                enum:
+                  - com.google.cloud.storage.object.finalize
+                  - com.google.cloud.storage.object.delete
+                  - com.google.cloud.storage.object.archive
+                  - com.google.cloud.storage.object.metadataUpdate
+          required:
+          - bucket
+          - sink
+        status:
+          type: object
+          properties:
+            observedGeneration:
+              type: integer
+              format: int64
+            conditions:
+              type: array
+              items:
+                type: object
                 properties:
                   lastTransitionTime:
                     # we use a string in the stored object but a wrapper object
@@ -134,8 +152,6 @@ spec:
                 required:
                 - type
                 - status
-                type: object
-              type: array
             sinkUri:
               type: string
             projectId:
@@ -146,4 +162,3 @@ spec:
               type: string
             subscriptionId:
               type: string
-          type: object

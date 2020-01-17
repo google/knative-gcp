@@ -37,16 +37,16 @@ type Key struct{}
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := factory.Get(ctx)
-	inf := f.Events().V1alpha1().Storages()
+	inf := f.Events().V1alpha1().CloudStorageSources()
 	return context.WithValue(ctx, Key{}, inf), inf.Informer()
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context) v1alpha1.StorageInformer {
+func Get(ctx context.Context) v1alpha1.CloudStorageSourceInformer {
 	untyped := ctx.Value(Key{})
 	if untyped == nil {
 		logging.FromContext(ctx).Panic(
-			"Unable to fetch github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1.StorageInformer from context.")
+			"Unable to fetch github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1.CloudStorageSourceInformer from context.")
 	}
-	return untyped.(v1alpha1.StorageInformer)
+	return untyped.(v1alpha1.CloudStorageSourceInformer)
 }

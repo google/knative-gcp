@@ -28,31 +28,31 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeAuditLogsSources implements AuditLogsSourceInterface
-type FakeAuditLogsSources struct {
+// FakeCloudAuditLogsSources implements CloudAuditLogsSourceInterface
+type FakeCloudAuditLogsSources struct {
 	Fake *FakeEventsV1alpha1
 	ns   string
 }
 
-var auditlogssourcesResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "auditlogssources"}
+var cloudauditlogssourcesResource = schema.GroupVersionResource{Group: "events.cloud.google.com", Version: "v1alpha1", Resource: "cloudauditlogssources"}
 
-var auditlogssourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "AuditLogsSource"}
+var cloudauditlogssourcesKind = schema.GroupVersionKind{Group: "events.cloud.google.com", Version: "v1alpha1", Kind: "CloudAuditLogsSource"}
 
 // Get takes name of the auditLogsSource, and returns the corresponding auditLogsSource object, and an error if there is any.
-func (c *FakeAuditLogsSources) Get(name string, options v1.GetOptions) (result *v1alpha1.AuditLogsSource, err error) {
+func (c *FakeCloudAuditLogsSources) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudAuditLogsSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(auditlogssourcesResource, c.ns, name), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewGetAction(cloudauditlogssourcesResource, c.ns, name), &v1alpha1.CloudAuditLogsSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.AuditLogsSource), err
+	return obj.(*v1alpha1.CloudAuditLogsSource), err
 }
 
-// List takes label and field selectors, and returns the list of AuditLogsSources that match those selectors.
-func (c *FakeAuditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.AuditLogsSourceList, err error) {
+// List takes label and field selectors, and returns the list of CloudAuditLogsSources that match those selectors.
+func (c *FakeCloudAuditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.CloudAuditLogsSourceList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewListAction(auditlogssourcesResource, auditlogssourcesKind, c.ns, opts), &v1alpha1.AuditLogsSourceList{})
+		Invokes(testing.NewListAction(cloudauditlogssourcesResource, cloudauditlogssourcesKind, c.ns, opts), &v1alpha1.CloudAuditLogsSourceList{})
 
 	if obj == nil {
 		return nil, err
@@ -62,8 +62,8 @@ func (c *FakeAuditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.Audit
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &v1alpha1.AuditLogsSourceList{ListMeta: obj.(*v1alpha1.AuditLogsSourceList).ListMeta}
-	for _, item := range obj.(*v1alpha1.AuditLogsSourceList).Items {
+	list := &v1alpha1.CloudAuditLogsSourceList{ListMeta: obj.(*v1alpha1.CloudAuditLogsSourceList).ListMeta}
+	for _, item := range obj.(*v1alpha1.CloudAuditLogsSourceList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -72,69 +72,69 @@ func (c *FakeAuditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.Audit
 }
 
 // Watch returns a watch.Interface that watches the requested auditLogsSources.
-func (c *FakeAuditLogsSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeCloudAuditLogsSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(auditlogssourcesResource, c.ns, opts))
+		InvokesWatch(testing.NewWatchAction(cloudauditlogssourcesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a auditLogsSource and creates it.  Returns the server's representation of the auditLogsSource, and an error, if there is any.
-func (c *FakeAuditLogsSources) Create(auditLogsSource *v1alpha1.AuditLogsSource) (result *v1alpha1.AuditLogsSource, err error) {
+func (c *FakeCloudAuditLogsSources) Create(auditLogsSource *v1alpha1.CloudAuditLogsSource) (result *v1alpha1.CloudAuditLogsSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(auditlogssourcesResource, c.ns, auditLogsSource), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewCreateAction(cloudauditlogssourcesResource, c.ns, auditLogsSource), &v1alpha1.CloudAuditLogsSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.AuditLogsSource), err
+	return obj.(*v1alpha1.CloudAuditLogsSource), err
 }
 
 // Update takes the representation of a auditLogsSource and updates it. Returns the server's representation of the auditLogsSource, and an error, if there is any.
-func (c *FakeAuditLogsSources) Update(auditLogsSource *v1alpha1.AuditLogsSource) (result *v1alpha1.AuditLogsSource, err error) {
+func (c *FakeCloudAuditLogsSources) Update(auditLogsSource *v1alpha1.CloudAuditLogsSource) (result *v1alpha1.CloudAuditLogsSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(auditlogssourcesResource, c.ns, auditLogsSource), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewUpdateAction(cloudauditlogssourcesResource, c.ns, auditLogsSource), &v1alpha1.CloudAuditLogsSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.AuditLogsSource), err
+	return obj.(*v1alpha1.CloudAuditLogsSource), err
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAuditLogsSources) UpdateStatus(auditLogsSource *v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, error) {
+func (c *FakeCloudAuditLogsSources) UpdateStatus(auditLogsSource *v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(auditlogssourcesResource, "status", c.ns, auditLogsSource), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewUpdateSubresourceAction(cloudauditlogssourcesResource, "status", c.ns, auditLogsSource), &v1alpha1.CloudAuditLogsSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.AuditLogsSource), err
+	return obj.(*v1alpha1.CloudAuditLogsSource), err
 }
 
 // Delete takes name of the auditLogsSource and deletes it. Returns an error if one occurs.
-func (c *FakeAuditLogsSources) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeCloudAuditLogsSources) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(auditlogssourcesResource, c.ns, name), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewDeleteAction(cloudauditlogssourcesResource, c.ns, name), &v1alpha1.CloudAuditLogsSource{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAuditLogsSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(auditlogssourcesResource, c.ns, listOptions)
+func (c *FakeCloudAuditLogsSources) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(cloudauditlogssourcesResource, c.ns, listOptions)
 
-	_, err := c.Fake.Invokes(action, &v1alpha1.AuditLogsSourceList{})
+	_, err := c.Fake.Invokes(action, &v1alpha1.CloudAuditLogsSourceList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched auditLogsSource.
-func (c *FakeAuditLogsSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.AuditLogsSource, err error) {
+func (c *FakeCloudAuditLogsSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudAuditLogsSource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(auditlogssourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.AuditLogsSource{})
+		Invokes(testing.NewPatchSubresourceAction(cloudauditlogssourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.CloudAuditLogsSource{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*v1alpha1.AuditLogsSource), err
+	return obj.(*v1alpha1.CloudAuditLogsSource), err
 }

@@ -29,34 +29,34 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// StoragesGetter has a method to return a StorageInterface.
+// CloudStorageSourcesGetter has a method to return a CloudStorageSourceInterface.
 // A group's client should implement this interface.
-type StoragesGetter interface {
-	Storages(namespace string) StorageInterface
+type CloudStorageSourcesGetter interface {
+	CloudStorageSources(namespace string) CloudStorageSourceInterface
 }
 
-// StorageInterface has methods to work with Storage resources.
-type StorageInterface interface {
-	Create(*v1alpha1.Storage) (*v1alpha1.Storage, error)
-	Update(*v1alpha1.Storage) (*v1alpha1.Storage, error)
-	UpdateStatus(*v1alpha1.Storage) (*v1alpha1.Storage, error)
+// CloudStorageSourceInterface has methods to work with CloudStorageSource resources.
+type CloudStorageSourceInterface interface {
+	Create(*v1alpha1.CloudStorageSource) (*v1alpha1.CloudStorageSource, error)
+	Update(*v1alpha1.CloudStorageSource) (*v1alpha1.CloudStorageSource, error)
+	UpdateStatus(*v1alpha1.CloudStorageSource) (*v1alpha1.CloudStorageSource, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.Storage, error)
-	List(opts v1.ListOptions) (*v1alpha1.StorageList, error)
+	Get(name string, options v1.GetOptions) (*v1alpha1.CloudStorageSource, error)
+	List(opts v1.ListOptions) (*v1alpha1.CloudStorageSourceList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Storage, err error)
-	StorageExpansion
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudStorageSource, err error)
+	CloudStorageSourceExpansion
 }
 
-// storages implements StorageInterface
+// storages implements CloudStorageSourceInterface
 type storages struct {
 	client rest.Interface
 	ns     string
 }
 
-// newStorages returns a Storages
-func newStorages(c *EventsV1alpha1Client, namespace string) *storages {
+// newCloudStorageSources returns a CloudStorageSources
+func newCloudStorageSources(c *EventsV1alpha1Client, namespace string) *storages {
 	return &storages{
 		client: c.RESTClient(),
 		ns:     namespace,
@@ -64,8 +64,8 @@ func newStorages(c *EventsV1alpha1Client, namespace string) *storages {
 }
 
 // Get takes name of the storage, and returns the corresponding storage object, and an error if there is any.
-func (c *storages) Get(name string, options v1.GetOptions) (result *v1alpha1.Storage, err error) {
-	result = &v1alpha1.Storage{}
+func (c *storages) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudStorageSource, err error) {
+	result = &v1alpha1.CloudStorageSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("storages").
@@ -76,13 +76,13 @@ func (c *storages) Get(name string, options v1.GetOptions) (result *v1alpha1.Sto
 	return
 }
 
-// List takes label and field selectors, and returns the list of Storages that match those selectors.
-func (c *storages) List(opts v1.ListOptions) (result *v1alpha1.StorageList, err error) {
+// List takes label and field selectors, and returns the list of CloudStorageSources that match those selectors.
+func (c *storages) List(opts v1.ListOptions) (result *v1alpha1.CloudStorageSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha1.StorageList{}
+	result = &v1alpha1.CloudStorageSourceList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("storages").
@@ -109,8 +109,8 @@ func (c *storages) Watch(opts v1.ListOptions) (watch.Interface, error) {
 }
 
 // Create takes the representation of a storage and creates it.  Returns the server's representation of the storage, and an error, if there is any.
-func (c *storages) Create(storage *v1alpha1.Storage) (result *v1alpha1.Storage, err error) {
-	result = &v1alpha1.Storage{}
+func (c *storages) Create(storage *v1alpha1.CloudStorageSource) (result *v1alpha1.CloudStorageSource, err error) {
+	result = &v1alpha1.CloudStorageSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("storages").
@@ -121,8 +121,8 @@ func (c *storages) Create(storage *v1alpha1.Storage) (result *v1alpha1.Storage, 
 }
 
 // Update takes the representation of a storage and updates it. Returns the server's representation of the storage, and an error, if there is any.
-func (c *storages) Update(storage *v1alpha1.Storage) (result *v1alpha1.Storage, err error) {
-	result = &v1alpha1.Storage{}
+func (c *storages) Update(storage *v1alpha1.CloudStorageSource) (result *v1alpha1.CloudStorageSource, err error) {
+	result = &v1alpha1.CloudStorageSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("storages").
@@ -136,8 +136,8 @@ func (c *storages) Update(storage *v1alpha1.Storage) (result *v1alpha1.Storage, 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
-func (c *storages) UpdateStatus(storage *v1alpha1.Storage) (result *v1alpha1.Storage, err error) {
-	result = &v1alpha1.Storage{}
+func (c *storages) UpdateStatus(storage *v1alpha1.CloudStorageSource) (result *v1alpha1.CloudStorageSource, err error) {
+	result = &v1alpha1.CloudStorageSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("storages").
@@ -177,8 +177,8 @@ func (c *storages) DeleteCollection(options *v1.DeleteOptions, listOptions v1.Li
 }
 
 // Patch applies the patch and returns the patched storage.
-func (c *storages) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.Storage, err error) {
-	result = &v1alpha1.Storage{}
+func (c *storages) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudStorageSource, err error) {
+	result = &v1alpha1.CloudStorageSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("storages").

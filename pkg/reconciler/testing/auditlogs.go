@@ -27,14 +27,14 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-type AuditLogsSourceOption func(*v1alpha1.AuditLogsSource)
+type CloudAuditLogsSourceOption func(*v1alpha1.CloudAuditLogsSource)
 
-func NewAuditLogsSource(name, namespace string, opts ...AuditLogsSourceOption) *v1alpha1.AuditLogsSource {
-	cal := &v1alpha1.AuditLogsSource{
+func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourceOption) *v1alpha1.CloudAuditLogsSource {
+	cal := &v1alpha1.CloudAuditLogsSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-auditlogssource-uid",
+			UID:       "test-cloudauditlogssource-uid",
 		},
 	}
 	for _, opt := range opts {
@@ -44,61 +44,61 @@ func NewAuditLogsSource(name, namespace string, opts ...AuditLogsSourceOption) *
 	return cal
 }
 
-func WithInitAuditLogsSourceConditions(s *v1alpha1.AuditLogsSource) {
+func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
-func WithAuditLogsSourceTopicFailed(reason, message string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkTopicFailed(reason, message)
 	}
 }
 
-func WithAuditLogsSourceTopicUnknown(reason, message string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceTopicUnknown(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
-func WithAuditLogsSourceTopicReady(topicID string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceTopicReady(topicID string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
-func WithAuditLogsSourcePullSubscriptionFailed(reason, message string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourcePullSubscriptionFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 
-func WithAuditLogsSourcePullSubscriptionUnknown(reason, message string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourcePullSubscriptionUnknown(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 
-func WithAuditLogsSourcePullSubscriptionReady() AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourcePullSubscriptionReady() CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkPullSubscriptionReady()
 	}
 }
 
-func WithAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ...interface{}) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ...interface{}) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkSinkNotReady(reason, messageFmt, messageA...)
 	}
 }
 
-func WithAuditLogsSourceSinkReady() AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceSinkReady() CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkSinkReady()
 	}
 }
 
-func WithAuditLogsSourceSink(gvk metav1.GroupVersionKind, name string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceSink(gvk metav1.GroupVersionKind, name string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
@@ -109,55 +109,55 @@ func WithAuditLogsSourceSink(gvk metav1.GroupVersionKind, name string) AuditLogs
 	}
 }
 
-func WithAuditLogsSourceSinkURI(url *apis.URL) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceSinkURI(url *apis.URL) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.SinkURI = url
 	}
 }
 
-func WithAuditLogsSourceProjectID(projectID string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceProjectID(projectID string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.ProjectID = projectID
 	}
 }
 
-func WithAuditLogsSourceSinkID(sinkID string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceSinkID(sinkID string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.StackdriverSink = sinkID
 	}
 }
 
-func WithAuditLogsSourceProject(project string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceProject(project string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.Project = project
 	}
 }
 
-func WithAuditLogsSourceResourceName(resourceName string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceResourceName(resourceName string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.ResourceName = resourceName
 	}
 }
 
-func WithAuditLogsSourceServiceName(serviceName string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceServiceName(serviceName string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.ServiceName = serviceName
 	}
 }
 
-func WithAuditLogsSourceMethodName(methodName string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceMethodName(methodName string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.MethodName = methodName
 	}
 }
 
-func WithAuditLogsSourceFinalizers(finalizers ...string) AuditLogsSourceOption {
-	return func(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceFinalizers(finalizers ...string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Finalizers = finalizers
 	}
 }
 
-func WithAuditLogsSourceDeletionTimestamp(s *v1alpha1.AuditLogsSource) {
+func WithCloudAuditLogsSourceDeletionTimestamp(s *v1alpha1.CloudAuditLogsSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
 }

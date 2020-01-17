@@ -24,7 +24,7 @@ metadata:
       [
         {"type", "com.google.cloud.auditlog.event", "schema", "type.googleapis.com/google.logging.v2.LogEntry", "description", "Common audit log event type for all Google Cloud Platform API operations." }
       ]
-  name: auditlogssources.events.cloud.google.com
+  name: cloudauditlogssources.events.cloud.google.com
 spec:
   group: events.cloud.google.com
   version: v1alpha1
@@ -32,10 +32,10 @@ spec:
     categories:
     - all
     - knative
-    - auditlogssource
+    - cloudauditlogssource
     - sources
-    kind: AuditLogsSource
-    plural: auditlogssources
+    kind: CloudAuditLogsSource
+    plural: cloudauditlogssources
   scope: Namespaced
   subresources:
     status: {}

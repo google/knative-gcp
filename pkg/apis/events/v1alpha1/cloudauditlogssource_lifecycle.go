@@ -22,63 +22,63 @@ import (
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
-func (s *AuditLogsSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+func (s *CloudAuditLogsSourceStatus) GetCondition(t apis.ConditionType) *apis.Condition {
 	return auditLogsSourceCondSet.Manage(s).GetCondition(t)
 }
 
 // GetTopLevelCondition returns the top level condition.
-func (s *AuditLogsSourceStatus) GetTopLevelCondition() *apis.Condition {
+func (s *CloudAuditLogsSourceStatus) GetTopLevelCondition() *apis.Condition {
 	return auditLogsSourceCondSet.Manage(s).GetTopLevelCondition()
 }
 
 // IsReady returns true if the resource is ready overall.
-func (s *AuditLogsSourceStatus) IsReady() bool {
+func (s *CloudAuditLogsSourceStatus) IsReady() bool {
 	return auditLogsSourceCondSet.Manage(s).IsHappy()
 }
 
 // InitializeConditions sets relevant unset conditions to Unknown state.
-func (s *AuditLogsSourceStatus) InitializeConditions() {
+func (s *CloudAuditLogsSourceStatus) InitializeConditions() {
 	auditLogsSourceCondSet.Manage(s).InitializeConditions()
 }
 
 // MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
 // is False and why.
-func (s *AuditLogsSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudAuditLogsSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionUnknown sets the condition that the status of underlying PullSubscription
 // is Unknown and why.
-func (s *AuditLogsSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudAuditLogsSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
 // MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
-func (s *AuditLogsSourceStatus) MarkPullSubscriptionReady() {
+func (s *CloudAuditLogsSourceStatus) MarkPullSubscriptionReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
 }
 
 // MarkTopicFailed sets the condition that the status of PubSub topic is False and why.
-func (s *AuditLogsSourceStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudAuditLogsSourceStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicUnknown sets the condition that the status of PubSub topic is Unknown and why.
-func (s *AuditLogsSourceStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudAuditLogsSourceStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
 }
 
 // MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
-func (s *AuditLogsSourceStatus) MarkTopicReady() {
+func (s *CloudAuditLogsSourceStatus) MarkTopicReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 }
 
-// MarkSinkNotReady sets the condition that a AuditLogsSource pubsub sink
+// MarkSinkNotReady sets the condition that a CloudAuditLogsSource pubsub sink
 // has not been configured and why.
-func (s *AuditLogsSourceStatus) MarkSinkNotReady(reason, messageFormat string, messageA ...interface{}) {
+func (s *CloudAuditLogsSourceStatus) MarkSinkNotReady(reason, messageFormat string, messageA ...interface{}) {
 	auditLogsSourceCondSet.Manage(s).MarkFalse(SinkReady, reason, messageFormat, messageA...)
 }
 
-func (s *AuditLogsSourceStatus) MarkSinkReady() {
+func (s *CloudAuditLogsSourceStatus) MarkSinkReady() {
 	auditLogsSourceCondSet.Manage(s).MarkTrue(SinkReady)
 }

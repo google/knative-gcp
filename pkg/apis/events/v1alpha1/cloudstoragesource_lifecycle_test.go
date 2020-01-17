@@ -26,20 +26,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestStorageStatusIsReady(t *testing.T) {
+func TestCloudStorageSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
-		s                   *StorageStatus
+		s                   *CloudStorageSourceStatus
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{{
 		name: "uninitialized",
-		s:    &StorageStatus{},
+		s:    &CloudStorageSourceStatus{},
 		want: false,
 	}, {
 		name: "initialized",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
@@ -47,8 +47,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is false",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkNotificationReady("notificationID")
@@ -59,8 +59,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkNotificationReady("notificationID")
@@ -71,8 +71,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of pullsubscription is false",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			s.MarkTopicReady()
 			s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
@@ -84,8 +84,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 	},
 		{
 			name: "the status of pullsubscription is unknown",
-			s: func() *StorageStatus {
-				s := &StorageStatus{}
+			s: func() *CloudStorageSourceStatus {
+				s := &CloudStorageSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
@@ -96,8 +96,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 			want:                false,
 		}, {
 			name: "notification not ready",
-			s: func() *StorageStatus {
-				s := &StorageStatus{}
+			s: func() *CloudStorageSourceStatus {
+				s := &CloudStorageSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkPullSubscriptionReady()
@@ -106,8 +106,8 @@ func TestStorageStatusIsReady(t *testing.T) {
 			}(),
 		}, {
 			name: "ready",
-			s: func() *StorageStatus {
-				s := &StorageStatus{}
+			s: func() *CloudStorageSourceStatus {
+				s := &CloudStorageSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkPullSubscriptionReady()
@@ -134,33 +134,33 @@ func TestStorageStatusIsReady(t *testing.T) {
 	}
 }
 
-func TestStorageStatusGetCondition(t *testing.T) {
+func TestCloudStorageSourceStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *StorageStatus
+		s         *CloudStorageSourceStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &StorageStatus{},
-		condQuery: StorageConditionReady,
+		s:         &CloudStorageSourceStatus{},
+		condQuery: CloudStorageSourceConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: StorageConditionReady,
+		condQuery: CloudStorageSourceConditionReady,
 		want: &apis.Condition{
-			Type:   StorageConditionReady,
+			Type:   CloudStorageSourceConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			s.MarkNotificationNotReady("NotReady", "test message")
 			return s
@@ -174,8 +174,8 @@ func TestStorageStatusGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "ready",
-		s: func() *StorageStatus {
-			s := &StorageStatus{}
+		s: func() *CloudStorageSourceStatus {
+			s := &CloudStorageSourceStatus{}
 			s.InitializeConditions()
 			s.MarkNotificationReady("notificationID")
 			return s

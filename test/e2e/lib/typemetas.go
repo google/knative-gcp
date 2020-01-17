@@ -53,7 +53,7 @@ var StorageTypeMeta = eventsTypeMeta(resources.StorageKind)
 
 var PubsubTypeMeta = eventsTypeMeta(resources.PubSubKind)
 
-var AuditLogsSourceTypeMeta = eventsTypeMeta(resources.AuditLogsSourceKind)
+var CloudAuditLogsSourceTypeMeta = eventsTypeMeta(resources.CloudAuditLogsSourceKind)
 
 var SchedulerSourceTypeMeta = eventsTypeMeta(resources.Scheduler)
 

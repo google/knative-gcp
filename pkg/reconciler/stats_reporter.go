@@ -45,10 +45,10 @@ const (
 	// TopicReadyLatencyN is the time it takes for a topic to become ready since the resource is created.
 	TopicReadyLatencyN = "topic_ready_latency"
 
-	// StorageReadyCountN is the number of storages that have become ready.
-	StorageReadyCountN = "storage_ready_count"
-	// StorageReadyLatencyN is the time it takes for a storage to become ready since the resource is created.
-	StorageReadyLatencyN = "storage_ready_latency"
+	// CloudStorageSourceReadyCountN is the number of storages that have become ready.
+	CloudStorageSourceReadyCountN = "storage_ready_count"
+	// CloudStorageSourceReadyLatencyN is the time it takes for a storage to become ready since the resource is created.
+	CloudStorageSourceReadyLatencyN = "storage_ready_latency"
 
 	// PubSubReadyCountN is the number of pubsubs that have become ready.
 	PubSubReadyCountN = "pubsub_ready_count"
@@ -60,10 +60,10 @@ const (
 	// SchedulerReadyLatencyN is the time it takes for a scheduler to become ready since the resource is created.
 	SchedulerReadyLatencyN = "scheduler_ready_latency"
 
-	// AuditLogsSourceReadyCountN is the number of AuditLogsSources that have become ready.
-	AuditLogsSourceReadyCountN = "auditlogssource_ready_count"
-	// AuditLogsSourceReadyLatencyN is the time it takes for an AuditLogsSource to become ready since the resource is created.
-	AuditLogsSourceReadyLatencyN = "auditlogssource_ready_latency"
+	// CloudAuditLogsSourceReadyCountN is the number of CloudAuditLogsSources that have become ready.
+	CloudAuditLogsSourceReadyCountN = "cloudauditlogssource_ready_count"
+	// CloudAuditLogsSourceReadyLatencyN is the time it takes for an CloudAuditLogsSource to become ready since the resource is created.
+	CloudAuditLogsSourceReadyLatencyN = "cloudauditlogssource_ready_latency"
 )
 
 var (
@@ -83,9 +83,9 @@ var (
 			ReadyLatencyKey: TopicReadyLatencyN,
 		},
 		// events
-		"Storage": {
-			ReadyCountKey:   StorageReadyCountN,
-			ReadyLatencyKey: StorageReadyLatencyN,
+		"CloudStorageSource": {
+			ReadyCountKey:   CloudStorageSourceReadyCountN,
+			ReadyLatencyKey: CloudStorageSourceReadyLatencyN,
 		},
 		"PubSub": {
 			ReadyCountKey:   PubSubReadyCountN,
@@ -95,9 +95,9 @@ var (
 			ReadyCountKey:   SchedulerReadyCountN,
 			ReadyLatencyKey: SchedulerReadyLatencyN,
 		},
-		"AuditLogsSource": {
-			ReadyCountKey:   AuditLogsSourceReadyCountN,
-			ReadyLatencyKey: AuditLogsSourceReadyLatencyN,
+		"CloudAuditLogsSource": {
+			ReadyCountKey:   CloudAuditLogsSourceReadyCountN,
+			ReadyLatencyKey: CloudAuditLogsSourceReadyLatencyN,
 		},
 	}
 

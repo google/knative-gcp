@@ -34,7 +34,7 @@
         |      PubSub      	|     roles/pubsub.editor    	|
         |      Storage     	|     roles/storage.admin    	|
         |     Scheduler    	| roles/cloudscheduler.admin 	|
-        |   AuditLogsSource | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer	|
+        |   CloudAuditLogsSource | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer	|
         |      Channel     	|     roles/pubsub.editor    	|
         | PullSubscription 	|     roles/pubsub.editor    	|
         |       Topic      	|     roles/pubsub.editor    	|

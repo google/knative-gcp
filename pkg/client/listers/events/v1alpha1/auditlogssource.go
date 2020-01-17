@@ -25,70 +25,70 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// AuditLogsSourceLister helps list AuditLogsSources.
-type AuditLogsSourceLister interface {
-	// List lists all AuditLogsSources in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.AuditLogsSource, err error)
-	// AuditLogsSources returns an object that can list and get AuditLogsSources.
-	AuditLogsSources(namespace string) AuditLogsSourceNamespaceLister
-	AuditLogsSourceListerExpansion
+// CloudAuditLogsSourceLister helps list CloudAuditLogsSources.
+type CloudAuditLogsSourceLister interface {
+	// List lists all CloudAuditLogsSources in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudAuditLogsSource, err error)
+	// CloudAuditLogsSources returns an object that can list and get CloudAuditLogsSources.
+	CloudAuditLogsSources(namespace string) CloudAuditLogsSourceNamespaceLister
+	CloudAuditLogsSourceListerExpansion
 }
 
-// auditLogsSourceLister implements the AuditLogsSourceLister interface.
+// auditLogsSourceLister implements the CloudAuditLogsSourceLister interface.
 type auditLogsSourceLister struct {
 	indexer cache.Indexer
 }
 
-// NewAuditLogsSourceLister returns a new AuditLogsSourceLister.
-func NewAuditLogsSourceLister(indexer cache.Indexer) AuditLogsSourceLister {
+// NewCloudAuditLogsSourceLister returns a new CloudAuditLogsSourceLister.
+func NewCloudAuditLogsSourceLister(indexer cache.Indexer) CloudAuditLogsSourceLister {
 	return &auditLogsSourceLister{indexer: indexer}
 }
 
-// List lists all AuditLogsSources in the indexer.
-func (s *auditLogsSourceLister) List(selector labels.Selector) (ret []*v1alpha1.AuditLogsSource, err error) {
+// List lists all CloudAuditLogsSources in the indexer.
+func (s *auditLogsSourceLister) List(selector labels.Selector) (ret []*v1alpha1.CloudAuditLogsSource, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.AuditLogsSource))
+		ret = append(ret, m.(*v1alpha1.CloudAuditLogsSource))
 	})
 	return ret, err
 }
 
-// AuditLogsSources returns an object that can list and get AuditLogsSources.
-func (s *auditLogsSourceLister) AuditLogsSources(namespace string) AuditLogsSourceNamespaceLister {
+// CloudAuditLogsSources returns an object that can list and get CloudAuditLogsSources.
+func (s *auditLogsSourceLister) CloudAuditLogsSources(namespace string) CloudAuditLogsSourceNamespaceLister {
 	return auditLogsSourceNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// AuditLogsSourceNamespaceLister helps list and get AuditLogsSources.
-type AuditLogsSourceNamespaceLister interface {
-	// List lists all AuditLogsSources in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.AuditLogsSource, err error)
-	// Get retrieves the AuditLogsSource from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.AuditLogsSource, error)
-	AuditLogsSourceNamespaceListerExpansion
+// CloudAuditLogsSourceNamespaceLister helps list and get CloudAuditLogsSources.
+type CloudAuditLogsSourceNamespaceLister interface {
+	// List lists all CloudAuditLogsSources in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudAuditLogsSource, err error)
+	// Get retrieves the CloudAuditLogsSource from the indexer for a given namespace and name.
+	Get(name string) (*v1alpha1.CloudAuditLogsSource, error)
+	CloudAuditLogsSourceNamespaceListerExpansion
 }
 
-// auditLogsSourceNamespaceLister implements the AuditLogsSourceNamespaceLister
+// auditLogsSourceNamespaceLister implements the CloudAuditLogsSourceNamespaceLister
 // interface.
 type auditLogsSourceNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
-// List lists all AuditLogsSources in the indexer for a given namespace.
-func (s auditLogsSourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.AuditLogsSource, err error) {
+// List lists all CloudAuditLogsSources in the indexer for a given namespace.
+func (s auditLogsSourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.CloudAuditLogsSource, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.AuditLogsSource))
+		ret = append(ret, m.(*v1alpha1.CloudAuditLogsSource))
 	})
 	return ret, err
 }
 
-// Get retrieves the AuditLogsSource from the indexer for a given namespace and name.
-func (s auditLogsSourceNamespaceLister) Get(name string) (*v1alpha1.AuditLogsSource, error) {
+// Get retrieves the CloudAuditLogsSource from the indexer for a given namespace and name.
+func (s auditLogsSourceNamespaceLister) Get(name string) (*v1alpha1.CloudAuditLogsSource, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("auditlogssource"), name)
+		return nil, errors.NewNotFound(v1alpha1.Resource("cloudauditlogssource"), name)
 	}
-	return obj.(*v1alpha1.AuditLogsSource), nil
+	return obj.(*v1alpha1.CloudAuditLogsSource), nil
 }

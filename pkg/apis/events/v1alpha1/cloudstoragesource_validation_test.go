@@ -30,7 +30,7 @@ import (
 
 var (
 	// Bare minimum is Bucket and Sink
-	minimalStorageSpec = StorageSpec{
+	minimalCloudStorageSourceSpec = CloudStorageSourceSpec{
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
@@ -47,7 +47,7 @@ var (
 	}
 
 	// Bucket, Sink and Secret
-	withSecret = StorageSpec{
+	withSecret = CloudStorageSourceSpec{
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
@@ -70,7 +70,7 @@ var (
 	}
 
 	// Bucket, Sink, Secret, and PubSubSecret
-	withPubSubSecret = StorageSpec{
+	withPubSubSecret = CloudStorageSourceSpec{
 		Bucket: "my-test-bucket",
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
@@ -102,18 +102,18 @@ var (
 func TestValidationFields(t *testing.T) {
 	testCases := []struct {
 		name string
-		s    *Storage
+		s    *CloudStorageSource
 		want *apis.FieldError
 	}{{
 		name: "empty",
-		s:    &Storage{Spec: StorageSpec{}},
+		s:    &CloudStorageSource{Spec: CloudStorageSourceSpec{}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.bucket", "spec.sink")
 			return fe
 		}(),
 	}, {
 		name: "missing sink",
-		s:    &Storage{Spec: StorageSpec{Bucket: "foo"}},
+		s:    &CloudStorageSource{Spec: CloudStorageSourceSpec{Bucket: "foo"}},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("spec.sink")
 			return fe
@@ -123,7 +123,7 @@ func TestValidationFields(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.s.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Errorf("%s: Validate StorageSpec (-want, +got) = %v", test.name, diff)
+				t.Errorf("%s: Validate CloudStorageSourceSpec (-want, +got) = %v", test.name, diff)
 			}
 		})
 	}
@@ -132,25 +132,25 @@ func TestValidationFields(t *testing.T) {
 func TestSpecValidationFields(t *testing.T) {
 	testCases := []struct {
 		name string
-		spec *StorageSpec
+		spec *CloudStorageSourceSpec
 		want *apis.FieldError
 	}{{
 		name: "empty",
-		spec: &StorageSpec{},
+		spec: &CloudStorageSourceSpec{},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("bucket", "sink")
 			return fe
 		}(),
 	}, {
 		name: "missing sink",
-		spec: &StorageSpec{Bucket: "foo"},
+		spec: &CloudStorageSourceSpec{Bucket: "foo"},
 		want: func() *apis.FieldError {
 			fe := apis.ErrMissingField("sink")
 			return fe
 		}(),
 	}, {
 		name: "missing bucket",
-		spec: &StorageSpec{
+		spec: &CloudStorageSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -170,7 +170,7 @@ func TestSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid secret, missing name",
-		spec: &StorageSpec{
+		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
@@ -195,7 +195,7 @@ func TestSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid gcs secret, missing key",
-		spec: &StorageSpec{
+		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
@@ -219,7 +219,7 @@ func TestSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid pullsubscription secret, missing name",
-		spec: &StorageSpec{
+		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
@@ -244,7 +244,7 @@ func TestSpecValidationFields(t *testing.T) {
 		}(),
 	}, {
 		name: "invalid gcs secret, missing key",
-		spec: &StorageSpec{
+		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				SourceSpec: duckv1.SourceSpec{
@@ -271,7 +271,7 @@ func TestSpecValidationFields(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.spec.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
-				t.Errorf("%s: Validate StorageSpec (-want, +got) = %v", test.name, diff)
+				t.Errorf("%s: Validate CloudStorageSourceSpec (-want, +got) = %v", test.name, diff)
 			}
 		})
 	}

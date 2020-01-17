@@ -24,14 +24,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// AuditLogsSources returns a AuditLogsSourceInformer.
-	AuditLogsSources() AuditLogsSourceInformer
+	// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+	CloudAuditLogsSources() CloudAuditLogsSourceInformer
 	// PubSubs returns a PubSubInformer.
 	PubSubs() PubSubInformer
 	// Schedulers returns a SchedulerInformer.
 	Schedulers() SchedulerInformer
-	// Storages returns a StorageInformer.
-	Storages() StorageInformer
+	// CloudStorageSources returns a CloudStorageSourceInformer.
+	CloudStorageSources() CloudStorageSourceInformer
 }
 
 type version struct {
@@ -45,8 +45,8 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// AuditLogsSources returns a AuditLogsSourceInformer.
-func (v *version) AuditLogsSources() AuditLogsSourceInformer {
+// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+func (v *version) CloudAuditLogsSources() CloudAuditLogsSourceInformer {
 	return &auditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
@@ -60,7 +60,7 @@ func (v *version) Schedulers() SchedulerInformer {
 	return &schedulerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Storages returns a StorageInformer.
-func (v *version) Storages() StorageInformer {
+// CloudStorageSources returns a CloudStorageSourceInformer.
+func (v *version) CloudStorageSources() CloudStorageSourceInformer {
 	return &storageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

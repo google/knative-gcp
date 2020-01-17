@@ -29,13 +29,13 @@ import (
 )
 
 func TestMakePullSubscription(t *testing.T) {
-	source := &v1alpha1.Storage{
+	source := &v1alpha1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "bucket-name",
 			Namespace: "bucket-namespace",
 			UID:       "bucket-uid",
 		},
-		Spec: v1alpha1.StorageSpec{
+		Spec: v1alpha1.CloudStorageSourceSpec{
 			Bucket: "this-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Project: "project-123",
@@ -78,7 +78,7 @@ func TestMakePullSubscription(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "Storage",
+				Kind:               "CloudStorageSource",
 				Name:               "bucket-name",
 				UID:                "bucket-uid",
 				Controller:         &yes,

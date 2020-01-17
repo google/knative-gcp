@@ -25,64 +25,64 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// StorageLister helps list Storages.
-type StorageLister interface {
-	// List lists all Storages in the indexer.
-	List(selector labels.Selector) (ret []*v1alpha1.Storage, err error)
-	// Storages returns an object that can list and get Storages.
-	Storages(namespace string) StorageNamespaceLister
-	StorageListerExpansion
+// CloudStorageSourceLister helps list CloudStorageSources.
+type CloudStorageSourceLister interface {
+	// List lists all CloudStorageSources in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudStorageSource, err error)
+	// CloudStorageSources returns an object that can list and get CloudStorageSources.
+	CloudStorageSources(namespace string) CloudStorageSourceNamespaceLister
+	CloudStorageSourceListerExpansion
 }
 
-// storageLister implements the StorageLister interface.
+// storageLister implements the CloudStorageSourceLister interface.
 type storageLister struct {
 	indexer cache.Indexer
 }
 
-// NewStorageLister returns a new StorageLister.
-func NewStorageLister(indexer cache.Indexer) StorageLister {
+// NewCloudStorageSourceLister returns a new CloudStorageSourceLister.
+func NewCloudStorageSourceLister(indexer cache.Indexer) CloudStorageSourceLister {
 	return &storageLister{indexer: indexer}
 }
 
-// List lists all Storages in the indexer.
-func (s *storageLister) List(selector labels.Selector) (ret []*v1alpha1.Storage, err error) {
+// List lists all CloudStorageSources in the indexer.
+func (s *storageLister) List(selector labels.Selector) (ret []*v1alpha1.CloudStorageSource, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Storage))
+		ret = append(ret, m.(*v1alpha1.CloudStorageSource))
 	})
 	return ret, err
 }
 
-// Storages returns an object that can list and get Storages.
-func (s *storageLister) Storages(namespace string) StorageNamespaceLister {
+// CloudStorageSources returns an object that can list and get CloudStorageSources.
+func (s *storageLister) CloudStorageSources(namespace string) CloudStorageSourceNamespaceLister {
 	return storageNamespaceLister{indexer: s.indexer, namespace: namespace}
 }
 
-// StorageNamespaceLister helps list and get Storages.
-type StorageNamespaceLister interface {
-	// List lists all Storages in the indexer for a given namespace.
-	List(selector labels.Selector) (ret []*v1alpha1.Storage, err error)
-	// Get retrieves the Storage from the indexer for a given namespace and name.
-	Get(name string) (*v1alpha1.Storage, error)
-	StorageNamespaceListerExpansion
+// CloudStorageSourceNamespaceLister helps list and get CloudStorageSources.
+type CloudStorageSourceNamespaceLister interface {
+	// List lists all CloudStorageSources in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1alpha1.CloudStorageSource, err error)
+	// Get retrieves the CloudStorageSource from the indexer for a given namespace and name.
+	Get(name string) (*v1alpha1.CloudStorageSource, error)
+	CloudStorageSourceNamespaceListerExpansion
 }
 
-// storageNamespaceLister implements the StorageNamespaceLister
+// storageNamespaceLister implements the CloudStorageSourceNamespaceLister
 // interface.
 type storageNamespaceLister struct {
 	indexer   cache.Indexer
 	namespace string
 }
 
-// List lists all Storages in the indexer for a given namespace.
-func (s storageNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.Storage, err error) {
+// List lists all CloudStorageSources in the indexer for a given namespace.
+func (s storageNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.CloudStorageSource, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.Storage))
+		ret = append(ret, m.(*v1alpha1.CloudStorageSource))
 	})
 	return ret, err
 }
 
-// Get retrieves the Storage from the indexer for a given namespace and name.
-func (s storageNamespaceLister) Get(name string) (*v1alpha1.Storage, error) {
+// Get retrieves the CloudStorageSource from the indexer for a given namespace and name.
+func (s storageNamespaceLister) Get(name string) (*v1alpha1.CloudStorageSource, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -90,5 +90,5 @@ func (s storageNamespaceLister) Get(name string) (*v1alpha1.Storage, error) {
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("storage"), name)
 	}
-	return obj.(*v1alpha1.Storage), nil
+	return obj.(*v1alpha1.CloudStorageSource), nil
 }

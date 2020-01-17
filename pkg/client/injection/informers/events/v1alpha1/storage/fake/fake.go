@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Events().V1alpha1().Storages()
+	inf := f.Events().V1alpha1().CloudStorageSources()
 	return context.WithValue(ctx, storage.Key{}, inf), inf.Informer()
 }

@@ -27,10 +27,10 @@ func TestGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
-		Kind:    "Storage",
+		Kind:    "CloudStorageSource",
 	}
 
-	c := &Storage{}
+	c := &CloudStorageSource{}
 	got := c.GetGroupVersionKind()
 
 	if diff := cmp.Diff(want, got); diff != "" {

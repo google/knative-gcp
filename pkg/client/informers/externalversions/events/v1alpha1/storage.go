@@ -31,11 +31,11 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// StorageInformer provides access to a shared informer and lister for
-// Storages.
-type StorageInformer interface {
+// CloudStorageSourceInformer provides access to a shared informer and lister for
+// CloudStorageSources.
+type CloudStorageSourceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.StorageLister
+	Lister() v1alpha1.CloudStorageSourceLister
 }
 
 type storageInformer struct {
@@ -44,46 +44,46 @@ type storageInformer struct {
 	namespace        string
 }
 
-// NewStorageInformer constructs a new informer for Storage type.
+// NewCloudStorageSourceInformer constructs a new informer for CloudStorageSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewStorageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredStorageInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewCloudStorageSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredCloudStorageSourceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredStorageInformer constructs a new informer for Storage type.
+// NewFilteredCloudStorageSourceInformer constructs a new informer for CloudStorageSource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredStorageInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredCloudStorageSourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().Storages(namespace).List(options)
+				return client.EventsV1alpha1().CloudStorageSources(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventsV1alpha1().Storages(namespace).Watch(options)
+				return client.EventsV1alpha1().CloudStorageSources(namespace).Watch(options)
 			},
 		},
-		&eventsv1alpha1.Storage{},
+		&eventsv1alpha1.CloudStorageSource{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
 func (f *storageInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredStorageInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredCloudStorageSourceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *storageInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventsv1alpha1.Storage{}, f.defaultInformer)
+	return f.factory.InformerFor(&eventsv1alpha1.CloudStorageSource{}, f.defaultInformer)
 }
 
-func (f *storageInformer) Lister() v1alpha1.StorageLister {
-	return v1alpha1.NewStorageLister(f.Informer().GetIndexer())
+func (f *storageInformer) Lister() v1alpha1.CloudStorageSourceLister {
+	return v1alpha1.NewCloudStorageSourceLister(f.Informer().GetIndexer())
 }

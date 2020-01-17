@@ -25,20 +25,20 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestAuditLogsSourceStatusIsReady(t *testing.T) {
+func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
-		s                   *AuditLogsSourceStatus
+		s                   *CloudAuditLogsSourceStatus
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{{
 		name: "uninitialized",
-		s:    &AuditLogsSourceStatus{},
+		s:    &CloudAuditLogsSourceStatus{},
 		want: false,
 	}, {
 		name: "initialized",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
@@ -46,8 +46,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is false",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkSinkReady()
@@ -58,8 +58,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			s.MarkPullSubscriptionReady()
 			s.MarkSinkReady()
@@ -71,8 +71,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 	},
 		{
 			name: "the status of pullsubscription is false",
-			s: func() *AuditLogsSourceStatus {
-				s := &AuditLogsSourceStatus{}
+			s: func() *CloudAuditLogsSourceStatus {
+				s := &CloudAuditLogsSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkSinkReady()
@@ -82,8 +82,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 			wantConditionStatus: corev1.ConditionFalse,
 		}, {
 			name: "the status of pullsubscription is unknown",
-			s: func() *AuditLogsSourceStatus {
-				s := &AuditLogsSourceStatus{}
+			s: func() *CloudAuditLogsSourceStatus {
+				s := &CloudAuditLogsSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkSinkReady()
@@ -95,8 +95,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 		},
 		{
 			name: "sink is not ready",
-			s: func() *AuditLogsSourceStatus {
-				s := &AuditLogsSourceStatus{}
+			s: func() *CloudAuditLogsSourceStatus {
+				s := &CloudAuditLogsSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkPullSubscriptionReady()
@@ -107,8 +107,8 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 			want:                false,
 		}, {
 			name: "ready",
-			s: func() *AuditLogsSourceStatus {
-				s := &AuditLogsSourceStatus{}
+			s: func() *CloudAuditLogsSourceStatus {
+				s := &CloudAuditLogsSourceStatus{}
 				s.InitializeConditions()
 				s.MarkTopicReady()
 				s.MarkPullSubscriptionReady()
@@ -133,21 +133,21 @@ func TestAuditLogsSourceStatusIsReady(t *testing.T) {
 		})
 	}
 }
-func TestAuditLogsSourceGetCondition(t *testing.T) {
+func TestCloudAuditLogsSourceGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *AuditLogsSourceStatus
+		s         *CloudAuditLogsSourceStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &AuditLogsSourceStatus{},
+		s:         &CloudAuditLogsSourceStatus{},
 		condQuery: SinkReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
@@ -158,8 +158,8 @@ func TestAuditLogsSourceGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "not ready",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			s.MarkSinkNotReady("NotReady", "test message")
 			return s
@@ -173,8 +173,8 @@ func TestAuditLogsSourceGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "ready",
-		s: func() *AuditLogsSourceStatus {
-			s := &AuditLogsSourceStatus{}
+		s: func() *CloudAuditLogsSourceStatus {
+			s := &CloudAuditLogsSourceStatus{}
 			s.InitializeConditions()
 			s.MarkSinkReady()
 			return s

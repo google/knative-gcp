@@ -217,11 +217,11 @@ func TestStorageStackDriverMetrics(t *testing.T) {
 	StorageWithTestImpl(t, true /*assertMetrics */)
 }
 
-// TestAuditLogsSource tests we can knock down a target from an AuditLogsSource.
-func TestAuditLogsSource(t *testing.T) {
+// TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
+func TestCloudAuditLogsSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	AuditLogsSourceWithTestImpl(t)
+	CloudAuditLogsSourceWithTestImpl(t)
 }
 
 // TestSmokeSchedulerSetup tests if we can create a Scheduler resource and get it to a ready state.

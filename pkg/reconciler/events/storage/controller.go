@@ -34,7 +34,7 @@ import (
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "Storage"
+	reconcilerName = "CloudStorageSource"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
@@ -66,12 +66,12 @@ func NewController(
 	storageInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Storage")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

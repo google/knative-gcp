@@ -1,8 +1,8 @@
-# Cloud AuditLogsSource Example
+# Cloud CloudAuditLogsSource Example
 
 ## Overview
 
-This sample shows how to Configure a `AuditLogsSource` resource to 
+This sample shows how to Configure a `CloudAuditLogsSource` resource to 
 read data from [Cloud Audit Logs](https://cloud.google.com/logging/docs/audit/) and directly publish to the underlying transport (Pub/Sub), 
 in CloudEvents format.
 
@@ -21,21 +21,21 @@ in CloudEvents format.
 
 ## Deployment
 
-1. Create an [AuditLogsSource](./auditlogssource.yaml).
-   This `AuditLogsSource` will emit Cloud Audit Log Entries for the creation of Pub/Sub topics.  
+1. Create an [CloudAuditLogsSource](./cloudauditlogssource.yaml).
+   This `CloudAuditLogsSource` will emit Cloud Audit Log Entries for the creation of Pub/Sub topics.  
    You can change the `serviceName`, `methodName` and `resourceName` (see detailed description [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
        
-   |   AuditLogsSource Spec  |       Audit Log Entry Fields   |
+   |   CloudAuditLogsSource Spec  |       Audit Log Entry Fields   |
    |  :-------------------:  |  :--------------------------:  |
    |      serviceName        |     protoPayload.serviceName   |
    |      methodName         |     protoPayload.methodName    |
    |     resourceName        |     protoPayload.resourceName  |
    
     ```shell
-    kubectl apply --filename auditlogssource.yaml
+    kubectl apply --filename cloudauditlogssource.yaml
     ```   
 
-1. Create a [service](./event-display.yaml) that the AuditLogsSource will sink into:
+1. Create a [service](./event-display.yaml) that the CloudAuditLogsSource will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -53,7 +53,7 @@ Create a GCP PubSub Topic:
 ## Verify
 
 We will verify that the published event was sent by looking at the logs of the
-service that this AuditLogsSource sinks to.
+service that this CloudAuditLogsSource sinks to.
 
 1. We need to wait for the downstream pods to get started and receive our event,
    wait 60 seconds.
@@ -159,10 +159,10 @@ Data,
 
 ## Cleaning Up
 
-1. Delete the AuditLogsSource
+1. Delete the CloudAuditLogsSource
 
     ```shell
-    kubectl delete -f ./auditlogssource.yaml
+    kubectl delete -f ./cloudauditlogssource.yaml
     ```
 1. Delete the Service    
     

@@ -25,14 +25,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestStorage_SetDefaults(t *testing.T) {
+func TestCloudStorageSource_SetDefaults(t *testing.T) {
 	testCases := map[string]struct {
-		orig     *StorageSpec
-		expected *StorageSpec
+		orig     *CloudStorageSourceSpec
+		expected *CloudStorageSourceSpec
 	}{
 		"missing defaults": {
-			orig: &StorageSpec{},
-			expected: &StorageSpec{
+			orig: &CloudStorageSourceSpec{},
+			expected: &CloudStorageSourceSpec{
 				EventTypes: allEventTypes,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
@@ -45,8 +45,8 @@ func TestStorage_SetDefaults(t *testing.T) {
 			},
 		},
 		"defaults present": {
-			orig: &StorageSpec{
-				EventTypes: []string{StorageFinalize, StorageDelete},
+			orig: &CloudStorageSourceSpec{
+				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
@@ -56,8 +56,8 @@ func TestStorage_SetDefaults(t *testing.T) {
 					},
 				},
 			},
-			expected: &StorageSpec{
-				EventTypes: []string{StorageFinalize, StorageDelete},
+			expected: &CloudStorageSourceSpec{
+				EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

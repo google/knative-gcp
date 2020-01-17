@@ -24,6 +24,6 @@ import (
 
 // GenerateTopicName generates a topic name for the storage. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
-func GenerateTopicName(storage *v1alpha1.Storage) string {
+func GenerateTopicName(storage *v1alpha1.CloudStorageSource) string {
 	return fmt.Sprintf("storage-%s", string(storage.UID))
 }

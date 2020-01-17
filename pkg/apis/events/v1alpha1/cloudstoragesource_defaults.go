@@ -20,13 +20,13 @@ import (
 	"context"
 )
 
-var allEventTypes = []string{StorageFinalize, StorageDelete, StorageArchive, StorageMetadataUpdate}
+var allEventTypes = []string{CloudStorageSourceFinalize, CloudStorageSourceDelete, CloudStorageSourceArchive, CloudStorageSourceMetadataUpdate}
 
-func (s *Storage) SetDefaults(ctx context.Context) {
+func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
 }
 
-func (ss *StorageSpec) SetDefaults(ctx context.Context) {
+func (ss *CloudStorageSourceSpec) SetDefaults(ctx context.Context) {
 	ss.SetPubSubDefaults()
 	if len(ss.EventTypes) == 0 {
 		ss.EventTypes = allEventTypes

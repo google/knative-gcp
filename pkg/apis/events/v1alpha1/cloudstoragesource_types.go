@@ -32,25 +32,25 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Storage is a specification for a Google Cloud Storage Source resource
-type Storage struct {
+// CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource
+type CloudStorageSource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   StorageSpec   `json:"spec"`
-	Status StorageStatus `json:"status"`
+	Spec   CloudStorageSourceSpec   `json:"spec"`
+	Status CloudStorageSourceStatus `json:"status"`
 }
 
 var (
-	_ apis.Validatable             = (*Storage)(nil)
-	_ apis.Defaultable             = (*Storage)(nil)
-	_ runtime.Object               = (*Storage)(nil)
-	_ kmeta.OwnerRefable           = (*Storage)(nil)
-	_ resourcesemantics.GenericCRD = (*Storage)(nil)
+	_ apis.Validatable             = (*CloudStorageSource)(nil)
+	_ apis.Defaultable             = (*CloudStorageSource)(nil)
+	_ runtime.Object               = (*CloudStorageSource)(nil)
+	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 )
 
-// StorageSpec is the spec for a Storage resource
-type StorageSpec struct {
+// CloudStorageSourceSpec is the spec for a CloudStorageSource resource
+type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
@@ -80,26 +80,26 @@ type StorageSpec struct {
 }
 
 const (
-	// CloudEvent types used by Storage.
-	StorageFinalize       = "com.google.cloud.storage.object.finalize"
-	StorageArchive        = "com.google.cloud.storage.object.archive"
-	StorageDelete         = "com.google.cloud.storage.object.delete"
-	StorageMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
+	// CloudEvent types used by CloudStorageSource.
+	CloudStorageSourceFinalize       = "com.google.cloud.storage.object.finalize"
+	CloudStorageSourceArchive        = "com.google.cloud.storage.object.archive"
+	CloudStorageSourceDelete         = "com.google.cloud.storage.object.delete"
+	CloudStorageSourceMetadataUpdate = "com.google.cloud.storage.object.metadataUpdate"
 
 	// CloudEvent source prefix.
 	storageSourcePrefix = "//storage.googleapis.com/buckets"
 )
 
 const (
-	// StorageConditionReady has status True when the Storage is ready to send events.
-	StorageConditionReady = apis.ConditionReady
+	// CloudStorageSourceConditionReady has status True when the CloudStorageSource is ready to send events.
+	CloudStorageSourceConditionReady = apis.ConditionReady
 
 	// NotificationReady has status True when GCS has been configured properly to
 	// send Notification events
 	NotificationReady apis.ConditionType = "NotificationReady"
 )
 
-func StorageEventSource(bucket string) string {
+func CloudStorageSourceEventSource(bucket string) string {
 	return fmt.Sprintf("%s/%s", storageSourcePrefix, bucket)
 }
 
@@ -108,8 +108,8 @@ var storageCondSet = apis.NewLivingConditionSet(
 	duckv1alpha1.TopicReady,
 	NotificationReady)
 
-// StorageStatus is the status for a GCS resource
-type StorageStatus struct {
+// CloudStorageSourceStatus is the status for a GCS resource
+type CloudStorageSourceStatus struct {
 	// This brings in our GCP PubSub based events importers
 	// duck/v1beta1 Status, SinkURI, ProjectID, TopicID, and SubscriptionID
 	duckv1alpha1.PubSubStatus `json:",inline"`
@@ -119,33 +119,33 @@ type StorageStatus struct {
 	NotificationID string `json:"notificationId,omitempty"`
 }
 
-func (storage *Storage) GetGroupVersionKind() schema.GroupVersionKind {
-	return SchemeGroupVersion.WithKind("Storage")
+func (storage *CloudStorageSource) GetGroupVersionKind() schema.GroupVersionKind {
+	return SchemeGroupVersion.WithKind("CloudStorageSource")
 }
 
 // Methods for pubsubable interface
 
 // PubSubSpec returns the PubSubSpec portion of the Spec.
-func (s *Storage) PubSubSpec() *duckv1alpha1.PubSubSpec {
+func (s *CloudStorageSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &s.Spec.PubSubSpec
 }
 
 // PubSubStatus returns the PubSubStatus portion of the Status.
-func (s *Storage) PubSubStatus() *duckv1alpha1.PubSubStatus {
+func (s *CloudStorageSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
-func (s *Storage) ConditionSet() *apis.ConditionSet {
+func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// StorageList is a list of Storage resources
-type StorageList struct {
+// CloudStorageSourceList is a list of CloudStorageSource resources
+type CloudStorageSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []Storage `json:"items"`
+	Items []CloudStorageSource `json:"items"`
 }

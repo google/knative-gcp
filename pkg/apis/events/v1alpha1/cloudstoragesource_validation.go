@@ -25,11 +25,11 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func (current *Storage) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	return current.Spec.Validate(ctx).ViaField("spec")
 }
 
-func (current *StorageSpec) Validate(ctx context.Context) *apis.FieldError {
+func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
 	// Sink [required]

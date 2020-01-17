@@ -20,6 +20,6 @@ import (
 	"context"
 )
 
-func (s *AuditLogsSource) SetDefaults(ctx context.Context) {
+func (s *CloudAuditLogsSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetPubSubDefaults()
 }

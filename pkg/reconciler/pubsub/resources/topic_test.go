@@ -29,14 +29,14 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-func TestMakeTopicWithStorage(t *testing.T) {
-	source := &v1alpha1.Storage{
+func TestMakeTopicWithCloudStorageSource(t *testing.T) {
+	source := &v1alpha1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "storage-name",
 			Namespace: "storage-namespace",
 			UID:       "storage-uid",
 		},
-		Spec: v1alpha1.StorageSpec{
+		Spec: v1alpha1.CloudStorageSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Project: "project-123",
 				Secret: &corev1.SecretKeySelector{
@@ -71,7 +71,7 @@ func TestMakeTopicWithStorage(t *testing.T) {
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "Storage",
+				Kind:               "CloudStorageSource",
 				Name:               "storage-name",
 				UID:                "storage-uid",
 				Controller:         &yes,

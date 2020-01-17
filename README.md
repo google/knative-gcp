@@ -15,7 +15,7 @@ Then use one of the implemented Sources:
 - [PubSub (events.cloud.google.com)](docs/pubsub/README.md)
 - [Storage (events.cloud.google.com)](docs/storage/README.md)
 - [Scheduler (events.cloud.google.com)](docs/scheduler/README.md)
-- [AuditLogsSource (events.cloud.google.com)](docs/auditlogssource/README.md)
+- [CloudAuditLogsSource (events.cloud.google.com)](docs/cloudauditlogssource/README.md)
 
 To use a Knative Eventing Channel backed by Pub/Sub:
 

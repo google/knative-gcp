@@ -30,10 +30,10 @@ func TestAuditLogsGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
 		Group:   "events.cloud.google.com",
 		Version: "v1alpha1",
-		Kind:    "AuditLogsSource",
+		Kind:    "CloudAuditLogsSource",
 	}
 
-	c := &AuditLogsSource{}
+	c := &CloudAuditLogsSource{}
 
 	got := c.GetGroupVersionKind()
 
@@ -52,7 +52,7 @@ func TestAuditLogsConditionSet(t *testing.T) {
 	}, {
 		Type: apis.ConditionReady,
 	}}
-	c := &AuditLogsSource{}
+	c := &CloudAuditLogsSource{}
 
 	c.ConditionSet().Manage(&c.Status).InitializeConditions()
 	var got []apis.Condition = c.Status.GetConditions()

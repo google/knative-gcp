@@ -29,34 +29,34 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
-// AuditLogsSourcesGetter has a method to return a AuditLogsSourceInterface.
+// CloudAuditLogsSourcesGetter has a method to return a CloudAuditLogsSourceInterface.
 // A group's client should implement this interface.
-type AuditLogsSourcesGetter interface {
-	AuditLogsSources(namespace string) AuditLogsSourceInterface
+type CloudAuditLogsSourcesGetter interface {
+	CloudAuditLogsSources(namespace string) CloudAuditLogsSourceInterface
 }
 
-// AuditLogsSourceInterface has methods to work with AuditLogsSource resources.
-type AuditLogsSourceInterface interface {
-	Create(*v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, error)
-	Update(*v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, error)
-	UpdateStatus(*v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, error)
+// CloudAuditLogsSourceInterface has methods to work with CloudAuditLogsSource resources.
+type CloudAuditLogsSourceInterface interface {
+	Create(*v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error)
+	Update(*v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error)
+	UpdateStatus(*v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1alpha1.AuditLogsSource, error)
-	List(opts v1.ListOptions) (*v1alpha1.AuditLogsSourceList, error)
+	Get(name string, options v1.GetOptions) (*v1alpha1.CloudAuditLogsSource, error)
+	List(opts v1.ListOptions) (*v1alpha1.CloudAuditLogsSourceList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.AuditLogsSource, err error)
-	AuditLogsSourceExpansion
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudAuditLogsSource, err error)
+	CloudAuditLogsSourceExpansion
 }
 
-// auditLogsSources implements AuditLogsSourceInterface
+// auditLogsSources implements CloudAuditLogsSourceInterface
 type auditLogsSources struct {
 	client rest.Interface
 	ns     string
 }
 
-// newAuditLogsSources returns a AuditLogsSources
-func newAuditLogsSources(c *EventsV1alpha1Client, namespace string) *auditLogsSources {
+// newCloudAuditLogsSources returns a CloudAuditLogsSources
+func newCloudAuditLogsSources(c *EventsV1alpha1Client, namespace string) *auditLogsSources {
 	return &auditLogsSources{
 		client: c.RESTClient(),
 		ns:     namespace,
@@ -64,11 +64,11 @@ func newAuditLogsSources(c *EventsV1alpha1Client, namespace string) *auditLogsSo
 }
 
 // Get takes name of the auditLogsSource, and returns the corresponding auditLogsSource object, and an error if there is any.
-func (c *auditLogsSources) Get(name string, options v1.GetOptions) (result *v1alpha1.AuditLogsSource, err error) {
-	result = &v1alpha1.AuditLogsSource{}
+func (c *auditLogsSources) Get(name string, options v1.GetOptions) (result *v1alpha1.CloudAuditLogsSource, err error) {
+	result = &v1alpha1.CloudAuditLogsSource{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
 		Do().
@@ -76,16 +76,16 @@ func (c *auditLogsSources) Get(name string, options v1.GetOptions) (result *v1al
 	return
 }
 
-// List takes label and field selectors, and returns the list of AuditLogsSources that match those selectors.
-func (c *auditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.AuditLogsSourceList, err error) {
+// List takes label and field selectors, and returns the list of CloudAuditLogsSources that match those selectors.
+func (c *auditLogsSources) List(opts v1.ListOptions) (result *v1alpha1.CloudAuditLogsSourceList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha1.AuditLogsSourceList{}
+	result = &v1alpha1.CloudAuditLogsSourceList{}
 	err = c.client.Get().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Do().
@@ -102,18 +102,18 @@ func (c *auditLogsSources) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	opts.Watch = true
 	return c.client.Get().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
 		Watch()
 }
 
 // Create takes the representation of a auditLogsSource and creates it.  Returns the server's representation of the auditLogsSource, and an error, if there is any.
-func (c *auditLogsSources) Create(auditLogsSource *v1alpha1.AuditLogsSource) (result *v1alpha1.AuditLogsSource, err error) {
-	result = &v1alpha1.AuditLogsSource{}
+func (c *auditLogsSources) Create(auditLogsSource *v1alpha1.CloudAuditLogsSource) (result *v1alpha1.CloudAuditLogsSource, err error) {
+	result = &v1alpha1.CloudAuditLogsSource{}
 	err = c.client.Post().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		Body(auditLogsSource).
 		Do().
 		Into(result)
@@ -121,11 +121,11 @@ func (c *auditLogsSources) Create(auditLogsSource *v1alpha1.AuditLogsSource) (re
 }
 
 // Update takes the representation of a auditLogsSource and updates it. Returns the server's representation of the auditLogsSource, and an error, if there is any.
-func (c *auditLogsSources) Update(auditLogsSource *v1alpha1.AuditLogsSource) (result *v1alpha1.AuditLogsSource, err error) {
-	result = &v1alpha1.AuditLogsSource{}
+func (c *auditLogsSources) Update(auditLogsSource *v1alpha1.CloudAuditLogsSource) (result *v1alpha1.CloudAuditLogsSource, err error) {
+	result = &v1alpha1.CloudAuditLogsSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		Name(auditLogsSource.Name).
 		Body(auditLogsSource).
 		Do().
@@ -136,11 +136,11 @@ func (c *auditLogsSources) Update(auditLogsSource *v1alpha1.AuditLogsSource) (re
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 
-func (c *auditLogsSources) UpdateStatus(auditLogsSource *v1alpha1.AuditLogsSource) (result *v1alpha1.AuditLogsSource, err error) {
-	result = &v1alpha1.AuditLogsSource{}
+func (c *auditLogsSources) UpdateStatus(auditLogsSource *v1alpha1.CloudAuditLogsSource) (result *v1alpha1.CloudAuditLogsSource, err error) {
+	result = &v1alpha1.CloudAuditLogsSource{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		Name(auditLogsSource.Name).
 		SubResource("status").
 		Body(auditLogsSource).
@@ -153,7 +153,7 @@ func (c *auditLogsSources) UpdateStatus(auditLogsSource *v1alpha1.AuditLogsSourc
 func (c *auditLogsSources) Delete(name string, options *v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		Name(name).
 		Body(options).
 		Do().
@@ -168,7 +168,7 @@ func (c *auditLogsSources) DeleteCollection(options *v1.DeleteOptions, listOptio
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
@@ -177,11 +177,11 @@ func (c *auditLogsSources) DeleteCollection(options *v1.DeleteOptions, listOptio
 }
 
 // Patch applies the patch and returns the patched auditLogsSource.
-func (c *auditLogsSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.AuditLogsSource, err error) {
-	result = &v1alpha1.AuditLogsSource{}
+func (c *auditLogsSources) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.CloudAuditLogsSource, err error) {
+	result = &v1alpha1.CloudAuditLogsSource{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
-		Resource("auditlogssources").
+		Resource("cloudauditlogssources").
 		SubResource(subresources...).
 		Name(name).
 		Body(data).

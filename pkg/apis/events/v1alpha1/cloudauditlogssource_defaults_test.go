@@ -25,15 +25,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func TestAuditLogsSource_SetDefaults(t *testing.T) {
+func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 	testCases := map[string]struct {
-		orig     *AuditLogsSource
-		expected *AuditLogsSource
+		orig     *CloudAuditLogsSource
+		expected *CloudAuditLogsSource
 	}{
 		"missing defaults": {
-			orig: &AuditLogsSource{},
-			expected: &AuditLogsSource{
-				Spec: AuditLogsSourceSpec{
+			orig: &CloudAuditLogsSource{},
+			expected: &CloudAuditLogsSource{
+				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{
@@ -46,8 +46,8 @@ func TestAuditLogsSource_SetDefaults(t *testing.T) {
 			},
 		},
 		"defaults present": {
-			orig: &AuditLogsSource{
-				Spec: AuditLogsSourceSpec{
+			orig: &CloudAuditLogsSource{
+				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{
@@ -58,8 +58,8 @@ func TestAuditLogsSource_SetDefaults(t *testing.T) {
 					},
 				},
 			},
-			expected: &AuditLogsSource{
-				Spec: AuditLogsSourceSpec{
+			expected: &CloudAuditLogsSource{
+				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
 							LocalObjectReference: corev1.LocalObjectReference{

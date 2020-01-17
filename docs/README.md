@@ -11,7 +11,7 @@
 1. [PubSub](./pubsub/README.md)
 1. [Storage](./storage/README.md)
 1. [Scheduler](./scheduler/README.md)
-1. [AuditLogsSource](./auditlogssource/README.md)
+1. [CloudAuditLogsSource](./cloudauditlogssource/README.md)
 
 ## Channel examples
 

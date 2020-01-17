@@ -126,12 +126,12 @@ func (l *Listers) GetJobLister() batchv1listers.JobLister {
 	return batchv1listers.NewJobLister(l.indexerFor(&batchv1.Job{}))
 }
 
-func (l *Listers) GetAuditLogsSourceLister() eventslisters.AuditLogsSourceLister {
-	return eventslisters.NewAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.AuditLogsSource{}))
+func (l *Listers) GetCloudAuditLogsSourceLister() eventslisters.CloudAuditLogsSourceLister {
+	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.CloudAuditLogsSource{}))
 }
 
-func (l *Listers) GetStorageLister() eventslisters.StorageLister {
-	return eventslisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
+func (l *Listers) GetCloudStorageSourceLister() eventslisters.CloudStorageSourceLister {
+	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1alpha1.CloudStorageSource{}))
 }
 
 func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
