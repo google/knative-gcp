@@ -62,7 +62,7 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: com.google.cloud.sheduler.job.execute
+  type: com.google.cloud.scheduler.job.execute
   source: //cloudscheduler.googleapis.com/projects/knative-gcp/locations/us-east4/schedulers/scheduler-test
   subject: jobs/cre-scheduler-bfc82b00-11fd-42ec-b21a-011dddc2170b
   id: 714614529367848
