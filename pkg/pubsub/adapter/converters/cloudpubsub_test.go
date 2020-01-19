@@ -28,7 +28,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-func TestConvertPubSub(t *testing.T) {
+func TestConvertCloudPubSub(t *testing.T) {
 
 	tests := []struct {
 		name        string
@@ -115,9 +115,9 @@ func TestConvertPubSub(t *testing.T) {
 func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
-	e.SetSource(v1alpha1.PubSubEventSource("testproject", "testtopic"))
+	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
 	e.SetDataContentType("application/octet-stream")
-	e.SetType(v1alpha1.PubSubPublish)
+	e.SetType(v1alpha1.CloudPubSubSourcePublish)
 	e.SetExtension("knativecemode", string(Binary))
 	e.Data = []byte("test data")
 	e.DataEncoded = true

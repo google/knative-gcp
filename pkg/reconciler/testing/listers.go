@@ -138,7 +138,7 @@ func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSo
 	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1alpha1.CloudSchedulerSource{}))
 }
 
-func (l *Listers) GetCloudPubSubSourceLister() eventslisters.PubSubLister {
+func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLister {
 	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
 }
 

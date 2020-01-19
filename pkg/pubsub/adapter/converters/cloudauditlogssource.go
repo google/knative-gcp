@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	AuditLogConverter = "com.google.cloud.auditlogs"
+	CloudAuditLogsSourceConverter = "com.google.cloud.auditlogs"
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
 	loggingSource  = "logging.googleapis.com"
@@ -104,7 +104,7 @@ func resolveAnyUnknowns(typeURL string) (proto.Message, error) {
 	return reflect.New(mt.Elem()).Interface().(proto.Message), nil
 }
 
-func convertAuditLog(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertCloudAuditLogsSource(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("nil pubsub message")
 	}

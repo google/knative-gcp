@@ -138,13 +138,17 @@ func TestAllCases(t *testing.T) {
 	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS),
+			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		},
 		Key:     testNS + "/" + sourceName,
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
 		}},
 		WantCreates: []runtime.Object{
@@ -170,6 +174,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists, topic has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -182,6 +188,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
 		}},
 		WantEvents: []string{
@@ -191,6 +199,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -203,6 +213,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose projectid`),
 			),
@@ -214,6 +226,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -227,6 +241,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose topicid`),
 			),
@@ -238,6 +254,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -251,6 +269,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" mismatch: expected "cloudauditlogssource-test-cloudauditlogssource-uid" got "garbaaaaage"`),
 			),
@@ -262,6 +282,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and the status of topic is false",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -274,6 +296,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status")),
 		}},
@@ -284,6 +308,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and the status of topic is unknown",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
@@ -296,6 +322,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicUnknown("", "")),
 		}},
@@ -306,6 +334,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, pullsubscription created",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -319,6 +349,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -332,7 +364,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
 					Topic:       testTopicID,
 					Secret:      &secret,
-					AdapterType: converters.AuditLogConverter,
+					AdapterType: converters.CloudAuditLogsSourceConverter,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
@@ -351,6 +383,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -365,6 +399,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -380,6 +416,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -394,6 +432,8 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -409,6 +449,8 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -424,6 +466,8 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -438,6 +482,8 @@ func TestAllCases(t *testing.T) {
 		Name: "logging client create fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -462,6 +508,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -476,6 +524,8 @@ func TestAllCases(t *testing.T) {
 		Name: "get sink fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -500,6 +550,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -514,6 +566,8 @@ func TestAllCases(t *testing.T) {
 		Name: "create sink fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -538,6 +592,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -552,6 +608,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created, pubsub client create fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -576,6 +634,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -590,6 +650,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created, get pubsub IAM policy fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -623,6 +685,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -639,6 +703,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created, set pubsub IAM policy fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -672,6 +738,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -688,6 +756,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink created",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -716,6 +786,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -733,6 +805,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink exists",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
@@ -765,6 +839,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -780,6 +856,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink delete fails",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -823,6 +901,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -839,6 +919,8 @@ func TestAllCases(t *testing.T) {
 		Name: "sink delete succeeds",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -876,6 +958,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
@@ -902,6 +986,8 @@ func TestAllCases(t *testing.T) {
 		Name: "delete succeeds, sink does not exist",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
@@ -934,6 +1020,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
@@ -968,7 +1056,7 @@ func TestAllCases(t *testing.T) {
 			tt.Test(t, MakeFactory(
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					return &Reconciler{
-						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.AuditLogConverter, cmw),
+						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsSourceConverter, cmw),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),
