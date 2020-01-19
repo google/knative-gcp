@@ -12,9 +12,9 @@ To get started, [install Knative with GCP](./docs/install/README.md).
 
 Then use one of the implemented Sources:
 
-- [PubSub (events.cloud.google.com)](docs/examples/cloudpubsubsource/README.md)
-- [Storage (events.cloud.google.com)](docs/examples/cloudstoragesource/README.md)
-- [Scheduler (events.cloud.google.com)](docs/examples/cloudschedulersource/README.md)
+- [CloudPubSubSource (events.cloud.google.com)](docs/examples/cloudpubsubsource/README.md)
+- [CloudStorageSource (events.cloud.google.com)](docs/examples/cloudstoragesource/README.md)
+- [CloudSchedulerSource (events.cloud.google.com)](docs/examples/cloudschedulersource/README.md)
 - [CloudAuditLogsSource (events.cloud.google.com)](docs/examples/cloudauditlogssource/README.md)
 
 To use a Knative Eventing Channel backed by Pub/Sub:
