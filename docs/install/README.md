@@ -31,9 +31,9 @@
        
         |     Resource     	|            Roles           	|
         |:----------------:	|:--------------------------:	|
-        |      PubSub      	|     roles/pubsub.editor    	|
-        |      Storage     	|     roles/storage.admin    	|
-        |     Scheduler    	| roles/cloudscheduler.admin 	|
+        |      CloudPubSubSource      	|     roles/pubsub.editor    	|
+        |      CloudStorageSource     	|     roles/storage.admin    	|
+        |     CloudSchedulerSource    	| roles/cloudscheduler.admin 	|
         |   CloudAuditLogsSource | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer	|
         |      Channel     	|     roles/pubsub.editor    	|
         | PullSubscription 	|     roles/pubsub.editor    	|

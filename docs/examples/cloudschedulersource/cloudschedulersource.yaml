@@ -1,5 +1,5 @@
 apiVersion: events.cloud.google.com/v1alpha1
-kind: Scheduler
+kind: CloudSchedulerSource
 metadata:
   name: scheduler-test
 spec:

@@ -91,7 +91,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    kubectl apply --filename cloudstoragesource.yaml
    ```
 
-1. Create a [service](event-display.yaml) that the Storage notifications will sink into:
+1. Create a [`Service`](event-display.yaml) that the Storage notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -120,7 +120,7 @@ that this Storage notification sinks to.
      ```
     You should see at least one.
 
-1. Inspect the logs of the service:
+1. Inspect the logs of the `Service`:
 
    ```shell
    kubectl logs --selector app=event-display -c user-container
@@ -171,12 +171,12 @@ Data,
 
 ## Cleaning Up
 
-1. Delete the Storage
+1. Delete the `CloudStorageSource`
 
     ```shell
     kubectl delete -f ./cloudstoragesource.yaml
     ```
-1. Delete the Service    
+1. Delete the `Service`    
     
     ```shell
     kubectl delete -f ./event-display.yaml
