@@ -1,7 +1,7 @@
 # PullSubscription Example
 
 This sample shows how to configure `PullSubscriptions`. This
-can be considered an implementation detail of the [PubSub Source](../../pubsub/README.md), and users should rather 
+can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), and users should rather 
 use the latter if they want to bridge events from other Google Cloud services using Pub/Sub into their clusters.
 
 ## Prerequisites
@@ -58,7 +58,7 @@ use the latter if they want to bridge events from other Google Cloud services us
    kubectl apply --filename pullsubscription.yaml
    ```
 
-1. Create a [service](event-display.yaml) that the `PullSubscription` will sink into:
+1. Create a [`Service`](event-display.yaml) that the `PullSubscription` will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -117,9 +117,10 @@ For more information about the format of the `Data` see the `data` field of
 
 ## What's next
 
-1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../../pubsub/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
-1. For integrating with Cloud Scheduler see the [Scheduler example](../scheduler/README.md).
+1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
@@ -141,7 +142,7 @@ For more information about the format of the `Data` see the `data` field of
     kubectl delete --filename pullsubscription.yaml
     ```
 
-1. Delete the service used as the sink:
+1. Delete the `Service` used as the sink:
 
     ```shell
     kubectl delete --filename event-display.yaml

@@ -1,4 +1,4 @@
-# Cloud Scheduler Example
+# CloudSchedulerSource Example
 
 ## Overview
 
@@ -21,13 +21,13 @@ events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Deployment
 
-1. Create a [CloudSchedulerSource](../scheduler.yaml)
+1. Create a [`CloudSchedulerSource`](cloudschedulersource.yaml)
 
     ```shell
-    kubectl apply --filename scheduler.yaml
+    kubectl apply --filename cloudschedulersource.yaml
     ```
 
-1. Create a [service](event-display.yaml) that the Scheduler notifications will sink into:
+1. Create a [`Service`](event-display.yaml) that the Scheduler notifications will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -49,7 +49,7 @@ service that this Scheduler job sinks to.
 
      You should see at least one.
 
-1. Inspect the logs of the service:
+1. Inspect the logs of the Service:
 
    ```shell
    kubectl logs --selector app=event-display -c user-container
@@ -76,18 +76,19 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../pubsub/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../storage/README.md).
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
-1. Delete the Scheduler
+1. Delete the `CloudSchedulerSource`
 
     ```shell
-    kubectl delete -f ./scheduler.yaml
+    kubectl delete -f ./cloudschedulersource.yaml
     ```
-1. Delete the Service    
+1. Delete the `Service`    
     
     ```shell
     kubectl delete -f ./event-display.yaml

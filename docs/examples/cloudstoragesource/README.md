@@ -1,4 +1,4 @@
-# Cloud Storage Example
+# CloudStorageSource Example
 
 ## Overview
 
@@ -164,9 +164,9 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [CloudPubSubSource example](../../examples/cloudpubsubsource/README.md).
-1. For integrating with Cloud Scheduler see the [CloudSchedulerSource example](../../examples/cloudschedulersource/README.md).
-1. For integrating with Cloud Audit Logs see the [CloudAuditLogsSource example](../../examples/cloudauditlogssource/README.md).
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
 1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
