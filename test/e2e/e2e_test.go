@@ -173,26 +173,26 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t)
 }
 
-// TestSmokePubSub makes sure we can run tests on PubSubs.
-func TestSmokePubSub(t *testing.T) {
+// TestSmokeCloudPubSubSource makes sure we can run tests on the CloudPubSubSource.
+func TestSmokeCloudPubSubSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokePubSubTestImpl(t)
+	SmokeCloudPubSubSourceTestImpl(t)
 }
 
-// TestPubSubWithTarget tests we can knock down a target from a PubSub.
-func TestPubSubWithTarget(t *testing.T) {
+// TestCloudPubSubSourceWithTarget tests we can knock down a target from a CloudPubSubSource.
+func TestCloudPubSubSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, false /*assertMetrics */)
+	CloudPubSubSourceWithTargetTestImpl(t, false /*assertMetrics */)
 }
 
-// TestPubSubStackDriverMetrics tests we can knock down a target from a PubSub and that we send metrics to StackDriver.
-func TestPubSubStackDriverMetrics(t *testing.T) {
+// TestCloudPubSubSourceStackDriverMetrics tests we can knock down a target from a CloudPubSubSource and that we send metrics to StackDriver.
+func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 	t.Skip("See issues https://github.com/google/knative-gcp/issues/317 and https://github.com/cloudevents/sdk-go/pull/234")
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubWithTargetTestImpl(t, true /*assertMetrics */)
+	CloudPubSubSourceWithTargetTestImpl(t, true /*assertMetrics */)
 }
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
@@ -202,19 +202,19 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 	BrokerWithPubSubChannelTestImpl(t)
 }
 
-// TestStorage tests we can knock down a target from a Storage.
-func TestStorage(t *testing.T) {
+// TestCloudStorageSource tests we can knock down a target from a CloudStorageSource.
+func TestCloudStorageSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, false /*assertMetrics */)
+	CloudStorageSourceWithTestImpl(t, false /*assertMetrics */)
 }
 
-// TestStorageStackDriverMetrics tests we can knock down a target from a Storage and that we send metrics to StackDriver.
-func TestStorageStackDriverMetrics(t *testing.T) {
+// TestCloudStorageSourceStackDriverMetrics tests we can knock down a target from a CloudStorageSource and that we send metrics to StackDriver.
+func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageWithTestImpl(t, true /*assertMetrics */)
+	CloudStorageSourceWithTestImpl(t, true /*assertMetrics */)
 }
 
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
@@ -224,16 +224,16 @@ func TestCloudAuditLogsSource(t *testing.T) {
 	CloudAuditLogsSourceWithTestImpl(t)
 }
 
-// TestSmokeSchedulerSetup tests if we can create a Scheduler resource and get it to a ready state.
-func TestSmokeSchedulerSetup(t *testing.T) {
+// TestSmokeCloudSchedulerSourceSetup tests if we can create a CloudSchedulerSource resource and get it to a ready state.
+func TestSmokeCloudSchedulerSourceSetup(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeSchedulerSetup(t)
+	SmokeCloudSchedulerSourceSetup(t)
 }
 
-// TestSchedulerWithTargetTestImpl tests if we can receive an event on a bespoke sink from a Scheduler source.
-func TestSchedulerWithTargetTestImpl(t *testing.T) {
+// TestCloudSchedulerSourceWithTargetTestImpl tests if we can receive an event on a bespoke sink from a CloudSchedulerSource source.
+func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SchedulerWithTargetTestImpl(t)
+	CloudSchedulerSourceWithTargetTestImpl(t)
 }
