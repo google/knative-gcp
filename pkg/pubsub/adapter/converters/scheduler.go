@@ -30,10 +30,10 @@ import (
 )
 
 const (
-	CloudSchedulerSourceConverter = "com.google.cloud.scheduler"
+	CloudSchedulerConverter = "com.google.cloud.scheduler"
 )
 
-func convertCloudSchedulerSource(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertCloudScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)

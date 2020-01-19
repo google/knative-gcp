@@ -223,7 +223,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 
 	// Add our own converter type as a customAttribute.
 	customAttributes := map[string]string{
-		converters.KnativeGCPConverter: converters.CloudStorageSourceConverter,
+		converters.KnativeGCPConverter: converters.CloudStorageConverter,
 	}
 
 	nc := &Notification{

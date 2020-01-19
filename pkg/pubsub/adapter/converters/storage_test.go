@@ -159,11 +159,11 @@ func TestConvertCloudStorageSource(t *testing.T) {
 
 			if err != nil {
 				if !test.wantErr {
-					t.Fatalf("converters.convertCloudStorageSource got error %v want error=%v", err, test.wantErr)
+					t.Fatalf("converters.convertCloudStorage got error %v want error=%v", err, test.wantErr)
 				}
 			} else {
 				if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-					t.Fatalf("converters.convertCloudStorageSource got unexpeceted cloudevents.Event (-want +got) %s", diff)
+					t.Fatalf("converters.convertCloudStorage got unexpeceted cloudevents.Event (-want +got) %s", diff)
 				}
 			}
 		})

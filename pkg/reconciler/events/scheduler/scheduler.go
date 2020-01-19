@@ -203,7 +203,7 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Cloud
 			parent := resources.ExtractParentName(jobName)
 			// Add our own converter type, jobName, and schedulerName as customAttributes.
 			customAttributes := map[string]string{
-				converters.KnativeGCPConverter:       converters.CloudSchedulerSourceConverter,
+				converters.KnativeGCPConverter:       converters.CloudSchedulerConverter,
 				v1alpha1.CloudSchedulerSourceJobName: jobName,
 				v1alpha1.CloudSchedulerSourceName:    scheduler.GetName(),
 			}

@@ -186,7 +186,7 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				WithTopicLabels(map[string]string{
-					"receive-adapter": "scheduler.events.cloud.google.com",
+					"receive-adapter": receiveAdapterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),

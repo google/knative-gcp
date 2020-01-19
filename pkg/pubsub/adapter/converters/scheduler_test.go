@@ -154,7 +154,7 @@ func TestConvertCloudSchedulerSource(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-				t.Errorf("converters.convertCloudSchedulerSource got unexpeceted cloudevents.Event (-want +got) %s", diff)
+				t.Errorf("converters.convertCloudScheduler got unexpeceted cloudevents.Event (-want +got) %s", diff)
 			}
 		})
 	}

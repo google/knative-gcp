@@ -364,7 +364,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
 					Topic:       testTopicID,
 					Secret:      &secret,
-					AdapterType: converters.CloudAuditLogsSourceConverter,
+					AdapterType: converters.CloudAuditLogsConverter,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
@@ -1056,7 +1056,7 @@ func TestAllCases(t *testing.T) {
 			tt.Test(t, MakeFactory(
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					return &Reconciler{
-						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsSourceConverter, cmw),
+						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),

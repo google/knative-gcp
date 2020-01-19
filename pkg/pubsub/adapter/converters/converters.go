@@ -54,9 +54,9 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
-		CloudAuditLogsSourceConverter: convertCloudAuditLogsSource,
-		CloudStorageSourceConverter:   convertCloudStorageSource,
-		CloudSchedulerSourceConverter: convertCloudSchedulerSource,
+		CloudAuditLogsConverter: convertCloudAuditLogs,
+		CloudStorageConverter:   convertCloudStorage,
+		CloudSchedulerConverter: convertCloudScheduler,
 	}
 }
 

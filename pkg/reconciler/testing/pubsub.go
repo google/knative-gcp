@@ -37,7 +37,7 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-CloudPubSubSource-uid",
+			UID:       "test-pubsub-uid",
 		},
 	}
 	for _, opt := range so {

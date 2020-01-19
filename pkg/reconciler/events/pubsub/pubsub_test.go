@@ -157,10 +157,10 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": "pubsub.events.cloud.google.com",
+					"receive-adapter": receiveAdapterName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": "pubsubs.events.cloud.google.com",
+					"metrics-resource-group": resourceGroup,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
