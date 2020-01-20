@@ -64,13 +64,13 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
 		Value: resourceName,
 	}, {
 		Name:  "TYPE",
-		Value: v1alpha1.AuditLogEventType,
+		Value: v1alpha1.CloudAuditLogsSourceEvent,
 	}, {
 		Name:  "SOURCE",
-		Value: fmt.Sprintf("%s/projects/%s", serviceName, project),
+		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
 	}, {
 		Name:  "SUBJECT",
-		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
+		Value: resourceName,
 	}, {
 		Name:  "TIME",
 		Value: "360",

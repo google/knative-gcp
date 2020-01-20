@@ -67,3 +67,23 @@ func TestAuditLogsConditionSet(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudAuditLogsSourceEventSource(t *testing.T) {
+	want := "//pubsub.googleapis.com/projects/PROJECT"
+
+	got := CloudAuditLogsSourceEventSource("pubsub.googleapis.com", "projects/PROJECT")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudAuditLogsSourceEventID(t *testing.T) {
+	want := "efdb9bf7d6fdfc922352530c1ba51242"
+
+	got := CloudAuditLogsSourceEventID("pt9y76cxw5", "projects/knative-project-228222/logs/cloudaudit.googleapis.com%2Factivity", "2020-01-19T22:45:03.439395442Z")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}

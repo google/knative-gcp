@@ -19,6 +19,7 @@ package converters
 import (
 	"bytes"
 	"context"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"testing"
 	"time"
 
@@ -79,19 +80,19 @@ func TestConvertAuditLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("conversion failed: %v", err)
 	}
-	if e.ID() != insertID+logName+testTs {
-		t.Errorf("ID '%s' != '%s%s%s'", e.ID(), insertID, logName, testTs)
+	if id := v1alpha1.CloudAuditLogsSourceEventID(insertID, logName, testTs); e.ID() != id {
+		t.Errorf("ID '%s' != '%s'", e.ID(), id)
 	}
 	if !e.Time().Equal(testTime) {
 		t.Errorf("Time '%v' != '%v'", e.Time(), testTime)
 	}
-	if want := "test-service-name/projects/test-project"; e.Source() != want {
+	if want := v1alpha1.CloudAuditLogsSourceEventSource("test-service-name", "projects/test-project"); e.Source() != want {
 		t.Errorf("Source %q != %q", e.Source(), want)
 	}
 	if e.Type() != "com.google.cloud.auditlog.event" {
 		t.Errorf(`Type %q != "com.google.cloud.auditlog.event"`, e.Type())
 	}
-	if want := "test-service-name/test-resource-name"; e.Subject() != want {
+	if want := "test-resource-name"; e.Subject() != want {
 		t.Errorf("Subject %q != %q", e.Subject(), want)
 	}
 	if data, err := e.DataBytes(); err != nil {

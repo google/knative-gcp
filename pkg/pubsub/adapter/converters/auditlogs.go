@@ -19,14 +19,14 @@ package converters
 import (
 	"bytes"
 	"context"
-	errors "errors"
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
 	"regexp"
 	"strings"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -42,7 +42,6 @@ const (
 	CloudAuditLogsConverter = "com.google.cloud.auditlogs"
 
 	logEntrySchema = "type.googleapis.com/google.logging.v2.LogEntry"
-	loggingSource  = "logging.googleapis.com"
 
 	parentResourcePattern = `^(:?projects|organizations|billingAccounts|folders)/[^/]+`
 
@@ -120,7 +119,7 @@ func convertCloudAuditLogs(ctx context.Context, msg *cepubsub.Message, sendMode 
 
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID(entry.InsertId + entry.LogName + ptypes.TimestampString(entry.Timestamp))
+	event.SetID(v1alpha1.CloudAuditLogsSourceEventID(entry.InsertId, entry.LogName, ptypes.TimestampString(entry.Timestamp)))
 	if timestamp, err := ptypes.Timestamp(entry.Timestamp); err != nil {
 		return nil, fmt.Errorf("invalid LogEntry timestamp: %w", err)
 	} else {
@@ -138,9 +137,9 @@ func convertCloudAuditLogs(ctx context.Context, msg *cepubsub.Message, sendMode 
 		}
 		switch proto := unpacked.Message.(type) {
 		case *auditpb.AuditLog:
-			event.SetSource(fmt.Sprintf("%s/%s", proto.ServiceName, parentResource))
-			event.SetSubject(fmt.Sprintf("%s/%s", proto.ServiceName, proto.ResourceName))
-			event.SetType(v1alpha1.AuditLogEventType)
+			event.SetType(v1alpha1.CloudAuditLogsSourceEvent)
+			event.SetSource(v1alpha1.CloudAuditLogsSourceEventSource(proto.ServiceName, parentResource))
+			event.SetSubject(proto.ResourceName)
 			event.SetExtension(serviceNameExtension, proto.ServiceName)
 			event.SetExtension(methodNameExtension, proto.MethodName)
 			event.SetExtension(resourceNameExtension, proto.ResourceName)
