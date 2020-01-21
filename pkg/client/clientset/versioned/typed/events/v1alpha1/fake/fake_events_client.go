@@ -28,20 +28,20 @@ type FakeEventsV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeEventsV1alpha1) AuditLogsSources(namespace string) v1alpha1.AuditLogsSourceInterface {
-	return &FakeAuditLogsSources{c, namespace}
+func (c *FakeEventsV1alpha1) CloudAuditLogsSources(namespace string) v1alpha1.CloudAuditLogsSourceInterface {
+	return &FakeCloudAuditLogsSources{c, namespace}
 }
 
-func (c *FakeEventsV1alpha1) PubSubs(namespace string) v1alpha1.PubSubInterface {
-	return &FakePubSubs{c, namespace}
+func (c *FakeEventsV1alpha1) CloudPubSubSources(namespace string) v1alpha1.CloudPubSubSourceInterface {
+	return &FakeCloudPubSubSources{c, namespace}
 }
 
-func (c *FakeEventsV1alpha1) Schedulers(namespace string) v1alpha1.SchedulerInterface {
-	return &FakeSchedulers{c, namespace}
+func (c *FakeEventsV1alpha1) CloudSchedulerSources(namespace string) v1alpha1.CloudSchedulerSourceInterface {
+	return &FakeCloudSchedulerSources{c, namespace}
 }
 
-func (c *FakeEventsV1alpha1) Storages(namespace string) v1alpha1.StorageInterface {
-	return &FakeStorages{c, namespace}
+func (c *FakeEventsV1alpha1) CloudStorageSources(namespace string) v1alpha1.CloudStorageSourceInterface {
+	return &FakeCloudStorageSources{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

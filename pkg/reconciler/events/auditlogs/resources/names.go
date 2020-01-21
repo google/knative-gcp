@@ -26,17 +26,17 @@ import (
 // GenerateTopicName generates a topic name for the audit log
 // source. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
-func GenerateTopicName(s *v1alpha1.AuditLogsSource) string {
-	return fmt.Sprintf("auditlogssource-%s", string(s.UID))
+func GenerateTopicName(s *v1alpha1.CloudAuditLogsSource) string {
+	return fmt.Sprintf("cloudauditlogssource-%s", string(s.UID))
 }
 
-// Generates the resource name for the topic used by an AuditLogsSource.
-func GenerateTopicResourceName(s *v1alpha1.AuditLogsSource) string {
+// Generates the resource name for the topic used by an CloudAuditLogsSource.
+func GenerateTopicResourceName(s *v1alpha1.CloudAuditLogsSource) string {
 	return fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", s.Status.ProjectID, s.Status.TopicID)
 }
 
 // GenerateSinkName generates a Stackdriver sink resource name for an
-// AuditLogsSource.
-func GenerateSinkName(s *v1alpha1.AuditLogsSource) string {
+// CloudAuditLogsSource.
+func GenerateSinkName(s *v1alpha1.CloudAuditLogsSource) string {
 	return fmt.Sprintf("sink-%s", string(s.UID))
 }

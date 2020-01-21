@@ -37,10 +37,10 @@ const (
 
 // Kind for events resources.
 const (
-	StorageKind         string = "Storage"
-	PubSubKind          string = "PubSub"
-	AuditLogsSourceKind string = "AuditLogsSource"
-	Scheduler           string = "Scheduler"
+	CloudStorageSourceKind   string = "CloudStorageSource"
+	CloudPubSubSourceKind    string = "CloudPubSubSource"
+	CloudAuditLogsSourceKind string = "CloudAuditLogsSource"
+	CloudSchedulerSourceKind string = "CloudSchedulerSource"
 )
 
 // Kind for pubsub resources.

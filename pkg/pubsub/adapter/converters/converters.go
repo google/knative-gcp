@@ -54,9 +54,9 @@ var converters map[string]converterFn
 
 func init() {
 	converters = map[string]converterFn{
-		AuditLogConverter:  convertAuditLog,
-		StorageConverter:   convertStorage,
-		SchedulerConverter: convertScheduler,
+		CloudAuditLogsConverter: convertCloudAuditLogs,
+		CloudStorageConverter:   convertCloudStorage,
+		CloudSchedulerConverter: convertCloudScheduler,
 	}
 }
 
@@ -84,5 +84,5 @@ func Convert(ctx context.Context, msg *cepubsub.Message, sendMode ModeType, conv
 	}
 
 	// No converter, PubSub is the default one.
-	return convertPubsub(ctx, msg, sendMode)
+	return convertPubSub(ctx, msg, sendMode)
 }

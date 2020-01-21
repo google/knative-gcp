@@ -48,7 +48,7 @@ import (
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "schedulers.events.cloud.google.com"
+	resourceGroup = "cloudschedulersources.events.cloud.google.com"
 )
 
 // Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
@@ -56,7 +56,7 @@ type Reconciler struct {
 	*pubsub.PubSubBase
 
 	// schedulerLister for reading schedulers.
-	schedulerLister listers.SchedulerLister
+	schedulerLister listers.CloudSchedulerSourceLister
 
 	createClientFn gscheduler.CreateFn
 }
@@ -75,11 +75,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the Scheduler resource with this namespace/name
-	original, err := r.schedulerLister.Schedulers(namespace).Get(name)
+	// Get the CloudSchedulerSource resource with this namespace/name
+	original, err := r.schedulerLister.CloudSchedulerSources(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
-		// The Scheduler resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("PubSub in work queue no longer exists")
+		// The CloudSchedulerSource resource may no longer exist, in which case we stop processing.
+		logging.FromContext(ctx).Desugar().Error("CloudSchedulerSource in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -99,13 +99,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
 	} else if _, updated, fErr := r.updateFinalizers(ctx, scheduler); fErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update Scheduler finalizers", zap.Error(fErr))
+		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudSchedulerSource finalizers", zap.Error(fErr))
 		r.Recorder.Eventf(scheduler, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update finalizers for Scheduler %q: %v", scheduler.Name, fErr)
+			"Failed to update finalizers for CloudSchedulerSource %q: %v", scheduler.Name, fErr)
 		return fErr
 	} else if updated {
 		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(scheduler, corev1.EventTypeNormal, "Updated", "Updated Scheduler %q finalizers", scheduler.Name)
+		r.Recorder.Eventf(scheduler, corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q finalizers", scheduler.Name)
 	}
 
 	if equality.Semantic.DeepEqual(original.Status, scheduler.Status) {
@@ -115,13 +115,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// to status with this stale state.
 
 	} else if _, uErr := r.updateStatus(ctx, scheduler); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update Scheduler status", zap.Error(uErr))
+		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudSchedulerSource status", zap.Error(uErr))
 		r.Recorder.Eventf(scheduler, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Scheduler %q: %v", scheduler.Name, uErr)
+			"Failed to update status for CloudSchedulerSource %q: %v", scheduler.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(scheduler, corev1.EventTypeNormal, "Updated", "Updated Scheduler %q", scheduler.Name)
+		r.Recorder.Eventf(scheduler, corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", scheduler.Name)
 	}
 	if reconcileErr != nil {
 		r.Recorder.Event(scheduler, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
@@ -129,19 +129,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
+func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) error {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("scheduler", scheduler)))
 
 	scheduler.Status.InitializeConditions()
 
 	// See if the source has been deleted.
 	if scheduler.DeletionTimestamp != nil {
-		logging.FromContext(ctx).Desugar().Debug("Deleting Scheduler job")
+		logging.FromContext(ctx).Desugar().Debug("Deleting CloudSchedulerSource job")
 		if err := r.deleteJob(ctx, scheduler); err != nil {
-			scheduler.Status.MarkJobNotReady("JobDeleteFailed", "Failed to delete Scheduler job: %s", err.Error())
+			scheduler.Status.MarkJobNotReady("JobDeleteFailed", "Failed to delete CloudSchedulerSource job: %s", err.Error())
 			return err
 		}
-		scheduler.Status.MarkJobNotReady("JobDeleted", "Successfully deleted Scheduler job: %s", scheduler.Status.JobName)
+		scheduler.Status.MarkJobNotReady("JobDeleted", "Successfully deleted CloudSchedulerSource job: %s", scheduler.Status.JobName)
 
 		if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
 			return err
@@ -167,14 +167,14 @@ func (r *Reconciler) reconcile(ctx context.Context, scheduler *v1alpha1.Schedule
 	jobName := resources.GenerateJobName(scheduler)
 	err = r.reconcileJob(ctx, scheduler, topic, jobName)
 	if err != nil {
-		scheduler.Status.MarkJobNotReady("JobReconcileFailed", "Failed to reconcile Scheduler job: %s", err.Error())
+		scheduler.Status.MarkJobNotReady("JobReconcileFailed", "Failed to reconcile CloudSchedulerSource job: %s", err.Error())
 		return err
 	}
 	scheduler.Status.MarkJobReady(jobName)
 	return nil
 }
 
-func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Scheduler, topic, jobName string) error {
+func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource, topic, jobName string) error {
 	if scheduler.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(scheduler.Spec.Project)
 		if err != nil {
@@ -187,7 +187,7 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 
 	client, err := r.createClientFn(ctx)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource client", zap.Error(err))
 		return err
 	}
 	defer client.Close()
@@ -196,16 +196,16 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 	_, err = client.GetJob(ctx, &schedulerpb.GetJobRequest{Name: jobName})
 	if err != nil {
 		if st, ok := gstatus.FromError(err); !ok {
-			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job", zap.String("jobName", jobName), zap.Error(err))
 			return err
 		} else if st.Code() == codes.NotFound {
 			// Create the job as it does not exist. For creation, we need a parent, extract it from the jobName.
 			parent := resources.ExtractParentName(jobName)
 			// Add our own converter type, jobName, and schedulerName as customAttributes.
 			customAttributes := map[string]string{
-				converters.KnativeGCPConverter: converters.SchedulerConverter,
-				v1alpha1.SchedulerJobName:      jobName,
-				v1alpha1.SchedulerName:         scheduler.GetName(),
+				converters.KnativeGCPConverter:       converters.CloudSchedulerConverter,
+				v1alpha1.CloudSchedulerSourceJobName: jobName,
+				v1alpha1.CloudSchedulerSourceName:    scheduler.GetName(),
 			}
 			_, err = client.CreateJob(ctx, &schedulerpb.CreateJobRequest{
 				Parent: parent,
@@ -222,11 +222,11 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 				},
 			})
 			if err != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler job", zap.String("jobName", jobName), zap.Error(err))
+				logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource job", zap.String("jobName", jobName), zap.Error(err))
 				return err
 			}
 		} else {
-			logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while retrieving Scheduler job", zap.String("jobName", jobName), zap.Any("errorCode", st.Code()), zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while retrieving CloudSchedulerSource job", zap.String("jobName", jobName), zap.Any("errorCode", st.Code()), zap.Error(err))
 			return err
 		}
 	}
@@ -236,47 +236,47 @@ func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.Sched
 // deleteJob looks at the status.JobName and if non-empty,
 // hence indicating that we have created a job successfully
 // in the Scheduler, remove it.
-func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.Scheduler) error {
+func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) error {
 	if scheduler.Status.JobName == "" {
 		return nil
 	}
 
 	client, err := r.createClientFn(ctx)
 	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to create Scheduler client", zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to create CloudSchedulerSource client", zap.Error(err))
 		return err
 	}
 	defer client.Close()
 
 	err = client.DeleteJob(ctx, &schedulerpb.DeleteJobRequest{Name: scheduler.Status.JobName})
 	if err == nil {
-		logging.FromContext(ctx).Desugar().Debug("Deleted Scheduler job", zap.String("jobName", scheduler.Status.JobName))
+		logging.FromContext(ctx).Desugar().Debug("Deleted CloudSchedulerSource job", zap.String("jobName", scheduler.Status.JobName))
 		return nil
 	}
 	if st, ok := gstatus.FromError(err); !ok {
-		logging.FromContext(ctx).Desugar().Error("Failed from Scheduler client while deleting Scheduler job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed from CloudSchedulerSource client while deleting CloudSchedulerSource job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
 		return err
 	} else if st.Code() != codes.NotFound {
-		logging.FromContext(ctx).Desugar().Error("Failed to delete Scheduler job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
+		logging.FromContext(ctx).Desugar().Error("Failed to delete CloudSchedulerSource job", zap.String("jobName", scheduler.Status.JobName), zap.Error(err))
 		return err
 	}
 	return nil
 }
 
-func addFinalizer(s *v1alpha1.Scheduler) {
+func addFinalizer(s *v1alpha1.CloudSchedulerSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Insert(finalizerName)
 	s.Finalizers = finalizers.List()
 }
 
-func removeFinalizer(s *v1alpha1.Scheduler) {
+func removeFinalizer(s *v1alpha1.CloudSchedulerSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Delete(finalizerName)
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Scheduler) (*v1alpha1.Scheduler, error) {
-	source, err := r.schedulerLister.Schedulers(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, error) {
+	source, err := r.schedulerLister.CloudSchedulerSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -289,15 +289,15 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := r.RunClientSet.EventsV1alpha1().Schedulers(desired.Namespace).UpdateStatus(existing)
+	src, err := r.RunClientSet.EventsV1alpha1().CloudSchedulerSources(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("Scheduler became ready", zap.Any("after", duration))
-		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Scheduler %q became ready", source.Name))
-		if metricErr := r.StatsReporter.ReportReady("Scheduler", source.Namespace, source.Name, duration); metricErr != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Scheduler", zap.Error(metricErr))
+		logging.FromContext(ctx).Desugar().Info("CloudSchedulerSource became ready", zap.Any("after", duration))
+		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudSchedulerSource %q became ready", source.Name))
+		if metricErr := r.StatsReporter.ReportReady("CloudSchedulerSource", source.Namespace, source.Name, duration); metricErr != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudSchedulerSource", zap.Error(metricErr))
 		}
 	}
 	return src, err
@@ -305,8 +305,8 @@ func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Schedul
 
 // updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
-func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Scheduler) (*v1alpha1.Scheduler, bool, error) {
-	scheduler, err := r.schedulerLister.Schedulers(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.CloudSchedulerSource) (*v1alpha1.CloudSchedulerSource, bool, error) {
+	scheduler, err := r.schedulerLister.CloudSchedulerSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
 	}
@@ -349,6 +349,6 @@ func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Sch
 		return desired, false, err
 	}
 
-	update, err := r.RunClientSet.EventsV1alpha1().Schedulers(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	update, err := r.RunClientSet.EventsV1alpha1().CloudSchedulerSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
 	return update, true, err
 }

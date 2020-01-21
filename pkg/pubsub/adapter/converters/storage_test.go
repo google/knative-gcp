@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-func TestConvertStorage(t *testing.T) {
+func TestConvertCloudStorageSource(t *testing.T) {
 
 	tests := []struct {
 		name        string
@@ -159,11 +159,11 @@ func TestConvertStorage(t *testing.T) {
 
 			if err != nil {
 				if !test.wantErr {
-					t.Fatalf("converters.convertStorage got error %v want error=%v", err, test.wantErr)
+					t.Fatalf("converters.convertCloudStorage got error %v want error=%v", err, test.wantErr)
 				}
 			} else {
 				if diff := cmp.Diff(test.wantEventFn(), gotEvent); diff != "" {
-					t.Fatalf("converters.convertStorage got unexpeceted cloudevents.Event (-want +got) %s", diff)
+					t.Fatalf("converters.convertCloudStorage got unexpeceted cloudevents.Event (-want +got) %s", diff)
 				}
 			}
 		})
@@ -175,8 +175,8 @@ func storageCloudEvent(extensions map[string]string, subject ...string) *cloudev
 	e.SetID("id")
 	e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 	e.SetDataSchema(storageSchemaUrl)
-	e.SetSource(v1alpha1.StorageEventSource("my-bucket"))
-	e.SetType(v1alpha1.StorageFinalize)
+	e.SetSource(v1alpha1.CloudStorageSourceEventSource("my-bucket"))
+	e.SetType(v1alpha1.CloudStorageSourceFinalize)
 	if len(subject) > 0 {
 		e.SetSubject(subject[0])
 	}

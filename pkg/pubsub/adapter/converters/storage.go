@@ -33,10 +33,10 @@ import (
 var (
 	// Mapping of GCS eventTypes to CloudEvent types.
 	storageEventTypes = map[string]string{
-		"OBJECT_FINALIZE":        v1alpha1.StorageFinalize,
-		"OBJECT_ARCHIVE":         v1alpha1.StorageArchive,
-		"OBJECT_DELETE":          v1alpha1.StorageDelete,
-		"OBJECT_METADATA_UPDATE": v1alpha1.StorageMetadataUpdate,
+		"OBJECT_FINALIZE":        v1alpha1.CloudStorageSourceFinalize,
+		"OBJECT_ARCHIVE":         v1alpha1.CloudStorageSourceArchive,
+		"OBJECT_DELETE":          v1alpha1.CloudStorageSourceDelete,
+		"OBJECT_METADATA_UPDATE": v1alpha1.CloudStorageSourceMetadataUpdate,
 	}
 )
 
@@ -45,11 +45,11 @@ const (
 	// Schema extracted from https://raw.githubusercontent.com/googleapis/google-api-go-client/master/storage/v1/storage-api.json.
 	// TODO find the public google endpoint we should use to point to the schema and avoid hosting it ourselves.
 	//  The link above is tied to the go-client, and it seems not to be a valid json schema.
-	storageSchemaUrl = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
-	StorageConverter = "com.google.cloud.storage"
+	storageSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json"
+	CloudStorageConverter = "com.google.cloud.storage"
 )
 
-func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertCloudStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	if msg == nil {
 		return nil, errors.New("nil pubsub message")
 	}
@@ -63,7 +63,7 @@ func convertStorage(ctx context.Context, msg *cepubsub.Message, sendMode ModeTyp
 
 	if val, ok := msg.Attributes["bucketId"]; ok {
 		delete(msg.Attributes, "bucketId")
-		event.SetSource(v1alpha1.StorageEventSource(val))
+		event.SetSource(v1alpha1.CloudStorageSourceEventSource(val))
 	} else {
 		return nil, errors.New("received event did not have bucketId")
 	}

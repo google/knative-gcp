@@ -12,19 +12,19 @@ To get started, [install Knative with GCP](./docs/install/README.md).
 
 Then use one of the implemented Sources:
 
-- [PubSub (events.cloud.google.com)](docs/pubsub/README.md)
-- [Storage (events.cloud.google.com)](docs/storage/README.md)
-- [Scheduler (events.cloud.google.com)](docs/scheduler/README.md)
-- [AuditLogsSource (events.cloud.google.com)](docs/auditlogssource/README.md)
+- [CloudPubSubSource (events.cloud.google.com)](docs/examples/cloudpubsubsource/README.md)
+- [CloudStorageSource (events.cloud.google.com)](docs/examples/cloudstoragesource/README.md)
+- [CloudSchedulerSource (events.cloud.google.com)](docs/examples/cloudschedulersource/README.md)
+- [CloudAuditLogsSource (events.cloud.google.com)](docs/examples/cloudauditlogssource/README.md)
 
 To use a Knative Eventing Channel backed by Pub/Sub:
 
-- [Channel (messaging.cloud.google.com)](docs/channel/README.md)
+- [Channel (messaging.cloud.google.com)](docs/examples/channel/README.md)
 
 To leverage Pub/Sub directly, use one of the Pub/Sub resources:
 
-- [PullSubscription (pubsub.cloud.google.com)](docs/pullsubscription/README.md)
-- [Topic (pubsub.cloud.google.com)](docs/topic/README.md)
+- [PullSubscription (pubsub.cloud.google.com)](docs/examples/pullsubscription/README.md)
+- [Topic (pubsub.cloud.google.com)](docs/examples/topic/README.md)
 
 
 _Note:_ This repo is still in development, APIs and resource names are subject to change in the future.

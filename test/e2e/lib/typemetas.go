@@ -49,13 +49,13 @@ func messagingTypeMeta(kind string) *metav1.TypeMeta {
 	}
 }
 
-var StorageTypeMeta = eventsTypeMeta(resources.StorageKind)
+var CloudStorageSourceTypeMeta = eventsTypeMeta(resources.CloudStorageSourceKind)
 
-var PubsubTypeMeta = eventsTypeMeta(resources.PubSubKind)
+var CloudPubSubSourceTypeMeta = eventsTypeMeta(resources.CloudPubSubSourceKind)
 
-var AuditLogsSourceTypeMeta = eventsTypeMeta(resources.AuditLogsSourceKind)
+var CloudAuditLogsSourceTypeMeta = eventsTypeMeta(resources.CloudAuditLogsSourceKind)
 
-var SchedulerSourceTypeMeta = eventsTypeMeta(resources.Scheduler)
+var CloudSchedulerSourceTypeMeta = eventsTypeMeta(resources.CloudSchedulerSourceKind)
 
 func eventsTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{

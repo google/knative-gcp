@@ -27,17 +27,17 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-func convertPubsub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
-	event.SetSource(v1alpha1.PubSubEventSource(tx.Project, tx.Topic))
+	event.SetSource(v1alpha1.CloudPubSubSourceEventSource(tx.Project, tx.Topic))
 	// We do not know the content type and we do not want to inspect the payload,
 	// thus we set this generic one.
 	event.SetDataContentType("application/octet-stream")
-	event.SetType(v1alpha1.PubSubPublish)
+	event.SetType(v1alpha1.CloudPubSubSourcePublish)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")

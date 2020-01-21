@@ -62,19 +62,19 @@ rules:
 - apiGroups:
     - events.cloud.google.com
   resources:
-    - auditlogssources
-    - storages
-    - schedulers
-    - pubsubs
+    - cloudauditlogssources
+    - cloudstoragesources
+    - cloudschedulersources
+    - cloudpubsubsources
   verbs: *everything
 
 - apiGroups:
     - events.cloud.google.com
   resources:
-    - auditlogssources/status
-    - storages/status
-    - schedulers/status
-    - pubsubs/status
+    - cloudauditlogssources/status
+    - cloudstoragesources/status
+    - cloudschedulersources/status
+    - cloudpubsubsources/status
   verbs:
     - get
     - update
@@ -135,27 +135,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: knative-gcp-pullsubscription-observer
-  labels:
-    eventing.knative.dev/release: devel
-    duck.knative.dev/source: "true"
-rules:
-  - apiGroups:
-      - "pubsub.cloud.google.com"
-    resources:
-      - "pullsubscriptions"
-    verbs:
-      - get
-      - list
-      - watch
-
----
-# The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".
-# See https://github.com/knative/eventing/blob/master/config/200-source-observer-clusterrole.yaml.
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: knative-gcp-storage-observer
+  name: knative-gcp-sources-observer
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/source: "true"
@@ -163,8 +143,10 @@ rules:
   - apiGroups:
       - "events.cloud.google.com"
     resources:
-      - "storages"
-      - "pubsubs"
+      - "cloudstoragesources"
+      - "cloudpubsubsources"
+      - "cloudauditlogssources"
+      - "cloudschedulersources"
     verbs:
       - get
       - list

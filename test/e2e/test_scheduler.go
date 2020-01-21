@@ -29,29 +29,29 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
-// SmokeSchedulerSetup tests if a scheduler object can be created and be made ready.
-func SmokeSchedulerSetup(t *testing.T) {
+// SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
+func SmokeCloudSchedulerSourceSetup(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
 	sName := "scheduler-test"
 
-	scheduler := kngcptesting.NewScheduler(sName, client.Namespace,
-		kngcptesting.WithSchedulerLocation("us-central1"),
-		kngcptesting.WithSchedulerData("my test data"),
-		kngcptesting.WithSchedulerSchedule("* * * * *"),
-		kngcptesting.WithSchedulerSink(lib.ServiceGVK, "event-display"),
+	scheduler := kngcptesting.NewCloudSchedulerSource(sName, client.Namespace,
+		kngcptesting.WithCloudSchedulerSourceLocation("us-central1"),
+		kngcptesting.WithCloudSchedulerSourceData("my test data"),
+		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
+		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, "event-display"),
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
-	if err := client.Core.WaitForResourceReady(sName, lib.SchedulerSourceTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
 
-// SchedulerSourceWithTestImpl injects a scheduler event and checks if it is in the
+// CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
 // log of the receiver.
-func SchedulerWithTargetTestImpl(t *testing.T) {
+func CloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
@@ -73,7 +73,7 @@ func SchedulerWithTargetTestImpl(t *testing.T) {
 		},
 		{
 			Name:  "TYPE",
-			Value: v1alpha1.SchedulerExecute,
+			Value: v1alpha1.CloudSchedulerSourceExecute,
 		},
 	})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
@@ -81,15 +81,15 @@ func SchedulerWithTargetTestImpl(t *testing.T) {
 	// Create a scheduler
 	sName := "scheduler-test"
 
-	scheduler := kngcptesting.NewScheduler(sName, client.Namespace,
-		kngcptesting.WithSchedulerLocation("us-central1"),
-		kngcptesting.WithSchedulerData(data),
-		kngcptesting.WithSchedulerSchedule("* * * * *"),
-		kngcptesting.WithSchedulerSink(lib.ServiceGVK, targetName),
+	scheduler := kngcptesting.NewCloudSchedulerSource(sName, client.Namespace,
+		kngcptesting.WithCloudSchedulerSourceLocation("us-central1"),
+		kngcptesting.WithCloudSchedulerSourceData(data),
+		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
+		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, targetName),
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
-	if err := client.Core.WaitForResourceReady(sName, lib.SchedulerSourceTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -106,7 +106,7 @@ func SchedulerWithTargetTestImpl(t *testing.T) {
 		}
 		if !out.Success {
 			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, sName, lib.SchedulerSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("scheduler log: %+v", logs)

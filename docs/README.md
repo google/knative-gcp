@@ -8,16 +8,16 @@
 
 ## Sources examples
 
-1. [PubSub](./pubsub/README.md)
-1. [Storage](./storage/README.md)
-1. [Scheduler](./scheduler/README.md)
-1. [AuditLogsSource](./auditlogssource/README.md)
+1. [CloudPubSubSource](./examples/cloudpubsubsource/README.md)
+1. [CloudStorageSource](./examples/cloudstoragesource/README.md)
+1. [CloudSchedulerSource](./examples/cloudschedulersource/README.md)
+1. [CloudAuditLogsSource](./examples/cloudauditlogssource/README.md)
 
 ## Channel examples
 
-1. [Channel](./channel/README.md)
+1. [Channel](./examples/channel/README.md)
 
 ## Pub/Sub examples
 
-1. [PullSubscription](./pullsubscription/README.md)
-1. [Topic](./topic/README.md)
+1. [PullSubscription](./examples/pullsubscription/README.md)
+1. [Topic](./examples/topic/README.md)

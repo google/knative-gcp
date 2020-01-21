@@ -30,10 +30,10 @@ import (
 )
 
 const (
-	SchedulerConverter = "com.google.cloud.scheduler"
+	CloudSchedulerConverter = "com.google.cloud.scheduler"
 )
 
-func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
+func convertCloudScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {
 	tx := pubsubcontext.TransportContextFrom(ctx)
 	// Make a new event and convert the message payload.
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
@@ -42,27 +42,27 @@ func convertScheduler(ctx context.Context, msg *cepubsub.Message, sendMode ModeT
 	// We do not know the content type and we do not want to inspect the payload,
 	// thus we set this generic one.
 	event.SetDataContentType("application/octet-stream")
-	event.SetType(v1alpha1.SchedulerExecute)
+	event.SetType(v1alpha1.CloudSchedulerSourceExecute)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
 		delete(msg.Attributes, "schema")
 		event.SetDataSchema(val)
 	}
 	// Set the source and subject if it comes as an attribute.
-	jobName, ok := msg.Attributes[v1alpha1.SchedulerJobName]
+	jobName, ok := msg.Attributes[v1alpha1.CloudSchedulerSourceJobName]
 	if ok {
-		delete(msg.Attributes, v1alpha1.SchedulerJobName)
+		delete(msg.Attributes, v1alpha1.CloudSchedulerSourceJobName)
 	} else {
 		return nil, errors.New("received event did not have jobName")
 	}
-	schedulerName, ok := msg.Attributes[v1alpha1.SchedulerName]
+	schedulerName, ok := msg.Attributes[v1alpha1.CloudSchedulerSourceName]
 	if ok {
-		delete(msg.Attributes, v1alpha1.SchedulerName)
+		delete(msg.Attributes, v1alpha1.CloudSchedulerSourceName)
 	} else {
 		return nil, errors.New("received event did not have schedulerName")
 	}
 	parentName := resources.ExtractParentName(jobName)
-	event.SetSource(v1alpha1.SchedulerEventSource(parentName, schedulerName))
+	event.SetSource(v1alpha1.CloudSchedulerSourceEventSource(parentName, schedulerName))
 	event.SetSubject(resources.ExtractJobID(jobName))
 
 	// Set the mode to be an extension attribute.

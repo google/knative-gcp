@@ -126,20 +126,20 @@ func (l *Listers) GetJobLister() batchv1listers.JobLister {
 	return batchv1listers.NewJobLister(l.indexerFor(&batchv1.Job{}))
 }
 
-func (l *Listers) GetAuditLogsSourceLister() eventslisters.AuditLogsSourceLister {
-	return eventslisters.NewAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.AuditLogsSource{}))
+func (l *Listers) GetCloudAuditLogsSourceLister() eventslisters.CloudAuditLogsSourceLister {
+	return eventslisters.NewCloudAuditLogsSourceLister(l.indexerFor(&EventsV1alpha1.CloudAuditLogsSource{}))
 }
 
-func (l *Listers) GetStorageLister() eventslisters.StorageLister {
-	return eventslisters.NewStorageLister(l.indexerFor(&EventsV1alpha1.Storage{}))
+func (l *Listers) GetCloudStorageSourceLister() eventslisters.CloudStorageSourceLister {
+	return eventslisters.NewCloudStorageSourceLister(l.indexerFor(&EventsV1alpha1.CloudStorageSource{}))
 }
 
-func (l *Listers) GetSchedulerLister() eventslisters.SchedulerLister {
-	return eventslisters.NewSchedulerLister(l.indexerFor(&EventsV1alpha1.Scheduler{}))
+func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSourceLister {
+	return eventslisters.NewCloudSchedulerSourceLister(l.indexerFor(&EventsV1alpha1.CloudSchedulerSource{}))
 }
 
-func (l *Listers) GetPubSubLister() eventslisters.PubSubLister {
-	return eventslisters.NewPubSubLister(l.indexerFor(&EventsV1alpha1.PubSub{}))
+func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLister {
+	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
