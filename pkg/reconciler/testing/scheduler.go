@@ -29,12 +29,12 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-// SchedulerOption enables further configuration of a Scheduler.
-type SchedulerOption func(*v1alpha1.Scheduler)
+// CloudSchedulerSourceOption enables further configuration of a CloudSchedulerSource.
+type CloudSchedulerSourceOption func(*v1alpha1.CloudSchedulerSource)
 
-// NewScheduler creates a Scheduler with SchedulerOptions
-func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Scheduler {
-	s := &v1alpha1.Scheduler{
+// NewCloudSchedulerSource creates a CloudSchedulerSource with CloudSchedulerSourceOptions
+func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceOption) *v1alpha1.CloudSchedulerSource {
+	s := &v1alpha1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -48,8 +48,8 @@ func NewScheduler(name, namespace string, so ...SchedulerOption) *v1alpha1.Sched
 	return s
 }
 
-func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceSink(gvk metav1.GroupVersionKind, name string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
@@ -60,120 +60,120 @@ func WithSchedulerSink(gvk metav1.GroupVersionKind, name string) SchedulerOption
 	}
 }
 
-func WithSchedulerLocation(location string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceLocation(location string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Location = location
 	}
 }
 
-func WithSchedulerProject(project string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceProject(project string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Project = project
 	}
 }
 
-func WithSchedulerSchedule(schedule string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceSchedule(schedule string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Schedule = schedule
 	}
 }
 
-func WithSchedulerData(data string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceData(data string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Data = data
 	}
 }
 
-func WithSchedulerDeletionTimestamp(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceDeletionTimestamp(s *v1alpha1.CloudSchedulerSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
-// WithInitSchedulerConditions initializes the Schedulers's conditions.
-func WithInitSchedulerConditions(s *v1alpha1.Scheduler) {
+// WithInitCloudSchedulerSourceConditions initializes the CloudSchedulerSources's conditions.
+func WithInitCloudSchedulerSourceConditions(s *v1alpha1.CloudSchedulerSource) {
 	s.Status.InitializeConditions()
 }
 
-// WithSchedulerTopicFailed marks the condition that the
+// WithCloudSchedulerSourceTopicFailed marks the condition that the
 // status of topic is False.
-func WithSchedulerTopicFailed(reason, message string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkTopicFailed(reason, message)
 	}
 }
 
-// WithSchedulerTopicUnknown marks the condition that the
+// WithCloudSchedulerSourceTopicUnknown marks the condition that the
 // status of topic is Unknown.
-func WithSchedulerTopicUnknown(reason, message string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceTopicUnknown(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
-// WithSchedulerTopicNotReady marks the condition that the
+// WithCloudSchedulerSourceTopicNotReady marks the condition that the
 // topic is not ready.
-func WithSchedulerTopicReady(topicID, projectID string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkTopicReady(topicID, projectID)
 	}
 }
 
-// WithSchedulerPullSubscriptionFailed marks the condition that the
+// WithCloudSchedulerSourcePullSubscriptionFailed marks the condition that the
 // topic is False.
-func WithSchedulerPullSubscriptionFailed(reason, message string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 
-// WithSchedulerPullSubscriptionUnknown marks the condition that the
+// WithCloudSchedulerSourcePullSubscriptionUnknown marks the condition that the
 // topic is Unknown.
-func WithSchedulerPullSubscriptionUnknown(reason, message string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourcePullSubscriptionUnknown(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 
-// WithSchedulerPullSubscriptionReady marks the condition that the
+// WithCloudSchedulerSourcePullSubscriptionReady marks the condition that the
 // topic is ready.
-func WithSchedulerPullSubscriptionReady() SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourcePullSubscriptionReady() CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkPullSubscriptionReady()
 	}
 }
 
-// WithSchedulerJobNotReady marks the condition that the
-// Scheduler Job is not ready.
-func WithSchedulerJobNotReady(reason, message string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+// WithCloudSchedulerSourceJobNotReady marks the condition that the
+// CloudSchedulerSource Job is not ready.
+func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkJobNotReady(reason, message)
 	}
 }
 
-// WithSchedulerJobReady marks the condition that the
-// Scheduler Job is ready and sets Status.JobName to jobName.
-func WithSchedulerJobReady(jobName string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+// WithCloudSchedulerSourceJobReady marks the condition that the
+// CloudSchedulerSource Job is ready and sets Status.JobName to jobName.
+func WithCloudSchedulerSourceJobReady(jobName string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkJobReady(jobName)
 	}
 }
 
-// WithSchedulerSinkURI sets the status for sink URI
-func WithSchedulerSinkURI(url *apis.URL) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+// WithCloudSchedulerSourceSinkURI sets the status for sink URI
+func WithCloudSchedulerSourceSinkURI(url *apis.URL) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.SinkURI = url
 	}
 }
 
-// WithSchedulerJobName sets the status for job Name
-func WithSchedulerJobName(jobName string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+// WithCloudSchedulerSourceJobName sets the status for job Name
+func WithCloudSchedulerSourceJobName(jobName string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.JobName = jobName
 	}
 }
 
-func WithSchedulerFinalizers(finalizers ...string) SchedulerOption {
-	return func(s *v1alpha1.Scheduler) {
+func WithCloudSchedulerSourceFinalizers(finalizers ...string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Finalizers = finalizers
 	}
 }

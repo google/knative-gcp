@@ -39,8 +39,8 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// SmokePubSubTestImpl tests we can create a pubsub to ready state.
-func SmokePubSubTestImpl(t *testing.T) {
+// SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state.
+func SmokeCloudPubSubSourceTestImpl(t *testing.T) {
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -51,21 +51,21 @@ func SmokePubSubTestImpl(t *testing.T) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
-		kngcptesting.WithPubSubSink(metav1.GroupVersionKind{
+	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
+		kngcptesting.WithCloudPubSubSourceSink(metav1.GroupVersionKind{
 			Version: "v1",
 			Kind:    "Service"}, svcName),
-		kngcptesting.WithPubSubTopic(topic))
+		kngcptesting.WithCloudPubSubSourceTopic(topic))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.CloudPubSubSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 }
 
-// PubSubWithTargetTestImpl tests we can receive an event from PubSub. If assertMetrics is set to true, we also assert
-// for StackDriver metrics.
-func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
+// CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
+// If assertMetrics is set to true, we also assert for StackDriver metrics.
+func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -86,12 +86,12 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
-	eventsPubsub := kngcptesting.NewPubSub(psName, client.Namespace,
-		kngcptesting.WithPubSubSink(lib.ServiceGVK, targetName),
-		kngcptesting.WithPubSubTopic(topicName))
+	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
+		kngcptesting.WithCloudPubSubSourceSink(lib.ServiceGVK, targetName),
+		kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.PubsubTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(psName, lib.CloudPubSubSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -121,7 +121,7 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 		}
 		if !out.Success {
 			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.PubsubTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, psName, lib.CloudPubSubSourceTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("pubsub: %+v", logs)
@@ -148,8 +148,8 @@ func PubSubWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
 			"metric.label.resource_group": lib.PubsubResourceGroup,
-			"metric.label.event_type":     v1alpha1.PubSubPublish,
-			"metric.label.event_source":   v1alpha1.PubSubEventSource(projectID, topicName),
+			"metric.label.event_type":     v1alpha1.CloudPubSubSourcePublish,
+			"metric.label.event_source":   v1alpha1.CloudPubSubSourceEventSource(projectID, topicName),
 			"metric.label.namespace_name": client.Namespace,
 			"metric.label.name":           psName,
 			// We exit the target image before sending a response, thus check for 500.

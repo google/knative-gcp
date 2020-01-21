@@ -45,14 +45,14 @@ var (
 // Adds the list of known types to Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&AuditLogsSource{},
-		&AuditLogsSourceList{},
-		&Storage{},
-		&StorageList{},
-		&Scheduler{},
-		&SchedulerList{},
-		&PubSub{},
-		&PubSubList{},
+		&CloudAuditLogsSource{},
+		&CloudAuditLogsSourceList{},
+		&CloudStorageSource{},
+		&CloudStorageSourceList{},
+		&CloudSchedulerSource{},
+		&CloudSchedulerSourceList{},
+		&CloudPubSubSource{},
+		&CloudPubSubSourceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

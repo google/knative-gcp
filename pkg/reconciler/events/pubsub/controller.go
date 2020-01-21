@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/pubsub"
+	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
@@ -30,14 +30,14 @@ import (
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "PubSub"
+	reconcilerName = "CloudPubSubSource"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-source-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "pubsub.events.cloud.google.com"
+	receiveAdapterName = "cloudpubsubsource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -48,21 +48,21 @@ func NewController(
 ) *controller.Impl {
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
-	pubsubInformer := pubsubinformers.Get(ctx)
+	cloudpubsubsourceInformer := cloudpubsubsourceinformers.Get(ctx)
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		pubsubLister:           pubsubInformer.Lister(),
+		pubsubLister:           cloudpubsubsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		receiveAdapterName:     receiveAdapterName,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
 	r.Logger.Info("Setting up event handlers")
-	pubsubInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PubSub")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

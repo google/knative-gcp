@@ -46,14 +46,14 @@ import (
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "auditlogssources.events.cloud.google.com"
+	resourceGroup = "cloudauditlogssources.events.cloud.google.com"
 	publisherRole = "roles/pubsub.publisher"
 )
 
 type Reconciler struct {
 	*pubsubreconciler.PubSubBase
 
-	auditLogsSourceLister  listers.AuditLogsSourceLister
+	auditLogsSourceLister  listers.CloudAuditLogsSourceLister
 	logadminClientProvider glogadmin.CreateFn
 	pubsubClientProvider   gpubsub.CreateFn
 }
@@ -62,7 +62,7 @@ type Reconciler struct {
 var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the AuditLogsSource resource
+// converge the two. It then updates the Status block of the CloudAuditLogsSource resource
 // with the current status of the resource.
 func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
@@ -72,11 +72,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the AuditLogsSource resource with this namespace/name
-	original, err := c.auditLogsSourceLister.AuditLogsSources(namespace).Get(name)
+	// Get the CloudAuditLogsSource resource with this namespace/name
+	original, err := c.auditLogsSourceLister.CloudAuditLogsSources(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
-		// The AuditLogsSource resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("AuditLogsSource in work queue no longer exists")
+		// The CloudAuditLogsSource resource may no longer exist, in which case we stop processing.
+		logging.FromContext(ctx).Desugar().Error("CloudAuditLogsSource in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
@@ -93,11 +93,11 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	}
 
 	if _, updated, err := c.updateFinalizers(ctx, s); err != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update AuditLogsSource finalizers", zap.Error(err))
-		c.Recorder.Eventf(s, corev1.EventTypeWarning, "UpdateFailed", "Failed to update finalizers for AuditLogsSource %q: %v", s.Name, err)
+		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudAuditLogsSource finalizers", zap.Error(err))
+		c.Recorder.Eventf(s, corev1.EventTypeWarning, "UpdateFailed", "Failed to update finalizers for CloudAuditLogsSource %q: %v", s.Name, err)
 		return err
 	} else if updated {
-		c.Recorder.Eventf(s, corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q finalizers", s.Name)
+		c.Recorder.Eventf(s, corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q finalizers", s.Name)
 	}
 
 	// If we didn't change anything then don't call updateStatus.
@@ -106,12 +106,12 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// overwrite a prior update to status with this stale state.
 	if !equality.Semantic.DeepEqual(original.Status, s.Status) {
 		if _, err := c.updateStatus(ctx, s); err != nil {
-			c.Logger.Warn("Failed to update AuditLogsSource status", zap.Error(err))
+			c.Logger.Warn("Failed to update CloudAuditLogsSource status", zap.Error(err))
 			c.Recorder.Eventf(s, corev1.EventTypeWarning, "UpdateFailed",
-				"Failed to update status for AuditLogsSource %q: %v", s.Name, err)
+				"Failed to update status for CloudAuditLogsSource %q: %v", s.Name, err)
 			return err
 		} else if reconcileErr == nil {
-			c.Recorder.Eventf(s, corev1.EventTypeNormal, "Updated", "Updated AuditLogsSource %q", s.Name)
+			c.Recorder.Eventf(s, corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", s.Name)
 		}
 	}
 
@@ -121,7 +121,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return reconcileErr
 }
 
-func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource) error {
+func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) error {
 	ctx = logging.WithLogger(ctx, c.Logger.With(zap.Any("auditlogsource", s)))
 
 	s.Status.InitializeConditions()
@@ -164,7 +164,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.AuditLogsSource)
 	return nil
 }
 
-func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.AuditLogsSource) (string, error) {
+func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) (string, error) {
 	sink, err := c.ensureSinkCreated(ctx, s)
 	if err != nil {
 		s.Status.MarkSinkNotReady("SinkCreateFailed", "failed to ensure creation of logging sink: %v", err)
@@ -178,7 +178,7 @@ func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.AuditLogsSou
 	return sink.ID, nil
 }
 
-func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLogsSource) (*logadmin.Sink, error) {
+func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) (*logadmin.Sink, error) {
 	sinkID := s.Status.StackdriverSink
 	if sinkID == "" {
 		sinkID = resources.GenerateSinkName(s)
@@ -210,7 +210,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.AuditLog
 }
 
 // Ensures that the sink has been granted the pubsub.publisher role on the source topic.
-func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.AuditLogsSource, sink *logadmin.Sink) error {
+func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.CloudAuditLogsSource, sink *logadmin.Sink) error {
 	pubsubClient, err := c.pubsubClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create PubSub client", zap.Error(err))
@@ -236,7 +236,7 @@ func (c *Reconciler) ensureSinkIsPublisher(ctx context.Context, s *v1alpha1.Audi
 
 // deleteSink looks at status.SinkID and if non-empty will delete the
 // previously created stackdriver sink.
-func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource) error {
+func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) error {
 	if s.Status.StackdriverSink == "" {
 		return nil
 	}
@@ -251,20 +251,20 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.AuditLogsSource
 	return nil
 }
 
-func (c *Reconciler) addFinalizer(s *v1alpha1.AuditLogsSource) {
+func (c *Reconciler) addFinalizer(s *v1alpha1.CloudAuditLogsSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Insert(finalizerName)
 	s.Finalizers = finalizers.List()
 }
 
-func (c *Reconciler) removeFinalizer(s *v1alpha1.AuditLogsSource) {
+func (c *Reconciler) removeFinalizer(s *v1alpha1.CloudAuditLogsSource) {
 	finalizers := sets.NewString(s.Finalizers...)
 	finalizers.Delete(finalizerName)
 	s.Finalizers = finalizers.List()
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, error) {
-	source, err := c.auditLogsSourceLister.AuditLogsSources(desired.Namespace).Get(desired.Name)
+func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error) {
+	source, err := c.auditLogsSourceLister.CloudAuditLogsSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -277,14 +277,14 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.AuditLo
 	// Don't modify the informers copy.
 	existing := source.DeepCopy()
 	existing.Status = desired.Status
-	src, err := c.RunClientSet.EventsV1alpha1().AuditLogsSources(desired.Namespace).UpdateStatus(existing)
+	src, err := c.RunClientSet.EventsV1alpha1().CloudAuditLogsSources(desired.Namespace).UpdateStatus(existing)
 
 	if err == nil && becomesReady {
 		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("AuditLogsSource became ready", zap.Any("after", duration))
-		c.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("AuditLogsSource %q became ready", source.Name))
-		if err := c.StatsReporter.ReportReady("AuditLogsSource", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for AuditLogsSource, %v", err)
+		logging.FromContext(ctx).Desugar().Info("CloudAuditLogsSource became ready", zap.Any("after", duration))
+		c.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudAuditLogsSource %q became ready", source.Name))
+		if err := c.StatsReporter.ReportReady("CloudAuditLogsSource", source.Namespace, source.Name, duration); err != nil {
+			logging.FromContext(ctx).Infof("failed to record ready for CloudAuditLogsSource, %v", err)
 		}
 	}
 
@@ -293,8 +293,8 @@ func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.AuditLo
 
 // updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
-func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.AuditLogsSource) (*v1alpha1.AuditLogsSource, bool, error) {
-	s, err := r.auditLogsSourceLister.AuditLogsSources(desired.Namespace).Get(desired.Name)
+func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, bool, error) {
+	s, err := r.auditLogsSourceLister.CloudAuditLogsSources(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
 	}
@@ -337,6 +337,6 @@ func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.Aud
 		return desired, false, err
 	}
 
-	update, err := r.RunClientSet.EventsV1alpha1().AuditLogsSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
+	update, err := r.RunClientSet.EventsV1alpha1().CloudAuditLogsSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
 	return update, true, err
 }

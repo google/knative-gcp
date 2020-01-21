@@ -41,7 +41,7 @@ const (
 	methodName  = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func AuditLogsSourceWithTestImpl(t *testing.T) {
+func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -64,29 +64,29 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 		Value: resourceName,
 	}, {
 		Name:  "TYPE",
-		Value: v1alpha1.AuditLogEventType,
+		Value: v1alpha1.CloudAuditLogsSourceEvent,
 	}, {
 		Name:  "SOURCE",
-		Value: fmt.Sprintf("%s/projects/%s", serviceName, project),
+		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
 	}, {
 		Name:  "SUBJECT",
-		Value: fmt.Sprintf("%s/%s", serviceName, resourceName),
+		Value: resourceName,
 	}, {
 		Name:  "TIME",
 		Value: "360",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
-	// Create the AuditLogsSource.
-	eventsAuditLogs := kngcptesting.NewAuditLogsSource(auditlogsName, client.Namespace,
-		kngcptesting.WithAuditLogsSourceServiceName(serviceName),
-		kngcptesting.WithAuditLogsSourceMethodName(methodName),
-		kngcptesting.WithAuditLogsSourceProject(project),
-		kngcptesting.WithAuditLogsSourceResourceName(resourceName),
-		kngcptesting.WithAuditLogsSourceSink(lib.ServiceGVK, targetName))
+	// Create the CloudAuditLogsSource.
+	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace,
+		kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName),
+		kngcptesting.WithCloudAuditLogsSourceMethodName(methodName),
+		kngcptesting.WithCloudAuditLogsSourceProject(project),
+		kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName),
+		kngcptesting.WithCloudAuditLogsSourceSink(lib.ServiceGVK, targetName))
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
-	if err := client.Core.WaitForResourceReady(auditlogsName, lib.AuditLogsSourceTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -108,11 +108,11 @@ func AuditLogsSourceWithTestImpl(t *testing.T) {
 			t.Error(err)
 		}
 		if !out.Success {
-			// Log the output auditlogssource pods.
-			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.AuditLogsSourceTypeMeta); err != nil {
+			// Log the output cloudauditlogssource pods.
+			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
 				t.Error(err)
 			} else {
-				t.Logf("auditlogssource: %+v", logs)
+				t.Logf("cloudauditlogssource: %+v", logs)
 			}
 			// Log the output of the target job pods.
 			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {

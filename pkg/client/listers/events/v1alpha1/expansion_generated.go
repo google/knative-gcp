@@ -18,34 +18,34 @@ limitations under the License.
 
 package v1alpha1
 
-// AuditLogsSourceListerExpansion allows custom methods to be added to
-// AuditLogsSourceLister.
-type AuditLogsSourceListerExpansion interface{}
+// CloudAuditLogsSourceListerExpansion allows custom methods to be added to
+// CloudAuditLogsSourceLister.
+type CloudAuditLogsSourceListerExpansion interface{}
 
-// AuditLogsSourceNamespaceListerExpansion allows custom methods to be added to
-// AuditLogsSourceNamespaceLister.
-type AuditLogsSourceNamespaceListerExpansion interface{}
+// CloudAuditLogsSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudAuditLogsSourceNamespaceLister.
+type CloudAuditLogsSourceNamespaceListerExpansion interface{}
 
-// PubSubListerExpansion allows custom methods to be added to
-// PubSubLister.
-type PubSubListerExpansion interface{}
+// CloudPubSubSourceListerExpansion allows custom methods to be added to
+// CloudPubSubSourceLister.
+type CloudPubSubSourceListerExpansion interface{}
 
-// PubSubNamespaceListerExpansion allows custom methods to be added to
-// PubSubNamespaceLister.
-type PubSubNamespaceListerExpansion interface{}
+// CloudPubSubSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudPubSubSourceNamespaceLister.
+type CloudPubSubSourceNamespaceListerExpansion interface{}
 
-// SchedulerListerExpansion allows custom methods to be added to
-// SchedulerLister.
-type SchedulerListerExpansion interface{}
+// CloudSchedulerSourceListerExpansion allows custom methods to be added to
+// CloudSchedulerSourceLister.
+type CloudSchedulerSourceListerExpansion interface{}
 
-// SchedulerNamespaceListerExpansion allows custom methods to be added to
-// SchedulerNamespaceLister.
-type SchedulerNamespaceListerExpansion interface{}
+// CloudSchedulerSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudSchedulerSourceNamespaceLister.
+type CloudSchedulerSourceNamespaceListerExpansion interface{}
 
-// StorageListerExpansion allows custom methods to be added to
-// StorageLister.
-type StorageListerExpansion interface{}
+// CloudStorageSourceListerExpansion allows custom methods to be added to
+// CloudStorageSourceLister.
+type CloudStorageSourceListerExpansion interface{}
 
-// StorageNamespaceListerExpansion allows custom methods to be added to
-// StorageNamespaceLister.
-type StorageNamespaceListerExpansion interface{}
+// CloudStorageSourceNamespaceListerExpansion allows custom methods to be added to
+// CloudStorageSourceNamespaceLister.
+type CloudStorageSourceNamespaceListerExpansion interface{}

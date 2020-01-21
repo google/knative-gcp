@@ -113,9 +113,9 @@ func TestInboundConvert(t *testing.T) {
 		wantMessageFn: func() *cloudevents.Event {
 			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetID("abc")
-			e.SetSource(v1alpha1.PubSubEventSource("proj", "topic"))
+			e.SetSource(v1alpha1.CloudPubSubSourceEventSource("proj", "topic"))
 			e.SetDataContentType("application/octet-stream")
-			e.SetType(v1alpha1.PubSubPublish)
+			e.SetType(v1alpha1.CloudPubSubSourcePublish)
 			e.SetDataSchema("http://example.com")
 			e.SetExtension("knativecemode", string(converters.DefaultSendMode))
 			e.Data = []byte("some data")
@@ -145,7 +145,7 @@ func TestInboundConvert(t *testing.T) {
 		wantMessageFn: func() *cloudevents.Event {
 			e := cloudevents.NewEvent(cloudevents.VersionV1)
 			e.SetID("abc")
-			e.SetSource(v1alpha1.StorageEventSource("my-bucket"))
+			e.SetSource(v1alpha1.CloudStorageSourceEventSource("my-bucket"))
 			e.SetSubject("my-obj")
 			e.SetDataContentType(*cloudevents.StringOfApplicationJSON())
 			e.SetType("com.google.cloud.storage.object.finalize")

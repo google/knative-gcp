@@ -86,7 +86,7 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, proje
 	return client.Bucket(bucketName)
 }
 
-func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
+func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
@@ -113,12 +113,12 @@ func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the Storage source.
-	eventsStorage := kngcptesting.NewStorage(storageName, client.Namespace,
-		kngcptesting.WithStorageBucket(bucketName),
-		kngcptesting.WithStorageSink(lib.ServiceGVK, targetName))
+	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace,
+		kngcptesting.WithCloudStorageSourceBucket(bucketName),
+		kngcptesting.WithCloudStorageSourceSink(lib.ServiceGVK, targetName))
 	client.CreateStorageOrFail(eventsStorage)
 
-	if err := client.Core.WaitForResourceReady(storageName, lib.StorageTypeMeta); err != nil {
+	if err := client.Core.WaitForResourceReady(storageName, lib.CloudStorageSourceTypeMeta); err != nil {
 		t.Error(err)
 	}
 
@@ -155,7 +155,7 @@ func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 		}
 		if !out.Success {
 			// Log the output storage pods.
-			if logs, err := client.LogsFor(client.Namespace, storageName, lib.StorageTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, storageName, lib.CloudStorageSourceTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("storage: %+v", logs)
@@ -181,8 +181,8 @@ func StorageWithTestImpl(t *testing.T, assertMetrics bool) {
 			"metric.type":                 lib.EventCountMetricType,
 			"resource.type":               lib.GlobalMetricResourceType,
 			"metric.label.resource_group": lib.StorageResourceGroup,
-			"metric.label.event_type":     v1alpha1.StorageFinalize,
-			"metric.label.event_source":   v1alpha1.StorageEventSource(bucketName),
+			"metric.label.event_type":     v1alpha1.CloudStorageSourceFinalize,
+			"metric.label.event_source":   v1alpha1.CloudStorageSourceEventSource(bucketName),
 			"metric.label.namespace_name": client.Namespace,
 			"metric.label.name":           storageName,
 			// We exit the target image before sending a response, thus check for 500.

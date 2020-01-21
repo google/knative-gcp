@@ -59,7 +59,7 @@ var (
 		},
 		Key: "key.json",
 	}
-	pubsubable = rectesting.NewStorage(name, testNS)
+	pubsubable = rectesting.NewCloudStorageSource(name, testNS)
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
@@ -70,7 +70,7 @@ var (
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
 		APIVersion:         "events.cloud.google.com/v1alpha1",
-		Kind:               "Storage",
+		Kind:               "CloudStorageSource",
 		Name:               name,
 		UID:                "test-storage-uid",
 		Controller:         &trueVal,
@@ -236,7 +236,7 @@ func TestCreates(t *testing.T) {
 		),
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("the status of Topic %q is Unknown", name),
-	},{
+	}, {
 		name: "topic exists and is ready but no topicid",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
@@ -451,7 +451,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionFailed(),
 		),
 		expectedErr: fmt.Sprintf("the status of PullSubscription %q is False", name),
-	},{
+	}, {
 		name: "topic exists and is ready, pullsubscription exists and the status is unknown",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,

@@ -24,14 +24,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// AuditLogsSources returns a AuditLogsSourceInformer.
-	AuditLogsSources() AuditLogsSourceInformer
-	// PubSubs returns a PubSubInformer.
-	PubSubs() PubSubInformer
-	// Schedulers returns a SchedulerInformer.
-	Schedulers() SchedulerInformer
-	// Storages returns a StorageInformer.
-	Storages() StorageInformer
+	// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+	CloudAuditLogsSources() CloudAuditLogsSourceInformer
+	// CloudPubSubSources returns a CloudPubSubSourceInformer.
+	CloudPubSubSources() CloudPubSubSourceInformer
+	// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+	CloudSchedulerSources() CloudSchedulerSourceInformer
+	// CloudStorageSources returns a CloudStorageSourceInformer.
+	CloudStorageSources() CloudStorageSourceInformer
 }
 
 type version struct {
@@ -45,22 +45,22 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// AuditLogsSources returns a AuditLogsSourceInformer.
-func (v *version) AuditLogsSources() AuditLogsSourceInformer {
-	return &auditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// CloudAuditLogsSources returns a CloudAuditLogsSourceInformer.
+func (v *version) CloudAuditLogsSources() CloudAuditLogsSourceInformer {
+	return &cloudAuditLogsSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// PubSubs returns a PubSubInformer.
-func (v *version) PubSubs() PubSubInformer {
-	return &pubSubInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// CloudPubSubSources returns a CloudPubSubSourceInformer.
+func (v *version) CloudPubSubSources() CloudPubSubSourceInformer {
+	return &cloudPubSubSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Schedulers returns a SchedulerInformer.
-func (v *version) Schedulers() SchedulerInformer {
-	return &schedulerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// CloudSchedulerSources returns a CloudSchedulerSourceInformer.
+func (v *version) CloudSchedulerSources() CloudSchedulerSourceInformer {
+	return &cloudSchedulerSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// Storages returns a StorageInformer.
-func (v *version) Storages() StorageInformer {
-	return &storageInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// CloudStorageSources returns a CloudStorageSourceInformer.
+func (v *version) CloudStorageSources() CloudStorageSourceInformer {
+	return &cloudStorageSourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -25,10 +25,14 @@ func TestTypesImplements(t *testing.T) {
 		instance interface{}
 		iface    duck.Implementable
 	}{
-		{instance: &Storage{}, iface: &v1beta1.Source{}},
-		{instance: &Storage{}, iface: &v1beta1.Conditions{}},
-		{instance: &Scheduler{}, iface: &v1beta1.Source{}},
-		{instance: &Scheduler{}, iface: &v1beta1.Conditions{}},
+		{instance: &CloudAuditLogsSource{}, iface: &v1beta1.Source{}},
+		{instance: &CloudAuditLogsSource{}, iface: &v1beta1.Conditions{}},
+		{instance: &CloudStorageSource{}, iface: &v1beta1.Source{}},
+		{instance: &CloudStorageSource{}, iface: &v1beta1.Conditions{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1beta1.Source{}},
+		{instance: &CloudSchedulerSource{}, iface: &v1beta1.Conditions{}},
+		{instance: &CloudPubSubSource{}, iface: &v1beta1.Source{}},
+		{instance: &CloudPubSubSource{}, iface: &v1beta1.Conditions{}},
 	}
 	for _, tc := range testCases {
 		if err := duck.VerifyType(tc.instance, tc.iface); err != nil {

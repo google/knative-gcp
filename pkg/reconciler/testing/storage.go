@@ -29,12 +29,12 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
-// StorageOption enables further configuration of a Storage.
-type StorageOption func(*v1alpha1.Storage)
+// CloudStorageSourceOption enables further configuration of a CloudStorageSource.
+type CloudStorageSourceOption func(*v1alpha1.CloudStorageSource)
 
-// NewStorage creates a Storage with StorageOptions
-func NewStorage(name, namespace string, so ...StorageOption) *v1alpha1.Storage {
-	s := &v1alpha1.Storage{
+// NewCloudStorageSource creates a CloudStorageSource with CloudStorageSourceOptions
+func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOption) *v1alpha1.CloudStorageSource {
+	s := &v1alpha1.CloudStorageSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -48,26 +48,26 @@ func NewStorage(name, namespace string, so ...StorageOption) *v1alpha1.Storage {
 	return s
 }
 
-func WithStorageBucket(bucket string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceBucket(bucket string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.Bucket = bucket
 	}
 }
 
-func WithStorageProject(project string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceProject(project string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.Project = project
 	}
 }
 
-func WithStorageEventTypes(eventTypes []string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceEventTypes(eventTypes []string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.EventTypes = eventTypes
 	}
 }
 
-func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceSink(gvk metav1.GroupVersionKind, name string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &corev1.ObjectReference{
 				APIVersion: apiVersion(gvk),
@@ -78,123 +78,123 @@ func WithStorageSink(gvk metav1.GroupVersionKind, name string) StorageOption {
 	}
 }
 
-// WithInitStorageConditions initializes the Storages's conditions.
-func WithInitStorageConditions(s *v1alpha1.Storage) {
+// WithInitCloudStorageSourceConditions initializes the CloudStorageSources's conditions.
+func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
-// WithStorageTopicFailed marks the condition that the
+// WithCloudStorageSourceTopicFailed marks the condition that the
 // topic is False
-func WithStorageTopicFailed(reason, message string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkTopicFailed(reason, message)
 	}
 }
 
-// WithStorageTopicUnknown marks the condition that the
+// WithCloudStorageSourceTopicUnknown marks the condition that the
 // topic is False
-func WithStorageTopicUnknown(reason, message string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkTopicUnknown(reason, message)
 	}
 }
 
-// WithStorageTopicNotReady marks the condition that the
+// WithCloudStorageSourceTopicNotReady marks the condition that the
 // topic is not ready
-func WithStorageTopicReady(topicID string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceTopicReady(topicID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
-func WithStorageTopicID(topicID string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceTopicID(topicID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.TopicID = topicID
 	}
 }
 
-// WithStoragePullSubscriptionFailed marks the condition that the
+// WithCloudStorageSourcePullSubscriptionFailed marks the condition that the
 // status of topic is False
-func WithStoragePullSubscriptionFailed(reason, message string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkPullSubscriptionFailed(reason, message)
 	}
 }
 
-// WithStoragePullSubscriptionUnknown marks the condition that the
+// WithCloudStorageSourcePullSubscriptionUnknown marks the condition that the
 // status of topic is Unknown.
-func WithStoragePullSubscriptionUnknown(reason, message string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkPullSubscriptionUnknown(reason, message)
 	}
 }
 
-// WithStoragePullSubscriptionReady marks the condition that the
+// WithCloudStorageSourcePullSubscriptionReady marks the condition that the
 // topic is ready.
-func WithStoragePullSubscriptionReady() StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkPullSubscriptionReady()
 	}
 }
 
-// WithStorageNotificationNotReady marks the condition that the
+// WithCloudStorageSourceNotificationNotReady marks the condition that the
 // GCS Notification is not ready.
-func WithStorageNotificationNotReady(reason, message string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceNotificationNotReady(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkNotificationNotReady(reason, message)
 	}
 }
 
-// WithStorageNotificationReady marks the condition that the GCS
+// WithCloudStorageSourceNotificationReady marks the condition that the GCS
 // Notification is ready.
-func WithStorageNotificationReady(notificationID string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceNotificationReady(notificationID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkNotificationReady(notificationID)
 	}
 }
 
-// WithStorageSinkURI sets the status for sink URI
-func WithStorageSinkURI(url *apis.URL) StorageOption {
-	return func(s *v1alpha1.Storage) {
+// WithCloudStorageSourceSinkURI sets the status for sink URI
+func WithCloudStorageSourceSinkURI(url *apis.URL) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.SinkURI = url
 	}
 }
 
-// WithStorageNotificationId sets the status for Notification ID
-func WithStorageNotificationID(notificationID string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+// WithCloudStorageSourceNotificationId sets the status for Notification ID
+func WithCloudStorageSourceNotificationID(notificationID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.NotificationID = notificationID
 	}
 }
 
-// WithStorageProjectId sets the status for Project ID
-func WithStorageProjectID(projectID string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+// WithCloudStorageSourceProjectId sets the status for Project ID
+func WithCloudStorageSourceProjectID(projectID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.ProjectID = projectID
 	}
 }
 
-func WithStorageFinalizers(finalizers ...string) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceFinalizers(finalizers ...string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Finalizers = finalizers
 	}
 }
 
-func WithStorageStatusObservedGeneration(generation int64) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceStatusObservedGeneration(generation int64) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.Status.ObservedGeneration = generation
 	}
 }
 
-func WithStorageObjectMetaGeneration(generation int64) StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithCloudStorageSourceObjectMetaGeneration(generation int64) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		s.ObjectMeta.Generation = generation
 	}
 }
 
-func WithDeletionTimestamp() StorageOption {
-	return func(s *v1alpha1.Storage) {
+func WithDeletionTimestamp() CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
 	}

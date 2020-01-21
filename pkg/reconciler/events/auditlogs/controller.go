@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package auditlogs implements the AuditLogsSource controller.
+// Package auditlogs implements the CloudAuditLogsSource controller.
 package auditlogs
 
 import (
@@ -28,7 +28,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	auditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/auditlogssource"
+	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlogssource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
@@ -37,14 +37,14 @@ import (
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "AuditLogsSource"
+	reconcilerName = "CloudAuditLogsSource"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-auditlogssource-controller"
+	controllerAgentName = "cloud-run-events-cloudauditlogssource-controller"
 
 	// receiveAdapterName is the string used as name for the receive adapter pod.
-	receiveAdapterName = "auditlogs.events.cloud.google.com"
+	receiveAdapterName = "cloudauditlogssource.events.cloud.google.com"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -56,18 +56,18 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
-	auditlogssourceInformer := auditlogssourceinformers.Get(ctx)
+	cloudauditlogssourceInformer := cloudauditlogssourceinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.AuditLogConverter, cmw),
-		auditLogsSourceLister:  auditlogssourceInformer.Lister(),
+		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
+		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
 		pubsubClientProvider:   gpubsub.NewClient,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
 	r.Logger.Info("Setting up event handlers")
-	auditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
+	cloudauditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
