@@ -1,0 +1,21 @@
+apiVersion: events.cloud.google.com/v1alpha1
+kind: CloudPubSubSource
+metadata:
+  name: cloudpubsubsource-test
+spec:
+  topic: testing
+  sink:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: event-display
+
+  # If running in GKE, we will ask the metadata server, change this if required.
+  #project: MY_PROJECT
+  # The default secret name and key, change this if required.
+  #secret:
+  #  name: google-cloud-key
+  #  key: key.json
+  #pubsubSecret:  # A secret in the default namespace for Pub/Sub operations
+  #name: google-cloud-key
+  #key: key.json
