@@ -110,10 +110,7 @@ gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere'
 Verify that the published message was sent by looking at the logs of the service
 that this Storage notification sinks to.
 
-1. To ensure the downstream pods to get started and receive our event, wait 60
-   seconds.
-   
-   You can check the status of the downstream pods with:
+1. You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display

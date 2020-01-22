@@ -48,10 +48,7 @@ gcloud pubsub topics publish testing --message='{"Hello": "world"}'
 We will verify that the published event was sent by looking at the logs of the
 service that this CloudPubSubSource sinks to.
 
-1. We need to wait for the downstream pods to get started and receive our event,
-   wait 60 seconds.
-
-   - You can check the status of the downstream pods with:
+1. You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display
