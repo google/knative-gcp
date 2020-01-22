@@ -2,10 +2,7 @@
 
 ## Overview
 
-This sample shows how to configure the CloudPubSubSource. 
-This source is most useful as a bridge from other GCP services, 
-such as [Cloud Storage](https://cloud.google.com/storage/docs/pubsub-notifications), 
-[Cloud Scheduler](https://cloud.google.com/scheduler/docs/creating#).
+This sample shows how to configure the CloudPubSubSource. CloudPubSubSource fires a new event each time a message is published on a [Google Cloud Platform PubSub topic](https://cloud.google.com/pubsub/).
 
 ## Prerequisites
 
@@ -48,7 +45,8 @@ gcloud pubsub topics publish testing --message='{"Hello": "world"}'
 We will verify that the published event was sent by looking at the logs of the
 service that this CloudPubSubSource sinks to.
 
-1. You can check the status of the downstream pods with:
+1. We need to wait for the downstream pods to get started and receive our event,
+   wait 60 seconds. You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display
@@ -79,6 +77,13 @@ Extensions,
 Data,
   {"Hello": "world"}
 ```
+
+## What's Next
+
+1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 

@@ -55,7 +55,8 @@ Create a GCP PubSub Topic:
 We will verify that the published event was sent by looking at the logs of the
 service that this CloudAuditLogsSource sinks to.
 
-1. You can check the status of the downstream pods with:
+1. We need to wait for the downstream pods to get started and receive our event,
+   wait 60 seconds. You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display
@@ -147,6 +148,13 @@ Data,
     "timestamp": "2020-01-07T20:56:30.516179081Z"
   }
 ```
+
+## What's Next
+
+1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
