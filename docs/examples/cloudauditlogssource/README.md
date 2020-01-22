@@ -56,9 +56,7 @@ We will verify that the published event was sent by looking at the logs of the
 service that this CloudAuditLogsSource sinks to.
 
 1. We need to wait for the downstream pods to get started and receive our event,
-   wait 60 seconds.
-
-   - You can check the status of the downstream pods with:
+   wait 60 seconds. You can check the status of the downstream pods with:
 
      ```shell
      kubectl get pods --selector app=event-display

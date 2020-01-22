@@ -26,6 +26,7 @@ webhooks:
       name: webhook
       namespace: cloud-run-events
   failurePolicy: Fail
+  sideEffects: None
   name: webhook.events.cloud.google.com
 
 ---
@@ -44,6 +45,7 @@ webhooks:
       name: webhook
       namespace: cloud-run-events
   failurePolicy: Fail
+  sideEffects: None
   name: validation.webhook.events.cloud.google.com
 
 ---
@@ -62,6 +64,7 @@ webhooks:
       name: webhook
       namespace: cloud-run-events
   failurePolicy: Fail
+  sideEffects: None
   name: config.webhook.events.cloud.google.com
   namespaceSelector:
     matchExpressions:
