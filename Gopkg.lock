@@ -1334,12 +1334,13 @@
   revision = "69764acb6e8e900b7c05296c5d3c9c19545475f9"
 
 [[projects]]
-  branch = "release-0.12"
-  digest = "1:498305d17fb706457f834b446360fa0e9f17b35ff9085d055d72c887365c7db9"
+  branch = "master"
+  digest = "1:e68cd9d82cd3eb3d47c0ab84e138813616f028be9e3f090abe332e06804f540d"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/duck",
     "pkg/apis/duck/v1alpha1",
+    "pkg/apis/duck/v1beta1",
     "pkg/apis/eventing",
     "pkg/apis/eventing/v1alpha1",
     "pkg/apis/flows",
@@ -1348,6 +1349,7 @@
     "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
+    "pkg/apis/messaging/v1beta1",
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
     "pkg/client/clientset/versioned",
@@ -1359,6 +1361,8 @@
     "pkg/client/clientset/versioned/typed/flows/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/messaging/v1beta1",
+    "pkg/client/clientset/versioned/typed/messaging/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
     "pkg/client/injection/client",
@@ -1396,7 +1400,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "8a92a8c91447a6ff71e4be97a42c548790d52a22"
+  revision = "e4533efc014b49291f5b213b87d3334294af7a4f"
 
 [[projects]]
   branch = "release-0.12"
