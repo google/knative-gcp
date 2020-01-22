@@ -617,7 +617,6 @@ function get_latest_knative_yaml_source() {
   if is_release_branch; then
     # Get the latest tag name for the current branch, which is likely formatted as v0.5.0
     local tag_name="$(git describe --tags --abbrev=0)"
-    echo "tag name is: ${tag_name}"
     # The given repo might not have this tag, so we need to find its latest release manifest with the same major&minor version.
     local major_minor="$(echo ${tag_name} | cut -d. -f1-2)"
     local yaml_source_path="$(gsutil ls gs://knative-releases/${repo_name}/previous/${major_minor}.*/${yaml_name}.yaml \
