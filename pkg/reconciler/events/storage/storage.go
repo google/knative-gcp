@@ -36,6 +36,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -127,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := r.updateStatus(ctx, storage); uErr != nil {
+	} else if uErr := r.updateStatus(ctx, original, storage); uErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudStorageSource status", zap.Error(uErr))
 		r.Recorder.Eventf(storage, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for CloudStorageSource %q: %v", storage.Name, uErr)
@@ -310,33 +311,37 @@ func removeFinalizer(s *v1alpha1.CloudStorageSource) {
 	s.Finalizers = finalizers.List()
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudStorageSource) (*v1alpha1.CloudStorageSource, error) {
-	source, err := r.storageLister.CloudStorageSources(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return nil, err
-	}
-	// Check if there is anything to update.
-	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
-		return source, nil
-	}
-	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
-
-	// Don't modify the informers copy.
-	existing := source.DeepCopy()
-	existing.Status = desired.Status
-	src, err := r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).UpdateStatus(existing)
-
-	if err == nil && becomesReady {
-		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("CloudStorageSource became ready", zap.Any("after", duration))
-		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudStorageSource %q became ready", source.Name))
-		if metricErr := r.StatsReporter.ReportReady("CloudStorageSource", source.Namespace, source.Name, duration); metricErr != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudStorageSource", zap.Error(metricErr))
+func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.CloudStorageSource, desired *v1alpha1.CloudStorageSource) error {
+	existing = existing.DeepCopy()
+	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
+		if attempts > 0 {
+			existing, err = r.storageLister.CloudStorageSources(desired.Namespace).Get(desired.Name)
+			if err != nil {
+				return err
+			}
 		}
-	}
+		// Check if there is anything to update.
+		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
+			return nil
+		}
+		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
 
-	return src, err
+		existing.Status = desired.Status
+		_, err = r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).UpdateStatus(existing)
+
+		if err == nil && becomesReady {
+			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
+			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
+			logging.FromContext(ctx).Desugar().Info("CloudStorageSource became ready", zap.Any("after", duration))
+			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudStorageSource %q became ready", existing.Name))
+			if metricErr := r.StatsReporter.ReportReady("CloudStorageSource", existing.Namespace, existing.Name, duration); metricErr != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudStorageSource", zap.Error(metricErr))
+			}
+		}
+
+		return err
+	})
 }
 
 // updateFinalizers is a generic method for future compatibility with a

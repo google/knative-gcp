@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
 	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"go.uber.org/zap"
@@ -105,7 +106,7 @@ func (c *Reconciler) Reconcile(ctx context.Context, key string) error {
 	// informer's cache may be stale and we don't want to
 	// overwrite a prior update to status with this stale state.
 	if !equality.Semantic.DeepEqual(original.Status, s.Status) {
-		if _, err := c.updateStatus(ctx, s); err != nil {
+		if err := c.updateStatus(ctx, original, s); err != nil {
 			c.Logger.Warn("Failed to update CloudAuditLogsSource status", zap.Error(err))
 			c.Recorder.Eventf(s, corev1.EventTypeWarning, "UpdateFailed",
 				"Failed to update status for CloudAuditLogsSource %q: %v", s.Name, err)
@@ -263,32 +264,36 @@ func (c *Reconciler) removeFinalizer(s *v1alpha1.CloudAuditLogsSource) {
 	s.Finalizers = finalizers.List()
 }
 
-func (c *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudAuditLogsSource) (*v1alpha1.CloudAuditLogsSource, error) {
-	source, err := c.auditLogsSourceLister.CloudAuditLogsSources(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return nil, err
-	}
-	// Check if there is anything to update.
-	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
-		return source, nil
-	}
-	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
-
-	// Don't modify the informers copy.
-	existing := source.DeepCopy()
-	existing.Status = desired.Status
-	src, err := c.RunClientSet.EventsV1alpha1().CloudAuditLogsSources(desired.Namespace).UpdateStatus(existing)
-
-	if err == nil && becomesReady {
-		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("CloudAuditLogsSource became ready", zap.Any("after", duration))
-		c.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudAuditLogsSource %q became ready", source.Name))
-		if err := c.StatsReporter.ReportReady("CloudAuditLogsSource", source.Namespace, source.Name, duration); err != nil {
-			logging.FromContext(ctx).Infof("failed to record ready for CloudAuditLogsSource, %v", err)
+func (c *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.CloudAuditLogsSource, desired *v1alpha1.CloudAuditLogsSource) error {
+	existing = existing.DeepCopy()
+	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
+		if attempts > 0 {
+			existing, err = c.auditLogsSourceLister.CloudAuditLogsSources(desired.Namespace).Get(desired.Name)
+			if err != nil {
+				return err
+			}
 		}
-	}
+		// If there's nothing to update, just return.
+		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
+			return nil
+		}
+		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
 
-	return src, err
+		existing.Status = desired.Status
+		_, err = c.RunClientSet.EventsV1alpha1().CloudAuditLogsSources(desired.Namespace).UpdateStatus(existing)
+
+		if err == nil && becomesReady {
+			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
+			logging.FromContext(ctx).Desugar().Info("CloudAuditLogsSource became ready", zap.Any("after", duration))
+			c.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudAuditLogsSource %q became ready", existing.Name))
+			if err := c.StatsReporter.ReportReady("CloudAuditLogsSource", existing.Namespace, existing.Name, duration); err != nil {
+				logging.FromContext(ctx).Infof("failed to record ready for CloudAuditLogsSource, %v", err)
+			}
+		}
+
+		return err
+	})
 }
 
 // updateFinalizers is a generic method for future compatibility with a

@@ -97,7 +97,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := r.updateStatus(ctx, pubsub); uErr != nil {
+	} else if uErr := r.updateStatus(ctx, original, pubsub); uErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudPubSubSource status", zap.Error(uErr))
 		r.Recorder.Eventf(pubsub, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for CloudPubSubSource %q: %v", pubsub.Name, uErr)
@@ -168,31 +168,35 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 	return ps, nil
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.CloudPubSubSource) (*v1alpha1.CloudPubSubSource, error) {
-	source, err := r.pubsubLister.CloudPubSubSources(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return nil, err
-	}
-	// Check if there is anything to update.
-	if equality.Semantic.DeepEqual(source.Status, desired.Status) {
-		return source, nil
-	}
-	becomesReady := desired.Status.IsReady() && !source.Status.IsReady()
-
-	// Don't modify the informers copy.
-	existing := source.DeepCopy()
-	existing.Status = desired.Status
-	src, err := r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).UpdateStatus(existing)
-
-	if err == nil && becomesReady {
-		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-		duration := time.Since(src.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("CloudPubSubSource became ready", zap.Any("after", duration))
-		r.Recorder.Event(source, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudPubSubSource %q became ready", source.Name))
-		if metricErr := r.StatsReporter.ReportReady("CloudPubSubSource", source.Namespace, source.Name, duration); metricErr != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudPubSubSource", zap.Error(metricErr))
+func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.CloudPubSubSource, desired *v1alpha1.CloudPubSubSource) error {
+	existing = existing.DeepCopy()
+	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
+		if attempts > 0 {
+			existing, err = r.pubsubLister.CloudPubSubSources(desired.Namespace).Get(desired.Name)
+			if err != nil {
+				return err
+			}
 		}
-	}
+		// Check if there is anything to update.
+		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
+			return nil
+		}
+		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
 
-	return src, err
+		existing.Status = desired.Status
+		_, err = r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).UpdateStatus(existing)
+
+		if err == nil && becomesReady {
+			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
+			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
+			logging.FromContext(ctx).Desugar().Info("CloudPubSubSource became ready", zap.Any("after", duration))
+			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudPubSubSource %q became ready", existing.Name))
+			if metricErr := r.StatsReporter.ReportReady("CloudPubSubSource", existing.Namespace, existing.Name, duration); metricErr != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudPubSubSource", zap.Error(metricErr))
+			}
+		}
+
+		return err
+	})
 }
