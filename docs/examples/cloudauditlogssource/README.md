@@ -148,13 +148,6 @@ Data,
   }
 ```
 
-## What's Next
-
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
-1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
-1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
-
 ## Cleaning Up
 
 1. Delete the `CloudAuditLogsSource`
