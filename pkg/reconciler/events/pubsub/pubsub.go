@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/apis"
@@ -173,7 +174,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.CloudP
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.pubsubLister.CloudPubSubSources(desired.Namespace).Get(desired.Name)
+			existing, err = r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}

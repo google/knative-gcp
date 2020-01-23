@@ -147,7 +147,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.Channe
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.channelLister.Channels(desired.Namespace).Get(desired.Name)
+			existing, err = r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}

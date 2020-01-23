@@ -31,6 +31,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/types"
 
 	"cloud.google.com/go/logging/logadmin"
@@ -269,7 +271,7 @@ func (c *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.CloudA
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = c.auditLogsSourceLister.CloudAuditLogsSources(desired.Namespace).Get(desired.Name)
+			existing, err = c.RunClientSet.EventsV1alpha1().CloudAuditLogsSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}

@@ -345,7 +345,7 @@ func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.PullSu
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.pullSubscriptionLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
+			existing, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
