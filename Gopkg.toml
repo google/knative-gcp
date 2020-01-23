@@ -66,7 +66,8 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  version = "0.11.0"
+  source = "github.com/nachocano/sdk-go"
+  branch = "pubsub-transport"
 
 [prune]
   go-tests = true
