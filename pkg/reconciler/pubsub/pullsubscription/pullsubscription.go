@@ -340,8 +340,8 @@ func (r *Reconciler) resolveDestination(ctx context.Context, destination duckv1.
 	return url.String(), nil
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, existing *v1alpha1.PullSubscription, desired *v1alpha1.PullSubscription) error {
-	existing = existing.DeepCopy()
+func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.PullSubscription, desired *v1alpha1.PullSubscription) error {
+	existing := original.DeepCopy()
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
