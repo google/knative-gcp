@@ -69,7 +69,7 @@ required = [
 # once we get one.
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  branch = "master"
+  revision = "2c354395746cfea050b7426aaef63993161a8b50"
 
 [prune]
   go-tests = true
