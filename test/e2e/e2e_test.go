@@ -197,6 +197,7 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("See issue https://github.com/google/knative-gcp/issues/504")
 	cancel := logstream.Start(t)
 	defer cancel()
 	BrokerWithPubSubChannelTestImpl(t)
@@ -219,6 +220,7 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSource(t *testing.T) {
+	t.Skip("See issue https://github.com/google/knative-gcp/issues/480")
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudAuditLogsSourceWithTestImpl(t)
