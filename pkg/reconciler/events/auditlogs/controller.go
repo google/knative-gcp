@@ -19,8 +19,7 @@ package auditlogs
 
 import (
 	"context"
-
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -71,12 +70,12 @@ func NewController(
 		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("AuditLogSource")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("AuditLogSource")),
+		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
