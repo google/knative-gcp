@@ -18,6 +18,8 @@ package publisher
 
 import (
 	"fmt"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
 	"context"
 
@@ -64,9 +66,13 @@ func (a *Publisher) Start(ctx context.Context) error {
 func (a *Publisher) receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) error {
 	event = tracing.AddTraceparentAttributeFromContext(ctx, event)
 
+	logging.FromContext(ctx).Desugar().Info("event gotten in publisher", zap.String("event", event.String()))
+
 	if _, r, err := a.outbound.Send(ctx, event); err != nil {
+		logging.FromContext(ctx).Desugar().Info("response failed", zap.Error(err))
 		return err
 	} else if r != nil {
+		logging.FromContext(ctx).Desugar().Info("response succeeded")
 		resp.RespondWith(200, r)
 	}
 
