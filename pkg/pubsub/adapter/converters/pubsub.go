@@ -52,8 +52,6 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.Data = msg.Data
 	event.DataEncoded = true
 	// Attributes are extensions.
-	// Also grab all extensions as a string, which we will set as attributes payload if send mode is Push.
-	attrs := make(map[string]string, 0)
 	if msg.Attributes != nil && len(msg.Attributes) > 0 {
 		for k, v := range msg.Attributes {
 			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
@@ -62,13 +60,13 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 			if IsAlphaNumeric(k) {
 				event.SetExtension(k, v)
 			}
-			// All atributes (whether valid as extensions) are stored in attrs to be set in the payload if mode is Push.
-			attrs[k] = v
 		}
 	}
 	// If send mode is Push, convert to Pub/Sub Push payload style.
 	if sendMode == Push {
-		event = convertToPush(ctx, event, attrs)
+		// set the content type to something that can be handled by codec.go
+		event.SetDataContentType("application/json")
+		event = convertToPush(ctx, event, msg.Attributes)
 	}
 	return &event, nil
 }

@@ -18,6 +18,8 @@ package converters
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
@@ -83,6 +85,24 @@ func TestConvertCloudPubSub(t *testing.T) {
 				"attribute1": "value1",
 			})
 		},
+	}, {
+		name: "Push mode with non valid alphanumeric attribute",
+		message: &cepubsub.Message{
+			Data: []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
+			Attributes: map[string]string{
+				"attribute1":        "value1",
+				"Invalid-Attrib#$^": "value2",
+			},
+		},
+		sendMode: Push,
+		wantEventFn: func() *cloudevents.Event {
+			return pushCloudEvent(map[string]string{
+				"attribute1": "value1",
+			}, map[string]string{
+				"attribute1":        "value1",
+				"Invalid-Attrib#$^": "value2",
+			}, "\"test data\"")
+		},
 	}}
 
 	for _, test := range tests {
@@ -98,7 +118,6 @@ func TestConvertCloudPubSub(t *testing.T) {
 			))
 
 			gotEvent, err := Convert(ctx, test.message, test.sendMode, "")
-
 			if err != nil {
 				if !test.wantErr {
 					t.Errorf("converters.convertPubsub got error %v want error=%v", err, test.wantErr)
@@ -120,6 +139,23 @@ func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
 	e.SetType(v1alpha1.CloudPubSubSourcePublish)
 	e.SetExtension("knativecemode", string(Binary))
 	e.Data = []byte("test data")
+	e.DataEncoded = true
+	for k, v := range extensions {
+		e.SetExtension(k, v)
+	}
+	return &e
+}
+
+func pushCloudEvent(extensions, allExtensions map[string]string, data string) *cloudevents.Event {
+	e := cloudevents.NewEvent(cloudevents.VersionV1)
+	e.SetID("id")
+	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
+	e.SetDataContentType("application/json")
+	e.SetType(v1alpha1.CloudPubSubSourcePublish)
+	e.SetExtension("knativecemode", string(Push))
+	ex, _ := json.Marshal(allExtensions)
+	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"id":"id","data":%s,"attributes":%s,"publish_time":"0001-01-01T00:00:00Z"}}`, data, ex)
+	e.Data = []byte(s)
 	e.DataEncoded = true
 	for k, v := range extensions {
 		e.SetExtension(k, v)
