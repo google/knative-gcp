@@ -91,7 +91,6 @@ func (ec *EventContextV1) SetExtension(name string, value interface{}) error {
 		if err == nil {
 			ec.Extensions[name] = v
 		}
-		fmt.Printf("SetExtension name that failed %s", name)
 		return err
 	}
 }
