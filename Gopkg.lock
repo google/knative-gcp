@@ -136,7 +136,6 @@
   version = "v0.2.1"
 
 [[projects]]
-  branch = "master"
   digest = "1:9beee36e5f85a34a8d8e5b6e58fec01d81c6f74247cb9baed6c5e8f198e9da5e"
   name = "github.com/cloudevents/sdk-go"
   packages = [
