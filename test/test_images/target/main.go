@@ -39,22 +39,22 @@ type Receiver struct {
 func (r *Receiver) Receive(event cloudevents.Event) {
 	var target string
 
-	// Try Pull first.
+	// Try Pull first used by the PullSubscription.
 	err := event.ExtensionAs("target", &target)
 	if err != nil {
-		// Should be Push format and the target should be in the data payload.
+		// If it fails, try Push format used by the CloudPubSubSource.
 		data, err := event.DataBytes()
 		if err != nil {
 			fmt.Println("failed to get data from event", err)
 			return
 		}
-		msg := converters.PubSubMessage{}
-		if err := json.Unmarshal(data, &msg); err != nil {
-			fmt.Println("failed to unmarshall PubSubMessage", err)
+		push := converters.PushMessage{}
+		if err := json.Unmarshal(data, &push); err != nil {
+			fmt.Println("failed to unmarshall PubMessage", err)
 			return
 		}
 
-		if tt, ok := msg.Attributes["target"]; !ok {
+		if tt, ok := push.Message.Attributes["target"]; !ok {
 			fmt.Println("failed to get target from attributes:", err)
 			return
 		} else {
