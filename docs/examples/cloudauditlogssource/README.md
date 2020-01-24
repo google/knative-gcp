@@ -79,8 +79,8 @@ Context Attributes,
   specversion: 1.0
   type: com.google.cloud.auditlog.event
   source: pubsub.googleapis.com/projects/test
-  subject: pubsub.googleapis.com/projects/test/topics/test-auditlogs-source
-  id: 8c2iznd54odprojects/test/logs/cloudaudit.googleapis.com%2Factivity2020-01-07T20:56:30.516179081Z
+  subject: projects/test/topics/test-auditlogs-source
+  id: efdb9bf7d6fdfc922352530c1ba51242
   time: 2020-01-07T20:56:30.516179081Z
   dataschema: type.googleapis.com/google.logging.v2.LogEntry
   datacontenttype: application/json
