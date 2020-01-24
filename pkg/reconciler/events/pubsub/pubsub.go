@@ -147,7 +147,17 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return nil, fmt.Errorf("failed to get PullSubscription: %w", err)
 		}
-		newPS := resources.MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, source.Spec.Topic, r.receiveAdapterName, "", resourceGroup)
+		args := &resources.PullSubscriptionArgs{
+			Namespace:      source.Namespace,
+			Name:           source.Name,
+			Spec:           &source.Spec.PubSubSpec,
+			Owner:          source,
+			Topic:          source.Spec.Topic,
+			ReceiveAdapter: r.receiveAdapterName,
+			ResourceGroup:  resourceGroup,
+			Mode:           pubsubv1alpha1.ModePushCompatible,
+		}
+		newPS := resources.MakePullSubscription(args)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
 		if err != nil {

@@ -273,3 +273,9 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 		}}
 	}
 }
+
+func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.Mode = mode
+	}
+}

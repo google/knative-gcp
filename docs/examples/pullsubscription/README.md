@@ -1,8 +1,9 @@
 # PullSubscription Example
 
 This sample shows how to configure `PullSubscriptions`. This
-can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), and users should rather 
-use the latter if they want to bridge events from other Google Cloud services using Pub/Sub into their clusters.
+can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), 
+and users should rather use the latter if they want to bridge events from Pub/Sub into their clusters. As opposed to the  
+`CloudPubSubSource`, which sends events using the Push-compatible format, this does so using a Pull format.
 
 ## Prerequisites
 
@@ -117,7 +118,8 @@ For more information about the format of the `Data` see the `data` field of
 
 ## What's next
 
-1. For a higher-level construct to interact with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For more details on Cloud Pub/Sub formats refer to the [Subscriber overview guide](https://cloud.google.com/pubsub/docs/subscriber).
+1. For a higher-level construct to interact with Cloud Pub/Sub that sends Push-compatible format events, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
 1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
 1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
 1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).

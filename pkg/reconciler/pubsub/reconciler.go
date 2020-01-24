@@ -91,7 +91,17 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
-		newPS := resources.MakePullSubscription(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName, psb.adapterType, resourceGroup)
+		args := &resources.PullSubscriptionArgs{
+			Namespace:      namespace,
+			Name:           name,
+			Spec:           spec,
+			Owner:          pubsubable,
+			Topic:          topic,
+			ReceiveAdapter: psb.receiveAdapterName,
+			AdapterType:    psb.adapterType,
+			ResourceGroup:  resourceGroup,
+		}
+		newPS := resources.MakePullSubscription(args)
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
