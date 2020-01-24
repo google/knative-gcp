@@ -2,7 +2,9 @@
 
 ## Overview
 
-This sample shows how to configure the CloudPubSubSource. CloudPubSubSource fires a new event each time a message is published on a [Google Cloud Platform PubSub topic](https://cloud.google.com/pubsub/).
+This sample shows how to configure `CloudPubSubSources`. 
+The `CloudPubSubSource` fires a new event each time a message is published on a [Cloud Pub/Sub topic](https://cloud.google.com/pubsub/). 
+This source sends events using a Push-compatible format.
 
 ## Prerequisites
 
@@ -68,18 +70,30 @@ Validation: valid
 Context Attributes,
   specversion: 1.0
   type: com.google.cloud.pubsub.topic.publish
-  source: //pubsub.googleapis.com/projects/xiyue-knative-gcp/topics/testing
-  id: 946366448650699
-  time: 2020-01-21T22:12:06.742Z
-  datacontenttype: application/octet-stream
+  source: //pubsub.googleapis.com/projects/PROJECT_ID/topics/TOPIC_NAME
+  id: 951049449503068
+  time: 2020-01-24T18:29:36.874Z
+  datacontenttype: application/json
 Extensions,
-  knativecemode: binary
+  knativearrivaltime: 2020-01-24T18:29:37.212883996Z
+  knativecemode: push
+  traceparent: 00-7e7fb503ae694cc0f1cbf84ea63354be-f8c4848c9c11e073-00
 Data,
-  {"Hello": "world"}
+  {
+    "subscription": "cre-pull-7b35a745-877f-4f1f-9434-74062631a958",
+    "message": {
+      "id": "951049449503068",
+      "data": {
+        "Hello": "world"
+      },
+      "publish_time": "2020-01-24T18:29:36.874Z"
+    }
+  }
 ```
 
 ## What's Next
 
+1. For more details on Cloud Pub/Sub formats refer to the [Subscriber overview guide](https://cloud.google.com/pubsub/docs/subscriber).
 1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
 1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
 1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
