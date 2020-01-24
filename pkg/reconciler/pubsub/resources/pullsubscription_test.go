@@ -63,7 +63,17 @@ func TestMakePullSubscription(t *testing.T) {
 		},
 	}
 
-	got := MakePullSubscription(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com", "google.storage", "storages.events.cloud.google.com")
+	args := &PullSubscriptionArgs{
+		Namespace:      source.Namespace,
+		Name:           source.Name,
+		Spec:           &source.Spec.PubSubSpec,
+		Owner:          source,
+		Topic:          "topic-abc",
+		ReceiveAdapter: "storage.events.cloud.google.com",
+		AdapterType:    "google.storage",
+		ResourceGroup:  "storages.events.cloud.google.com",
+	}
+	got := MakePullSubscription(args)
 
 	yes := true
 	want := &pubsubv1alpha1.PullSubscription{
