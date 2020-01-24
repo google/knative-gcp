@@ -38,9 +38,6 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetID(tx.ID)
 	event.SetTime(tx.PublishTime)
 	event.SetSource(v1alpha1.CloudPubSubSourceEventSource(tx.Project, tx.Topic))
-	// We do not know the content type and we do not want to inspect the payload,
-	// thus we set this generic one.
-	event.SetDataContentType("application/octet-stream")
 	event.SetType(v1alpha1.CloudPubSubSourcePublish)
 	// Set the schema if it comes as an attribute.
 	if val, ok := msg.Attributes["schema"]; ok {
@@ -49,13 +46,15 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	}
 	// Set the mode to be an extension attribute.
 	event.SetExtension("knativecemode", string(sendMode))
+	// Setting the event Data for Pull format. If it's Push, it will be overwritten below.
+	// Setting it here to be able to leverage event.DataAs call below.
 	event.Data = msg.Data
 	event.DataEncoded = true
 
+	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
 	// If send mode is Push, convert to Pub/Sub Push payload style.
 	if sendMode == Push {
-		logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
-		// set the content type to something that can be handled by codec.go
+		// Set the content type to something that can be handled by codec.go.
 		event.SetDataContentType(cloudevents.ApplicationJSON)
 		msg := &pubSubMessage{
 			ID:          event.ID(),
@@ -65,7 +64,7 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 
 		var raw json.RawMessage
 		if err := event.DataAs(&raw); err != nil {
-			logger.Debugw("Failed to get data as raw json, using as is.", zap.Error(err))
+			logger.Desugar().Debug("Failed to get data as raw json, using as is.", zap.Error(err))
 			// Use data as a byte slice.
 			msg.Data = event.Data
 		} else {
@@ -77,19 +76,25 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 			Subscription: tx.Subscription,
 			Message:      msg,
 		}); err != nil {
-			logger.Warnw("Failed to set data.", zap.Error(err))
+			logger.Desugar().Warn("Failed to set data.", zap.Error(err))
 		}
-	} else if msg.Attributes != nil && len(msg.Attributes) > 0 {
-		// Attributes are promoted to extensions if send mode is not Push.
-		for k, v := range msg.Attributes {
-			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
-			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
-			// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
-			if IsAlphaNumeric(k) {
-				event.SetExtension(k, v)
+	} else {
+		// non-Push mode, attributes should be promoted to extensions.
+		// We do not know the content type and we do not want to inspect the payload,
+		// thus we set this generic one.
+		event.SetDataContentType("application/octet-stream")
+		if msg.Attributes != nil && len(msg.Attributes) > 0 {
+			for k, v := range msg.Attributes {
+				// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
+				// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
+				// Note `SetExtension` will make it lowercase so only `IsAlphaNumeric` needs to be checked here.
+				if IsAlphaNumeric(k) {
+					event.SetExtension(k, v)
+				} else {
+					logger.Desugar().Warn("Skipping attribute that is not a valid extension", zap.String(k, v))
+				}
 			}
 		}
-
 	}
 	return &event, nil
 }
