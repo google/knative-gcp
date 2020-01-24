@@ -20,11 +20,12 @@ import (
 	"context"
 	"fmt"
 
+	nethttp "net/http"
+
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
-	nethttp "net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport"
@@ -211,11 +212,6 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 		event = *transformedEvent
 		// Update the tracing information to use the span returned by the transformer.
 		ctx = trace.NewContext(ctx, trace.FromContext(transformedCTX))
-	}
-
-	// If send mode is Push, convert to Pub/Sub Push payload style.
-	if a.SendMode == converters.Push {
-		event = ConvertToPush(ctx, event)
 	}
 
 	// Apply CloudEvent override extensions to the outbound event.
