@@ -52,7 +52,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 			return pubSubCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
-			})
+			}, "")
 		},
 	}, {
 		name: "upper case attributes",
@@ -68,7 +68,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 			return pubSubCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
-			})
+			}, "")
 		},
 	}, {
 		name: "only setting valid alphanumeric attribute",
@@ -83,7 +83,24 @@ func TestConvertCloudPubSub(t *testing.T) {
 		wantEventFn: func() *cloudevents.Event {
 			return pubSubCloudEvent(map[string]string{
 				"attribute1": "value1",
-			})
+			}, "")
+		},
+	}, {
+		name: "schema as attribute",
+		message: &cepubsub.Message{
+			Data: []byte("test data"),
+			Attributes: map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+				"schema":     "schema_val",
+			},
+		},
+		sendMode: Binary,
+		wantEventFn: func() *cloudevents.Event {
+			return pubSubCloudEvent(map[string]string{
+				"attribute1": "value1",
+				"attribute2": "value2",
+			}, "schema_val")
 		},
 	}, {
 		name: "Push mode with non valid alphanumeric attribute",
@@ -139,7 +156,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}
 }
 
-func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
+func pubSubCloudEvent(extensions map[string]string, schema string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
@@ -150,6 +167,9 @@ func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
 	e.DataEncoded = true
 	for k, v := range extensions {
 		e.SetExtension(k, v)
+	}
+	if schema != "" {
+		e.SetDataSchema(schema)
 	}
 	return &e
 }
