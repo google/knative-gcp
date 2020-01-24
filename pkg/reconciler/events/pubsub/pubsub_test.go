@@ -156,6 +156,7 @@ func TestAllCases(t *testing.T) {
 					Secret: &secret,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMode(pubsubv1alpha1.ModePushCompatible),
 				WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
 				}),
