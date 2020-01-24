@@ -97,11 +97,19 @@ func TestConvertCloudPubSub(t *testing.T) {
 		sendMode: Push,
 		wantEventFn: func() *cloudevents.Event {
 			return pushCloudEvent(map[string]string{
-				"attribute1": "value1",
-			}, map[string]string{
 				"attribute1":        "value1",
 				"Invalid-Attrib#$^": "value2",
 			}, "\"test data\"")
+		},
+	}, {
+		name: "Push mode with no attributes",
+		message: &cepubsub.Message{
+			Data:       []byte("\"test data\""), // Data passed in quotes for it to be marshalled properly
+			Attributes: map[string]string{},
+		},
+		sendMode: Push,
+		wantEventFn: func() *cloudevents.Event {
+			return pushCloudEvent(nil, "\"test data\"")
 		},
 	}}
 
@@ -146,110 +154,20 @@ func pubSubCloudEvent(extensions map[string]string) *cloudevents.Event {
 	return &e
 }
 
-func pushCloudEvent(extensions, allExtensions map[string]string, data string) *cloudevents.Event {
+func pushCloudEvent(attributes map[string]string, data string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
-	e.SetDataContentType("application/json")
+	e.SetDataContentType(cloudevents.ApplicationJSON)
 	e.SetType(v1alpha1.CloudPubSubSourcePublish)
 	e.SetExtension("knativecemode", string(Push))
-	ex, _ := json.Marshal(allExtensions)
-	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"id":"id","data":%s,"attributes":%s,"publish_time":"0001-01-01T00:00:00Z"}}`, data, ex)
+	at := ""
+	if attributes != nil {
+		ex, _ := json.Marshal(attributes)
+		at = fmt.Sprintf(`"attributes":%s,`, ex)
+	}
+	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"id":"id","data":%s,%s"publish_time":"0001-01-01T00:00:00Z"}}`, data, at)
 	e.Data = []byte(s)
 	e.DataEncoded = true
-	for k, v := range extensions {
-		e.SetExtension(k, v)
-	}
 	return &e
-}
-
-func TestConvertToPush_noattrs(t *testing.T) {
-	want := `Validation: valid
-Context Attributes,
-  specversion: 0.2
-  type: unit.testing
-  source: source
-  id: abc-123
-  contenttype: application/json
-Data,
-  {
-    "subscription": "sub",
-    "message": {
-      "id": "abc-123",
-      "data": "testing",
-      "publish_time": "0001-01-01T00:00:00Z"
-    }
-  }
-`
-
-	event := cloudevents.NewEvent()
-	event.SetSource("source")
-	event.SetType("unit.testing")
-	event.SetID("abc-123")
-	event.SetDataContentType("application/json")
-	_ = event.SetData("testing")
-	attrs := make(map[string]string, 0)
-	ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
-		"proj",
-		"top",
-		"sub",
-		"test",
-		&pubsub.Message{},
-	))
-
-	got := convertToPush(ctx, event, attrs)
-
-	if diff := cmp.Diff(want, got.String()); diff != "" {
-		t.Logf("%s", got.String())
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
-}
-
-func TestConvertToPush_attrs(t *testing.T) {
-	want := `Validation: valid
-Context Attributes,
-  specversion: 0.2
-  type: unit.testing
-  source: source
-  id: abc-123
-  contenttype: application/json
-Extensions,
-  foo: bar
-Data,
-  {
-    "subscription": "sub",
-    "message": {
-      "id": "abc-123",
-      "data": "testing",
-      "attributes": {
-        "foo": "bar"
-      },
-      "publish_time": "0001-01-01T00:00:00Z"
-    }
-  }
-`
-
-	event := cloudevents.NewEvent()
-	event.SetSource("source")
-	event.SetType("unit.testing")
-	event.SetID("abc-123")
-	event.SetExtension("foo", "bar")
-	event.SetDataContentType("application/json")
-	_ = event.SetData("testing")
-	attrs := make(map[string]string, 0)
-	attrs["foo"] = "bar"
-	ctx := pubsubcontext.WithTransportContext(context.TODO(), pubsubcontext.NewTransportContext(
-		"proj",
-		"top",
-		"sub",
-		"test",
-		&pubsub.Message{},
-	))
-
-	got := convertToPush(ctx, event, attrs)
-
-	if diff := cmp.Diff(want, got.String()); diff != "" {
-		t.Logf("%s", got.String())
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
-	}
 }

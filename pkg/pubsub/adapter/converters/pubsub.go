@@ -51,8 +51,36 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	event.SetExtension("knativecemode", string(sendMode))
 	event.Data = msg.Data
 	event.DataEncoded = true
-	// Attributes are extensions.
-	if msg.Attributes != nil && len(msg.Attributes) > 0 {
+
+	// If send mode is Push, convert to Pub/Sub Push payload style.
+	if sendMode == Push {
+		logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
+		// set the content type to something that can be handled by codec.go
+		event.SetDataContentType(cloudevents.ApplicationJSON)
+		msg := &PubSubMessage{
+			ID:          event.ID(),
+			Attributes:  msg.Attributes,
+			PublishTime: event.Time(),
+		}
+
+		var raw json.RawMessage
+		if err := event.DataAs(&raw); err != nil {
+			logger.Debugw("Failed to get data as raw json, using as is.", zap.Error(err))
+			// Use data as a byte slice.
+			msg.Data = event.Data
+		} else {
+			// Use data as a raw message.
+			msg.Data = raw
+		}
+
+		if err := event.SetData(&PushMessage{
+			Subscription: tx.Subscription,
+			Message:      msg,
+		}); err != nil {
+			logger.Warnw("Failed to set data.", zap.Error(err))
+		}
+	} else if msg.Attributes != nil && len(msg.Attributes) > 0 {
+		// Attributes are promoted to extensions if send mode is not Push.
 		for k, v := range msg.Attributes {
 			// CloudEvents v1.0 attributes MUST consist of lower-case letters ('a' to 'z') or digits ('0' to '9') as per
 			// the spec. It's not even possible for a conformant transport to allow non-base36 characters.
@@ -61,12 +89,7 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 				event.SetExtension(k, v)
 			}
 		}
-	}
-	// If send mode is Push, convert to Pub/Sub Push payload style.
-	if sendMode == Push {
-		// set the content type to something that can be handled by codec.go
-		event.SetDataContentType("application/json")
-		event = convertToPush(ctx, event, msg.Attributes)
+
 	}
 	return &event, nil
 }
@@ -97,39 +120,4 @@ type PubSubMessage struct {
 	// server for Messages obtained from a subscription.
 	// This field is read-only.
 	PublishTime time.Time `json:"publish_time,omitempty"`
-}
-
-// convertToPush convert an event to a Pub/Sub style Push payload.
-func convertToPush(ctx context.Context, event cloudevents.Event, attrs map[string]string) cloudevents.Event {
-	logger := logging.FromContext(ctx).With(zap.Any("event.id", event.ID()))
-
-	tx := pubsubcontext.TransportContextFrom(ctx)
-
-	push := cloudevents.NewEvent(event.SpecVersion())
-	push.Context = event.Context.Clone()
-
-	msg := &PubSubMessage{
-		ID:          event.ID(),
-		Attributes:  attrs,
-		PublishTime: event.Time(),
-	}
-
-	var raw json.RawMessage
-	if err := event.DataAs(&raw); err != nil {
-		logger.Debugw("Failed to get data as raw json, using as is.", zap.Error(err))
-		// Use data as a byte slice.
-		msg.Data = event.Data
-	} else {
-		// Use data as a raw message.
-		msg.Data = raw
-	}
-
-	if err := push.SetData(&PushMessage{
-		Subscription: tx.Subscription,
-		Message:      msg,
-	}); err != nil {
-		logger.Warnw("Failed to set data.", zap.Error(err))
-	}
-
-	return push
 }
