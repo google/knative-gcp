@@ -56,7 +56,7 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	if sendMode == Push {
 		// Set the content type to something that can be handled by codec.go.
 		event.SetDataContentType(cloudevents.ApplicationJSON)
-		msg := &pubSubMessage{
+		msg := &PubSubMessage{
 			ID:          event.ID(),
 			Attributes:  msg.Attributes,
 			PublishTime: event.Time(),
@@ -72,7 +72,7 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 			msg.Data = raw
 		}
 
-		if err := event.SetData(&pushMessage{
+		if err := event.SetData(&PushMessage{
 			Subscription: tx.Subscription,
 			Message:      msg,
 		}); err != nil {
@@ -99,16 +99,16 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 	return &event, nil
 }
 
-// pushMessage represents the format Pub/Sub uses to push events.
-type pushMessage struct {
+// PushMessage represents the format Pub/Sub uses to push events.
+type PushMessage struct {
 	// Subscription is the subscription ID that received this Message.
 	Subscription string `json:"subscription"`
 	// Message holds the Pub/Sub message contents.
-	Message *pubSubMessage `json:"message,omitempty"`
+	Message *PubSubMessage `json:"message,omitempty"`
 }
 
 // PubSubMessage matches the inner message format used by Push Subscriptions.
-type pubSubMessage struct {
+type PubSubMessage struct {
 	// ID identifies this message. This ID is assigned by the server and is
 	// populated for Messages obtained from a subscription.
 	// This field is read-only.

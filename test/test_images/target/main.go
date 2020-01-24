@@ -9,7 +9,8 @@ import (
 	"os"
 	"strings"
 
-	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -37,16 +38,36 @@ type Receiver struct {
 
 func (r *Receiver) Receive(event cloudevents.Event) {
 	var target string
-	if err := event.ExtensionAs("target", &target); err != nil {
-		fmt.Println("failed to get target from extensions:", err)
-		return
+
+	// Try Pull first.
+	err := event.ExtensionAs("target", &target)
+	if err != nil {
+		// Should be Push format and the target should be in the data payload.
+		data, err := event.DataBytes()
+		if err != nil {
+			fmt.Println("failed to get data from event", err)
+			return
+		}
+		msg := converters.PubSubMessage{}
+		if err := json.Unmarshal(data, &msg); err != nil {
+			fmt.Println("failed to unmarshall PubSubMessage", err)
+			return
+		}
+
+		if tt, ok := msg.Attributes["target"]; !ok {
+			fmt.Println("failed to get target from attributes:", err)
+			return
+		} else {
+			target = tt
+		}
 	}
+
 	var success bool
-	if strings.HasPrefix(r.Target, target) {
-		fmt.Printf("Target prefix matched, %q.\n", r.Target)
+	if strings.Contains(r.Target, target) {
+		fmt.Printf("Target found, %q.\n", r.Target)
 		success = true
 	} else {
-		fmt.Printf("Target prefix did not match, %q != %q.\n", target, r.Target)
+		fmt.Printf("Target not found, got:%q, want:%q.\n", target, r.Target)
 		success = false
 	}
 	// Write the termination message.
