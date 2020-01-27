@@ -112,7 +112,7 @@ type PubSubMessage struct {
 	// ID identifies this message. This ID is assigned by the server and is
 	// populated for Messages obtained from a subscription.
 	// This field is read-only.
-	ID string `json:"id,omitempty"`
+	ID string `json:"messageId,omitempty"`
 
 	// Data is the actual data in the message.
 	Data interface{} `json:"data,omitempty"`
@@ -124,5 +124,5 @@ type PubSubMessage struct {
 	// The time at which the message was published. This is populated by the
 	// server for Messages obtained from a subscription.
 	// This field is read-only.
-	PublishTime time.Time `json:"publish_time,omitempty"`
+	PublishTime time.Time `json:"publishTime,omitempty"`
 }
