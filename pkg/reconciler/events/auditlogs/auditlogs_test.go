@@ -25,6 +25,7 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
@@ -36,6 +37,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -126,6 +128,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	calSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -780,11 +783,36 @@ func TestAllCases(t *testing.T) {
 					Destination: testTopicResource,
 				}},
 		},
+		WithReactors: []clientgotesting.ReactionFunc{
+			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if attempts != 0 || !action.Matches("update", "cloudauditlogssources") {
+					return false, nil, nil
+				}
+				attempts++
+				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+			},
+		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudAuditLogsSource %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceFinalizers(finalizerName),
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceProjectID(testProject),
+				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceTopicReady(testTopicID),
+				WithCloudAuditLogsSourcePullSubscriptionReady(),
+				WithCloudAuditLogsSourceSinkURI(calSinkURL),
+				WithCloudAuditLogsSourceSinkReady(),
+				WithCloudAuditLogsSourceSinkID(testSinkID),
+			),
+		}, {
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),

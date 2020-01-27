@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,6 +43,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -153,6 +155,7 @@ func newTransformer() *unstructured.Unstructured {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -578,6 +581,15 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		Key: testNS + "/" + sourceName,
+		WithReactors: []clientgotesting.ReactionFunc{
+			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if attempts != 0 || !action.Matches("update", "pullsubscriptions") {
+					return false, nil, nil
+				}
+				attempts++
+				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+			},
+		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
@@ -591,6 +603,26 @@ func TestAllCases(t *testing.T) {
 			Object: newReceiveAdapter(context.Background(), testImage, transformerURI),
 		}},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionFinalizers(finalizerName),
+				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionProjectID(testProject),
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionTransformer(transformerGVK, transformerName),
+				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				WithPullSubscriptionMarkDeployed,
+				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkTransformer(transformerURI),
+				WithPullSubscriptionStatusObservedGeneration(generation),
+			),
+		}, {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionFinalizers(finalizerName),

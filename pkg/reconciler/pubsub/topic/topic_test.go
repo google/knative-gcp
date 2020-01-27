@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -39,6 +40,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -120,6 +122,7 @@ func newSecret() *corev1.Secret {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -359,11 +362,34 @@ func TestAllCases(t *testing.T) {
 		},
 		WithReactors: []clientgotesting.ReactionFunc{
 			ProvideResource("create", "services", newPublisher(true, true)),
+			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if attempts != 0 || !action.Matches("update", "topics") {
+					return false, nil, nil
+				}
+				attempts++
+				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+			},
 		},
 		WantCreates: []runtime.Object{
 			newPublisher(false, false),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
+				WithTopicFinalizers(finalizerName),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateNoDelete"),
+				// Updates
+				WithInitTopicConditions,
+				WithTopicReady(testTopicID),
+				WithTopicDeployed,
+				WithTopicAddress(testTopicURI)),
+		}, {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),

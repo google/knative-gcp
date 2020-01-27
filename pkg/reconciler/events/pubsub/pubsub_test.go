@@ -18,9 +18,11 @@ package pubsub
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -115,6 +117,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	pubsubSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -243,7 +246,27 @@ func TestAllCases(t *testing.T) {
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
+		WithReactors: []clientgotesting.ReactionFunc{
+			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if attempts != 0 || !action.Matches("update", "cloudpubsubsources") {
+					return false, nil, nil
+				}
+				attempts++
+				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+			},
+		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceFinalizers(finalizerName),
+				WithInitCloudPubSubSourceConditions,
+				WithCloudPubSubSourcePullSubscriptionReady(),
+				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+			),
+		}, {
 			Object: NewCloudPubSubSource(pubsubName, testNS,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceStatusObservedGeneration(generation),
