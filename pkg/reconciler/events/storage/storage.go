@@ -31,13 +31,13 @@ import (
 
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 
 	. "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"

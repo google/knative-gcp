@@ -30,12 +30,12 @@ import (
 
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"

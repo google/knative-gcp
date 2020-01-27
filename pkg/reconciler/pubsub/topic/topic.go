@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
@@ -40,6 +39,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	serving "knative.dev/serving/pkg/apis/serving/v1"

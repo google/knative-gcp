@@ -30,6 +30,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -171,7 +172,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 
 func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudPubSubSource, desired *v1alpha1.CloudPubSubSource) error {
 	existing := original.DeepCopy()
-	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+	return pkgreconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
 			existing, err = r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})

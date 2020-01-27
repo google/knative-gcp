@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/utils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +39,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"knative.dev/pkg/controller"

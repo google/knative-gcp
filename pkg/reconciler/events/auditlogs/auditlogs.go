@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
 	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"go.uber.org/zap"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 )
 
 const (
