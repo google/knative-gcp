@@ -25,43 +25,56 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
+type PullSubscriptionArgs struct {
+	Namespace      string
+	Name           string
+	Spec           *duckv1alpha1.PubSubSpec
+	Owner          kmeta.OwnerRefable
+	Topic          string
+	ReceiveAdapter string
+	AdapterType    string
+	ResourceGroup  string
+	Mode           pubsubv1alpha1.ModeType
+}
+
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
-func MakePullSubscription(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName, adapterType, resourceGroup string) *pubsubv1alpha1.PullSubscription {
+func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscription {
 	labels := map[string]string{
-		"receive-adapter": receiveAdapterName,
+		"receive-adapter": args.ReceiveAdapter,
 	}
 
 	annotations := map[string]string{
-		"metrics-resource-group": resourceGroup,
+		"metrics-resource-group": args.ResourceGroup,
 	}
 
-	pubsubSecret := spec.Secret
-	if spec.PubSubSecret != nil {
-		pubsubSecret = spec.PubSubSecret
+	pubsubSecret := args.Spec.Secret
+	if args.Spec.PubSubSecret != nil {
+		pubsubSecret = args.Spec.PubSubSecret
 	}
 
 	ps := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
+			Name:            args.Name,
+			Namespace:       args.Namespace,
 			Labels:          labels,
 			Annotations:     annotations,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
 			Secret:      pubsubSecret,
-			Project:     spec.Project,
-			Topic:       topic,
-			AdapterType: adapterType,
+			Project:     args.Spec.Project,
+			Topic:       args.Topic,
+			AdapterType: args.AdapterType,
+			Mode:        args.Mode,
 			SourceSpec: duckv1.SourceSpec{
-				Sink: spec.Sink,
+				Sink: args.Spec.Sink,
 			},
 		},
 	}
-	if spec.CloudEventOverrides != nil && spec.CloudEventOverrides.Extensions != nil {
+	if args.Spec.CloudEventOverrides != nil && args.Spec.CloudEventOverrides.Extensions != nil {
 		ps.Spec.SourceSpec.CloudEventOverrides = &duckv1.CloudEventOverrides{
-			Extensions: spec.CloudEventOverrides.Extensions,
+			Extensions: args.Spec.CloudEventOverrides.Extensions,
 		}
 	}
 	return ps
