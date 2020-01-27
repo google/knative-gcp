@@ -756,7 +756,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "sink created",
+		Name: "sink created, with retry",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),

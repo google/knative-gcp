@@ -777,7 +777,7 @@ func TestAllCases(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", schedulerName),
 			},
 		}, {
-			Name: "topic and pullsubscription exist and ready, job exists",
+			Name: "topic and pullsubscription exist and ready, job exists, with retry",
 			Objects: []runtime.Object{
 				NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),

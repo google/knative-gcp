@@ -678,7 +678,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 		}, {
-			Name: "successfully created notification",
+			Name: "successfully created notification, with retry",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),

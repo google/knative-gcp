@@ -231,7 +231,7 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
 		},
 	}, {
-		Name: "pullsubscription exists and ready",
+		Name: "pullsubscription exists and ready, with retry",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),

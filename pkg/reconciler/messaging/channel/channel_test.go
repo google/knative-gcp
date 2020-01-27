@@ -128,7 +128,7 @@ func TestAllCases(t *testing.T) {
 			newTopic(),
 		},
 	}, {
-		Name: "topic ready",
+		Name: "topic ready, with retry",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),

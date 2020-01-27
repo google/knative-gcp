@@ -554,7 +554,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "successful create - reuse existing receive adapter - mismatch",
+		Name: "successful create - reuse existing receive adapter - mismatch, with retry",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),

@@ -340,7 +340,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicNotDeployed("PublisherStatus", "Publisher has no Ready type status")),
 		}},
 	}, {
-		Name: "topic successfully reconciles and is ready",
+		Name: "topic successfully reconciles and is ready, with retry",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
