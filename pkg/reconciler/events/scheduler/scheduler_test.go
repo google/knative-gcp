@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -35,6 +36,7 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
@@ -146,6 +148,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	schedulerSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -774,7 +777,7 @@ func TestAllCases(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", schedulerName),
 			},
 		}, {
-			Name: "topic and pullsubscription exist and ready, job exists",
+			Name: "topic and pullsubscription exist and ready, job exists, with retry",
 			Objects: []runtime.Object{
 				NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
@@ -795,7 +798,29 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 			},
 			Key: testNS + "/" + schedulerName,
+			WithReactors: []clientgotesting.ReactionFunc{
+				func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+					if attempts != 0 || !action.Matches("update", "cloudschedulersources") {
+						return false, nil, nil
+					}
+					attempts++
+					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+				},
+			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudSchedulerSource(schedulerName, testNS,
+					WithCloudSchedulerSourceProject(testProject),
+					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+					WithCloudSchedulerSourceLocation(location),
+					WithCloudSchedulerSourceFinalizers(finalizerName),
+					WithCloudSchedulerSourceData(testData),
+					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
+					WithCloudSchedulerSourcePullSubscriptionReady(),
+					WithCloudSchedulerSourceJobReady(jobName),
+					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
+			}, {
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),

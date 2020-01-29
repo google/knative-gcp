@@ -18,11 +18,13 @@ package channel
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -83,6 +85,7 @@ func init() {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -125,7 +128,7 @@ func TestAllCases(t *testing.T) {
 			newTopic(),
 		},
 	}, {
-		Name: "topic ready",
+		Name: "topic ready, with retry",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -138,11 +141,33 @@ func TestAllCases(t *testing.T) {
 			newReadyTopic(),
 		},
 		Key: testNS + "/" + channelName,
+		WithReactors: []clientgotesting.ReactionFunc{
+			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+				if attempts != 0 || !action.Matches("update", "channels") {
+					return false, nil, nil
+				}
+				attempts++
+				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+			},
+		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Channel %q became ready", channelName),
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithInitChannelConditions,
+				WithChannelDefaults,
+				WithChannelTopic(testTopicID),
+				// Updates
+				WithChannelAddress(topicURI),
+				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+			),
+		}, {
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
 				WithChannelSpec(v1alpha1.ChannelSpec{

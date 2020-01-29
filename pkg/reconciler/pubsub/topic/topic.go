@@ -39,6 +39,7 @@ import (
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	serving "knative.dev/serving/pkg/apis/serving/v1"
@@ -129,7 +130,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if _, uErr := r.updateStatus(ctx, topic); uErr != nil {
+	} else if uErr := r.updateStatus(ctx, original, topic); uErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update Topic status", zap.Error(uErr))
 		r.Recorder.Eventf(topic, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for Topic %q: %v", topic.Name, uErr)
@@ -274,32 +275,36 @@ func (r *Reconciler) deleteTopic(ctx context.Context, topic *v1alpha1.Topic) err
 	return nil
 }
 
-func (r *Reconciler) updateStatus(ctx context.Context, desired *v1alpha1.Topic) (*v1alpha1.Topic, error) {
-	topic, err := r.topicLister.Topics(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return nil, err
-	}
-	// If there's nothing to update, just return.
-	if equality.Semantic.DeepEqual(topic.Status, desired.Status) {
-		return topic, nil
-	}
-	becomesReady := desired.Status.IsReady() && !topic.Status.IsReady()
-	// Don't modify the informers copy.
-	existing := topic.DeepCopy()
-	existing.Status = desired.Status
-
-	ch, err := r.RunClientSet.PubsubV1alpha1().Topics(desired.Namespace).UpdateStatus(existing)
-	if err == nil && becomesReady {
-		// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-		duration := time.Since(ch.ObjectMeta.CreationTimestamp.Time)
-		logging.FromContext(ctx).Desugar().Info("Topic became ready", zap.Any("after", duration))
-		r.Recorder.Event(topic, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Topic %q became ready", topic.Name))
-		if metricErr := r.StatsReporter.ReportReady("Topic", topic.Namespace, topic.Name, duration); metricErr != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to record ready for Topic", zap.Error(metricErr))
+func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.Topic, desired *v1alpha1.Topic) error {
+	existing := original.DeepCopy()
+	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
+		if attempts > 0 {
+			existing, err = r.RunClientSet.PubsubV1alpha1().Topics(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
 		}
-	}
+		// If there's nothing to update, just return.
+		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
+			return nil
+		}
+		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
+		existing.Status = desired.Status
 
-	return ch, err
+		_, err = r.RunClientSet.PubsubV1alpha1().Topics(desired.Namespace).UpdateStatus(existing)
+		if err == nil && becomesReady {
+			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
+			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
+			logging.FromContext(ctx).Desugar().Info("Topic became ready", zap.Any("after", duration))
+			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Topic %q became ready", existing.Name))
+			if metricErr := r.StatsReporter.ReportReady("Topic", existing.Namespace, existing.Name, duration); metricErr != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to record ready for Topic", zap.Error(metricErr))
+			}
+		}
+
+		return err
+	})
 }
 
 // updateFinalizers is a generic method for future compatibility with a
