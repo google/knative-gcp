@@ -20,7 +20,6 @@ metadata:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
-    # TODO properly define type, schema, and description.
     registry.knative.dev/eventTypes: |
       [
         { "type": "com.google.cloud.scheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
