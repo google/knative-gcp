@@ -49,7 +49,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return pubSubPullCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
 			}, "")
@@ -65,7 +65,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return pubSubPullCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
 			}, "")
@@ -81,7 +81,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return pubSubPullCloudEvent(map[string]string{
 				"attribute1": "value1",
 			}, "")
 		},
@@ -97,7 +97,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Binary,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubCloudEvent(map[string]string{
+			return pubSubPullCloudEvent(map[string]string{
 				"attribute1": "value1",
 				"attribute2": "value2",
 			}, "schema_val")
@@ -113,7 +113,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Push,
 		wantEventFn: func() *cloudevents.Event {
-			return pushCloudEvent(map[string]string{
+			return pubSubPushCloudEvent(map[string]string{
 				"attribute1":        "value1",
 				"Invalid-Attrib#$^": "value2",
 			}, "\"test data\"")
@@ -126,7 +126,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Push,
 		wantEventFn: func() *cloudevents.Event {
-			return pushCloudEvent(nil, "\"test data\"")
+			return pubSubPushCloudEvent(nil, "\"test data\"")
 		},
 	}}
 
@@ -156,7 +156,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 	}
 }
 
-func pubSubCloudEvent(extensions map[string]string, schema string) *cloudevents.Event {
+func pubSubPullCloudEvent(extensions map[string]string, schema string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
@@ -174,7 +174,7 @@ func pubSubCloudEvent(extensions map[string]string, schema string) *cloudevents.
 	return &e
 }
 
-func pushCloudEvent(attributes map[string]string, data string) *cloudevents.Event {
+func pubSubPushCloudEvent(attributes map[string]string, data string) *cloudevents.Event {
 	e := cloudevents.NewEvent(cloudevents.VersionV1)
 	e.SetID("id")
 	e.SetSource(v1alpha1.CloudPubSubSourceEventSource("testproject", "testtopic"))
@@ -186,7 +186,7 @@ func pushCloudEvent(attributes map[string]string, data string) *cloudevents.Even
 		ex, _ := json.Marshal(attributes)
 		at = fmt.Sprintf(`"attributes":%s,`, ex)
 	}
-	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"id":"id","data":%s,%s"publish_time":"0001-01-01T00:00:00Z"}}`, data, at)
+	s := fmt.Sprintf(`{"subscription":"testsubscription","message":{"messageId":"id","data":%s,%s"publishTime":"0001-01-01T00:00:00Z"}}`, data, at)
 	e.Data = []byte(s)
 	e.DataEncoded = true
 	return &e
