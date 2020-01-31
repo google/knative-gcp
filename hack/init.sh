@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2019 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./init.sh [OPTIONAL: EXISTING_GSA_CONTROL_PLANE] [OPTIONAL: EXISTING_GSA_CONTROL_PLANE]
+# Usage: ./init.sh [OPTIONAL: EXISTING_GSA_CONTROL_PLANE] [OPTIONAL: EXISTING_GSA_DATA_PLANE]
 # If the first parameter is not provided, a default service account name ("cloud-run-events") will be used.
 # If the second parameter is not provided, a default service account name ("cre-pubsub") will be used.
 # The current project set in gcloud MUST be the same as where the cluster is running.
@@ -31,11 +31,13 @@ KEY_TEMP_DATA_PLANE=cre-pubsub.json
 GSA_CONTROL_PLANE=cloud-run-events
 if [[ -z "$1" ]]; then
   echo "GSA_CONTROL_PLANE not provided; will create GSA_CONTROL_PLANE ${GSA_CONTROL_PLANE} in project ${PROJECT_ID} instead."
-  gcloud iam service-accounts create ${GSA_CONTROL_PLANE}
 else
   echo "Will use provided GSA_CONTROL_PLANE ${GSA_CONTROL_PLANE}."
   GSA_CONTROL_PLANE="$1"
 fi
+
+# Create the service account of control plane
+gcloud iam service-accounts create ${GSA_CONTROL_PLANE}
 
 # Grant owner role to the service account for the control plane to manage native GCP resources.
 gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_CONTROL_PLANE}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/owner
@@ -54,11 +56,12 @@ gcloud services enable pubsub.googleapis.com
 GSA_DATA_PLANE=cre-pubsub
 if [[ -z "$2" ]]; then
   echo "GSA_DATA_PLANE not provided; will create GSA_DATA_PLANE ${GSA_DATA_PLANE} in project ${PROJECT_ID} instead."
-  gcloud iam service-accounts create ${GSA_DATA_PLANE}
 else
-  echo "Will use provided GSA_CONTROL_PLANE ${GSA_DATA_PLANE}."
+  echo "Will use provided GSA_DATA_PLANE ${GSA_DATA_PLANE}."
   GSA_DATA_PLANE="$2"
 fi
+# Create the service account of data plane
+gcloud iam service-accounts create ${GSA_DATA_PLANE}
 
 # Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:${GSA_DATA_PLANE}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.editor
