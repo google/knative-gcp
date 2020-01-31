@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,6 +39,7 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
@@ -144,6 +146,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
+	attempts := 0
 	storageSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -675,7 +678,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 		}, {
-			Name: "successfully created notification",
+			Name: "successfully created notification, with retry",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
@@ -703,11 +706,36 @@ func TestAllCases(t *testing.T) {
 					},
 				},
 			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
+					if attempts != 0 || !action.Matches("update", "cloudstoragesources") {
+						return false, nil, nil
+					}
+					attempts++
+					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+				},
+			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudStorageSource %q became ready", storageName),
 				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudStorageSource %q", storageName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceFinalizers(finalizerName),
+					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceTopicReady(testTopicID),
+					WithCloudStorageSourceProjectID(testProject),
+					WithCloudStorageSourcePullSubscriptionReady(),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceNotificationReady(notificationId)),
+			}, {
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
