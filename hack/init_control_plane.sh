@@ -22,6 +22,14 @@ SERVICE_ACCOUNT=cloud-run-events
 PROJECT_ID=$(gcloud config get-value project)
 KEY_TEMP=google-cloud-key.json
 
+# Enable APIs.
+gcloud services enable pubsub.googleapis.com
+gcloud services enable storage-component.googleapis.com
+gcloud services enable storage-api.googleapis.com
+gcloud services enable cloudscheduler.googleapis.com
+gcloud services enable logging.googleapis.com
+gcloud services enable stackdriver.googleapis.com
+
 # Create the service account for the control plane
 gcloud iam service-accounts create ${SERVICE_ACCOUNT}
 

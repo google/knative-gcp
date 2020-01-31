@@ -31,9 +31,6 @@ else
   kubectl create namespace $NAMESPACE
 fi
 
-# Enable the pubsub APIs
-gcloud services enable pubsub.googleapis.com
-
 # Create the service account for the data plane
 gcloud iam service-accounts create ${SERVICE_ACCOUNT}
 
