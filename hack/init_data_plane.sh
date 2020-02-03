@@ -21,7 +21,8 @@
 # The script always uses the same service account called cre-pubsub.
 
 SERVICE_ACCOUNT=cre-pubsub
-KEY_TEMP=google-cloud-key.json
+KEY_TEMP=cre-pubsub.json
+PROJECT_ID=$(gcloud config get-value project)
 NAMESPACE=default
 if [[ -z "$1" ]]; then
   echo "NAMESPACE not provided, using default"
