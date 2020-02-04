@@ -38,7 +38,7 @@ var (
 		Topic:   "pubsub-topic",
 		SourceSpec: duckv1.SourceSpec{
 			Sink: duckv1.Destination{
-				Ref: &corev1.ObjectReference{
+				Ref: &duckv1.KReference{
 					APIVersion: "foo",
 					Kind:       "bar",
 					Namespace:  "baz",
@@ -47,7 +47,7 @@ var (
 			},
 		},
 		Transformer: &duckv1.Destination{
-			Ref: &corev1.ObjectReference{
+			Ref: &duckv1.KReference{
 				APIVersion: "foo",
 				Kind:       "bar",
 				Namespace:  "baz",
@@ -163,7 +163,7 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 						Scheme: "http",
 						Host:   "example.com",
 					},
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						Name: "foo",
 					},
 				}
@@ -286,7 +286,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "some-other-api-version",
 							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
@@ -311,7 +311,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 							Kind:       "some-other-kind",
 							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
@@ -336,7 +336,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 							Namespace:  "some-other-namespace",
@@ -361,7 +361,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
@@ -386,7 +386,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Topic:   pullSubscriptionSpec.Topic,
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "some-other-api-version",
 							Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
 							Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
@@ -410,7 +410,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
 						Kind:       "some-other-kind",
 						Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
@@ -433,7 +433,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
 						Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
 						Namespace:  "some-other-namespace",
@@ -456,7 +456,7 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				Project: pullSubscriptionSpec.Project,
 				Topic:   pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
 						Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
 						Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,

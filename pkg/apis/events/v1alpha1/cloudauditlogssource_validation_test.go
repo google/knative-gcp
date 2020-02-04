@@ -39,7 +39,7 @@ var (
 			},
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
