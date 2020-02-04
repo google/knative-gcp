@@ -4,6 +4,7 @@
 
 1. [Installing Knative with GCP](./install/README.md)
 1. [Installing Pub/Sub Enabled Service Account](./install/pubsub-service-account.md)
+1. [Installing Broker with PubSub Channel](./install/install-broker-with-pubsub-channel.md)
 1. [Managing Multiple Projects](./install/managing-multiple-projects.md)
 
 ## Sources examples
