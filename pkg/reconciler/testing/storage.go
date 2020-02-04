@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -69,7 +68,7 @@ func WithCloudStorageSourceEventTypes(eventTypes []string) CloudStorageSourceOpt
 func WithCloudStorageSourceSink(gvk metav1.GroupVersionKind, name string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.Sink = duckv1.Destination{
-			Ref: &corev1.ObjectReference{
+			Ref: &duckv1.KReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,

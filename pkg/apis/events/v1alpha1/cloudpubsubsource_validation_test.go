@@ -38,7 +38,7 @@ var (
 			},
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: "foo",
 						Kind:       "bar",
 						Namespace:  "baz",
@@ -157,7 +157,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 						Scheme: "http",
 						Host:   "example.com",
 					},
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						Name: "foo",
 					},
 				}
@@ -275,7 +275,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
-							Ref: &corev1.ObjectReference{
+							Ref: &duckv1.KReference{
 								APIVersion: "some-other-api-version",
 								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
@@ -301,7 +301,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
-							Ref: &corev1.ObjectReference{
+							Ref: &duckv1.KReference{
 								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 								Kind:       "some-other-kind",
 								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
@@ -327,7 +327,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
-							Ref: &corev1.ObjectReference{
+							Ref: &duckv1.KReference{
 								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 								Namespace:  "some-other-namespace",
@@ -353,7 +353,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 					Project: pullSubscriptionSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
-							Ref: &corev1.ObjectReference{
+							Ref: &duckv1.KReference{
 								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
 								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
 								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
