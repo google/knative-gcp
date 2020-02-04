@@ -90,8 +90,9 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
 		t.Error(err)
 	}
 
-	// audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds
-	time.Sleep(45 * time.Second)
+	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
+	// Tried with 45 seconds but the test has been quite flaky.
+	time.Sleep(90 * time.Second)
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 
