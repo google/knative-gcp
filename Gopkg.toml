@@ -64,12 +64,9 @@ required = [
   name = "k8s.io/client-go"
   version = "kubernetes-1.16.4"
 
-# Using master as of 01-23-2020 due to a critical fix needed for the PubSub channel.
-# See PR https://github.com/cloudevents/sdk-go/pull/289. This should be moved back to a release (>= 0.12.0),
-# once we get one.
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  revision = "2c354395746cfea050b7426aaef63993161a8b50"
+  version = "1.0.0"
 
 [prune]
   go-tests = true

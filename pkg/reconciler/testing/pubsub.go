@@ -19,7 +19,6 @@ package testing
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -50,7 +49,7 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Spec.Sink = duckv1.Destination{
-			Ref: &corev1.ObjectReference{
+			Ref: &duckv1.KReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,

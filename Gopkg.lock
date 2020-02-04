@@ -121,6 +121,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:45c41cd27a8d986998680bfc86da0bbff5fa4f90d0f446c00636c8b099028ffe"
+  name = "github.com/blang/semver"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ba2c2ddd89069b46a7011d4106f6868f17ee1705"
+  version = "v3.6.1"
+
+[[projects]]
   digest = "1:8f5acd4d4462b5136af644d25101f0968a7a94ee90fcb2059cec5b7cc42e0b20"
   name = "github.com/census-instrumentation/opencensus-proto"
   packages = [
@@ -136,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:9beee36e5f85a34a8d8e5b6e58fec01d81c6f74247cb9baed6c5e8f198e9da5e"
+  digest = "1:e5f524de90a54f6c24b3604427dca2d595c5eb62ee58deeb942fab06451c6d2a"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -156,7 +164,8 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "2c354395746cfea050b7426aaef63993161a8b50"
+  revision = "3673e23532dccb38196f600eec7e8b7090ecfb12"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -265,12 +274,12 @@
   revision = "b02d448a3705facf11018efff34f1d2830be5724"
 
 [[projects]]
-  digest = "1:52c5834e2bebac9030c97cc0798ac11c3aa8a39f098aeb419f142533da6cd3cc"
+  digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
   name = "github.com/google/gofuzz"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "f140a6486e521aad38f5917de355cbf147cc0496"
-  version = "v1.0.0"
+  revision = "db92cf7ae75e4a7a28abc005addab2b394362888"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -982,9 +991,10 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:9851a3756a37a7ccd76f8b50050e84be09e3cdccdf8ccf23ef4f00f0b6c4772a"
+  digest = "1:fb10523ccc02c08ea85d0a368191c7588ed749337d163e1da5351d31bbf6d384"
   name = "k8s.io/apimachinery"
   packages = [
+    "pkg/api/apitesting/fuzzer",
     "pkg/api/equality",
     "pkg/api/errors",
     "pkg/api/meta",
@@ -1334,34 +1344,49 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:498305d17fb706457f834b446360fa0e9f17b35ff9085d055d72c887365c7db9"
+  digest = "1:a24c485f2dd9c1b0c250efb2e6f888acde51f1949962650ce3b3163d4bef1016"
   name = "knative.dev/eventing"
   packages = [
+    "pkg/apis/configs",
+    "pkg/apis/configs/v1alpha1",
     "pkg/apis/duck",
     "pkg/apis/duck/v1alpha1",
+    "pkg/apis/duck/v1beta1",
     "pkg/apis/eventing",
     "pkg/apis/eventing/v1alpha1",
+    "pkg/apis/eventing/v1beta1",
     "pkg/apis/flows",
     "pkg/apis/flows/v1alpha1",
+    "pkg/apis/flows/v1beta1",
     "pkg/apis/legacysources",
     "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
     "pkg/apis/messaging/v1alpha1",
+    "pkg/apis/messaging/v1beta1",
     "pkg/apis/sources",
     "pkg/apis/sources/v1alpha1",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/configs/v1alpha1",
+    "pkg/client/clientset/versioned/typed/configs/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1",
     "pkg/client/clientset/versioned/typed/eventing/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/eventing/v1beta1",
+    "pkg/client/clientset/versioned/typed/eventing/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/flows/v1alpha1",
     "pkg/client/clientset/versioned/typed/flows/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/flows/v1beta1",
+    "pkg/client/clientset/versioned/typed/flows/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1",
     "pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake",
+    "pkg/client/clientset/versioned/typed/messaging/v1beta1",
+    "pkg/client/clientset/versioned/typed/messaging/v1beta1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1",
     "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
+    "pkg/client/listers/configs/v1alpha1",
     "pkg/client/listers/eventing/v1alpha1",
     "pkg/client/listers/flows/v1alpha1",
     "pkg/client/listers/messaging/v1alpha1",
@@ -1379,6 +1404,7 @@
     "pkg/legacyclient/listers/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
+    "pkg/reconciler/namespace/resources",
     "pkg/reconciler/testing",
     "pkg/tracing",
     "pkg/utils",
@@ -1395,11 +1421,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "7b12239a441ba684dfde93bb55fe2cbbdd1d1d57"
+  revision = "ba8fc2e995fe6c8146c2da0eba142d8031ac3f8f"
 
 [[projects]]
   branch = "master"
-  digest = "1:54f23de409afa3502f87837a4c52ce9d2dfef7cce43131f85988c76bdc74e65e"
+  digest = "1:4288d026898c6706774a4dc6a56d82d83b1ea943b68eb419d219a3731cf729ea"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1407,6 +1433,7 @@
     "apis/duck/v1",
     "apis/duck/v1alpha1",
     "apis/duck/v1beta1",
+    "apis/testing/fuzzer",
     "changeset",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
@@ -1472,11 +1499,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "d6f121ffafb949271eb196a9b2d834feebe58e92"
+  revision = "95163c65ac3d7714a6cdfb8906ab1bea71c9f777"
 
 [[projects]]
   branch = "master"
-  digest = "1:c9cf1670af44077ad8a75b8fc5d617c668fe5560ac90e7d53147b9ef18b24458"
+  digest = "1:9bdcd31b2091398d8e09c6a88752f9aa3ad1b6b98685a4c1a6547cd45427ba31"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1527,7 +1554,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "5c909f23fb31da62ecaef01286990cef48f09587"
+  revision = "85d2a1403eb5212bf782f8252746ccf5385c4c84"
 
 [[projects]]
   branch = "master"

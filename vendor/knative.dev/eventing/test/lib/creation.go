@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	configsv1alpha1 "knative.dev/eventing/pkg/apis/configs/v1alpha1"
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	flowsv1alpha1 "knative.dev/eventing/pkg/apis/flows/v1alpha1"
 	legacysourcesv1alpha1 "knative.dev/eventing/pkg/apis/legacysources/v1alpha1"
@@ -34,8 +35,6 @@ import (
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/eventing/test/lib/duck"
 	"knative.dev/eventing/test/lib/resources"
-
-	"knative.dev/pkg/test/helpers"
 )
 
 // TODO(chizhg): break this file into multiple files when it grows too large.
@@ -103,6 +102,18 @@ func (client *Client) CreateSubscriptionsOrFail(
 	}
 }
 
+func (client *Client) CreateConfigMapPropagationOrFail(name string) *configsv1alpha1.ConfigMapPropagation {
+	namespace := client.Namespace
+	configMapPropagation := resources.ConfigMapPropagation(name, namespace)
+	configMapPropagations := client.Eventing.ConfigsV1alpha1().ConfigMapPropagations(namespace)
+	configMapPropagation, err := configMapPropagations.Create(configMapPropagation)
+	if err != nil {
+		client.T.Fatalf("Failed to create configMapPropagation %q: %v", name, err)
+	}
+	client.Tracker.AddObj(configMapPropagation)
+	return configMapPropagation
+}
+
 // CreateBrokerOrFail will create a Broker or fail the test if there is an error.
 func (client *Client) CreateBrokerOrFail(name string, options ...resources.BrokerOption) *v1alpha1.Broker {
 	namespace := client.Namespace
@@ -140,16 +151,6 @@ func (client *Client) CreateTriggerOrFail(name string, options ...resources.Trig
 	return trigger
 }
 
-// CreateSequenceOrFail will create a Sequence or fail the test if there is an error.
-func (client *Client) CreateSequenceOrFail(sequence *messagingv1alpha1.Sequence) {
-	sequences := client.Eventing.MessagingV1alpha1().Sequences(client.Namespace)
-	_, err := sequences.Create(sequence)
-	if err != nil {
-		client.T.Fatalf("Failed to create sequence %q: %v", sequence.Name, err)
-	}
-	client.Tracker.AddObj(sequence)
-}
-
 // CreateFlowsSequenceOrFail will create a Sequence (in flows.knative.dev api group) or
 // fail the test if there is an error.
 func (client *Client) CreateFlowsSequenceOrFail(sequence *flowsv1alpha1.Sequence) {
@@ -159,16 +160,6 @@ func (client *Client) CreateFlowsSequenceOrFail(sequence *flowsv1alpha1.Sequence
 		client.T.Fatalf("Failed to create sequence %q: %v", sequence.Name, err)
 	}
 	client.Tracker.AddObj(sequence)
-}
-
-// CreateParallelOrFail will create a Parallel or fail the test if there is an error.
-func (client *Client) CreateParallelOrFail(parallel *messagingv1alpha1.Parallel) {
-	parallels := client.Eventing.MessagingV1alpha1().Parallels(client.Namespace)
-	_, err := parallels.Create(parallel)
-	if err != nil {
-		client.T.Fatalf("Failed to create parallel %q: %v", parallel.Name, err)
-	}
-	client.Tracker.AddObj(parallel)
 }
 
 // CreateFlowsParallelOrFail will create a Parallel (in flows.knative.dev api group) or
@@ -230,6 +221,16 @@ func (client *Client) CreateApiServerSourceOrFail(apiServerSource *sourcesv1alph
 		client.T.Fatalf("Failed to create apiserversource %q: %v", apiServerSource.Name, err)
 	}
 	client.Tracker.AddObj(apiServerSource)
+}
+
+// CreatePingSourceOrFail will create an PingSource
+func (client *Client) CreatePingSourceOrFail(pingSource *sourcesv1alpha1.PingSource) {
+	pingInterface := client.Eventing.SourcesV1alpha1().PingSources(client.Namespace)
+	_, err := pingInterface.Create(pingSource)
+	if err != nil {
+		client.T.Fatalf("Failed to create pingsource %q: %v", pingSource.Name, err)
+	}
+	client.Tracker.AddObj(pingSource)
 }
 
 // CreateLegacyApiServerSourceOrFail will create an ApiServerSource
@@ -417,21 +418,5 @@ func (client *Client) CreateRBACResourcesForBrokers() {
 		crFilterName,
 		fmt.Sprintf("%s-%s", saFilterName, crFilterName),
 		client.Namespace,
-	)
-	// The two RoleBindings are required for access to shared configmaps for logging,
-	// tracing, and metrics configuration.
-	client.CreateRoleBindingOrFail(
-		saIngressName,
-		ClusterRoleKind,
-		crConfigReaderName,
-		fmt.Sprintf("%s-%s-%s", saIngressName, helpers.MakeK8sNamePrefix(client.Namespace), crConfigReaderName),
-		resources.SystemNamespace,
-	)
-	client.CreateRoleBindingOrFail(
-		saFilterName,
-		ClusterRoleKind,
-		crConfigReaderName,
-		fmt.Sprintf("%s-%s-%s", saFilterName, helpers.MakeK8sNamePrefix(client.Namespace), crConfigReaderName),
-		resources.SystemNamespace,
 	)
 }

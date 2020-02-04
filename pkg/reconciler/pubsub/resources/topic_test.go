@@ -47,7 +47,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -114,7 +114,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -186,7 +186,7 @@ func TestMakeTopicWithCloudSchedulerSourceWithPubSubSecret(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",

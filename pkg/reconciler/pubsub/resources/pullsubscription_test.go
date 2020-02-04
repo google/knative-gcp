@@ -47,7 +47,7 @@ func TestMakePullSubscription(t *testing.T) {
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
-						Ref: &corev1.ObjectReference{
+						Ref: &duckv1.KReference{
 							APIVersion: "v1",
 							Kind:       "Kitchen",
 							Name:       "sink",
@@ -107,7 +107,7 @@ func TestMakePullSubscription(t *testing.T) {
 			AdapterType: "google.storage",
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
-					Ref: &corev1.ObjectReference{
+					Ref: &duckv1.KReference{
 						APIVersion: "v1",
 						Kind:       "Kitchen",
 						Name:       "sink",

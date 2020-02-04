@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -51,7 +50,7 @@ func NewCloudSchedulerSource(name, namespace string, so ...CloudSchedulerSourceO
 func WithCloudSchedulerSourceSink(gvk metav1.GroupVersionKind, name string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.Sink = duckv1.Destination{
-			Ref: &corev1.ObjectReference{
+			Ref: &duckv1.KReference{
 				APIVersion: apiVersion(gvk),
 				Kind:       gvk.Kind,
 				Name:       name,
