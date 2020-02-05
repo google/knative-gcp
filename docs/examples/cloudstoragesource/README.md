@@ -72,7 +72,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the `MY_PROJECT` placeholder in [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it.
-   Note that the Service Account during the [installation](../../install/README.md) step should be able to manage
+   Note that the Service Account during the [installation](../../install/install-knative-gcp.md) step should be able to manage
    [multiple projects](../../install/managing-multiple-projects.md).   
 
    If you're in the storage directory, you can replace `MY_PROJECT` and `BUCKET`

@@ -40,7 +40,7 @@ and users should rather use the latter if they want to bridge events from Pub/Su
 
 1. **[Optional]** If you are not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the `MY_PROJECT` placeholder in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it. 
-   Note that the Service Account during the [installation](../../install/README.md) step should be able to manage
+   Note that the Service Account during the [installation](../../install/install-knative-gcp.md) step should be able to manage
    [multiple projects](../../install/managing-multiple-projects.md).
 
    If you're in the pullsubscription directory, you can replace `MY_PROJECT` and
