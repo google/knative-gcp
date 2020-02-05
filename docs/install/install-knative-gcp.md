@@ -1,4 +1,4 @@
-# Installing Knative with GCP
+# Installing Knative-GCP
 
 1. Create a
    [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
@@ -9,7 +9,8 @@
    `gcloud config set project $PROJECT_ID`.
 
 1. Install [Knative](https://knative.dev/docs/install/). Preferably, set up both [Serving](https://knative.dev/docs/serving/)
-   and [Eventing](https://knative.dev/docs/eventing/). The latter is only required if you want to use the Pub/Sub `Channel`.  
+   and [Eventing](https://knative.dev/docs/eventing/). The latter is only required if you want to use the Pub/Sub `Channel` or 
+   a `Broker` backed by a Pub/Sub `Channel`.  
 
 1. Create the `cloud-run-events` namespace. This is the namespace where our control plane pods run.
 

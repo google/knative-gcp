@@ -8,7 +8,7 @@ in CloudEvents format.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install/README.md).
+1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
