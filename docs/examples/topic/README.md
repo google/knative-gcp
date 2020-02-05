@@ -37,11 +37,13 @@ This is a core construct used by higher-level objects, such as `Channel`.
    ```shell
    kubectl apply --filename topic.yaml
    ```
+
 1. Create a Pod using [`curl`](curl.yaml), which will act as the event producer.
 
    ```shell
    kubectl apply --filename curl.yaml
    ```
+
 1. Create a Cloud Pub/Sub subscription so that you can receive the message published:
  
    ```shell
