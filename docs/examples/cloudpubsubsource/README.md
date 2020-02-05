@@ -8,7 +8,7 @@ This source sends events using a Push-compatible format.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install/README.md).
+1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
@@ -82,11 +82,11 @@ Data,
   {
     "subscription": "cre-pull-7b35a745-877f-4f1f-9434-74062631a958",
     "message": {
-      "id": "951049449503068",
+      "messageId": "951049449503068",
       "data": {
         "Hello": "world"
       },
-      "publish_time": "2020-01-24T18:29:36.874Z"
+      "publishTime": "2020-01-24T18:29:36.874Z"
     }
   }
 ```

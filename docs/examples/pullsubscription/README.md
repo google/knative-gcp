@@ -1,13 +1,13 @@
 # PullSubscription Example
 
-This sample shows how to configure `PullSubscriptions`. This
-can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), 
+This sample shows how to configure `PullSubscriptions`, which is our Kubernetes object to 
+represent Cloud Pub/Sub subscriptions. This resource can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), 
 and users should rather use the latter if they want to bridge events from Pub/Sub into their clusters. As opposed to the  
 `CloudPubSubSource`, which sends events using the Push-compatible format, this does so using a Pull format.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install/README.md).
+1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 

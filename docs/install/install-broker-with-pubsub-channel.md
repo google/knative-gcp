@@ -1,30 +1,30 @@
-# Installing Broker with PubSub Channel
+# Installing Broker with Pub/Sub Channel
 
-A channel provides an event delivery mechanism that can fan-out received events to multiple destinations. 
-The default channel configuration allows channels to be created without specifying an underlying implementation.
-This is useful for users that do not care about the properties a particular channel provides (e.g.,
-ordering, persistence, etc.), but are rather fine with using the  
-implementation selected by the the operator. The operator controls the default
-settings via a `ConfigMap`. For example, when `Brokers` are
-created, an operator can configure a default channel to use for their underlying
-channel-based implementations.
-For [Knative Eventing](https://github.com/knative/eventing), we use `InMemoryChannel` as the default channel for Broker.
-We need to modify the `ConfigMap` to install broker with pubsub channel.
+In Knative Eventing, a Broker represents an "event mesh". Events are sent to the Broker's ingress and are then sent to any
+subscribers that are interested in that event. Brokers are currently backed by a configurable Channel.
+In this guide, we show an example of how to configure a Broker backed by the Pub/Sub Channel.
 
-   
-1.  Patch the configmap in namespace knative-eventing to use pubsub channel as the default channel with [patch-default-ch-config-with-pubsub.yaml](./patch-default-ch-config-with-pubsub.yaml)
+## Prerequisites
+
+1. [Install Knative-GCP](./install-knative-gcp.md). Remember to install [Knative Eventing](https://knative.dev/docs/eventing/).
+
+1. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+
+## Deployment
+
+1.  Patch the configmap in the `knative-eventing` namespace to use the Pub/Sub `Channel` as the [default channel](https://knative.dev/docs/eventing/channels/default-channels/) with [patch-default-ch-config-with-pubsub.yaml](./patch-default-ch-config-with-pubsub.yaml).
 
     ```shell
     kubectl patch configmap default-ch-webhook -n knative-eventing --patch "$(cat patch-default-ch-config-with-pubsub.yaml)"
     ```
 
-1. Add a label to your namespace with the following command:
+1. Add the `knative-eventing-injection` label to your namespace with the following command.
 
     ```shell
     kubectl label namespace default knative-eventing-injection=enabled
     ```
 
-   This gives the `default`  namespace the `knative-eventing-injection` label, which installs broker.
+   This triggers a reconciliation process that creates the `default Broker` in that namespace.
 
 1. Verify that the `Broker` is running
 
@@ -39,4 +39,4 @@ We need to modify the `ConfigMap` to install broker with pubsub channel.
     default   True             http://default-broker.event-example.svc.cluster.local      1m
     ```
 
-    When the `Broker` has the `READY=True` state, it can begin to manage any events it receives.
+    When the `Broker` has the `READY=True` state, it can start processing any events it receives.

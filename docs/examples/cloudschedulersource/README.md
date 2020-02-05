@@ -7,7 +7,7 @@ events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install/README.md). Note that your project needs to be created with
+1. [Install Knative-GCP](../../install/install-knative-gcp.md). Note that your project needs to be created with
    an App Engine application. Refer to this [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
    for more details.
 
