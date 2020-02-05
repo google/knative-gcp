@@ -97,6 +97,36 @@ var (
 			},
 		},
 	}
+	// Bucket, Sink, Secret, PubSubSecret, Event Type and Project
+	storageSourceSpec = CloudStorageSourceSpec{
+		Bucket:     "my-test-bucket",
+		EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		PubSubSpec: duckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
+				},
+			},
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "gcs-secret-name",
+				},
+				Key: "gcs-secret-key",
+			},
+			Project: "my-eventing-project",
+			PubSubSecret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "pullsubscription-secret-name",
+				},
+				Key: "pullsubscription-secret-key",
+			},
+		},
+	}
 )
 
 func TestValidationFields(t *testing.T) {
@@ -272,6 +302,113 @@ func TestSpecValidationFields(t *testing.T) {
 			got := test.spec.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
 				t.Errorf("%s: Validate CloudStorageSourceSpec (-want, +got) = %v", test.name, diff)
+			}
+		})
+	}
+}
+
+func TestCheckImmutableFields(t *testing.T) {
+	testCases := map[string]struct {
+		orig    interface{}
+		updated CloudStorageSourceSpec
+		allowed bool
+	}{
+		"nil orig": {
+			updated: storageSourceSpec,
+			allowed: true,
+		},
+		"EventType changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:     storageSourceSpec.Bucket,
+				EventTypes: []string{CloudStorageSourceMetadataUpdate},
+				PubSubSpec: storageSourceSpec.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"Secret.Name changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket: storageSourceSpec.Bucket,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-name",
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project:      storageSourceSpec.Project,
+					PubSubSecret: storageSourceSpec.PubSubSecret,
+				},
+			},
+			allowed: false,
+		},
+		"PubSubSecret.Name changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket: storageSourceSpec.Bucket,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-name",
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: storageSourceSpec.Project,
+					PubSubSecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "pullsubscription-secret-name",
+						},
+						Key: storageSourceSpec.PubSubSecret.Key,
+					},
+				},
+			},
+			allowed: false,
+		},
+		"Project changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket: storageSourceSpec.Bucket,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-name",
+						},
+						Key: storageSourceSpec.Secret.Key,
+					},
+					Project: "some-other-project",
+					PubSubSecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "pullsubscription-secret-name",
+						},
+						Key: storageSourceSpec.PubSubSecret.Key,
+					},
+				},
+			},
+			allowed: false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var orig *CloudStorageSource
+
+			if tc.orig != nil {
+				if spec, ok := tc.orig.(*CloudStorageSourceSpec); ok {
+					orig = &CloudStorageSource{
+						Spec: *spec,
+					}
+				}
+			}
+			updated := &CloudStorageSource{
+				Spec: tc.updated,
+			}
+			err := updated.CheckImmutableFields(context.TODO(), orig)
+			if tc.allowed != (err == nil) {
+				t.Fatalf("Unexpected immutable field check. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}
