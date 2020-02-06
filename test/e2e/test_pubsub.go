@@ -58,9 +58,8 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T) {
 		kngcptesting.WithCloudPubSubSourceTopic(topic))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.CloudPubSubSourceTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
+
 }
 
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
