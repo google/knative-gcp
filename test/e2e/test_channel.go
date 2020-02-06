@@ -33,7 +33,5 @@ func SmokeTestChannelImpl(t *testing.T) {
 	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace)
 	client.CreateChannelOrFail(channel)
 
-	if err := client.Core.WaitForResourceReady("e2e-smoke-test", lib.ChannelTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail("e2e-smoke-test", lib.ChannelTypeMeta)
 }
