@@ -51,9 +51,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
@@ -81,9 +79,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.PullSubscriptionTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
 
 	topic := lib.GetTopic(t, topicName)
 

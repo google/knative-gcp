@@ -44,9 +44,7 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T) {
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
-	if err := client.Core.WaitForResourceReady(sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(sName, lib.CloudSchedulerSourceTypeMeta)
 }
 
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
@@ -89,9 +87,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
-	if err := client.Core.WaitForResourceReady(sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(sName, lib.CloudSchedulerSourceTypeMeta)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {

@@ -91,9 +91,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 		kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	client.CreatePubSubOrFail(eventsPubsub)
 
-	if err := client.Core.WaitForResourceReady(psName, lib.CloudPubSubSourceTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
 
 	topic := lib.GetTopic(t, topicName)
 
