@@ -1,13 +1,13 @@
 # PullSubscription Example
 
-This sample shows how to configure `PullSubscriptions`. This
-can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), 
+This sample shows how to configure `PullSubscriptions`, which is our Kubernetes object to 
+represent Cloud Pub/Sub subscriptions. This resource can be considered an implementation detail of the [CloudPubSubSource](../../examples/cloudpubsubsource/README.md), 
 and users should rather use the latter if they want to bridge events from Pub/Sub into their clusters. As opposed to the  
 `CloudPubSubSource`, which sends events using the Push-compatible format, this does so using a Pull format.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install/README.md).
+1. [Install Knative-GCP](../../install/install-knative-gcp.md)
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
@@ -40,7 +40,7 @@ and users should rather use the latter if they want to bridge events from Pub/Su
 
 1. **[Optional]** If you are not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the `MY_PROJECT` placeholder in [`pullsubscription.yaml`](pullsubscription.yaml) and apply it. 
-   Note that the Service Account during the [installation](../../install/README.md) step should be able to manage
+   Note that the Service Account during the [installation](../../install/install-knative-gcp.md) step should be able to manage
    [multiple projects](../../install/managing-multiple-projects.md).
 
    If you're in the pullsubscription directory, you can replace `MY_PROJECT` and

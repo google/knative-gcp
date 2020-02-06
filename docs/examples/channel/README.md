@@ -2,12 +2,12 @@
 
 This sample shows how to configure a Channel backed by Cloud Pub/Sub. This is an
 implementation of a
-[Knative Channel](https://github.com/knative/eventing/blob/master/docs/spec/channel.md)
+[Knative Eventing Channel](https://github.com/knative/eventing/blob/master/docs/spec/channel.md)
 intended to provide a durable messaging solution.
 
 ## Prerequisites
 
-1. [Install Knative with GCP](../../install). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part of 
+1. [Install Knative-GCP](../../install/install-knative-gcp.md). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part of 
    the installation procedure.
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
