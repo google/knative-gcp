@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	cloudevents "github.com/cloudevents/sdk-go"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -97,10 +98,12 @@ var (
 			},
 		},
 	}
-	// Bucket, Sink, Secret, PubSubSecret, Event Type and Project
+	// Bucket, Sink, Secret, PubSubSecret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
-		Bucket:     "my-test-bucket",
-		EventTypes: []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		Bucket:           "my-test-bucket",
+		EventTypes:       []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
+		ObjectNamePrefix: "test-prefix",
+		PayloadFormat:    cloudevents.ApplicationJSON,
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			SourceSpec: duckv1.SourceSpec{
 				Sink: duckv1.Destination{
@@ -317,19 +320,57 @@ func TestCheckImmutableFields(t *testing.T) {
 			updated: storageSourceSpec,
 			allowed: true,
 		},
+		"Bucket changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           "some-other-bucket",
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				PubSubSpec:       storageSourceSpec.PubSubSpec,
+			},
+			allowed: false,
+		},
 		"EventType changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
-				Bucket:     storageSourceSpec.Bucket,
-				EventTypes: []string{CloudStorageSourceMetadataUpdate},
-				PubSubSpec: storageSourceSpec.PubSubSpec,
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       []string{CloudStorageSourceMetadataUpdate},
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				PubSubSpec:       storageSourceSpec.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"ObjectNamePrefix changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: "some-other-prefix",
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				PubSubSpec:       storageSourceSpec.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"PayloadFormat changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    "some-other-format",
+				PubSubSpec:       storageSourceSpec.PubSubSpec,
 			},
 			allowed: false,
 		},
 		"Secret.Name changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
-				Bucket: storageSourceSpec.Bucket,
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret: &corev1.SecretKeySelector{
@@ -347,19 +388,17 @@ func TestCheckImmutableFields(t *testing.T) {
 		"PubSubSecret.Name changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
-				Bucket: storageSourceSpec.Bucket,
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "some-other-name",
-						},
-						Key: storageSourceSpec.Secret.Key,
-					},
-					Project: storageSourceSpec.Project,
+					Secret:     storageSourceSpec.Secret,
+					Project:    storageSourceSpec.Project,
 					PubSubSecret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "pullsubscription-secret-name",
+							Name: "some-other-pullsubscription-secret-name",
 						},
 						Key: storageSourceSpec.PubSubSecret.Key,
 					},
@@ -370,22 +409,15 @@ func TestCheckImmutableFields(t *testing.T) {
 		"Project changed": {
 			orig: &storageSourceSpec,
 			updated: CloudStorageSourceSpec{
-				Bucket: storageSourceSpec.Bucket,
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "some-other-name",
-						},
-						Key: storageSourceSpec.Secret.Key,
-					},
-					Project: "some-other-project",
-					PubSubSecret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "pullsubscription-secret-name",
-						},
-						Key: storageSourceSpec.PubSubSecret.Key,
-					},
+					SourceSpec:   storageSourceSpec.SourceSpec,
+					Secret:       storageSourceSpec.Secret,
+					Project:      "some-other-project",
+					PubSubSecret: storageSourceSpec.PubSubSecret,
 				},
 			},
 			allowed: false,
