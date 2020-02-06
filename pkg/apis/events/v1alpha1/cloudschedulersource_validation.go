@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
@@ -71,4 +73,21 @@ func (current *CloudSchedulerSourceSpec) Validate(ctx context.Context) *apis.Fie
 	}
 
 	return errs
+}
+
+func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, original *CloudSchedulerSource) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	// Modification of Location, Schedule, Data, Secret, PubSubSecret, Project are not allowed. Everything else is mutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(CloudSchedulerSourceSpec{},
+			"Sink", "CloudEventOverrides")); diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
+	}
+	return nil
 }
