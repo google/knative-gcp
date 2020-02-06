@@ -327,3 +327,122 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 	}
 
 }
+
+func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
+	testCases := map[string]struct {
+		orig    interface{}
+		updated CloudSchedulerSourceSpec
+		allowed bool
+	}{
+		"nil orig": {
+			updated: schedulerWithPubSubSecret,
+			allowed: true,
+		},
+		"Location changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location:   "some-other-location",
+				Schedule:   schedulerWithPubSubSecret.Schedule,
+				Data:       schedulerWithPubSubSecret.Data,
+				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"Schedule changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location:   schedulerWithPubSubSecret.Location,
+				Schedule:   "* * * * 1",
+				Data:       schedulerWithPubSubSecret.Data,
+				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"Data changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location:   schedulerWithPubSubSecret.Location,
+				Schedule:   schedulerWithPubSubSecret.Schedule,
+				Data:       "some-other-data",
+				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+			},
+			allowed: false,
+		},
+		"Secret.Name changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithPubSubSecret.Location,
+				Schedule: schedulerWithPubSubSecret.Schedule,
+				Data:     schedulerWithPubSubSecret.Data,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: schedulerWithPubSubSecret.SourceSpec,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-name",
+						},
+						Key: schedulerWithPubSubSecret.Secret.Key,
+					},
+					Project:      schedulerWithPubSubSecret.Project,
+					PubSubSecret: schedulerWithPubSubSecret.PubSubSecret,
+				},
+			},
+			allowed: false,
+		},
+		"PubSubSecret.Name changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithPubSubSecret.Location,
+				Schedule: schedulerWithPubSubSecret.Schedule,
+				Data:     schedulerWithPubSubSecret.Data,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec: schedulerWithPubSubSecret.SourceSpec,
+					Secret:     schedulerWithPubSubSecret.Secret,
+					Project:    schedulerWithPubSubSecret.Project,
+					PubSubSecret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-pullsubscription-secret-name",
+						},
+						Key: schedulerWithPubSubSecret.PubSubSecret.Key,
+					},
+				},
+			},
+			allowed: false,
+		},
+		"Project changed changed": {
+			orig: &schedulerWithPubSubSecret,
+			updated: CloudSchedulerSourceSpec{
+				Location: schedulerWithPubSubSecret.Location,
+				Schedule: schedulerWithPubSubSecret.Schedule,
+				Data:     schedulerWithPubSubSecret.Data,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec:   schedulerWithPubSubSecret.SourceSpec,
+					Secret:       schedulerWithPubSubSecret.Secret,
+					Project:      "some-other-project",
+					PubSubSecret: schedulerWithPubSubSecret.PubSubSecret,
+				},
+			},
+			allowed: false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var orig *CloudSchedulerSource
+
+			if tc.orig != nil {
+				if spec, ok := tc.orig.(*CloudSchedulerSourceSpec); ok {
+					orig = &CloudSchedulerSource{
+						Spec: *spec,
+					}
+				}
+			}
+			updated := &CloudSchedulerSource{
+				Spec: tc.updated,
+			}
+			err := updated.CheckImmutableFields(context.TODO(), orig)
+			if tc.allowed != (err == nil) {
+				t.Fatalf("Unexpected immutable field check. Expected %v. Actual %v", tc.allowed, err)
+			}
+		})
+	}
+}
