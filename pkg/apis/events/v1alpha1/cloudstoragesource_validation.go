@@ -23,6 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
@@ -72,4 +75,21 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("key"))
 	}
 	return errs
+}
+
+func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, original *CloudStorageSource) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	// Modification of EventType, Secret, PubSubSecret, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+	if diff := cmp.Diff(original.Spec, current.Spec,
+		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
+			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
+	}
+	return nil
 }
