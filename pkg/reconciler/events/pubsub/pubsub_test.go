@@ -161,8 +161,8 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMode(pubsubv1alpha1.ModePushCompatible),
 				WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
-					"source":          pubsubName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": pubsubName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,

@@ -75,10 +75,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			Spec:      spec,
 			Owner:     pubsubable,
 			Topic:     topic,
-			Labels: map[string]string{
-				"receive-adapter": psb.receiveAdapterName,
-				"source":          name,
-			},
+			Labels:    resources.GetLabels(psb.receiveAdapterName, name),
 		}
 		newTopic := resources.MakeTopic(args)
 		t, err = topics.Create(newTopic)
@@ -110,10 +107,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			Topic:         topic,
 			AdapterType:   psb.adapterType,
 			ResourceGroup: resourceGroup,
-			Labels: map[string]string{
-				"receive-adapter": psb.receiveAdapterName,
-				"source":          name,
-			},
+			Labels:        resources.GetLabels(psb.receiveAdapterName, name),
 		}
 		newPS := resources.MakePullSubscription(args)
 		ps, err = pullSubscriptions.Create(newPS)

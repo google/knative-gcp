@@ -72,7 +72,7 @@ func TestMakePullSubscription(t *testing.T) {
 		ResourceGroup: "storages.events.cloud.google.com",
 		Labels: map[string]string{
 			"receive-adapter": "storage.events.cloud.google.com",
-			"source":          source.Name,
+			"events.cloud.google.com/source-name":          source.Name,
 		},
 	}
 	got := MakePullSubscription(args)
@@ -84,7 +84,7 @@ func TestMakePullSubscription(t *testing.T) {
 			Name:      "bucket-name",
 			Labels: map[string]string{
 				"receive-adapter": "storage.events.cloud.google.com",
-				"source":          "bucket-name",
+				"events.cloud.google.com/source-name":          "bucket-name",
 			},
 			Annotations: map[string]string{
 				"metrics-resource-group": "storages.events.cloud.google.com",

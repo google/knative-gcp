@@ -157,10 +157,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 			Topic:         source.Spec.Topic,
 			ResourceGroup: resourceGroup,
 			Mode:          pubsubv1alpha1.ModePushCompatible,
-			Labels: map[string]string{
-				"receive-adapter": r.receiveAdapterName,
-				"source":          source.Name,
-			},
+			Labels:        resources.GetLabels(r.receiveAdapterName, source.Name),
 		}
 		newPS := resources.MakePullSubscription(args)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))

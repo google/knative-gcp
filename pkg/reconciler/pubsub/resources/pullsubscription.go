@@ -68,9 +68,9 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			},
 		},
 	}
-	if args.Spec.SourceSpec.CloudEventOverrides != nil && args.Spec.SourceSpec.CloudEventOverrides.Extensions != nil {
+	if args.Spec.CloudEventOverrides != nil && args.Spec.CloudEventOverrides.Extensions != nil {
 		ps.Spec.SourceSpec.CloudEventOverrides = &duckv1.CloudEventOverrides{
-			Extensions: args.Spec.SourceSpec.CloudEventOverrides.Extensions,
+			Extensions: args.Spec.CloudEventOverrides.Extensions,
 		}
 	}
 	return ps
