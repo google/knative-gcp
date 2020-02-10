@@ -96,6 +96,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -109,6 +110,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -123,6 +125,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -135,6 +138,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -150,6 +154,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicReady(testTopicID),
@@ -164,6 +169,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -182,6 +188,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -196,6 +203,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicFailed(),
@@ -214,6 +222,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -228,6 +237,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicUnknown(),
@@ -246,6 +256,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -261,6 +272,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(""),
@@ -280,6 +292,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -295,6 +308,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -309,6 +323,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -324,6 +339,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -341,6 +357,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -354,6 +371,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -369,6 +387,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -383,6 +402,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -400,6 +420,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -413,6 +434,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -429,6 +451,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -443,6 +466,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -461,6 +485,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -474,6 +499,7 @@ func TestCreates(t *testing.T) {
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter": receiveAdapterName,
+					"source":          name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -490,6 +516,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -504,6 +531,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter": receiveAdapterName,
+				"source":          name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
