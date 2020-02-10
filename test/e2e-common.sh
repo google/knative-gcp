@@ -118,11 +118,26 @@ function control_plane_setup() {
 
 # Create resources required for Pub/Sub Admin setup.
 function pubsub_setup() {
+  # If the tests are run on Prow, clean up the topics and subscriptions before running them.
+  # See https://github.com/google/knative-gcp/issues/494
+  if (( IS_PROW )); then
+    subs=$(gcloud pubsub subscriptions list --format="value(name)")
+    while read -r sub_name
+    do
+      gcloud pubsub subscriptions delete "${sub_name}"
+    done <<<"$subs"
+    topics=$(gcloud pubsub topics list --format="value(name)")
+    while read -r topic_name
+    do
+      gcloud pubsub topics delete "${topic_name}"
+    done <<<"$topics"
+  fi
+
   local service_account_key="${GOOGLE_APPLICATION_CREDENTIALS}"
-  # Enable monitoring
-  gcloud services enable monitoring
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
+    # Enable monitoring
+    gcloud services enable monitoring
     echo "Set up ServiceAccount for Pub/Sub Admin"
     gcloud services enable pubsub.googleapis.com
     gcloud iam service-accounts create ${PUBSUB_SERVICE_ACCOUNT}
