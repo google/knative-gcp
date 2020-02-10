@@ -118,9 +118,7 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 		kngcptesting.WithCloudStorageSourceSink(lib.ServiceGVK, targetName))
 	client.CreateStorageOrFail(eventsStorage)
 
-	if err := client.Core.WaitForResourceReady(storageName, lib.CloudStorageSourceTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(storageName, lib.CloudStorageSourceTypeMeta)
 
 	// Add a random name file in the bucket
 	bucketHandle := getBucketHandle(ctx, t, bucketName, project)

@@ -99,17 +99,9 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	)
 
 	// Wait for broker, trigger, ksvc ready.
-	if err := client.Core.WaitForResourceReady(brokerName, eventingtestlib.BrokerTypeMeta); err != nil {
-		t.Error(err)
-	}
-
-	if err := client.Core.WaitForResourcesReady(eventingtestlib.TriggerTypeMeta); err != nil {
-		t.Error(err)
-	}
-
-	if err := client.Core.WaitForResourceReady(kserviceName, lib.KsvcTypeMeta); err != nil {
-		t.Error(err)
-	}
+	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
 
 	// Get broker URL.
 	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
