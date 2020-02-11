@@ -142,7 +142,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 		Owner:     source,
 		Topic:     "topic-abc",
 		Labels: map[string]string{
-			"receive-adapter": "storage.events.cloud.google.com",
+			"receive-adapter": "scheduler.events.cloud.google.com",
 			"source":          source.Name,
 		},
 	}
@@ -154,7 +154,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			Namespace: "scheduler-namespace",
 			Name:      "scheduler-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.google.com",
+				"receive-adapter": "scheduler.events.cloud.google.com",
 				"source":          "scheduler-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
