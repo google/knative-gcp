@@ -26,24 +26,20 @@ import (
 )
 
 type PullSubscriptionArgs struct {
-	Namespace      string
-	Name           string
-	Spec           *duckv1alpha1.PubSubSpec
-	Owner          kmeta.OwnerRefable
-	Topic          string
-	ReceiveAdapter string
-	AdapterType    string
-	ResourceGroup  string
-	Mode           pubsubv1alpha1.ModeType
+	Namespace     string
+	Name          string
+	Spec          *duckv1alpha1.PubSubSpec
+	Owner         kmeta.OwnerRefable
+	Topic         string
+	AdapterType   string
+	ResourceGroup string
+	Mode          pubsubv1alpha1.ModeType
+	Labels        map[string]string
 }
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
 func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscription {
-	labels := map[string]string{
-		"receive-adapter": args.ReceiveAdapter,
-	}
-
 	annotations := map[string]string{
 		"metrics-resource-group": args.ResourceGroup,
 	}
@@ -57,7 +53,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
-			Labels:          labels,
+			Labels:          args.Labels,
 			Annotations:     annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
@@ -68,7 +64,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			AdapterType: args.AdapterType,
 			Mode:        args.Mode,
 			SourceSpec: duckv1.SourceSpec{
-				Sink: args.Spec.Sink,
+				Sink: args.Spec.SourceSpec.Sink,
 			},
 		},
 	}

@@ -58,8 +58,18 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			Bucket: "this-bucket",
 		},
 	}
-
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com")
+	args := &TopicArgs{
+		Namespace: source.Namespace,
+		Name:      source.Name,
+		Spec:      &source.Spec.PubSubSpec,
+		Owner:     source,
+		Topic:     "topic-abc",
+		Labels: map[string]string{
+			"receive-adapter": "storage.events.cloud.google.com",
+			"source":          source.Name,
+		},
+	}
+	got := MakeTopic(args)
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -68,6 +78,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			Name:      "storage-name",
 			Labels: map[string]string{
 				"receive-adapter": "storage.events.cloud.google.com",
+				"source":          "storage-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
@@ -124,8 +135,18 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			},
 		},
 	}
-
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "storage.events.cloud.google.com")
+	args := &TopicArgs{
+		Namespace: source.Namespace,
+		Name:      source.Name,
+		Spec:      &source.Spec.PubSubSpec,
+		Owner:     source,
+		Topic:     "topic-abc",
+		Labels: map[string]string{
+			"receive-adapter": "scheduler.events.cloud.google.com",
+			"source":          source.Name,
+		},
+	}
+	got := MakeTopic(args)
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -133,7 +154,8 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			Namespace: "scheduler-namespace",
 			Name:      "scheduler-name",
 			Labels: map[string]string{
-				"receive-adapter": "storage.events.cloud.google.com",
+				"receive-adapter": "scheduler.events.cloud.google.com",
+				"source":          "scheduler-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
@@ -196,8 +218,18 @@ func TestMakeTopicWithCloudSchedulerSourceWithPubSubSecret(t *testing.T) {
 			},
 		},
 	}
-
-	got := MakeTopic(source.Namespace, source.Name, &source.Spec.PubSubSpec, source, "topic-abc", "scheduler.events.cloud.google.com")
+	args := &TopicArgs{
+		Namespace: source.Namespace,
+		Name:      source.Name,
+		Spec:      &source.Spec.PubSubSpec,
+		Owner:     source,
+		Topic:     "topic-abc",
+		Labels: map[string]string{
+			"receive-adapter": "scheduler.events.cloud.google.com",
+			"source":          source.Name,
+		},
+	}
+	got := MakeTopic(args)
 
 	yes := true
 	want := &pubsubv1alpha1.Topic{
@@ -206,6 +238,7 @@ func TestMakeTopicWithCloudSchedulerSourceWithPubSubSecret(t *testing.T) {
 			Name:      "scheduler-name",
 			Labels: map[string]string{
 				"receive-adapter": "scheduler.events.cloud.google.com",
+				"source":          "scheduler-name",
 			},
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",

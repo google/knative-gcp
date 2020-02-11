@@ -150,14 +150,14 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 			return nil, fmt.Errorf("failed to get PullSubscription: %w", err)
 		}
 		args := &resources.PullSubscriptionArgs{
-			Namespace:      source.Namespace,
-			Name:           source.Name,
-			Spec:           &source.Spec.PubSubSpec,
-			Owner:          source,
-			Topic:          source.Spec.Topic,
-			ReceiveAdapter: r.receiveAdapterName,
-			ResourceGroup:  resourceGroup,
-			Mode:           pubsubv1alpha1.ModePushCompatible,
+			Namespace:     source.Namespace,
+			Name:          source.Name,
+			Spec:          &source.Spec.PubSubSpec,
+			Owner:         source,
+			Topic:         source.Spec.Topic,
+			ResourceGroup: resourceGroup,
+			Mode:          pubsubv1alpha1.ModePushCompatible,
+			Labels:        resources.GetLabels(r.receiveAdapterName, source.Name),
 		}
 		newPS := resources.MakePullSubscription(args)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
