@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 )
@@ -69,7 +69,15 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
 			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
-		newTopic := resources.MakeTopic(namespace, name, spec, pubsubable, topic, psb.receiveAdapterName)
+		args := &resources.TopicArgs{
+			Namespace: namespace,
+			Name:      name,
+			Spec:      spec,
+			Owner:     pubsubable,
+			Topic:     topic,
+			Labels:    resources.GetLabels(psb.receiveAdapterName, name),
+		}
+		newTopic := resources.MakeTopic(args)
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
@@ -92,14 +100,14 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
 		args := &resources.PullSubscriptionArgs{
-			Namespace:      namespace,
-			Name:           name,
-			Spec:           spec,
-			Owner:          pubsubable,
-			Topic:          topic,
-			ReceiveAdapter: psb.receiveAdapterName,
-			AdapterType:    psb.adapterType,
-			ResourceGroup:  resourceGroup,
+			Namespace:     namespace,
+			Name:          name,
+			Spec:          spec,
+			Owner:         pubsubable,
+			Topic:         topic,
+			AdapterType:   psb.adapterType,
+			ResourceGroup: resourceGroup,
+			Labels:        resources.GetLabels(psb.receiveAdapterName, name),
 		}
 		newPS := resources.MakePullSubscription(args)
 		ps, err = pullSubscriptions.Create(newPS)
