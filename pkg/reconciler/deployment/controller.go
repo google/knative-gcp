@@ -28,7 +28,7 @@ import (
 
 const (
 	// ReconcilerName is the name of the reconciler
-	ReconcilerName = "Deployment" //
+	ReconcilerName = "Deployment"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
@@ -40,7 +40,8 @@ const (
 )
 
 // NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
+// Registers event handlers to enqueue events.
+// When the secret `google-cloud-key` of namespace `cloud-run-events` gets updated, we will enqueue the deployment `controller` of namespace `cloud-run-events`.
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,

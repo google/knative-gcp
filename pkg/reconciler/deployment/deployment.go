@@ -18,11 +18,12 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	"strconv"
 
 	v1 "k8s.io/api/apps/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -45,6 +46,7 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 
 // Reconciler implements controller.Reconciler
 // Reconciler get the deployment and then update the deployment's annotation.
+// Then the deployment will recreate the pods which will pick up the latest secret image immediately. Otherwise we will need to wait for 1 min for the deployment pods to pick up the update secret.
 func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
