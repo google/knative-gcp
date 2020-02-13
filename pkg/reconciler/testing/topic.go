@@ -101,13 +101,25 @@ func WithTopicSpec(spec v1alpha1.TopicSpec) TopicOption {
 	}
 }
 
-func WithTopicDeployed(s *v1alpha1.Topic) {
-	s.Status.MarkDeployed()
+func WithTopicPublisherDeployed(s *v1alpha1.Topic) {
+	s.Status.MarkPublisherDeployed()
 }
 
-func WithTopicNotDeployed(reason, message string) TopicOption {
+func WithTopicPublisherNotDeployed(reason, message string) TopicOption {
 	return func(t *v1alpha1.Topic) {
-		t.Status.MarkNotDeployed(reason, message)
+		t.Status.MarkPublisherNotDeployed(reason, message)
+	}
+}
+
+func WithTopicPublisherUnknown(reason, message string) TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkPublisherUnknown(reason, message)
+	}
+}
+
+func WithTopicPublisherNotConfigured() TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkPublisherNotConfigured()
 	}
 }
 
@@ -120,7 +132,7 @@ func WithTopicProjectID(projectID string) TopicOption {
 func WithTopicReady(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
-		s.Status.MarkDeployed()
+		s.Status.MarkPublisherDeployed()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
@@ -129,7 +141,7 @@ func WithTopicReady(topicID string) TopicOption {
 func WithTopicFailed() TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
-		s.Status.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
+		s.Status.MarkPublisherNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	}
 }
 

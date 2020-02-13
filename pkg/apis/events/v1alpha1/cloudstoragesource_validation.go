@@ -57,9 +57,11 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 	}
 
 	if current.PubSubSecret != nil {
-		err := validateSecret(current.PubSubSecret)
-		if err != nil {
-			errs = errs.Also(err.ViaField("pubSubSecret"))
+		if !equality.Semantic.DeepEqual(current.PubSubSecret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.PubSubSecret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("pubSubSecret"))
+			}
 		}
 	}
 

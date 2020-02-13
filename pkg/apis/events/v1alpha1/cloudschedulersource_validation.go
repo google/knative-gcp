@@ -66,9 +66,11 @@ func (current *CloudSchedulerSourceSpec) Validate(ctx context.Context) *apis.Fie
 	}
 
 	if current.PubSubSecret != nil {
-		err := validateSecret(current.PubSubSecret)
-		if err != nil {
-			errs = errs.Also(err.ViaField("pubsubSecret"))
+		if !equality.Semantic.DeepEqual(current.PubSubSecret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.PubSubSecret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("pubsubSecret"))
+			}
 		}
 	}
 
