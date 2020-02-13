@@ -95,7 +95,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -108,7 +109,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -122,7 +124,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -134,7 +137,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -149,7 +153,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicReady(testTopicID),
@@ -163,7 +168,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -181,7 +187,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -195,7 +202,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicFailed(),
@@ -213,7 +221,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -227,7 +236,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicUnknown(),
@@ -245,7 +255,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -260,7 +271,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(""),
@@ -279,7 +291,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -294,7 +307,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -308,7 +322,8 @@ func TestCreates(t *testing.T) {
 				Secret: &secret,
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -323,7 +338,8 @@ func TestCreates(t *testing.T) {
 					Secret: &secret,
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -340,7 +356,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -353,7 +370,8 @@ func TestCreates(t *testing.T) {
 					Secret: &secret,
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -368,7 +386,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -382,7 +401,8 @@ func TestCreates(t *testing.T) {
 				Secret: &secret,
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -399,7 +419,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -412,7 +433,8 @@ func TestCreates(t *testing.T) {
 					Secret: &secret,
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -428,7 +450,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -442,7 +465,8 @@ func TestCreates(t *testing.T) {
 				Secret: &secret,
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,
@@ -460,7 +484,8 @@ func TestCreates(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				rectesting.WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
@@ -473,7 +498,8 @@ func TestCreates(t *testing.T) {
 					Secret: &secret,
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group": resourceGroup,
@@ -489,7 +515,8 @@ func TestCreates(t *testing.T) {
 				PropagationPolicy: "CreateDelete",
 			}),
 			rectesting.WithTopicLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -503,7 +530,8 @@ func TestCreates(t *testing.T) {
 				Secret: &secret,
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
-				"receive-adapter": receiveAdapterName,
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
 				"metrics-resource-group": resourceGroup,

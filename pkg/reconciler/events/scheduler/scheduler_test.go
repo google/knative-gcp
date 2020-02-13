@@ -189,7 +189,8 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				WithTopicLabels(map[string]string{
-					"receive-adapter": receiveAdapterName,
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": schedulerName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -434,8 +435,8 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionLabels(map[string]string{
-						"receive-adapter": receiveAdapterName,
-					}),
+						"receive-adapter":                     receiveAdapterName,
+						"events.cloud.google.com/source-name": schedulerName}),
 					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group": resourceGroup,
 					}),

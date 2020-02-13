@@ -17,6 +17,8 @@ limitations under the License.
 package resources
 
 import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
@@ -24,29 +26,35 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
+type TopicArgs struct {
+	Namespace string
+	Name      string
+	Spec      *duckv1alpha1.PubSubSpec
+	Owner     kmeta.OwnerRefable
+	Topic     string
+	Labels    map[string]string
+}
+
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmeta.OwnerRefable, topic, receiveAdapterName string) *pubsubv1alpha1.Topic {
-	labels := map[string]string{
-		"receive-adapter": receiveAdapterName,
-	}
+func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
 
-	pubsubSecret := spec.Secret
-	if spec.PubSubSecret != nil {
-		pubsubSecret = spec.PubSubSecret
+	pubsubSecret := args.Spec.Secret
+	if args.Spec.PubSubSecret != nil && !equality.Semantic.DeepEqual(args.Spec.PubSubSecret, &corev1.SecretKeySelector{}) {
+		pubsubSecret = args.Spec.PubSubSecret
 	}
 
 	return &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            name,
-			Namespace:       namespace,
-			Labels:          labels,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(owner)},
+			Name:            args.Name,
+			Namespace:       args.Namespace,
+			Labels:          args.Labels,
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
 			Secret:            pubsubSecret,
-			Project:           spec.Project,
-			Topic:             topic,
+			Project:           args.Spec.Project,
+			Topic:             args.Topic,
 			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
 		},
 	}

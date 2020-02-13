@@ -502,7 +502,7 @@ func newReadyTopic() *pubsubv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
-	topic.Status.MarkDeployed()
+	topic.Status.MarkPublisherDeployed()
 	topic.Status.MarkTopicReady()
 	return topic
 }
@@ -511,7 +511,7 @@ func newFalseTopic() *pubsubv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
-	topic.Status.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
+	topic.Status.MarkPublisherNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	return topic
 }
 
