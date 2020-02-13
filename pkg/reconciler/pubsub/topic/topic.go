@@ -36,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
@@ -177,12 +176,12 @@ func (r *Reconciler) reconcile(ctx context.Context, topic *v1alpha1.Topic) error
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
-		topic.Status.MarkNotDeployed("PublisherReconcileFailed", "Failed to reconcile Publisher: %s", err.Error())
+		topic.Status.MarkPublisherNotDeployed("PublisherReconcileFailed", "Failed to reconcile Publisher: %s", err.Error())
 		return err
 	}
 
 	// Update the topic.
-	topic.Status.PropagatePublisherStatus(svc.Status.GetCondition(apis.ConditionReady))
+	topic.Status.PropagatePublisherStatus(&svc.Status)
 	if svc.Status.IsReady() {
 		topic.Status.SetAddress(svc.Status.Address.URL)
 	}

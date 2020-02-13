@@ -49,7 +49,7 @@ func TestTopicStatusIsReady(t *testing.T) {
 		s: func() *TopicStatus {
 			s := &TopicStatus{}
 			s.InitializeConditions()
-			s.MarkDeployed()
+			s.MarkPublisherDeployed()
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
@@ -60,7 +60,7 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s := &TopicStatus{}
 			s.InitializeConditions()
 			s.MarkTopicReady()
-			s.MarkDeployed()
+			s.MarkPublisherDeployed()
 			s.SetAddress(&apis.URL{})
 			return s
 		}(),
@@ -72,7 +72,7 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s := &TopicStatus{}
 			s.InitializeConditions()
 			s.MarkTopicReady()
-			s.MarkDeployed()
+			s.MarkPublisherDeployed()
 			s.SetAddress(nil)
 			return s
 		}(),
@@ -85,8 +85,8 @@ func TestTopicStatusIsReady(t *testing.T) {
 			s.InitializeConditions()
 			s.MarkTopicReady()
 			s.SetAddress(&apis.URL{})
-			s.MarkNotDeployed("MarkNotDeployed", "")
-			s.MarkDeployed()
+			s.MarkPublisherNotDeployed("MarkNotDeployed", "")
+			s.MarkPublisherDeployed()
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
@@ -137,7 +137,7 @@ func TestTopicStatusGetCondition(t *testing.T) {
 		s: func() *TopicStatus {
 			s := &TopicStatus{}
 			s.InitializeConditions()
-			s.MarkDeployed()
+			s.MarkPublisherDeployed()
 			return s
 		}(),
 		condQuery: TopicConditionReady,
