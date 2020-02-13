@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	defaultSecretName = "google-cloud-key"
+	DefaultSecretName = "google-cloud-key"
 	defaultSecretKey  = "key.json"
 )
 
@@ -30,7 +30,7 @@ const (
 func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 	return &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
-			Name: defaultSecretName,
+			Name: DefaultSecretName,
 		},
 		Key: defaultSecretKey,
 	}

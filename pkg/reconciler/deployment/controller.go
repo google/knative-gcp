@@ -17,8 +17,11 @@ package deployment
 
 import (
 	"context"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
@@ -35,7 +38,7 @@ const (
 	controllerAgentName = "cloud-run-events-deployment-controller"
 
 	namespace      = "cloud-run-events"
-	secretName     = "google-cloud-key"
+	secretName     = v1alpha1.DefaultSecretName
 	deploymentName = "controller"
 )
 
@@ -53,6 +56,7 @@ func NewController(
 	r := &Reconciler{
 		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
 		deploymentLister: deploymentInformer.Lister(),
+		clock:           clock.RealClock{},
 	}
 
 	impl := controller.NewImpl(r, r.Logger, ReconcilerName)

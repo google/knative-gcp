@@ -19,10 +19,13 @@ package deployment
 import (
 	"context"
 	"testing"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -65,7 +68,7 @@ func TestAllCases(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewDeployment(testDeploymentName, testNS,
 					WithDeploymentAnnotations(map[string]string{
-						"api.v1.namespaces.cloud-run-events.secrets.google-cloud-key/updated-revision": "1",
+						"events.cloud.google.com/secretLastObservedUpdateTime": "2019-11-17 20:34:58.651387237 +0000 UTC",
 					}),
 				),
 			}},
@@ -74,14 +77,14 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewDeployment(testDeploymentName, testNS,
 					WithDeploymentAnnotations(map[string]string{
-						"api.v1.namespaces.cloud-run-events.secrets.google-cloud-key/updated-revision": "1",
+						"events.cloud.google.com/secretLastObservedUpdateTime": "2019-11-16 20:34:58.651387237 +0000 UTC",
 					})),
 			},
 			Key: testNS + "/" + testDeploymentName,
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewDeployment(testDeploymentName, testNS,
 					WithDeploymentAnnotations(map[string]string{
-						"api.v1.namespaces.cloud-run-events.secrets.google-cloud-key/updated-revision": "2",
+						"events.cloud.google.com/secretLastObservedUpdateTime": "2019-11-17 20:34:58.651387237 +0000 UTC",
 					}),
 				),
 			}},
@@ -93,6 +96,8 @@ func TestAllCases(t *testing.T) {
 		return &Reconciler{
 			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
 			deploymentLister: listers.GetDeploymentLister(),
+			clock: clock.NewFakeClock(time.Date(
+				2019, 11, 17, 20, 34, 58, 651387237, time.UTC)),
 		}
 	}))
 }

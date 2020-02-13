@@ -18,20 +18,19 @@ package deployment
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/google/knative-gcp/pkg/reconciler"
+	v1 "k8s.io/api/apps/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/clock"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-
-	v1 "k8s.io/api/apps/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	appsv1listers "k8s.io/client-go/listers/apps/v1"
 )
 
 const (
-	updatedSecretRevisionAnno = "api.v1.namespaces.cloud-run-events.secrets.google-cloud-key/updated-revision"
+	SecretUpdateAnnotation = "events.cloud.google.com/secretLastObservedUpdateTime"
 )
 
 type Reconciler struct {
@@ -39,6 +38,8 @@ type Reconciler struct {
 
 	// listers index properties about resources
 	deploymentLister appsv1listers.DeploymentLister
+
+	clock clock.Clock
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -50,17 +51,16 @@ var _ controller.Reconciler = (*Reconciler)(nil)
 func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		logging.FromContext(ctx).Error("invalid resource key")
+		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
 		return nil
 	}
 	// Get the deployment resource with this namespace/name
 	original, err := r.deploymentLister.Deployments(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
 		// The resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Errorf("deployment key in work queue no longer exists %q %q", namespace, name)
+		logging.FromContext(ctx).Desugar().Error("Deployment in work queue no longer exists")
 		return nil
 	} else if err != nil {
-		logging.FromContext(ctx).Errorf("Error fetching deployment with namespace %q name %q: error", namespace, name, err)
 		return err
 	}
 
@@ -75,19 +75,12 @@ func (r *Reconciler) reconcile(ctx context.Context, d *v1.Deployment) error {
 		return nil
 	}
 
-	anno := d.Spec.Template.GetObjectMeta().GetAnnotations()
-	revision, ok := anno[updatedSecretRevisionAnno]
-	if !ok {
-		anno = make(map[string]string)
-		anno[updatedSecretRevisionAnno] = "1"
-	} else {
-		i, err := strconv.Atoi(revision)
-		if err != nil {
-			return fmt.Errorf("error converting the %q of annotation %q of deployment of namespace %q, name %q from string to int", revision, updatedSecretRevisionAnno, d.Namespace, d.Name)
-		}
-		anno[updatedSecretRevisionAnno] = strconv.Itoa(i + 1)
+	annotations := d.Spec.Template.GetObjectMeta().GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
 	}
-	d.Spec.Template.SetAnnotations(anno)
+	annotations[SecretUpdateAnnotation] = r.clock.Now().String()
+	d.Spec.Template.SetAnnotations(annotations)
 	_, err := r.KubeClientSet.AppsV1().Deployments(d.Namespace).Update(d)
 	if err != nil {
 		return fmt.Errorf("failed to update deployment: %v", err)
