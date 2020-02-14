@@ -116,7 +116,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 			return pubSubPushCloudEvent(map[string]string{
 				"attribute1":        "value1",
 				"Invalid-Attrib#$^": "value2",
-			}, "\"test data\"")
+			}, "\"InRlc3QgZGF0YSI=\"")
 		},
 	}, {
 		name: "Push mode with no attributes",
@@ -126,7 +126,7 @@ func TestConvertCloudPubSub(t *testing.T) {
 		},
 		sendMode: Push,
 		wantEventFn: func() *cloudevents.Event {
-			return pubSubPushCloudEvent(nil, "\"test data\"")
+			return pubSubPushCloudEvent(nil, "\"InRlc3QgZGF0YSI=\"")
 		},
 	}}
 

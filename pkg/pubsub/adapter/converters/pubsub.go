@@ -18,7 +18,6 @@ package converters
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -60,16 +59,7 @@ func convertPubSub(ctx context.Context, msg *cepubsub.Message, sendMode ModeType
 			ID:          event.ID(),
 			Attributes:  msg.Attributes,
 			PublishTime: event.Time(),
-		}
-
-		var raw json.RawMessage
-		if err := event.DataAs(&raw); err != nil {
-			logger.Desugar().Debug("Failed to get data as raw json, using as is.", zap.Error(err))
-			// Use data as a byte slice.
-			msg.Data = event.Data
-		} else {
-			// Use data as a raw message.
-			msg.Data = raw
+			Data:        event.Data,
 		}
 
 		if err := event.SetData(&PushMessage{
