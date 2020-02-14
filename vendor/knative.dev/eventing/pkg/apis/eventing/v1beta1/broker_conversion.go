@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 The Knative Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"context"
+	"fmt"
+
+	"knative.dev/pkg/apis"
 )
 
-const (
-	DefaultSecretName = "google-cloud-key"
-	defaultSecretKey  = "key.json"
-)
+// ConvertUp implements apis.Convertible
+func (source *Broker) ConvertUp(ctx context.Context, sink apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", sink)
+}
 
-// DefaultGoogleCloudSecretSelector is the default secret selector used to load
-// the creds for the objects that will auth with Google Cloud.
-func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: DefaultSecretName,
-		},
-		Key: defaultSecretKey,
-	}
+// ConvertDown implements apis.Convertible
+func (sink *Broker) ConvertDown(ctx context.Context, source apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", source)
 }

@@ -110,6 +110,7 @@ rules:
   resources:
     - configmaps
     - pods # For reading termination messages
+    - secrets
   verbs: &readOnly
     - get
     - list
