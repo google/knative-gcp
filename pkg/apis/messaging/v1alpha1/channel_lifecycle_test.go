@@ -258,7 +258,7 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 func ReadyTopicStatus() *v1alpha1.TopicStatus {
 	ts := &v1alpha1.TopicStatus{}
 	ts.InitializeConditions()
-	ts.MarkDeployed()
+	ts.MarkPublisherDeployed()
 	ts.MarkTopicReady()
 	url, _ := apis.ParseURL("http://testchannel.mynamespace.svc.cluster.local/")
 	ts.SetAddress(url)
