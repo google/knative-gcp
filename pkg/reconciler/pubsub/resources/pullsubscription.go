@@ -17,6 +17,8 @@ limitations under the License.
 package resources
 
 import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -49,7 +51,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 	}
 
 	pubsubSecret := args.Spec.Secret
-	if args.Spec.PubSubSecret != nil {
+	if args.Spec.PubSubSecret != nil && !equality.Semantic.DeepEqual(args.Spec.PubSubSecret, &corev1.SecretKeySelector{}){
 		pubsubSecret = args.Spec.PubSubSecret
 	}
 

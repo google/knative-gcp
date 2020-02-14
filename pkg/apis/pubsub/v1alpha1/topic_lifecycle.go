@@ -17,8 +17,10 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/serving/pkg/apis/serving/v1"
 )
 
 // GetCondition returns the condition currently associated with the given type,
@@ -58,25 +60,44 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	}
 }
 
-func (ts *TopicStatus) PropagatePublisherStatus(ready *apis.Condition) {
+func (ts *TopicStatus) PropagatePublisherStatus(ss *v1.ServiceStatus) {
+	sc := ss.GetCondition(apis.ConditionReady)
+	if sc == nil {
+		ts.MarkPublisherNotConfigured()
+		return
+	}
+
 	switch {
-	case ready == nil:
-		ts.MarkNotDeployed("PublisherStatus", "Publisher has no Ready type status")
-	case ready.IsTrue():
-		ts.MarkDeployed()
-	case ready.IsFalse():
-		ts.MarkNotDeployed(ready.Reason, ready.Message)
+	case sc.Status == corev1.ConditionUnknown:
+		ts.MarkPublisherUnknown(sc.Reason, sc.Message)
+	case sc.Status == corev1.ConditionTrue:
+		ts.MarkPublisherDeployed()
+	case sc.Status == corev1.ConditionFalse:
+		ts.MarkPublisherNotDeployed(sc.Reason, sc.Message)
+	default:
+		ts.MarkPublisherUnknown("TopicUnknown", "The status of Topic is invalid: %v", sc.Status)
 	}
 }
 
-// MarkDeployed sets the condition that the publisher has been deployed.
-func (ts *TopicStatus) MarkDeployed() {
+// MarkPublisherDeployed sets the condition that the publisher has been deployed.
+func (ts *TopicStatus) MarkPublisherDeployed() {
 	topicCondSet.Manage(ts).MarkTrue(TopicConditionPublisherReady)
 }
 
-// MarkNotDeployed sets the condition that the publisher has not been deployed.
-func (ts *TopicStatus) MarkNotDeployed(reason, messageFormat string, messageA ...interface{}) {
+// MarkPublisherUnknown sets the condition that the status of publisher is Unknown.
+func (ts *TopicStatus) MarkPublisherUnknown(reason, messageFormat string, messageA ...interface{}) {
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, reason, messageFormat, messageA...)
+}
+
+// MarkPublisherNotDeployed sets the condition that the publisher has not been deployed.
+func (ts *TopicStatus) MarkPublisherNotDeployed(reason, messageFormat string, messageA ...interface{}) {
 	topicCondSet.Manage(ts).MarkFalse(TopicConditionPublisherReady, reason, messageFormat, messageA...)
+}
+
+// MarkPublisherNotConfigured changes the PublisherReady condition to be unknown to reflect
+// that the Publisher does not yet have a Status.
+func (ts *TopicStatus) MarkPublisherNotConfigured() {
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, "PublisherNotConfigured","Publisher has not yet been reconciled")
 }
 
 // MarkTopicReady sets the condition that the topic has been created.

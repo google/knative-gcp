@@ -20,9 +20,9 @@ metadata:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
   annotations:
-    registry.cloud.google.com/eventTypes: |
+    registry.knative.dev/eventTypes: |
       [
-        {"type", "com.google.cloud.auditlog.event", "schema", "type.googleapis.com/google.logging.v2.LogEntry", "description", "Common audit log event type for all Google Cloud Platform API operations." }
+        {"type": "com.google.cloud.auditlog.event", "schema": "type.googleapis.com/google.logging.v2.LogEntry", "description": "Common audit log event type for all Google Cloud Platform API operations." }
       ]
   name: cloudauditlogssources.events.cloud.google.com
 spec:
