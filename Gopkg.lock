@@ -407,14 +407,6 @@
   version = "v1.0.4"
 
 [[projects]]
-  branch = "master"
-  digest = "1:0e9bfc47ab9941ecc3344e580baca5deb4091177e84dd9773b48b38ec26b93d5"
-  name = "github.com/mattbaird/jsonpatch"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "81af80346b1a01caae0cbc27fd3c1ba5b11e189f"
-
-[[projects]]
   digest = "1:5985ef4caf91ece5d54817c11ea25f182697534f8ae6521eadcd628c142ac4b6"
   name = "github.com/matttproud/golang_protobuf_extensions"
   packages = ["pbutil"]
@@ -744,6 +736,14 @@
   ]
   pruneopts = "NUT"
   revision = "90aeebe84374219b793ddaf02606e8d77a632028"
+
+[[projects]]
+  digest = "1:8392b5c29adedc5f85c66b48bb53b6c49dd91d8540f3cad5d43ef7277946718f"
+  name = "gomodules.xyz/jsonpatch"
+  packages = ["v2"]
+  pruneopts = "NUT"
+  revision = "e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849"
+  version = "v2.0.1"
 
 [[projects]]
   branch = "master"
@@ -1344,7 +1344,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3d77fdc1d9d56ca140a641d2b8ccca84df64f3ddc4929006726f490e91f1a3fa"
+  digest = "1:d727b4191a9182621e9b504a39281ff9d69a5da16ad721d05368781813ea5870"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/configs",
@@ -1421,11 +1421,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "1f0e962c7ad034abae7660316511559304a403bd"
+  revision = "9a9b28aadd6baeb3f83c1dfb9f1d938495ebaaaf"
 
 [[projects]]
   branch = "master"
-  digest = "1:c55e6286fda3f9eb8c3b983a8f0f01dcc1d11d0db718a783032c1821038eb749"
+  digest = "1:08f61d9c869f9ede5e90279575ac65a6147c190ef3ccc1cff2d38f9cf515353c"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1499,11 +1499,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "6a46689984134b93264f0315fa86f14c8119c238"
+  revision = "91a86d6aecdeaf91afe351e132c7c86047007563"
 
 [[projects]]
   branch = "master"
-  digest = "1:4f95d2e1c3434e07568b8428c35ccb9b8d14419597350e1e6093aa8654557d4c"
+  digest = "1:ac7808d642ab66317d8cbc2ba74320a21899d57de3bce731ffe2c6f540a8f3e9"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1554,7 +1554,7 @@
     "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "3b43eae05e8489a0d5b601e203ea8bd155998f69"
+  revision = "d161feb8979a6f44b950270f71faee45df70ea84"
 
 [[projects]]
   branch = "master"
