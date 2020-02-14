@@ -17,6 +17,8 @@ limitations under the License.
 package resources
 
 import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
@@ -32,7 +34,7 @@ func MakeTopic(namespace, name string, spec *duckv1alpha1.PubSubSpec, owner kmet
 	}
 
 	pubsubSecret := spec.Secret
-	if spec.PubSubSecret != nil {
+	if spec.PubSubSecret != nil && !equality.Semantic.DeepEqual(spec.PubSubSecret, &corev1.SecretKeySelector{}) {
 		pubsubSecret = spec.PubSubSecret
 	}
 

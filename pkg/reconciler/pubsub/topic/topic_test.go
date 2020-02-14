@@ -38,6 +38,7 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
@@ -298,7 +299,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
-		Name: "publisher has no ready type status",
+		Name: "publisher has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
@@ -318,7 +319,7 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
 		},
 		WantCreates: []runtime.Object{
-			newPublisher(false, false),
+			newPublisher(),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
@@ -334,221 +335,262 @@ func TestAllCases(t *testing.T) {
 				// Updates
 				WithInitTopicConditions,
 				WithTopicReady(testTopicID),
-				WithTopicNotDeployed("PublisherStatus", "Publisher has no Ready type status")),
+				WithTopicPublisherNotConfigured()),
 		}},
-	}, {
-		Name: "topic successfully reconciles and is ready",
-		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + topicName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-		},
-		WithReactors: []clientgotesting.ReactionFunc{
-			ProvideResource("create", "services", newPublisher(true, true)),
-		},
-		WantCreates: []runtime.Object{
-			newPublisher(false, false),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				// Updates
-				WithInitTopicConditions,
-				WithTopicReady(testTopicID),
-				WithTopicDeployed,
-				WithTopicAddress(testTopicURI)),
-		}},
-	}, {
-		Name: "topic successfully reconciles and reuses existing publisher",
-		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-			),
-			newSink(),
-			newSecret(),
-			newPublisher(true, true),
-			NewService(topicName+"-topic", testNS,
-				WithServiceOwnerReferences(ownerReferences()),
-				WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
-				WithServicePorts(servicePorts())),
-		},
-		Key: testNS + "/" + topicName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-		},
-		WithReactors: []clientgotesting.ReactionFunc{},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicProjectID(testProject),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				// Updates
-				WithInitTopicConditions,
-				WithTopicReady(testTopicID),
-				WithTopicDeployed,
-				WithTopicAddress(testTopicURI)),
-		}},
-	}, {
-		Name: "delete topic - policy CreateNoDelete",
-		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				WithTopicDeleted,
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + topicName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, ""),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateNoDelete"),
-				WithInitTopicConditions,
-				WithTopicDeleted),
-		}},
-	}, {
-		Name: "delete topic - policy CreateDelete",
-		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateDelete"),
-				WithTopicTopicID(topicName),
-				WithTopicDeleted,
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + topicName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, ""),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateDelete"),
-				WithInitTopicConditions,
-				WithTopicNoTopic("TopicDeleted", fmt.Sprintf("Successfully deleted Pub/Sub topic: %s", topicName)),
-				WithTopicDeleted),
-		}},
-	}, {
-		Name: "fail to delete - policy CreateDelete",
-		Objects: []runtime.Object{
-			NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateDelete"),
-				WithTopicTopicID(topicName),
-				WithTopicDeleted,
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + topicName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "delete-topic-induced-error"),
-		},
-		OtherTestData: map[string]interface{}{
-			"topic": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists:    true,
-					DeleteErr: errors.New("delete-topic-induced-error"),
+	},
+		{
+			Name: "the status of publisher is false",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+				),
+				newSink(),
+				newSecret(),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				ProvideResource("create", "services", makeFalseStatusPublisher("PublisherNotDeployed", "PublisherNotDeployed")),
+			},
+			WantCreates: []runtime.Object{
+				newPublisher(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicProjectID(testProject),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+					// Updates
+					WithInitTopicConditions,
+					WithTopicReady(testTopicID),
+					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed")),
+			}},
+		}, {
+			Name: "the status of publisher is unknown",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+				),
+				newSink(),
+				newSecret(),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				ProvideResource("create", "services", makeUnknownStatusPublisher("PublisherUnknown", "PublisherUnknown")),
+			},
+			WantCreates: []runtime.Object{
+				newPublisher(),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicProjectID(testProject),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+					// Updates
+					WithInitTopicConditions,
+					WithTopicReady(testTopicID),
+					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
+			}},
+		}, {
+			Name: "topic successfully reconciles and reuses existing publisher",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+				),
+				newSink(),
+				newSecret(),
+				makeReadyPublisher(),
+				NewService(topicName+"-topic", testNS,
+					WithServiceOwnerReferences(ownerReferences()),
+					WithServiceLabels(resources.GetLabels(controllerAgentName, topicName)),
+					WithServicePorts(servicePorts())),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicProjectID(testProject),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+					// Updates
+					WithInitTopicConditions,
+					WithTopicReady(testTopicID),
+					WithTopicPublisherDeployed,
+					WithTopicAddress(testTopicURI)),
+			}},
+		}, {
+			Name: "delete topic - policy CreateNoDelete",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithTopicDeleted,
+				),
+				newSink(),
+				newSecret(),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, ""),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateNoDelete"),
+					WithInitTopicConditions,
+					WithTopicDeleted),
+			}},
+		}, {
+			Name: "delete topic - policy CreateDelete",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateDelete"),
+					WithTopicTopicID(topicName),
+					WithTopicDeleted,
+				),
+				newSink(),
+				newSecret(),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, ""),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateDelete"),
+					WithInitTopicConditions,
+					WithTopicNoTopic("TopicDeleted", fmt.Sprintf("Successfully deleted Pub/Sub topic: %s", topicName)),
+					WithTopicDeleted),
+			}},
+		}, {
+			Name: "fail to delete - policy CreateDelete",
+			Objects: []runtime.Object{
+				NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateDelete"),
+					WithTopicTopicID(topicName),
+					WithTopicDeleted,
+				),
+				newSink(),
+				newSecret(),
+			},
+			Key: testNS + "/" + topicName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "InternalError", "delete-topic-induced-error"),
+			},
+			OtherTestData: map[string]interface{}{
+				"topic": gpubsub.TestClientData{
+					TopicData: gpubsub.TestTopicData{
+						Exists:    true,
+						DeleteErr: errors.New("delete-topic-induced-error"),
+					},
 				},
 			},
-		},
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewTopic(topicName, testNS,
-				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithTopicPropagationPolicy("CreateDelete"),
-				WithInitTopicConditions,
-				WithTopicTopicID(topicName),
-				WithTopicNoTopic("TopicDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteTopicMsg, "delete-topic-induced-error")),
-				WithTopicDeleted),
-		}},
-	}}
+			WantErr: true,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewTopic(topicName, testNS,
+					WithTopicUID(topicUID),
+					WithTopicFinalizers(finalizerName),
+					WithTopicSpec(pubsubv1alpha1.TopicSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithTopicPropagationPolicy("CreateDelete"),
+					WithInitTopicConditions,
+					WithTopicTopicID(topicName),
+					WithTopicNoTopic("TopicDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteTopicMsg, "delete-topic-induced-error")),
+					WithTopicDeleted),
+			}},
+		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
@@ -673,7 +715,42 @@ func servicePorts() []corev1.ServicePort {
 	return svcPorts
 }
 
-func newPublisher(get, done bool) runtime.Object {
+func makeReadyPublisher() *servingv1.Service {
+	pub := newPublisher()
+	pub.Status.Conditions = []apis.Condition{{
+		Type:   apis.ConditionReady,
+		Status: "True",
+	}}
+	uri, _ := apis.ParseURL(testTopicURI)
+	pub.Status.Address = &duckv1.Addressable{
+		URL: uri,
+	}
+	return pub
+}
+
+func makeUnknownStatusPublisher(reason, message string) *servingv1.Service {
+	pub := newPublisher()
+	pub.Status.Conditions = []apis.Condition{{
+		Type:    apis.ConditionReady,
+		Status:  "Unknown",
+		Reason:  reason,
+		Message: message,
+	}}
+	return pub
+}
+
+func makeFalseStatusPublisher(reason, message string) *servingv1.Service {
+	pub := newPublisher()
+	pub.Status.Conditions = []apis.Condition{{
+		Type:    apis.ConditionReady,
+		Status:  "False",
+		Reason:  reason,
+		Message: message,
+	}}
+	return pub
+}
+
+func newPublisher() *servingv1.Service {
 	topic := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
@@ -686,23 +763,5 @@ func newPublisher(get, done bool) runtime.Object {
 		Topic:  topic,
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
-	pub := resources.MakePublisher(args)
-	if get {
-		if done {
-			pub.Status.Conditions = []apis.Condition{{
-				Type:   apis.ConditionReady,
-				Status: "True",
-			}}
-			uri, _ := apis.ParseURL(testTopicURI)
-			pub.Status.Address = &duckv1.Addressable{
-				URL: uri,
-			}
-		} else {
-			pub.Status.Conditions = []apis.Condition{{
-				Type:   apis.ConditionReady,
-				Status: "Unknown",
-			}}
-		}
-	}
-	return pub
+	return resources.MakePublisher(args)
 }
