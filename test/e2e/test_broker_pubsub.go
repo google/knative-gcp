@@ -110,16 +110,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// Create the PubSub source.
-	// TODO(nlopezgi): consider refactoring this code as its very similar to the one in
-	// test_pubsub.go:CloudPubSubSourceWithTargetTestImpl
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
-		kngcptesting.WithCloudPubSubSourceSink(lib.ServiceGVK, targetName),
-		kngcptesting.WithCloudPubSubSourceTopic(topicName),
-		kngcptesting.WithCloudPubSubSourceSinkURI(&url))
-
-	client.CreatePubSubOrFail(eventsPubsub)
-
-	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
+	lib.MakePubSubOrDie(t, client, lib.ServiceGVK, psName, targetName, topicName, kngcptesting.WithCloudPubSubSourceSinkURI(&url))
 
 	topic := lib.GetTopic(t, topicName)
 
@@ -134,34 +125,11 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	if err != nil {
 		t.Logf("%s", err)
 	}
-	t.Logf("check job is done")
-	// Check if resp CloudEvent hits the target Service.
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
-	if err != nil {
-		t.Error(err)
-	}
-	t.Logf("Last term message => %s", msg)
 
-	if msg != "" {
-		out := &lib.TargetOutput{}
-		if err := json.Unmarshal([]byte(msg), out); err != nil {
-			t.Error(err)
-		}
-		if !out.Success {
-			// Log the output pods.
-			if logs, err := client.LogsFor(client.Namespace, psName, lib.CloudPubSubSourceTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("pubsub: %+v", logs)
-			}
-			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("job: %s\n", logs)
-			}
-			t.Fail()
-		}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
 	}
 
 	// TODO(nlopezgi): define if we want to assert StackDriver metrics here. CloudPubSubSourceWithTargetTestImpl can do so, but the test is currently disabled, so its unclear whether we want to replicate that functionality here.
