@@ -14,28 +14,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pullsubscription
+// TODO better package name?
+package k8s
 
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
 
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
-
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 )
 
 const (
@@ -45,6 +47,8 @@ const (
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
+
+	finalizerName = controllerAgentName
 )
 
 type envConfig struct {
@@ -74,24 +78,37 @@ func NewController(
 	}
 
 	r := &Reconciler{
-		PubSubBase:             pubsubBase,
-		deploymentLister:       deploymentInformer.Lister(),
-		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
-		receiveAdapterImage:    env.ReceiveAdapter,
-		createClientFn:         gpubsub.NewClient,
+		Base: &psreconciler.Base{
+			PubSubBase:             pubsubBase,
+			DeploymentLister:       deploymentInformer.Lister(),
+			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
+			ReceiveAdapterImage:    env.ReceiveAdapter,
+			CreateClientFn:         gpubsub.NewClient,
+			ControllerAgentName:    controllerAgentName,
+			FinalizerName:          finalizerName,
+		},
 	}
 
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
+	notKedaScaler := pkgreconciler.Not(onlyKedaScaler)
+
+	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
+		FilterFunc: notKedaScaler,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	}
+	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(pullSubscriptionHandler, reconciler.DefaultResyncPeriod)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
+		FilterFunc: notKedaScaler,
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.ReconcileDataPlaneFn = r.ReconcileDeployment
 
 	cmw.Watch(logging.ConfigMapName(), r.UpdateFromLoggingConfigMap)
 	cmw.Watch(metrics.ConfigMapName(), r.UpdateFromMetricsConfigMap)

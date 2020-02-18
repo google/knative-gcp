@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -38,7 +39,8 @@ const (
 )
 
 func (current *CloudPubSubSource) Validate(ctx context.Context) *apis.FieldError {
-	return current.Spec.Validate(ctx).ViaField("spec")
+	errs := current.Spec.Validate(ctx).ViaField("spec")
+	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldError {

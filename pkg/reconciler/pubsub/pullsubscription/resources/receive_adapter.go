@@ -100,7 +100,8 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 			Name:            GenerateSubscriptionName(args.Source),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
-			Annotations:     map[string]string{},
+			// copy the source annotations so that the appropriate reconciler is called.
+			Annotations: args.Source.Annotations,
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
@@ -118,6 +119,11 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 						Env: []corev1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: credsFile,
+						}, {
+							// Needed for Keda scaling.
+							// TODO set it only when using Keda.
+							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: secret},
 						}, {
 							Name:  "PROJECT_ID",
 							Value: args.Source.Spec.Project,

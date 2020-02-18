@@ -54,7 +54,7 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
-	// This brings in CloudEventOverrides and Sink.
+	// inherits duckv1.SourceSpec.
 	duckv1.SourceSpec `json:",inline"`
 
 	// Secret is the credential to use to create and poll the PullSubscription
@@ -109,16 +109,6 @@ type PullSubscriptionSpec struct {
 	AdapterType string `json:"adapterType,omitempty"`
 }
 
-// CloudEventOverrides defines arguments for a Source that control the output
-// format of the CloudEvents produced by the Source.
-type CloudEventOverrides struct {
-	// Extensions specify what attribute are added or overridden on the
-	// outbound event. Each `Extensions` key-value pair are set on the event as
-	// an attribute extension independently.
-	// +optional
-	Extensions map[string]string `json:"extensions,omitempty"`
-}
-
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.
 func (ps PullSubscriptionSpec) GetAckDeadline() time.Duration {
 	if ps.AckDeadline != nil {
@@ -165,7 +155,7 @@ const (
 	PullSubscriptionConditionSinkProvided apis.ConditionType = "SinkProvided"
 
 	// PullSubscriptionConditionDeployed has status True when the PullSubscription has
-	// had its receive adapter deployment created.
+	// had its data plane resource(s) created.
 	PullSubscriptionConditionDeployed apis.ConditionType = "Deployed"
 
 	// PullSubscriptionConditionSubscribed has status True when a Google Cloud
@@ -222,4 +212,9 @@ type PullSubscriptionList struct {
 // GetGroupVersionKind returns the GroupVersionKind.
 func (s *PullSubscription) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("PullSubscription")
+}
+
+// GetGroupVersionKind returns the GroupVersion.
+func (s *PullSubscription) GetGroupVersion() schema.GroupVersion {
+	return SchemeGroupVersion
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pullsubscription
+package k8s
 
 import (
 	"context"
@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -48,6 +47,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -587,7 +587,7 @@ func TestAllCases(t *testing.T) {
 					return false, nil, nil
 				}
 				attempts++
-				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+				return true, nil, apierrs.NewConflict(v1alpha1.GroupResource("foo"), "bar", errors.New("foo"))
 			},
 		},
 		WantEvents: []string{
@@ -761,14 +761,20 @@ func TestAllCases(t *testing.T) {
 		pubsubBase := &pubsub.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
-		return &Reconciler{
-			PubSubBase:             pubsubBase,
-			deploymentLister:       listers.GetDeploymentLister(),
-			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
-			uriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
-			receiveAdapterImage:    testImage,
-			createClientFn:         gpubsub.TestClientCreator(testData["ps"]),
+		r := &Reconciler{
+			Base: &psreconciler.Base{
+				PubSubBase:             pubsubBase,
+				DeploymentLister:       listers.GetDeploymentLister(),
+				PullSubscriptionLister: listers.GetPullSubscriptionLister(),
+				UriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
+				ReceiveAdapterImage:    testImage,
+				CreateClientFn:         gpubsub.TestClientCreator(testData["ps"]),
+				ControllerAgentName:    controllerAgentName,
+				FinalizerName:          finalizerName,
+			},
 		}
+		r.ReconcileDataPlaneFn = r.ReconcileDeployment
+		return r
 	}))
 }
 
@@ -800,62 +806,6 @@ func receiveAdapterGVR() schema.GroupVersionResource {
 		Group:    "apps",
 		Version:  "v1",
 		Resource: "deployment",
-	}
-}
-
-func TestFinalizers(t *testing.T) {
-	testCases := []struct {
-		name     string
-		original sets.String
-		add      bool
-		want     sets.String
-	}{
-		{
-			name:     "empty, add",
-			original: sets.NewString(),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "empty, delete",
-			original: sets.NewString(),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, delete",
-			original: sets.NewString(finalizerName),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, add",
-			original: sets.NewString(finalizerName),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "existing two, delete",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      false,
-			want:     sets.NewString("someother"),
-		}, {
-			name:     "existing two, no change",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      true,
-			want:     sets.NewString(finalizerName, "someother"),
-		},
-	}
-
-	for _, tc := range testCases {
-		original := &pubsubv1alpha1.PullSubscription{}
-		original.Finalizers = tc.original.List()
-		if tc.add {
-			addFinalizer(original)
-		} else {
-			removeFinalizer(original)
-		}
-		has := sets.NewString(original.Finalizers...)
-		diff := has.Difference(tc.want)
-		if diff.Len() > 0 {
-			t.Errorf("%q failed, diff: %+v", tc.name, diff)
-		}
 	}
 }
 

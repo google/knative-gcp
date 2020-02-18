@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
-
-import (
-	"context"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-)
-
-func (s *CloudAuditLogsSource) SetDefaults(ctx context.Context) {
-	s.Spec.SetPubSubDefaults()
-	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
-}
+// Package k8s implements the Pub/Sub PullSubscription controller for K8s-based PullSubscriptions.
+package k8s

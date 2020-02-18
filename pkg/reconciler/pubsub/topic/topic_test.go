@@ -41,7 +41,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -453,7 +452,7 @@ func TestAllCases(t *testing.T) {
 						return false, nil, nil
 					}
 					attempts++
-					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+					return true, nil, apierrs.NewConflict(pubsubv1alpha1.Resource("foo"), "bar", errors.New("foo"))
 				},
 			},
 			WantCreates: []runtime.Object{

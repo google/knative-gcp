@@ -1344,7 +1344,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d727b4191a9182621e9b504a39281ff9d69a5da16ad721d05368781813ea5870"
+  digest = "1:31494622d7b9aa1e81c125758a79855473615c9b4cfbb1e387e4fcb4c2b76f51"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/configs",
@@ -1393,6 +1393,7 @@
     "pkg/client/listers/sources/v1alpha1",
     "pkg/configmap",
     "pkg/defaultchannel",
+    "pkg/duck",
     "pkg/kncloudevents",
     "pkg/legacyclient/clientset/versioned",
     "pkg/legacyclient/clientset/versioned/fake",
@@ -1404,6 +1405,7 @@
     "pkg/legacyclient/listers/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
+    "pkg/reconciler/names",
     "pkg/reconciler/namespace/resources",
     "pkg/reconciler/testing",
     "pkg/tracing",
@@ -1425,7 +1427,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:08f61d9c869f9ede5e90279575ac65a6147c190ef3ccc1cff2d38f9cf515353c"
+  digest = "1:6e2169542b76688fe02763aee6b53dedc9d71acb8608705393c4230ffae94e68"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1437,6 +1439,7 @@
     "changeset",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
+    "client/injection/ducks/duck/v1alpha1/addressable",
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
     "client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration",
@@ -1500,7 +1503,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "91a86d6aecdeaf91afe351e132c7c86047007563"
+  revision = "1cc7b7152937735a29c9d6fdaf3b244684aa850e"
 
 [[projects]]
   branch = "master"
@@ -1667,6 +1670,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
+    "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
@@ -1720,6 +1724,7 @@
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
     "knative.dev/pkg/tracing",
     "knative.dev/pkg/tracing/config",
+    "knative.dev/pkg/tracker",
     "knative.dev/pkg/webhook",
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",

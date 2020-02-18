@@ -26,7 +26,8 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
+	pullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/k8s"
+	kedapullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic"
 
 	"knative.dev/pkg/injection/sharedmain"
@@ -39,6 +40,7 @@ func main() {
 		scheduler.NewController,
 		pubsub.NewController,
 		pullsubscription.NewController,
+		kedapullsubscription.NewController,
 		topic.NewController,
 		channel.NewController,
 		deployment.NewController,
