@@ -66,7 +66,14 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t, client, brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName)
+	u := createBrokerWithPubSubChannel(t,
+		client,
+		brokerName,
+		dummyTriggerName,
+		kserviceName,
+		respTriggerName,
+		targetName,
+	)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -104,13 +111,27 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t, client, brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName)
+	u := createBrokerWithPubSubChannel(t,
+		client,
+		brokerName,
+		dummyTriggerName,
+		kserviceName,
+		respTriggerName,
+		targetName,
+	)
 	var url apis.URL = apis.URL(u)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(t, client, lib.ServiceGVK, psName, targetName, topicName, kngcptesting.WithCloudPubSubSourceSinkURI(&url))
+	lib.MakePubSubOrDie(t,
+		client,
+		lib.ServiceGVK,
+		psName,
+		targetName,
+		topicName,
+		kngcptesting.WithCloudPubSubSourceSinkURI(&url),
+	)
 
 	topic := lib.GetTopic(t, topicName)
 
@@ -131,11 +152,13 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
 	}
-
-	// TODO(nlopezgi): define if we want to assert StackDriver metrics here. CloudPubSubSourceWithTargetTestImpl can do so, but the test is currently disabled, so its unclear whether we want to replicate that functionality here.
+	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
-func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string) url.URL {
+func createBrokerWithPubSubChannel(t *testing.T,
+	client *lib.Client,
+	brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string,
+) url.URL {
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()

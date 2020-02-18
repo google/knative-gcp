@@ -202,7 +202,7 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 	BrokerWithPubSubChannelTestImpl(t)
 }
 
-// TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
+// TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()

@@ -29,7 +29,12 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 )
 
-func MakePubSubOrDie(t *testing.T, client *Client, gvk metav1.GroupVersionKind, psName, targetName, topicName string, so ...kngcptesting.CloudPubSubSourceOption) {
+func MakePubSubOrDie(t *testing.T,
+	client *Client,
+	gvk metav1.GroupVersionKind,
+	psName, targetName, topicName string,
+	so ...kngcptesting.CloudPubSubSourceOption,
+) {
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(gvk, targetName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
