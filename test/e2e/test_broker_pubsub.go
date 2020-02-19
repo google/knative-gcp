@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"testing"
@@ -104,14 +105,12 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	makeTargetJobOrDie(client, targetName)
 
 	u := createBrokerWithPubSubChannel(t, client, targetName)
-
 	var url apis.URL = apis.URL(u)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(t,
-		client,
+	lib.MakePubSubOrDie(client,
 		lib.ServiceGVK,
 		psName,
 		targetName,
@@ -178,6 +177,73 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
+	}
+}
+
+func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	project := os.Getenv(lib.ProwProjectKey)
+
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	targetName := helpers.AppendRandomString(auditlogsName + "-target")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
+	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	// Create a target Job to receive the events.
+	lib.MakeAuditLogsJobOrDie(client, methodName, project, resourceName, serviceName, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the CloudAuditLogsSource.
+	lib.MakeAuditLogsOrDie(client,
+		auditlogsName,
+		methodName,
+		project,
+		resourceName,
+		serviceName,
+		targetName,
+		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
+	)
+
+	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
+	// Tried with 45 seconds but the test has been quite flaky.
+	time.Sleep(90 * time.Second)
+	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
+	defer deleteTopic()
+
+	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Last term message => %s", msg)
+
+	if msg != "" {
+		out := &lib.TargetOutput{}
+		if err := json.Unmarshal([]byte(msg), out); err != nil {
+			t.Error(err)
+		}
+		if !out.Success {
+			// Log the output cloudauditlogssource pods.
+			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("cloudauditlogssource: %+v", logs)
+			}
+			// Log the output of the target job pods.
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("job: %s\n", logs)
+			}
+			t.Fail()
+		}
 	}
 }
 

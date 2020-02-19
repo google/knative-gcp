@@ -45,7 +45,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(t, client, metav1.GroupVersionKind{
+	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
 		Version: "v1",
 		Kind:    "Service"}, psName, svcName, topic)
 
@@ -76,7 +76,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(t, client, lib.ServiceGVK, psName, targetName, topicName)
+	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName)
 
 	topic := lib.GetTopic(t, topicName)
 
