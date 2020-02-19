@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2020 The Knative Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +k8s:deepcopy-gen=package
-// Package config holds the typed objects that define the schemas for
-// assorted ConfigMap objects on which the Route controller depends.
-package config
+package v1beta1
+
+import (
+	"context"
+	"fmt"
+
+	"knative.dev/pkg/apis"
+)
+
+// ConvertUp implements apis.Convertible
+func (source *Subscription) ConvertUp(ctx context.Context, sink apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", sink)
+}
+
+// ConvertDown implements apis.Convertible
+func (sink *Subscription) ConvertDown(ctx context.Context, source apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", source)
+}
