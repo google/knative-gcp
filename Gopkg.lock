@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:e5f524de90a54f6c24b3604427dca2d595c5eb62ee58deeb942fab06451c6d2a"
+  digest = "1:3118732af9dc74f6a1a9e366fde67a872215deae8ba1e1c19003a4cdd584a39c"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     ".",
@@ -164,8 +164,7 @@
     "pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "3673e23532dccb38196f600eec7e8b7090ecfb12"
-  version = "v1.0.0"
+  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1344,7 +1343,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:31494622d7b9aa1e81c125758a79855473615c9b4cfbb1e387e4fcb4c2b76f51"
+  digest = "1:a27af002fdd32be997416c50173eecc0673cee794d0936c17132132faf20a02b"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/configs",
@@ -1393,7 +1392,6 @@
     "pkg/client/listers/sources/v1alpha1",
     "pkg/configmap",
     "pkg/defaultchannel",
-    "pkg/duck",
     "pkg/kncloudevents",
     "pkg/legacyclient/clientset/versioned",
     "pkg/legacyclient/clientset/versioned/fake",
@@ -1405,7 +1403,6 @@
     "pkg/legacyclient/listers/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
-    "pkg/reconciler/names",
     "pkg/reconciler/namespace/resources",
     "pkg/reconciler/testing",
     "pkg/tracing",
@@ -1423,11 +1420,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "9a9b28aadd6baeb3f83c1dfb9f1d938495ebaaaf"
+  revision = "d23a1ad4418e9b34f242b4012d32e9eddc57c4d8"
 
 [[projects]]
   branch = "master"
-  digest = "1:6e2169542b76688fe02763aee6b53dedc9d71acb8608705393c4230ffae94e68"
+  digest = "1:4d466bcd929b5ae71fddc9153076b396c5d05479f03b2ae6318c3433578205dc"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1439,7 +1436,6 @@
     "changeset",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
-    "client/injection/ducks/duck/v1alpha1/addressable",
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
     "client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration",
@@ -1503,11 +1499,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "1cc7b7152937735a29c9d6fdaf3b244684aa850e"
+  revision = "5d8a01d12cc825688b14117af294139fee2270eb"
 
 [[projects]]
   branch = "master"
-  digest = "1:ac7808d642ab66317d8cbc2ba74320a21899d57de3bce731ffe2c6f540a8f3e9"
+  digest = "1:ff37229d55307c6477f48254d97975b349c00ebb3bd23186394368f808038932"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1553,12 +1549,9 @@
     "pkg/client/listers/serving/v1",
     "pkg/client/listers/serving/v1alpha1",
     "pkg/client/listers/serving/v1beta1",
-    "pkg/gc",
-    "pkg/network",
-    "pkg/reconciler/route/config",
   ]
   pruneopts = "NUT"
-  revision = "d161feb8979a6f44b950270f71faee45df70ea84"
+  revision = "808199cba3d1a34eff97f90830b40077ec75fad7"
 
 [[projects]]
   branch = "master"
@@ -1670,7 +1663,6 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
-    "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
@@ -1724,7 +1716,6 @@
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
     "knative.dev/pkg/tracing",
     "knative.dev/pkg/tracing/config",
-    "knative.dev/pkg/tracker",
     "knative.dev/pkg/webhook",
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",
