@@ -19,22 +19,16 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"net/http"
-	"os"
 	"testing"
-	"time"
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
@@ -51,12 +45,9 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
-		kngcptesting.WithCloudPubSubSourceSink(metav1.GroupVersionKind{
-			Version: "v1",
-			Kind:    "Service"}, svcName),
-		kngcptesting.WithCloudPubSubSourceTopic(topic))
-	client.CreatePubSubOrFail(eventsPubsub)
+	lib.MakePubSubOrDie(t, client, metav1.GroupVersionKind{
+		Version: "v1",
+		Kind:    "Service"}, psName, svcName, topic)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
 
@@ -85,12 +76,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
-		kngcptesting.WithCloudPubSubSourceSink(lib.ServiceGVK, targetName),
-		kngcptesting.WithCloudPubSubSourceTopic(topicName))
-	client.CreatePubSubOrFail(eventsPubsub)
-
-	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
+	lib.MakePubSubOrDie(t, client, lib.ServiceGVK, psName, targetName, topicName)
 
 	topic := lib.GetTopic(t, topicName)
 
@@ -135,37 +121,6 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool) {
 
 	// Assert that we are actually sending event counts to StackDriver.
 	if assertMetrics {
-		sleepTime := 1 * time.Minute
-		t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
-		time.Sleep(sleepTime)
-
-		// If we reach this point, the projectID should have been set.
-		projectID := os.Getenv(lib.ProwProjectKey)
-		f := map[string]interface{}{
-			"metric.type":                 lib.EventCountMetricType,
-			"resource.type":               lib.GlobalMetricResourceType,
-			"metric.label.resource_group": lib.PubsubResourceGroup,
-			"metric.label.event_type":     v1alpha1.CloudPubSubSourcePublish,
-			"metric.label.event_source":   v1alpha1.CloudPubSubSourceEventSource(projectID, topicName),
-			"metric.label.namespace_name": client.Namespace,
-			"metric.label.name":           psName,
-			// We exit the target image before sending a response, thus check for 500.
-			"metric.label.response_code":       http.StatusInternalServerError,
-			"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusInternalServerError),
-		}
-
-		filter := metrics.StringifyStackDriverFilter(f)
-		t.Logf("Filter expression: %s", filter)
-
-		actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
-		if err != nil {
-			t.Errorf("failed to get stackdriver event count metric: %v", err)
-			t.Fail()
-		}
-		expectedCount := int64(1)
-		if *actualCount != expectedCount {
-			t.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
-			t.Fail()
-		}
+		lib.AssertMetrics(t, client, topicName, psName)
 	}
 }

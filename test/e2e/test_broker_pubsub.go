@@ -17,20 +17,25 @@ limitations under the License.
 package e2e
 
 import (
+	"context"
 	"encoding/json"
+	"net/url"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
@@ -61,6 +66,99 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
+	u := createBrokerWithPubSubChannel(t,
+		client,
+		brokerName,
+		dummyTriggerName,
+		kserviceName,
+		respTriggerName,
+		targetName,
+	)
+
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: u.String(),
+	}})
+	client.CreateJobOrFail(senderJob)
+
+	// Check if dummy CloudEvent is sent out.
+	if done := jobDone(client, senderName, t); !done {
+		t.Error("dummy event wasn't sent to broker")
+		t.Failed()
+	}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
+	}
+}
+
+func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	topicName, deleteTopic := lib.MakeTopicOrDie(t)
+	defer deleteTopic()
+
+	brokerName := helpers.AppendRandomString("pubsub")
+	dummyTriggerName := "dummy-broker-" + brokerName
+	psName := helpers.AppendRandomString(topicName + "-pubsub")
+	respTriggerName := "resp-broker-" + brokerName
+	kserviceName := helpers.AppendRandomString("kservice")
+	targetName := helpers.AppendRandomString(topicName + "-target")
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	u := createBrokerWithPubSubChannel(t,
+		client,
+		brokerName,
+		dummyTriggerName,
+		kserviceName,
+		respTriggerName,
+		targetName,
+	)
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the PubSub source.
+	lib.MakePubSubOrDie(t,
+		client,
+		lib.ServiceGVK,
+		psName,
+		targetName,
+		topicName,
+		kngcptesting.WithCloudPubSubSourceSinkURI(&url),
+	)
+
+	topic := lib.GetTopic(t, topicName)
+
+	r := topic.Publish(context.TODO(), &pubsub.Message{
+		Attributes: map[string]string{
+			"target": "falldown",
+		},
+		Data: []byte(`{"foo":bar}`),
+	})
+
+	_, err := r.Get(context.TODO())
+	if err != nil {
+		t.Logf("%s", err)
+	}
+
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
+	}
+	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
+}
+
+func createBrokerWithPubSubChannel(t *testing.T,
+	client *lib.Client,
+	brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string,
+) url.URL {
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
@@ -109,27 +207,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	if err != nil {
 		t.Error(err.Error())
 	}
-
-	// Just to make sure all resources are ready.
-	time.Sleep(5 * time.Second)
-
-	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
-		Name:  "BROKER_URL",
-		Value: u.String(),
-	}})
-	client.CreateJobOrFail(senderJob)
-
-	// Check if dummy CloudEvent is sent out.
-	if done := jobDone(client, senderName, t); !done {
-		t.Error("dummy event wasn't sent to broker")
-		t.Failed()
-	}
-	// Check if resp CloudEvent hits the target Service.
-	if done := jobDone(client, targetName, t); !done {
-		t.Error("resp event didn't hit the target pod")
-		t.Failed()
-	}
+	return u
 }
 
 func jobDone(client *lib.Client, podName string, t *testing.T) bool {
