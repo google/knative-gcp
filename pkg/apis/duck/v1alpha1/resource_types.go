@@ -24,13 +24,13 @@ import (
 	"knative.dev/pkg/apis/duck"
 )
 
-// GroupResource is an Implementable "duck type".
+// Resource is an Implementable "duck type".
 var _ duck.Implementable = (*Resource)(nil)
 
 // +genduck
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// GroupResource is a skeleton type wrapping all Kubernetes resources. It is typically used to watch
+// Resource is a skeleton type wrapping all Kubernetes resources. It is typically used to watch
 // arbitrary other resources. This is not a real resource.
 // TODO upstream to pkg
 type Resource struct {
@@ -39,7 +39,7 @@ type Resource struct {
 }
 
 var (
-	// Verify GroupResource resources meet duck contracts.
+	// Verify Resource resources meet duck contracts.
 	_ duck.Populatable = (*Resource)(nil)
 	_ apis.Listable    = (*Resource)(nil)
 )
@@ -68,7 +68,7 @@ func (*Resource) GetListType() runtime.Object {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ResourceList is a list of GroupResource resources
+// ResourceList is a list of Resource resources
 type ResourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
