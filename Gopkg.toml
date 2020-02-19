@@ -70,6 +70,10 @@ required = [
   name = "github.com/cloudevents/sdk-go"
   revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
 
+[[constraint]]
+  name = "github.com/kedacore/keda"
+  version = "1.2.0"
+
 [prune]
   go-tests = true
   unused-packages = true
