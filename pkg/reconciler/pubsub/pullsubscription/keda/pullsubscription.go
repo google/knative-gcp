@@ -93,8 +93,8 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	ref := tracker.Reference{
 		APIVersion: apiVersion,
 		Kind:       kind,
-		Namespace:  existing.Namespace,
-		Name:       resources.GenerateScaledObjectName(existing),
+		Name:       resources.GenerateScaledObjectName(src),
+		Namespace:  src.Namespace,
 	}
 	track := r.scaledObjectTracker.TrackInNamespace(src)
 
