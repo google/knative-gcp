@@ -1343,7 +1343,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a27af002fdd32be997416c50173eecc0673cee794d0936c17132132faf20a02b"
+  digest = "1:299c591249d0747f656dfbcfc22dc0f3a3489d016008b9e718346daf59fe35b9"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/configs",
@@ -1392,6 +1392,7 @@
     "pkg/client/listers/sources/v1alpha1",
     "pkg/configmap",
     "pkg/defaultchannel",
+    "pkg/duck",
     "pkg/kncloudevents",
     "pkg/legacyclient/clientset/versioned",
     "pkg/legacyclient/clientset/versioned/fake",
@@ -1403,6 +1404,7 @@
     "pkg/legacyclient/listers/legacysources/v1alpha1",
     "pkg/logconfig",
     "pkg/logging",
+    "pkg/reconciler/names",
     "pkg/reconciler/namespace/resources",
     "pkg/reconciler/testing",
     "pkg/tracing",
@@ -1436,6 +1438,7 @@
     "changeset",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
+    "client/injection/ducks/duck/v1alpha1/addressable",
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
     "client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration",
@@ -1663,6 +1666,7 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
+    "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/tracing",
@@ -1716,6 +1720,7 @@
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
     "knative.dev/pkg/tracing",
     "knative.dev/pkg/tracing/config",
+    "knative.dev/pkg/tracker",
     "knative.dev/pkg/webhook",
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",
