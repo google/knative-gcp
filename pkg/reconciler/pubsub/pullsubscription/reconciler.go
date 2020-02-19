@@ -123,7 +123,7 @@ func (r *Base) Reconcile(ctx context.Context, key string) error {
 	if equality.Semantic.DeepEqual(original.Finalizers, ps.Finalizers) {
 		// If we didn't change finalizers then don't call updateFinalizers.
 
-	} else if _, updated, fErr := r.UpdateFinalizers(ctx, ps); fErr != nil {
+	} else if _, updated, fErr := r.updateFinalizers(ctx, ps); fErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update PullSubscription finalizers", zap.Error(fErr))
 		r.Recorder.Eventf(ps, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update finalizers for PullSubscription %q: %v", ps.Name, fErr)
@@ -139,7 +139,7 @@ func (r *Base) Reconcile(ctx context.Context, key string) error {
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if uErr := r.UpdateStatus(ctx, original, ps); uErr != nil {
+	} else if uErr := r.updateStatus(ctx, original, ps); uErr != nil {
 		logging.FromContext(ctx).Desugar().Warn("Failed to update ps status", zap.Error(uErr))
 		r.Recorder.Eventf(ps, corev1.EventTypeWarning, "UpdateFailed",
 			"Failed to update status for PullSubscription %q: %v", ps.Name, uErr)
@@ -327,7 +327,7 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscrip
 	return nil
 }
 
-func (r *Base) UpdateStatus(ctx context.Context, original *v1alpha1.PullSubscription, desired *v1alpha1.PullSubscription) error {
+func (r *Base) updateStatus(ctx context.Context, original *v1alpha1.PullSubscription, desired *v1alpha1.PullSubscription) error {
 	existing := original.DeepCopy()
 	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
@@ -359,9 +359,9 @@ func (r *Base) UpdateStatus(ctx context.Context, original *v1alpha1.PullSubscrip
 	})
 }
 
-// UpdateFinalizers is a generic method for future compatibility with a
+// updateFinalizers is a generic method for future compatibility with a
 // reconciler SDK.
-func (r *Base) UpdateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
+func (r *Base) updateFinalizers(ctx context.Context, desired *v1alpha1.PullSubscription) (*v1alpha1.PullSubscription, bool, error) {
 	source, err := r.PullSubscriptionLister.PullSubscriptions(desired.Namespace).Get(desired.Name)
 	if err != nil {
 		return nil, false, err
