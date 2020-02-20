@@ -87,7 +87,11 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		return fmt.Errorf("unable to create dynamic client for ScaledObject")
 	}
 
-	so := resources.MakeScaledObject(ctx, existing, src)
+	so, err := resources.MakeScaledObject(ctx, existing, src)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Error creating ScaledObject", zap.Error(err))
+		return err
+	}
 
 	apiVersion, kind := resources.ScaledObjectGVK.ToAPIVersionAndKind()
 	ref := tracker.Reference{

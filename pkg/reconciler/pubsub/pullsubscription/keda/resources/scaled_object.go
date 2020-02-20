@@ -18,9 +18,11 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
+	"knative.dev/pkg/kmeta"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/ptr"
 	"strconv"
 
@@ -33,23 +35,29 @@ import (
 
 var (
 	ScaledObjectGVK = schema.GroupVersionKind{
-		Group:   "keda.k8s.io",
-		Version: "v1alpha1",
+		Group:   kedav1alpha1.SchemeGroupVersion.Group,
+		Version: kedav1alpha1.SchemeGroupVersion.Version,
 		Kind:    "ScaledObject",
 	}
 
-	KedaSchemeGroupVersion = schema.GroupVersion{Group: "keda.k8s.io", Version: "v1alpha1"}
+	KedaSchemeGroupVersion = kedav1alpha1.SchemeGroupVersion
 )
 
-func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullSubscription) *unstructured.Unstructured {
+func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullSubscription) (*unstructured.Unstructured, error) {
 
 	// These values should have already been validated in the webhook, and be valid ints. Not checking for errors.
-	minReplicaCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMinScaleAnnotation])
-	maxReplicateCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMaxScaleAnnotation])
-	cooldownPeriod, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation])
-	pollingInterval, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation])
+	minReplicaCount, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.AutoscalingMinScaleAnnotation], 10, 64)
+	maxReplicateCount, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.AutoscalingMaxScaleAnnotation], 10, 64)
+	cooldownPeriod, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation], 10, 64)
+	pollingInterval, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation], 10, 64)
+
+	apiVersion, kind := ScaledObjectGVK.ToAPIVersionAndKind()
 
 	so := kedav1alpha1.ScaledObject{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: ra.Namespace,
 			Name:      GenerateScaledObjectName(ps),
@@ -60,51 +68,32 @@ func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullS
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(ps)},
 		},
 		Spec: kedav1alpha1.ScaledObjectSpec{
-			MinReplicaCount: ptr.Int32(minReplicaCount),
-			MaxReplicaCount:
-
+			ScaleTargetRef: &kedav1alpha1.ObjectReference{
+				DeploymentName: ra.Name,
+			},
+			MinReplicaCount: ptr.Int32(int32(minReplicaCount)),
+			MaxReplicaCount: ptr.Int32(int32(maxReplicateCount)),
+			CooldownPeriod:  ptr.Int32(int32(cooldownPeriod)),
+			PollingInterval: ptr.Int32(int32(pollingInterval)),
+			Triggers: []kedav1alpha1.ScaleTriggers{{
+				Type: "gcp-pubsub",
+				Metadata: map[string]string{
+					"subscriptionSize": ps.Annotations[duckv1alpha1.KedaAutoscalingSubscriptionSizeAnnotation],
+					"subscriptionName": ps.Status.SubscriptionID,
+					"credentials":      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+				},
+			}},
 		},
 	}
 
-
-	so := &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "keda.k8s.io/v1alpha1",
-			"kind":       "ScaledObject",
-			"metadata": map[string]interface{}{
-				"namespace": ra.Namespace,
-				"name":      GenerateScaledObjectName(ps),
-				"labels": map[string]interface{}{
-					"deploymentName":                  ra.Name,
-					"events.cloud.google.com/ps-name": ps.Name,
-				},
-				"ownerReferences": []map[string]interface{}{{
-					"apiVersion":         "apps/v1",
-					"kind":               "Deployment",
-					"blockOwnerDeletion": true,
-					"controller":         true,
-					"name":               ps.Name,
-					"uid":                ps.UID,
-				}},
-			},
-			"spec": map[string]interface{}{
-				"scaleTargetRef": map[string]interface{}{
-					"deploymentName": ra.Name,
-				},
-				"minReplicaCount": minReplicaCount,
-				"maxReplicaCount": maxReplicateCount,
-				"cooldownPeriod":  cooldownPeriod,
-				"pollingInterval": pollingInterval,
-				"triggers": []map[string]interface{}{{
-					"type": "gcp-pubsub",
-					"metadata": map[string]interface{}{
-						"subscriptionSize": ps.Annotations[duckv1alpha1.KedaAutoscalingSubscriptionSizeAnnotation],
-						"subscriptionName": ps.Status.SubscriptionID,
-						"credentials":      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-					},
-				}},
-			},
-		},
+	raw, err := json.Marshal(so)
+	if err != nil {
+		return nil, err
 	}
-	return so
+	u := &unstructured.Unstructured{}
+	err = json.Unmarshal(raw, u)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }
