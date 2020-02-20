@@ -18,7 +18,6 @@ package keda
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -157,352 +156,351 @@ func newTransformer() *unstructured.Unstructured {
 func TestAllCases(t *testing.T) {
 	//attempts := 0
 	table := TableTest{{
-		Name: "bad workqueue key",
-		// Make sure Reconcile handles bad keys.
-		Key: "too/many/parts",
-	}, {
-		Name: "key not found",
-		// Make sure Reconcile handles good keys that don't exist.
-		Key: "foo/not-found",
-	}, {
-		Name: "cannot get sink",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-			),
-			newSecret(),
-		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError",
-				`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				// updates
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSinkNotFound(),
-			),
-		}},
-	}, {
-		Name: "create client fails",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "client-create-induced-error"),
-		},
-		WantErr: true,
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				CreateClientErr: errors.New("client-create-induced-error"),
+	//	Name: "bad workqueue key",
+	//	// Make sure Reconcile handles bad keys.
+	//	Key: "too/many/parts",
+	//}, {
+	//	Name: "key not found",
+	//	// Make sure Reconcile handles good keys that don't exist.
+	//	Key: "foo/not-found",
+	//}, {
+	//	Name: "cannot get sink",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//		),
+	//		newSecret(),
+	//	},
+	//	Key:     testNS + "/" + sourceName,
+	//	WantErr: true,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeWarning, "InternalError",
+	//			`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			// updates
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSinkNotFound(),
+	//		),
+	//	}},
+	//}, {
+	//	Name: "create client fails",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//		),
+	//		newSink(),
+	//		newSecret(),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+	//		Eventf(corev1.EventTypeWarning, "InternalError", "client-create-induced-error"),
+	//	},
+	//	WantErr: true,
+	//	OtherTestData: map[string]interface{}{
+	//		"ps": gpubsub.TestClientData{
+	//			CreateClientErr: errors.New("client-create-induced-error"),
+	//		},
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionProjectID(testProject),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+	//			WithPullSubscriptionTransformerURI(""),
+	//			WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
+	//	}},
+	//	WantPatches: []clientgotesting.PatchActionImpl{
+	//		patchFinalizers(testNS, sourceName, finalizerName),
+	//	},
+	//}, {
+	//	Name: "topic exists fails",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//		),
+	//		newSink(),
+	//		newSecret(),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeWarning, "InternalError", "topic-exists-induced-error"),
+	//	},
+	//	WantErr: true,
+	//	OtherTestData: map[string]interface{}{
+	//		"ps": gpubsub.TestClientData{
+	//			TopicData: gpubsub.TestTopicData{
+	//				ExistsErr: errors.New("topic-exists-induced-error"),
+	//			},
+	//		},
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionProjectID(testProject),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+	//			WithPullSubscriptionTransformerURI(""),
+	//			WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
+	//	}},
+	//}, {
+	//	Name: "topic does not exist",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//		),
+	//		newSink(),
+	//		newSecret(),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist", testTopicID),
+	//	},
+	//	WantErr: true,
+	//	OtherTestData: map[string]interface{}{
+	//		"ps": gpubsub.TestClientData{
+	//			TopicData: gpubsub.TestTopicData{
+	//				Exists: false,
+	//			},
+	//		},
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionProjectID(testProject),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+	//			WithPullSubscriptionTransformerURI(""),
+	//			WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
+	//	}},
+	//}, {
+	//	Name: "subscription exists fails",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//		),
+	//		newSink(),
+	//		newSecret(),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeWarning, "InternalError", "subscription-exists-induced-error"),
+	//	},
+	//	WantErr: true,
+	//	OtherTestData: map[string]interface{}{
+	//		"ps": gpubsub.TestClientData{
+	//			SubscriptionData: gpubsub.TestSubscriptionData{
+	//				ExistsErr: errors.New("subscription-exists-induced-error"),
+	//			},
+	//		},
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionProjectID(testProject),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+	//			WithPullSubscriptionTransformerURI(""),
+	//			WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
+	//	}},
+	//}, {
+	//	Name: "create subscription fails",
+	//	Objects: []runtime.Object{
+	//		NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//		),
+	//		newSink(),
+	//		newSecret(),
+	//	},
+	//	Key: testNS + "/" + sourceName,
+	//	WantEvents: []string{
+	//		Eventf(corev1.EventTypeWarning, "InternalError", "subscription-create-induced-error"),
+	//	},
+	//	WantErr: true,
+	//	OtherTestData: map[string]interface{}{
+	//		"ps": gpubsub.TestClientData{
+	//			TopicData: gpubsub.TestTopicData{
+	//				Exists: true,
+	//			},
+	//			CreateSubscriptionErr: errors.New("subscription-create-induced-error"),
+	//		},
+	//	},
+	//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+	//		Object: NewPullSubscription(sourceName, testNS,
+	//			WithPullSubscriptionUID(sourceUID),
+	//			WithPullSubscriptionFinalizers(finalizerName),
+	//			WithPullSubscriptionObjectMetaGeneration(generation),
+	//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+	//				Project: testProject,
+	//				Topic:   testTopicID,
+	//				Secret:  &secret,
+	//			}),
+	//			WithInitPullSubscriptionConditions,
+	//			WithPullSubscriptionProjectID(testProject),
+	//			WithPullSubscriptionSink(sinkGVK, sinkName),
+	//			WithPullSubscriptionMarkSink(sinkURI),
+	//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+	//			WithPullSubscriptionTransformerURI(""),
+	//			WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
+	//	}},
+	//	}, {
+			Name: "successfully created subscription",
+			Objects: []runtime.Object{
+				NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionMarkSink(sinkURI),
+				),
+				newSink(),
+				newSecret(),
 			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, finalizerName),
-		},
-	}, {
-		Name: "topic exists fails",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "topic-exists-induced-error"),
-		},
-		WantErr: true,
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					ExistsErr: errors.New("topic-exists-induced-error"),
+			Key: testNS + "/" + sourceName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
+				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
+				Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			},
+			OtherTestData: map[string]interface{}{
+				"ps": gpubsub.TestClientData{
+					TopicData: gpubsub.TestTopicData{
+						Exists: true,
+					},
 				},
 			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
-		}},
-	}, {
-		Name: "topic does not exist",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist", testTopicID),
-		},
-		WantErr: true,
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: false,
-				},
+			WantCreates: []runtime.Object{
+				newReceiveAdapter(context.Background(), testImage),
 			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
-		}},
-	}, {
-		Name: "subscription exists fails",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "subscription-exists-induced-error"),
-		},
-		WantErr: true,
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					ExistsErr: errors.New("subscription-exists-induced-error"),
-				},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewPullSubscription(sourceName, testNS,
+					WithPullSubscriptionUID(sourceUID),
+					WithPullSubscriptionObjectMetaGeneration(generation),
+					WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+						Project: testProject,
+						Topic:   testTopicID,
+						Secret:  &secret,
+					}),
+					WithInitPullSubscriptionConditions,
+					WithPullSubscriptionProjectID(testProject),
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionMarkSink(sinkURI),
+					WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+					WithPullSubscriptionTransformerURI(""),
+					// Updates
+					WithPullSubscriptionStatusObservedGeneration(generation),
+					WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+					WithPullSubscriptionMarkDeployed,
+				),
+			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, sourceName, finalizerName),
 			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
-		}},
-	}, {
-		Name: "create subscription fails",
-		Objects: []runtime.Object{
-			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-			),
-			newSink(),
-			newSecret(),
-		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "subscription-create-induced-error"),
-		},
-		WantErr: true,
-		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				CreateSubscriptionErr: errors.New("subscription-create-induced-error"),
-			},
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
-		}},
-		// TODO fix
-		//}, {
-		//	Name: "successfully created subscription",
-		//	Objects: []runtime.Object{
-		//		NewPullSubscription(sourceName, testNS,
-		//			WithPullSubscriptionUID(sourceUID),
-		//			WithPullSubscriptionObjectMetaGeneration(generation),
-		//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-		//				Project: testProject,
-		//				Topic:   testTopicID,
-		//				Secret:  &secret,
-		//			}),
-		//			WithInitPullSubscriptionConditions,
-		//			WithPullSubscriptionSink(sinkGVK, sinkName),
-		//			WithPullSubscriptionMarkSink(sinkURI),
-		//		),
-		//		newSink(),
-		//		newSecret(),
-		//	},
-		//	Key: testNS + "/" + sourceName,
-		//	WantEvents: []string{
-		//		Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-		//		Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
-		//		Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
-		//	},
-		//	OtherTestData: map[string]interface{}{
-		//		"ps": gpubsub.TestClientData{
-		//			TopicData: gpubsub.TestTopicData{
-		//				Exists: true,
-		//			},
-		//		},
-		//	},
-		//	WantCreates: []runtime.Object{
-		//		newReceiveAdapter(context.Background(), testImage),
-		//	},
-		//	WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-		//		Object: NewPullSubscription(sourceName, testNS,
-		//			WithPullSubscriptionUID(sourceUID),
-		//			WithPullSubscriptionObjectMetaGeneration(generation),
-		//			WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-		//				Project: testProject,
-		//				Topic:   testTopicID,
-		//				Secret:  &secret,
-		//			}),
-		//			WithInitPullSubscriptionConditions,
-		//			WithPullSubscriptionProjectID(testProject),
-		//			WithPullSubscriptionSink(sinkGVK, sinkName),
-		//			WithPullSubscriptionMarkSink(sinkURI),
-		//			WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-		//			WithPullSubscriptionTransformerURI(""),
-		//			// Updates
-		//			WithPullSubscriptionStatusObservedGeneration(generation),
-		//			WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-		//			WithPullSubscriptionMarkDeployed,
-		//		),
-		//	}},
-		//	WantPatches: []clientgotesting.PatchActionImpl{
-		//		patchFinalizers(testNS, sourceName, finalizerName),
-		//	},
 		//}, {
 		//	Name: "successful create - reuse existing receive adapter - match",
 		//	Objects: []runtime.Object{

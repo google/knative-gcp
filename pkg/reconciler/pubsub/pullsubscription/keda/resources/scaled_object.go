@@ -24,6 +24,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	keda_v1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
 	"k8s.io/api/apps/v1"
 )
 
@@ -38,6 +39,9 @@ var (
 )
 
 func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullSubscription) *unstructured.Unstructured {
+
+
+
 	// These values should have already been validated in the webhook, and be valid ints. Not checking for errors.
 	minReplicaCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMinScaleAnnotation])
 	maxReplicateCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMaxScaleAnnotation])
