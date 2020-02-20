@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -68,6 +69,10 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 
 	u := createBrokerWithPubSubChannel(t,
 		client,
+		[]v1.EnvVar{{
+			Name:  "TARGET",
+			Value: "falldown",
+		}},
 		brokerName,
 		dummyTriggerName,
 		kserviceName,
@@ -113,6 +118,10 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 
 	u := createBrokerWithPubSubChannel(t,
 		client,
+		[]v1.EnvVar{{
+			Name:  "TARGET",
+			Value: "falldown",
+		}},
 		brokerName,
 		dummyTriggerName,
 		kserviceName,
@@ -155,8 +164,65 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
+func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	targetName := helpers.AppendRandomString(bucketName + "-target")
+	fileName := helpers.AppendRandomString("test-file-for-storage")
+
+	brokerName := helpers.AppendRandomString("pubsub")
+	dummyTriggerName := "dummy-broker-" + brokerName
+	respTriggerName := "resp-broker-" + brokerName
+	kserviceName := helpers.AppendRandomString("kservice")
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	u := createBrokerWithPubSubChannel(t,
+		client,
+		[]v1.EnvVar{{
+			Name:  "SUBJECT",
+			Value: fileName,
+		}, {
+			Name:  "TIME",
+			Value: "120",
+		}},
+		brokerName,
+		dummyTriggerName,
+		kserviceName,
+		respTriggerName,
+		targetName,
+	)
+	t.Logf("Created broker")
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the Storage source.
+	lib.MakeStorageOrDie(
+		client,
+		bucketName,
+		storageName,
+		targetName,
+		kngcptesting.WithCloudStorageSourceSinkURI(&url),
+	)
+
+	// Add a random name file in the bucket
+	lib.AddRandomFile(ctx, t, bucketName, fileName, project)
+
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
+	}
+}
+
 func createBrokerWithPubSubChannel(t *testing.T,
 	client *lib.Client,
+	targetJobEnvVars []v1.EnvVar,
 	brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string,
 ) url.URL {
 	// Create a new Broker.
@@ -180,10 +246,7 @@ func createBrokerWithPubSubChannel(t *testing.T,
 	)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName, []v1.EnvVar{{
-		Name:  "TARGET",
-		Value: "falldown",
-	}})
+	job := resources.StorageTargetJob(targetName, targetJobEnvVars)
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create a Trigger with the target Service subscriber.

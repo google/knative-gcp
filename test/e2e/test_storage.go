@@ -19,20 +19,16 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -41,56 +37,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-// makeBucket retrieves the bucket name for the test. If it does not exist, it will create it.
-func makeBucket(ctx context.Context, t *testing.T, project string) string {
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", lib.ProwProjectKey)
-	}
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		t.Fatalf("failed to create storage client, %s", err.Error())
-	}
-	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-" + project
-	// Iterate buckets to check if there has a bucket for e2e test
-	for {
-		bucketAttrs, err := it.Next()
-		if err == iterator.Done {
-			// Create a new bucket if there is no existing e2e test bucket
-			bucket := client.Bucket(bucketName)
-			if e := bucket.Create(ctx, project, &storage.BucketAttrs{}); e != nil {
-				t.Fatalf("failed to create bucket, %s", e.Error())
-			}
-			break
-		}
-		if err != nil {
-			t.Fatalf("failed to list buckets, %s", err.Error())
-		}
-		// Break iteration if there has a bucket for e2e test
-		if bucketAttrs.Name == bucketName {
-			break
-		}
-	}
-	return bucketName
-}
-
-func getBucketHandle(ctx context.Context, t *testing.T, bucketName string, project string) *storage.BucketHandle {
-	// Prow sticks the project in this key
-	if project == "" {
-		t.Fatalf("failed to find %q in envvars", lib.ProwProjectKey)
-	}
-	client, err := storage.NewClient(ctx)
-	if err != nil {
-		t.Fatalf("failed to create pubsub client, %s", err.Error())
-	}
-	return client.Bucket(bucketName)
-}
-
 func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
-	bucketName := makeBucket(ctx, t, project)
+	bucketName := lib.MakeBucket(ctx, t, project)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
@@ -113,31 +64,10 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the Storage source.
-	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace,
-		kngcptesting.WithCloudStorageSourceBucket(bucketName),
-		kngcptesting.WithCloudStorageSourceSink(lib.ServiceGVK, targetName))
-	client.CreateStorageOrFail(eventsStorage)
-
-	client.Core.WaitForResourceReadyOrFail(storageName, lib.CloudStorageSourceTypeMeta)
+	lib.MakeStorageOrDie(client, bucketName, storageName, targetName)
 
 	// Add a random name file in the bucket
-	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
-	wc := bucketHandle.Object(fileName).NewWriter(ctx)
-	// Write some text to object
-	if _, err := fmt.Fprintf(wc, "e2e test for storage importer.\n"); err != nil {
-		t.Error(err)
-	}
-	if err := wc.Close(); err != nil {
-		t.Error(err)
-	}
-
-	// Delete test file deferred
-	defer func() {
-		o := bucketHandle.Object(fileName)
-		if err := o.Delete(ctx); err != nil {
-			t.Error(err)
-		}
-	}()
+	lib.AddRandomFile(ctx, t, bucketName, fileName, project)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {
