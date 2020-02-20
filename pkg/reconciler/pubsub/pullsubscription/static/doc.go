@@ -15,4 +15,4 @@ limitations under the License.
 */
 
 // Package k8s implements the Pub/Sub PullSubscription controller for K8s-based PullSubscriptions.
-package k8s
+package static
