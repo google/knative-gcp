@@ -44,6 +44,9 @@ func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullS
 	cooldownPeriod, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation], 10, 64)
 	pollingInterval, _ := strconv.ParseInt(ps.Annotations[duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation], 10, 64)
 
+	// Using Unstructured instead of adding the Keda dependency. Given that the only way to interact with the scaledObject
+	// is using the dynamicClient (see https://keda.sh/faq/), it does not make much sense for now to add an extra dependency,
+	// which BTW brings things like controller-runtime, etc.
 	so := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"apiVersion": "keda.k8s.io/v1alpha1",
