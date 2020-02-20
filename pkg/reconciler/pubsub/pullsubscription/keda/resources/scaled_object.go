@@ -20,12 +20,15 @@ import (
 	"context"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/ptr"
 	"strconv"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	keda_v1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
+	kedav1alpha1 "github.com/kedacore/keda/pkg/apis/keda/v1alpha1"
 	"k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -40,13 +43,29 @@ var (
 
 func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullSubscription) *unstructured.Unstructured {
 
-
-
 	// These values should have already been validated in the webhook, and be valid ints. Not checking for errors.
 	minReplicaCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMinScaleAnnotation])
 	maxReplicateCount, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.AutoscalingMaxScaleAnnotation])
 	cooldownPeriod, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.KedaAutoscalingCooldownPeriodAnnotation])
 	pollingInterval, _ := strconv.Atoi(ps.Annotations[duckv1alpha1.KedaAutoscalingPollingIntervalAnnotation])
+
+	so := kedav1alpha1.ScaledObject{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ra.Namespace,
+			Name:      GenerateScaledObjectName(ps),
+			Labels: map[string]string{
+				"deploymentName":                  ra.Name,
+				"events.cloud.google.com/ps-name": ps.Name,
+			},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(ps)},
+		},
+		Spec: kedav1alpha1.ScaledObjectSpec{
+			MinReplicaCount: ptr.Int32(minReplicaCount),
+			MaxReplicaCount:
+
+		},
+	}
+
 
 	so := &unstructured.Unstructured{
 		Object: map[string]interface{}{
