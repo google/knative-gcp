@@ -127,7 +127,7 @@ func newSecret() *corev1.Secret {
 func newPullSubscription(subscriptionId string) *pubsubv1alpha1.PullSubscription {
 	return NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
-		WithPullSubscriptionAnnotations(newKedaAnnotations()),
+		WithPullSubscriptionAnnotations(newAnnotations()),
 		WithPullSubscriptionObjectMetaGeneration(generation),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 			Project: testProject,
@@ -159,7 +159,7 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
-func newKedaAnnotations() map[string]string {
+func newAnnotations() map[string]string {
 	return map[string]string{
 		v1alpha1.AutoscalingClassAnnotation:                v1alpha1.KEDA,
 		v1alpha1.AutoscalingMinScaleAnnotation:             "0",
@@ -202,7 +202,7 @@ func TestAllCases(t *testing.T) {
 		Name: "cannot get sink",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -221,7 +221,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -239,7 +239,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -267,7 +267,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -290,7 +290,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -320,7 +320,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -341,7 +341,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -371,7 +371,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -392,7 +392,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -422,7 +422,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -443,7 +443,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -474,7 +474,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -517,7 +517,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -544,7 +544,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -576,7 +576,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -600,7 +600,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -651,7 +651,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -672,7 +672,7 @@ func TestAllCases(t *testing.T) {
 		}, {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -696,7 +696,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -731,7 +731,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -752,7 +752,7 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
@@ -786,7 +786,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newKedaAnnotations()),
+				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
