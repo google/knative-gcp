@@ -100,7 +100,7 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 			Name:            GenerateSubscriptionName(args.Source),
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
-			// copy the source annotations so that the appropriate reconciler is called.
+			// Copy the source annotations so that the appropriate reconciler is called.
 			Annotations: args.Source.Annotations,
 		},
 		Spec: v1.DeploymentSpec{

@@ -86,6 +86,7 @@ func MakeScaledObject(ctx context.Context, ra *v1.Deployment, ps *v1alpha1.PullS
 		},
 	}
 
+	// As Keda doesn't provide clients for their types, we convert to unstructured and end up using the dynamic client.
 	raw, err := json.Marshal(so)
 	if err != nil {
 		return nil, err
