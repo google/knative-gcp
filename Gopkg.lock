@@ -72,22 +72,6 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:0a111edd8693fd977f42a0c4f199a0efb13c20aec9da99ad8830c7bb6a87e8d6"
-  name = "github.com/PuerkitoBio/purell"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "44968752391892e1b0d0b821ee79e9a85fa13049"
-  version = "v1.1.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8098cd40cd09879efbf12e33bcd51ead4a66006ac802cd563a66c4f3373b9727"
-  name = "github.com/PuerkitoBio/urlesc"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "de5bf2ad457846296e2031421a34e2568e304e35"
-
-[[projects]]
   digest = "1:77dfd27299a11fa91e91c93e5155eda28e3e22897f20abd59be1bc5194315856"
   name = "github.com/aws/aws-sdk-go"
   packages = [
@@ -191,17 +175,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:b4ead29a4d5e49c80b6b110ff10bb4614b768097435845a144241a6dce7a3513"
-  name = "github.com/emicklei/go-restful"
-  packages = [
-    ".",
-    "log",
-  ]
-  pruneopts = "NUT"
-  revision = "a2fa14558f9a828f859fcad1d5c824437d7d4388"
-  version = "v2.11.2"
-
-[[projects]]
   digest = "1:4304cca260ab815326ca42d9c28fb843342748267034c51963e13f5e54e727d1"
   name = "github.com/evanphx/json-patch"
   packages = ["."]
@@ -216,38 +189,6 @@
   pruneopts = "NUT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:3758c86e787dfe5792a23430f34636106a16da914446724399c9c12f121a225d"
-  name = "github.com/go-openapi/jsonpointer"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "ed123515f087412cd7ef02e49b0b0a5e6a79a360"
-  version = "v0.19.3"
-
-[[projects]]
-  digest = "1:98abd61947ff5c7c6fcfec5473d02a4821ed3a2dd99a4fbfdb7925b0dd745546"
-  name = "github.com/go-openapi/jsonreference"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "82f31475a8f7a12bc26962f6e26ceade8ea6f66a"
-  version = "v0.19.3"
-
-[[projects]]
-  digest = "1:da2ad0356c603997317f60dfa8c571df6c60411b4359846b8b9ed735b62e913f"
-  name = "github.com/go-openapi/spec"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "dce82e4362c708e636da7feb0831bd29efb5cd97"
-  version = "v0.19.6"
-
-[[projects]]
-  digest = "1:2233a452b32ea89d54ed31bb1357a23b35e5fcc55f25880bcdccc1aa0872c891"
-  name = "github.com/go-openapi/swag"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "6a1eb9830f1c6b090dcd01cee6c3983604a2306f"
-  version = "v0.19.7"
 
 [[projects]]
   digest = "1:fcd8ddc48ce648d5fbb36029fe3dd98f29c03377eea5c4a3c436701b0e3f2774"
@@ -449,32 +390,12 @@
   version = "v0.9.1"
 
 [[projects]]
-  digest = "1:6f8a9edea6713b3f6eadd4262ecb11bc4b358f24685459a507eaf00ad94cc8ff"
-  name = "github.com/kedacore/keda"
-  packages = ["pkg/apis/keda/v1alpha1"]
-  pruneopts = "NUT"
-  revision = "3a682580fdaf15bff56b9fe7cc0c30ebd4f7b58e"
-  version = "v1.2.0"
-
-[[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
   name = "github.com/kelseyhightower/envconfig"
   packages = ["."]
   pruneopts = "NUT"
   revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
   version = "v1.4.0"
-
-[[projects]]
-  digest = "1:7bbccd3dd7998f2a180264ec1d12e362ed8e02f55ea7b82ac0d0f48ffa2d8888"
-  name = "github.com/mailru/easyjson"
-  packages = [
-    "buffer",
-    "jlexer",
-    "jwriter",
-  ]
-  pruneopts = "NUT"
-  revision = "8edcc4e51f39ddbd3505a3386aff3f435a7fd028"
-  version = "v0.7.1"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -756,7 +677,7 @@
   revision = "c990c680b611ac1aeb7d8f2af94a825f98d69720"
 
 [[projects]]
-  digest = "1:66a2f252a58b4fbbad0e4e180e1d85a83c222b6bce09c3dcdef3dc87c72eda7c"
+  digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -775,7 +696,6 @@
     "unicode/cldr",
     "unicode/norm",
     "unicode/rangetable",
-    "width",
   ]
   pruneopts = "NUT"
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
@@ -1402,12 +1322,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5808bb1694e8727155e7c023499195cd0f9931b56545fe37795985f87f024696"
+  digest = "1:42674e29bf0cf4662d49bd9528e24b9ecc4895b32d0be281f9cf04d3a7671846"
   name = "k8s.io/kube-openapi"
-  packages = [
-    "pkg/common",
-    "pkg/util/proto",
-  ]
+  packages = ["pkg/util/proto"]
   pruneopts = "NUT"
   revision = "0270cf2f1c1d995d34b36019a6f65d58e6e33ad4"
 
@@ -1651,14 +1568,6 @@
   revision = "d5990f0e5a05d5819a40ad3b4de6227406850b48"
 
 [[projects]]
-  digest = "1:c4e8f6509ee8cec911985a812ed3f9cc024404acc45ac613fa103f735cf3222a"
-  name = "sigs.k8s.io/controller-runtime"
-  packages = ["pkg/scheme"]
-  pruneopts = "NUT"
-  revision = "0fcf28efebc9a977c954f00d40af966d6a4aeae3"
-  version = "v0.5.0"
-
-[[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -1692,7 +1601,6 @@
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/googleapis/gax-go/v2",
-    "github.com/kedacore/keda/pkg/apis/keda/v1alpha1",
     "github.com/kelseyhightower/envconfig",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/plugin/ochttp",

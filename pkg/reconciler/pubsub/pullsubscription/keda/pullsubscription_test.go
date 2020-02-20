@@ -872,7 +872,7 @@ func newScaledObject(ps *pubsubv1alpha1.PullSubscription) runtime.Object {
 	ctx := context.Background()
 	ra := newReceiveAdapter(ctx, testImage)
 	d, _ := ra.(*v1.Deployment)
-	u, _ := MakeScaledObject(ctx, d, ps)
+	u := MakeScaledObject(ctx, d, ps)
 	return u
 }
 

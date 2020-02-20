@@ -70,7 +70,6 @@ func TestMakeScaledObject(t *testing.T) {
 			"apiVersion": "keda.k8s.io/v1alpha1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
-				"creationTimestamp": nil,
 				"namespace":         "psnamespace",
 				"name":              GenerateScaledObjectName(ps),
 				"labels": map[string]interface{}{
@@ -105,11 +104,10 @@ func TestMakeScaledObject(t *testing.T) {
 						},
 					}},
 			},
-			"status": map[string]interface{}{},
 		},
 	}
 
-	got, _ := MakeScaledObject(context.Background(), ra, ps)
+	got := MakeScaledObject(context.Background(), ra, ps)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
