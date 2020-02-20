@@ -45,7 +45,7 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 	if err != nil {
 		return err
 	}
-	if !equality.Semantic.DeepDerivative(ra.Spec, existing.Spec) {
+	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
 		_, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {

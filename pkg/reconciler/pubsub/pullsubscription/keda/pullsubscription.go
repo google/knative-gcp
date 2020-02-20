@@ -77,7 +77,7 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	// Given than the Deployment replicas will be controlled by Keda, we assume
 	// the replica count from the existing one is the correct one.
 	ra.Spec.Replicas = existing.Spec.Replicas
-	if !equality.Semantic.DeepDerivative(ra.Spec, existing.Spec) {
+	if !equality.Semantic.DeepEqual(ra.Spec, existing.Spec) {
 		existing.Spec = ra.Spec
 		_, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Update(existing)
 		if err != nil {
