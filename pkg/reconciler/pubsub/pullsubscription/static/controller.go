@@ -92,6 +92,9 @@ func NewController(
 
 	pubsubBase.Logger.Info("Setting up event handlers")
 
+	// Whenever we introduce a new way of scaling, this code will have to be updated to not just exclude Keda, but the others.
+	// Might be useful to use pkgreconciler.ChainFilterFuncs and move them somewhere else.
+	// TODO revisit once we introduce new scaling strategies.
 	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
 	notKedaScaler := pkgreconciler.Not(onlyKedaScaler)
 
