@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package k8s implements the Pub/Sub PullSubscription controller for K8s-based PullSubscriptions.
+// Package static implements the Pub/Sub PullSubscription controller for non-scalable PullSubscriptions.
 package static
