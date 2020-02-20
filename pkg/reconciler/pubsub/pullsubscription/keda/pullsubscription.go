@@ -21,17 +21,17 @@ import (
 	"fmt"
 	"strings"
 
-	"go.uber.org/zap"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/discovery"
-
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda/resources"
+	"go.uber.org/zap"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/discovery"
 	eventingduck "knative.dev/eventing/pkg/duck"
 
 	"knative.dev/pkg/controller"
@@ -39,12 +39,17 @@ import (
 	"knative.dev/pkg/tracker"
 )
 
+type DiscoverFunc func(discovery.DiscoveryInterface, schema.GroupVersion) error
+
 // Reconciler implements controller.Reconciler for PullSubscription resources.
 type Reconciler struct {
 	*psreconciler.Base
 
 	// scaledObjectTracker is used to notify us that a Keda ScaledObject has changed so that we can reconcile.
 	scaledObjectTracker eventingduck.ListableTracker
+
+	// discoveryFn is the function used to discover whether Keda is installed or not. Needed for UTs purposes.
+	discoveryFn DiscoverFunc
 }
 
 // Check that our Reconciler implements controller.Reconciler
@@ -58,7 +63,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deployment, src *v1alpha1.PullSubscription) error {
 	// Check whether KEDA is installed, if not, error out.
 	// Ideally this should be done in the webhook, thus not even allowing the creation of the object.
-	if err := discovery.ServerSupportsVersion(r.KubeClientSet.Discovery(), resources.KedaSchemeGroupVersion); err != nil {
+	if err := r.discoveryFn(r.KubeClientSet.Discovery(), resources.KedaSchemeGroupVersion); err != nil {
 		if strings.Contains(err.Error(), "server does not support API version") {
 			logging.FromContext(ctx).Desugar().Error("KEDA not installed, failed to check API version", zap.Any("GroupVersion", resources.KedaSchemeGroupVersion))
 			return err
@@ -102,13 +107,20 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 	}
 	track := r.scaledObjectTracker.TrackInNamespace(src)
 
+	objRef := ref.ObjectReference()
 	// Track changes in the ScaledObject.
-	if err = track(ref.ObjectReference()); err != nil {
+	if err = track(objRef); err != nil {
 		logging.FromContext(ctx).Desugar().Error("Unable to track changes to ScaledObject", zap.Error(err))
 		return err
 	}
 
-	_, err = scaledObjectResourceInterface.Get(so.GetName(), metav1.GetOptions{})
+	lister, err := r.scaledObjectTracker.ListerFor(objRef)
+	if err != nil {
+		logging.FromContext(ctx).Error("Error getting lister for ScaledObject", zap.Any("so", objRef), zap.Error(err))
+		return err
+	}
+
+	_, err = lister.ByNamespace(so.GetNamespace()).Get(so.GetName())
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			_, err = scaledObjectResourceInterface.Create(so, metav1.CreateOptions{})

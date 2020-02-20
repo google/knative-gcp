@@ -18,17 +18,19 @@ package keda
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
+
+	"go.uber.org/zap"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/tools/cache"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/client-go/tools/cache"
 
 	eventingduck "knative.dev/eventing/pkg/duck"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -109,6 +111,7 @@ func NewController(
 	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 	r.ReconcileDataPlaneFn = r.ReconcileScaledObject
 	r.scaledObjectTracker = eventingduck.NewListableTracker(ctx, resource.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
+	r.discoveryFn = discovery.ServerSupportsVersion
 
 	cmw.Watch(logging.ConfigMapName(), r.UpdateFromLoggingConfigMap)
 	cmw.Watch(metrics.ConfigMapName(), r.UpdateFromMetricsConfigMap)

@@ -462,7 +462,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.Pu
 }
 
 func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-	existing, err := r.GetReceiveAdapter(ctx, src)
+	existing, err := r.getReceiveAdapter(ctx, src)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
 		return nil, err
@@ -477,7 +477,7 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 	return existing, nil
 }
 
-func (r *Base) GetReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
+func (r *Base) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
 	dl, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
 		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, src.Name).String(),
 		TypeMeta: metav1.TypeMeta{
