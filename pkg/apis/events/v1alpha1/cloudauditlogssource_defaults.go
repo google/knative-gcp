@@ -18,8 +18,11 @@ package v1alpha1
 
 import (
 	"context"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (s *CloudAuditLogsSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetPubSubDefaults()
+	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }

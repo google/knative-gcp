@@ -45,9 +45,9 @@ type Reconciler struct {
 // Check that our Reconciler implements controller.Reconciler
 var _ controller.Reconciler = (*Reconciler)(nil)
 
-// Reconciler implements controller.Reconciler
-// Reconciler get the deployment and then update the deployment's annotation.
-// Then the deployment will recreate the pods which will pick up the latest secret image immediately. Otherwise we will need to wait for 1 min for the deployment pods to pick up the update secret.
+// Reconciler implements controller.Reconciler. It gets the deployment and then update its annotation.
+// With this, the deployment will recreate the pods and they will pick up the latest secret image immediately.
+// Otherwise we would need to wait for 1 min for the deployment pods to pick up the updated secret.
 func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {

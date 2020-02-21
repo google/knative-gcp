@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/ptr"
 )
 
@@ -30,6 +31,7 @@ const (
 
 func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
 	ps.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &ps.ObjectMeta)
 }
 
 func (pss *CloudPubSubSourceSpec) SetDefaults(ctx context.Context) {

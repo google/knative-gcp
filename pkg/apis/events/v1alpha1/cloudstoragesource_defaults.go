@@ -18,12 +18,15 @@ package v1alpha1
 
 import (
 	"context"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 var allEventTypes = []string{CloudStorageSourceFinalize, CloudStorageSourceDelete, CloudStorageSourceArchive, CloudStorageSourceMetadataUpdate}
 
 func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *CloudStorageSourceSpec) SetDefaults(ctx context.Context) {

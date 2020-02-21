@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,37 +14,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pullsubscription
+package keda
 
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"go.uber.org/zap"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/tools/cache"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/client-go/tools/cache"
 
+	eventingduck "knative.dev/eventing/pkg/duck"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 	tracingconfig "knative.dev/pkg/tracing/config"
-
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 )
 
 const (
 	// reconcilerName is the name of the reconciler
-	reconcilerName = "PullSubscriptions"
+	reconcilerName = "KedaPullSubscriptions"
 
 	// controllerAgentName is the string used by this controller to identify
 	// itself when creating events.
-	controllerAgentName = "cloud-run-events-pubsub-pullsubscription-controller"
+	controllerAgentName = "cloud-run-events-pubsub-keda-pullsubscription-controller"
+
+	finalizerName = controllerAgentName
 )
 
 type envConfig struct {
@@ -74,24 +81,37 @@ func NewController(
 	}
 
 	r := &Reconciler{
-		PubSubBase:             pubsubBase,
-		deploymentLister:       deploymentInformer.Lister(),
-		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
-		receiveAdapterImage:    env.ReceiveAdapter,
-		createClientFn:         gpubsub.NewClient,
+		Base: &psreconciler.Base{
+			PubSubBase:             pubsubBase,
+			DeploymentLister:       deploymentInformer.Lister(),
+			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
+			ReceiveAdapterImage:    env.ReceiveAdapter,
+			CreateClientFn:         gpubsub.NewClient,
+			ControllerAgentName:    controllerAgentName,
+			FinalizerName:          finalizerName,
+		},
 	}
 
 	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
-	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)
+
+	pullSubscriptionHandler := cache.FilteringResourceEventHandler{
+		FilterFunc: onlyKedaScaler,
+		Handler:    controller.HandleAll(impl.Enqueue),
+	}
+	pullSubscriptionInformer.Informer().AddEventHandlerWithResyncPeriod(pullSubscriptionHandler, reconciler.DefaultResyncPeriod)
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("PullSubscription")),
+		FilterFunc: onlyKedaScaler,
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	r.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.UriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
+	r.ReconcileDataPlaneFn = r.ReconcileScaledObject
+	r.scaledObjectTracker = eventingduck.NewListableTracker(ctx, resource.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
+	r.discoveryFn = discovery.ServerSupportsVersion
 
 	cmw.Watch(logging.ConfigMapName(), r.UpdateFromLoggingConfigMap)
 	cmw.Watch(metrics.ConfigMapName(), r.UpdateFromMetricsConfigMap)

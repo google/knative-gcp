@@ -33,6 +33,7 @@ const (
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {

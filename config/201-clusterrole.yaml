@@ -129,6 +129,11 @@ rules:
     - eventtypes
   verbs: *everything
 
+- apiGroups:
+    - keda.k8s.io
+  resources:
+    - scaledobjects
+  verbs: *everything
 
 ---
 # The role is needed for the aggregated role source-observer in knative-eventing to provide readonly access to "Sources".

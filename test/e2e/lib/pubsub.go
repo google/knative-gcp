@@ -29,8 +29,7 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 )
 
-func MakePubSubOrDie(t *testing.T,
-	client *Client,
+func MakePubSubOrDie(client *Client,
 	gvk metav1.GroupVersionKind,
 	psName, targetName, topicName string,
 	so ...kngcptesting.CloudPubSubSourceOption,

@@ -714,7 +714,7 @@ func TestAllCases(t *testing.T) {
 						return false, nil, nil
 					}
 					attempts++
-					return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
+					return true, nil, apierrs.NewConflict(v1alpha1.GroupResource("foo"), "bar", errors.New("foo"))
 				},
 			},
 			WantEvents: []string{

@@ -29,7 +29,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 )
@@ -58,6 +58,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
+	annotations := pubsubable.GetObjectMeta().GetAnnotations()
 	spec := pubsubable.PubSubSpec()
 	status := pubsubable.PubSubStatus()
 
@@ -100,14 +101,14 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
 		args := &resources.PullSubscriptionArgs{
-			Namespace:     namespace,
-			Name:          name,
-			Spec:          spec,
-			Owner:         pubsubable,
-			Topic:         topic,
-			AdapterType:   psb.adapterType,
-			ResourceGroup: resourceGroup,
-			Labels:        resources.GetLabels(psb.receiveAdapterName, name),
+			Namespace:   namespace,
+			Name:        name,
+			Spec:        spec,
+			Owner:       pubsubable,
+			Topic:       topic,
+			AdapterType: psb.adapterType,
+			Labels:      resources.GetLabels(psb.receiveAdapterName, name),
+			Annotations: resources.GetAnnotations(annotations, resourceGroup),
 		}
 		newPS := resources.MakePullSubscription(args)
 		ps, err = pullSubscriptions.Create(newPS)

@@ -66,7 +66,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   "source-namespace",
 			Name:        "cre-pull-",
-			Annotations: map[string]string{},
+			Annotations: nil,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -101,6 +101,9 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						Env: []corev1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
+						}, {
+							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
 						}, {
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
@@ -218,7 +221,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   "source-namespace",
 			Name:        "cre-pull-",
-			Annotations: map[string]string{},
+			Annotations: src.Annotations,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -253,6 +256,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						Env: []corev1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/var/secrets/google/eventing-secret-key",
+						}, {
+							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
 						}, {
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",

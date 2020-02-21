@@ -19,7 +19,9 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -56,24 +58,16 @@ Note: the number denotes the sequence of the event that flows in this test case.
 */
 
 func BrokerWithPubSubChannelTestImpl(t *testing.T) {
-	brokerName := helpers.AppendRandomString("pubsub")
-	dummyTriggerName := "dummy-broker-" + brokerName
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t,
-		client,
-		brokerName,
-		dummyTriggerName,
-		kserviceName,
-		respTriggerName,
-		targetName,
-	)
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -101,31 +95,22 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
-	brokerName := helpers.AppendRandomString("pubsub")
-	dummyTriggerName := "dummy-broker-" + brokerName
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t,
-		client,
-		brokerName,
-		dummyTriggerName,
-		kserviceName,
-		respTriggerName,
-		targetName,
-	)
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
 	var url apis.URL = apis.URL(u)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(t,
-		client,
+	lib.MakePubSubOrDie(client,
 		lib.ServiceGVK,
 		psName,
 		targetName,
@@ -155,10 +140,118 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
-func createBrokerWithPubSubChannel(t *testing.T,
-	client *lib.Client,
-	brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string,
-) url.URL {
+func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	targetName := helpers.AppendRandomString(bucketName + "-target")
+	fileName := helpers.AppendRandomString("test-file-for-storage")
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	// Create a target StorageJob to receive the events.
+	lib.MakeStorageJobOrDie(client, fileName, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the Storage source.
+	lib.MakeStorageOrDie(
+		client,
+		bucketName,
+		storageName,
+		targetName,
+		kngcptesting.WithCloudStorageSourceSinkURI(&url),
+	)
+
+	// Add a random name file in the bucket
+	lib.AddRandomFile(ctx, t, bucketName, fileName, project)
+
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
+	}
+}
+
+func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	project := os.Getenv(lib.ProwProjectKey)
+
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	targetName := helpers.AppendRandomString(auditlogsName + "-target")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
+	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	// Create a target Job to receive the events.
+	lib.MakeAuditLogsJobOrDie(client, methodName, project, resourceName, serviceName, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the CloudAuditLogsSource.
+	lib.MakeAuditLogsOrDie(client,
+		auditlogsName,
+		methodName,
+		project,
+		resourceName,
+		serviceName,
+		targetName,
+		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
+	)
+
+	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
+	// Tried with 45 seconds but the test has been quite flaky.
+	time.Sleep(90 * time.Second)
+	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
+	defer deleteTopic()
+
+	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Last term message => %s", msg)
+
+	if msg != "" {
+		out := &lib.TargetOutput{}
+		if err := json.Unmarshal([]byte(msg), out); err != nil {
+			t.Error(err)
+		}
+		if !out.Success {
+			// Log the output cloudauditlogssource pods.
+			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("cloudauditlogssource: %+v", logs)
+			}
+			// Log the output of the target job pods.
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("job: %s\n", logs)
+			}
+			t.Fail()
+		}
+	}
+}
+
+func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName string) url.URL {
+	brokerName := helpers.AppendRandomString("pubsub")
+	dummyTriggerName := "dummy-broker-" + brokerName
+	respTriggerName := "resp-broker-" + brokerName
+	kserviceName := helpers.AppendRandomString("kservice")
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
@@ -178,13 +271,6 @@ func createBrokerWithPubSubChannel(t *testing.T,
 			map[string]interface{}{"type": "e2e-testing-dummy"}),
 		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
 	)
-
-	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName, []v1.EnvVar{{
-		Name:  "TARGET",
-		Value: "falldown",
-	}})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create a Trigger with the target Service subscriber.
 	client.Core.CreateTriggerOrFail(
@@ -208,6 +294,14 @@ func createBrokerWithPubSubChannel(t *testing.T,
 		t.Error(err.Error())
 	}
 	return u
+}
+
+func makeTargetJobOrDie(client *lib.Client, targetName string) {
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }
 
 func jobDone(client *lib.Client, podName string, t *testing.T) bool {

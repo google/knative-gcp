@@ -27,7 +27,6 @@ import (
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
-
 )
 
 func TestNew(t *testing.T) {
