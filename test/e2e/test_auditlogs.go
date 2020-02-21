@@ -23,12 +23,7 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	"knative.dev/pkg/test/helpers"
 
@@ -53,38 +48,17 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	job := resources.AuditLogsTargetJob(targetName, []v1.EnvVar{{
-		Name:  "SERVICENAME",
-		Value: serviceName,
-	}, {
-		Name:  "METHODNAME",
-		Value: methodName,
-	}, {
-		Name:  "RESOURCENAME",
-		Value: resourceName,
-	}, {
-		Name:  "TYPE",
-		Value: v1alpha1.CloudAuditLogsSourceEvent,
-	}, {
-		Name:  "SOURCE",
-		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
-	}, {
-		Name:  "SUBJECT",
-		Value: resourceName,
-	}, {
-		Name:  "TIME",
-		Value: "360",
-	}})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+	lib.MakeAuditLogsJobOrDie(client, methodName, project, resourceName, serviceName, targetName)
 
 	// Create the CloudAuditLogsSource.
-	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace,
-		kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName),
-		kngcptesting.WithCloudAuditLogsSourceMethodName(methodName),
-		kngcptesting.WithCloudAuditLogsSourceProject(project),
-		kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName),
-		kngcptesting.WithCloudAuditLogsSourceSink(lib.ServiceGVK, targetName))
-	client.CreateAuditLogsOrFail(eventsAuditLogs)
+	lib.MakeAuditLogsOrDie(client,
+		auditlogsName,
+		methodName,
+		project,
+		resourceName,
+		serviceName,
+		targetName,
+	)
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
 
