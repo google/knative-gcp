@@ -57,28 +57,16 @@ Note: the number denotes the sequence of the event that flows in this test case.
 */
 
 func BrokerWithPubSubChannelTestImpl(t *testing.T) {
-	brokerName := helpers.AppendRandomString("pubsub")
-	dummyTriggerName := "dummy-broker-" + brokerName
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t,
-		client,
-		[]v1.EnvVar{{
-			Name:  "TARGET",
-			Value: "falldown",
-		}},
-		brokerName,
-		dummyTriggerName,
-		kserviceName,
-		respTriggerName,
-		targetName,
-	)
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -106,28 +94,17 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
-	brokerName := helpers.AppendRandomString("pubsub")
-	dummyTriggerName := "dummy-broker-" + brokerName
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t,
-		client,
-		[]v1.EnvVar{{
-			Name:  "TARGET",
-			Value: "falldown",
-		}},
-		brokerName,
-		dummyTriggerName,
-		kserviceName,
-		respTriggerName,
-		targetName,
-	)
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
 	var url apis.URL = apis.URL(u)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -173,30 +150,14 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
-	brokerName := helpers.AppendRandomString("pubsub")
-	dummyTriggerName := "dummy-broker-" + brokerName
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
-
 	client := lib.Setup(t, true)
 	defer lib.TearDown(client)
 
-	u := createBrokerWithPubSubChannel(t,
-		client,
-		[]v1.EnvVar{{
-			Name:  "SUBJECT",
-			Value: fileName,
-		}, {
-			Name:  "TIME",
-			Value: "120",
-		}},
-		brokerName,
-		dummyTriggerName,
-		kserviceName,
-		respTriggerName,
-		targetName,
-	)
-	t.Logf("Created broker")
+	// Create a target StorageJob to receive the events.
+	lib.MakeStorageJobOrDie(client, fileName, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
 	var url apis.URL = apis.URL(u)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -220,11 +181,11 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 }
 
-func createBrokerWithPubSubChannel(t *testing.T,
-	client *lib.Client,
-	targetJobEnvVars []v1.EnvVar,
-	brokerName, dummyTriggerName, kserviceName, respTriggerName, targetName string,
-) url.URL {
+func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName string) url.URL {
+	brokerName := helpers.AppendRandomString("pubsub")
+	dummyTriggerName := "dummy-broker-" + brokerName
+	respTriggerName := "resp-broker-" + brokerName
+	kserviceName := helpers.AppendRandomString("kservice")
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
@@ -244,10 +205,6 @@ func createBrokerWithPubSubChannel(t *testing.T,
 			map[string]interface{}{"type": "e2e-testing-dummy"}),
 		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
 	)
-
-	// Create a target Job to receive the events.
-	job := resources.StorageTargetJob(targetName, targetJobEnvVars)
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create a Trigger with the target Service subscriber.
 	client.Core.CreateTriggerOrFail(
@@ -271,6 +228,14 @@ func createBrokerWithPubSubChannel(t *testing.T,
 		t.Error(err.Error())
 	}
 	return u
+}
+
+func makeTargetJobOrDie(client *lib.Client, targetName string) {
+	job := resources.TargetJob(targetName, []v1.EnvVar{{
+		Name:  "TARGET",
+		Value: "falldown",
+	}})
+	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }
 
 func jobDone(client *lib.Client, podName string, t *testing.T) bool {

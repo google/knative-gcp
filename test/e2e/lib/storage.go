@@ -23,7 +23,9 @@ import (
 
 	"cloud.google.com/go/storage"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
+	v1 "k8s.io/api/core/v1"
 )
 
 func MakeStorageOrDie(client *Client,
@@ -36,6 +38,17 @@ func MakeStorageOrDie(client *Client,
 	client.CreateStorageOrFail(eventsStorage)
 
 	client.Core.WaitForResourceReadyOrFail(storageName, CloudStorageSourceTypeMeta)
+}
+
+func MakeStorageJobOrDie(client *Client, fileName, targetName string) {
+	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
+		Name:  "SUBJECT",
+		Value: fileName,
+	}, {
+		Name:  "TIME",
+		Value: "120",
+	}})
+	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
 
 func AddRandomFile(ctx context.Context, t *testing.T, bucketName, fileName, project string) {

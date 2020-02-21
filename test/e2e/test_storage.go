@@ -24,14 +24,12 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -54,14 +52,7 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
 	// Create a storage_target Job to receive the events.
-	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
-		Name:  "SUBJECT",
-		Value: fileName,
-	}, {
-		Name:  "TIME",
-		Value: "120",
-	}})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+	lib.MakeStorageJobOrDie(client, fileName, targetName)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, bucketName, storageName, targetName)
