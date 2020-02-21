@@ -56,7 +56,7 @@ func NewController(
 	r := &Reconciler{
 		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
 		deploymentLister: deploymentInformer.Lister(),
-		clock:           clock.RealClock{},
+		clock:            clock.RealClock{},
 	}
 
 	impl := controller.NewImpl(r, r.Logger, ReconcilerName)
