@@ -209,6 +209,13 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	PubSubSourceBrokerWithPubSubChannelTestImpl(t)
 }
 
+// TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
+func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	StorageSourceBrokerWithPubSubChannelTestImpl(t)
+}
+
 // TestCloudStorageSource tests we can knock down a target from a CloudStorageSource.
 func TestCloudStorageSource(t *testing.T) {
 	cancel := logstream.Start(t)
