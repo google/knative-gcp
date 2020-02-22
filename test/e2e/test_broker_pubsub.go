@@ -247,6 +247,58 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 }
 
+func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+	data := "my test data"
+	targetName := "event-display"
+	sName := "scheduler-test"
+
+	client := lib.Setup(t, true)
+	defer lib.TearDown(client)
+
+	// Create a target Job to receive the events.
+	lib.MakeSchedulerJobOrDie(client, data, targetName)
+
+	u := createBrokerWithPubSubChannel(t, client, targetName)
+
+	var url apis.URL = apis.URL(u)
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create the CloudSchedulerSource.
+	lib.MakeSchedulerOrDie(client, sName, data, targetName,
+		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
+	)
+
+	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Last termination message => %s", msg)
+	if msg != "" {
+		out := &lib.TargetOutput{}
+		if err := json.Unmarshal([]byte(msg), out); err != nil {
+			t.Error(err)
+		}
+		if !out.Success {
+			// Log the output of scheduler pods
+			if logs, err := client.LogsFor(client.Namespace, sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("scheduler log: %+v", logs)
+			}
+
+			// Log the output of the target job pods
+			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
+				t.Error(err)
+			} else {
+				t.Logf("addressable job: %+v", logs)
+			}
+			t.Fail()
+		}
+	}
+}
+
 func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName string) url.URL {
 	brokerName := helpers.AppendRandomString("pubsub")
 	dummyTriggerName := "dummy-broker-" + brokerName
