@@ -20,13 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	kngcpresources "github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 // SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
@@ -56,38 +51,12 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	// Create an Addressable to receive scheduler events
 	data := "my test data"
 	targetName := "event-display"
-	job := resources.SchedulerJob(targetName, []v1.EnvVar{
-		{
-			Name:  "TIME",
-			Value: "360",
-		},
-		{
-			Name:  "SUBJECT_PREFIX",
-			Value: kngcpresources.JobPrefix,
-		},
-		{
-			Name:  "DATA",
-			Value: data,
-		},
-		{
-			Name:  "TYPE",
-			Value: v1alpha1.CloudSchedulerSourceExecute,
-		},
-	})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+	lib.MakeSchedulerJobOrDie(client, data, targetName)
 
 	// Create a scheduler
 	sName := "scheduler-test"
 
-	scheduler := kngcptesting.NewCloudSchedulerSource(sName, client.Namespace,
-		kngcptesting.WithCloudSchedulerSourceLocation("us-central1"),
-		kngcptesting.WithCloudSchedulerSourceData(data),
-		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
-		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, targetName),
-	)
-
-	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(sName, lib.CloudSchedulerSourceTypeMeta)
+	lib.MakeSchedulerOrDie(client, sName, data, targetName)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {
