@@ -24,14 +24,12 @@ import (
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
-
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 const (
 	CloudBuildConverter = "com.google.cloud.build"
-	buildSchemaUrl     = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json"
-
+	buildSchemaUrl      = "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/build/schema.json"
 )
 
 func convertCloudBuild(ctx context.Context, msg *cepubsub.Message, sendMode ModeType) (*cloudevents.Event, error) {

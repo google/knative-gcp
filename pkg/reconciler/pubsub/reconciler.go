@@ -131,13 +131,12 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 			args.Mode = pubsubv1alpha1.ModePushCompatible
 		}
 
-
 		newPS := resources.MakePullSubscription(args)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
-			return  nil, fmt.Errorf("failed to create PullSubscription: %w", err)
+			return nil, fmt.Errorf("failed to create PullSubscription: %w", err)
 		}
 	}
 
@@ -152,7 +151,6 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	status.SinkURI = uri
 	return ps, nil
 }
-
 
 func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
 	pc := ps.Status.GetTopLevelCondition()

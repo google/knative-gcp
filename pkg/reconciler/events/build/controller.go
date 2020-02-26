@@ -18,12 +18,12 @@ package build
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudbuildsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -52,7 +52,7 @@ func NewController(
 	cloudbuildsourceInformer := cloudbuildsourceinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter,cmw),
+		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
 		buildLister:            cloudbuildsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 	}
@@ -68,4 +68,3 @@ func NewController(
 
 	return impl
 }
-
