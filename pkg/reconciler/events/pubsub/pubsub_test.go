@@ -19,6 +19,7 @@ package pubsub
 import (
 	"context"
 	"errors"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,8 +37,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
-
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -49,7 +48,7 @@ const (
 
 	testNS      = "testnamespace"
 	testTopicID = "test-topic"
-	generation  = 1
+	originalGeneration  = 0
 )
 
 var (
@@ -132,7 +131,7 @@ func TestAllCases(t *testing.T) {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
@@ -142,16 +141,16 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + pubsubName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
+				WithCloudPubSubSourceStatusObservedGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceFinalizers(finalizerName),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
+		WantErr: true,
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
@@ -171,13 +170,13 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is false",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
@@ -187,26 +186,26 @@ func TestAllCases(t *testing.T) {
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
+		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
+				WithCloudPubSubSourceStatusObservedGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
 				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is False", pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
@@ -216,33 +215,33 @@ func TestAllCases(t *testing.T) {
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
+		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(originalGeneration),
+				WithCloudPubSubSourceStatusObservedGeneration(originalGeneration),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
 				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is Unknown", pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(1),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
 			),
 			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
 				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionReady", ""),
 			),
 			newSink(),
 		},
@@ -258,8 +257,8 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(1),
+				WithCloudPubSubSourceStatusObservedGeneration(1),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
@@ -269,8 +268,8 @@ func TestAllCases(t *testing.T) {
 			),
 		}, {
 			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceObjectMetaGeneration(1),
+				WithCloudPubSubSourceStatusObservedGeneration(1),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceFinalizers(finalizerName),
@@ -288,10 +287,9 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		return &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:                   pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
-			receiveAdapterName:     receiveAdapterName,
 		}
 	}))
 

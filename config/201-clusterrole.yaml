@@ -66,6 +66,7 @@ rules:
     - cloudstoragesources
     - cloudschedulersources
     - cloudpubsubsources
+    - cloudbuildsources
   verbs: *everything
 
 - apiGroups:
@@ -75,6 +76,7 @@ rules:
     - cloudstoragesources/status
     - cloudschedulersources/status
     - cloudpubsubsources/status
+    - cloudbuildsources/status
   verbs:
     - get
     - update
@@ -153,6 +155,7 @@ rules:
       - "cloudpubsubsources"
       - "cloudauditlogssources"
       - "cloudschedulersources"
+      - "cloudbuildsources"
     verbs:
       - get
       - list

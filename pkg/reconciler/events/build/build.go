@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pubsub
+package build
 
 import (
 	"context"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"time"
 
 	"go.uber.org/zap"
@@ -35,24 +34,24 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const (
 	finalizerName = controllerAgentName
 
-	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
+	resourceGroup = "cloudbuildsources.events.cloud.google.com"
 )
 
-// Reconciler is the controller implementation for the CloudPubSubSource source.
+// Reconciler is the controller implementation for the CloudBuildSource source.
 type Reconciler struct {
 	*pubsub.PubSubBase
 
-	// pubsubLister for reading cloudpubsubsources.
-	pubsubLister listers.CloudPubSubSourceLister
+	// buildLister for reading cloudbuildsources.
+	buildLister listers.CloudBuildSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
-
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -69,58 +68,58 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 		return nil
 	}
 
-	// Get the CloudPubSubSource resource with this namespace/name
-	original, err := r.pubsubLister.CloudPubSubSources(namespace).Get(name)
+	// Get the CloudBuildSource resource with this namespace/name
+	original, err := r.buildLister.CloudBuildSources(namespace).Get(name)
 	if apierrs.IsNotFound(err) {
-		// The CloudPubSubSource resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("CloudPubSubSource in work queue no longer exists")
+		// The CloudBuildSource resource may no longer exist, in which case we stop processing.
+		logging.FromContext(ctx).Desugar().Error("CloudBuildSource in work queue no longer exists")
 		return nil
 	} else if err != nil {
 		return err
 	}
 
 	// Don't modify the informers copy
-	pubsub := original.DeepCopy()
+	build := original.DeepCopy()
 
-	reconcileErr := r.reconcile(ctx, pubsub)
+	reconcileErr := r.reconcile(ctx, build)
 
 	// If no error is returned, mark the observed generation.
 	if reconcileErr == nil {
-		pubsub.Status.ObservedGeneration = pubsub.Generation
+		build.Status.ObservedGeneration = build.Generation
 	}
 
-	if equality.Semantic.DeepEqual(original.Status, pubsub.Status) {
+	if equality.Semantic.DeepEqual(original.Status, build.Status) {
 		// If we didn't change anything then don't call updateStatus.
 		// This is important because the copy we loaded from the informer's
 		// cache may be stale and we don't want to overwrite a prior update
 		// to status with this stale state.
 
-	} else if uErr := r.updateStatus(ctx, original, pubsub); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudPubSubSource status", zap.Error(uErr))
-		r.Recorder.Eventf(pubsub, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for CloudPubSubSource %q: %v", pubsub.Name, uErr)
+	} else if uErr := r.updateStatus(ctx, original, build); uErr != nil {
+		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudBuildSource status", zap.Error(uErr))
+		r.Recorder.Eventf(build, corev1.EventTypeWarning, "UpdateFailed",
+			"Failed to update status for CloudBuildSource %q: %v", build.Name, uErr)
 		return uErr
 	} else if reconcileErr == nil {
 		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(pubsub, corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsub.Name)
+		r.Recorder.Eventf(build, corev1.EventTypeNormal, "Updated", "Updated CloudBuildSource %q", build.Name)
 	}
 	if reconcileErr != nil {
-		r.Recorder.Event(pubsub, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
+		r.Recorder.Event(build, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
 	}
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) error {
-	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
+func (r *Reconciler) reconcile(ctx context.Context, build *v1alpha1.CloudBuildSource) error {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("build", build)))
 
-	pubsub.Status.InitializeConditions()
+	build.Status.InitializeConditions()
 
-	if pubsub.DeletionTimestamp != nil {
+	if build.DeletionTimestamp != nil {
 		// No finalizer needed, the pullsubscription will be garbage collected.
 		return nil
 	}
 
-	_, err := r.PubSubBase.ReconcilePullSubscription(ctx, pubsub, pubsub.Spec.Topic, resourceGroup, true)
+	_, err := r.PubSubBase.ReconcilePullSubscription(ctx, build, build.Spec.Topic, resourceGroup, false)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to reconcile PullSubscription", zap.Error(err))
 		return err
@@ -128,13 +127,12 @@ func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.CloudPubSub
 	return nil
 }
 
-
-func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudPubSubSource, desired *v1alpha1.CloudPubSubSource) error {
+func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudBuildSource, desired *v1alpha1.CloudBuildSource) error {
 	existing := original.DeepCopy()
 	return pkgreconciler.RetryUpdateConflicts(func(attempts int) (err error) {
 		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
 		if attempts > 0 {
-			existing, err = r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
+			existing, err = r.RunClientSet.EventsV1alpha1().CloudBuildSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
@@ -146,15 +144,15 @@ func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudP
 		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
 
 		existing.Status = desired.Status
-		_, err = r.RunClientSet.EventsV1alpha1().CloudPubSubSources(desired.Namespace).UpdateStatus(existing)
+		_, err = r.RunClientSet.EventsV1alpha1().CloudBuildSources(desired.Namespace).UpdateStatus(existing)
 
 		if err == nil && becomesReady {
 			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
 			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
-			logging.FromContext(ctx).Desugar().Info("CloudPubSubSource became ready", zap.Any("after", duration))
-			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudPubSubSource %q became ready", existing.Name))
-			if metricErr := r.StatsReporter.ReportReady("CloudPubSubSource", existing.Namespace, existing.Name, duration); metricErr != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudPubSubSource", zap.Error(metricErr))
+			logging.FromContext(ctx).Desugar().Info("CloudBuildSource became ready", zap.Any("after", duration))
+			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudBuildSource %q became ready", existing.Name))
+			if metricErr := r.StatsReporter.ReportReady("CloudBuildSource", existing.Namespace, existing.Name, duration); metricErr != nil {
+				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudBuildSource", zap.Error(metricErr))
 			}
 		}
 

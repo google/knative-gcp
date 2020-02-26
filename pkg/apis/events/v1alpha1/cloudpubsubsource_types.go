@@ -46,9 +46,9 @@ type CloudPubSubSource struct {
 }
 
 var (
-	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
-	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_ kmeta.OwnerRefable           = (*CloudPubSubSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudPubSubSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudPubSubSource)(nil)
 	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
 )
 
@@ -126,8 +126,7 @@ var pubSubCondSet = apis.NewLivingConditionSet(
 
 // CloudPubSubSourceStatus defines the observed state of CloudPubSubSource.
 type CloudPubSubSourceStatus struct {
-	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1.SourceStatus `json:",inline"`
+	duckv1alpha1.PubSubStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -149,6 +148,10 @@ func (s *CloudPubSubSource) GetGroupVersionKind() schema.GroupVersionKind {
 // CloudPubSubSourceSpec returns the CloudPubSubSourceSpec portion of the Spec.
 func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 	return &ps.Spec.PubSubSpec
+}
+
+func (ps *CloudPubSubSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &ps.Status.PubSubStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object

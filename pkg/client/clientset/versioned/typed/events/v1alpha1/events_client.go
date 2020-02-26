@@ -27,6 +27,7 @@ import (
 type EventsV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	CloudAuditLogsSourcesGetter
+	CloudBuildSourcesGetter
 	CloudPubSubSourcesGetter
 	CloudSchedulerSourcesGetter
 	CloudStorageSourcesGetter
@@ -39,6 +40,10 @@ type EventsV1alpha1Client struct {
 
 func (c *EventsV1alpha1Client) CloudAuditLogsSources(namespace string) CloudAuditLogsSourceInterface {
 	return newCloudAuditLogsSources(c, namespace)
+}
+
+func (c *EventsV1alpha1Client) CloudBuildSources(namespace string) CloudBuildSourceInterface {
+	return newCloudBuildSources(c, namespace)
 }
 
 func (c *EventsV1alpha1Client) CloudPubSubSources(namespace string) CloudPubSubSourceInterface {

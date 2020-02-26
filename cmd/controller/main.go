@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -39,6 +40,7 @@ func main() {
 		storage.NewController,
 		scheduler.NewController,
 		pubsub.NewController,
+		build.NewController,
 		staticpullsubscription.NewController,
 		kedapullsubscription.NewController,
 		topic.NewController,

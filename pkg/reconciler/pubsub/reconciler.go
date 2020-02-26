@@ -58,7 +58,6 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
-	annotations := pubsubable.GetObjectMeta().GetAnnotations()
 	spec := pubsubable.PubSubSpec()
 	status := pubsubable.PubSubStatus()
 
@@ -92,13 +91,31 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		return t, nil, err
 	}
 
-	// Ok, so the Topic is ready, let's reconcile PullSubscription.
+	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
+	if err != nil {
+		return t, ps, err
+	}
+	return t, ps, nil
+}
+
+func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*pubsubv1alpha1.PullSubscription, error) {
+	if pubsubable == nil {
+		return nil, fmt.Errorf("nil pubsubable passed in")
+	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	annotations := pubsubable.GetObjectMeta().GetAnnotations()
+	spec := pubsubable.PubSubSpec()
+	status := pubsubable.PubSubStatus()
+
+	cs := pubsubable.ConditionSet()
+
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
+			return nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
 		}
 		args := &resources.PullSubscriptionArgs{
 			Namespace:   namespace,
@@ -110,25 +127,32 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			Labels:      resources.GetLabels(psb.receiveAdapterName, name),
 			Annotations: resources.GetAnnotations(annotations, resourceGroup),
 		}
+		if isPushCompatible {
+			args.Mode = pubsubv1alpha1.ModePushCompatible
+		}
+
+
 		newPS := resources.MakePullSubscription(args)
+		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
-			return t, nil, fmt.Errorf("failed to create PullSubscription: %w", err)
+			return  nil, fmt.Errorf("failed to create PullSubscription: %w", err)
 		}
 	}
 
 	if err := propagatePullSubscriptionStatus(ps, status, cs); err != nil {
-		return t, ps, err
+		return ps, err
 	}
 
 	uri, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
-		return t, ps, fmt.Errorf("failed to parse url %q: %w", ps.Status.SinkURI, err)
+		return ps, fmt.Errorf("failed to parse url %q: %w", ps.Status.SinkURI, err)
 	}
 	status.SinkURI = uri
-	return t, ps, nil
+	return ps, nil
 }
+
 
 func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
 	pc := ps.Status.GetTopLevelCondition()
