@@ -23,9 +23,19 @@ const (
 )
 
 var (
-	// SubscriptionssResource respresents a Knative Subscription
-	TriggersResource = schema.GroupResource{
+	// SubscriptionssResource represents a Knative Subscription
+	SubscriptionsResource = schema.GroupResource{
 		Group:    GroupName,
 		Resource: "subscriptions",
+	}
+	// ChannelsResource represents a Knative Channel
+	ChannelsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "channels",
+	}
+	// InMemoryChannelsResource represents a Knative Channel
+	InMemoryChannelsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "inmemorychannels",
 	}
 )
