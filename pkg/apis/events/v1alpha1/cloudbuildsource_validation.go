@@ -18,16 +18,14 @@ package v1alpha1
 
 import (
 	"context"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"k8s.io/apimachinery/pkg/api/equality"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
-
 
 func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
@@ -73,4 +71,3 @@ func (current *CloudBuildSource) CheckImmutableFields(ctx context.Context, origi
 	}
 	return nil
 }
-
