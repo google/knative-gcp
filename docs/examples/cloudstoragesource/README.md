@@ -59,7 +59,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    command:
 
    ```shell
-   sed "s/\BUCKET/$BUCKET/g" cloudstoragesource.yaml | \
+   sed "s/BUCKET/$BUCKET/g" cloudstoragesource.yaml | \
        kubectl apply --filename -
    ```
 
@@ -79,7 +79,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    and then apply in one command:
 
    ```shell
-   sed "s/\BUCKET/$BUCKET/g" pullsubscription.yaml | \
+   sed "s/BUCKET/$BUCKET/g" pullsubscription.yaml | \
    sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
        kubectl apply --filename -
    ```
@@ -102,7 +102,7 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 Upload a file to your BUCKET, either using the [Cloud Console](https://cloud.google.com/console) or gsutil:
 
 ```shell
-gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere'
+gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere
 ```
 
 ## Verify
