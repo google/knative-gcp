@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
@@ -59,37 +57,40 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 		secret = DefaultSecretSelector()
 	}
 
-	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
+	//credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 
 	podSpec := corev1.PodSpec{
 		Containers: []corev1.Container{{
 			Image: args.Image,
-			Env: []corev1.EnvVar{{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: credsFile,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: args.Topic.Spec.Project,
-			}, {
-				Name:  "PUBSUB_TOPIC_ID",
-				Value: args.Topic.Spec.Topic,
-			}, {
-				Name:  "K_TRACING_CONFIG",
-				Value: args.TracingConfig,
-			}},
-			VolumeMounts: []corev1.VolumeMount{{
-				Name:      credsVolume,
-				MountPath: credsMountPath,
-			}}},
+			Env: []corev1.EnvVar{
+				//	{
+				//	Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				//	Value: credsFile,
+				//},
+				{
+					Name:  "PROJECT_ID",
+					Value: args.Topic.Spec.Project,
+				}, {
+					Name:  "PUBSUB_TOPIC_ID",
+					Value: args.Topic.Spec.Topic,
+				}, {
+					Name:  "K_TRACING_CONFIG",
+					Value: args.TracingConfig,
+				}},
+			//VolumeMounts: []corev1.VolumeMount{{
+			//	Name:      credsVolume,
+			//	MountPath: credsMountPath,
+			//}}
 		},
-		Volumes: []corev1.Volume{{
-			Name: credsVolume,
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: secret.Name,
-				},
-			},
-		}},
+		},
+		//Volumes: []corev1.Volume{{
+		//	Name: credsVolume,
+		//	VolumeSource: corev1.VolumeSource{
+		//		Secret: &corev1.SecretVolumeSource{
+		//			SecretName: secret.Name,
+		//		},
+		//	},
+		//}},
 	}
 	return podSpec
 }

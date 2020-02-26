@@ -18,8 +18,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
-
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -58,7 +56,7 @@ const (
 // PullSubscriptions.
 func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deployment {
 
-	secret := args.Source.Spec.Secret
+	//secret := args.Source.Spec.Secret
 
 	// Convert CloudEvent Overrides to pod embeddable properties.
 	ceExtensions := ""
@@ -92,7 +90,7 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 		resourceName = rn
 	}
 
-	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
+	//credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 	replicas := int32(1)
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,77 +114,80 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: args.Image,
-						Env: []corev1.EnvVar{{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: credsFile,
-						}, {
-							// Needed for Keda scaling.
-							// TODO set it only when using Keda.
-							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: secret},
-						}, {
-							Name:  "PROJECT_ID",
-							Value: args.Source.Spec.Project,
-						}, {
-							Name:  "PUBSUB_TOPIC_ID",
-							Value: args.Source.Spec.Topic,
-						}, {
-							Name:  "PUBSUB_SUBSCRIPTION_ID",
-							Value: args.SubscriptionID,
-						}, {
-							Name:  "SINK_URI",
-							Value: args.SinkURI,
-						}, {
-							Name:  "TRANSFORMER_URI",
-							Value: args.TransformerURI,
-						}, {
-							Name:  "ADAPTER_TYPE",
-							Value: args.Source.Spec.AdapterType,
-						}, {
-							Name:  "SEND_MODE",
-							Value: string(mode),
-						}, {
-							Name:  "K_CE_EXTENSIONS",
-							Value: ceExtensions,
-						}, {
-							Name:  "K_METRICS_CONFIG",
-							Value: args.MetricsConfig,
-						}, {
-							Name:  "K_LOGGING_CONFIG",
-							Value: args.LoggingConfig,
-						}, {
-							Name:  "K_TRACING_CONFIG",
-							Value: args.TracingConfig,
-						}, {
-							Name:  "NAME",
-							Value: resourceName,
-						}, {
-							Name:  "NAMESPACE",
-							Value: args.Source.Namespace,
-						}, {
-							Name:  "RESOURCE_GROUP",
-							Value: resourceGroup,
-						}, {
-							Name:  "METRICS_DOMAIN",
-							Value: metricsDomain,
-						}},
-						VolumeMounts: []corev1.VolumeMount{{
-							Name:      credsVolume,
-							MountPath: credsMountPath,
-						}},
+						Env: []corev1.EnvVar{
+							//	{
+							//	Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							//	Value: credsFile,
+							//},
+							//{
+							//	// Needed for Keda scaling.
+							//	// TODO set it only when using Keda.
+							//	Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							//	ValueFrom: &corev1.EnvVarSource{SecretKeyRef: secret},
+							//},
+							{
+								Name:  "PROJECT_ID",
+								Value: args.Source.Spec.Project,
+							}, {
+								Name:  "PUBSUB_TOPIC_ID",
+								Value: args.Source.Spec.Topic,
+							}, {
+								Name:  "PUBSUB_SUBSCRIPTION_ID",
+								Value: args.SubscriptionID,
+							}, {
+								Name:  "SINK_URI",
+								Value: args.SinkURI,
+							}, {
+								Name:  "TRANSFORMER_URI",
+								Value: args.TransformerURI,
+							}, {
+								Name:  "ADAPTER_TYPE",
+								Value: args.Source.Spec.AdapterType,
+							}, {
+								Name:  "SEND_MODE",
+								Value: string(mode),
+							}, {
+								Name:  "K_CE_EXTENSIONS",
+								Value: ceExtensions,
+							}, {
+								Name:  "K_METRICS_CONFIG",
+								Value: args.MetricsConfig,
+							}, {
+								Name:  "K_LOGGING_CONFIG",
+								Value: args.LoggingConfig,
+							}, {
+								Name:  "K_TRACING_CONFIG",
+								Value: args.TracingConfig,
+							}, {
+								Name:  "NAME",
+								Value: resourceName,
+							}, {
+								Name:  "NAMESPACE",
+								Value: args.Source.Namespace,
+							}, {
+								Name:  "RESOURCE_GROUP",
+								Value: resourceGroup,
+							}, {
+								Name:  "METRICS_DOMAIN",
+								Value: metricsDomain,
+							}},
+						//VolumeMounts: []corev1.VolumeMount{{
+						//	Name:      credsVolume,
+						//	MountPath: credsMountPath,
+						//}},
 						Ports: []corev1.ContainerPort{{
 							Name:          "metrics",
 							ContainerPort: 9090,
 						}}},
 					},
-					Volumes: []corev1.Volume{{
-						Name: credsVolume,
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName: secret.Name,
-							},
-						},
-					}},
+					//Volumes: []corev1.Volume{{
+					//	Name: credsVolume,
+					//	VolumeSource: corev1.VolumeSource{
+					//		Secret: &corev1.SecretVolumeSource{
+					//			SecretName: secret.Name,
+					//		},
+					//	},
+					//}},
 				},
 			},
 		},
