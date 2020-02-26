@@ -21,6 +21,7 @@ import (
 	"time"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -73,6 +74,15 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 			errs = errs.Also(apis.ErrInvalidValue(*current.AckDeadline, "ackDeadline"))
 		} else if ad < minAckDeadline || ad > maxAckDeadline {
 			errs = errs.Also(apis.ErrOutOfBoundsValue(*current.AckDeadline, minAckDeadline.String(), maxAckDeadline.String(), "ackDeadline"))
+		}
+	}
+
+	if current.Secret != nil {
+		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.Secret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("secret"))
+			}
 		}
 	}
 

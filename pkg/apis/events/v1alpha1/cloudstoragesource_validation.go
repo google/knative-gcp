@@ -58,15 +58,6 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 		}
 	}
 
-	if current.PubSubSecret != nil {
-		if !equality.Semantic.DeepEqual(current.PubSubSecret, &corev1.SecretKeySelector{}) {
-			err := validateSecret(current.PubSubSecret)
-			if err != nil {
-				errs = errs.Also(err.ViaField("pubSubSecret"))
-			}
-		}
-	}
-
 	return errs
 }
 
@@ -85,7 +76,7 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
-	// Modification of EventType, Secret, PubSubSecret, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+	// Modification of EventType, Secret, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
 			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {

@@ -18,9 +18,13 @@ package v1alpha1
 
 import (
 	"context"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldError {
@@ -29,6 +33,14 @@ func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldEr
 
 func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
+
+	// Sink [required]
+	if equality.Semantic.DeepEqual(current.Sink, duckv1.Destination{}) {
+		errs = errs.Also(apis.ErrMissingField("sink"))
+	} else if err := current.Sink.Validate(ctx); err != nil {
+		errs = errs.Also(err.ViaField("sink"))
+	}
+
 	// ServiceName [required]
 	if current.ServiceName == "" {
 		errs = errs.Also(apis.ErrMissingField("serviceName"))
@@ -36,6 +48,15 @@ func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.Fie
 	// MethodName [required]
 	if current.MethodName == "" {
 		errs = errs.Also(apis.ErrMissingField("methodName"))
+	}
+
+	if current.Secret != nil {
+		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.Secret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("secret"))
+			}
+		}
 	}
 
 	return errs

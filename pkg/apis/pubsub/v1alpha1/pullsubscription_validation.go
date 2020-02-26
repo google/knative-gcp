@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -89,6 +90,27 @@ func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(apis.ErrInvalidValue(current.Mode, "mode"))
 	}
 
+	if current.Secret != nil {
+		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
+			err := validateSecret(current.Secret)
+			if err != nil {
+				errs = errs.Also(err.ViaField("secret"))
+			}
+		}
+	}
+
+	return errs
+}
+
+// TODO move this to a common place.
+func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
+	var errs *apis.FieldError
+	if secret.Name == "" {
+		errs = errs.Also(apis.ErrMissingField("name"))
+	}
+	if secret.Key == "" {
+		errs = errs.Also(apis.ErrMissingField("key"))
+	}
 	return errs
 }
 

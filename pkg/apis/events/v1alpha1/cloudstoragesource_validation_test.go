@@ -70,35 +70,7 @@ var (
 		},
 	}
 
-	// Bucket, Sink, Secret, and PubSubSecret
-	withPubSubSecret = CloudStorageSourceSpec{
-		Bucket: "my-test-bucket",
-		PubSubSpec: duckv1alpha1.PubSubSpec{
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					Ref: &duckv1.KReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
-					},
-				},
-			},
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "gcs-secret-name",
-				},
-				Key: "gcs-secret-key",
-			},
-			PubSubSecret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "pullsubscription-secret-name",
-				},
-				Key: "pullsubscription-secret-key",
-			},
-		},
-	}
-	// Bucket, Sink, Secret, PubSubSecret, Event Type and Project, ObjectNamePrefix and PayloadFormat
+	// Bucket, Sink, Secret, Event Type and Project, ObjectNamePrefix and PayloadFormat
 	storageSourceSpec = CloudStorageSourceSpec{
 		Bucket:           "my-test-bucket",
 		EventTypes:       []string{CloudStorageSourceFinalize, CloudStorageSourceDelete},
@@ -122,12 +94,6 @@ var (
 				Key: "gcs-secret-key",
 			},
 			Project: "my-eventing-project",
-			PubSubSecret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "pullsubscription-secret-name",
-				},
-				Key: "pullsubscription-secret-key",
-			},
 		},
 	}
 )
@@ -250,55 +216,6 @@ func TestSpecValidationFields(t *testing.T) {
 			fe := apis.ErrMissingField("secret.key")
 			return fe
 		}(),
-	}, {
-		name: "invalid pullsubscription secret, missing name",
-		spec: &CloudStorageSourceSpec{
-			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "foo",
-							Kind:       "bar",
-							Namespace:  "baz",
-							Name:       "qux",
-						},
-					},
-				},
-				PubSubSecret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{},
-					Key:                  "secret-test-key",
-				},
-			},
-		},
-		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubSubSecret.name")
-			return fe
-		}(),
-	}, {
-		name: "invalid gcs secret, missing key",
-		spec: &CloudStorageSourceSpec{
-			Bucket: "my-test-bucket",
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "foo",
-							Kind:       "bar",
-							Namespace:  "baz",
-							Name:       "qux",
-						},
-					},
-				},
-				PubSubSecret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
-				},
-			},
-		},
-		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubSubSecret.key")
-			return fe
-		}(),
 	}}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -380,28 +297,6 @@ func TestCheckImmutableFields(t *testing.T) {
 						Key: storageSourceSpec.Secret.Key,
 					},
 					Project:      storageSourceSpec.Project,
-					PubSubSecret: storageSourceSpec.PubSubSecret,
-				},
-			},
-			allowed: false,
-		},
-		"PubSubSecret.Name changed": {
-			orig: &storageSourceSpec,
-			updated: CloudStorageSourceSpec{
-				Bucket:           storageSourceSpec.Bucket,
-				EventTypes:       storageSourceSpec.EventTypes,
-				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
-				PayloadFormat:    storageSourceSpec.PayloadFormat,
-				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec: storageSourceSpec.SourceSpec,
-					Secret:     storageSourceSpec.Secret,
-					Project:    storageSourceSpec.Project,
-					PubSubSecret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "some-other-pullsubscription-secret-name",
-						},
-						Key: storageSourceSpec.PubSubSecret.Key,
-					},
 				},
 			},
 			allowed: false,
@@ -417,7 +312,6 @@ func TestCheckImmutableFields(t *testing.T) {
 					SourceSpec:   storageSourceSpec.SourceSpec,
 					Secret:       storageSourceSpec.Secret,
 					Project:      "some-other-project",
-					PubSubSecret: storageSourceSpec.PubSubSecret,
 				},
 			},
 			allowed: false,

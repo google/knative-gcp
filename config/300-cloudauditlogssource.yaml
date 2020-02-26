@@ -56,10 +56,7 @@ spec:
           properties:
             secret:
               type: object
-              description: "Credential used to pull Stackdriver audit log pubsub messages. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'"
-            pubSubSecret:
-              type: object
-              description: "Optional credential to use for creating a Topic and subscribing to the Topic. If omitted, uses secret. Must be a service account key in JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys)."
+              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
             serviceAccountName:
               type: string
               description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."

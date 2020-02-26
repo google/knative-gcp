@@ -95,11 +95,6 @@ func (in *PubSubSpec) DeepCopyInto(out *PubSubSpec) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.PubSubSecret != nil {
-		in, out := &in.PubSubSecret, &out.PubSubSecret
-		*out = new(v1.SecretKeySelector)
-		(*in).DeepCopyInto(*out)
-	}
 	return
 }
 

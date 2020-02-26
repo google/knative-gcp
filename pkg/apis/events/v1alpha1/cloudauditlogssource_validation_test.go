@@ -77,6 +77,16 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"invalid scheduler secret, missing key": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test-secret"},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
