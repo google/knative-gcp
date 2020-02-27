@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors.
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+// +k8s:deepcopy-gen=package
 
-import (
-	"context"
-	"fmt"
-
-	"knative.dev/pkg/apis"
-)
-
-// ConvertTo implements apis.Convertible
-func (source *SinkBinding) ConvertTo(ctx context.Context, sink apis.Convertible) error {
-	return fmt.Errorf("v1alpha2 is the highest known version, got: %T", sink)
-}
-
-// ConvertFrom implements apis.Convertible
-func (sink *SinkBinding) ConvertFrom(ctx context.Context, source apis.Convertible) error {
-	return fmt.Errorf("v1alpha2 is the highest known version, got: %T", source)
-}
+// Package config holds the typed objects that define the schemas for
+// ConfigMap objects that pertain to our API objects.
+package config
