@@ -50,16 +50,12 @@ type PubSubSpec struct {
 	// This brings in CloudEventOverrides and Sink.
 	duckv1.SourceSpec `json:",inline"`
 
-	// Secret is the credential to use to create the "entity" in GCP.
+	// Secret is the credential to use to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to:
 	// Name: google-cloud-key
 	// Key: key.json
 	// +optional
 	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
-
-	// PubSubSecret is the credential to use to create
-	// Topic / PullSubscription resources. If omitted, uses Secret
-	PubSubSecret *corev1.SecretKeySelector `json:"pubsubSecret,omitempty"`
 
 	// Project is the ID of the Google Cloud Project that the PubSub Topic exists in.
 	// If omitted, defaults to same as the cluster.
@@ -133,10 +129,6 @@ func (s *PubSub) Populate() {
 	s.Spec.Secret = &corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "secret"},
 		Key:                  "secretkey",
-	}
-	s.Spec.PubSubSecret = &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{Name: "pubsubsecret"},
-		Key:                  "pubsubkey",
 	}
 	s.Status.ObservedGeneration = 42
 	s.Status.Conditions = duckv1.Conditions{{

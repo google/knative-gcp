@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/kmeta"
 
@@ -38,12 +36,6 @@ type TopicArgs struct {
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
 func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
-
-	pubsubSecret := args.Spec.Secret
-	if args.Spec.PubSubSecret != nil && !equality.Semantic.DeepEqual(args.Spec.PubSubSecret, &corev1.SecretKeySelector{}) {
-		pubsubSecret = args.Spec.PubSubSecret
-	}
-
 	return &pubsubv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
@@ -52,7 +44,7 @@ func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
-			Secret:            pubsubSecret,
+			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,
 			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,

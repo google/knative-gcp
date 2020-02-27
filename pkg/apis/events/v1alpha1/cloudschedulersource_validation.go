@@ -67,15 +67,6 @@ func (current *CloudSchedulerSourceSpec) Validate(ctx context.Context) *apis.Fie
 		}
 	}
 
-	if current.PubSubSecret != nil {
-		if !equality.Semantic.DeepEqual(current.PubSubSecret, &corev1.SecretKeySelector{}) {
-			err := validateSecret(current.PubSubSecret)
-			if err != nil {
-				errs = errs.Also(err.ViaField("pubsubSecret"))
-			}
-		}
-	}
-
 	return errs
 }
 
@@ -83,7 +74,7 @@ func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, o
 	if original == nil {
 		return nil
 	}
-	// Modification of Location, Schedule, Data, Secret, PubSubSecret, Project are not allowed. Everything else is mutable.
+	// Modification of Location, Schedule, Data, Secret, Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudSchedulerSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
