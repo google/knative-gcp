@@ -23,10 +23,12 @@ import (
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	configvalidation "knative.dev/eventing/pkg/apis/configs/validation"
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 	tracingconfig "knative.dev/pkg/tracing/config"
@@ -114,7 +116,8 @@ func NewConfigValidationController(ctx context.Context, cmw configmap.Watcher) *
 		configmap.Constructors{
 			tracingconfig.ConfigName: tracingconfig.NewTracingConfigFromConfigMap,
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
-			logging.ConfigMapName(): logging.NewConfigFromConfigMap,
+			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
+			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
 		},
 	)
 }
