@@ -19,7 +19,7 @@ limitations under the License.
 package pubsub
 
 import (
-	"context"
+	context "context"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duck "knative.dev/pkg/apis/duck"

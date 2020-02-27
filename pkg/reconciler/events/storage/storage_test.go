@@ -221,11 +221,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithCloudStorageSourceFinalizers(finalizerName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", storageName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", storageName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",

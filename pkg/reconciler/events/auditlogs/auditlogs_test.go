@@ -197,11 +197,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
+				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",

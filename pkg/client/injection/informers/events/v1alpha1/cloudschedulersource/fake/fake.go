@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	"context"
+	context "context"
 
 	cloudschedulersource "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource"
 	fake "github.com/google/knative-gcp/pkg/client/injection/informers/factory/fake"
