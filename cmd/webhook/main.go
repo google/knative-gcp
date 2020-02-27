@@ -19,11 +19,11 @@ package main
 import (
 	"context"
 
+	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	configvalidation "knative.dev/eventing/pkg/apis/configs/validation"
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
