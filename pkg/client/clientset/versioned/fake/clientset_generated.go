@@ -26,6 +26,8 @@ import (
 	fakemessagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	fakepubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
+	securityv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/security/v1alpha1"
+	fakesecurityv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/security/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -93,4 +95,9 @@ func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Inter
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
 func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
 	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
+}
+
+// SecurityV1alpha1 retrieves the SecurityV1alpha1Client
+func (c *Clientset) SecurityV1alpha1() securityv1alpha1.SecurityV1alpha1Interface {
+	return &fakesecurityv1alpha1.FakeSecurityV1alpha1{Fake: &c.Fake}
 }
