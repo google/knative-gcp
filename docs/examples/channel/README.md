@@ -7,8 +7,9 @@ intended to provide a durable messaging solution.
 
 ## Prerequisites
 
-1. [Install Knative-GCP](../../install/install-knative-gcp.md). Remember to install [Eventing](https://knative.dev/docs/eventing/) as part of 
-   the installation procedure.
+1. [Install Knative-GCP](../../install/install-knative-gcp.md). Remember to
+   install [Eventing](https://knative.dev/docs/eventing/) as part of the
+   installation procedure.
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
@@ -46,13 +47,15 @@ intended to provide a durable messaging solution.
    kubectl get subscription demo
    ```
 
-1. Create an Event Source, in this case, a CronJobSource from [source.yaml](source.yaml).
+1. Create an Event Source, in this case, a CronJobSource from
+   [source.yaml](source.yaml).
 
    ```shell
    kubectl apply --filename source.yaml
    ```
 
-   This will send an event through the `demo` channel every minute on the minute.
+   This will send an event through the `demo` channel every minute on the
+   minute.
 
 ## Verify
 
