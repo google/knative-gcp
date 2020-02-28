@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+
 	"google.golang.org/api/option"
 
 	"github.com/google/knative-gcp/pkg/gclient/scheduler"

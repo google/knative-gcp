@@ -20,8 +20,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/client-go/tools/cache"
 	"time"
+
+	"k8s.io/client-go/tools/cache"
 
 	"go.uber.org/zap"
 
