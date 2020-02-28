@@ -52,7 +52,7 @@ E2E_PROJECT_ID=<project name> \
 ```
 
 Note that if you plan on running metrics-related E2E tests using the StackDriver
-backend, you need to give your [Service Account](../../docs/pubsub/README.md)
+backend, you need to give your [Service Account](../../docs/install/pubsub-service-account.md)
 the `Monitoring Editor` role on your Google Cloud project:
 
 ```shell
