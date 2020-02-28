@@ -1513,7 +1513,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:de7e2f56a6d7068e94ecb5cecd5bc8a05d55c36ba3b7bcbad2f9a5a4e283c9c1"
+  digest = "1:97db0e850822f07de0861e4d9bd0e779b08584fd37710bb38550e22e4f2b6bf9"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1525,6 +1525,7 @@
     "pkg/apis/serving/v1",
     "pkg/apis/serving/v1alpha1",
     "pkg/apis/serving/v1beta1",
+    "pkg/autoscaler/config",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/fake",
     "pkg/client/clientset/versioned/scheme",
@@ -1561,18 +1562,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "ff459c4d411a2e2dfb363d9f5250169333fb77ab"
+  revision = "10548021d4ef09b603b94d93ec070c4291bc7ad0"
 
 [[projects]]
   branch = "master"
-  digest = "1:4ba0f80b3feed917d2c9a1aa79ea95836c3aef84589431cff77ffd01615a1150"
+  digest = "1:e7ea104eff9c91ce48f1730ab8b4098faa1ea519162ccbbbca68c205428f0e21"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "d5990f0e5a05d5819a40ad3b4de6227406850b48"
+  revision = "8c4b7ba9225ef684492032fb787f5f99d021545d"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
