@@ -19,7 +19,7 @@ limitations under the License.
 package topic
 
 import (
-	"context"
+	context "context"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub/v1alpha1"
 	factory "github.com/google/knative-gcp/pkg/client/injection/informers/factory"

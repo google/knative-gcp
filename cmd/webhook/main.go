@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 
+	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -27,6 +28,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/leaderelection"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 	tracingconfig "knative.dev/pkg/tracing/config"
@@ -114,7 +116,8 @@ func NewConfigValidationController(ctx context.Context, cmw configmap.Watcher) *
 		configmap.Constructors{
 			tracingconfig.ConfigName: tracingconfig.NewTracingConfigFromConfigMap,
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
-			logging.ConfigMapName(): logging.NewConfigFromConfigMap,
+			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
+			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
 		},
 	)
 }
@@ -128,7 +131,7 @@ func main() {
 		SecretName: "webhook-certs",
 	})
 
-	sharedmain.MainWithContext(ctx, logconfig.WebhookName(),
+	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(),
 		certificates.NewController,
 		NewConfigValidationController,
 		NewValidationAdmissionController,

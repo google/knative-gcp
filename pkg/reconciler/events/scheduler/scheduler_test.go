@@ -227,11 +227,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithCloudSchedulerSourceFinalizers(finalizerName),
 				WithInitCloudSchedulerSourceConditions,
-				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", schedulerName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", schedulerName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
