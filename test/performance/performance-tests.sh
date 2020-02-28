@@ -33,7 +33,7 @@ readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 
 function update_knative() {
-  start_knative_gcp
+  start_knative_gcp || return 1
   # Create the secret for pub-sub if it does not exist.
   kubectl -n ${TEST_NAMESPACE} get secret ${PUBSUB_SECRET_NAME} || \
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \

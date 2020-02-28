@@ -21,10 +21,10 @@ readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
-  start_latest_knative_serving
-  start_latest_knative_eventing
-  cloud_run_events_setup
-  istio_patch
+  start_latest_knative_serving || return 1
+  start_latest_knative_eventing || return 1
+  cloud_run_events_setup || return 1
+  istio_patch || return 1
 }
 
 # Setup the Cloud Run Events environment for running tests.
@@ -39,5 +39,5 @@ function cloud_run_events_setup() {
 
 function istio_patch() {
   header "Patching Istio"
-  kubectl apply -f test/e2e/config/istio-patch/istio-knative-extras.yaml
+  kubectl apply -f test/e2e/config/istio-patch/istio-knative-extras.yaml || return 1
 }

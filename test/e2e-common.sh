@@ -48,7 +48,7 @@ readonly PUBSUB_SECRET_NAME="google-cloud-key"
 # Setup Knative GCP.
 function knative_setup() {
   control_plane_setup || return 1
-  start_knative_gcp
+  start_knative_gcp || return 1
 }
 
 # Setup resources common to all eventing tests.
