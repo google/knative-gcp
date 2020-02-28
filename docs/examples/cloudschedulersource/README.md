@@ -2,13 +2,15 @@
 
 ## Overview
 
-This sample shows how to Configure `CloudSchedulerSource` resource for receiving scheduled
-events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
+This sample shows how to Configure `CloudSchedulerSource` resource for receiving
+scheduled events from
+[Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 ## Prerequisites
 
-1. [Install Knative-GCP](../../install/install-knative-gcp.md). Note that your project needs to be created with
-   an App Engine application. Refer to this [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
+1. [Install Knative-GCP](../../install/install-knative-gcp.md). Note that your
+   project needs to be created with an App Engine application. Refer to this
+   [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
    for more details.
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
@@ -23,11 +25,12 @@ events from [Google Cloud Scheduler](https://cloud.google.com/scheduler/).
 
 1. Create a [`CloudSchedulerSource`](cloudschedulersource.yaml)
 
-    ```shell
-    kubectl apply --filename cloudschedulersource.yaml
-    ```
+   ```shell
+   kubectl apply --filename cloudschedulersource.yaml
+   ```
 
-1. Create a [`Service`](event-display.yaml) that the Scheduler notifications will sink into:
+1. Create a [`Service`](event-display.yaml) that the Scheduler notifications
+   will sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -41,11 +44,11 @@ service that this Scheduler job sinks to.
 1. We need to wait for the downstream pods to get started and receive our event,
    wait 60 seconds. You can check the status of the downstream pods with:
 
-     ```shell
-     kubectl get pods --selector app=event-display
-     ```
+   ```shell
+   kubectl get pods --selector app=event-display
+   ```
 
-     You should see at least one.
+   You should see at least one.
 
 1. Inspect the logs of the `Service`:
 
@@ -74,20 +77,25 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
-1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
-1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
+1. For integrating with Cloud Pub/Sub, see the
+   [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the
+   [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Audit Logs see the
+   [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For more information about CloudEvents, see the
+   [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
 1. Delete the `CloudSchedulerSource`
 
-    ```shell
-    kubectl delete -f ./cloudschedulersource.yaml
-    ```
-1. Delete the `Service`    
-    
-    ```shell
-    kubectl delete -f ./event-display.yaml
-    ```
+   ```shell
+   kubectl delete -f ./cloudschedulersource.yaml
+   ```
+
+1. Delete the `Service`
+
+   ```shell
+   kubectl delete -f ./event-display.yaml
+   ```
