@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+// +k8s:deepcopy-gen=package
 
-import (
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-func TestGenerateScaledObjectName(t *testing.T) {
-	want := "cre-so-a-uid"
-	got := GenerateScaledObjectName(&v1alpha1.PullSubscription{
-		ObjectMeta: v1.ObjectMeta{
-			UID: "a-uid",
-		},
-	})
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-	}
-}
+// Package config contains the config for the autoscaler
+package config

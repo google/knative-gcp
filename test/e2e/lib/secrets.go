@@ -23,8 +23,8 @@ import (
 )
 
 const (
-    pubSubSecretName      = "google-cloud-key"
-    pubSubSecretNamespace = "default"
+	pubSubSecretName      = "google-cloud-key"
+	pubSubSecretNamespace = "default"
 )
 
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.

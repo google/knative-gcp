@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck/v1alpha1"
-	"knative.dev/serving/pkg/apis/serving/v1"
+	v1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
 // GetCondition returns the condition currently associated with the given type,
@@ -97,7 +97,7 @@ func (ts *TopicStatus) MarkPublisherNotDeployed(reason, messageFormat string, me
 // MarkPublisherNotConfigured changes the PublisherReady condition to be unknown to reflect
 // that the Publisher does not yet have a Status.
 func (ts *TopicStatus) MarkPublisherNotConfigured() {
-	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, "PublisherNotConfigured","Publisher has not yet been reconciled")
+	topicCondSet.Manage(ts).MarkUnknown(TopicConditionPublisherReady, "PublisherNotConfigured", "Publisher has not yet been reconciled")
 }
 
 // MarkTopicReady sets the condition that the topic has been created.

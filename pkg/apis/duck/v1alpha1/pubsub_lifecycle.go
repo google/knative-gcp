@@ -52,7 +52,6 @@ func (s *PubSubStatus) MarkPullSubscriptionUnknown(cs *apis.ConditionSet, reason
 	cs.Manage(s).MarkUnknown(PullSubscriptionReady, reason, messageFormat, messageA...)
 }
 
-
 // MarkPullSubscriptionReady sets the condition that the PubSub PullSubscription is ready.
 func (s *PubSubStatus) MarkPullSubscriptionReady(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkTrue(PullSubscriptionReady)
