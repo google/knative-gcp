@@ -18,6 +18,7 @@ package publisher
 
 import (
 	"fmt"
+
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 

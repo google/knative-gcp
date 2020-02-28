@@ -18,6 +18,7 @@ package topic
 
 import (
 	"context"
+
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"

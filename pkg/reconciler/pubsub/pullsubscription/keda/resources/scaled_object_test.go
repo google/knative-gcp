@@ -18,12 +18,12 @@ package resources
 
 import (
 	"context"
-	"k8s.io/api/apps/v1"
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/google/go-cmp/cmp"
@@ -70,8 +70,8 @@ func TestMakeScaledObject(t *testing.T) {
 			"apiVersion": "keda.k8s.io/v1alpha1",
 			"kind":       "ScaledObject",
 			"metadata": map[string]interface{}{
-				"namespace":         "psnamespace",
-				"name":              GenerateScaledObjectName(ps),
+				"namespace": "psnamespace",
+				"name":      GenerateScaledObjectName(ps),
 				"labels": map[string]interface{}{
 					"deploymentName":                  ra.Name,
 					"events.cloud.google.com/ps-name": ps.Name,

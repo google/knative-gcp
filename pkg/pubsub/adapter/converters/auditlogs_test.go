@@ -19,9 +19,10 @@ package converters
 import (
 	"bytes"
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"testing"
 	"time"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	"github.com/golang/protobuf/jsonpb"

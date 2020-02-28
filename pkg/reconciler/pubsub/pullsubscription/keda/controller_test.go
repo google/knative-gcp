@@ -37,6 +37,7 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
 	_ "knative.dev/pkg/injection/clients/dynamicclient/fake"
+
 	// Why is serving needed here?
 	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1/service/fake"
 	// Fake injection informers
