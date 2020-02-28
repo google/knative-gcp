@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	"context"
+	context "context"
 
 	fake "github.com/google/knative-gcp/pkg/client/injection/informers/factory/fake"
 	eventpolicy "github.com/google/knative-gcp/pkg/client/injection/informers/security/v1alpha1/eventpolicy"
