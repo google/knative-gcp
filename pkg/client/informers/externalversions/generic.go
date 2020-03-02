@@ -78,8 +78,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=security.knative.dev, Version=v1alpha1
 	case securityv1alpha1.SchemeGroupVersion.WithResource("eventpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Security().V1alpha1().EventPolicies().Informer()}, nil
+	case securityv1alpha1.SchemeGroupVersion.WithResource("eventpolicybindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Security().V1alpha1().EventPolicyBindings().Informer()}, nil
 	case securityv1alpha1.SchemeGroupVersion.WithResource("httppolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Security().V1alpha1().HTTPPolicies().Informer()}, nil
+	case securityv1alpha1.SchemeGroupVersion.WithResource("httppolicybindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Security().V1alpha1().HTTPPolicyBindings().Informer()}, nil
 
 	}
 

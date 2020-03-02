@@ -21,7 +21,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/tracker"
 )
 
 func TestValidateStringMatch(t *testing.T) {
@@ -193,6 +196,132 @@ func TestValidateStringMatches(t *testing.T) {
 			gotErr := ValidateStringMatches(context.Background(), tc.sm, "parent")
 			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
 				t.Errorf("ValidateStringMatches (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestValidatePolicyBindingSpec(t *testing.T) {
+	cases := []struct {
+		name            string
+		spec            PolicyBindingSpec
+		parentNamespace string
+		wantErr         *apis.FieldError
+	}{{
+		name: "valid",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+	}, {
+		name: "subject namespace mismatch",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "bar",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrInvalidValue("bar", "namespace").ViaField("subject"),
+	}, {
+		name: "subject name and selector not specified",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Namespace: "foo",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrMissingOneOf("name", "selector").ViaField("subject"),
+	}, {
+		name: "policy namespace mismatch",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				Name:      "policy",
+				Namespace: "bar",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrInvalidValue("bar", "namespace").ViaField("policy"),
+	}, {
+		name: "policy missing",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrMissingField("policy"),
+	}, {
+		name: "policy API specified",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				APIVersion: "other.policy",
+				Name:       "policy",
+				Namespace:  "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrDisallowedFields("apiVersion", "kind").ViaField("policy"),
+	}, {
+		name: "policy kind specified",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+			Policy: &corev1.ObjectReference{
+				Kind:      "other.kind",
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrDisallowedFields("apiVersion", "kind").ViaField("policy"),
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotErr := tc.spec.Validate(context.Background(), tc.parentNamespace)
+			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
+				t.Errorf("PolicyBindingSpec.Validate (-want, +got) = %v", diff)
 			}
 		})
 	}

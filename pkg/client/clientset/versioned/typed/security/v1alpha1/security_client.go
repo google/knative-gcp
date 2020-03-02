@@ -27,7 +27,9 @@ import (
 type SecurityV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	EventPoliciesGetter
+	EventPolicyBindingsGetter
 	HTTPPoliciesGetter
+	HTTPPolicyBindingsGetter
 }
 
 // SecurityV1alpha1Client is used to interact with features provided by the security.knative.dev group.
@@ -39,8 +41,16 @@ func (c *SecurityV1alpha1Client) EventPolicies(namespace string) EventPolicyInte
 	return newEventPolicies(c, namespace)
 }
 
+func (c *SecurityV1alpha1Client) EventPolicyBindings(namespace string) EventPolicyBindingInterface {
+	return newEventPolicyBindings(c, namespace)
+}
+
 func (c *SecurityV1alpha1Client) HTTPPolicies(namespace string) HTTPPolicyInterface {
 	return newHTTPPolicies(c, namespace)
+}
+
+func (c *SecurityV1alpha1Client) HTTPPolicyBindings(namespace string) HTTPPolicyBindingInterface {
+	return newHTTPPolicyBindings(c, namespace)
 }
 
 // NewForConfig creates a new SecurityV1alpha1Client for the given config.

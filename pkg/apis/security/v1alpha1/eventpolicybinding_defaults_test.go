@@ -21,23 +21,22 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestJWTDefaults(t *testing.T) {
-	j := &JWTSpec{}
-	j.SetDefaults(context.Background())
-	if j.JwtHeader != "Authorization" {
-		t.Errorf("default JwtHeader got=%s want=Authorization", j.JwtHeader)
+func TestEventPolicyBindingDefaults(t *testing.T) {
+	pb := EventPolicyBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "my-policy-binding",
+			Namespace: "test-namespace",
+		},
+		Spec: PolicyBindingSpec{Policy: &corev1.ObjectReference{}},
 	}
-}
-
-func TestPolicyBindingSpecDefaults(t *testing.T) {
-	spec := &PolicyBindingSpec{Policy: &corev1.ObjectReference{}}
-	spec.SetDefaults(context.Background(), "test-namespace")
-	if spec.Subject.Namespace != "test-namespace" {
-		t.Errorf("spec.Subject.Namespace got=%s want=test-namespace", spec.Subject.Namespace)
+	pb.SetDefaults(context.Background())
+	if pb.Spec.Subject.Namespace != "test-namespace" {
+		t.Errorf("spec.Subject.Namespace got=%s want=test-namespace", pb.Spec.Subject.Namespace)
 	}
-	if spec.Policy.Namespace != "test-namespace" {
-		t.Errorf("spec.Policy.Namespace got=%s want=test-namespace", spec.Policy.Namespace)
+	if pb.Spec.Policy.Namespace != "test-namespace" {
+		t.Errorf("spec.Policy.Namespace got=%s want=test-namespace", pb.Spec.Policy.Namespace)
 	}
 }

@@ -105,3 +105,28 @@ func ValidateStringMatches(ctx context.Context, matches []StringMatch, field str
 	}
 	return errs
 }
+
+// Validate validates a PolicyBindingSpec.
+func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace string) *apis.FieldError {
+	var errs *apis.FieldError
+	if pbs.Subject.Namespace != parentNamespace {
+		errs = errs.Also(apis.ErrInvalidValue(pbs.Subject.Namespace, "namespace").ViaField("subject"))
+	}
+	if pbs.Subject.Name == "" && pbs.Subject.Selector == nil {
+		errs = errs.Also(apis.ErrMissingOneOf("name", "selector").ViaField("subject"))
+	}
+	if pbs.Policy == nil {
+		errs = errs.Also(apis.ErrMissingField("policy"))
+	} else {
+		if pbs.Policy.APIVersion != "" || pbs.Policy.Kind != "" {
+			errs = errs.Also(apis.ErrDisallowedFields("apiVersion", "kind").ViaField("policy"))
+		}
+		if pbs.Policy.Name == "" {
+			errs = errs.Also(apis.ErrMissingField("name").ViaField("policy"))
+		}
+		if pbs.Policy.Namespace != parentNamespace {
+			errs = errs.Also(apis.ErrInvalidValue(pbs.Policy.Namespace, "namespace").ViaField("policy"))
+		}
+	}
+	return errs
+}

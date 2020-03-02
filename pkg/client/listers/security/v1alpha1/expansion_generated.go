@@ -26,6 +26,14 @@ type EventPolicyListerExpansion interface{}
 // EventPolicyNamespaceLister.
 type EventPolicyNamespaceListerExpansion interface{}
 
+// EventPolicyBindingListerExpansion allows custom methods to be added to
+// EventPolicyBindingLister.
+type EventPolicyBindingListerExpansion interface{}
+
+// EventPolicyBindingNamespaceListerExpansion allows custom methods to be added to
+// EventPolicyBindingNamespaceLister.
+type EventPolicyBindingNamespaceListerExpansion interface{}
+
 // HTTPPolicyListerExpansion allows custom methods to be added to
 // HTTPPolicyLister.
 type HTTPPolicyListerExpansion interface{}
@@ -33,3 +41,11 @@ type HTTPPolicyListerExpansion interface{}
 // HTTPPolicyNamespaceListerExpansion allows custom methods to be added to
 // HTTPPolicyNamespaceLister.
 type HTTPPolicyNamespaceListerExpansion interface{}
+
+// HTTPPolicyBindingListerExpansion allows custom methods to be added to
+// HTTPPolicyBindingLister.
+type HTTPPolicyBindingListerExpansion interface{}
+
+// HTTPPolicyBindingNamespaceListerExpansion allows custom methods to be added to
+// HTTPPolicyBindingNamespaceLister.
+type HTTPPolicyBindingNamespaceListerExpansion interface{}

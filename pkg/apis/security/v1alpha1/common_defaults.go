@@ -24,3 +24,13 @@ func (j *JWTSpec) SetDefaults(ctx context.Context) {
 		j.JwtHeader = "Authorization"
 	}
 }
+
+// SetDefaults sets default for PolicyBindingSpec.
+func (pbs *PolicyBindingSpec) SetDefaults(ctx context.Context, parentNamespace string) {
+	if pbs.Subject.Namespace == "" {
+		pbs.Subject.Namespace = parentNamespace
+	}
+	if pbs.Policy != nil && pbs.Policy.Namespace == "" {
+		pbs.Policy.Namespace = parentNamespace
+	}
+}

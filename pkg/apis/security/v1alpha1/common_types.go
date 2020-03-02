@@ -16,6 +16,12 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	corev1 "k8s.io/api/core/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+)
+
 // StringMatch defines the specification to match a string.
 type StringMatch struct {
 	// Exact is to match the exact string.
@@ -61,4 +67,21 @@ type JWTSpec struct {
 	// IncludePaths is a list of request paths to include in this JWT validation.
 	// If provided, only listed paths will be checked for the policy.
 	IncludePaths []StringMatch `json:"includePaths,omitempty"`
+}
+
+// PolicyBindingSpec is the specification for a policy binding.
+type PolicyBindingSpec struct {
+	// The binding subject.
+	duckv1alpha1.BindingSpec `json:",inline"`
+
+	// Policy is the policy to bind to the subject.
+	Policy *corev1.ObjectReference `json:"policy"`
+}
+
+// PolicyBindingStatus is the status for a policy binding.
+type PolicyBindingStatus struct {
+	// inherits duck/v1 Status, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
+	// * Conditions - the latest available observations of a resource's current state.
+	duckv1.Status `json:",inline"`
 }

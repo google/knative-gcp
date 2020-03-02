@@ -60,8 +60,12 @@ func TestKnownTypes(t *testing.T) {
 	for _, name := range []string{
 		"HTTPPolicy",
 		"EventPolicy",
+		"HTTPPolicyBinding",
+		"EventPolicyBinding",
 		"HTTPPolicyList",
 		"EventPolicyList",
+		"HTTPPolicyBindingList",
+		"EventPolicyBindingList",
 	} {
 		if _, ok := types[name]; !ok {
 			t.Errorf("Did not find %q as registered type", name)

@@ -32,8 +32,16 @@ func (c *FakeSecurityV1alpha1) EventPolicies(namespace string) v1alpha1.EventPol
 	return &FakeEventPolicies{c, namespace}
 }
 
+func (c *FakeSecurityV1alpha1) EventPolicyBindings(namespace string) v1alpha1.EventPolicyBindingInterface {
+	return &FakeEventPolicyBindings{c, namespace}
+}
+
 func (c *FakeSecurityV1alpha1) HTTPPolicies(namespace string) v1alpha1.HTTPPolicyInterface {
 	return &FakeHTTPPolicies{c, namespace}
+}
+
+func (c *FakeSecurityV1alpha1) HTTPPolicyBindings(namespace string) v1alpha1.HTTPPolicyBindingInterface {
+	return &FakeHTTPPolicyBindings{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

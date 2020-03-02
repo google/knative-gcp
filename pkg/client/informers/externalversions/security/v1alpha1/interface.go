@@ -26,8 +26,12 @@ import (
 type Interface interface {
 	// EventPolicies returns a EventPolicyInformer.
 	EventPolicies() EventPolicyInformer
+	// EventPolicyBindings returns a EventPolicyBindingInformer.
+	EventPolicyBindings() EventPolicyBindingInformer
 	// HTTPPolicies returns a HTTPPolicyInformer.
 	HTTPPolicies() HTTPPolicyInformer
+	// HTTPPolicyBindings returns a HTTPPolicyBindingInformer.
+	HTTPPolicyBindings() HTTPPolicyBindingInformer
 }
 
 type version struct {
@@ -46,7 +50,17 @@ func (v *version) EventPolicies() EventPolicyInformer {
 	return &eventPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// EventPolicyBindings returns a EventPolicyBindingInformer.
+func (v *version) EventPolicyBindings() EventPolicyBindingInformer {
+	return &eventPolicyBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // HTTPPolicies returns a HTTPPolicyInformer.
 func (v *version) HTTPPolicies() HTTPPolicyInformer {
 	return &hTTPPolicyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// HTTPPolicyBindings returns a HTTPPolicyBindingInformer.
+func (v *version) HTTPPolicyBindings() HTTPPolicyBindingInformer {
+	return &hTTPPolicyBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
