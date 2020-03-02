@@ -1,0 +1,16 @@
+apiVersion: events.cloud.google.com/v1alpha1
+kind: CloudPubSubSource
+metadata:
+  name: cloudpubsubsource-keda-test
+  annotations:
+    autoscaling.knative.dev/class: keda.autoscaling.knative.dev
+    autoscaling.knative.dev/minScale: "0"
+    autoscaling.knative.dev/maxScale: "5"
+    keda.autoscaling.knative.dev/subscriptionSize: "5"
+spec:
+  topic: testing-keda
+  sink:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: event-display
