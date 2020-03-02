@@ -16,12 +16,53 @@ limitations under the License.
 
 package v1alpha1
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/tracker"
+)
 
 func TestEventPolicyBindingGetGroupVersionKind(t *testing.T) {
 	pb := EventPolicyBinding{}
 	gvk := pb.GetGroupVersionKind()
 	if gvk.Kind != "EventPolicyBinding" {
 		t.Errorf("EventPolicy.GetGroupVersionKind.Kind want=EventPolicyBinding got=%s", gvk.Kind)
+	}
+}
+
+func TestEventPolicyBindingGetSubject(t *testing.T) {
+	sub := tracker.Reference{
+		APIVersion: "foo.bar",
+		Kind:       "PolicyBinding",
+		Name:       "foo",
+		Namespace:  "bar",
+	}
+	pb := &EventPolicyBinding{
+		Spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: sub,
+			},
+		},
+	}
+	gotSub := pb.GetSubject()
+	if diff := cmp.Diff(sub, gotSub); diff != "" {
+		t.Errorf("EventPolicyBinding.GetSubject() (-want, +got) = %v", diff)
+	}
+}
+
+func TestEventPolicyBindingGetBindingStatus(t *testing.T) {
+	s := &PolicyBindingStatus{}
+	s.InitializeConditions()
+	s.MarkBindingAvailable()
+
+	pb := &EventPolicyBinding{
+		Status: *s,
+	}
+
+	gotStatus := pb.GetBindingStatus()
+	if diff := cmp.Diff(s, gotStatus); diff != "" {
+		t.Errorf("EventPolicyBinding.GetBindingStatus() (-want, +got) = %v", diff)
 	}
 }

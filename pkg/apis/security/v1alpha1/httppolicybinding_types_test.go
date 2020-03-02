@@ -16,12 +16,53 @@ limitations under the License.
 
 package v1alpha1
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/tracker"
+)
 
 func TestHTTPPolicyBindingGetGroupVersionKind(t *testing.T) {
 	pb := HTTPPolicyBinding{}
 	gvk := pb.GetGroupVersionKind()
 	if gvk.Kind != "HTTPPolicyBinding" {
-		t.Errorf("HTTPPolicyBinding.GetGroupVersionKind.Kind want=EventPolicyBinding got=%s", gvk.Kind)
+		t.Errorf("HTTPPolicyBinding.GetGroupVersionKind.Kind want=HTTPPolicyBinding got=%s", gvk.Kind)
+	}
+}
+
+func TestHTTPPolicyBindingGetSubject(t *testing.T) {
+	sub := tracker.Reference{
+		APIVersion: "foo.bar",
+		Kind:       "PolicyBinding",
+		Name:       "foo",
+		Namespace:  "bar",
+	}
+	pb := &HTTPPolicyBinding{
+		Spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: sub,
+			},
+		},
+	}
+	gotSub := pb.GetSubject()
+	if diff := cmp.Diff(sub, gotSub); diff != "" {
+		t.Errorf("HTTPPolicyBinding.GetSubject() (-want, +got) = %v", diff)
+	}
+}
+
+func TestHTTPPolicyBindingGetBindingStatus(t *testing.T) {
+	s := &PolicyBindingStatus{}
+	s.InitializeConditions()
+	s.MarkBindingAvailable()
+
+	pb := &HTTPPolicyBinding{
+		Status: *s,
+	}
+
+	gotStatus := pb.GetBindingStatus()
+	if diff := cmp.Diff(s, gotStatus); diff != "" {
+		t.Errorf("HTTPPolicyBinding.GetBindingStatus() (-want, +got) = %v", diff)
 	}
 }
