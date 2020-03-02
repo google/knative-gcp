@@ -58,7 +58,7 @@ you could do this for any of the [Sources in Knative-GCP](../../../README.md), a
 1. [Install KEDA](https://keda.sh/deploy/). Note that this example was tested using KEDA [v1.2.0](https://github.com/kedacore/keda/releases/tag/v1.2.0). 
 
 
-## Deployment
+### Deployment
 
 1. Create a GCP PubSub Topic. If you change its name (`testing-keda`), you also need
    to update the `topic` in the [`CloudPubSubSource`](cloudpubsubsource-keda.yaml)
@@ -91,7 +91,7 @@ you could do this for any of the [Sources in Knative-GCP](../../../README.md), a
    kubectl apply --filename event-display.yaml
    ```
 
-## Publish
+### Publish
 
 Now, let's publish some messages to our GCP Pub/Sub topic, so that the `CloudPubSubSource` scales out.
 
@@ -99,7 +99,7 @@ Now, let's publish some messages to our GCP Pub/Sub topic, so that the `CloudPub
 for x in {1..50}; do gcloud pubsub topics publish testing-keda --message "Test Message ${x}"; done
 ```
 
-## Verify
+### Verify
 
 1. Verify that the `CloudPubSubSource` scales out to a maximum of 5 replicas (as configured in the yaml file), and then
 scales back down to zero. Again, we will check for the active replica count of the `Deployment` that was created when the Source was instantiated.
@@ -146,7 +146,7 @@ that this `CloudPubSubSource` sinks to. Inspect the logs of the `Service`:
       }
     ```
 
-## Cleaning Up
+### Cleaning Up
 
 1. Delete the `CloudPubSubSource`
 
