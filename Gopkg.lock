@@ -1345,7 +1345,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:890667f9c0f461ff553485224012b6c2fbdc60dd2a96d985b3e5f616cf9018de"
+  digest = "1:1c43dc65fb9a9178d94583afc6578424ad15e30eb7876dbbd7f3575b46e6072c"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1363,6 +1363,7 @@
     "pkg/apis/legacysources",
     "pkg/apis/legacysources/v1alpha1",
     "pkg/apis/messaging",
+    "pkg/apis/messaging/config",
     "pkg/apis/messaging/v1alpha1",
     "pkg/apis/messaging/v1beta1",
     "pkg/apis/sources",
@@ -1397,7 +1398,6 @@
     "pkg/client/listers/messaging/v1alpha1",
     "pkg/client/listers/sources/v1alpha1",
     "pkg/configmap",
-    "pkg/defaultchannel",
     "pkg/duck",
     "pkg/kncloudevents",
     "pkg/legacyclient/clientset/versioned",
@@ -1428,7 +1428,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "6fc16675593b0c1c3a8e2f9eb68f4acbf8d23045"
+  revision = "8ec86a8d487874be18c33a9335e3c8452c83d9e3"
 
 [[projects]]
   branch = "release-0.13"
@@ -1562,7 +1562,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "10548021d4ef09b603b94d93ec070c4291bc7ad0"
+  revision = "24ac85f2c7ca5c6e40accc7f47f274f23f38e5ac"
 
 [[projects]]
   branch = "master"
@@ -1573,7 +1573,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "8c4b7ba9225ef684492032fb787f5f99d021545d"
+  revision = "4dac123b9a3d14d2e07b4a59fbac0b0e99a09e92"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"

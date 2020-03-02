@@ -1,10 +1,10 @@
 # Installing Pub/Sub Enabled Service Account
 
 Besides the control plane setup described in the general
-[installation guide](./install-knative-gcp.md), each of our resources have a data plane
-component, which basically needs permissions to read and/or write to Pub/Sub.
-Herein, we show the steps needed to configure such Pub/Sub enabled Service
-Account.
+[installation guide](./install-knative-gcp.md), each of our resources have a
+data plane component, which basically needs permissions to read and/or write to
+Pub/Sub. Herein, we show the steps needed to configure such Pub/Sub enabled
+Service Account.
 
 1.  Create a
     [Google Cloud project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
