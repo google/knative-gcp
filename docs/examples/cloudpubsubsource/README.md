@@ -29,8 +29,8 @@ events using a Push-compatible format.
    kubectl apply --filename cloudpubsubsource.yaml
    ```
 
-1. Create a [`Service`](event-display.yaml) that the CloudAuditLogsSource will
-   sink into:
+1. Create a [`Service`](event-display.yaml) that the CloudPubSubSource will sink
+   into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -85,9 +85,7 @@ Data,
     "subscription": "cre-pull-7b35a745-877f-4f1f-9434-74062631a958",
     "message": {
       "messageId": "951049449503068",
-      "data": {
-        "Hello": "world"
-      },
+      "data": "eyJIZWxsbyI6ICJ3b3JsZCJ9Cg==",
       "publishTime": "2020-01-24T18:29:36.874Z"
     }
   }
