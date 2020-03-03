@@ -1345,7 +1345,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a99b832a5b94d350459582b1fa98075f1fa142f52b804346b93236166fc64e0"
+  digest = "1:f4dcb79e9b01236fe9fb89e7740af183af737c0a7c62ebd68d9ee9d33904abd5"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1428,7 +1428,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "f1611b4d106c51891e07c5342e7e5a8a81b5b6c6"
+  revision = "e87c532ba93e474a5ad4135fb81f2932ce5125cc"
 
 [[projects]]
   branch = "release-0.13"
@@ -1562,7 +1562,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "142b1002bbc1c7b352301be97d1b51d730d25047"
+  revision = "b79fef014aaf1dd7bc06574cd2bfdc08a2aaad0f"
 
 [[projects]]
   branch = "master"
@@ -1573,7 +1573,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "670fb44ab11b63e8bc91d674196f8806e255d0cc"
+  revision = "7b384c28e66cb8561f3620bd91eb9d5680686a8c"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
