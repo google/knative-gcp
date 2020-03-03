@@ -31,13 +31,13 @@ how to configure and consume events from different GCP services.
 1. [CloudSchedulerSource](./docs/examples/cloudschedulersource/README.md)
 1. [CloudAuditLogsSource](./docs/examples/cloudauditlogssource/README.md)
 
-All of the above Sources are Pull-based, i.e., they poll messages from Pub/Sub subscriptions. 
-Different mechanisms can be used to scale them out. Roughly speaking, all such mechanisms need metrics 
-to understand how "congested" the Pub/Sub subscription is and inform their scaling decision subsystem. 
-We currently support the following scaling mechanisms:     
+All of the above Sources are Pull-based, i.e., they poll messages from Pub/Sub
+subscriptions. Different mechanisms can be used to scale them out. Roughly
+speaking, all such mechanisms need metrics to understand how "congested" the
+Pub/Sub subscription is and inform their scaling decision subsystem. We
+currently support the following scaling mechanisms:
 
 1. [Keda-based Scaling](./docs/examples/keda/README.md)
-
 
 ## Pub/Sub Channel
 
