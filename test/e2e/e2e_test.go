@@ -90,14 +90,12 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
-	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
 	e2ehelpers.ChannelClusterDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
-	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
 	e2ehelpers.ChannelNamespaceDefaulterTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
