@@ -33,7 +33,7 @@ _Disclaimers:_
 - This is still experimental and subject to change.
 - KEDA uses StackDriver to collect metrics. As it can take a while until those metrics are "refreshed" in StackDriver, you 
 might experience certain delay (~2-3 mins) until your Sources are properly scaled.
-- If you have a latency-critical workload, then you might disable the scale down to zero (i.e., set the `minScale` annotation to 1).
+- If you have a latency-critical workload, then you might be better off by disabling the scale down to zero (i.e., set the `minScale` annotation to 1).
 
 
 ## Example
