@@ -29,8 +29,8 @@ events using a Push-compatible format.
    kubectl apply --filename cloudpubsubsource.yaml
    ```
 
-1. Create a [`Service`](event-display.yaml) that the CloudPubSubSource will
-   sink into:
+1. Create a [`Service`](event-display.yaml) that the CloudPubSubSource will sink
+   into:
 
    ```shell
    kubectl apply --filename event-display.yaml
