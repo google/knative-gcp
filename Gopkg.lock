@@ -1428,7 +1428,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "e87c532ba93e474a5ad4135fb81f2932ce5125cc"
+  revision = "200ea1aebdbf9a71068f3fd59205f3bf07ba65e6"
 
 [[projects]]
   branch = "release-0.13"
@@ -1562,7 +1562,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "b79fef014aaf1dd7bc06574cd2bfdc08a2aaad0f"
+  revision = "fcfce7288cefce40664bdb5d3be59e07bae1b7fa"
 
 [[projects]]
   branch = "master"
