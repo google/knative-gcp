@@ -40,7 +40,7 @@ func main() {
 
 	go func() {
 		<-timer.C
-		// Write the termination message if time out occured
+		// Write the termination message if time out occurred
 		fmt.Println("Timed out waiting for event from scheduler")
 		if err := r.writeTerminationMessage(map[string]interface{}{
 			"success": false,

@@ -2,9 +2,9 @@
 
 ## Overview
 
-This sample shows how to Configure a `CloudAuditLogsSource` resource to 
-read data from [Cloud Audit Logs](https://cloud.google.com/logging/docs/audit/) and directly publish to the underlying transport (Pub/Sub), 
-in CloudEvents format.
+This sample shows how to Configure a `CloudAuditLogsSource` resource to read
+data from [Cloud Audit Logs](https://cloud.google.com/logging/docs/audit/) and
+directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
 
 ## Prerequisites
 
@@ -15,40 +15,42 @@ in CloudEvents format.
 1. Enable the `Cloud Audit Logs API` on your project:
 
    ```shell
-   gcloud services enable logging.googleapis.com 
-   gcloud services enable stackdriver.googleapis.com 
+   gcloud services enable logging.googleapis.com
+   gcloud services enable stackdriver.googleapis.com
    ```
 
 ## Deployment
 
-1. Create a [`CloudAuditLogsSource`](cloudauditlogssource.yaml).
-   This `CloudAuditLogsSource` will emit Cloud Audit Log Entries for the creation of Pub/Sub topics.  
-   You can change the `serviceName`, `methodName` and `resourceName` (see detailed description [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog)) to select the Cloud Audit Log Entries you want to view.
-       
-   |   CloudAuditLogsSource Spec  |       Audit Log Entry Fields   |
-   |  :-------------------:  |  :--------------------------:  |
-   |      serviceName        |     protoPayload.serviceName   |
-   |      methodName         |     protoPayload.methodName    |
-   |     resourceName        |     protoPayload.resourceName  |
-   
-    ```shell
-    kubectl apply --filename cloudauditlogssource.yaml
-    ```   
+1. Create a [`CloudAuditLogsSource`](cloudauditlogssource.yaml). This
+   `CloudAuditLogsSource` will emit Cloud Audit Log Entries for the creation of
+   Pub/Sub topics.  
+   You can change the `serviceName`, `methodName` and `resourceName` (see
+   detailed description
+   [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog))
+   to select the Cloud Audit Log Entries you want to view.  
+   | CloudAuditLogsSource Spec | Audit Log Entry Fields | |
+   :-------------------: | :--------------------------: | | serviceName |
+   protoPayload.serviceName | | methodName | protoPayload.methodName | |
+   resourceName | protoPayload.resourceName |
 
-1. Create a [`Service`](event-display.yaml) that the CloudAuditLogsSource will sink into:
+   ```shell
+   kubectl apply --filename cloudauditlogssource.yaml
+   ```
+
+1. Create a [`Service`](event-display.yaml) that the CloudAuditLogsSource will
+   sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
    ```
-   
+
 ## Publish
 
 Create a GCP PubSub Topic:
 
-   ```shell
-   gcloud pubsub topics create test-auditlogs-source
-   ```
-
+```shell
+gcloud pubsub topics create test-auditlogs-source
+```
 
 ## Verify
 
@@ -58,11 +60,11 @@ service that this CloudAuditLogsSource sinks to.
 1. We need to wait for the downstream pods to get started and receive our event,
    wait 60 seconds. You can check the status of the downstream pods with:
 
-     ```shell
-     kubectl get pods --selector app=event-display
-     ```
+   ```shell
+   kubectl get pods --selector app=event-display
+   ```
 
-     You should see at least one.
+   You should see at least one.
 
 1. Inspect the logs of the service:
 
@@ -151,20 +153,25 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
-1. For integrating with Cloud Storage see the [Storage example](../../examples/cloudstoragesource/README.md).
-1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
-1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
+1. For integrating with Cloud Pub/Sub, see the
+   [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Storage see the
+   [Storage example](../../examples/cloudstoragesource/README.md).
+1. For integrating with Cloud Scheduler see the
+   [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For more information about CloudEvents, see the
+   [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
 1. Delete the `CloudAuditLogsSource`
 
-    ```shell
-    kubectl delete -f ./cloudauditlogssource.yaml
-    ```
-1. Delete the `Service`  
-    
-    ```shell
-    kubectl delete -f ./event-display.yaml
-    ```
+   ```shell
+   kubectl delete -f ./cloudauditlogssource.yaml
+   ```
+
+1. Delete the `Service`
+
+   ```shell
+   kubectl delete -f ./event-display.yaml
+   ```

@@ -17,13 +17,15 @@ test/e2e
 - `e2e_test.go` is the testing file entry point (tagged with e2e).
 - `test_xxx.go` are the test implementations (not tagged with e2e).
 
-We leverage the [test library in Eventing](https://github.com/knative/eventing/tree/master/test/lib)
-as much as possible for implementing the e2e tests. Logic specific to knative-gcp
-should be added under [knative-gcp e2e test lib](lib).
+We leverage the
+[test library in Eventing](https://github.com/knative/eventing/tree/master/test/lib)
+as much as possible for implementing the e2e tests. Logic specific to
+knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 ## Running E2E Tests on an existing cluster
-To run [the e2e tests](../e2e) with `go test` command, you need to have a running
-environment that meets
+
+To run [the e2e tests](../e2e) with `go test` command, you need to have a
+running environment that meets
 [the e2e test environment requirements](#environment-requirements), and you need
 to specify the build tag `e2e`.
 
@@ -52,8 +54,9 @@ E2E_PROJECT_ID=<project name> \
 ```
 
 Note that if you plan on running metrics-related E2E tests using the StackDriver
-backend, you need to give your [Service Account](../../docs/pubsub/README.md)
-the `Monitoring Editor` role on your Google Cloud project:
+backend, you need to give your
+[Service Account](../../docs/install/pubsub-service-account.md) the
+`Monitoring Editor` role on your Google Cloud project:
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -65,7 +68,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 There's couple of things you need to install before running e2e tests locally.
 
-1. A running Kubernetes cluster with [knative-gcp](../../docs/install) installed and configured
+1. A running Kubernetes cluster with [knative-gcp](../../docs/install) installed
+   and configured
 1. A docker repo containing [the test images](#test-images)
 
 ## Test images
@@ -107,4 +111,5 @@ a new sub-folder and include a Go file that will be an entry point to the
 application. This Go file should use the package `main` and include the function
 `main()`. It is a good practice to include a `README` file as well. When
 uploading test images, `ko` will build an image from this folder and upload to
-the Docker repository configured as [`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).
+the Docker repository configured as
+[`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).

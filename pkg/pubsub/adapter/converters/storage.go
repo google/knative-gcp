@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
-	"github.com/cloudevents/sdk-go"
+	cloudevents "github.com/cloudevents/sdk-go"
 	. "github.com/cloudevents/sdk-go/pkg/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"

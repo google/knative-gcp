@@ -2,8 +2,9 @@
 
 ## Overview
 
-This sample shows how to Configure a `CloudStorageSource` resource to deliver Object
-Notifications for when a new object is added to Google Cloud Storage (GCS).
+This sample shows how to Configure a `CloudStorageSource` resource to deliver
+Object Notifications for when a new object is added to Google Cloud Storage
+(GCS).
 
 ## Prerequisites
 
@@ -53,13 +54,14 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 ## Deployment
 
-1. Update `BUCKET` in the [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it.
+1. Update `BUCKET` in the [`cloudstoragesource.yaml`](cloudstoragesource.yaml)
+   and apply it.
 
    If you're in the storage directory, you can replace `BUCKET` and apply in one
    command:
 
    ```shell
-   sed "s/\BUCKET/$BUCKET/g" cloudstoragesource.yaml | \
+   sed "s/BUCKET/$BUCKET/g" cloudstoragesource.yaml | \
        kubectl apply --filename -
    ```
 
@@ -71,15 +73,17 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    ```
 
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
-   project, uncomment and replace the `MY_PROJECT` placeholder in [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it.
-   Note that the Service Account during the [installation](../../install/install-knative-gcp.md) step should be able to manage
-   [multiple projects](../../install/managing-multiple-projects.md).   
+   project, uncomment and replace the `MY_PROJECT` placeholder in
+   [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it. Note that
+   the Service Account during the
+   [installation](../../install/install-knative-gcp.md) step should be able to
+   manage [multiple projects](../../install/managing-multiple-projects.md).
 
    If you're in the storage directory, you can replace `MY_PROJECT` and `BUCKET`
    and then apply in one command:
 
    ```shell
-   sed "s/\BUCKET/$BUCKET/g" pullsubscription.yaml | \
+   sed "s/BUCKET/$BUCKET/g" pullsubscription.yaml | \
    sed "s/\#project: MY_PROJECT/project: $PROJECT_ID/g" | \
        kubectl apply --filename -
    ```
@@ -91,7 +95,8 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
    kubectl apply --filename cloudstoragesource.yaml
    ```
 
-1. Create a [`Service`](event-display.yaml) that the Storage notifications will sink into:
+1. Create a [`Service`](event-display.yaml) that the Storage notifications will
+   sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
@@ -99,10 +104,11 @@ Notifications for when a new object is added to Google Cloud Storage (GCS).
 
 ## Publish
 
-Upload a file to your BUCKET, either using the [Cloud Console](https://cloud.google.com/console) or gsutil:
+Upload a file to your BUCKET, either using the
+[Cloud Console](https://cloud.google.com/console) or gsutil:
 
 ```shell
-gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere'
+gsutil cp cloudstoragesource.yaml gs://$BUCKET/testfilehere
 ```
 
 ## Verify
@@ -113,10 +119,11 @@ that this Storage notification sinks to.
 1. We need to wait for the downstream pods to get started and receive our event,
    wait 60 seconds. You can check the status of the downstream pods with:
 
-     ```shell
-     kubectl get pods --selector app=event-display
-     ```
-    You should see at least one.
+   ```shell
+   kubectl get pods --selector app=event-display
+   ```
+
+   You should see at least one.
 
 1. Inspect the logs of the `Service`:
 
@@ -162,21 +169,25 @@ Data,
 
 ## What's Next
 
-1. For integrating with Cloud Pub/Sub, see the [PubSub example](../../examples/cloudpubsubsource/README.md).
-1. For integrating with Cloud Scheduler see the [Scheduler example](../../examples/cloudschedulersource/README.md).
-1. For integrating with Cloud Audit Logs see the [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
-1. For more information about CloudEvents, see the [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
+1. For integrating with Cloud Pub/Sub, see the
+   [PubSub example](../../examples/cloudpubsubsource/README.md).
+1. For integrating with Cloud Scheduler see the
+   [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Audit Logs see the
+   [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For more information about CloudEvents, see the
+   [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
 ## Cleaning Up
 
 1. Delete the `CloudStorageSource`
 
-    ```shell
-    kubectl delete -f ./cloudstoragesource.yaml
-    ```
-1. Delete the `Service`    
-    
-    ```shell
-    kubectl delete -f ./event-display.yaml
-    ```
+   ```shell
+   kubectl delete -f ./cloudstoragesource.yaml
+   ```
 
+1. Delete the `Service`
+
+   ```shell
+   kubectl delete -f ./event-display.yaml
+   ```

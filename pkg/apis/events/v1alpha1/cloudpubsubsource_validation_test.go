@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	pullSubscriptionSpec = CloudPubSubSourceSpec{
+	pubSubSourceSpec = CloudPubSubSourceSpec{
 		PubSubSpec: duckv1alpha1.PubSubSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
@@ -58,12 +58,12 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		error bool
 	}{
 		"ok": {
-			spec:  pullSubscriptionSpec,
+			spec:  pubSubSourceSpec,
 			error: false,
 		},
 		"bad RetentionDuration": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.RetentionDuration = ptr.String("wrong")
 				return *obj
 			}(),
@@ -71,7 +71,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad RetentionDuration, range": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.RetentionDuration = ptr.String("10000h")
 				return *obj
 			}(),
@@ -79,7 +79,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad AckDeadline": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.AckDeadline = ptr.String("wrong")
 				return *obj
 			}(),
@@ -87,7 +87,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad AckDeadline, range": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.AckDeadline = ptr.String("10000h")
 				return *obj
 			}(),
@@ -95,7 +95,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, name": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink.Ref.Name = ""
 				return *obj
 			}(),
@@ -103,7 +103,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, apiVersion": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink.Ref.APIVersion = ""
 				return *obj
 			}(),
@@ -111,7 +111,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, kind": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink.Ref.Kind = ""
 				return *obj
 			}(),
@@ -119,7 +119,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, empty": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{}
 				return *obj
 			}(),
@@ -127,7 +127,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, uri scheme": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Host: "example.com",
@@ -139,7 +139,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, uri host": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
@@ -151,7 +151,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		},
 		"bad sink, uri and ref": {
 			spec: func() CloudPubSubSourceSpec {
-				obj := pullSubscriptionSpec.DeepCopy()
+				obj := pubSubSourceSpec.DeepCopy()
 				obj.Sink = duckv1.Destination{
 					URI: &apis.URL{
 						Scheme: "http",
@@ -159,6 +159,18 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 					},
 					Ref: &duckv1.KReference{
 						Name: "foo",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"invalid secret, missing key": {
+			spec: func() CloudPubSubSourceSpec {
+				obj := pubSubSourceSpec.DeepCopy()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "name",
 					},
 				}
 				return *obj
@@ -183,79 +195,79 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 		allowed bool
 	}{
 		"nil orig": {
-			updated: pullSubscriptionSpec,
+			updated: pubSubSourceSpec,
 			allowed: true,
 		},
 		"Secret.Name changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "some-other-name",
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpec.Sink,
+						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: false,
 		},
 		"Secret.Key changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
 						Key: "some-other-key",
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpec.Sink,
+						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: false,
 		},
 		"Project changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
 					Project: "some-other-project",
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpec.Sink,
+						Sink: pubSubSourceSpec.Sink,
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: false,
 		},
 		"Topic changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
-						Sink: pullSubscriptionSpec.Sink,
+						Sink: pubSubSourceSpec.Sink,
 					},
 				},
 				Topic: "some-other-topic",
@@ -263,117 +275,117 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			allowed: false,
 		},
 		"Sink.APIVersion changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
 							Ref: &duckv1.KReference{
 								APIVersion: "some-other-api-version",
-								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
-								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
-								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+								Kind:       pubSubSourceSpec.Sink.Ref.Kind,
+								Namespace:  pubSubSourceSpec.Sink.Ref.Namespace,
+								Name:       pubSubSourceSpec.Sink.Ref.Name,
 							},
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: true,
 		},
 		"Sink.Kind changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
 							Ref: &duckv1.KReference{
-								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+								APIVersion: pubSubSourceSpec.Sink.Ref.APIVersion,
 								Kind:       "some-other-kind",
-								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
-								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+								Namespace:  pubSubSourceSpec.Sink.Ref.Namespace,
+								Name:       pubSubSourceSpec.Sink.Ref.Name,
 							},
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: true,
 		},
 		"Sink.Namespace changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
 							Ref: &duckv1.KReference{
-								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
-								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+								APIVersion: pubSubSourceSpec.Sink.Ref.APIVersion,
+								Kind:       pubSubSourceSpec.Sink.Ref.Kind,
 								Namespace:  "some-other-namespace",
-								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+								Name:       pubSubSourceSpec.Sink.Ref.Name,
 							},
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: true,
 		},
 		"Sink.Name changed": {
-			orig: &pullSubscriptionSpec,
+			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: pullSubscriptionSpec.Secret.Name,
+							Name: pubSubSourceSpec.Secret.Name,
 						},
-						Key: pullSubscriptionSpec.Secret.Key,
+						Key: pubSubSourceSpec.Secret.Key,
 					},
-					Project: pullSubscriptionSpec.Project,
+					Project: pubSubSourceSpec.Project,
 					SourceSpec: duckv1.SourceSpec{
 						Sink: duckv1.Destination{
 							Ref: &duckv1.KReference{
-								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
-								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
-								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+								APIVersion: pubSubSourceSpec.Sink.Ref.APIVersion,
+								Kind:       pubSubSourceSpec.Sink.Ref.Kind,
+								Namespace:  pubSubSourceSpec.Sink.Ref.Namespace,
 								Name:       "some-other-name",
 							},
 						},
 					},
 				},
-				Topic: pullSubscriptionSpec.Topic,
+				Topic: pubSubSourceSpec.Topic,
 			},
 			allowed: true,
 		},
 		"no change": {
-			orig:    &pullSubscriptionSpec,
-			updated: pullSubscriptionSpec,
+			orig:    &pubSubSourceSpec,
+			updated: pubSubSourceSpec,
 			allowed: true,
 		},
 		"not spec": {
 			orig:    []string{"wrong"},
-			updated: pullSubscriptionSpec,
+			updated: pubSubSourceSpec,
 			allowed: true,
 		},
 	}

@@ -180,6 +180,18 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"bad secret, missing key": {
+			spec: func() PullSubscriptionSpec {
+				obj := pullSubscriptionSpec.DeepCopy()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "some-other-name",
+					},
+				}
+				return *obj
+			}(),
+			error: true,
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {

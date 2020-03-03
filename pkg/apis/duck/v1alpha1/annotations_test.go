@@ -18,10 +18,11 @@ package v1alpha1
 
 import (
 	"context"
-	"github.com/google/go-cmp/cmp"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 var (

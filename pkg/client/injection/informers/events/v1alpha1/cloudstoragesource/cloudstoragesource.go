@@ -19,7 +19,7 @@ limitations under the License.
 package cloudstoragesource
 
 import (
-	"context"
+	context "context"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/client/informers/externalversions/events/v1alpha1"
 	factory "github.com/google/knative-gcp/pkg/client/injection/informers/factory"

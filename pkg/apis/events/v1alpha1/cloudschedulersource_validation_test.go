@@ -71,37 +71,6 @@ var (
 			},
 		},
 	}
-
-	// Location, Schedule, Data, Sink, Secret, and PubSubSecret
-	schedulerWithPubSubSecret = CloudSchedulerSourceSpec{
-		Location: "mylocation",
-		Schedule: "* * * * *",
-		Data:     "mydata",
-		PubSubSpec: duckv1alpha1.PubSubSpec{
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					Ref: &duckv1.KReference{
-						APIVersion: "foo",
-						Kind:       "bar",
-						Namespace:  "baz",
-						Name:       "qux",
-					},
-				},
-			},
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "gcs-secret-name",
-				},
-				Key: "gcs-secret-key",
-			},
-			PubSubSecret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "pullsubscription-secret-name",
-				},
-				Key: "pullsubscription-secret-key",
-			},
-		},
-	}
 )
 
 func TestCloudSchedulerSourceValidationFields(t *testing.T) {
@@ -238,7 +207,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "invalid gcs secret, missing key",
+		name: "invalid scheduler secret, missing key",
 		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
@@ -263,59 +232,6 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			fe := apis.ErrMissingField("secret.key")
 			return fe
 		}(),
-	}, {
-		name: "invalid pubsub secret, missing name",
-		spec: &CloudSchedulerSourceSpec{
-			Location: "my-test-location",
-			Schedule: "* * * * *",
-			Data:     "data",
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "foo",
-							Kind:       "bar",
-							Namespace:  "baz",
-							Name:       "qux",
-						},
-					},
-				},
-				PubSubSecret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{},
-					Key:                  "secret-test-key",
-				},
-			},
-		},
-		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubsubSecret.name")
-			return fe
-		}(),
-	}, {
-		name: "invalid secret, missing key",
-		spec: &CloudSchedulerSourceSpec{
-			Location: "my-test-location",
-			Schedule: "* * * * *",
-			Data:     "data",
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "foo",
-							Kind:       "bar",
-							Namespace:  "baz",
-							Name:       "qux",
-						},
-					},
-				},
-				PubSubSecret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{Name: "gcs-test-secret"},
-				},
-			},
-		},
-		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("pubsubSecret.key")
-			return fe
-		}(),
 	}}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
@@ -335,90 +251,68 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		allowed bool
 	}{
 		"nil orig": {
-			updated: schedulerWithPubSubSecret,
+			updated: schedulerWithSecret,
 			allowed: true,
 		},
 		"Location changed": {
-			orig: &schedulerWithPubSubSecret,
+			orig: &schedulerWithSecret,
 			updated: CloudSchedulerSourceSpec{
 				Location:   "some-other-location",
-				Schedule:   schedulerWithPubSubSecret.Schedule,
-				Data:       schedulerWithPubSubSecret.Data,
-				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+				Schedule:   schedulerWithSecret.Schedule,
+				Data:       schedulerWithSecret.Data,
+				PubSubSpec: schedulerWithSecret.PubSubSpec,
 			},
 			allowed: false,
 		},
 		"Schedule changed": {
-			orig: &schedulerWithPubSubSecret,
+			orig: &schedulerWithSecret,
 			updated: CloudSchedulerSourceSpec{
-				Location:   schedulerWithPubSubSecret.Location,
+				Location:   schedulerWithSecret.Location,
 				Schedule:   "* * * * 1",
-				Data:       schedulerWithPubSubSecret.Data,
-				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+				Data:       schedulerWithSecret.Data,
+				PubSubSpec: schedulerWithSecret.PubSubSpec,
 			},
 			allowed: false,
 		},
 		"Data changed": {
-			orig: &schedulerWithPubSubSecret,
+			orig: &schedulerWithSecret,
 			updated: CloudSchedulerSourceSpec{
-				Location:   schedulerWithPubSubSecret.Location,
-				Schedule:   schedulerWithPubSubSecret.Schedule,
+				Location:   schedulerWithSecret.Location,
+				Schedule:   schedulerWithSecret.Schedule,
 				Data:       "some-other-data",
-				PubSubSpec: schedulerWithPubSubSecret.PubSubSpec,
+				PubSubSpec: schedulerWithSecret.PubSubSpec,
 			},
 			allowed: false,
 		},
 		"Secret.Name changed": {
-			orig: &schedulerWithPubSubSecret,
+			orig: &schedulerWithSecret,
 			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithPubSubSecret.Location,
-				Schedule: schedulerWithPubSubSecret.Schedule,
-				Data:     schedulerWithPubSubSecret.Data,
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec: schedulerWithPubSubSecret.SourceSpec,
+					SourceSpec: schedulerWithSecret.SourceSpec,
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: "some-other-name",
 						},
-						Key: schedulerWithPubSubSecret.Secret.Key,
+						Key: schedulerWithSecret.Secret.Key,
 					},
-					Project:      schedulerWithPubSubSecret.Project,
-					PubSubSecret: schedulerWithPubSubSecret.PubSubSecret,
-				},
-			},
-			allowed: false,
-		},
-		"PubSubSecret.Name changed": {
-			orig: &schedulerWithPubSubSecret,
-			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithPubSubSecret.Location,
-				Schedule: schedulerWithPubSubSecret.Schedule,
-				Data:     schedulerWithPubSubSecret.Data,
-				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec: schedulerWithPubSubSecret.SourceSpec,
-					Secret:     schedulerWithPubSubSecret.Secret,
-					Project:    schedulerWithPubSubSecret.Project,
-					PubSubSecret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "some-other-pullsubscription-secret-name",
-						},
-						Key: schedulerWithPubSubSecret.PubSubSecret.Key,
-					},
+					Project: schedulerWithSecret.Project,
 				},
 			},
 			allowed: false,
 		},
 		"Project changed changed": {
-			orig: &schedulerWithPubSubSecret,
+			orig: &schedulerWithSecret,
 			updated: CloudSchedulerSourceSpec{
-				Location: schedulerWithPubSubSecret.Location,
-				Schedule: schedulerWithPubSubSecret.Schedule,
-				Data:     schedulerWithPubSubSecret.Data,
+				Location: schedulerWithSecret.Location,
+				Schedule: schedulerWithSecret.Schedule,
+				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec:   schedulerWithPubSubSecret.SourceSpec,
-					Secret:       schedulerWithPubSubSecret.Secret,
-					Project:      "some-other-project",
-					PubSubSecret: schedulerWithPubSubSecret.PubSubSecret,
+					SourceSpec: schedulerWithSecret.SourceSpec,
+					Secret:     schedulerWithSecret.Secret,
+					Project:    "some-other-project",
 				},
 			},
 			allowed: false,

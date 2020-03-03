@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	"context"
+	context "context"
 
 	externalversions "github.com/google/knative-gcp/pkg/client/informers/externalversions"
 	fake "github.com/google/knative-gcp/pkg/client/injection/client/fake"

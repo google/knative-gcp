@@ -142,6 +142,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		},
@@ -150,6 +151,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
@@ -178,6 +180,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists, topic has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -190,19 +193,20 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
+				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -216,6 +220,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -230,6 +235,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, no topicid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -244,6 +250,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -258,6 +265,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and is ready, unexpected topicid",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -272,6 +280,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -286,6 +295,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and the status of topic is false",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -299,6 +309,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -312,6 +323,7 @@ func TestAllCases(t *testing.T) {
 		Name: "topic exists and the status of topic is unknown",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
@@ -325,6 +337,7 @@ func TestAllCases(t *testing.T) {
 		WantErr: true,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),

@@ -236,10 +236,16 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 					},
 				},
 				Status: duckv1.Status{
-					Conditions: []apis.Condition{{
-						Type:   ChannelConditionAddressable,
-						Status: corev1.ConditionTrue,
-					}},
+					Conditions: []apis.Condition{
+						{
+							Type:   ChannelConditionAddressable,
+							Status: corev1.ConditionTrue,
+						},
+						{
+							Type:   ChannelConditionReady,
+							Status: corev1.ConditionUnknown,
+						},
+					},
 				},
 			},
 		},

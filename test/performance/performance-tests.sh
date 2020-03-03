@@ -33,7 +33,7 @@ readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 
 function update_knative() {
-  start_knative_gcp
+  start_knative_gcp || return 1
   # Create the secret for pub-sub if it does not exist.
   kubectl -n ${TEST_NAMESPACE} get secret ${PUBSUB_SECRET_NAME} || \
   kubectl -n ${TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
@@ -64,7 +64,7 @@ function update_benchmark() {
   kubectl patch configmap config-mako -n "${TEST_NAMESPACE}" -p '{"data":{"environment":"prod"}}' || abort "failed to patch config-mako configmap"
 
   echo ">> Updating benchmark $1"
-  ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true
+  ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true --wait=false
   sleep 30
   ko apply -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 

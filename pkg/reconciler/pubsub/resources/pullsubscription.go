@@ -17,8 +17,6 @@ limitations under the License.
 package resources
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
@@ -42,11 +40,6 @@ type PullSubscriptionArgs struct {
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
 func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscription {
-	pubsubSecret := args.Spec.Secret
-	if args.Spec.PubSubSecret != nil && !equality.Semantic.DeepEqual(args.Spec.PubSubSecret, &corev1.SecretKeySelector{}) {
-		pubsubSecret = args.Spec.PubSubSecret
-	}
-
 	ps := &pubsubv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
@@ -56,7 +49,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret:      pubsubSecret,
+			Secret:      args.Spec.Secret,
 			Project:     args.Spec.Project,
 			Topic:       args.Topic,
 			AdapterType: args.AdapterType,

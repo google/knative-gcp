@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
