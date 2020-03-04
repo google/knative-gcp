@@ -58,7 +58,7 @@ function build_release() {
     done
     all_yamls+=(${yaml})
   done
-  YAMLS_TO_PUBLISH="${all_yamls[@]}"
+  ARTIFACTS_TO_PUBLISH="${all_yamls[@]}"
 }
 
 main $@
