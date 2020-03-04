@@ -1345,7 +1345,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d7a920e84bf2e8fe532aad511bce0505e9261487a8f43030936042a9d60b8467"
+  digest = "1:0f930be8c976435761c3882c3d4fcdbbd65ffec0eb981603f0a3e7b4db86c34a"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1392,6 +1392,7 @@
     "pkg/client/injection/client/fake",
     "pkg/client/listers/configs/v1alpha1",
     "pkg/client/listers/eventing/v1alpha1",
+    "pkg/client/listers/eventing/v1beta1",
     "pkg/client/listers/flows/v1alpha1",
     "pkg/client/listers/messaging/v1alpha1",
     "pkg/client/listers/sources/v1alpha1",
@@ -1418,7 +1419,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "4d1c20b9c3a9c0d4987cba8ce8db4f6547bf631d"
+  revision = "3548f283ca809a7bec05663685b5e363fcd42d1e"
 
 [[projects]]
   branch = "master"
@@ -1552,18 +1553,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "48b4bf3f3f0213da0c465591ee4dc5c716715367"
+  revision = "1cab8116c11a0b97535c567c3473ecae9e9a9907"
 
 [[projects]]
   branch = "master"
-  digest = "1:0c6168aeb05dc03f4b44cbdc9450054e81fde8e388400f39e6ed38792e590782"
+  digest = "1:5d6439b7856df77cf6df3597a4711e0b39f85cab9986b7784b2521a8b7bdbfbb"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "5e690cbbddda1886e1fb948acfe678b8b1e02b21"
+  revision = "a8e82a4213f65ffcee2c08cdb05f7636e76c51b6"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"

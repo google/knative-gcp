@@ -376,7 +376,8 @@ function setup_test_cluster() {
   set +o pipefail
 
   if (( ! SKIP_KNATIVE_SETUP )) && function_exists knative_setup; then
-    wait_until_batch_job_complete istio-system || return 1
+    # Wait for Istio installation to complete, if necessary, before calling knative_setup.
+    (( ! SKIP_ISTIO_ADDON )) && (wait_until_batch_job_complete istio-system || return 1)
     knative_setup || fail_test "Knative setup failed"
   fi
   if function_exists test_setup; then
@@ -421,6 +422,7 @@ function fail_test() {
 
 RUN_TESTS=0
 SKIP_KNATIVE_SETUP=0
+SKIP_ISTIO_ADDON=0
 SKIP_TEARDOWNS=0
 GCP_PROJECT=""
 E2E_SCRIPT=""
@@ -457,6 +459,7 @@ function initialize() {
       --run-tests) RUN_TESTS=1 ;;
       --skip-knative-setup) SKIP_KNATIVE_SETUP=1 ;;
       --skip-teardowns) SKIP_TEARDOWNS=1 ;;
+      --skip-istio-addon) SKIP_ISTIO_ADDON=1 ;;
       *)
         [[ $# -ge 2 ]] || abort "missing parameter after $1"
         shift
@@ -481,6 +484,8 @@ function initialize() {
   fi
 
   (( IS_PROW )) && [[ -z "${GCP_PROJECT}" ]] && IS_BOSKOS=1
+
+  (( SKIP_ISTIO_ADDON )) || GKE_ADDONS="--addons=Istio"
 
   readonly RUN_TESTS
   readonly GCP_PROJECT
