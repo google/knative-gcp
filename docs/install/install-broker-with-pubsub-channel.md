@@ -17,12 +17,12 @@ Channel.
 
 1.  Patch the configmap in the `knative-eventing` namespace to use the Pub/Sub
     `Channel` as the
-    [default channel](https://knative.dev/docs/eventing/channels/default-channels/)
-    with
-    [patch-default-ch-config-with-pubsub.yaml](./patch-default-ch-config-with-pubsub.yaml).
+    [default channel](https://knative.dev/docs/eventing/channel-based-broker/)
+    for Brokers with
+    [patch-config-br-defaults-with-pubsub.yaml](./patch-config-br-defaults-with-pubsub.yaml).
 
     ```shell
-    kubectl patch configmap default-ch-webhook -n knative-eventing --patch "$(cat patch-default-ch-config-with-pubsub.yaml)"
+    kubectl patch configmap config-br-defaults -n knative-eventing --patch "$(cat patch-config-br-defaults-with-pubsub.yaml)"
     ```
 
 1.  Add the `knative-eventing-injection` label to your namespace with the
