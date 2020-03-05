@@ -6,8 +6,8 @@ The files in this directory are organized as follows:
 - `monitoring/`: an installable bundle of tooling for assorted observability
   functions,
 - `istio/`: the istio configuration,
-- `*.yaml`: symlinks that form a particular "rendered view" of the
-  knative-gcp configuration.
+- `*.yaml`: symlinks that form a particular "rendered view" of the knative-gcp
+  configuration.
 
 ## Core
 
