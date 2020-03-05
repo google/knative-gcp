@@ -30,6 +30,7 @@ import (
 	cloudstoragesourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudstoragesource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 )
 
 const (
@@ -60,19 +61,24 @@ func NewController(
 		storageLister:  cloudstoragesourceInformer.Lister(),
 		createClientFn: gstorage.NewClient,
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudstoragesourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudstoragesourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
+	// Call GlobalResync on pubsubsource.
+	grCh := func(obj interface{}) {
+		impl.GlobalResync(cloudstoragesourceInformer.Informer())
+	}
+
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		Handler:    controller.HandleAll(grCh),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		Handler:    controller.HandleAll(grCh),
 	})
 
 	return impl
