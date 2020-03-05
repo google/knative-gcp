@@ -22,6 +22,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
@@ -56,14 +57,19 @@ func NewController(
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		receiveAdapterName:     receiveAdapterName,
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
+	// Call GlobalResync on pubsubsource.
+	grCh := func(obj interface{}) {
+		impl.GlobalResync(cloudpubsubsourceInformer.Informer())
+	}
+
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+		Handler:    controller.HandleAll(grCh),
 	})
 
 	return impl

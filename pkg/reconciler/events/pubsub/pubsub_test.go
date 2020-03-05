@@ -21,6 +21,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,7 +173,7 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is false",
@@ -200,7 +202,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
@@ -229,7 +231,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
@@ -280,19 +282,19 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudPubSubSource %q became ready", pubsubName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource %q", pubsubName),
+			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
 		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
-		return &Reconciler{
+		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
 			receiveAdapterName:     receiveAdapterName,
 		}
+		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)
 	}))
 
 }
