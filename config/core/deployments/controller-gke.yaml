@@ -34,13 +34,13 @@ spec:
       serviceAccountName: controller
       containers:
         - name: controller
-          image: github.com/google/knative-gcp/cmd/controller
+          image: ko://github.com/google/knative-gcp/cmd/controller
           imagePullPolicy: Always
           env:
             - name: PUBSUB_RA_IMAGE
-              value: github.com/google/knative-gcp/cmd/pubsub/receive_adapter
+              value: ko://github.com/google/knative-gcp/cmd/pubsub/receive_adapter
             - name: PUBSUB_PUBLISHER_IMAGE
-              value: github.com/google/knative-gcp/cmd/pubsub/publisher
+              value: ko://github.com/google/knative-gcp/cmd/pubsub/publisher
             - name: SYSTEM_NAMESPACE
               valueFrom:
                 fieldRef:

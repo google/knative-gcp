@@ -5,5 +5,5 @@ metadata:
 spec:
   containers:
     - name: storage_target
-      image: github.com/google/knative-gcp/test/test_images/storage_target
+      image: ko://github.com/google/knative-gcp/test/test_images/storage_target
 
