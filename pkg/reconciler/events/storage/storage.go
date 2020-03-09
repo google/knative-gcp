@@ -43,7 +43,12 @@ import (
 )
 
 const (
-	resourceGroup = "cloudstoragesources.events.cloud.google.com"
+	reconciledSuccessReason      = "CloudStorageSourceReconciled"
+	reconciledNotificationFailed = "NotificationReconcileFailed"
+	reconciledPubSubFailed       = "PubSubReconcileFailed"
+	deleteNotificationFailed     = "NotificationDeleteFailed"
+	deletePubSubFailed           = "PubSubDeleteFailed"
+	resourceGroup                = "cloudstoragesources.events.cloud.google.com"
 )
 
 var (
@@ -55,12 +60,6 @@ var (
 		v1alpha1.CloudStorageSourceMetadataUpdate: "OBJECT_METADATA_UPDATE",
 	}
 )
-
-// newReconciledNormal makes a new reconciler event with event type Normal, and
-// reason StorageSourceReconciled.
-func newReconciledNormal(namespace, name string) reconciler.Event {
-	return reconciler.NewEvent(corev1.EventTypeNormal, "Updated", "Updated CloudStorageSource: \"%s/%s\"", namespace, name)
-}
 
 // Reconciler is the controller implementation for Google Cloud Storage (GCS) event
 // notifications.
@@ -82,22 +81,22 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
-	storage.Status.ObservedGeneration = storage.Generation
 
 	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, "ReconcilePubSubFailed", "Failed to reconcile CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile CloudStorageSource PubSub: %s", err)
 	}
 
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
-		storage.Status.MarkNotificationNotReady("NotificationReconcileFailed", "Failed to reconcile CloudStorageSource notification: %s", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, "NotificationReconcileFailed", "Failed to reconcile CloudStorageSource notification: %s", err)
+		storage.Status.MarkNotificationNotReady(reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err)
 	}
 	storage.Status.MarkNotificationReady(notification)
+	storage.Status.ObservedGeneration = storage.Generation
 
-	return newReconciledNormal(storage.Namespace, storage.Name)
+	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
 
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.CloudStorageSource) (string, error) {
@@ -247,13 +246,11 @@ func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudS
 func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
 	logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
 	if err := r.deleteNotification(ctx, storage); err != nil {
-		storage.Status.MarkNotificationNotReady("NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: %s", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, "NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err)
 	}
-	storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted CloudStorageSource notification: %s", storage.Status.NotificationID)
 
 	if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, "PubSubDeleteFailed", "Failed to delete CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err)
 	}
 
 	// ok to remove finalizer.

@@ -66,19 +66,14 @@ func NewController(
 	r.Logger.Info("Setting up event handlers")
 	cloudstoragesourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	// Call GlobalResync on pubsubsource.
-	grCh := func(obj interface{}) {
-		impl.GlobalResync(cloudstoragesourceInformer.Informer())
-	}
-
 	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
-		Handler:    controller.HandleAll(grCh),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
-		Handler:    controller.HandleAll(grCh),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	return impl
