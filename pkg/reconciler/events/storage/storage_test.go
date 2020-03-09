@@ -111,7 +111,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	action.Namespace = namespace
 	var fname string
 	if add {
-		fname = fmt.Sprintf("%q", "cloudstoragesources.events.cloud.google.com")
+		fname = fmt.Sprintf("%q", resourceGroup)
 	}
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
@@ -880,9 +880,6 @@ func TestAllCases(t *testing.T) {
 					Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
 					Name: storageName,
 				},
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, deleteNotificationSuccess, "Successfully deleted CloudStorageSource notification: "),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,

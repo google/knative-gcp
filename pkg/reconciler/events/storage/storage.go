@@ -46,7 +46,6 @@ const (
 	resourceGroup = "cloudstoragesources.events.cloud.google.com"
 
 	deleteNotificationFailed     = "NotificationDeleteFailed"
-	deleteNotificationSuccess    = "NotificationDeleted"
 	deletePubSubFailed           = "PubSubDeleteFailed"
 	reconciledNotificationFailed = "NotificationReconcileFailed"
 	reconciledPubSubFailed       = "PubSubReconcileFailed"
@@ -256,5 +255,5 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudSt
 	}
 
 	// ok to remove finalizer.
-	return reconciler.NewEvent(corev1.EventTypeNormal, deleteNotificationSuccess, "Successfully deleted CloudStorageSource notification: %s", storage.Status.NotificationID)
+	return nil
 }
