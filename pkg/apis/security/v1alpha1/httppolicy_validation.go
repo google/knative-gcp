@@ -18,9 +18,22 @@ package v1alpha1
 
 import (
 	"context"
+	"net/http"
 
 	"knative.dev/pkg/apis"
 )
+
+var validHTTPMethods = map[string]bool{
+	http.MethodConnect: true,
+	http.MethodDelete:  true,
+	http.MethodGet:     true,
+	http.MethodHead:    true,
+	http.MethodOptions: true,
+	http.MethodPatch:   true,
+	http.MethodPost:    true,
+	http.MethodPut:     true,
+	http.MethodTrace:   true,
+}
 
 // Validate validates a HTTPPolicy.
 func (p *HTTPPolicy) Validate(ctx context.Context) *apis.FieldError {
@@ -66,6 +79,11 @@ func (r *HTTPPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 			}
 			if err := ValidateStringMatches(ctx, op.Paths, "paths"); err != nil {
 				errs = errs.Also(err.ViaFieldIndex("operations", i))
+			}
+			for j, m := range op.Methods {
+				if !validHTTPMethods[m] {
+					errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j))
+				}
 			}
 		}
 	}

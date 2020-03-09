@@ -35,7 +35,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -59,7 +59,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{JwtHeader: "Authorization"},
+				JWT: &JWTSpec{FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -84,7 +84,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -109,7 +109,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -134,7 +134,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -153,13 +153,13 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("hosts", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "suffix").ViaFieldIndex("hosts", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid path",
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						Auth: &RequestAuth{
@@ -178,7 +178,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("paths", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("paths", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}}
 
 	for _, tc := range cases {

@@ -35,7 +35,7 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "my-source"}}},
 					{Type: []StringMatch{{Exact: "my-type"}}},
@@ -47,7 +47,7 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{JwtHeader: "Authorization"},
+				JWT: &JWTSpec{FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "my-source"}}},
 					{Type: []StringMatch{{Exact: "my-type"}}},
@@ -60,91 +60,91 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{ID: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("id", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("id", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid data schema",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{DataSchema: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("dataschema", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("dataschema", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid source",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("source", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("source", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid type",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Type: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("type", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("type", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid subject",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Subject: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("subject", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("subject", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid content type",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{ContentType: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("contenttype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("contenttype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid media type",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{MediaType: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
 			},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("mediatype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("mediatype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid extension",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", JwtHeader: "Authorization"},
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Extensions: []KeyValuesMatch{{Values: []StringMatch{{Exact: "bar"}}}}},
 				},

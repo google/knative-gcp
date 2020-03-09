@@ -20,19 +20,21 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/go-cmp/cmp"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestJWTDefaults(t *testing.T) {
 	j := &JWTSpec{}
 	j.SetDefaults(context.Background())
-	if j.JwtHeader != "Authorization" {
-		t.Errorf("default JwtHeader got=%s want=Authorization", j.JwtHeader)
+	want := []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}
+	if diff := cmp.Diff(want, j.FromHeaders); diff != "" {
+		t.Errorf("default FromHeaders (-want, +got) = %v", diff)
 	}
 }
 
 func TestPolicyBindingSpecDefaults(t *testing.T) {
-	spec := &PolicyBindingSpec{Policy: &corev1.ObjectReference{}}
+	spec := &PolicyBindingSpec{Policy: duckv1.KReference{}}
 	spec.SetDefaults(context.Background(), "test-namespace")
 	if spec.Subject.Namespace != "test-namespace" {
 		t.Errorf("spec.Subject.Namespace got=%s want=test-namespace", spec.Subject.Namespace)

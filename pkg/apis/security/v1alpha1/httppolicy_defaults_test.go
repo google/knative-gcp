@@ -20,6 +20,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,7 +34,8 @@ func TestHTTPPolicyDefaults(t *testing.T) {
 		},
 	}
 	p.SetDefaults(context.Background())
-	if p.Spec.JWT.JwtHeader != "Authorization" {
-		t.Errorf("default JwtHeader got=%s, want=Authorization", p.Spec.JWT.JwtHeader)
+	want := []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}
+	if diff := cmp.Diff(want, p.Spec.JWT.FromHeaders); diff != "" {
+		t.Errorf("default FromHeaders (-want, +got) = %v", diff)
 	}
 }

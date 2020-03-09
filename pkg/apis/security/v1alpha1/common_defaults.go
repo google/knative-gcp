@@ -20,8 +20,8 @@ import "context"
 
 // SetDefaults sets default for JWTSpec.
 func (j *JWTSpec) SetDefaults(ctx context.Context) {
-	if j.JwtHeader == "" {
-		j.JwtHeader = "Authorization"
+	if j.FromHeaders == nil {
+		j.FromHeaders = []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}
 	}
 }
 
@@ -30,7 +30,7 @@ func (pbs *PolicyBindingSpec) SetDefaults(ctx context.Context, parentNamespace s
 	if pbs.Subject.Namespace == "" {
 		pbs.Subject.Namespace = parentNamespace
 	}
-	if pbs.Policy != nil && pbs.Policy.Namespace == "" {
+	if pbs.Policy.Namespace == "" {
 		pbs.Policy.Namespace = parentNamespace
 	}
 }

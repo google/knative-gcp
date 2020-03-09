@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/tracker"
 )
@@ -47,11 +47,11 @@ func TestValidateStringMatch(t *testing.T) {
 	}, {
 		name:    "multiple presence",
 		m:       StringMatch{Exact: "abc", Prefix: "xxx"},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence"),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix"),
 	}, {
 		name:    "multiple presence 2",
 		m:       StringMatch{Suffix: "abc", Presence: true},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence"),
+		wantErr: apis.ErrMultipleOneOf("suffix", "presence"),
 	}, {
 		name:    "not set",
 		m:       StringMatch{},
@@ -87,7 +87,7 @@ func TestValidationKeyValuesMatch(t *testing.T) {
 	}, {
 		name:    "invalid values",
 		kvm:     KeyValuesMatch{Key: "foo", Values: []StringMatch{{Exact: "bar", Prefix: "abc"}}},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("values", 0),
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("values", 0),
 	}}
 
 	for _, tc := range cases {
@@ -108,30 +108,27 @@ func TestValidateJWT(t *testing.T) {
 	}{{
 		name: "valid",
 		j: JWTSpec{
-			JwksURI:      "https://example.com",
-			JwtHeader:    "Authorization",
-			ExcludePaths: []StringMatch{{Prefix: "/exclude/"}},
+			JwksURI:     "https://example.com",
+			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 	}, {
 		name: "valid 2",
 		j: JWTSpec{
-			Jwks:         "jwk",
-			JwtHeader:    "Authorization",
-			IncludePaths: []StringMatch{{Prefix: "/include/"}},
+			Jwks:        "jwk",
+			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 	}, {
 		name: "both jwks and jwksUri are specified",
 		j: JWTSpec{
-			Jwks:      "jwk",
-			JwksURI:   "https://example.com",
-			JwtHeader: "Authorization",
+			Jwks:        "jwk",
+			JwksURI:     "https://example.com",
+			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 		wantErr: apis.ErrMultipleOneOf("jwks", "jwksUri"),
 	}, {
 		name: "neither jwks nor jwksUri is specified",
 		j: JWTSpec{
-			JwtHeader:    "Authorization",
-			IncludePaths: []StringMatch{{Prefix: "/include/"}},
+			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 		wantErr: apis.ErrMissingOneOf("jwks", "jwksUri"),
 	}, {
@@ -139,23 +136,7 @@ func TestValidateJWT(t *testing.T) {
 		j: JWTSpec{
 			Jwks: "jwk",
 		},
-		wantErr: apis.ErrMissingField("jwtHeader"),
-	}, {
-		name: "invalid include paths",
-		j: JWTSpec{
-			Jwks:         "jwk",
-			JwtHeader:    "Authorization",
-			IncludePaths: []StringMatch{{Prefix: "/include/", Exact: "abc"}},
-		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("includePaths", 0),
-	}, {
-		name: "invalid include paths",
-		j: JWTSpec{
-			Jwks:         "jwk",
-			JwtHeader:    "Authorization",
-			ExcludePaths: []StringMatch{{Prefix: "/exclude/", Exact: "abc"}},
-		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("excludePaths", 0),
+		wantErr: apis.ErrMissingField("fromHeaders"),
 	}}
 
 	for _, tc := range cases {
@@ -188,7 +169,7 @@ func TestValidateStringMatches(t *testing.T) {
 			{Exact: "abc"},
 			{Suffix: "-s", Prefix: "p-"},
 		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix", "suffix", "presence").ViaFieldIndex("parent", 1),
+		wantErr: apis.ErrMultipleOneOf("prefix", "suffix").ViaFieldIndex("parent", 1),
 	}}
 
 	for _, tc := range cases {
@@ -216,7 +197,7 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "foo",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				Name:      "policy",
 				Namespace: "foo",
 			},
@@ -231,7 +212,7 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "bar",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				Name:      "policy",
 				Namespace: "foo",
 			},
@@ -246,7 +227,7 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "foo",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				Name:      "policy",
 				Namespace: "foo",
 			},
@@ -262,25 +243,13 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "foo",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				Name:      "policy",
 				Namespace: "bar",
 			},
 		},
 		parentNamespace: "foo",
 		wantErr:         apis.ErrInvalidValue("bar", "namespace").ViaField("policy"),
-	}, {
-		name: "policy missing",
-		spec: PolicyBindingSpec{
-			BindingSpec: duckv1alpha1.BindingSpec{
-				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "foo",
-				},
-			},
-		},
-		parentNamespace: "foo",
-		wantErr:         apis.ErrMissingField("policy"),
 	}, {
 		name: "policy API specified",
 		spec: PolicyBindingSpec{
@@ -290,7 +259,7 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "foo",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				APIVersion: "other.policy",
 				Name:       "policy",
 				Namespace:  "foo",
@@ -307,7 +276,7 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 					Namespace: "foo",
 				},
 			},
-			Policy: &corev1.ObjectReference{
+			Policy: duckv1.KReference{
 				Kind:      "other.kind",
 				Name:      "policy",
 				Namespace: "foo",

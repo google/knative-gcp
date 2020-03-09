@@ -74,13 +74,13 @@ func (pbs *PolicyBindingStatus) MarkBindingAvailable() {
 	policybindingCondSet.Manage(pbs).MarkTrue(PolicyBindingConditionReady)
 }
 
-// MarkBindingClassCompatible marks the policy binding's binding class
+// MarkBindingClassCompatible marks the policy binding's class
 // compatible status to True.
 func (pbs *PolicyBindingStatus) MarkBindingClassCompatible() {
 	policybindingCondSet.Manage(pbs).MarkTrue(PolicyBindingClassCompatible)
 }
 
-// MarkBindingClassIncompatible marks the policy binding's binding class
+// MarkBindingClassIncompatible marks the policy binding's class
 // compatible status to False.
 func (pbs *PolicyBindingStatus) MarkBindingClassIncompatible(reason, messageFormat string, messageA ...interface{}) {
 	policybindingCondSet.Manage(pbs).MarkFalse(PolicyBindingClassCompatible, reason, messageFormat, messageA...)

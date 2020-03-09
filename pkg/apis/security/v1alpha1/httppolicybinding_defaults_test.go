@@ -20,8 +20,8 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 func TestHTTPPolicyBindingDefaults(t *testing.T) {
@@ -30,7 +30,7 @@ func TestHTTPPolicyBindingDefaults(t *testing.T) {
 			Name:      "my-policy-binding",
 			Namespace: "test-namespace",
 		},
-		Spec: PolicyBindingSpec{Policy: &corev1.ObjectReference{}},
+		Spec: PolicyBindingSpec{Policy: duckv1.KReference{}},
 	}
 	pb.SetDefaults(context.Background())
 	if pb.Spec.Subject.Namespace != "test-namespace" {

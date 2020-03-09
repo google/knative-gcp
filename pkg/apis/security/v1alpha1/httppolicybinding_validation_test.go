@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/tracker"
 )
@@ -47,7 +47,7 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "foo",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					Name:      "policy",
 					Namespace: "foo",
 				},
@@ -67,7 +67,7 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "bar",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					Name:      "policy",
 					Namespace: "foo",
 				},
@@ -87,7 +87,7 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "foo",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					Name:      "policy",
 					Namespace: "foo",
 				},
@@ -108,30 +108,13 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "foo",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					Name:      "policy",
 					Namespace: "bar",
 				},
 			},
 		},
 		wantErr: apis.ErrInvalidValue("bar", "namespace").ViaField("policy").ViaField("spec"),
-	}, {
-		name: "policy missing",
-		pb: HTTPPolicyBinding{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "my-binding",
-				Namespace: "foo",
-			},
-			Spec: PolicyBindingSpec{
-				BindingSpec: duckv1alpha1.BindingSpec{
-					Subject: tracker.Reference{
-						Name:      "subject",
-						Namespace: "foo",
-					},
-				},
-			},
-		},
-		wantErr: apis.ErrMissingField("policy").ViaField("spec"),
 	}, {
 		name: "policy API specified",
 		pb: HTTPPolicyBinding{
@@ -146,7 +129,7 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "foo",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					APIVersion: "other.policy",
 					Name:       "policy",
 					Namespace:  "foo",
@@ -168,7 +151,7 @@ func TestHTTPPolicyBindingValidation(t *testing.T) {
 						Namespace: "foo",
 					},
 				},
-				Policy: &corev1.ObjectReference{
+				Policy: duckv1.KReference{
 					Kind:      "other.kind",
 					Name:      "policy",
 					Namespace: "foo",

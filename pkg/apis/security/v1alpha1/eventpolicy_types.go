@@ -50,7 +50,7 @@ type EventPolicySpec struct {
 	JWT *JWTSpec `json:"jwt,omitempty"`
 
 	// Rules is the list of rules to check for the policy.
-	// The rules should be evaludated in order. If the request under check
+	// The rules should be evaluated in order. If the request under check
 	// passes one rule, it passes the policy check.
 	// If Rules is not specified, it implies the policy is to "allow all".
 	// If an empty rule is specified in Rules, it implies the policy is to "reject all".

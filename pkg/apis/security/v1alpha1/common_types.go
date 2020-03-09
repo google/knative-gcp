@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
@@ -52,21 +51,22 @@ type JWTSpec struct {
 	// Can only be specified if Jwks is not set.
 	JwksURI string `json:"jwksUri,omitempty"`
 
-	// Jwks is the literal JWKs for validatiing JWTs.
+	// Jwks is the literal JWKs for validating JWTs.
 	// Can only be specified if JwksURI is not specified.
 	Jwks string `json:"jwks,omitempty"`
 
-	// JwtHeader is the HTTP header that contains the JWT to validate.
-	JwtHeader string `json:"jwtHead,omitempty"`
+	// FromHeader is the list of header locations from which JWT is expected.
+	FromHeaders []JWTHeader `json:"fromHeaders"`
+}
 
-	// ExcludePaths is a list of request paths to exclude from this JWT validation.
-	// E.g. probes.
-	// If omitted, all paths will be checked for the policy.
-	ExcludePaths []StringMatch `json:"excludePaths,omitempty"`
+// JWTHeader specifies a header location to extract JWT token.
+type JWTHeader struct {
+	// Name is the HTTP header name.
+	Name string `json:"name"`
 
-	// IncludePaths is a list of request paths to include in this JWT validation.
-	// If provided, only listed paths will be checked for the policy.
-	IncludePaths []StringMatch `json:"includePaths,omitempty"`
+	// Prefix is the prefix that should be stripped before decoding the token.
+	// E.g. a common one is "Bearer".
+	Prefix string `json:"prefix,omitempty"`
 }
 
 // PolicyBindingSpec is the specification for a policy binding.
@@ -75,7 +75,7 @@ type PolicyBindingSpec struct {
 	duckv1alpha1.BindingSpec `json:",inline"`
 
 	// Policy is the policy to bind to the subject.
-	Policy *corev1.ObjectReference `json:"policy"`
+	Policy duckv1.KReference `json:"policy"`
 }
 
 // PolicyBindingStatus is the status for a policy binding.

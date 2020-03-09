@@ -24,28 +24,23 @@ import (
 
 // Validate validates a StringMatch.
 func (m *StringMatch) Validate(ctx context.Context) *apis.FieldError {
-	notEmpty := 0
+	matchesSpecified := make([]string, 0)
 	if m.Exact != "" {
-		notEmpty++
+		matchesSpecified = append(matchesSpecified, "exact")
 	}
 	if m.Prefix != "" {
-		notEmpty++
+		matchesSpecified = append(matchesSpecified, "prefix")
 	}
 	if m.Suffix != "" {
-		notEmpty++
+		matchesSpecified = append(matchesSpecified, "suffix")
 	}
 	if m.Presence {
-		notEmpty++
+		matchesSpecified = append(matchesSpecified, "presence")
 	}
-	if notEmpty > 1 {
-		return apis.ErrMultipleOneOf(
-			"exact",
-			"prefix",
-			"suffix",
-			"presence",
-		)
+	if len(matchesSpecified) > 1 {
+		return apis.ErrMultipleOneOf(matchesSpecified...)
 	}
-	if notEmpty == 0 {
+	if len(matchesSpecified) == 0 {
 		return apis.ErrMissingOneOf(
 			"exact",
 			"prefix",
@@ -80,14 +75,8 @@ func (j *JWTSpec) Validate(ctx context.Context) *apis.FieldError {
 	if j.Jwks == "" && j.JwksURI == "" {
 		errs = errs.Also(apis.ErrMissingOneOf("jwks", "jwksUri"))
 	}
-	if j.JwtHeader == "" {
-		errs = errs.Also(apis.ErrMissingField("jwtHeader"))
-	}
-	if err := ValidateStringMatches(ctx, j.ExcludePaths, "excludePaths"); err != nil {
-		errs = errs.Also(err)
-	}
-	if err := ValidateStringMatches(ctx, j.IncludePaths, "includePaths"); err != nil {
-		errs = errs.Also(err)
+	if j.FromHeaders == nil || len(j.FromHeaders) == 0 {
+		errs = errs.Also(apis.ErrMissingField("fromHeaders"))
 	}
 	return errs
 }
@@ -115,18 +104,15 @@ func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace stri
 	if pbs.Subject.Name == "" && pbs.Subject.Selector == nil {
 		errs = errs.Also(apis.ErrMissingOneOf("name", "selector").ViaField("subject"))
 	}
-	if pbs.Policy == nil {
-		errs = errs.Also(apis.ErrMissingField("policy"))
-	} else {
-		if pbs.Policy.APIVersion != "" || pbs.Policy.Kind != "" {
-			errs = errs.Also(apis.ErrDisallowedFields("apiVersion", "kind").ViaField("policy"))
-		}
-		if pbs.Policy.Name == "" {
-			errs = errs.Also(apis.ErrMissingField("name").ViaField("policy"))
-		}
-		if pbs.Policy.Namespace != parentNamespace {
-			errs = errs.Also(apis.ErrInvalidValue(pbs.Policy.Namespace, "namespace").ViaField("policy"))
-		}
+
+	if pbs.Policy.APIVersion != "" || pbs.Policy.Kind != "" {
+		errs = errs.Also(apis.ErrDisallowedFields("apiVersion", "kind").ViaField("policy"))
+	}
+	if pbs.Policy.Name == "" {
+		errs = errs.Also(apis.ErrMissingField("name").ViaField("policy"))
+	}
+	if pbs.Policy.Namespace != parentNamespace {
+		errs = errs.Also(apis.ErrInvalidValue(pbs.Policy.Namespace, "namespace").ViaField("policy"))
 	}
 	return errs
 }
