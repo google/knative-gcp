@@ -5,5 +5,5 @@ metadata:
 spec:
   containers:
     - name: auditlogs_target
-      image: github.com/google/knative-gcp/test/test_images/auditlogs_target
+      image: ko://github.com/google/knative-gcp/test/test_images/auditlogs_target
 

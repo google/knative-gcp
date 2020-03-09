@@ -40,7 +40,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: sender-receiver
-            image: knative.dev/eventing/test/test_images/performance
+            image: ko://knative.dev/eventing/test/test_images/performance
             args:
               - "--roles=sender,receiver"
               - "--sink=http://pubsub-broker"
@@ -93,7 +93,7 @@ spec:
           restartPolicy: Never
           containers:
           - name: aggregator
-            image: knative.dev/eventing/test/test_images/performance
+            image: ko://knative.dev/eventing/test/test_images/performance
             args:
               - "--roles=aggregator"
               # set to the number of sender + receiver (same image that does both counts 2)
