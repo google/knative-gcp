@@ -18,13 +18,10 @@ package storage
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"go.uber.org/zap"
 	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
@@ -39,7 +36,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
 	"google.golang.org/grpc/codes"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const (
@@ -209,39 +205,6 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 		}
 	}
 	return nil
-}
-
-func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudStorageSource, desired *v1alpha1.CloudStorageSource) error {
-	existing := original.DeepCopy()
-	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
-		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
-		if attempts > 0 {
-			existing, err = r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-		}
-		// Check if there is anything to update.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
-			return nil
-		}
-		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
-
-		existing.Status = desired.Status
-		_, err = r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).UpdateStatus(existing)
-
-		if err == nil && becomesReady {
-			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
-			logging.FromContext(ctx).Desugar().Info("CloudStorageSource became ready", zap.Any("after", duration))
-			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudStorageSource %q became ready", existing.Name))
-			if metricErr := r.StatsReporter.ReportReady("CloudStorageSource", existing.Namespace, existing.Name, duration); metricErr != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudStorageSource", zap.Error(metricErr))
-			}
-		}
-
-		return err
-	})
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
