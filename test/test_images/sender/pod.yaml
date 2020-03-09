@@ -5,5 +5,5 @@ metadata:
 spec:
   containers:
     - name: sender
-      image: github.com/google/knative-gcp/test/test_images/sender
+      image: ko://github.com/google/knative-gcp/test/test_images/sender
 

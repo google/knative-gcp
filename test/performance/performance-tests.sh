@@ -68,11 +68,11 @@ function update_benchmark() {
   echo ">> Updating benchmark $1"
   ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true --wait=false
   sleep 30
-  ko apply -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
+  ko apply --strict -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 
   echo "Sleeping 2 min to wait for all resources to setup"
   sleep 120
-  # In the current implmentation, for some reason there can be error pods after the setup, but it does not necessarily
+  # In the current implementation, for some reason there can be error pods after the setup, but it does not necessarily
   # mean there is an error. Delete the error pods after the setup is done.
   # TODO(chizhg): remove it after there is no longer error pod.
   delete_error_pods
