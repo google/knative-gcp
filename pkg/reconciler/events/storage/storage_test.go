@@ -170,6 +170,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -194,7 +195,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: Topic %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: Topic %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists, topic not yet been reconciled",
@@ -213,6 +214,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -223,7 +225,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: the status of Topic %q is Unknown", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of Topic %q is Unknown", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
@@ -243,6 +245,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -254,7 +257,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: Topic %q did not expose projectid", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: Topic %q did not expose projectid", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and is ready, no topicid",
@@ -275,6 +278,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -286,7 +290,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: Topic %q did not expose topicid", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: Topic %q did not expose topicid", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and is ready, unexpected topicid",
@@ -307,6 +311,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -318,7 +323,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf(`%s: Topic %q mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf(`%s: Topic %q mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and the status of topic is false",
@@ -338,6 +343,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -349,7 +355,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: the status of Topic %q is False", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of Topic %q is False", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and the status of topic is unknown",
@@ -369,6 +375,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -380,7 +387,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: the status of Topic %q is Unknown", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of Topic %q is Unknown", failedToReconcilePubSubMsg, storageName)),
 		},
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
@@ -401,6 +408,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
@@ -431,7 +439,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
 		},
 	},
 		{
@@ -454,6 +462,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
@@ -467,7 +476,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -488,6 +497,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
@@ -501,7 +511,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, storageName)),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -522,6 +532,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
@@ -535,7 +546,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "PubSubReconcileFailed", fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, storageName)),
 			},
 		},
 		{
@@ -566,7 +577,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
+				Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, storageName, true),
@@ -575,6 +586,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
@@ -584,7 +596,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionReady(),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
+					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
 				),
 			}},
 		}, {
@@ -617,7 +629,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
+				Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, storageName, true),
@@ -626,6 +638,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
@@ -635,7 +648,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionReady(),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
+					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-notifications-induced-error")),
 				),
 			}},
 		}, {
@@ -668,7 +681,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, "NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
+				Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, storageName, true),
@@ -677,6 +690,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
@@ -686,7 +700,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionReady(),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceNotificationNotReady("NotificationReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
+					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "bucket-add-notification-induced-error")),
 				),
 			}},
 		}, {
@@ -719,7 +733,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeNormal, "CloudStorageSourceReconciled", `CloudStorageSource reconciled: "%s/%s"`, testNS, storageName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, testNS, storageName),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, storageName, true),
@@ -778,7 +792,7 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: delete-notification-induced-error"),
+				Eventf(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: delete-notification-induced-error"),
 			},
 			WantStatusUpdates: nil,
 		}, {
@@ -819,7 +833,7 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: rpc error: code = %s desc = %s", codes.Unknown, "delete-notification-induced-error"),
+				Eventf(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: rpc error: code = %s desc = %s", codes.Unknown, "delete-notification-induced-error"),
 			},
 			WantStatusUpdates: nil,
 		}, {

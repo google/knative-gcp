@@ -43,12 +43,13 @@ import (
 )
 
 const (
-	reconciledSuccessReason      = "CloudStorageSourceReconciled"
-	reconciledNotificationFailed = "NotificationReconcileFailed"
-	reconciledPubSubFailed       = "PubSubReconcileFailed"
+	resourceGroup = "cloudstoragesources.events.cloud.google.com"
+
 	deleteNotificationFailed     = "NotificationDeleteFailed"
 	deletePubSubFailed           = "PubSubDeleteFailed"
-	resourceGroup                = "cloudstoragesources.events.cloud.google.com"
+	reconciledNotificationFailed = "NotificationReconcileFailed"
+	reconciledPubSubFailed       = "PubSubReconcileFailed"
+	reconciledSuccessReason      = "CloudStorageSourceReconciled"
 )
 
 var (
@@ -81,6 +82,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
+	storage.Status.ObservedGeneration = storage.Generation
 
 	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
@@ -94,7 +96,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err)
 	}
 	storage.Status.MarkNotificationReady(notification)
-	storage.Status.ObservedGeneration = storage.Generation
 
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
