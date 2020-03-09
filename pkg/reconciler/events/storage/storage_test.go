@@ -881,6 +881,9 @@ func TestAllCases(t *testing.T) {
 					Name: storageName,
 				},
 			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, deleteNotificationSuccess, "Successfully deleted CloudStorageSource notification: "),
+			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
 					WithCloudStorageSourceProject(testProject),
