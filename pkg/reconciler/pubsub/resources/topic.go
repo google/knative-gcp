@@ -44,6 +44,7 @@ func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
+			ServiceAccount:    args.Spec.ServiceAccount,
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,

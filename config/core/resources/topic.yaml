@@ -53,6 +53,9 @@ spec:
           required:
             - topic
           properties:
+            serviceAccount:
+              type: string
+              description: "GCP service account used as credential to poll the Cloud Pub/Sub Subscription. The value of it must be a full format of gcp service account."
             secret:
               type: object
               description: "Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."

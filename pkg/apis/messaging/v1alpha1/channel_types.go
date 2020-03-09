@@ -55,6 +55,11 @@ var _ resourcesemantics.GenericCRD = (*Channel)(nil)
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
+	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// If not specified, defaults to use secret.
+	// +optional
+	ServiceAccount *string `json:"serviceAccount,omitempty"`
+
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format

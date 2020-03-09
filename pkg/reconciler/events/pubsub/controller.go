@@ -19,13 +19,15 @@ package pubsub
 import (
 	"context"
 
+	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"k8s.io/client-go/tools/cache"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
 )
 
 const (
@@ -49,11 +51,13 @@ func NewController(
 
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	cloudpubsubsourceInformer := cloudpubsubsourceinformers.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		pubsubLister:           cloudpubsubsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
+		serviceAccountLister:   serviceAccountInformer.Lister(),
 		receiveAdapterName:     receiveAdapterName,
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
@@ -63,6 +67,11 @@ func NewController(
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

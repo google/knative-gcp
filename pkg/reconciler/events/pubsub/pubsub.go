@@ -21,14 +21,20 @@ import (
 	"fmt"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -38,7 +44,6 @@ import (
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
-	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 const (
@@ -55,6 +60,8 @@ type Reconciler struct {
 	pubsubLister listers.CloudPubSubSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
 
 	receiveAdapterName string
 }

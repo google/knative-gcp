@@ -56,6 +56,11 @@ var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})
 // TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
 // Topic depending on the PropagationPolicy.
 type TopicSpec struct {
+	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// If not specified, defaults to use secret.
+	// +optional
+	ServiceAccount *string `json:"serviceAccount,omitempty"`
+
 	// Secret is the credential to be used to create and publish into the
 	// Cloud Pub/Sub Topic. The value of the secret entry must be a service
 	// account key in the JSON format
