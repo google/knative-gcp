@@ -173,7 +173,7 @@ func TestAllCases(t *testing.T) {
 			),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
+			Eventf(corev1.EventTypeNormal, "CloudPubSubSourceReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is false",
@@ -202,7 +202,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
+			Eventf(corev1.EventTypeNormal, "CloudPubSubSourceReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
@@ -231,7 +231,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
+			Eventf(corev1.EventTypeNormal, "CloudPubSubSourceReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
@@ -282,7 +282,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", testNS, pubsubName),
+			Eventf(corev1.EventTypeNormal, "CloudPubSubSourceReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}}
 

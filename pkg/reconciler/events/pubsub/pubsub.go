@@ -37,24 +37,12 @@ import (
 )
 
 const (
-	finalizerName = controllerAgentName
-
-	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
+	creatingFailedReason    = "PullSubscriptionGetFailed"
+	finalizerName           = controllerAgentName
+	reconciledSuccessReason = "CloudPubSubSourceReconciled"
+	reconciledFailedReason  = "PullSubscriptionReconcileFailed"
+	resourceGroup           = "cloudpubsubsources.events.cloud.google.com"
 )
-
-// newReconciledNormal makes a new reconciler event with event type Normal, and
-// reason PubSubSourceReconciled.
-func newReconciledNormal(namespace, name string) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "Updated", "Updated CloudPubSubSource: \"%s/%s\"", namespace, name)
-}
-
-func newGetPullSubscriptionsWarn(err error) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeWarning, "PubSubSourceFailed", "Getting PubSubSource failed with: %s", err)
-}
-
-func newCreatePullSubscriptionsWarn(err error) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeWarning, "PubSubSourceFailed", "Creating PubSubSource failed with: %s", err)
-}
 
 // Reconciler is the controller implementation for the CloudPubSubSource source.
 type Reconciler struct {
@@ -75,37 +63,38 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
 
 	pubsub.Status.InitializeConditions()
-	pubsub.Status.ObservedGeneration = pubsub.Generation
 
 	if pubsub.DeletionTimestamp != nil {
 		// No finalizer needed, the pullsubscription will be garbage collected.
 		return nil
 	}
 
-	ps, err := r.reconcilePullSubscription(ctx, pubsub)
-	if err != nil {
-		pubsub.Status.MarkPullSubscriptionFailed("PullSubscriptionReconcileFailed", "Failed to reconcile PullSubscription: %s", err.Error())
-		return err
+	ps, event := r.reconcilePullSubscription(ctx, pubsub)
+	if event != nil {
+		pubsub.Status.MarkPullSubscriptionFailed(reconciledFailedReason, "Failed to reconcile PullSubscription: %s", event.Error())
+		return event
 	}
+	// Set the ObservedGeneration after successful reconcile
+	pubsub.Status.ObservedGeneration = pubsub.Generation
 	pubsub.Status.PropagatePullSubscriptionStatus(&ps.Status)
 
 	// Sink has been resolved from the underlying PullSubscription, set it here.
 	sinkURI, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
 		pubsub.Status.SinkURI = nil
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Getting sink URI failed with: %s", err)
 	} else {
 		pubsub.Status.SinkURI = sinkURI
 	}
-	return newReconciledNormal(pubsub.Namespace, pubsub.Name)
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `PullSubscription reconciled: "%s/%s"`, pubsub.Namespace, pubsub.Name)
 }
 
-func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.CloudPubSubSource) (*pubsubv1alpha1.PullSubscription, error) {
+func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.CloudPubSubSource) (*pubsubv1alpha1.PullSubscription, pkgreconciler.Event) {
 	ps, err := r.pullsubscriptionLister.PullSubscriptions(source.Namespace).Get(source.Name)
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return nil, newGetPullSubscriptionsWarn(err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, creatingFailedReason, "Getting PullSubscription failed with: %s", err)
 		}
 		args := &resources.PullSubscriptionArgs{
 			Namespace:   source.Namespace,
@@ -122,7 +111,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Error(err))
-			return nil, newCreatePullSubscriptionsWarn(err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, creatingFailedReason, "Creating PullSubscription failed with: %s", err)
 		}
 	}
 	return ps, nil

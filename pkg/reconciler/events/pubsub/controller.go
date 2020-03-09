@@ -62,14 +62,9 @@ func NewController(
 	r.Logger.Info("Setting up event handlers")
 	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	// Call GlobalResync on pubsubsource.
-	grCh := func(obj interface{}) {
-		impl.GlobalResync(cloudpubsubsourceInformer.Informer())
-	}
-
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
-		Handler:    controller.HandleAll(grCh),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	return impl
