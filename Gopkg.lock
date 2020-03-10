@@ -1345,7 +1345,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:07e31a41bdeb6c5fec24e2b31933f6dfdbee7d8afdccb76533c4b7869f06ba69"
+  digest = "1:e3fe9ad0866a881e5c4825c30a63e23b2b1fb8fc43fd872ee80b24403520a47d"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1419,11 +1419,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "f08d029debf108263cc04c06622738e4c3192777"
+  revision = "f2462bc1e8e25ed840148c1397037d97b45f917f"
 
 [[projects]]
   branch = "master"
-  digest = "1:af30f32b9caae9e7c28eb5223eef83b00f0b47b6dc0b2d3838f3c3204d50d23e"
+  digest = "1:064cef5ec36970abc88e990be3e032b7bed5969201962d27d9e80982168b6664"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1500,11 +1500,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "d1665814487e0f9a731e1874fce8d318918622f1"
+  revision = "1327ff317946b1d98492b35655e761702db330ca"
 
 [[projects]]
   branch = "master"
-  digest = "1:dd43741e135778684365f99edc614cd54fd242aa0ccb8920b6e0446314194077"
+  digest = "1:d32da3c613d2d44dbdeccf9dfe17ffeb9cebce25b55fbec867600a53ae94e93e"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1553,7 +1553,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "91205292305c560d7c38c03f2c0413df368b7813"
+  revision = "b6976088bf7f9ec0316183e55e41a8eec011f4cb"
 
 [[projects]]
   branch = "master"
@@ -1564,7 +1564,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "b0442a32a47ab9a35aaa98151bc4970f457d1c23"
+  revision = "3cf9b305bb55cce84866bbf7e7fc4415adde01fb"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
