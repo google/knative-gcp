@@ -37,7 +37,6 @@ import (
 )
 
 const (
-	finalizerName = controllerAgentName
 	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
 
 	createFailedReason      = "PullSubscriptionCreateFailed"
