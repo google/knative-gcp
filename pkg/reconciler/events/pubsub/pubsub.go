@@ -83,7 +83,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 	sinkURI, err := apis.ParseURL(ps.Status.SinkURI)
 	if err != nil {
 		pubsub.Status.SinkURI = nil
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Getting sink URI failed with: %s", err)
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Getting sink URI failed with: %s", err.Error())
 	} else {
 		pubsub.Status.SinkURI = sinkURI
 	}
@@ -95,7 +95,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, getFailedReason, "Getting PullSubscription failed with: %s", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, getFailedReason, "Getting PullSubscription failed with: %s", err.Error())
 		}
 		args := &resources.PullSubscriptionArgs{
 			Namespace:   source.Namespace,
@@ -112,7 +112,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, createFailedReason, "Creating PullSubscription failed with: %s", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, createFailedReason, "Creating PullSubscription failed with: %s", err.Error())
 		}
 	}
 	return ps, nil
