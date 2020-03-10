@@ -33,6 +33,7 @@ import (
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudPubSubSource is a specification for a CloudPubSubSource resource

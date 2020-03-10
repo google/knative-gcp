@@ -32,6 +32,7 @@ import (
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudStorageSource is a specification for a Google Cloud CloudStorageSource Source resource

@@ -174,12 +174,6 @@ func WithCloudStorageSourceProjectID(projectID string) CloudStorageSourceOption 
 	}
 }
 
-func WithCloudStorageSourceFinalizers(finalizers ...string) CloudStorageSourceOption {
-	return func(s *v1alpha1.CloudStorageSource) {
-		s.Finalizers = finalizers
-	}
-}
-
 func WithCloudStorageSourceStatusObservedGeneration(generation int64) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.Status.ObservedGeneration = generation
