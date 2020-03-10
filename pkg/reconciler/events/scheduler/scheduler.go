@@ -179,7 +179,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.Cloud
 	}
 
 	if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudSchedulerSource PubSub: %s", err.Error())
 	}
 
 	return nil
