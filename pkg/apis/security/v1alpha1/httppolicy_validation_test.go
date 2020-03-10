@@ -179,6 +179,30 @@ func TestHTTPPolicyValidation(t *testing.T) {
 			},
 		},
 		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("paths", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+	}, {
+		name: "invalid method",
+		p: HTTPPolicy{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
+			Spec: HTTPPolicySpec{
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				Rules: []HTTPPolicyRuleSpec{
+					{
+						JWTRule: JWTRule{
+							Principals: []string{"user"},
+							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
+						},
+						Headers: []KeyValuesMatch{{Key: "foo", Values: []StringMatch{{Exact: "bar"}}}},
+						Operations: []RequestOperation{
+							{
+								Hosts:   []StringMatch{{Suffix: "svc.cluster.local"}},
+								Methods: []string{"XXX"},
+							},
+						},
+					},
+				},
+			},
+		},
+		wantErr: apis.ErrInvalidArrayValue("XXX", "methods", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}}
 
 	for _, tc := range cases {

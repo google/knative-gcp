@@ -20,20 +20,21 @@ import (
 	"context"
 	"net/http"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
 )
 
-var validHTTPMethods = map[string]bool{
-	http.MethodConnect: true,
-	http.MethodDelete:  true,
-	http.MethodGet:     true,
-	http.MethodHead:    true,
-	http.MethodOptions: true,
-	http.MethodPatch:   true,
-	http.MethodPost:    true,
-	http.MethodPut:     true,
-	http.MethodTrace:   true,
-}
+var validHTTPMethods = sets.NewString(
+	http.MethodConnect,
+	http.MethodDelete,
+	http.MethodGet,
+	http.MethodHead,
+	http.MethodOptions,
+	http.MethodPatch,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodTrace,
+)
 
 // Validate validates a HTTPPolicy.
 func (p *HTTPPolicy) Validate(ctx context.Context) *apis.FieldError {
@@ -70,8 +71,8 @@ func (r *HTTPPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(err.ViaFieldIndex("operations", i))
 		}
 		for j, m := range op.Methods {
-			if !validHTTPMethods[m] {
-				errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j))
+			if !validHTTPMethods.Has(m) {
+				errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j).ViaFieldIndex("operations", i))
 			}
 		}
 	}
