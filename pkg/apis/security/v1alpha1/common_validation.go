@@ -81,6 +81,17 @@ func (j *JWTSpec) Validate(ctx context.Context) *apis.FieldError {
 	return errs
 }
 
+// Validate validates a JWTRule.
+func (j *JWTRule) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+	for i, c := range j.Claims {
+		if err := c.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("claims", i))
+		}
+	}
+	return errs
+}
+
 // ValidateStringMatches a slice of StringMatch.
 func ValidateStringMatches(ctx context.Context, matches []StringMatch, field string) *apis.FieldError {
 	if matches == nil {

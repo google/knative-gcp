@@ -43,11 +43,9 @@ func (p *HTTPPolicy) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(err.ViaField("jwt").ViaField("spec"))
 		}
 	}
-	if p.Spec.Rules != nil {
-		for i, r := range p.Spec.Rules {
-			if err := r.Validate(ctx); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("rules", i).ViaField("spec"))
-			}
+	for i, r := range p.Spec.Rules {
+		if err := r.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("rules", i).ViaField("spec"))
 		}
 	}
 	return errs
@@ -56,34 +54,24 @@ func (p *HTTPPolicy) Validate(ctx context.Context) *apis.FieldError {
 // Validate validates a HTTPPolicyRuleSpec.
 func (r *HTTPPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
-	if r.Auth != nil {
-		if r.Auth.Claims != nil {
-			for i, c := range r.Auth.Claims {
-				if err := c.Validate(ctx); err != nil {
-					errs = errs.Also(err.ViaFieldIndex("claims", i).ViaField("auth"))
-				}
-			}
+	if err := r.JWTRule.Validate(ctx); err != nil {
+		errs = errs.Also(err)
+	}
+	for i, h := range r.Headers {
+		if err := h.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("headers", i))
 		}
 	}
-	if r.Headers != nil {
-		for i, h := range r.Headers {
-			if err := h.Validate(ctx); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("headers", i))
-			}
+	for i, op := range r.Operations {
+		if err := ValidateStringMatches(ctx, op.Hosts, "hosts"); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("operations", i))
 		}
-	}
-	if r.Operations != nil {
-		for i, op := range r.Operations {
-			if err := ValidateStringMatches(ctx, op.Hosts, "hosts"); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("operations", i))
-			}
-			if err := ValidateStringMatches(ctx, op.Paths, "paths"); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("operations", i))
-			}
-			for j, m := range op.Methods {
-				if !validHTTPMethods[m] {
-					errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j))
-				}
+		if err := ValidateStringMatches(ctx, op.Paths, "paths"); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("operations", i))
+		}
+		for j, m := range op.Methods {
+			if !validHTTPMethods[m] {
+				errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j))
 			}
 		}
 	}

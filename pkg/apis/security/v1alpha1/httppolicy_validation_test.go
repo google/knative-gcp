@@ -38,7 +38,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
 						},
@@ -62,7 +62,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
 						},
@@ -87,7 +87,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Values: []StringMatch{{Exact: "me"}}}},
 						},
@@ -103,7 +103,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				},
 			},
 		},
-		wantErr: apis.ErrMissingField("key").ViaFieldIndex("claims", 0).ViaField("auth").ViaFieldIndex("rules", 0).ViaField("spec"),
+		wantErr: apis.ErrMissingField("key").ViaFieldIndex("claims", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
 		name: "invalid header",
 		p: HTTPPolicy{
@@ -112,7 +112,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
 						},
@@ -137,7 +137,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
 						},
@@ -162,7 +162,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
-						Auth: &RequestAuth{
+						JWTRule: JWTRule{
 							Principals: []string{"user"},
 							Claims:     []KeyValuesMatch{{Key: "aud", Values: []StringMatch{{Exact: "me"}}}},
 						},

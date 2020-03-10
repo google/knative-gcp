@@ -69,6 +69,16 @@ type JWTHeader struct {
 	Prefix string `json:"prefix,omitempty"`
 }
 
+// JWTRule specifies a rule to check JWT attributes.
+type JWTRule struct {
+	// Principals is a list of source identities to match.
+	// If omitted, it implies any principal is allowed.
+	Principals []string `json:"principals,omitempty"`
+
+	// Claims is a list of claims that should match certain patterns.
+	Claims []KeyValuesMatch `json:"claims,omitempty"`
+}
+
 // PolicyBindingSpec is the specification for a policy binding.
 type PolicyBindingSpec struct {
 	// The binding subject.

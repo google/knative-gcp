@@ -60,8 +60,8 @@ type HTTPPolicySpec struct {
 // HTTPPolicyRuleSpec is the specification for a HTTP policy rule.
 // To pass a specified rule, a request must match all attributes provided in the rule.
 type HTTPPolicyRuleSpec struct {
-	// Auth is the authentication attribues to match.
-	Auth *RequestAuth `json:"auth,omitempty"`
+	// JWTRule inlines the rule for checking the JWT.
+	JWTRule `json:",inline"`
 
 	// Operations is a list of operation attributes to match.
 	Operations []RequestOperation `json:"operations,omitempty"`

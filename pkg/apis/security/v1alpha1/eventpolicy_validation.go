@@ -30,11 +30,9 @@ func (p *EventPolicy) Validate(ctx context.Context) *apis.FieldError {
 			errs = errs.Also(err.ViaField("jwt").ViaField("spec"))
 		}
 	}
-	if p.Spec.Rules != nil {
-		for i, r := range p.Spec.Rules {
-			if err := r.Validate(ctx); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("rules", i).ViaField("spec"))
-			}
+	for i, r := range p.Spec.Rules {
+		if err := r.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("rules", i).ViaField("spec"))
 		}
 	}
 	return errs
@@ -43,6 +41,9 @@ func (p *EventPolicy) Validate(ctx context.Context) *apis.FieldError {
 // Validate validates a EventPolicyRuleSpec.
 func (r *EventPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
+	if err := r.JWTRule.Validate(ctx); err != nil {
+		errs = errs.Also(err)
+	}
 	if err := ValidateStringMatches(ctx, r.ID, "id"); err != nil {
 		errs = errs.Also(err)
 	}
@@ -64,11 +65,9 @@ func (r *EventPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 	if err := ValidateStringMatches(ctx, r.MediaType, "mediatype"); err != nil {
 		errs = errs.Also(err)
 	}
-	if r.Extensions != nil {
-		for i, e := range r.Extensions {
-			if err := e.Validate(ctx); err != nil {
-				errs = errs.Also(err.ViaFieldIndex("extensions", i))
-			}
+	for i, e := range r.Extensions {
+		if err := e.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("extensions", i))
 		}
 	}
 	return errs

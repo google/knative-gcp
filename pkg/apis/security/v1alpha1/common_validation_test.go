@@ -100,7 +100,7 @@ func TestValidationKeyValuesMatch(t *testing.T) {
 	}
 }
 
-func TestValidateJWT(t *testing.T) {
+func TestValidateJWTSpec(t *testing.T) {
 	cases := []struct {
 		name    string
 		j       JWTSpec
@@ -144,6 +144,43 @@ func TestValidateJWT(t *testing.T) {
 			gotErr := tc.j.Validate(context.Background())
 			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
 				t.Errorf("JWTSpec.Validate (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestValidateJWTRule(t *testing.T) {
+	cases := []struct {
+		name    string
+		j       JWTRule
+		wantErr *apis.FieldError
+	}{{
+		name: "valid",
+		j: JWTRule{
+			Principals: []string{"users"},
+			Claims:     []KeyValuesMatch{{Key: "iss", Values: []StringMatch{{Prefix: "example.com"}}}},
+		},
+	}, {
+		name: "invalid missing claim key",
+		j: JWTRule{
+			Principals: []string{"users"},
+			Claims:     []KeyValuesMatch{{Values: []StringMatch{{Prefix: "example.com"}}}},
+		},
+		wantErr: apis.ErrMissingField("key").ViaFieldIndex("claims", 0),
+	}, {
+		name: "invalid claim value",
+		j: JWTRule{
+			Principals: []string{"users"},
+			Claims:     []KeyValuesMatch{{Key: "iss", Values: []StringMatch{{Exact: "example", Prefix: "example.com"}}}},
+		},
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("values", 0).ViaFieldIndex("claims", 0),
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotErr := tc.j.Validate(context.Background())
+			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
+				t.Errorf("JWTRule.Validate (-want, +got) = %v", diff)
 			}
 		})
 	}

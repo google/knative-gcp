@@ -56,6 +56,24 @@ func TestEventPolicyValidation(t *testing.T) {
 		},
 		wantErr: apis.ErrMissingOneOf("jwks", "jwksUri").ViaField("jwt").ViaField("spec"),
 	}, {
+		name: "invalid claim",
+		p: EventPolicy{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
+			Spec: EventPolicySpec{
+				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				Rules: []EventPolicyRuleSpec{
+					{
+						JWTRule: JWTRule{
+							Principals: []string{"user"},
+							Claims:     []KeyValuesMatch{{Values: []StringMatch{{Exact: "me"}}}},
+						},
+						Source: []StringMatch{{Exact: "my-source"}},
+					},
+				},
+			},
+		},
+		wantErr: apis.ErrMissingField("key").ViaFieldIndex("claims", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+	}, {
 		name: "invalid id",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},

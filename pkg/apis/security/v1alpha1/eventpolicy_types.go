@@ -59,6 +59,11 @@ type EventPolicySpec struct {
 
 // EventPolicyRuleSpec defines the rule specification for EventPolicy.
 type EventPolicyRuleSpec struct {
+	// JWTRule inlines the rule for checking the JWT.
+	JWTRule `json:",inline"`
+
+	// The following attributes map to standard CloudEvents attributes.
+
 	ID          []StringMatch    `json:"id,omitempty"`
 	Source      []StringMatch    `json:"source,omitempty"`
 	Type        []StringMatch    `json:"type,omitempty"`
