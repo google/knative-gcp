@@ -786,7 +786,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, "CloudSchedulerSource reconciled: %s", jobName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, testNS, schedulerName),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, job exists",
@@ -827,7 +827,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, "CloudSchedulerSource reconciled: %s", jobName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, testNS, schedulerName),
 			},
 		}, {
 			Name: "scheduler job fails to delete with no-grpc error",

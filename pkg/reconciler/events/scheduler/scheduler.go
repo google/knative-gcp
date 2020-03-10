@@ -70,17 +70,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 	topic := resources.GenerateTopicName(scheduler)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, scheduler, topic, resourceGroup)
 	if err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s", err.Error())
 	}
 
 	jobName := resources.GenerateJobName(scheduler)
 	err = r.reconcileJob(ctx, scheduler, topic, jobName)
 	if err != nil {
 		scheduler.Status.MarkJobNotReady(reconciledFailedReason, "Failed to reconcile CloudSchedulerSource job: %s", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: %s", err.Error())
 	}
 	scheduler.Status.MarkJobReady(jobName)
-	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, "CloudSchedulerSource reconciled: %s", scheduler.Status.JobName)
+	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, scheduler.Namespace, scheduler.Name)
 }
 
 func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource, topic, jobName string) error {
@@ -175,11 +175,11 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.CloudSch
 func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) reconciler.Event {
 	logging.FromContext(ctx).Desugar().Debug("Deleting CloudSchedulerSource job")
 	if err := r.deleteJob(ctx, scheduler); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deleteJobFailed, "Failed to delete CloudSchedulerSource job: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deleteJobFailed, "Failed to delete CloudSchedulerSource job: %s", err.Error())
 	}
 
 	if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err.Error())
 	}
 
 	return nil
