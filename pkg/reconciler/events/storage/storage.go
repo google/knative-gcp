@@ -176,6 +176,7 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.CloudStora
 		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
+			psresources.RemoveIamPolicyBinding(ctx, *storage.Spec.ServiceAccount, kServiceAccount)
 		}
 
 		logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
