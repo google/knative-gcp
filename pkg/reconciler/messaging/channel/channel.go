@@ -19,7 +19,6 @@ package channel
 import (
 	"context"
 	"fmt"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -27,20 +26,26 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
 
 	"go.uber.org/zap"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
+)
+
+const (
+	reconciledSuccessReason                 = "ChannelReconciled"
+	reconciledTopicFailedReason             = "TopicReconcileFailed"
+	reconciledSubscribersFailedReason       = "SubscribersReconcileFailed"
+	reconciledSubscribersStatusFailedReason = "SubscribersStatusReconcileFailed"
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
@@ -53,77 +58,20 @@ type Reconciler struct {
 	pullSubscriptionLister pubsublisters.PullSubscriptionLister
 }
 
-// Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Check that our Reconciler implements Interface.
+var _ channelreconciler.Interface = (*Reconciler)(nil)
 
-// Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Channel resource
-// with the current status of the resource.
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
-		return nil
-	}
-
-	// Get the Channel resource with this namespace/name
-	original, err := r.channelLister.Channels(namespace).Get(name)
-	if apierrs.IsNotFound(err) {
-		// The resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("Channel in work queue no longer exists")
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Don't modify the informers copy
-	channel := original.DeepCopy()
-
-	// Reconcile this copy of the Channel and then write back any status
-	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = r.reconcile(ctx, channel)
-
-	// If no error is returned, mark the observed generation.
-	if reconcileErr == nil {
-		channel.Status.ObservedGeneration = channel.Generation
-	}
-
-	if equality.Semantic.DeepEqual(original.Status, channel.Status) {
-		// If we didn't change anything then don't call updateStatus.
-		// This is important because the copy we loaded from the informer's
-		// cache may be stale and we don't want to overwrite a prior update
-		// to status with this stale state.
-
-	} else if uErr := r.updateStatus(ctx, original, channel); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update Channel status", zap.Error(uErr))
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Channel %q: %v", channel.Name, uErr)
-		return uErr
-	} else if reconcileErr == nil {
-		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "Updated", "Updated Channel %q", channel.Name)
-	}
-	if reconcileErr != nil {
-		r.Recorder.Event(channel, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
-	}
-	return reconcileErr
-}
-
-func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
+func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("channel", channel)))
 
 	channel.Status.InitializeConditions()
-
-	if channel.DeletionTimestamp != nil {
-		return nil
-	}
+	channel.Status.ObservedGeneration = channel.Generation
 
 	// 1. Create the Topic.
 	topic, err := r.reconcileTopic(ctx, channel)
 	if err != nil {
 		channel.Status.MarkTopicFailed("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledTopicFailedReason, "Reconcile Topic failed with: %s", err.Error())
 	}
 	channel.Status.PropagateTopicStatus(&topic.Status)
 	channel.Status.TopicID = topic.Spec.Topic
@@ -132,47 +80,15 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, channel); err != nil {
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: %s", err.Error())
 	}
 
 	// 3. Sync all subscriptions statuses.
 	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersStatusFailedReason, "Reconcile Subscribers Status failed with: %s", err.Error())
 	}
 
-	return nil
-}
-
-func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.Channel, desired *v1alpha1.Channel) error {
-	existing := original.DeepCopy()
-	return pkgreconciler.RetryUpdateConflicts(func(attempts int) (err error) {
-		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
-		if attempts > 0 {
-			existing, err = r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-		}
-		// If there's nothing to update, just return.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
-			return nil
-		}
-		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
-		existing.Status = desired.Status
-
-		_, err = r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
-		if err == nil && becomesReady {
-			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
-			logging.FromContext(ctx).Desugar().Info("Channel became ready", zap.Any("after", duration))
-			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Channel %q became ready", existing.Name))
-			if metricErr := r.StatsReporter.ReportReady("Channel", existing.Namespace, existing.Name, duration); metricErr != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to record ready for Channel", zap.Error(metricErr))
-			}
-		}
-
-		return err
-	})
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, channel.Namespace, channel.Name)
 }
 
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
