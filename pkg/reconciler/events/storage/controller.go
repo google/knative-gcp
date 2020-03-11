@@ -31,6 +31,7 @@ import (
 	cloudstoragesourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudstoragesource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 )
 
 const (
@@ -63,7 +64,7 @@ func NewController(
 		createClientFn:       gstorage.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudstoragesourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudstoragesourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)

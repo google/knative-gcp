@@ -30,6 +30,7 @@ import (
 	cloudschedulersourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudschedulersource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 )
 
@@ -63,7 +64,7 @@ func NewController(
 		createClientFn:       gscheduler.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
-	impl := controller.NewImpl(c, c.Logger, reconcilerName)
+	impl := cloudschedulersourcereconciler.NewImpl(ctx, c)
 
 	c.Logger.Info("Setting up event handlers")
 	cloudschedulersourceInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)

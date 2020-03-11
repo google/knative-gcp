@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,9 +35,9 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -113,7 +112,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	action.Namespace = namespace
 	var fname string
 	if add {
-		fname = fmt.Sprintf("%q", finalizerName)
+		fname = fmt.Sprintf("%q", resourceGroup)
 	}
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
@@ -148,7 +147,6 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
-	attempts := 0
 	schedulerSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -170,8 +168,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
@@ -199,8 +196,8 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, schedulerName, true),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q finalizers", schedulerName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q has not yet been reconciled", schedulerName),
 		},
 	}, {
 		Name: "topic exists, topic has not yet been reconciled",
@@ -210,27 +207,28 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicTopicID(testTopicID),
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 				WithInitCloudSchedulerSourceConditions,
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is Unknown", schedulerName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
@@ -240,7 +238,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicReady(testTopicID),
@@ -248,8 +245,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
@@ -258,11 +254,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" did not expose projectid`),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose projectid", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q did not expose projectid", schedulerName),
 		},
 	}, {
 		Name: "topic exists and is ready, no topicid",
@@ -272,7 +271,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicReady(""),
@@ -281,8 +279,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
@@ -291,11 +288,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" did not expose topicid`),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose topicid", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q did not expose topicid", schedulerName),
 		},
 	}, {
 		Name: "topic exists and is ready, unexpected topicid",
@@ -305,7 +305,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicReady("garbaaaaage"),
@@ -314,8 +313,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
@@ -324,11 +322,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `Topic %q mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`, schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: Topic %q mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`, schedulerName),
 		},
 	}, {
 		Name: "topic exists and the status topic is false",
@@ -338,7 +339,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicFailed(),
@@ -346,21 +346,23 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is False", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is False", schedulerName),
 		},
 	}, {
 		Name: "topic exists and the status topic is unknown",
@@ -370,7 +372,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 			),
 			NewTopic(schedulerName, testNS,
 				WithTopicUnknown(),
@@ -378,21 +379,23 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:     testNS + "/" + schedulerName,
-		WantErr: true,
+		Key: testNS + "/" + schedulerName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceFinalizers(finalizerName),
 				WithInitCloudSchedulerSourceConditions,
 				WithCloudSchedulerSourceTopicUnknown("", ""),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", schedulerName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is Unknown", schedulerName),
 		},
 	},
 		{
@@ -403,7 +406,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicReady(testTopicID),
@@ -412,8 +414,7 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
@@ -422,7 +423,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
 			}},
@@ -442,8 +442,12 @@ func TestAllCases(t *testing.T) {
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
@@ -453,7 +457,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicReady(testTopicID),
@@ -463,22 +466,24 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscriptionWithNoDefaults(schedulerName, testNS),
 				newSink(),
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -488,7 +493,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicReady(testTopicID),
@@ -498,22 +502,24 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPullSubscriptionFailed()),
 				newSink(),
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 				),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is False", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is False", schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -523,7 +529,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicReady(testTopicID),
@@ -533,22 +538,24 @@ func TestAllCases(t *testing.T) {
 				NewPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPullSubscriptionUnknown()),
 				newSink(),
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("", ""),
 				),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is Unknown", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is Unknown", schedulerName),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, create client fails",
@@ -557,7 +564,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -576,24 +582,26 @@ func TestAllCases(t *testing.T) {
 					CreateClientErr: errors.New("create-client-induced-error"),
 				},
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-client-induced-error")),
+					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-client-induced-error")),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: create-client-induced-error"),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, get job fails with non-grpc",
@@ -602,7 +610,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -621,24 +628,26 @@ func TestAllCases(t *testing.T) {
 					GetJobErr: errors.New("get-job-induced-error"),
 				},
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "get-job-induced-error")),
+					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "get-job-induced-error")),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "get-job-induced-error"),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: get-job-induced-error"),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, get job fails with grpc unknown error",
@@ -647,7 +656,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -666,24 +674,26 @@ func TestAllCases(t *testing.T) {
 					GetJobErr: gstatus.Error(codes.Unknown, "get-job-induced-error"),
 				},
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToReconcileJobMsg, codes.Unknown, "get-job-induced-error")),
+					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToReconcileJobMsg, codes.Unknown, "get-job-induced-error")),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", fmt.Sprintf("rpc error: code = %s desc = %s", codes.Unknown, "get-job-induced-error")),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledFailedReason, fmt.Sprintf("Reconcile Job failed with: rpc error: code = %s desc = %s", codes.Unknown, "get-job-induced-error")),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, get job fails with grpc not found error, create job fails",
@@ -692,7 +702,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -712,24 +721,26 @@ func TestAllCases(t *testing.T) {
 					CreateJobErr: errors.New("create-job-induced-error"),
 				},
 			},
-			Key:     testNS + "/" + schedulerName,
-			WantErr: true,
+			Key: testNS + "/" + schedulerName,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobNotReady("JobReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-job-induced-error")),
+					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-job-induced-error")),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "create-job-induced-error"),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Job failed with: create-job-induced-error"),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, get job fails with grpc not found error, create job succeeds",
@@ -738,7 +749,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -763,7 +773,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
@@ -772,18 +781,20 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceJobReady(jobName),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudSchedulerSource %q became ready", schedulerName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, testNS, schedulerName),
 			},
 		}, {
-			Name: "topic and pullsubscription exist and ready, job exists, with retry",
+			Name: "topic and pullsubscription exist and ready, job exists",
 			Objects: []runtime.Object{
 				NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
@@ -798,34 +809,11 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 			},
 			Key: testNS + "/" + schedulerName,
-			WithReactors: []clientgotesting.ReactionFunc{
-				func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-					if attempts != 0 || !action.Matches("update", "cloudschedulersources") {
-						return false, nil, nil
-					}
-					attempts++
-					return true, nil, apierrs.NewConflict(v1alpha1.GroupResource("foo"), "bar", errors.New("foo"))
-				},
-			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudSchedulerSource(schedulerName, testNS,
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
-					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobReady(jobName),
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
-			}, {
-				Object: NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
@@ -834,9 +822,12 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceJobReady(jobName),
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL)),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, schedulerName, true),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudSchedulerSource %q became ready", schedulerName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", schedulerName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudSchedulerSource reconciled: "%s/%s"`, testNS, schedulerName),
 			},
 		}, {
 			Name: "scheduler job fails to delete with no-grpc error",
@@ -845,7 +836,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
@@ -865,32 +855,15 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key: testNS + "/" + schedulerName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
-					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobName(jobName),
-					WithCloudSchedulerSourceJobNotReady("JobDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteJobMsg, "delete-job-induced-error")),
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
-					WithCloudSchedulerSourceDeletionTimestamp,
-				),
-			}},
+			Key:               testNS + "/" + schedulerName,
+			WantStatusUpdates: nil,
 			OtherTestData: map[string]interface{}{
 				"scheduler": gscheduler.TestClientData{
 					DeleteJobErr: errors.New("delete-job-induced-error"),
 				},
 			},
-			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "delete-job-induced-error"),
+				Eventf(corev1.EventTypeWarning, deleteJobFailed, "Failed to delete CloudSchedulerSource job: delete-job-induced-error"),
 			},
 		}, {
 			Name: "scheduler job fails to delete with Unknown grpc error",
@@ -899,7 +872,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
@@ -919,32 +891,15 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key: testNS + "/" + schedulerName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
-					WithCloudSchedulerSourcePullSubscriptionReady(),
-					WithCloudSchedulerSourceJobName(jobName),
-					WithCloudSchedulerSourceJobNotReady("JobDeleteFailed", fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToDeleteJobMsg, codes.Unknown, "delete-job-induced-error")),
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
-					WithCloudSchedulerSourceDeletionTimestamp,
-				),
-			}},
+			Key:               testNS + "/" + schedulerName,
+			WantStatusUpdates: nil,
 			OtherTestData: map[string]interface{}{
 				"scheduler": gscheduler.TestClientData{
 					DeleteJobErr: gstatus.Error(codes.Unknown, "delete-job-induced-error"),
 				},
 			},
-			WantErr: true,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", fmt.Sprintf("rpc error: code = %s desc = %s", codes.Unknown, "delete-job-induced-error")),
+				Eventf(corev1.EventTypeWarning, deleteJobFailed, fmt.Sprintf("Failed to delete CloudSchedulerSource job: rpc error: code = %s desc = %s", codes.Unknown, "delete-job-induced-error")),
 			},
 		}, {
 			Name: "scheduler successfully deleted with NotFound grpc error",
@@ -953,7 +908,6 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
@@ -979,11 +933,10 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceProject(testProject),
 					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
 					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceFinalizers(finalizerName),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceJobNotReady("JobDeleted", fmt.Sprintf("Successfully deleted CloudSchedulerSource job: %s", jobName)),
+					WithCloudSchedulerSourceJobReady(jobName),
 					WithCloudSchedulerSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", schedulerName)),
 					WithCloudSchedulerSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", schedulerName)),
 					WithCloudSchedulerSourceDeletionTimestamp,
@@ -999,28 +952,22 @@ func TestAllCases(t *testing.T) {
 					Name: schedulerName,
 				},
 			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, schedulerName, false),
-			},
 			OtherTestData: map[string]interface{}{
 				"scheduler": gscheduler.TestClientData{
 					DeleteJobErr: gstatus.Error(codes.NotFound, "delete-job-induced-error"),
 				},
 			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudSchedulerSource %q", schedulerName),
-			},
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
-		return &Reconciler{
+		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			schedulerLister:      listers.GetCloudSchedulerSourceLister(),
 			createClientFn:       gscheduler.TestClientCreator(testData["scheduler"]),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 		}
+		return cloudschedulersource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudSchedulerSourceLister(), r.Recorder, r)
 	}))
 
 }

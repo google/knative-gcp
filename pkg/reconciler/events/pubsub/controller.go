@@ -27,6 +27,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
@@ -60,7 +61,7 @@ func NewController(
 		serviceAccountLister:   serviceAccountInformer.Lister(),
 		receiveAdapterName:     receiveAdapterName,
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))

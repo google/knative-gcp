@@ -26,7 +26,7 @@ import (
 )
 
 // AddIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
-func AddIamPolicyBinding(ctx context.Context, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+func AddIamPolicyBinding(ctx context.Context, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
 	if err := setIamPolicy(ctx, "add", gServiceAccount, kServiceAccount); err != nil {
 		return fmt.Errorf("failed to add iam policy binding: %w", err)
 	}
@@ -34,14 +34,14 @@ func AddIamPolicyBinding(ctx context.Context, gServiceAccount string, kServiceAc
 }
 
 // RemoveIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
-func RemoveIamPolicyBinding(ctx context.Context, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+func RemoveIamPolicyBinding(ctx context.Context, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
 	if err := setIamPolicy(ctx, "remove", gServiceAccount, kServiceAccount); err != nil {
 		return fmt.Errorf("failed to remove iam policy binding: %w", err)
 	}
 	return nil
 }
 
-func setIamPolicy(ctx context.Context, action string, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+func setIamPolicy(ctx context.Context, action string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
 	iamService, err := iam.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to set google iam service: %w", err)
@@ -52,7 +52,7 @@ func setIamPolicy(ctx context.Context, action string, gServiceAccount string, kS
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	resource := "projects/" + projectId + "/serviceAccounts/" + gServiceAccount
+	resource := "projects/" + projectId + "/serviceAccounts/" + *gServiceAccount
 	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	if err != nil {
 		return fmt.Errorf("failed to get iam policy: %w", err)

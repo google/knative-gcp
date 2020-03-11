@@ -18,24 +18,19 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"time"
 
 	"go.uber.org/zap"
 	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
 
-	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
 	. "cloud.google.com/go/storage"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
@@ -44,15 +39,17 @@ import (
 	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 	"google.golang.org/grpc/codes"
-	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const (
-	finalizerName = controllerAgentName
-
 	resourceGroup = "cloudstoragesources.events.cloud.google.com"
+
+	deleteNotificationFailed     = "NotificationDeleteFailed"
+	deletePubSubFailed           = "PubSubDeleteFailed"
+	reconciledNotificationFailed = "NotificationReconcileFailed"
+	reconciledPubSubFailed       = "PubSubReconcileFailed"
+	reconciledSuccessReason      = "CloudStorageSourceReconciled"
+	workloadIdentityFailedReason = "WorkloadIdentityReconcileFailed"
 )
 
 var (
@@ -81,153 +78,51 @@ type Reconciler struct {
 	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
-// Check that we implement the controller.Reconciler interface.
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Check that our Reconciler implements Interface.
+var _ cloudstoragesourcereconciler.Interface = (*Reconciler)(nil)
 
-// Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the CloudStorageSource resource
-// with the current status of the resource.
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
-		return nil
-	}
-
-	// Get the CloudStorageSource resource with this namespace/name
-	original, err := r.storageLister.CloudStorageSources(namespace).Get(name)
-	if apierrs.IsNotFound(err) {
-		// The CloudStorageSource resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("CloudStorageSource in work queue no longer exists")
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Don't modify the informers copy
-	storage := original.DeepCopy()
-
-	reconcileErr := r.reconcile(ctx, storage)
-
-	// If no error is returned, mark the observed generation.
-	if reconcileErr == nil {
-		storage.Status.ObservedGeneration = storage.Generation
-	}
-
-	if equality.Semantic.DeepEqual(original.Finalizers, storage.Finalizers) {
-		// If we didn't change finalizers then don't call updateFinalizers.
-
-	} else if _, updated, fErr := r.updateFinalizers(ctx, storage); fErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudStorageSource finalizers", zap.Error(fErr))
-		r.Recorder.Eventf(storage, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update finalizers for CloudStorageSource %q: %v", storage.Name, fErr)
-		return fErr
-	} else if updated {
-		// There was a difference and updateFinalizers said it updated and did not return an error.
-		r.Recorder.Eventf(storage, corev1.EventTypeNormal, "Updated", "Updated CloudStorageSource %q finalizers", storage.Name)
-	}
-
-	if equality.Semantic.DeepEqual(original.Status, storage.Status) {
-		// If we didn't change anything then don't call updateStatus.
-		// This is important because the copy we loaded from the informer's
-		// cache may be stale and we don't want to overwrite a prior update
-		// to status with this stale state.
-
-	} else if uErr := r.updateStatus(ctx, original, storage); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update CloudStorageSource status", zap.Error(uErr))
-		r.Recorder.Eventf(storage, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for CloudStorageSource %q: %v", storage.Name, uErr)
-		return uErr
-	} else if reconcileErr == nil {
-		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(storage, corev1.EventTypeNormal, "Updated", "Updated CloudStorageSource %q", storage.Name)
-	}
-	if reconcileErr != nil {
-		r.Recorder.Event(storage, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
-	}
-	return reconcileErr
-}
-
-func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.CloudStorageSource) error {
+func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
-
-	// If GCP ServiceAccount is provided, get the corresponding k8s ServiceAccount.
-	// kServiceAccount will be nil if GCP ServiceAccount is not provided or there is no corresponding k8s ServiceAccount.
-	var kServiceAccount *corev1.ServiceAccount
-	if storage.Spec.ServiceAccount != nil {
-		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
-		ksa, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			if !apierrs.IsNotFound(err) {
-				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
-				return err
-			}
-		} else {
-			kServiceAccount = ksa
-		}
-	}
-
-	// See if the source has been deleted.
-	if storage.DeletionTimestamp != nil {
-		// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
-		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
-			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			psresources.RemoveIamPolicyBinding(ctx, *storage.Spec.ServiceAccount, kServiceAccount)
-		}
-
-		logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
-		if err := r.deleteNotification(ctx, storage); err != nil {
-			storage.Status.MarkNotificationNotReady("NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: %s", err.Error())
-			return err
-		}
-		storage.Status.MarkNotificationNotReady("NotificationDeleted", "Successfully deleted CloudStorageSource notification: %s", storage.Status.NotificationID)
-
-		if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
-			return err
-		}
-
-		// Only set the notificationID to empty after we successfully deleted the PubSub resources.
-		// Otherwise, we may leak them.
-		storage.Status.NotificationID = ""
-		removeFinalizer(storage)
-		return nil
-	}
-
-	// Ensure that there's finalizer there, since we're about to attempt to
-	// change external state with the topic, so we need to clean it up.
-	addFinalizer(storage)
+	storage.Status.ObservedGeneration = storage.Generation
 
 	// If GCP ServiceAccount is provided, configure workload identity.
 	if storage.Spec.ServiceAccount != nil {
-		gServiceAccount := *storage.Spec.ServiceAccount
 		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
-		if err := r.PubSubBase.CreateServiceAccount(ctx, storage, kServiceAccount); err != nil {
-			return err
+		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
+		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
+		if err != nil {
+			if !apierrs.IsNotFound(err) {
+				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
+				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
+			}
+			kServiceAccount = nil
+		}
+		kServiceAccount, event := r.CreateServiceAccount(ctx, storage, kServiceAccount)
+		if event != nil {
+			return event
 		}
 		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, gServiceAccount, kServiceAccount); err != nil {
-			return err
+		if event := psresources.AddIamPolicyBinding(ctx, storage.Spec.ServiceAccount, kServiceAccount); event != nil {
+			return event
 		}
 	}
 
 	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
-		return err
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile CloudStorageSource PubSub: %s", err)
 	}
 
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
-		storage.Status.MarkNotificationNotReady("NotificationReconcileFailed", "Failed to reconcile CloudStorageSource notification: %s", err.Error())
-		return err
+		storage.Status.MarkNotificationNotReady(reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err)
 	}
 	storage.Status.MarkNotificationReady(notification)
 
-	return nil
+	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudStorageSource reconciled: "%s/%s"`, storage.Namespace, storage.Name)
 }
 
 func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha1.CloudStorageSource) (string, error) {
@@ -341,97 +236,36 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 	return nil
 }
 
-func addFinalizer(s *v1alpha1.CloudStorageSource) {
-	finalizers := sets.NewString(s.Finalizers...)
-	finalizers.Insert(finalizerName)
-	s.Finalizers = finalizers.List()
-}
-
-func removeFinalizer(s *v1alpha1.CloudStorageSource) {
-	finalizers := sets.NewString(s.Finalizers...)
-	finalizers.Delete(finalizerName)
-	s.Finalizers = finalizers.List()
-}
-
-func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudStorageSource, desired *v1alpha1.CloudStorageSource) error {
-	existing := original.DeepCopy()
-	return reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
-		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
-		if attempts > 0 {
-			existing, err = r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
-			if err != nil {
+func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
+	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if storage.Spec.ServiceAccount != nil {
+		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
+		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
+		if err != nil {
+			if !apierrs.IsNotFound(err) {
+				// TODO add a delete reason
+				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
+			}
+			return nil
+		}
+		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
+			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
+			if err := psresources.RemoveIamPolicyBinding(ctx, storage.Spec.ServiceAccount, kServiceAccount); err != nil {
 				return err
 			}
 		}
-		// Check if there is anything to update.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
-			return nil
-		}
-		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
-
-		existing.Status = desired.Status
-		_, err = r.RunClientSet.EventsV1alpha1().CloudStorageSources(desired.Namespace).UpdateStatus(existing)
-
-		if err == nil && becomesReady {
-			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
-			logging.FromContext(ctx).Desugar().Info("CloudStorageSource became ready", zap.Any("after", duration))
-			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("CloudStorageSource %q became ready", existing.Name))
-			if metricErr := r.StatsReporter.ReportReady("CloudStorageSource", existing.Namespace, existing.Name, duration); metricErr != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to record ready for CloudStorageSource", zap.Error(metricErr))
-			}
-		}
-
-		return err
-	})
-}
-
-// updateFinalizers is a generic method for future compatibility with a
-// reconciler SDK.
-func (r *Reconciler) updateFinalizers(ctx context.Context, desired *v1alpha1.CloudStorageSource) (*v1alpha1.CloudStorageSource, bool, error) {
-	storage, err := r.storageLister.CloudStorageSources(desired.Namespace).Get(desired.Name)
-	if err != nil {
-		return nil, false, err
 	}
 
-	// Don't modify the informers copy.
-	existing := storage.DeepCopy()
-
-	var finalizers []string
-
-	// If there's nothing to update, just return.
-	existingFinalizers := sets.NewString(existing.Finalizers...)
-	desiredFinalizers := sets.NewString(desired.Finalizers...)
-
-	if desiredFinalizers.Has(finalizerName) {
-		if existingFinalizers.Has(finalizerName) {
-			// Nothing to do.
-			return desired, false, nil
-		}
-		// Add the finalizer.
-		finalizers = append(existing.Finalizers, finalizerName)
-	} else {
-		if !existingFinalizers.Has(finalizerName) {
-			// Nothing to do.
-			return desired, false, nil
-		}
-		// Remove the finalizer.
-		existingFinalizers.Delete(finalizerName)
-		finalizers = existingFinalizers.List()
+	logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
+	if err := r.deleteNotification(ctx, storage); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudStorageSource notification: %s", err)
 	}
 
-	mergePatch := map[string]interface{}{
-		"metadata": map[string]interface{}{
-			"finalizers":      finalizers,
-			"resourceVersion": existing.ResourceVersion,
-		},
+	if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
+		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudStorageSource PubSub: %s", err)
 	}
 
-	patch, err := json.Marshal(mergePatch)
-	if err != nil {
-		return desired, false, err
-	}
-
-	update, err := r.RunClientSet.EventsV1alpha1().CloudStorageSources(existing.Namespace).Patch(existing.Name, types.MergePatchType, patch)
-	return update, true, err
+	// ok to remove finalizer.
+	return nil
 }

@@ -140,14 +140,16 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			psresources.RemoveIamPolicyBinding(ctx, *channel.Spec.ServiceAccount, kServiceAccount)
+			if err := psresources.RemoveIamPolicyBinding(ctx, channel.Spec.ServiceAccount, kServiceAccount); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
 
 	// If GCP ServiceAccount is provided, configure workload identity.
 	if channel.Spec.ServiceAccount != nil {
-		gServiceAccount := *channel.Spec.ServiceAccount
+		gServiceAccount := channel.Spec.ServiceAccount
 		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
 		if err := r.CreateServiceAccount(ctx, channel, kServiceAccount); err != nil {
 			return err

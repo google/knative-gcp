@@ -225,18 +225,15 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	return nil
 }
 
-func (psb *PubSubBase) CreateServiceAccount(ctx context.Context, pubsubable duck.PubSubable, kServiceAccount *corev1.ServiceAccount) error {
+func (psb *PubSubBase) CreateServiceAccount(ctx context.Context, pubsubable duck.PubSubable, kServiceAccount *corev1.ServiceAccount) (*corev1.ServiceAccount, error) {
 	// If kServiceAccount doesn't exist, create it first.
 	if kServiceAccount == nil {
-		gServiceAccountName := pubsubable.PubSubSpec().ServiceAccount
-		namespace := pubsubable.GetObjectMeta().GetNamespace()
-
-		expect := resources.MakeServiceAccount(namespace, gServiceAccountName)
+		expect := resources.MakeServiceAccount(pubsubable.GetObjectMeta().GetNamespace(), pubsubable.PubSubSpec().ServiceAccount)
 		logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("kServiceAccount", expect))
 		ksa, err := psb.KubeClientSet.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
-			return fmt.Errorf("failed to create k8s service account: %w", err)
+			return nil, fmt.Errorf("failed to create k8s service account: %w", err)
 		}
 		kServiceAccount = ksa
 	}
@@ -248,8 +245,8 @@ func (psb *PubSubBase) CreateServiceAccount(ctx context.Context, pubsubable duck
 		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
 		if _, err := psb.KubeClientSet.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
-			return fmt.Errorf("failed to update OwnerReferences: %w", err)
+			return nil, fmt.Errorf("failed to update OwnerReferences: %w", err)
 		}
 	}
-	return nil
+	return kServiceAccount, nil
 }
