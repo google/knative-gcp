@@ -59,6 +59,13 @@ func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.Fie
 		}
 	}
 
+	if current.ServiceAccount != nil {
+		err := validateGCPServiceAccount(current.ServiceAccount)
+		if err != nil {
+			errs = errs.Also(err.ViaField("serviceAccount"))
+		}
+	}
+
 	return errs
 }
 

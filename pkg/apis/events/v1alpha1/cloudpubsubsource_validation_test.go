@@ -177,6 +177,14 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"invalid GCP service account": {
+			spec: func() CloudPubSubSourceSpec {
+				obj := pubSubSourceSpec.DeepCopy()
+				obj.ServiceAccount = &invalidServiceAccountName
+				return *obj
+			}(),
+			error: true,
+		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {

@@ -99,10 +99,6 @@ func TestMakePublisher(t *testing.T) {
             "image": "test-image",
             "env": [
               {
-                "name": "GOOGLE_APPLICATION_CREDENTIALS",
-                "value": "/var/secrets/google/eventing-secret-key"
-              },
-              {
                 "name": "PROJECT_ID",
                 "value": "eventing-name"
               },
@@ -113,6 +109,10 @@ func TestMakePublisher(t *testing.T) {
               {
                 "name": "K_TRACING_CONFIG",
                 "value": "TracingConfig-ABC123"
+              },
+              {
+                "name": "GOOGLE_APPLICATION_CREDENTIALS",
+                "value": "/var/secrets/google/eventing-secret-key"
               }
             ],
             "resources": {},

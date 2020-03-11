@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"regexp"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -58,6 +59,13 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 		}
 	}
 
+	if current.ServiceAccount != nil {
+		err := validateGCPServiceAccount(current.ServiceAccount)
+		if err != nil {
+			errs = errs.Also(err.ViaField("serviceAccount"))
+		}
+	}
+
 	return errs
 }
 
@@ -70,6 +78,18 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 		errs = errs.Also(apis.ErrMissingField("key"))
 	}
 	return errs
+}
+
+func validateGCPServiceAccount(gServiceAccountName *string) *apis.FieldError {
+	pattern := `[A-Z0-9._%+-]+@[A-Z0-9.-]+.iam.gserviceaccount.com`
+	match, err := regexp.MatchString(pattern, *gServiceAccountName)
+	if err != nil || !match {
+		return &apis.FieldError{
+			Message: "Invalid Service Account",
+			Paths:   []string{""},
+		}
+	}
+	return nil
 }
 
 func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, original *CloudStorageSource) *apis.FieldError {

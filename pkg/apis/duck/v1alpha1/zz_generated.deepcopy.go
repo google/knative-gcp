@@ -90,6 +90,11 @@ func (in *PubSubList) DeepCopyObject() runtime.Object {
 func (in *PubSubSpec) DeepCopyInto(out *PubSubSpec) {
 	*out = *in
 	in.SourceSpec.DeepCopyInto(&out.SourceSpec)
+	if in.ServiceAccount != nil {
+		in, out := &in.ServiceAccount, &out.ServiceAccount
+		*out = new(string)
+		**out = **in
+	}
 	if in.Secret != nil {
 		in, out := &in.Secret, &out.Secret
 		*out = new(v1.SecretKeySelector)

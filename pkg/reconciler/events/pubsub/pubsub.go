@@ -21,10 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"cloud.google.com/go/compute/metadata"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +41,7 @@ import (
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 )
 
 const (
@@ -126,9 +124,44 @@ func (r *Reconciler) reconcile(ctx context.Context, pubsub *v1alpha1.CloudPubSub
 
 	pubsub.Status.InitializeConditions()
 
+	// If GCP ServiceAccount is provided, get the corresponding k8s ServiceAccount.
+	// kServiceAccount will be nil if GCP ServiceAccount is not provided or there is no corresponding k8s ServiceAccount.
+	var kServiceAccount *corev1.ServiceAccount
+	if pubsub.Spec.ServiceAccount != nil {
+		kServiceAccountName := psresources.GenerateServiceAccountName(pubsub.Spec.ServiceAccount)
+		ksa, err := r.serviceAccountLister.ServiceAccounts(pubsub.Namespace).Get(kServiceAccountName)
+		if err != nil {
+			if !apierrs.IsNotFound(err) {
+				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
+				return err
+			}
+		} else {
+			kServiceAccount = ksa
+		}
+	}
+
 	if pubsub.DeletionTimestamp != nil {
-		// No finalizer needed, the pullsubscription will be garbage collected.
+		// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
+			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
+			psresources.RemoveIamPolicyBinding(ctx, *pubsub.Spec.ServiceAccount, kServiceAccount)
+		}
+		// The pullsubscription will be garbage collected.
 		return nil
+	}
+
+	// If GCP ServiceAccount is provided, configure workload identity.
+	if pubsub.Spec.ServiceAccount != nil {
+		gServiceAccount := *pubsub.Spec.ServiceAccount
+		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
+		if err := r.CreateServiceAccount(ctx, pubsub, kServiceAccount); err != nil {
+			return err
+		}
+		// Add iam policy binding to GCP ServiceAccount.
+		if err := psresources.AddIamPolicyBinding(ctx, gServiceAccount, kServiceAccount); err != nil {
+			return err
+		}
 	}
 
 	ps, err := r.reconcilePullSubscription(ctx, pubsub)
@@ -208,4 +241,30 @@ func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.CloudP
 
 		return err
 	})
+}
+
+func (r *Reconciler) CreateServiceAccount(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource, kServiceAccount *corev1.ServiceAccount) error {
+	// If kServiceAccount doesn't exist, create it first.
+	if kServiceAccount == nil {
+		expect := resources.MakeServiceAccount(pubsub.Namespace, pubsub.Spec.ServiceAccount)
+		logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("kServiceAccount", expect))
+		ksa, err := r.KubeClientSet.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
+			return fmt.Errorf("failed to create k8s service account: %w", err)
+		}
+		kServiceAccount = ksa
+	}
+	// Add ownerReference to K8s ServiceAccount.
+	expectOwnerReference := *kmeta.NewControllerRef(pubsub)
+	control := false
+	expectOwnerReference.Controller = &control
+	if !resources.OwnerReferenceExists(kServiceAccount, expectOwnerReference) {
+		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
+		if _, err := r.KubeClientSet.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
+			return fmt.Errorf("failed to update OwnerReferences: %w", err)
+		}
+	}
+	return nil
 }

@@ -99,12 +99,6 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/var/secrets/google/eventing-secret-key",
-						}, {
-							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
-						}, {
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
 						}, {
@@ -146,6 +140,12 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
+						}, {
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/var/secrets/google/eventing-secret-key",
+						}, {
+							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -254,12 +254,6 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						Name:  "receive-adapter",
 						Image: "test-image",
 						Env: []corev1.EnvVar{{
-							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-							Value: "/var/secrets/google/eventing-secret-key",
-						}, {
-							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
-						}, {
 							Name:  "PROJECT_ID",
 							Value: "eventing-name",
 						}, {
@@ -304,6 +298,12 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 						}, {
 							Name:  "METRICS_DOMAIN",
 							Value: metricsDomain,
+						}, {
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/var/secrets/google/eventing-secret-key",
+						}, {
+							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,

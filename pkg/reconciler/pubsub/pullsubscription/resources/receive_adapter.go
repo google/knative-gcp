@@ -144,8 +144,9 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) co
 
 	// If GCP service account is specified, use that service account as credential.
 	if args.Source.Spec.ServiceAccount != nil {
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.ServiceAccount)
 		return corev1.PodSpec{
-			ServiceAccountName: resources.GenerateServiceAccountName(*args.Source.Spec.ServiceAccount),
+			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
 				receiveAdapterContainer,
 			},

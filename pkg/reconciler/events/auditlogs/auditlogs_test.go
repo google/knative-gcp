@@ -1103,6 +1103,7 @@ func TestAllCases(t *testing.T) {
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),
+						serviceAccountLister:   listers.GetServiceAccountLister(),
 					}
 				}))
 			if expectedSinks := tt.OtherTestData["expectedSinks"]; expectedSinks != nil {

@@ -28,19 +28,30 @@ const (
 )
 
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
-func GenerateServiceAccountName(gsa string) string {
-	return strings.Split(gsa, "@")[0]
+func GenerateServiceAccountName(gServiceAccount *string) string {
+	return strings.Split(*gServiceAccount, "@")[0]
 }
 
-// MakeServiceAccount creates a ServiceAccount object for the Namespace.
-func MakeServiceAccount(namespace, name, gServiceAccount string) *corev1.ServiceAccount {
+// MakeServiceAccount creates a K8s ServiceAccount object for the Namespace.
+func MakeServiceAccount(namespace string, gServiceAccount *string) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name,
+			Name:      GenerateServiceAccountName(gServiceAccount),
 			Annotations: map[string]string{
-				workloadIdentityKey: gServiceAccount,
+				workloadIdentityKey: *gServiceAccount,
 			},
 		},
 	}
+}
+
+// OwnerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
+func OwnerReferenceExists(kServiceAccount *corev1.ServiceAccount, expect metav1.OwnerReference) bool {
+	references := kServiceAccount.OwnerReferences
+	for _, reference := range references {
+		if reference.Name == expect.Name {
+			return true
+		}
+	}
+	return false
 }

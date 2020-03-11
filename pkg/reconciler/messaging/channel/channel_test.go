@@ -473,6 +473,7 @@ func TestAllCases(t *testing.T) {
 			channelLister:          listers.GetChannelLister(),
 			topicLister:            listers.GetTopicLister(),
 			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 	}))
 

@@ -23,6 +23,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
@@ -54,11 +55,13 @@ func NewController(
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	cloudschedulersourceInformer := cloudschedulersourceinformers.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:      pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		schedulerLister: cloudschedulersourceInformer.Lister(),
-		createClientFn:  gscheduler.NewClient,
+		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		schedulerLister:      cloudschedulersourceInformer.Lister(),
+		createClientFn:       gscheduler.NewClient,
+		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
 	impl := controller.NewImpl(c, c.Logger, reconcilerName)
 
@@ -72,6 +75,11 @@ func NewController(
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -292,6 +292,7 @@ func TestAllCases(t *testing.T) {
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
 			receiveAdapterName:     receiveAdapterName,
+			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 	}))
 

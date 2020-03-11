@@ -27,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/pkg/controller"
@@ -40,6 +41,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 	"google.golang.org/grpc/codes"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -74,6 +76,9 @@ type Reconciler struct {
 	// createClientFn is the function used to create the Storage client that interacts with GCS.
 	// This is needed so that we can inject a mock client for UTs purposes.
 	createClientFn gstorage.CreateFn
+
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that we implement the controller.Reconciler interface.
@@ -149,8 +154,30 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.CloudStora
 
 	storage.Status.InitializeConditions()
 
+	// If GCP ServiceAccount is provided, get the corresponding k8s ServiceAccount.
+	// kServiceAccount will be nil if GCP ServiceAccount is not provided or there is no corresponding k8s ServiceAccount.
+	var kServiceAccount *corev1.ServiceAccount
+	if storage.Spec.ServiceAccount != nil {
+		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
+		ksa, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
+		if err != nil {
+			if !apierrs.IsNotFound(err) {
+				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
+				return err
+			}
+		} else {
+			kServiceAccount = ksa
+		}
+	}
+
 	// See if the source has been deleted.
 	if storage.DeletionTimestamp != nil {
+		// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
+			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
+		}
+
 		logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
 		if err := r.deleteNotification(ctx, storage); err != nil {
 			storage.Status.MarkNotificationNotReady("NotificationDeleteFailed", "Failed to delete CloudStorageSource notification: %s", err.Error())
@@ -172,6 +199,19 @@ func (r *Reconciler) reconcile(ctx context.Context, storage *v1alpha1.CloudStora
 	// Ensure that there's finalizer there, since we're about to attempt to
 	// change external state with the topic, so we need to clean it up.
 	addFinalizer(storage)
+
+	// If GCP ServiceAccount is provided, configure workload identity.
+	if storage.Spec.ServiceAccount != nil {
+		gServiceAccount := *storage.Spec.ServiceAccount
+		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
+		if err := r.PubSubBase.CreateServiceAccount(ctx, storage, kServiceAccount); err != nil {
+			return err
+		}
+		// Add iam policy binding to GCP ServiceAccount.
+		if err := psresources.AddIamPolicyBinding(ctx, gServiceAccount, kServiceAccount); err != nil {
+			return err
+		}
+	}
 
 	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)

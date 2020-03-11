@@ -86,6 +86,13 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 		}
 	}
 
+	if current.ServiceAccount != nil {
+		err := validateGCPServiceAccount(current.ServiceAccount)
+		if err != nil {
+			errs = errs.Also(err.ViaField("serviceAccount"))
+		}
+	}
+
 	return errs
 }
 

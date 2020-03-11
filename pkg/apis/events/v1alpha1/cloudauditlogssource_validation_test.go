@@ -50,6 +50,7 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+	invalidServiceAccountName = "test@test.iam.gserviceaccount.com"
 )
 
 func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
@@ -83,6 +84,14 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 				obj.Secret = &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "test-secret"},
 				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"invalid GCP service account": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.ServiceAccount = &invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,

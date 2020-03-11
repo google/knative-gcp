@@ -22,6 +22,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
@@ -50,12 +51,14 @@ func NewController(
 
 	topicInformer := topicinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformer.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 		channelLister:          channelInformer.Lister(),
 		topicLister:            topicInformer.Lister(),
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
+		serviceAccountLister:   serviceAccountInformer.Lister(),
 	}
 	impl := controller.NewImpl(r, r.Logger, reconcilerName)
 
@@ -69,6 +72,11 @@ func NewController(
 
 	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

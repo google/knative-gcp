@@ -216,6 +216,31 @@ func TestSpecValidationFields(t *testing.T) {
 			fe := apis.ErrMissingField("secret.key")
 			return fe
 		}(),
+	}, {
+		name: "invalid GCP service account",
+		spec: &CloudStorageSourceSpec{
+			Bucket: "my-test-bucket",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
+					},
+				},
+				ServiceAccount: &invalidServiceAccountName,
+			},
+		},
+		want: func() *apis.FieldError {
+			fe := &apis.FieldError{
+				Message: "Invalid Service Account",
+				Paths:   []string{"serviceAccount"},
+			}
+			return fe
+		}(),
 	}}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {

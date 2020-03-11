@@ -71,8 +71,9 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 
 	// If GCP service account is specified, use that service account as credential.
 	if args.Topic.Spec.ServiceAccount != nil {
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.ServiceAccount)
 		return corev1.PodSpec{
-			ServiceAccountName: resources.GenerateServiceAccountName(*args.Topic.Spec.ServiceAccount),
+			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
 				publisherContainer,
 			},
