@@ -142,8 +142,8 @@ MUST be individually mapped to and from distinct Pub/Sub message attributes.
 
 ##### 3.1.3.1 Pub/Sub Attribute Names
 
-Except for attributes
-[explicitly handled in this specification](#2-use-of-cloudevents-attributes),
+Except for the `data` attribute
+[explicitly handled in this specification](#22-data-attribute),
 the naming convention for the Pub/Sub attribute mapping of well-known CloudEvents
 attributes is that each attribute name MUST be prefixed with "ce-".
 
