@@ -28,6 +28,7 @@ import (
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Channel is a resource representing an channel backed by Google Cloud Pub/Sub.

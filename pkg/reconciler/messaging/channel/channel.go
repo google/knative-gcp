@@ -19,9 +19,8 @@ package channel
 import (
 	"context"
 	"fmt"
-	"knative.dev/pkg/kmeta"
-	"time"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,21 +28,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
 
-	"go.uber.org/zap"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+)
+
+const (
+	resourceGroup = "channels.messaging.cloud.google.com"
+
+	reconciledSuccessReason                 = "ChannelReconciled"
+	reconciledTopicFailedReason             = "TopicReconcileFailed"
+	reconciledSubscribersFailedReason       = "SubscribersReconcileFailed"
+	reconciledSubscribersStatusFailedReason = "SubscribersStatusReconcileFailed"
+	workloadIdentityFailedReason            = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
@@ -58,105 +66,25 @@ type Reconciler struct {
 	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
-// Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Check that our Reconciler implements Interface.
+var _ channelreconciler.Interface = (*Reconciler)(nil)
 
-// Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the Channel resource
-// with the current status of the resource.
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	// Convert the namespace/name string into a distinct namespace and name
-	namespace, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Invalid resource key")
-		return nil
-	}
-
-	// Get the Channel resource with this namespace/name
-	original, err := r.channelLister.Channels(namespace).Get(name)
-	if apierrs.IsNotFound(err) {
-		// The resource may no longer exist, in which case we stop processing.
-		logging.FromContext(ctx).Desugar().Error("Channel in work queue no longer exists")
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	// Don't modify the informers copy
-	channel := original.DeepCopy()
-
-	// Reconcile this copy of the Channel and then write back any status
-	// updates regardless of whether the reconciliation errored out.
-	var reconcileErr = r.reconcile(ctx, channel)
-
-	// If no error is returned, mark the observed generation.
-	if reconcileErr == nil {
-		channel.Status.ObservedGeneration = channel.Generation
-	}
-
-	if equality.Semantic.DeepEqual(original.Status, channel.Status) {
-		// If we didn't change anything then don't call updateStatus.
-		// This is important because the copy we loaded from the informer's
-		// cache may be stale and we don't want to overwrite a prior update
-		// to status with this stale state.
-
-	} else if uErr := r.updateStatus(ctx, original, channel); uErr != nil {
-		logging.FromContext(ctx).Desugar().Warn("Failed to update Channel status", zap.Error(uErr))
-		r.Recorder.Eventf(channel, corev1.EventTypeWarning, "UpdateFailed",
-			"Failed to update status for Channel %q: %v", channel.Name, uErr)
-		return uErr
-	} else if reconcileErr == nil {
-		// There was a difference and updateStatus did not return an error.
-		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "Updated", "Updated Channel %q", channel.Name)
-	}
-	if reconcileErr != nil {
-		r.Recorder.Event(channel, corev1.EventTypeWarning, "InternalError", reconcileErr.Error())
-	}
-	return reconcileErr
-}
-
-func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) error {
+func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("channel", channel)))
 
 	channel.Status.InitializeConditions()
-	// If GCP ServiceAccount is provided, get the corresponding k8s ServiceAccount.
-	// kServiceAccount will be nil if GCP ServiceAccount is not provided or there is no corresponding k8s ServiceAccount.
-	var kServiceAccount *corev1.ServiceAccount
-	if channel.Spec.ServiceAccount != nil {
-		kServiceAccountName := psresources.GenerateServiceAccountName(channel.Spec.ServiceAccount)
-		ksa, err := r.serviceAccountLister.ServiceAccounts(channel.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			if !apierrs.IsNotFound(err) {
-				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
-				return err
-			}
-		} else {
-			kServiceAccount = ksa
-		}
-	}
-
-	if channel.DeletionTimestamp != nil {
-		// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
-		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
-			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, channel.Spec.ServiceAccount, kServiceAccount); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
+	channel.Status.ObservedGeneration = channel.Generation
 
 	// If GCP ServiceAccount is provided, configure workload identity.
 	if channel.Spec.ServiceAccount != nil {
-		gServiceAccount := channel.Spec.ServiceAccount
 		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
-		if err := r.CreateServiceAccount(ctx, channel, kServiceAccount); err != nil {
-			return err
+		kServiceAccount, event := r.CreateServiceAccount(ctx, channel)
+		if event != nil {
+			return event
 		}
 		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, gServiceAccount, kServiceAccount); err != nil {
-			return err
+		if event := psresources.AddIamPolicyBinding(ctx, channel.Spec.ServiceAccount, kServiceAccount); event != nil {
+			return event
 		}
 	}
 
@@ -164,7 +92,7 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	topic, err := r.reconcileTopic(ctx, channel)
 	if err != nil {
 		channel.Status.MarkTopicFailed("TopicReconcileFailed", "Failed to reconcile Topic: %s", err.Error())
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledTopicFailedReason, "Reconcile Topic failed with: %s", err.Error())
 	}
 	channel.Status.PropagateTopicStatus(&topic.Status)
 	channel.Status.TopicID = topic.Spec.Topic
@@ -173,47 +101,15 @@ func (r *Reconciler) reconcile(ctx context.Context, channel *v1alpha1.Channel) e
 	//   a. create all subscriptions that are in spec and not in status.
 	//   b. delete all subscriptions that are in status but not in spec.
 	if err := r.syncSubscribers(ctx, channel); err != nil {
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: %s", err.Error())
 	}
 
 	// 3. Sync all subscriptions statuses.
 	if err := r.syncSubscribersStatus(ctx, channel); err != nil {
-		return err
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledSubscribersStatusFailedReason, "Reconcile Subscribers Status failed with: %s", err.Error())
 	}
 
-	return nil
-}
-
-func (r *Reconciler) updateStatus(ctx context.Context, original *v1alpha1.Channel, desired *v1alpha1.Channel) error {
-	existing := original.DeepCopy()
-	return pkgreconciler.RetryUpdateConflicts(func(attempts int) (err error) {
-		// The first iteration tries to use the informer's state, subsequent attempts fetch the latest state via API.
-		if attempts > 0 {
-			existing, err = r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).Get(desired.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-		}
-		// If there's nothing to update, just return.
-		if equality.Semantic.DeepEqual(existing.Status, desired.Status) {
-			return nil
-		}
-		becomesReady := desired.Status.IsReady() && !existing.Status.IsReady()
-		existing.Status = desired.Status
-
-		_, err = r.RunClientSet.MessagingV1alpha1().Channels(desired.Namespace).UpdateStatus(existing)
-		if err == nil && becomesReady {
-			// TODO compute duration since last non-ready. See https://github.com/google/knative-gcp/issues/455.
-			duration := time.Since(existing.ObjectMeta.CreationTimestamp.Time)
-			logging.FromContext(ctx).Desugar().Info("Channel became ready", zap.Any("after", duration))
-			r.Recorder.Event(existing, corev1.EventTypeNormal, "ReadinessChanged", fmt.Sprintf("Channel %q became ready", existing.Name))
-			if metricErr := r.StatsReporter.ReportReady("Channel", existing.Namespace, existing.Name, duration); metricErr != nil {
-				logging.FromContext(ctx).Desugar().Error("Failed to record ready for Channel", zap.Error(metricErr))
-			}
-		}
-
-		return err
-	})
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, channel.Namespace, channel.Name)
 }
 
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
@@ -484,27 +380,55 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscripti
 	return ready, message
 }
 
-func (r *Reconciler) CreateServiceAccount(ctx context.Context, channel *v1alpha1.Channel, kServiceAccount *corev1.ServiceAccount) error {
-	// If kServiceAccount doesn't exist, create it first.
-	if kServiceAccount == nil {
+func (r *Reconciler) CreateServiceAccount(ctx context.Context, channel *v1alpha1.Channel) (*corev1.ServiceAccount, pkgreconciler.Event) {
+	kServiceAccountName := psresources.GenerateServiceAccountName(channel.Spec.ServiceAccount)
+	kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(channel.Namespace).Get(kServiceAccountName)
+	if err != nil {
+		if !apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
+		}
 		expect := psresources.MakeServiceAccount(channel.Namespace, channel.Spec.ServiceAccount)
-		logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("kServiceAccount", expect))
-		ksa, err := r.KubeClientSet.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
+		logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
+		kServiceAccount, err = r.KubeClientSet.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
-			return fmt.Errorf("failed to create k8s service account: %w", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Creating k8s service account failed with: %w", err)
 		}
-		kServiceAccount = ksa
 	}
-	// Add ownerReference to K8s ServiceAccount.
+	//add owner reference
 	expectOwnerReference := *kmeta.NewControllerRef(channel)
 	control := false
 	expectOwnerReference.Controller = &control
 	if !psresources.OwnerReferenceExists(kServiceAccount, expectOwnerReference) {
 		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
-		if _, err := r.KubeClientSet.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
+		fmt.Printf("Owernerreference Here: %v/n", kServiceAccount.OwnerReferences)
+		kServiceAccount, err = r.KubeClientSet.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount)
+		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
-			return fmt.Errorf("failed to update OwnerReferences: %w", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Updating OwnerReferences failed with: %w", err)
+		}
+	}
+	return kServiceAccount, nil
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
+	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if channel.Spec.ServiceAccount != nil {
+		kServiceAccountName := psresources.GenerateServiceAccountName(channel.Spec.ServiceAccount)
+		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(channel.Namespace).Get(kServiceAccountName)
+		if err != nil {
+			if !apierrs.IsNotFound(err) {
+				return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
+			}
+			return nil
+		}
+		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
+			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
+			if err := psresources.RemoveIamPolicyBinding(ctx, channel.Spec.ServiceAccount, kServiceAccount); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

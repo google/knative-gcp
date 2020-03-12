@@ -29,6 +29,7 @@ import (
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
 	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 )
 
 const (
@@ -60,7 +61,7 @@ func NewController(
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
 		serviceAccountLister:   serviceAccountInformer.Lister(),
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := channelreconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	channelInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))

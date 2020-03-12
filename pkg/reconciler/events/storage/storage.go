@@ -259,11 +259,11 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudSt
 
 	logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
 	if err := r.deleteNotification(ctx, storage); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudStorageSource notification: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err)
 	}
 
 	if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err)
 	}
 
 	// ok to remove finalizer.

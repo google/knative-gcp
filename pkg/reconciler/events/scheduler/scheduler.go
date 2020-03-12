@@ -223,11 +223,11 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.Cloud
 
 	logging.FromContext(ctx).Desugar().Debug("Deleting CloudSchedulerSource job")
 	if err := r.deleteJob(ctx, scheduler); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudSchedulerSource job: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, deleteJobFailed, "Failed to delete CloudSchedulerSource job: %s", err.Error())
 	}
 
 	if err := r.PubSubBase.DeletePubSub(ctx, scheduler); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Failed to delete CloudSchedulerSource PubSub: %s", err.Error())
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudSchedulerSource PubSub: %s", err.Error())
 	}
 
 	return nil
