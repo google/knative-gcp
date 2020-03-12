@@ -109,7 +109,7 @@ particular content mode might be defined by an application, but are not defined
 here.
 
 The receiver of the event can distinguish between the two content modes by
-inspecting the [Pub/Sub Attribute `Content-Type`][content-type] of the
+inspecting the [Pub/Sub Attribute `contentType`][content-type] of the
 [Pub/Sub message][pubsub-message]. If the attribute is present and its value is prefixed 
 with the CloudEvents media type `application/cloudevents`, indicating the use of a known
 [event format](#14-event-formats), the receiver SHOULD use _structured_ mode,
@@ -123,11 +123,16 @@ forward it to another party as-is.
 ### 3.1. Binary Content Mode
 
 The _binary_ content mode accommodates any shape of event data, and allows for
-efficient transfer and without transcoding effort.
+efficient transfer and without transcoding effort. 
 
-#### 3.1.1. Content-Type
+The _binary_ content mode can only be used if the metadata attributes 
+fit within the [limits of Pub/Sub messages][pubsub-message-quotas]. For attributes 
+that exceeds those limits, a multi-attribute mapping MAY be needed. 
+This specification does not yet introduce such mapping.
 
-For the _binary_ mode, the [Pub/Sub Attribute `Content-Type`][content-type], if present, MUST 
+#### 3.1.1. contentType
+
+For the _binary_ mode, the [Pub/Sub Attribute `contentType`][content-type], if present, MUST 
 be used as the CloudEvents `datacontenttype` attribute.
 
 #### 3.1.2. Event Data Encoding
@@ -142,9 +147,7 @@ MUST be individually mapped to and from distinct Pub/Sub message attributes.
 
 ##### 3.1.3.1 Pub/Sub Attribute Names
 
-Except for the `data` attribute
-[explicitly handled in this specification](#22-data-attribute),
-the naming convention for the Pub/Sub attribute mapping of well-known CloudEvents
+The naming convention for the Pub/Sub attribute mapping of well-known CloudEvents
 attributes is that each attribute name MUST be prefixed with "ce-".
 
 Examples:
@@ -153,7 +156,7 @@ Examples:
     * `id` maps to `ce-id`
     * `specversion` maps to `ce-specversion`
 
-Attribute names are case-insensitive.
+Attribute names are lower-case.
 
 ##### 3.1.3.2 Pub/Sub Attribute Values
 
@@ -188,15 +191,15 @@ The _structured_ content mode keeps event metadata and data together in the
 payload, allowing simple forwarding of the same event across multiple routing
 hops, and across multiple transports.
 
-#### 3.2.1. Content-Type
+#### 3.2.1. contentType
 
-The [Pub/Sub Attribute `Content-Type`][content-type] MUST be set to the media type of
+The [Pub/Sub Attribute `contentType`][content-type] MUST be set to the media type of
 an [event format](#14-event-formats).
 
 Example for the [JSON format][json-format]:
 
 ```text
-"Content-Type": "application/cloudevents+json; charset=UTF-8"
+"contentType": "application/cloudevents+json; charset=UTF-8"
 ```
 
 #### 3.2.2. Event Data Encoding
@@ -223,7 +226,7 @@ This example shows the _structured_ mode mapping of an event to a Pub/Sub Messag
 Publish /some-topic
 --- Attributes ---
 {
-  "Content-Type": "application/cloudevents+json; charset=utf-8",
+  "contentType": "application/cloudevents+json; charset=utf-8",
 }
 --- Data ---
 {
@@ -255,6 +258,7 @@ Publish /some-topic
 [ce-types]: https://github.com/cloudevents/spec/blob/master/spec.md#type-system
 [pubsub]: https://cloud.google.com/pubsub/
 [pubsub-message]: https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage
+[pubsub-message-quotas]: https://cloud.google.com/pubsub/quotas
 [json-format]: https://github.com/cloudevents/spec/blob/master/json-format.md
 [content-type]: https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 [rfc2046]: https://tools.ietf.org/html/rfc2046
