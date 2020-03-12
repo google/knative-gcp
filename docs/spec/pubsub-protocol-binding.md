@@ -109,7 +109,7 @@ particular content mode might be defined by an application, but are not defined
 here.
 
 The receiver of the event can distinguish between the two content modes by
-inspecting the [Pub/Sub Attribute `contentType`][content-type] of the
+inspecting the [Pub/Sub Attribute `content-type`][content-type] of the
 [Pub/Sub message][pubsub-message]. If the attribute is present and its value is prefixed 
 with the CloudEvents media type `application/cloudevents`, indicating the use of a known
 [event format](#14-event-formats), the receiver SHOULD use _structured_ mode,
@@ -130,9 +130,9 @@ fit within the [limits of Pub/Sub messages][pubsub-message-quotas]. For attribut
 that exceeds those limits, a multi-attribute mapping MAY be needed. 
 This specification does not yet introduce such mapping.
 
-#### 3.1.1. contentType
+#### 3.1.1. content-type
 
-For the _binary_ mode, the [Pub/Sub Attribute `contentType`][content-type], if present, MUST 
+For the _binary_ mode, the [Pub/Sub Attribute `content-type`][content-type], if present, MUST 
 be used as the CloudEvents `datacontenttype` attribute.
 
 #### 3.1.2. Event Data Encoding
@@ -191,15 +191,15 @@ The _structured_ content mode keeps event metadata and data together in the
 payload, allowing simple forwarding of the same event across multiple routing
 hops, and across multiple transports.
 
-#### 3.2.1. contentType
+#### 3.2.1. content-type
 
-The [Pub/Sub Attribute `contentType`][content-type] MUST be set to the media type of
+The [Pub/Sub Attribute `content-type`][content-type] MUST be set to the media type of
 an [event format](#14-event-formats).
 
 Example for the [JSON format][json-format]:
 
 ```text
-"contentType": "application/cloudevents+json; charset=UTF-8"
+"content-type": "application/cloudevents+json; charset=UTF-8"
 ```
 
 #### 3.2.2. Event Data Encoding
@@ -226,7 +226,7 @@ This example shows the _structured_ mode mapping of an event to a Pub/Sub Messag
 Publish /some-topic
 --- Attributes ---
 {
-  "contentType": "application/cloudevents+json; charset=utf-8",
+  "content-type": "application/cloudevents+json; charset=utf-8",
 }
 --- Data ---
 {
