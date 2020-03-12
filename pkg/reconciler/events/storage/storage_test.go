@@ -69,7 +69,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -156,6 +157,51 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "topic created, not yet been reconciled",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceGCPServiceAccount("test@test"),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceGCPServiceAccount("test@test"),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, "test@test"),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, "test@test",
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudStorageSource",
+					Name:               "my-test-storage",
+					UID:                storageUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, storageName),
+		},
+		WantErr: true,
 	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
@@ -834,6 +880,54 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: rpc error: code = %s desc = %s", codes.Unknown, "delete-notification-induced-error"),
+			},
+			WantStatusUpdates: nil,
+		}, {
+			Name: "delete fails with getting k8s service account error",
+			Objects: []runtime.Object{
+				NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceGCPServiceAccount("test@test"),
+					WithDeletionTimestamp(),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + storageName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
+			},
+			WantStatusUpdates: nil,
+		}, {
+			Name: "delete fails with removing iam policy binding error",
+			Objects: []runtime.Object{
+				NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceGCPServiceAccount("test@test"),
+					WithDeletionTimestamp(),
+				),
+				NewServiceAccount("test", testNS, "test@test",
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudStorageSource",
+						Name:               "my-test-storage",
+						UID:                storageUID,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + storageName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
 			},
 			WantStatusUpdates: nil,
 		}, {

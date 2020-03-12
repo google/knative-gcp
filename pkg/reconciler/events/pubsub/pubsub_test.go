@@ -56,7 +56,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -144,6 +145,52 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "k8s serviceaccount created",
+		Objects: []runtime.Object{
+			NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceGCPServiceAccount("test@test"),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + pubsubName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithInitCloudPubSubSourceConditions,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceGCPServiceAccount("test@test"),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, "test@test"),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, "test@test",
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					Name:               pubsubName,
+					UID:                pubsubUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, pubsubName),
+		},
+		WantErr: true,
 	}, {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
@@ -305,6 +352,51 @@ func TestAllCases(t *testing.T) {
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+		},
+	}, {
+		Name: "pullsubscription deleted with getting k8s service account error",
+		Objects: []runtime.Object{
+			NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceDeletionTimestamp,
+				WithCloudPubSubSourceGCPServiceAccount("test@test"),
+			),
+			newSink(),
+		},
+		Key:               testNS + "/" + pubsubName,
+		WantStatusUpdates: nil,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
+		},
+	}, {
+		Name: "pullsubscription deleted with removing iam policy binding error",
+		Objects: []runtime.Object{
+			NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceProject("test-project-id"),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceDeletionTimestamp,
+				WithCloudPubSubSourceGCPServiceAccount("test@test"),
+			),
+			NewServiceAccount("test", testNS, "test@test",
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					Name:               pubsubName,
+					UID:                pubsubUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			newSink(),
+		},
+		Key:               testNS + "/" + pubsubName,
+		WantStatusUpdates: nil,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
 		},
 	}}
 

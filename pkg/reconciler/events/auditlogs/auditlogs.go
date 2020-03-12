@@ -155,7 +155,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.CloudAuditLogsSo
 		// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, s.Spec.ServiceAccount, kServiceAccount); err != nil {
+			if err := psresources.RemoveIamPolicyBinding(ctx, s.Spec.Project, s.Spec.ServiceAccount, kServiceAccount); err != nil {
 				return err
 			}
 		}
@@ -186,7 +186,7 @@ func (c *Reconciler) reconcile(ctx context.Context, s *v1alpha1.CloudAuditLogsSo
 			return err
 		}
 		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, s.Spec.ServiceAccount, kServiceAccount); err != nil {
+		if err := psresources.AddIamPolicyBinding(ctx, s.Spec.Project, s.Spec.ServiceAccount, kServiceAccount); err != nil {
 			return err
 		}
 	}

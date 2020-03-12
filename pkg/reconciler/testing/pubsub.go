@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -55,6 +56,23 @@ func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPu
 				Name:       name,
 			},
 		}
+	}
+}
+
+func WithCloudPubSubSourceGCPServiceAccount(gServiceAccount string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
+		ps.Spec.ServiceAccount = &gServiceAccount
+	}
+}
+
+func WithCloudPubSubSourceDeletionTimestamp(s *v1alpha1.CloudPubSubSource) {
+	t := metav1.NewTime(time.Unix(1e9, 0))
+	s.ObjectMeta.SetDeletionTimestamp(&t)
+}
+
+func WithCloudPubSubSourceProject(project string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Spec.Project = project
 	}
 }
 

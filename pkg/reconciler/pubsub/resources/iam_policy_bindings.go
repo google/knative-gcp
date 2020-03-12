@@ -20,34 +20,34 @@ import (
 	"context"
 	"fmt"
 
-	"cloud.google.com/go/compute/metadata"
+	"github.com/google/knative-gcp/pkg/utils"
 	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
 )
 
 // AddIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
-func AddIamPolicyBinding(ctx context.Context, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
-	if err := setIamPolicy(ctx, "add", gServiceAccount, kServiceAccount); err != nil {
+func AddIamPolicyBinding(ctx context.Context, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
+	if err := SetIamPolicy(ctx, "add", projectID, gServiceAccount, kServiceAccount); err != nil {
 		return fmt.Errorf("failed to add iam policy binding: %w", err)
 	}
 	return nil
 }
 
 // RemoveIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
-func RemoveIamPolicyBinding(ctx context.Context, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
-	if err := setIamPolicy(ctx, "remove", gServiceAccount, kServiceAccount); err != nil {
+func RemoveIamPolicyBinding(ctx context.Context, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
+	if err := SetIamPolicy(ctx, "remove", projectID, gServiceAccount, kServiceAccount); err != nil {
 		return fmt.Errorf("failed to remove iam policy binding: %w", err)
 	}
 	return nil
 }
 
-func setIamPolicy(ctx context.Context, action string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
+func SetIamPolicy(ctx context.Context, action, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
 	iamService, err := iam.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to set google iam service: %w", err)
 	}
 
-	projectId, err := metadata.ProjectID()
+	projectId, err := utils.ProjectID(projectID)
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
@@ -58,13 +58,20 @@ func setIamPolicy(ctx context.Context, action string, gServiceAccount *string, k
 		return fmt.Errorf("failed to get iam policy: %w", err)
 	}
 
-	var rb *iam.SetIamPolicyRequest
 	currentMember := "serviceAccount:" + projectId + ".svc.id.goog[" + kServiceAccount.Namespace + "/" + kServiceAccount.Name + "]"
-	bindings := resp.Bindings
+	rb := MakeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
+	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
+		return fmt.Errorf("failed to set iam policy: %w", err)
+	}
+
+	return nil
+}
+
+func MakeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember string) *iam.SetIamPolicyRequest {
 	switch action {
 	case "add":
-		rb = &iam.SetIamPolicyRequest{
+		return &iam.SetIamPolicyRequest{
 			Policy: &iam.Policy{
 				Bindings: append(bindings, &iam.Binding{
 					Members: []string{currentMember},
@@ -83,16 +90,11 @@ func setIamPolicy(ctx context.Context, action string, gServiceAccount *string, k
 				binding.Members = newMembers
 			}
 		}
-		rb = &iam.SetIamPolicyRequest{
+		return &iam.SetIamPolicyRequest{
 			Policy: &iam.Policy{
 				Bindings: bindings,
 			},
 		}
 	}
-
-	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
-		return fmt.Errorf("failed to set iam policy: %w", err)
-	}
-
 	return nil
 }

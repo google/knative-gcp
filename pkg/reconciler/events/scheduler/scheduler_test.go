@@ -70,7 +70,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -157,6 +158,52 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "k8s serviceaccount created",
+		Objects: []runtime.Object{
+			NewCloudSchedulerSource(schedulerName, testNS,
+				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+				WithCloudSchedulerSourceLocation(location),
+				WithCloudSchedulerSourceData(testData),
+				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudSchedulerSource(schedulerName, testNS,
+				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+				WithCloudSchedulerSourceLocation(location),
+				WithCloudSchedulerSourceData(testData),
+				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, "test@test"),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, "test@test",
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudSchedulerSource",
+					Name:               "my-test-scheduler",
+					UID:                schedulerUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, schedulerName),
+		},
+		WantErr: true,
 	}, {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
@@ -956,6 +1003,58 @@ func TestAllCases(t *testing.T) {
 				"scheduler": gscheduler.TestClientData{
 					DeleteJobErr: gstatus.Error(codes.NotFound, "delete-job-induced-error"),
 				},
+			},
+		}, {
+			Name: "scheduler deleted with getting k8s service account error",
+			Objects: []runtime.Object{
+				NewCloudSchedulerSource(schedulerName, testNS,
+					WithCloudSchedulerSourceProject(testProject),
+					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+					WithCloudSchedulerSourceLocation(location),
+					WithCloudSchedulerSourceData(testData),
+					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+				),
+				newSink(),
+			},
+			Key:               testNS + "/" + schedulerName,
+			WantStatusUpdates: nil,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
+			},
+		}, {
+			Name: "scheduler deleted with removing iam policy binding error",
+			Objects: []runtime.Object{
+				NewCloudSchedulerSource(schedulerName, testNS,
+					WithCloudSchedulerSourceProject(testProject),
+					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+					WithCloudSchedulerSourceLocation(location),
+					WithCloudSchedulerSourceData(testData),
+					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+				),
+				NewServiceAccount("test", testNS, "test@test",
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudSchedulerSource",
+						Name:               "my-test-scheduler",
+						UID:                schedulerUID,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+				newSink(),
+			},
+			Key:               testNS + "/" + schedulerName,
+			WantStatusUpdates: nil,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
 			},
 		}}
 

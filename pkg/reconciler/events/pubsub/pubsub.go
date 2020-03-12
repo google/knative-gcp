@@ -80,7 +80,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 			return event
 		}
 		// Add iam policy binding to GCP ServiceAccount.
-		if event := psresources.AddIamPolicyBinding(ctx, pubsub.Spec.ServiceAccount, kServiceAccount); event != nil {
+		if event := psresources.AddIamPolicyBinding(ctx, pubsub.Spec.Project, pubsub.Spec.ServiceAccount, kServiceAccount); event != nil {
 			return event
 		}
 	}
@@ -169,15 +169,13 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, pubsub *v1alpha1.CloudPub
 		kServiceAccountName := psresources.GenerateServiceAccountName(pubsub.Spec.ServiceAccount)
 		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(pubsub.Namespace).Get(kServiceAccountName)
 		if err != nil {
-			if !apierrs.IsNotFound(err) {
-				return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-			}
-			return nil
+			// k8s ServiceAccount should be there.
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
 		}
 		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, pubsub.Spec.ServiceAccount, kServiceAccount); err != nil {
-				return err
+			if err := psresources.RemoveIamPolicyBinding(ctx, pubsub.Spec.Project, pubsub.Spec.ServiceAccount, kServiceAccount); err != nil {
+				return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Removing iam policy binding failed with: %s", err)
 			}
 		}
 	}
