@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda/resources"
 	"go.uber.org/zap"
@@ -34,8 +35,8 @@ import (
 	"k8s.io/client-go/discovery"
 	eventingduck "knative.dev/eventing/pkg/duck"
 
-	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/tracker"
 )
 
@@ -52,11 +53,11 @@ type Reconciler struct {
 	discoveryFn DiscoverFunc
 }
 
-// Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Check that our Reconciler implements Interface.
+var _ pullsubscriptionreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	return r.Base.Reconcile(ctx, key)
+func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+	return r.Base.ReconcileKind(ctx, ps)
 }
 
 // TODO upstream to pkg
@@ -130,4 +131,8 @@ func (r *Reconciler) ReconcileScaledObject(ctx context.Context, ra *appsv1.Deplo
 		}
 	}
 	return nil
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+	return r.Base.FinalizeKind(ctx, ps)
 }

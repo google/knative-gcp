@@ -22,11 +22,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
 )
 
 // Reconciler implements controller.Reconciler for PullSubscription resources.
@@ -34,11 +35,11 @@ type Reconciler struct {
 	*psreconciler.Base
 }
 
-// Check that our Reconciler implements controller.Reconciler
-var _ controller.Reconciler = (*Reconciler)(nil)
+// Check that our Reconciler implements Interface.
+var _ pullsubscriptionreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
-	return r.Base.Reconcile(ctx, key)
+func (r *Reconciler) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+	return r.Base.ReconcileKind(ctx, ps)
 }
 
 func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deployment, src *v1alpha1.PullSubscription) error {
@@ -55,4 +56,8 @@ func (r *Reconciler) ReconcileDeployment(ctx context.Context, ra *appsv1.Deploym
 		}
 	}
 	return nil
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+	return r.Base.FinalizeKind(ctx, ps)
 }
