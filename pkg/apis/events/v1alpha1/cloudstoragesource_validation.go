@@ -81,7 +81,7 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 }
 
 func validateGCPServiceAccount(gServiceAccountName *string) *apis.FieldError {
-	pattern := `[A-Z0-9._%+-]+@[A-Z0-9.-]+.iam.gserviceaccount.com`
+	pattern := `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.iam.gserviceaccount.com`
 	match, err := regexp.MatchString(pattern, *gServiceAccountName)
 	if err != nil || !match {
 		return &apis.FieldError{

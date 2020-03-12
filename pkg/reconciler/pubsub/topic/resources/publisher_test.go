@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
@@ -129,6 +130,83 @@ func TestMakePublisher(t *testing.T) {
   },
   "status": {}
 }`
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+	}
+}
+
+func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
+	gServiceAccountName := "test@test.iam.gserviceaccount.com"
+	topic := &v1alpha1.Topic{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "topic-name",
+			Namespace: "topic-namespace",
+		},
+		Spec: v1alpha1.TopicSpec{
+			Project:        "eventing-name",
+			Topic:          "topic-name",
+			ServiceAccount: &gServiceAccountName,
+		},
+	}
+
+	got := MakePublisher(&PublisherArgs{
+		Image:         "test-image",
+		Topic:         topic,
+		Labels:        GetLabels("controller-name", "topic-name"),
+		TracingConfig: "TracingConfig-ABC123",
+	})
+
+	yes := true
+	want := &servingv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              "cre-topic-name-publish",
+			Namespace:         "topic-namespace",
+			CreationTimestamp: metav1.Time{},
+			Labels: map[string]string{
+				"pubsub.cloud.google.com/controller": "controller-name",
+				"pubsub.cloud.google.com/topic":      "topic-name",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "pubsub.cloud.google.com/v1alpha1",
+				Kind:               "Topic",
+				Name:               "topic-name",
+				Controller:         &yes,
+				BlockOwnerDeletion: &yes,
+			},
+			},
+		},
+		Spec: servingv1.ServiceSpec{
+			ConfigurationSpec: servingv1.ConfigurationSpec{
+				Template: servingv1.RevisionTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{
+							"pubsub.cloud.google.com/controller": "controller-name",
+							"pubsub.cloud.google.com/topic":      "topic-name",
+						},
+					},
+					Spec: servingv1.RevisionSpec{
+						PodSpec: corev1.PodSpec{
+							Containers: []corev1.Container{{
+								Name:  "",
+								Image: "test-image",
+								Env: []corev1.EnvVar{{
+									Name:  "PROJECT_ID",
+									Value: "eventing-name",
+								}, {
+									Name:  "PUBSUB_TOPIC_ID",
+									Value: "topic-name",
+								}, {
+									Name:  "K_TRACING_CONFIG",
+									Value: "TracingConfig-ABC123",
+								}},
+							}},
+							ServiceAccountName: "test",
+						},
+					},
+				}},
+		},
+	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected deploy (-want, +got) = %v", diff)

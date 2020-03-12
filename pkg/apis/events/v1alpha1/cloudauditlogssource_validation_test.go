@@ -50,7 +50,8 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
-	invalidServiceAccountName = "test@test.iam.gserviceaccount.com"
+	validServiceAccountName   = "test@test.iam.gserviceaccount.com"
+	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
 )
 
 func TestCloudAuditLogsSourceValidationFields(t *testing.T) {

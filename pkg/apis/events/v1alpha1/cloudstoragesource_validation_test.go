@@ -241,6 +241,25 @@ func TestSpecValidationFields(t *testing.T) {
 			}
 			return fe
 		}(),
+	}, {
+		name: "valid GCP service account",
+		spec: &CloudStorageSourceSpec{
+			Bucket: "my-test-bucket",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
+					},
+				},
+				ServiceAccount: &validServiceAccountName,
+			},
+		},
+		want: nil,
 	}}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {

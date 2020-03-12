@@ -331,3 +331,143 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
 	}
 }
+
+func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
+	gServiceAccountName := "test@test.iam.gserviceaccount.com"
+	src := &v1alpha1.PullSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "source-name",
+			Namespace: "source-namespace",
+			Annotations: map[string]string{
+				"metrics-resource-group": "test-resource-group",
+			},
+		},
+		Spec: v1alpha1.PullSubscriptionSpec{
+			Project:     "eventing-name",
+			Topic:       "topic",
+			AdapterType: "adapter-type",
+			SourceSpec: duckv1.SourceSpec{
+				CloudEventOverrides: &duckv1.CloudEventOverrides{
+					Extensions: map[string]string{
+						"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+					},
+				},
+			},
+			ServiceAccount: &gServiceAccountName,
+		},
+	}
+
+	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
+		Image:  "test-image",
+		Source: src,
+		Labels: map[string]string{
+			"test-key1": "test-value1",
+			"test-key2": "test-value2",
+		},
+		SubscriptionID: "sub-id",
+		SinkURI:        "sink-uri",
+		TransformerURI: "transformer-uri",
+		LoggingConfig:  "LoggingConfig-ABC123",
+		MetricsConfig:  "MetricsConfig-ABC123",
+		TracingConfig:  "TracingConfig-ABC123",
+	})
+
+	one := int32(1)
+	yes := true
+	want := &v1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:   "source-namespace",
+			Name:        "cre-pull-",
+			Annotations: src.Annotations,
+			Labels: map[string]string{
+				"test-key1": "test-value1",
+				"test-key2": "test-value2",
+			},
+			OwnerReferences: []metav1.OwnerReference{{
+				APIVersion:         "pubsub.cloud.google.com/v1alpha1",
+				Kind:               "PullSubscription",
+				Name:               "source-name",
+				Controller:         &yes,
+				BlockOwnerDeletion: &yes,
+			}},
+		},
+		Spec: v1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"test-key1": "test-value1",
+					"test-key2": "test-value2",
+				},
+			},
+			Replicas: &one,
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"test-key1": "test-value1",
+						"test-key2": "test-value2",
+					},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: "test",
+					Containers: []corev1.Container{{
+						Name:  "receive-adapter",
+						Image: "test-image",
+						Env: []corev1.EnvVar{{
+							Name:  "PROJECT_ID",
+							Value: "eventing-name",
+						}, {
+							Name:  "PUBSUB_TOPIC_ID",
+							Value: "topic",
+						}, {
+							Name:  "PUBSUB_SUBSCRIPTION_ID",
+							Value: "sub-id",
+						}, {
+							Name:  "SINK_URI",
+							Value: "sink-uri",
+						}, {
+							Name:  "TRANSFORMER_URI",
+							Value: "transformer-uri",
+						}, {
+							Name:  "ADAPTER_TYPE",
+							Value: "adapter-type",
+						}, {
+							Name:  "SEND_MODE",
+							Value: "binary",
+						}, {
+							Name:  "K_CE_EXTENSIONS",
+							Value: "eyJmb28iOiJiYXIifQ==",
+						}, {
+							Name:  "K_METRICS_CONFIG",
+							Value: "MetricsConfig-ABC123",
+						}, {
+							Name:  "K_LOGGING_CONFIG",
+							Value: "LoggingConfig-ABC123",
+						}, {
+							Name:  "K_TRACING_CONFIG",
+							Value: "TracingConfig-ABC123",
+						}, {
+							Name:  "NAME",
+							Value: "source-name",
+						}, {
+							Name:  "NAMESPACE",
+							Value: "source-namespace",
+						}, {
+							Name:  "RESOURCE_GROUP",
+							Value: "test-resource-group",
+						}, {
+							Name:  "METRICS_DOMAIN",
+							Value: metricsDomain,
+						}},
+						Ports: []corev1.ContainerPort{{
+							Name:          "metrics",
+							ContainerPort: 9090,
+						}},
+					}},
+				},
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected deploy (-want, +got) = %v", diff)
+	}
+}

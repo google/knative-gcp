@@ -26,6 +26,11 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
+var (
+	validServiceAccountName   = "test@test.iam.gserviceaccount.com"
+	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
+)
+
 func TestChannelValidation(t *testing.T) {
 	tests := []struct {
 		name string
@@ -84,6 +89,38 @@ func TestChannelValidation(t *testing.T) {
 			errs = errs.Also(fe)
 			return errs
 		}(),
+	}, {
+		name: "invalid GCP service account",
+		cr: &Channel{
+			Spec: ChannelSpec{
+				ServiceAccount: &invalidServiceAccountName,
+				Subscribable: &eventingduck.Subscribable{
+					Subscribers: []eventingduck.SubscriberSpec{{
+						SubscriberURI: apis.HTTP("subscriberendpoint"),
+						ReplyURI:      apis.HTTP("replyendpoint"),
+					}},
+				}},
+		},
+		want: func() *apis.FieldError {
+			fe := &apis.FieldError{
+				Message: "Invalid Service Account",
+				Paths:   []string{"spec.serviceAccount"},
+			}
+			return fe
+		}(),
+	}, {
+		name: "valid GCP service account",
+		cr: &Channel{
+			Spec: ChannelSpec{
+				ServiceAccount: &validServiceAccountName,
+				Subscribable: &eventingduck.Subscribable{
+					Subscribers: []eventingduck.SubscriberSpec{{
+						SubscriberURI: apis.HTTP("subscriberendpoint"),
+						ReplyURI:      apis.HTTP("replyendpoint"),
+					}},
+				}},
+		},
+		want: nil,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
