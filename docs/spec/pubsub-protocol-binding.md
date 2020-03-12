@@ -126,9 +126,7 @@ The _binary_ content mode accommodates any shape of event data, and allows for
 efficient transfer and without transcoding effort. 
 
 The _binary_ content mode can only be used if the metadata attributes 
-fit within the [limits of Pub/Sub messages][pubsub-message-quotas]. For attributes 
-that exceeds those limits, a multi-attribute mapping MAY be needed. 
-This specification does not yet introduce such mapping.
+fit within the [limits of Pub/Sub messages][pubsub-message-quotas].
 
 #### 3.1.1. content-type
 
