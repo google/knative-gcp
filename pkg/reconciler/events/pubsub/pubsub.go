@@ -37,7 +37,6 @@ import (
 )
 
 const (
-	finalizerName = controllerAgentName
 	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
 
 	createFailedReason      = "PullSubscriptionCreateFailed"
@@ -66,11 +65,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 
 	pubsub.Status.InitializeConditions()
 	pubsub.Status.ObservedGeneration = pubsub.Generation
-
-	if pubsub.DeletionTimestamp != nil {
-		// No finalizer needed, the pullsubscription will be garbage collected.
-		return nil
-	}
 
 	ps, event := r.reconcilePullSubscription(ctx, pubsub)
 	if event != nil {

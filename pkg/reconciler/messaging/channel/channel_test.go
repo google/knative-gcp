@@ -18,13 +18,11 @@ package channel
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -39,6 +37,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 
@@ -85,7 +84,6 @@ func init() {
 }
 
 func TestAllCases(t *testing.T) {
-	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -108,7 +106,7 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", testTopicName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
@@ -128,7 +126,7 @@ func TestAllCases(t *testing.T) {
 			newTopic(),
 		},
 	}, {
-		Name: "topic ready, with retry",
+		Name: "topic ready",
 		Objects: []runtime.Object{
 			NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
@@ -141,33 +139,10 @@ func TestAllCases(t *testing.T) {
 			newReadyTopic(),
 		},
 		Key: testNS + "/" + channelName,
-		WithReactors: []clientgotesting.ReactionFunc{
-			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				if attempts != 0 || !action.Matches("update", "channels") {
-					return false, nil, nil
-				}
-				attempts++
-				return true, nil, apierrs.NewConflict(v1alpha1.Resource("foo"), "bar", errors.New("foo"))
-			},
-		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Channel %q became ready", channelName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithInitChannelConditions,
-				WithChannelDefaults,
-				WithChannelTopic(testTopicID),
-				// Updates
-				WithChannelAddress(topicURI),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
-			),
-		}, {
 			Object: NewChannel(channelName, testNS,
 				WithChannelUID(channelUID),
 				WithChannelSpec(v1alpha1.ChannelSpec{
@@ -196,7 +171,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
@@ -235,7 +210,7 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -284,7 +259,7 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -333,7 +308,7 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-				Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -355,7 +330,6 @@ func TestAllCases(t *testing.T) {
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 			},
-			WantErr: true,
 		}, {
 			Name: "subscriber already exists in status owned by other channel",
 			Objects: []runtime.Object{
@@ -384,12 +358,11 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
-				Eventf(corev1.EventTypeWarning, "InternalError", "channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
 			},
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 			},
-			WantErr: true,
 		}, {
 			Name: "update - subscriber missing",
 			Objects: []runtime.Object{
@@ -414,6 +387,7 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
@@ -441,7 +415,7 @@ func TestAllCases(t *testing.T) {
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Channel %q", channelName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -468,12 +442,13 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
-		return &Reconciler{
+		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			channelLister:          listers.GetChannelLister(),
 			topicLister:            listers.GetTopicLister(),
 			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
 		}
+		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))
 
 }
