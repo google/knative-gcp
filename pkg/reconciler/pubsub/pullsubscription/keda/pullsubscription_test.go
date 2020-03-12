@@ -27,7 +27,6 @@ import (
 	v1 "k8s.io/api/apps/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,6 +47,7 @@ import (
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -189,7 +189,6 @@ func newTransformer() *unstructured.Unstructured {
 }
 
 func TestAllCases(t *testing.T) {
-	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -213,11 +212,14 @@ func TestAllCases(t *testing.T) {
 			),
 			newSecret(),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError",
-				`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "InvalidSink",
+				`InvalidSink: failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -229,7 +231,8 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
-				// updates
+				// Updates
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSinkNotFound(),
 			),
@@ -255,10 +258,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "client-create-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: client-create-induced-error"),
 		},
-		WantErr: true,
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
 				CreateClientErr: errors.New("client-create-induced-error"),
@@ -269,6 +271,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -283,7 +286,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, finalizerName),
+			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
 	}, {
 		Name: "topic exists fails",
@@ -291,7 +294,6 @@ func TestAllCases(t *testing.T) {
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -307,9 +309,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "topic-exists-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: topic-exists-induced-error"),
 		},
-		WantErr: true,
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
 				TopicData: gpubsub.TestTopicData{
@@ -321,8 +323,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -336,13 +338,15 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionTransformerURI(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "topic does not exist",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -358,9 +362,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist", testTopicID),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: Topic %q does not exist", testTopicID),
 		},
-		WantErr: true,
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
 				TopicData: gpubsub.TestTopicData{
@@ -372,8 +376,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -387,13 +391,15 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionTransformerURI(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "subscription exists fails",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -409,9 +415,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "subscription-exists-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: subscription-exists-induced-error"),
 		},
-		WantErr: true,
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
 				SubscriptionData: gpubsub.TestSubscriptionData{
@@ -423,8 +429,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -438,13 +444,15 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionTransformerURI(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "create subscription fails",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -460,9 +468,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "subscription-create-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, "SubscriptionReconcileFailed", "Failed to reconcile Pub/Sub subscription: subscription-create-induced-error"),
 		},
-		WantErr: true,
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
 				TopicData: gpubsub.TestTopicData{
@@ -475,8 +483,8 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -490,6 +498,9 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionTransformerURI(""),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "successfully created subscription",
 		Objects: []runtime.Object{
@@ -499,9 +510,8 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
@@ -537,7 +547,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, finalizerName),
+			patchFinalizers(testNS, sourceName, resourceGroup),
 		},
 	}, {
 		Name: "successful create - reuse existing receive adapter - match",
@@ -545,7 +555,6 @@ func TestAllCases(t *testing.T) {
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -570,14 +579,13 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -595,13 +603,15 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionStatusObservedGeneration(generation),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
-		Name: "successful create - reuse existing receive adapter - mismatch, with retry",
+		Name: "successful create - reuse existing receive adapter - mismatch",
 		Objects: []runtime.Object{
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -627,18 +637,9 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		Key: testNS + "/" + sourceName,
-		WithReactors: []clientgotesting.ReactionFunc{
-			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				if attempts != 0 || !action.Matches("update", "pullsubscriptions") {
-					return false, nil, nil
-				}
-				attempts++
-				return true, nil, apierrs.NewConflict(v1alpha1.GroupResource("foo"), "bar", errors.New("foo"))
-			},
-		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "PullSubscription %q became ready", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			ActionImpl: clientgotesting.ActionImpl{
@@ -652,28 +653,6 @@ func TestAllCases(t *testing.T) {
 			Object: NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithInitPullSubscriptionConditions,
-				WithPullSubscriptionProjectID(testProject),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionTransformer(transformerGVK, transformerName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionMarkTransformer(transformerURI),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-			),
-		}, {
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
@@ -691,6 +670,9 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionStatusObservedGeneration(generation),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
 	}, {
 		Name: "deleting - failed to delete subscription",
 		Objects: []runtime.Object{
@@ -698,7 +680,6 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -725,28 +706,9 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + sourceName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "subscription-delete-induced-error"),
+			Eventf(corev1.EventTypeWarning, "SubscriptionDeleteFailed", "Failed to delete Pub/Sub subscription: subscription-delete-induced-error"),
 		},
-		WantErr: true,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteSubscriptionMsg, "subscription-delete-induced-error")),
-				WithPullSubscriptionSubscriptionID(testSubscriptionID),
-				WithPullSubscriptionMarkDeployed,
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionDeleted,
-			),
-		}},
+		WantStatusUpdates: nil,
 	}, {
 		Name: "successfully deleted subscription",
 		Objects: []runtime.Object{
@@ -754,7 +716,6 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionFinalizers(finalizerName),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -764,6 +725,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
 				WithPullSubscriptionMarkDeployed,
 				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionSubscriptionID(""),
 				WithPullSubscriptionDeleted,
 			),
 			newSecret(),
@@ -778,33 +740,9 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 		},
-		Key: testNS + "/" + sourceName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q finalizers", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated PullSubscription %q", sourceName),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionAnnotations(newAnnotations()),
-				WithPullSubscriptionFinalizers(finalizerName),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
-				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkNoSubscription("SubscriptionDeleted", fmt.Sprintf("Successfully deleted Pub/Sub subscription %q", testSubscriptionID)),
-				WithPullSubscriptionMarkDeployed,
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionDeleted,
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, ""),
-		},
+		Key:               testNS + "/" + sourceName,
+		WantEvents:        nil,
+		WantStatusUpdates: nil,
 	}}
 
 	defer logtesting.ClearAll()
@@ -823,13 +761,13 @@ func TestAllCases(t *testing.T) {
 				ReceiveAdapterImage:    testImage,
 				CreateClientFn:         gpubsub.TestClientCreator(testData["ps"]),
 				ControllerAgentName:    controllerAgentName,
-				FinalizerName:          finalizerName,
+				ResourceGroup:          resourceGroup,
 			},
 		}
 		r.ReconcileDataPlaneFn = r.ReconcileScaledObject
 		r.scaledObjectTracker = duck.NewListableTracker(ctx, resource.Get, func(types.NamespacedName) {}, 0)
 		r.discoveryFn = mockDiscoveryFunc
-		return r
+		return pullsubscription.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPullSubscriptionLister(), r.Recorder, r)
 	}))
 }
 
