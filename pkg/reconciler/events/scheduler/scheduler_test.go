@@ -40,6 +40,7 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -88,6 +89,8 @@ var (
 		},
 		Key: "key.json",
 	}
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
@@ -166,7 +169,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
 			),
 			newSink(),
 		},
@@ -178,14 +181,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
-				WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, "test@test"),
+			NewServiceAccount("test", testNS, gServiceAccount),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, "test@test",
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1alpha1",
 					Kind:               "CloudSchedulerSource",
@@ -1016,7 +1019,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
-					WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
 				),
 				newSink(),
 			},
@@ -1037,9 +1040,9 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
-					WithCloudSchedulerSourceGCPServiceAccount("test@test"),
+					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
 				),
-				NewServiceAccount("test", testNS, "test@test",
+				NewServiceAccount("test", testNS, gServiceAccount,
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 						APIVersion:         "events.cloud.google.com/v1alpha1",
 						Kind:               "CloudSchedulerSource",
@@ -1054,7 +1057,7 @@ func TestAllCases(t *testing.T) {
 			Key:               testNS + "/" + schedulerName,
 			WantStatusUpdates: nil,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
 			},
 		}}
 

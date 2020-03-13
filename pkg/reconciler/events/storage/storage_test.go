@@ -43,6 +43,7 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -87,6 +88,8 @@ var (
 		},
 		Key: "key.json",
 	}
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
@@ -164,7 +167,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
-				WithCloudStorageSourceGCPServiceAccount("test@test"),
+				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 			),
 			newSink(),
 		},
@@ -176,14 +179,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceGCPServiceAccount("test@test"),
+				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, "test@test"),
+			NewServiceAccount("test", testNS, gServiceAccount),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, "test@test",
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1alpha1",
 					Kind:               "CloudStorageSource",
@@ -891,7 +894,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceGCPServiceAccount("test@test"),
+					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 					WithDeletionTimestamp(),
 				),
 				newSink(),
@@ -910,10 +913,10 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceGCPServiceAccount("test@test"),
+					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 					WithDeletionTimestamp(),
 				),
-				NewServiceAccount("test", testNS, "test@test",
+				NewServiceAccount("test", testNS, gServiceAccount,
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 						APIVersion:         "events.cloud.google.com/v1alpha1",
 						Kind:               "CloudStorageSource",
@@ -927,7 +930,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + storageName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
 			},
 			WantStatusUpdates: nil,
 		}, {

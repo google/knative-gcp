@@ -33,6 +33,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -92,6 +93,8 @@ var (
 		},
 		Key: "key.json",
 	}
+
+	gServiceAccount = "test@test"
 )
 
 func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
@@ -144,7 +147,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceGCPServiceAccount("test@test")),
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -153,13 +156,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceGCPServiceAccount("test@test")),
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
 		}},
 		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, "test@test"),
+			NewServiceAccount("test", testNS, gServiceAccount),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, "test@test",
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1alpha1",
 					Kind:               "CloudAuditLogsSource",
@@ -1091,7 +1094,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceGCPServiceAccount("test@test"),
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
 		},
@@ -1108,10 +1111,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceProject(testProject),
-				WithCloudAuditLogsSourceGCPServiceAccount("test@test"),
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
-			NewServiceAccount("test", testNS, "test@test",
+			NewServiceAccount("test", testNS, gServiceAccount,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1alpha1",
 					Kind:               "CloudAuditLogsSource",
@@ -1125,7 +1128,7 @@ func TestAllCases(t *testing.T) {
 		Key:               testNS + "/" + sourceName,
 		WantStatusUpdates: nil,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
 		},
 	}}
 

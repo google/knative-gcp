@@ -41,6 +41,7 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
+	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 
 	. "knative.dev/pkg/reconciler/testing"
 
@@ -80,6 +81,8 @@ var (
 
 	replyDNS = "reply.mynamespace.svc.cluster.local"
 	replyURI = apis.HTTP(replyDNS)
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
@@ -117,7 +120,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelGCPServiceAccount("test@test"),
+				WithChannelGCPServiceAccount(gServiceAccount),
 			),
 		},
 		Key: testNS + "/" + channelName,
@@ -132,14 +135,14 @@ func TestAllCases(t *testing.T) {
 				WithChannelSpec(v1alpha1.ChannelSpec{
 					Project: testProject,
 				}),
-				WithChannelGCPServiceAccount("test@test"),
+				WithChannelGCPServiceAccount(gServiceAccount),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, "test@test"),
+			NewServiceAccount("test", testNS, gServiceAccount),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, "test@test",
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "messaging.cloud.google.com/v1alpha1",
 					Kind:               "Channel",
@@ -546,7 +549,7 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithInitChannelConditions,
 					WithChannelDefaults,
-					WithChannelGCPServiceAccount("test@test"),
+					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDeletionTimestamp,
 				),
 			},
@@ -565,10 +568,10 @@ func TestAllCases(t *testing.T) {
 					}),
 					WithInitChannelConditions,
 					WithChannelDefaults,
-					WithChannelGCPServiceAccount("test@test"),
+					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDeletionTimestamp,
 				),
-				NewServiceAccount("test", testNS, "test@test",
+				NewServiceAccount("test", testNS, gServiceAccount,
 					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 						APIVersion:         "messaging.cloud.google.com/v1alpha1",
 						Kind:               "Channel",
@@ -581,7 +584,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
 			},
 			WantStatusUpdates: nil,
 		}}
