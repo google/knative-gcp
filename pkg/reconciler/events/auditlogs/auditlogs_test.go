@@ -25,8 +25,8 @@ import (
 	"cloud.google.com/go/logging/logadmin"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	glogadmintesting "github.com/google/knative-gcp/pkg/gclient/logging/logadmin/testing"
@@ -37,7 +37,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -111,7 +110,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	action.Namespace = namespace
 	var fname string
 	if add {
-		fname = fmt.Sprintf("%q", finalizerName)
+		fname = fmt.Sprintf("%q", resourceGroup)
 	}
 	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
@@ -128,7 +127,6 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 }
 
 func TestAllCases(t *testing.T) {
-	attempts := 0
 	calSinkURL := sinkURL(t, sinkURI)
 
 	table := TableTest{{
@@ -146,8 +144,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithInitCloudAuditLogsSourceConditions,
@@ -173,8 +170,8 @@ func TestAllCases(t *testing.T) {
 			patchFinalizers(testNS, sourceName, true),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q has not yet been reconciled", sourceName),
 		},
 	}, {
 		Name: "topic exists, topic has not yet been reconciled",
@@ -183,24 +180,25 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicTopicID(testTopicID),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no projectid",
@@ -209,27 +207,28 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose projectid`),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose projectid", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q did not expose projectid", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, no topicid",
@@ -238,7 +237,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(""),
@@ -246,20 +244,22 @@ func TestAllCases(t *testing.T) {
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose topicid`),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q did not expose topicid", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q did not expose topicid", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, unexpected topicid",
@@ -268,7 +268,6 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady("garbaaaaage"),
@@ -276,20 +275,22 @@ func TestAllCases(t *testing.T) {
 				WithTopicAddress(testTopicURI),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" mismatch: expected "cloudauditlogssource-test-cloudauditlogssource-uid" got "garbaaaaage"`),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `Topic %q mismatch: expected "cloudauditlogssource-test-cloudauditlogssource-uid" got "garbaaaaage"`, sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: Topic %q mismatch: expected "cloudauditlogssource-test-cloudauditlogssource-uid" got "garbaaaaage"`, sourceName),
 		},
 	}, {
 		Name: "topic exists and the status of topic is false",
@@ -298,26 +299,27 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicFailed(),
 				WithTopicTopicID(testTopicID),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status")),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is False", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is False", sourceName),
 		},
 	}, {
 		Name: "topic exists and the status of topic is unknown",
@@ -326,26 +328,27 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicUnknown(),
 				WithTopicTopicID(testTopicID),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicUnknown("", "")),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of Topic %q is Unknown", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of Topic %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "topic exists and is ready, pullsubscription created",
@@ -353,7 +356,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -362,13 +364,11 @@ func TestAllCases(t *testing.T) {
 				WithTopicProjectID(testProject),
 			),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -394,8 +394,12 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
@@ -403,7 +407,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -413,13 +416,11 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -427,8 +428,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -436,7 +441,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -446,13 +450,11 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionFailed()),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -460,8 +462,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is False", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is False", sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -469,7 +475,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -479,11 +484,9 @@ func TestAllCases(t *testing.T) {
 			),
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionUnknown()),
 		},
-		Key:     testNS + "/" + sourceName,
-		WantErr: true,
+		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
@@ -493,8 +496,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("", ""),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "the status of PullSubscription %q is Unknown", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is Unknown", sourceName),
 		},
 	}, {
 		Name: "logging client create fails",
@@ -502,7 +509,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -520,15 +526,17 @@ func TestAllCases(t *testing.T) {
 				CreateClientErr: errors.New("create-client-induced-error"),
 			},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -544,7 +552,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -562,15 +569,17 @@ func TestAllCases(t *testing.T) {
 				SinkErr: errors.New("create-client-induced-error"),
 			},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -586,7 +595,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -604,15 +612,17 @@ func TestAllCases(t *testing.T) {
 				CreateSinkErr: errors.New("create-client-induced-error"),
 			},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -628,7 +638,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -646,15 +655,17 @@ func TestAllCases(t *testing.T) {
 				CreateClientErr: errors.New("create-client-induced-error"),
 			},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -670,7 +681,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
@@ -697,15 +707,17 @@ func TestAllCases(t *testing.T) {
 					Destination: testTopicResource,
 				}},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
@@ -723,7 +735,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
@@ -750,15 +761,17 @@ func TestAllCases(t *testing.T) {
 					Destination: testTopicResource,
 				}},
 		},
-		WantErr: true,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledFailedReason, "Reconcile Sink failed with: create-client-induced-error"),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
@@ -771,12 +784,11 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 	}, {
-		Name: "sink created, with retry",
+		Name: "sink created",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
@@ -798,40 +810,17 @@ func TestAllCases(t *testing.T) {
 					Destination: testTopicResource,
 				}},
 		},
-		WithReactors: []clientgotesting.ReactionFunc{
-			func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-				if attempts != 0 || !action.Matches("update", "cloudauditlogssources") {
-					return false, nil, nil
-				}
-				attempts++
-				return true, nil, apierrs.NewConflict(v1alpha1.GroupResource("foo"), "bar", errors.New("foo"))
-			},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudAuditLogsSource %q became ready", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudAuditLogsSource reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceTopicReady(testTopicID),
-				WithCloudAuditLogsSourcePullSubscriptionReady(),
-				WithCloudAuditLogsSourceSinkURI(calSinkURL),
-				WithCloudAuditLogsSourceSinkReady(),
-				WithCloudAuditLogsSourceSinkID(testSinkID),
-			),
-		}, {
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
@@ -850,7 +839,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(sourceName, testNS,
@@ -876,15 +864,17 @@ func TestAllCases(t *testing.T) {
 					Destination: testTopicResource,
 				}},
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, true),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "ReadinessChanged", "CloudAuditLogsSource %q became ready", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", sourceName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudAuditLogsSource reconciled: "%s/%s"`, testNS, sourceName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -901,7 +891,6 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -938,33 +927,16 @@ func TestAllCases(t *testing.T) {
 				DeleteSinkErr: errors.New("delete-sink-induced-error"),
 			},
 		},
-		WantErr: true,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", "delete-sink-induced-error"),
+			Eventf(corev1.EventTypeWarning, deleteSinkFailed, "Failed to delete Stackdriver sink: delete-sink-induced-error"),
 		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceTopicReady(testTopicID),
-				WithCloudAuditLogsSourcePullSubscriptionReady(),
-				WithCloudAuditLogsSourceSinkURI(calSinkURL),
-				WithCloudAuditLogsSourceSinkNotReady("SinkDeleteFailed", "%s: %s", failedToDeleteSinkMsg, "delete-sink-induced-error"),
-				WithCloudAuditLogsSourceSinkID(testSinkID),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-			),
-		}},
+		WantStatusUpdates: nil,
 	}, {
 		Name: "sink delete succeeds",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -995,18 +967,13 @@ func TestAllCases(t *testing.T) {
 				testSinkID: nil,
 			},
 		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q finalizers", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", sourceName),
-		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
+				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithCloudAuditLogsSourceDeletionTimestamp,
@@ -1022,16 +989,12 @@ func TestAllCases(t *testing.T) {
 				Name: sourceName,
 			},
 		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, false),
-		},
 	}, {
 		Name: "delete succeeds, sink does not exist",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
@@ -1057,18 +1020,13 @@ func TestAllCases(t *testing.T) {
 				testSinkID: nil,
 			},
 		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q finalizers", sourceName),
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated CloudAuditLogsSource %q", sourceName),
-		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceFinalizers(finalizerName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceSinkNotReady("SinkDeleted", "Successfully deleted Stackdriver sink: %s", testSinkID),
+				WithCloudAuditLogsSourceSinkReady(),
 				WithCloudAuditLogsSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", sourceName)),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", sourceName)),
 				WithCloudAuditLogsSourceDeletionTimestamp,
@@ -1084,9 +1042,6 @@ func TestAllCases(t *testing.T) {
 				Name: sourceName,
 			},
 		},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, false),
-		},
 	}}
 
 	defer logtesting.ClearAll()
@@ -1098,12 +1053,13 @@ func TestAllCases(t *testing.T) {
 			}
 			tt.Test(t, MakeFactory(
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
-					return &Reconciler{
+					r := &Reconciler{
 						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),
 					}
+					return cloudauditlogssource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudAuditLogsSourceLister(), r.Recorder, r)
 				}))
 			if expectedSinks := tt.OtherTestData["expectedSinks"]; expectedSinks != nil {
 				expectSinks(t, logadminClientProvider, expectedSinks.(map[string]*logadmin.Sink))

@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
@@ -78,7 +79,7 @@ func NewController(
 		createClientFn: gpubsub.NewClient,
 	}
 
-	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
+	impl := topicreconciler.NewImpl(ctx, r)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
