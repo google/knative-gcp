@@ -29,6 +29,7 @@ import (
 )
 
 // +genclient
+// +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PullSubscription is the Schema for the gcppullSubscriptions API.

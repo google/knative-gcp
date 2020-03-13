@@ -26,6 +26,7 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -51,7 +52,7 @@ const (
 	// itself when creating events.
 	controllerAgentName = "cloud-run-events-pubsub-keda-pullsubscription-controller"
 
-	finalizerName = controllerAgentName
+	resourceGroup = "pullsubscriptions.pubsub.cloud.google.com"
 )
 
 type envConfig struct {
@@ -88,11 +89,11 @@ func NewController(
 			ReceiveAdapterImage:    env.ReceiveAdapter,
 			CreateClientFn:         gpubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
-			FinalizerName:          finalizerName,
+			ResourceGroup:          resourceGroup,
 		},
 	}
 
-	impl := controller.NewImpl(r, pubsubBase.Logger, reconcilerName)
+	impl := pullsubscriptionreconciler.NewImpl(ctx, r)
 
 	pubsubBase.Logger.Info("Setting up event handlers")
 	onlyKedaScaler := pkgreconciler.AnnotationFilterFunc(duckv1alpha1.AutoscalingClassAnnotation, duckv1alpha1.KEDA, false)

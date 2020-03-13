@@ -32,6 +32,7 @@ import (
 	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlogssource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
+	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 )
@@ -67,7 +68,7 @@ func NewController(
 		pubsubClientProvider:   gpubsub.NewClient,
 		serviceAccountLister:   serviceAccountInformer.Lister(),
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudauditlogssourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudauditlogssourceInformer.Informer().AddEventHandlerWithResyncPeriod(
