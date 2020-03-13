@@ -17,23 +17,13 @@ limitations under the License.
 package resources
 
 import (
-	"golang.org/x/net/context"
-	"google.golang.org/api/iam/v1"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"google.golang.org/api/iam/v1"
 )
 
 var (
-	gServiceAccount = "test"
-	kServiceAccount = &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "test",
-		},
-	}
-	projectID   = "project"
 	role        = "roles/iam.workloadIdentityUser"
 	addbindings = []*iam.Binding{{
 		Members: []string{"member1"},
@@ -44,26 +34,6 @@ var (
 		Role:    role,
 	}}
 )
-
-func TestAddIamPolicyBinding(t *testing.T) {
-	want := "failed to add iam policy binding: failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
-	gotb := AddIamPolicyBinding(context.Background(), projectID, &gServiceAccount, kServiceAccount)
-	got := gotb.Error()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-	}
-}
-
-func TestRemoveIamPolicyBinding(t *testing.T) {
-	want := "failed to remove iam policy binding: failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
-	gotb := RemoveIamPolicyBinding(context.Background(), projectID, &gServiceAccount, kServiceAccount)
-	got := gotb.Error()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-	}
-}
 
 func TestMakeSetIamPolicyRequest(t *testing.T) {
 	testCases := []struct {

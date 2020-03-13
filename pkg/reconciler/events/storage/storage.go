@@ -104,8 +104,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 			return event
 		}
 		// Add iam policy binding to GCP ServiceAccount.
-		if event := psresources.AddIamPolicyBinding(ctx, storage.Spec.Project, storage.Spec.ServiceAccount, kServiceAccount); event != nil {
-			return event
+		if err := psresources.AddIamPolicyBinding(ctx, storage.Spec.Project, storage.Spec.ServiceAccount, kServiceAccount); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Adding iam policy binding failed with: %s", err)
 		}
 	}
 

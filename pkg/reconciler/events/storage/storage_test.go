@@ -158,7 +158,7 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "topic created, not yet been reconciled",
+		Name: "k8s service account created",
 		Objects: []runtime.Object{
 			NewCloudStorageSource(storageName, testNS,
 				WithCloudStorageSourceObjectMetaGeneration(generation),

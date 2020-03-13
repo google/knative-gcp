@@ -114,6 +114,17 @@ func WithChannelDefaults(s *v1alpha1.Channel) {
 	s.SetDefaults(context.Background())
 }
 
+func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
+	return func(ps *v1alpha1.Channel) {
+		ps.Spec.ServiceAccount = &gServiceAccount
+	}
+}
+
+func WithChannelDeletionTimestamp(s *v1alpha1.Channel) {
+	t := metav1.NewTime(time.Unix(1e9, 0))
+	s.ObjectMeta.SetDeletionTimestamp(&t)
+}
+
 func WithChannelReady(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.InitializeConditions()

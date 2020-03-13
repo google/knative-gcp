@@ -63,6 +63,9 @@ const (
 )
 
 var (
+	trueVal  = true
+	falseVal = false
+
 	topicDNS = channelName + ".mynamespace.svc.cluster.local"
 	topicURI = "http://" + topicDNS + "/"
 
@@ -106,6 +109,51 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "k8s service account created",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithChannelGCPServiceAccount("test@test"),
+			),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithInitChannelConditions,
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithChannelGCPServiceAccount("test@test"),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, "test@test"),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, "test@test",
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "messaging.cloud.google.com/v1alpha1",
+					Kind:               "Channel",
+					Name:               "chan",
+					UID:                channelUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
+		WantErr: true,
 	}, {
 		Name: "create topic",
 		Objects: []runtime.Object{
@@ -488,6 +536,54 @@ func TestAllCases(t *testing.T) {
 			WantPatches: []clientgotesting.PatchActionImpl{
 				patchFinalizers(testNS, channelName, true),
 			},
+		}, {
+			Name: "delete channel failed with getting k8s service account error",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelGCPServiceAccount("test@test"),
+					WithChannelDeletionTimestamp,
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
+			},
+			WantStatusUpdates: nil,
+		}, {
+			Name: "delete channel failed with with removing iam policy binding error",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelGCPServiceAccount("test@test"),
+					WithChannelDeletionTimestamp,
+				),
+				NewServiceAccount("test", testNS, "test@test",
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "messaging.cloud.google.com/v1alpha1",
+						Kind:               "Channel",
+						Name:               "chan",
+						UID:                channelUID,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Removing iam policy binding failed with: failed to remove iam policy binding: failed to get iam policy: googleapi: Error 403: Permission iam.serviceAccounts.getIamPolicy is required to perform this operation on service account projects/test-project-id/serviceAccounts/test@test., forbidden`),
+			},
+			WantStatusUpdates: nil,
 		}}
 
 	defer logtesting.ClearAll()

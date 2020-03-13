@@ -159,7 +159,7 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "k8s serviceaccount created",
+		Name: "k8s service account created",
 		Objects: []runtime.Object{
 			NewCloudSchedulerSource(schedulerName, testNS,
 				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
