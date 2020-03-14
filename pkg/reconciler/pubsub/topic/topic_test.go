@@ -24,12 +24,10 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -42,6 +40,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -122,7 +121,6 @@ func newSecret() *corev1.Secret {
 }
 
 func TestAllCases(t *testing.T) {
-	attempts := 0
 	table := TableTest{{
 		Name: "bad workqueue key",
 		// Make sure Reconcile handles bad keys.
@@ -153,12 +151,11 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-client-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: create-client-induced-error"),
 		},
-		WantErr: true,
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, finalizerName),
+			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
@@ -198,12 +195,11 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "topic-exists-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: topic-exists-induced-error"),
 		},
-		WantErr: true,
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, finalizerName),
+			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
@@ -236,12 +232,11 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "Topic %q does not exist and the topic policy doesn't allow creation", testTopicID),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: Topic %q does not exist and the topic policy doesn't allow creation", testTopicID),
 		},
-		WantErr: true,
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, finalizerName),
+			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
@@ -274,17 +269,16 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + topicName,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-			Eventf(corev1.EventTypeWarning, "InternalError", "create-topic-induced-error"),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeWarning, reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: create-topic-induced-error"),
 		},
 		OtherTestData: map[string]interface{}{
 			"topic": gpubsub.TestClientData{
 				CreateTopicErr: errors.New("create-topic-induced-error"),
 			},
 		},
-		WantErr: true,
 		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, topicName, finalizerName),
+			patchFinalizers(testNS, topicName, resourceGroup),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
@@ -305,7 +299,6 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicFinalizers(finalizerName),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -317,8 +310,12 @@ func TestAllCases(t *testing.T) {
 			newSecret(),
 		},
 		Key: testNS + "/" + topicName,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, resourceGroup),
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 		},
 		WantCreates: []runtime.Object{
 			newPublisher(),
@@ -327,7 +324,6 @@ func TestAllCases(t *testing.T) {
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
 				WithTopicProjectID(testProject),
-				WithTopicFinalizers(finalizerName),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
 					Project: testProject,
 					Topic:   testTopicID,
@@ -345,7 +341,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -357,8 +352,12 @@ func TestAllCases(t *testing.T) {
 				newSecret(),
 			},
 			Key: testNS + "/" + topicName,
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, resourceGroup),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				ProvideResource("create", "services", makeFalseStatusPublisher("PublisherNotDeployed", "PublisherNotDeployed")),
@@ -370,7 +369,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -387,7 +385,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -399,8 +396,12 @@ func TestAllCases(t *testing.T) {
 				newSecret(),
 			},
 			Key: testNS + "/" + topicName,
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, resourceGroup),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				ProvideResource("create", "services", makeUnknownStatusPublisher("PublisherUnknown", "PublisherUnknown")),
@@ -412,7 +413,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -425,11 +425,10 @@ func TestAllCases(t *testing.T) {
 					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
 			}},
 		}, {
-			Name: "topic successfully reconciles and is ready, with retry",
+			Name: "topic successfully reconciles and is ready",
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -441,19 +440,15 @@ func TestAllCases(t *testing.T) {
 				newSecret(),
 			},
 			Key: testNS + "/" + topicName,
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, resourceGroup),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				ProvideResource("create", "services", makeReadyPublisher()),
-				func(action clientgotesting.Action) (handled bool, ret runtime.Object, err error) {
-					if attempts != 0 || !action.Matches("update", "topics") {
-						return false, nil, nil
-					}
-					attempts++
-					return true, nil, apierrs.NewConflict(pubsubv1alpha1.Resource("foo"), "bar", errors.New("foo"))
-				},
 			},
 			WantCreates: []runtime.Object{
 				newPublisher(),
@@ -462,23 +457,6 @@ func TestAllCases(t *testing.T) {
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicFinalizers(finalizerName),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					// Updates
-					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
-					WithTopicPublisherDeployed,
-					WithTopicAddress(testTopicURI)),
-			}, {
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicProjectID(testProject),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -496,7 +474,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -513,16 +490,18 @@ func TestAllCases(t *testing.T) {
 					WithServicePorts(servicePorts())),
 			},
 			Key: testNS + "/" + topicName,
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, topicName, resourceGroup),
+			},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "ReadinessChanged", "Topic %q became ready", topicName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
 					WithTopicProjectID(testProject),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -540,7 +519,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -552,33 +530,14 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 				newSecret(),
 			},
-			Key: testNS + "/" + topicName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, topicName, ""),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithTopicPropagationPolicy("CreateNoDelete"),
-					WithInitTopicConditions,
-					WithTopicDeleted),
-			}},
+			Key:               testNS + "/" + topicName,
+			WantEvents:        nil,
+			WantStatusUpdates: nil,
 		}, {
 			Name: "delete topic - policy CreateDelete",
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -591,34 +550,26 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 				newSecret(),
 			},
-			Key: testNS + "/" + topicName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q finalizers", topicName),
-				Eventf(corev1.EventTypeNormal, "Updated", "Updated Topic %q", topicName),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, topicName, ""),
-			},
+			Key:        testNS + "/" + topicName,
+			WantEvents: nil,
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
 					WithTopicPropagationPolicy("CreateDelete"),
-					WithInitTopicConditions,
-					WithTopicNoTopic("TopicDeleted", fmt.Sprintf("Successfully deleted Pub/Sub topic: %s", topicName)),
-					WithTopicDeleted),
+					WithTopicTopicID(""),
+					WithTopicDeleted,
+				),
 			}},
 		}, {
 			Name: "fail to delete - policy CreateDelete",
 			Objects: []runtime.Object{
 				NewTopic(topicName, testNS,
 					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
 					WithTopicSpec(pubsubv1alpha1.TopicSpec{
 						Project: testProject,
 						Topic:   testTopicID,
@@ -633,7 +584,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + topicName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "InternalError", "delete-topic-induced-error"),
+				Eventf(corev1.EventTypeWarning, deleteTopicFailed, "Failed to delete Pub/Sub topic: delete-topic-induced-error"),
 			},
 			OtherTestData: map[string]interface{}{
 				"topic": gpubsub.TestClientData{
@@ -643,22 +594,7 @@ func TestAllCases(t *testing.T) {
 					},
 				},
 			},
-			WantErr: true,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicFinalizers(finalizerName),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithTopicPropagationPolicy("CreateDelete"),
-					WithInitTopicConditions,
-					WithTopicTopicID(topicName),
-					WithTopicNoTopic("TopicDeleteFailed", fmt.Sprintf("%s: %s", failedToDeleteTopicMsg, "delete-topic-induced-error")),
-					WithTopicDeleted),
-			}},
+			WantStatusUpdates: nil,
 		}}
 
 	defer logtesting.ClearAll()
@@ -666,71 +602,16 @@ func TestAllCases(t *testing.T) {
 		pubsubBase := &pubsub.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
-		return &Reconciler{
+		r := &Reconciler{
 			PubSubBase:     pubsubBase,
 			topicLister:    listers.GetTopicLister(),
 			serviceLister:  listers.GetV1ServiceLister(),
 			publisherImage: testImage,
 			createClientFn: gpubsub.TestClientCreator(testData["topic"]),
 		}
+		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTopicLister(), r.Recorder, r)
 	}))
 
-}
-
-func TestFinalizers(t *testing.T) {
-	testCases := []struct {
-		name     string
-		original sets.String
-		add      bool
-		want     sets.String
-	}{
-		{
-			name:     "empty, add",
-			original: sets.NewString(),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "empty, delete",
-			original: sets.NewString(),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, delete",
-			original: sets.NewString(finalizerName),
-			add:      false,
-			want:     sets.NewString(),
-		}, {
-			name:     "existing, add",
-			original: sets.NewString(finalizerName),
-			add:      true,
-			want:     sets.NewString(finalizerName),
-		}, {
-			name:     "existing two, delete",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      false,
-			want:     sets.NewString("someother"),
-		}, {
-			name:     "existing two, no change",
-			original: sets.NewString(finalizerName, "someother"),
-			add:      true,
-			want:     sets.NewString(finalizerName, "someother"),
-		},
-	}
-
-	for _, tc := range testCases {
-		original := &pubsubv1alpha1.Topic{}
-		original.Finalizers = tc.original.List()
-		if tc.add {
-			addFinalizer(original)
-		} else {
-			removeFinalizer(original)
-		}
-		has := sets.NewString(original.Finalizers...)
-		diff := has.Difference(tc.want)
-		if diff.Len() > 0 {
-			t.Errorf("%q failed, diff: %+v", tc.name, diff)
-		}
-	}
 }
 
 func ProvideResource(verb, resource string, obj runtime.Object) clientgotesting.ReactionFunc {
