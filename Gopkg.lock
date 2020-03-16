@@ -1704,6 +1704,8 @@
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
+    "istio.io/api/security/v1beta1",
+    "istio.io/api/type/v1beta1",
     "istio.io/client-go/pkg/apis/security/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
