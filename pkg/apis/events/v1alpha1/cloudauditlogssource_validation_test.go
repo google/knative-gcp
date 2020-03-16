@@ -79,6 +79,22 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"bad sink, name": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.Sink.Ref.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, empty": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.Sink = duckv1.Destination{}
+				return *obj
+			}(),
+			error: true,
+		},
 		"invalid scheduler secret, missing key": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()

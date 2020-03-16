@@ -148,6 +148,23 @@ func TestSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
+		name: "invalid sink",
+		spec: &CloudStorageSourceSpec{Bucket: "foo",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
+					},
+				}}},
+		want: func() *apis.FieldError {
+			fe := apis.ErrMissingField("sink.ref.kind")
+			return fe
+		}(),
+	}, {
 		name: "missing bucket",
 		spec: &CloudStorageSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{

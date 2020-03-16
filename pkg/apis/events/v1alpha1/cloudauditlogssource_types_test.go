@@ -87,3 +87,18 @@ func TestCloudAuditLogsSourceEventID(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudAuditLogsSourceGetIdentity(t *testing.T) {
+	s := &CloudAuditLogsSource{
+		Spec: CloudAuditLogsSourceSpec{
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				ServiceAccount: "test@test",
+			},
+		},
+	}
+	want := "test@test"
+	got := s.GetIdentity()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}

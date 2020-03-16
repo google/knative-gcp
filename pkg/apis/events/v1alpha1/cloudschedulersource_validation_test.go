@@ -158,6 +158,27 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
+		name: "invalid sink",
+		spec: &CloudSchedulerSourceSpec{
+			Location: "location",
+			Schedule: "* * * * *",
+			Data:     "data",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Name:       "qux",
+						},
+					},
+				},
+			},
+		},
+		want: func() *apis.FieldError {
+			fe := apis.ErrMissingField("sink.ref.kind")
+			return fe
+		}(),
+	}, {
 		name: "missing data",
 		spec: &CloudSchedulerSourceSpec{
 			Location: "location",

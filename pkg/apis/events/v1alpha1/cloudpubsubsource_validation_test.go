@@ -61,6 +61,14 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			spec:  pubSubSourceSpec,
 			error: false,
 		},
+		"no topic": {
+			spec: func() CloudPubSubSourceSpec {
+				obj := pubSubSourceSpec.DeepCopy()
+				obj.Topic = ""
+				return *obj
+			}(),
+			error: true,
+		},
 		"bad RetentionDuration": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()

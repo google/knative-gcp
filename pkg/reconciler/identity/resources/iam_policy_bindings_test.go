@@ -45,7 +45,7 @@ var (
 	}}
 )
 
-// TODO The iam policy binding should be mocked in order to do UT, issue
+// TODO The iam policy binding should be mocked in order to do UT, issue: https://github.com/google/knative-gcp/issues/657
 func TestAddIamPolicyBinding(t *testing.T) {
 	want := "failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
 	gotb := AddIamPolicyBinding(context.Background(), projectID, gServiceAccount, kServiceAccount)
