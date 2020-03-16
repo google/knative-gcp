@@ -20,25 +20,25 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+
+	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
 	. "cloud.google.com/go/storage"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"github.com/google/knative-gcp/pkg/utils"
-	"google.golang.org/grpc/codes"
 )
 
 const (
@@ -46,10 +46,11 @@ const (
 
 	deleteNotificationFailed     = "NotificationDeleteFailed"
 	deletePubSubFailed           = "PubSubDeleteFailed"
+	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	reconciledNotificationFailed = "NotificationReconcileFailed"
 	reconciledPubSubFailed       = "PubSubReconcileFailed"
 	reconciledSuccessReason      = "CloudStorageSourceReconciled"
-	workloadIdentityFailedReason = "WorkloadIdentityReconcileFailed"
+	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 var (
@@ -66,7 +67,8 @@ var (
 // notifications.
 type Reconciler struct {
 	*pubsub.PubSubBase
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// storageLister for reading storages.
 	storageLister listers.CloudStorageSourceLister
 
@@ -87,38 +89,23 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	storage.Status.InitializeConditions()
 	storage.Status.ObservedGeneration = storage.Generation
 
-	// If GCP ServiceAccount is provided, configure workload identity.
-	if storage.Spec.ServiceAccount != nil {
-		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
-		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
-		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			if !apierrs.IsNotFound(err) {
-				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
-				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-			}
-			kServiceAccount = nil
-		}
-		kServiceAccount, event := r.CreateServiceAccount(ctx, storage, kServiceAccount)
-		if event != nil {
-			return event
-		}
-		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, storage.Spec.Project, storage.Spec.ServiceAccount, kServiceAccount); err != nil {
-			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Adding iam policy binding failed with: %s", err)
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if storage.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, storage.Spec.Project, storage.Namespace, storage); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudStorageSource workload identity: %s", err.Error())
 		}
 	}
 
 	topic := resources.GenerateTopicName(storage)
 	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
 	if err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile CloudStorageSource PubSub: %s", err.Error())
 	}
 
 	notification, err := r.reconcileNotification(ctx, storage)
 	if err != nil {
 		storage.Status.MarkNotificationNotReady(reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err.Error())
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledNotificationFailed, "Failed to reconcile CloudStorageSource notification: %s", err.Error())
 	}
 	storage.Status.MarkNotificationReady(notification)
 
@@ -239,28 +226,19 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if storage.Spec.ServiceAccount != nil {
-		kServiceAccountName := psresources.GenerateServiceAccountName(storage.Spec.ServiceAccount)
-		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(storage.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			// k8s ServiceAccount should be there.
-			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-		}
-		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
-			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, storage.Spec.Project, storage.Spec.ServiceAccount, kServiceAccount); err != nil {
-				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Removing iam policy binding failed with: %s", err)
-			}
+	if storage.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, storage.Spec.Project, storage.Namespace, storage); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudStorageSource workload identity: %s", err.Error())
 		}
 	}
 
 	logging.FromContext(ctx).Desugar().Debug("Deleting CloudStorageSource notification")
 	if err := r.deleteNotification(ctx, storage); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deleteNotificationFailed, "Failed to delete CloudStorageSource notification: %s", err.Error())
 	}
 
 	if err := r.PubSubBase.DeletePubSub(ctx, storage); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err)
+		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete CloudStorageSource PubSub: %s", err.Error())
 	}
 
 	// ok to remove finalizer.

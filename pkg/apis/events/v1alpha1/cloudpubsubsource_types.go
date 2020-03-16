@@ -156,3 +156,8 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }
+
+// Methods for identifiable interface
+func (ps *CloudPubSubSource) GetIdentity() string {
+	return ps.Spec.ServiceAccount
+}

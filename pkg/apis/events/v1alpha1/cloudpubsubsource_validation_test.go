@@ -180,7 +180,16 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		"invalid GCP service account": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.ServiceAccount = &invalidServiceAccountName
+				obj.ServiceAccount = invalidServiceAccountName
+				return *obj
+			}(),
+			error: true,
+		},
+		"have GCP service account and secret in the same time": {
+			spec: func() CloudPubSubSourceSpec {
+				obj := pubSubSourceSpec.DeepCopy()
+				obj.ServiceAccount = invalidServiceAccountName
+				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
 			error: true,

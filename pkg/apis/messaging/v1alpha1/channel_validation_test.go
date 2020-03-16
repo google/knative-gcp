@@ -93,7 +93,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "invalid GCP service account",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				ServiceAccount: &invalidServiceAccountName,
+				ServiceAccount: invalidServiceAccountName,
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
@@ -103,7 +103,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Invalid Service Account",
+				Message: "invalid value: test@test.iam.kserviceaccount.com",
 				Paths:   []string{"spec.serviceAccount"},
 			}
 			return fe
@@ -112,7 +112,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "valid GCP service account",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				ServiceAccount: &validServiceAccountName,
+				ServiceAccount: validServiceAccountName,
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
@@ -121,6 +121,26 @@ func TestChannelValidation(t *testing.T) {
 				}},
 		},
 		want: nil,
+	}, {
+		name: "have GCP service account and secret in the same time",
+		cr: &Channel{
+			Spec: ChannelSpec{
+				ServiceAccount: validServiceAccountName,
+				Secret:         defaultSecretSelector(),
+				Subscribable: &eventingduck.Subscribable{
+					Subscribers: []eventingduck.SubscriberSpec{{
+						SubscriberURI: apis.HTTP("subscriberendpoint"),
+						ReplyURI:      apis.HTTP("replyendpoint"),
+					}},
+				}},
+		},
+		want: func() *apis.FieldError {
+			fe := &apis.FieldError{
+				Message: "Can't have spec.serviceAccount and spec.secret in the same time",
+				Paths:   []string{"spec"},
+			}
+			return fe
+		}(),
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -146,7 +146,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 		Spec: v1alpha1.TopicSpec{
 			Project:        "eventing-name",
 			Topic:          "topic-name",
-			ServiceAccount: &gServiceAccountName,
+			ServiceAccount: gServiceAccountName,
 		},
 	}
 

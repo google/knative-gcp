@@ -21,7 +21,6 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/logging"
@@ -33,8 +32,8 @@ import (
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
@@ -46,16 +45,18 @@ const (
 
 	deleteJobFailed              = "JobDeleteFailed"
 	deletePubSubFailed           = "PubSubDeleteFailed"
+	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	reconciledPubSubFailedReason = "PubSubReconcileFailed"
 	reconciledFailedReason       = "JobReconcileFailed"
 	reconciledSuccessReason      = "CloudSchedulerSourceReconciled"
-	workloadIdentityFailedReason = "WorkloadIdentityReconcileFailed"
+	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
 type Reconciler struct {
 	*pubsub.PubSubBase
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// schedulerLister for reading schedulers.
 	schedulerLister listers.CloudSchedulerSourceLister
 
@@ -74,25 +75,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 	scheduler.Status.InitializeConditions()
 	scheduler.Status.ObservedGeneration = scheduler.Generation
 
-	// If GCP ServiceAccount is provided, configure workload identity.
-	if scheduler.Spec.ServiceAccount != nil {
-		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
-		kServiceAccountName := psresources.GenerateServiceAccountName(scheduler.Spec.ServiceAccount)
-		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(scheduler.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			if !apierrs.IsNotFound(err) {
-				logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
-				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-			}
-			kServiceAccount = nil
-		}
-		kServiceAccount, event := r.CreateServiceAccount(ctx, scheduler, kServiceAccount)
-		if event != nil {
-			return event
-		}
-		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, scheduler.Spec.Project, scheduler.Spec.ServiceAccount, kServiceAccount); err != nil {
-			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Adding iam policy binding failed with: %s", err)
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if scheduler.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler.Namespace, scheduler); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudSchedulerSource workload identity: %s", err.Error())
 		}
 	}
 
@@ -204,18 +190,9 @@ func (r *Reconciler) deleteJob(ctx context.Context, scheduler *v1alpha1.CloudSch
 func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource) reconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if scheduler.Spec.ServiceAccount != nil {
-		kServiceAccountName := psresources.GenerateServiceAccountName(scheduler.Spec.ServiceAccount)
-		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(scheduler.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			// k8s ServiceAccount should be there.
-			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-		}
-		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
-			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, scheduler.Spec.Project, scheduler.Spec.ServiceAccount, kServiceAccount); err != nil {
-				return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Removing iam policy binding failed with: %s", err)
-			}
+	if scheduler.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler.Namespace, scheduler); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudSchedulerSource workload identity: %s", err.Error())
 		}
 	}
 

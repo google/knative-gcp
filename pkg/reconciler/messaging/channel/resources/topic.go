@@ -32,7 +32,7 @@ type TopicArgs struct {
 	Name           string
 	Project        string
 	Topic          string
-	ServiceAccount *string
+	ServiceAccount string
 	Secret         *corev1.SecretKeySelector
 	Labels         map[string]string
 }

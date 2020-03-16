@@ -42,8 +42,8 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -202,7 +202,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, storageName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test: spec.serviceAccount`, storageName),
 		},
 		WantErr: true,
 	}, {
@@ -901,36 +901,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + storageName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
-			},
-			WantStatusUpdates: nil,
-		}, {
-			Name: "delete fails with removing iam policy binding error",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceProject(testProject),
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-					WithDeletionTimestamp(),
-				),
-				NewServiceAccount("test", testNS, gServiceAccount,
-					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-						APIVersion:         "events.cloud.google.com/v1alpha1",
-						Kind:               "CloudStorageSource",
-						Name:               "my-test-storage",
-						UID:                storageUID,
-						Controller:         &falseVal,
-						BlockOwnerDeletion: &trueVal,
-					}}),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + storageName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 			},
 			WantStatusUpdates: nil,
 		}, {
@@ -996,6 +967,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:             identity.NewIdentity(ctx),
 			storageLister:        listers.GetCloudStorageSourceLister(),
 			createClientFn:       gstorage.TestClientCreator(testData["storage"]),
 			serviceAccountLister: listers.GetServiceAccountLister(),

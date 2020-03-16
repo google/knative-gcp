@@ -123,6 +123,11 @@ func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 	return &auditLogsSourceCondSet
 }
 
+// Methods for identifiable interface
+func (s *CloudAuditLogsSource) GetIdentity() string {
+	return s.Spec.ServiceAccount
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type CloudAuditLogsSourceList struct {
 	metav1.TypeMeta

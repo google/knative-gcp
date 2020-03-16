@@ -142,6 +142,11 @@ func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
 }
 
+// Methods for identifiable interface
+func (s *CloudStorageSource) GetIdentity() string {
+	return s.Spec.ServiceAccount
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudStorageSourceList is a list of CloudStorageSource resources

@@ -39,8 +39,8 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
@@ -204,7 +204,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, schedulerName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test: spec.serviceAccount`, schedulerName),
 		},
 		WantErr: true,
 	}, {
@@ -1026,38 +1026,7 @@ func TestAllCases(t *testing.T) {
 			Key:               testNS + "/" + schedulerName,
 			WantStatusUpdates: nil,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
-			},
-		}, {
-			Name: "scheduler deleted with removing iam policy binding error",
-			Objects: []runtime.Object{
-				NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceProject(testProject),
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
-					WithCloudSchedulerSourceDeletionTimestamp,
-					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-				),
-				NewServiceAccount("test", testNS, gServiceAccount,
-					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-						APIVersion:         "events.cloud.google.com/v1alpha1",
-						Kind:               "CloudSchedulerSource",
-						Name:               "my-test-scheduler",
-						UID:                schedulerUID,
-						Controller:         &falseVal,
-						BlockOwnerDeletion: &trueVal,
-					}}),
-				),
-				newSink(),
-			},
-			Key:               testNS + "/" + schedulerName,
-			WantStatusUpdates: nil,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 			},
 		}}
 
@@ -1065,6 +1034,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:             identity.NewIdentity(ctx),
 			schedulerLister:      listers.GetCloudSchedulerSourceLister(),
 			createClientFn:       gscheduler.TestClientCreator(testData["scheduler"]),
 			serviceAccountLister: listers.GetServiceAccountLister(),

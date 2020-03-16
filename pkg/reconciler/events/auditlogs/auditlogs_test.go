@@ -23,6 +23,21 @@ import (
 	"testing"
 
 	"cloud.google.com/go/logging/logadmin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	clientgotesting "k8s.io/client-go/testing"
+
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -32,22 +47,9 @@ import (
 	glogadmintesting "github.com/google/knative-gcp/pkg/gclient/logging/logadmin/testing"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	clientgotesting "k8s.io/client-go/testing"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
-	logtesting "knative.dev/pkg/logging/testing"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -147,6 +149,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
 		},
 		Key: testNS + "/" + sourceName,
@@ -156,6 +159,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
 		}},
 		WantCreates: []runtime.Object{
@@ -178,7 +182,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", "Failed to update status for \"%s\": Invalid Service Account: spec.serviceAccount"+"\n"+"missing field(s): spec.serviceName", sourceName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test: spec.serviceAccount`, sourceName),
 		},
 		WantErr: true,
 	}, {
@@ -1101,34 +1105,7 @@ func TestAllCases(t *testing.T) {
 		Key:               testNS + "/" + sourceName,
 		WantStatusUpdates: nil,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
-		},
-	}, {
-		Name: "delete failed with removing iam policy binding error",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceProject(testProject),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-			),
-			NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudAuditLogsSource",
-					Name:               sourceName,
-					UID:                sourceUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		},
-		Key:               testNS + "/" + sourceName,
-		WantStatusUpdates: nil,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 		},
 	}}
 
@@ -1143,6 +1120,7 @@ func TestAllCases(t *testing.T) {
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					r := &Reconciler{
 						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
+						Identity:               identity.NewIdentity(ctx),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),

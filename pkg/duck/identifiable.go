@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package duck
 
-import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
-)
+import "knative.dev/pkg/kmeta"
 
-func (s *PubSubSpec) SetPubSubDefaults() {
-	if s.ServiceAccount == "" && (s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
-		s.Secret = DefaultGoogleCloudSecretSelector()
-	}
+type Identifiable interface {
+	kmeta.OwnerRefable
+	// GetIdentity returns identifiable's spec.serviceAccount.
+	GetIdentity() string
 }

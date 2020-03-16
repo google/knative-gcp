@@ -19,9 +19,9 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
 )
 
@@ -42,26 +42,11 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if cs.ServiceAccount != nil {
-		err := validateGCPServiceAccount(cs.ServiceAccount)
-		if err != nil {
-			errs = errs.Also(err.ViaField("serviceAccount"))
-		}
+	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.ServiceAccount); err != nil {
+		errs = errs.Also(err)
 	}
 
 	return errs
-}
-
-func validateGCPServiceAccount(gServiceAccountName *string) *apis.FieldError {
-	pattern := `[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.iam.gserviceaccount.com`
-	match, err := regexp.MatchString(pattern, *gServiceAccountName)
-	if err != nil || !match {
-		return &apis.FieldError{
-			Message: "Invalid Service Account",
-			Paths:   []string{""},
-		}
-	}
-	return nil
 }
 
 func (current *Channel) CheckImmutableFields(ctx context.Context, original *Channel) *apis.FieldError {

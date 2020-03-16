@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package identity
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"testing"
+
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 )
 
-const (
-	DefaultSecretName = "google-cloud-key"
-	defaultSecretKey  = "key.json"
-)
+func TestNew(t *testing.T) {
+	defer logtesting.ClearAll()
+	ctx, _ := SetupFakeContext(t)
 
-// DefaultGoogleCloudSecretSelector is the default secret selector used to load
-// the creds for the objects that will auth with Google Cloud.
-func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: DefaultSecretName,
-		},
-		Key: defaultSecretKey,
+	c := NewIdentity(ctx)
+
+	if c == nil {
+		t.Fatal("Expected NewIdentity to return a non-nil value")
 	}
 }

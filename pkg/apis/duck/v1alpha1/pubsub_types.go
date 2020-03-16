@@ -53,7 +53,7 @@ type PubSubSpec struct {
 	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to use secret.
 	// +optional
-	ServiceAccount *string `json:"serviceAccount,omitempty"`
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 
 	// Secret is the credential to use to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to:

@@ -29,6 +29,7 @@ import (
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 )
 
 const (
@@ -56,6 +57,7 @@ func NewController(
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:               identity.NewIdentity(ctx),
 		pubsubLister:           cloudpubsubsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		serviceAccountLister:   serviceAccountInformer.Lister(),

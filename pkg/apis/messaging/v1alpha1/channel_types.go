@@ -59,7 +59,7 @@ type ChannelSpec struct {
 	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to use secret.
 	// +optional
-	ServiceAccount *string `json:"serviceAccount,omitempty"`
+	ServiceAccount string `json:"serviceAccount,omitempty"`
 
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
@@ -121,6 +121,11 @@ type ChannelStatus struct {
 	// TopicID is the created topic ID used by the Channel.
 	// +optional
 	TopicID string `json:"topicId,omitempty"`
+}
+
+// Methods for identifiable interface
+func (c *Channel) GetIdentity() string {
+	return c.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

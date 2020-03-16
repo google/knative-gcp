@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,9 +37,9 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
-
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -191,7 +189,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, pubsubName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test: spec.serviceAccount`, pubsubName),
 		},
 		WantErr: true,
 	}, {
@@ -371,35 +369,7 @@ func TestAllCases(t *testing.T) {
 		Key:               testNS + "/" + pubsubName,
 		WantStatusUpdates: nil,
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
-		},
-	}, {
-		Name: "pullsubscription deleted with removing iam policy binding error",
-		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceProject("test-project-id"),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceDeletionTimestamp,
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-			),
-			NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					Name:               pubsubName,
-					UID:                pubsubUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-			newSink(),
-		},
-		Key:               testNS + "/" + pubsubName,
-		WantStatusUpdates: nil,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), "test-project-id", &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 		},
 	}}
 
@@ -407,6 +377,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:               identity.NewIdentity(ctx),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
 			receiveAdapterName:     receiveAdapterName,

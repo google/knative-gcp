@@ -25,23 +25,28 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+const (
+	Add    = "add"
+	Remove = "remove"
+)
+
 // AddIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
-func AddIamPolicyBinding(ctx context.Context, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
-	if err := SetIamPolicy(ctx, "add", projectID, gServiceAccount, kServiceAccount); err != nil {
-		return fmt.Errorf("failed to add iam policy binding: %w", err)
+func AddIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+	if err := setIamPolicy(ctx, Add, projectID, gServiceAccount, kServiceAccount); err != nil {
+		return err
 	}
 	return nil
 }
 
 // RemoveIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
-func RemoveIamPolicyBinding(ctx context.Context, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
-	if err := SetIamPolicy(ctx, "remove", projectID, gServiceAccount, kServiceAccount); err != nil {
-		return fmt.Errorf("failed to remove iam policy binding: %w", err)
+func RemoveIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+	if err := setIamPolicy(ctx, Remove, projectID, gServiceAccount, kServiceAccount); err != nil {
+		return err
 	}
 	return nil
 }
 
-func SetIamPolicy(ctx context.Context, action, projectID string, gServiceAccount *string, kServiceAccount *corev1.ServiceAccount) error {
+func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
 	iamService, err := iam.NewService(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to set google iam service: %w", err)
@@ -52,14 +57,15 @@ func SetIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	resource := "projects/" + projectId + "/serviceAccounts/" + *gServiceAccount
+	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", projectId, gServiceAccount)
 	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	if err != nil {
 		return fmt.Errorf("failed to get iam policy: %w", err)
 	}
 
-	currentMember := "serviceAccount:" + projectId + ".svc.id.goog[" + kServiceAccount.Namespace + "/" + kServiceAccount.Name + "]"
-	rb := MakeSetIamPolicyRequest(resp.Bindings, action, currentMember)
+	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
+	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
+	rb := makeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
 	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
 		return fmt.Errorf("failed to set iam policy: %w", err)
@@ -68,9 +74,9 @@ func SetIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 	return nil
 }
 
-func MakeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember string) *iam.SetIamPolicyRequest {
+func makeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember string) *iam.SetIamPolicyRequest {
 	switch action {
-	case "add":
+	case Add:
 		return &iam.SetIamPolicyRequest{
 			Policy: &iam.Policy{
 				Bindings: append(bindings, &iam.Binding{
@@ -78,7 +84,7 @@ func MakeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember stri
 					Role:    "roles/iam.workloadIdentityUser"}),
 			},
 		}
-	case "remove":
+	case Remove:
 		for _, binding := range bindings {
 			if binding.Role == "roles/iam.workloadIdentityUser" {
 				newMembers := []string{}

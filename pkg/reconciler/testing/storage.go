@@ -84,7 +84,7 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 
 func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
 	return func(ps *v1alpha1.CloudStorageSource) {
-		ps.Spec.ServiceAccount = &gServiceAccount
+		ps.Spec.ServiceAccount = gServiceAccount
 	}
 }
 

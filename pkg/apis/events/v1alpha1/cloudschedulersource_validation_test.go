@@ -203,7 +203,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("secret.name")
+			fe := apis.ErrMissingField("name", "secret.name")
 			return fe
 		}(),
 	}, {
@@ -229,7 +229,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("secret.key")
+			fe := apis.ErrMissingField("key", "secret.key")
 			return fe
 		}(),
 	}, {
@@ -249,13 +249,44 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: &invalidServiceAccountName,
+				ServiceAccount: invalidServiceAccountName,
 			},
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Invalid Service Account",
+				Message: "invalid value: test@test.iam.kserviceaccount.com",
 				Paths:   []string{"serviceAccount"},
+			}
+			return fe
+		}(),
+	}, {
+		name: "have GCP service account and secret in the same time",
+		spec: &CloudSchedulerSourceSpec{
+			Location: "my-test-location",
+			Schedule: "* * * * *",
+			Data:     "data",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
+					},
+				},
+				ServiceAccount: invalidServiceAccountName,
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{},
+					Key:                  "secret-test-key",
+				},
+			},
+		},
+		want: func() *apis.FieldError {
+			fe := &apis.FieldError{
+				Message: "Can't have spec.serviceAccount and spec.secret in the same time",
+				Paths:   []string{""},
 			}
 			return fe
 		}(),

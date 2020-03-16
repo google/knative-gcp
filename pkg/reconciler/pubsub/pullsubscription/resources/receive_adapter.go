@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
@@ -54,7 +54,7 @@ const (
 	defaultResourceGroup = "pullsubscriptions.pubsub.cloud.google.com"
 )
 
-func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) corev1.PodSpec {
+func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *corev1.PodSpec {
 	// Convert CloudEvent Overrides to pod embeddable properties.
 	ceExtensions := ""
 	if args.Source.Spec.CloudEventOverrides != nil && args.Source.Spec.CloudEventOverrides.Extensions != nil {
@@ -143,9 +143,9 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) co
 	}
 
 	// If GCP service account is specified, use that service account as credential.
-	if args.Source.Spec.ServiceAccount != nil {
+	if args.Source.Spec.ServiceAccount != "" {
 		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.ServiceAccount)
-		return corev1.PodSpec{
+		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
 				receiveAdapterContainer,
@@ -175,7 +175,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) co
 		MountPath: credsMountPath,
 	}}
 
-	return corev1.PodSpec{
+	return &corev1.PodSpec{
 		Containers: []corev1.Container{
 			receiveAdapterContainer,
 		},
@@ -214,7 +214,7 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: args.Labels,
 				},
-				Spec: podSpec,
+				Spec: *podSpec,
 			},
 		},
 	}

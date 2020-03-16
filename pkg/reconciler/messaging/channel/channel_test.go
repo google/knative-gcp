@@ -21,11 +21,10 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -40,9 +39,8 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
-
 	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -126,7 +124,7 @@ func TestAllCases(t *testing.T) {
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": Invalid Service Account: spec.serviceAccount`, channelName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test: spec.serviceAccount`, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewChannel(channelName, testNS,
@@ -555,36 +553,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", `Getting k8s service account failed with: serviceaccount "test" not found`),
-			},
-			WantStatusUpdates: nil,
-		}, {
-			Name: "delete channel failed with with removing iam policy binding error",
-			Objects: []runtime.Object{
-				NewChannel(channelName, testNS,
-					WithChannelUID(channelUID),
-					WithChannelSpec(v1alpha1.ChannelSpec{
-						Project: testProject,
-					}),
-					WithInitChannelConditions,
-					WithChannelDefaults,
-					WithChannelGCPServiceAccount(gServiceAccount),
-					WithChannelDeletionTimestamp,
-				),
-				NewServiceAccount("test", testNS, gServiceAccount,
-					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-						APIVersion:         "messaging.cloud.google.com/v1alpha1",
-						Kind:               "Channel",
-						Name:               "chan",
-						UID:                channelUID,
-						Controller:         &falseVal,
-						BlockOwnerDeletion: &trueVal,
-					}}),
-				),
-			},
-			Key: testNS + "/" + channelName,
-			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityReconcileFailed", "Removing iam policy binding failed with: "+psresources.RemoveIamPolicyBinding(context.Background(), testProject, &gServiceAccount, NewServiceAccount("test", testNS, gServiceAccount)).Error()),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 			},
 			WantStatusUpdates: nil,
 		}}
@@ -593,6 +562,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:               identity.NewIdentity(ctx),
 			channelLister:          listers.GetChannelLister(),
 			topicLister:            listers.GetTopicLister(),
 			pullSubscriptionLister: listers.GetPullSubscriptionLister(),

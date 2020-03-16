@@ -30,7 +30,6 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
-	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -40,8 +39,8 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-	psresources "github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 )
 
 const (
@@ -49,15 +48,17 @@ const (
 
 	reconciledSuccessReason                 = "ChannelReconciled"
 	reconciledTopicFailedReason             = "TopicReconcileFailed"
+	deleteWorkloadIdentityFailed            = "WorkloadIdentityDeleteFailed"
 	reconciledSubscribersFailedReason       = "SubscribersReconcileFailed"
 	reconciledSubscribersStatusFailedReason = "SubscribersStatusReconcileFailed"
-	workloadIdentityFailedReason            = "WorkloadIdentityReconcileFailed"
+	workloadIdentityFailed                  = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
 type Reconciler struct {
 	*reconciler.Base
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// listers index properties about resources
 	channelLister          listers.ChannelLister
 	topicLister            pubsublisters.TopicLister
@@ -75,16 +76,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 	channel.Status.InitializeConditions()
 	channel.Status.ObservedGeneration = channel.Generation
 
-	// If GCP ServiceAccount is provided, configure workload identity.
-	if channel.Spec.ServiceAccount != nil {
-		// Create corresponding k8s ServiceAccount if doesn't exist, and add ownerReference to it.
-		kServiceAccount, event := r.CreateServiceAccount(ctx, channel)
-		if event != nil {
-			return event
-		}
-		// Add iam policy binding to GCP ServiceAccount.
-		if err := psresources.AddIamPolicyBinding(ctx, channel.Spec.Project, channel.Spec.ServiceAccount, kServiceAccount); err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Adding iam policy binding failed with: %s", err)
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if channel.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, channel.Spec.Project, channel.Namespace, channel); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Channel workload identity: %s", err.Error())
 		}
 	}
 
@@ -380,54 +375,14 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscripti
 	return ready, message
 }
 
-func (r *Reconciler) CreateServiceAccount(ctx context.Context, channel *v1alpha1.Channel) (*corev1.ServiceAccount, pkgreconciler.Event) {
-	kServiceAccountName := psresources.GenerateServiceAccountName(channel.Spec.ServiceAccount)
-	kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(channel.Namespace).Get(kServiceAccountName)
-	if err != nil {
-		if !apierrs.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-		}
-		expect := psresources.MakeServiceAccount(channel.Namespace, channel.Spec.ServiceAccount)
-		logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
-		kServiceAccount, err = r.KubeClientSet.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Creating k8s service account failed with: %w", err)
-		}
-	}
-	//add owner reference
-	expectOwnerReference := *kmeta.NewControllerRef(channel)
-	control := false
-	expectOwnerReference.Controller = &control
-	if !psresources.OwnerReferenceExists(kServiceAccount, expectOwnerReference) {
-		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
-		fmt.Printf("Owernerreference Here: %v/n", kServiceAccount.OwnerReferences)
-		kServiceAccount, err = r.KubeClientSet.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Updating OwnerReferences failed with: %w", err)
-		}
-	}
-	return kServiceAccount, nil
-}
-
 func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if channel.Spec.ServiceAccount != nil {
-		kServiceAccountName := psresources.GenerateServiceAccountName(channel.Spec.ServiceAccount)
-		kServiceAccount, err := r.serviceAccountLister.ServiceAccounts(channel.Namespace).Get(kServiceAccountName)
-		if err != nil {
-			// k8s ServiceAccount should be there.
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Getting k8s service account failed with: %s", err)
-		}
-		if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
-			logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-			if err := psresources.RemoveIamPolicyBinding(ctx, channel.Spec.Project, channel.Spec.ServiceAccount, kServiceAccount); err != nil {
-				return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailedReason, "Removing iam policy binding failed with: %s", err)
-			}
+	if channel.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, channel.Spec.Project, channel.Namespace, channel); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Channel workload identity: %s", err.Error())
 		}
 	}
+
 	return nil
 }

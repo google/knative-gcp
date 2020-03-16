@@ -28,18 +28,18 @@ const (
 )
 
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
-func GenerateServiceAccountName(gServiceAccount *string) string {
-	return strings.Split(*gServiceAccount, "@")[0]
+func GenerateServiceAccountName(gServiceAccount string) string {
+	return strings.Split(gServiceAccount, "@")[0]
 }
 
 // MakeServiceAccount creates a K8s ServiceAccount object for the Namespace.
-func MakeServiceAccount(namespace string, gServiceAccount *string) *corev1.ServiceAccount {
+func MakeServiceAccount(namespace string, gServiceAccount string) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      GenerateServiceAccountName(gServiceAccount),
 			Annotations: map[string]string{
-				workloadIdentityKey: *gServiceAccount,
+				workloadIdentityKey: gServiceAccount,
 			},
 		},
 	}

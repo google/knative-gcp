@@ -125,6 +125,11 @@ func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
 	return &schedulerCondSet
 }
 
+// Methods for identifiable interface
+func (s *CloudSchedulerSource) GetIdentity() string {
+	return s.Spec.ServiceAccount
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // CloudSchedulerSourceList is a list of CloudSchedulerSource resources

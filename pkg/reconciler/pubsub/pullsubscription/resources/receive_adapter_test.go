@@ -353,7 +353,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 				},
 			},
-			ServiceAccount: &gServiceAccountName,
+			ServiceAccount: gServiceAccountName,
 		},
 	}
 

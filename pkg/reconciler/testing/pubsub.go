@@ -61,7 +61,7 @@ func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPu
 
 func WithCloudPubSubSourceGCPServiceAccount(gServiceAccount string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Spec.ServiceAccount = &gServiceAccount
+		ps.Spec.ServiceAccount = gServiceAccount
 	}
 }
 

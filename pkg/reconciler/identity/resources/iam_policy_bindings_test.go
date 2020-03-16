@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -45,9 +45,10 @@ var (
 	}}
 )
 
+// TODO The iam policy binding should be mocked in order to do UT, issue
 func TestAddIamPolicyBinding(t *testing.T) {
-	want := "failed to add iam policy binding: failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
-	gotb := AddIamPolicyBinding(context.Background(), projectID, &gServiceAccount, kServiceAccount)
+	want := "failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
+	gotb := AddIamPolicyBinding(context.Background(), projectID, gServiceAccount, kServiceAccount)
 	got := gotb.Error()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -56,8 +57,8 @@ func TestAddIamPolicyBinding(t *testing.T) {
 }
 
 func TestRemoveIamPolicyBinding(t *testing.T) {
-	want := "failed to remove iam policy binding: failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
-	gotb := RemoveIamPolicyBinding(context.Background(), projectID, &gServiceAccount, kServiceAccount)
+	want := "failed to get iam policy: googleapi: Error 400: Invalid service account email (test)., badRequest"
+	gotb := RemoveIamPolicyBinding(context.Background(), projectID, gServiceAccount, kServiceAccount)
 	got := gotb.Error()
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -83,7 +84,7 @@ func TestMakeSetIamPolicyRequest(t *testing.T) {
 				}},
 			},
 		},
-		got: MakeSetIamPolicyRequest(addbindings, "add", "member2"),
+		got: makeSetIamPolicyRequest(addbindings, "add", "member2"),
 	}, {
 		name: "Remove iam policy binding",
 		want: &iam.SetIamPolicyRequest{
@@ -94,11 +95,11 @@ func TestMakeSetIamPolicyRequest(t *testing.T) {
 				}},
 			},
 		},
-		got: MakeSetIamPolicyRequest(removebindings, "remove", "member2"),
+		got: makeSetIamPolicyRequest(removebindings, "remove", "member2"),
 	}, {
 		name: "invalid iam policy binding action",
 		want: nil,
-		got:  MakeSetIamPolicyRequest(removebindings, "plus", "member2"),
+		got:  makeSetIamPolicyRequest(removebindings, "plus", "member2"),
 	}}
 
 	for _, tc := range testCases {

@@ -25,7 +25,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
@@ -54,7 +54,7 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
+func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 	publisherContainer := corev1.Container{
 		Image: args.Image,
 		Env: []corev1.EnvVar{{
@@ -70,9 +70,9 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 	}
 
 	// If GCP service account is specified, use that service account as credential.
-	if args.Topic.Spec.ServiceAccount != nil {
+	if args.Topic.Spec.ServiceAccount != "" {
 		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.ServiceAccount)
-		return corev1.PodSpec{
+		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
 				publisherContainer,
@@ -96,7 +96,7 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 		MountPath: credsMountPath,
 	}}
 
-	return corev1.PodSpec{
+	return &corev1.PodSpec{
 		Containers: []corev1.Container{
 			publisherContainer,
 		},
@@ -130,7 +130,7 @@ func MakePublisher(args *PublisherArgs) *servingv1.Service {
 						Labels: args.Labels,
 					},
 					Spec: servingv1.RevisionSpec{
-						PodSpec: podSpec,
+						PodSpec: *podSpec,
 					},
 				},
 			},

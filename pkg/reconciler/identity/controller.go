@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC.
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package identity
 
 import (
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	"context"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
 )
 
-func (s *PubSubSpec) SetPubSubDefaults() {
-	if s.ServiceAccount == "" && (s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
-		s.Secret = DefaultGoogleCloudSecretSelector()
+func NewIdentity(ctx context.Context) *Identity {
+	return &Identity{
+		KubeClient: kubeclient.Get(ctx),
 	}
 }
