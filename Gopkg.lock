@@ -222,11 +222,14 @@
   version = "v1.7.1"
 
 [[projects]]
-  digest = "1:633dde05baa7afd3544cfe4ac16fe3c5450b868cfc6b1558621ee39ebf2273ea"
+  digest = "1:8993d0f1f807cb88203a8009d86a401b5d7dced6b3a88b9232668e903e7a5a70"
   name = "github.com/gogo/protobuf"
   packages = [
+    "jsonpb",
     "proto",
+    "protoc-gen-gogo/descriptor",
     "sortkeys",
+    "types",
   ]
   pruneopts = "NUT"
   revision = "0ca988a254f991240804bf9821f3450d87ccbb1b"
@@ -948,6 +951,33 @@
   pruneopts = "NUT"
   revision = "afd67930eec2a9ed3e9b19f684d17a062285f16a"
   version = "2019.2.3"
+
+[[projects]]
+  digest = "1:d8faaec3ed345bd2b8d89021efc48c2612c507dde6417026c8f7fa2b0cf58743"
+  name = "istio.io/api"
+  packages = [
+    "security/v1beta1",
+    "type/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "891bf31f3c325bbf2de0e7d0ed6406bbbc93deba"
+  version = "1.5.0"
+
+[[projects]]
+  digest = "1:bd953b610d7f6d2f0fe10e5426f930ab7b889d3defa5550b6503c41c9a651e0e"
+  name = "istio.io/client-go"
+  packages = ["pkg/apis/security/v1beta1"]
+  pruneopts = "NUT"
+  revision = "23b87b42e49bd613c2fca9fe5f3a8ab62450bebb"
+  version = "1.5.0"
+
+[[projects]]
+  digest = "1:fcf227730189418d83fabd8d0a0f52562749dfe002f81507e4ccce92c607a412"
+  name = "istio.io/gogo-genproto"
+  packages = ["googleapis/google/api"]
+  pruneopts = "NUT"
+  revision = "a0338448499a99db79cf32c3b34b44670b9fb5b5"
+  version = "1.5.0"
 
 [[projects]]
   digest = "1:d77b48cc0ea74f3edbc8e0515a0ce2fa2154eb414137dd4fb5a642a73296d403"
@@ -1674,6 +1704,7 @@
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
+    "istio.io/client-go/pkg/apis/security/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",

@@ -21,6 +21,17 @@ import (
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
+const (
+	// PolicyBindingClassAnnotationKey is the annotation key for policy binding class.
+	PolicyBindingClassAnnotationKey = "security.knative.dev/policybinding-class"
+
+	// AuthorizableAnnotationKey is the annotaion key for Authorizables.
+	AuthorizableAnnotationKey = "security.knative.dev/authorizableOn"
+
+	// SelfAuthorizableAnnotationValue is the annotation value if an object itself is an Authorizable.
+	SelfAuthorizableAnnotationValue = "self"
+)
+
 // StringMatch defines the specification to match a string.
 type StringMatch struct {
 	// Exact is to match the exact string.
@@ -34,6 +45,23 @@ type StringMatch struct {
 
 	// Presence is to match anything but empty.
 	Presence bool `json:"presence,omitempty"`
+}
+
+// ToExpression returns the string expression of the string match.
+func (m *StringMatch) ToExpression() string {
+	if m.Exact != "" {
+		return m.Exact
+	}
+	if m.Prefix != "" {
+		return m.Prefix + "*"
+	}
+	if m.Suffix != "" {
+		return "*" + m.Suffix
+	}
+	if m.Presence {
+		return "*"
+	}
+	return ""
 }
 
 // KeyValuesMatch defines a key and a list of string matches for the key.
