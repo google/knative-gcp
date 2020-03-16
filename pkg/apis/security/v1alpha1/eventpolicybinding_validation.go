@@ -30,3 +30,11 @@ func (pb *EventPolicyBinding) Validate(ctx context.Context) *apis.FieldError {
 	}
 	return errs
 }
+
+// CheckImmutableFields checks if any immutable fields are changed in an EventPolicyBinding.
+func (pb *EventPolicyBinding) CheckImmutableFields(ctx context.Context, original *EventPolicyBinding) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	return pb.Spec.CheckImmutableFields(ctx, &original.Spec)
+}

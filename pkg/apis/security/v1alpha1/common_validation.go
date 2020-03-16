@@ -20,7 +20,13 @@ import (
 	"context"
 
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmp"
 )
+
+var subjectRefErr = &apis.FieldError{
+	Paths:   []string{"apiVersion", "kind", "name"},
+	Message: `"apiVersion", "kind" and "name" must be specified altogether`,
+}
 
 // Validate validates a StringMatch.
 func (m *StringMatch) Validate(ctx context.Context) *apis.FieldError {
@@ -112,8 +118,18 @@ func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace stri
 	if pbs.Subject.Namespace != parentNamespace {
 		errs = errs.Also(apis.ErrInvalidValue(pbs.Subject.Namespace, "namespace").ViaField("subject"))
 	}
+	// Specify subject either by an object reference or by label selector.
+	// Cannot be both.
+	if pbs.Subject.APIVersion != "" || pbs.Subject.Kind != "" || pbs.Subject.Name != "" {
+		if pbs.Subject.APIVersion == "" || pbs.Subject.Kind == "" || pbs.Subject.Name == "" {
+			errs = errs.Also(subjectRefErr.ViaField("subject"))
+		}
+	}
 	if pbs.Subject.Name == "" && pbs.Subject.Selector == nil {
 		errs = errs.Also(apis.ErrMissingOneOf("name", "selector").ViaField("subject"))
+	}
+	if pbs.Subject.Name != "" && pbs.Subject.Selector != nil {
+		errs = errs.Also(apis.ErrMultipleOneOf("name", "selector").ViaField("subject"))
 	}
 
 	if pbs.Policy.APIVersion != "" || pbs.Policy.Kind != "" {
@@ -126,4 +142,29 @@ func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace stri
 		errs = errs.Also(apis.ErrInvalidValue(pbs.Policy.Namespace, "namespace").ViaField("policy"))
 	}
 	return errs
+}
+
+// CheckImmutableFields checks if any immutable fields are changed in a PolicyBindingSpec.
+// Make PolicyBindingSpec immutable because otherwise the following case cannot be handled properly:
+// A policy binding initially binds a policy to subject A but later gets changed to subject B.
+// The controller will not be aware of the previous value (subject A) and thus cannot properly unbind
+// the policy from subject A.
+func (pbs *PolicyBindingSpec) CheckImmutableFields(ctx context.Context, original *PolicyBindingSpec) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	if diff, err := kmp.ShortDiff(original, pbs); err != nil {
+		return &apis.FieldError{
+			Message: "Failed to diff PolicyBindingSpec",
+			Paths:   []string{"spec"},
+			Details: err.Error(),
+		}
+	} else if diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: diff,
+		}
+	}
+	return nil
 }
