@@ -18,6 +18,9 @@ events using a Push-compatible format.
 1. Create a GCP PubSub Topic. If you change its name (`testing`), you also need
    to update the `topic` in the [`CloudPubSubSource`](cloudpubsubsource.yaml)
    file:
+      1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled Service Account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
+       
+      1. If you are using non-default secret, update `project` and `secret`.
 
    ```shell
    gcloud pubsub topics create testing
