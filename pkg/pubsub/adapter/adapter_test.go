@@ -19,7 +19,6 @@ package adapter
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -197,9 +196,6 @@ func TestInboundConvert(t *testing.T) {
 }
 
 func TestReceive(t *testing.T) {
-	traceID := "1234567890abcdef1234567890abcdef"
-	spanID := "1234567890abcdef"
-	traceparent := fmt.Sprintf("00-%s-%s-00", traceID, spanID)
 	cases := []struct {
 		name           string
 		eventFn        func() cloudevents.Event
@@ -222,7 +218,6 @@ func TestReceive(t *testing.T) {
 			e.SetType("unit.testing")
 			e.SetID("abc")
 			e.SetDataContentType("application/json")
-			e.SetExtension("traceparent", traceparent)
 			e.Data = []byte(`{"key":"value"}`)
 			return e
 		},
@@ -231,12 +226,10 @@ func TestReceive(t *testing.T) {
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
 			"Ce-Specversion": {"1.0"},
-			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
 			"X-B3-Sampled":   {"0"},
-			"X-B3-Traceid":   {traceID},
 		},
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
@@ -284,7 +277,6 @@ func TestReceive(t *testing.T) {
 			e.SetType("unit.testing")
 			e.SetID("abc")
 			e.SetDataContentType("application/json")
-			e.SetExtension("traceparent", traceparent)
 			e.Data = []byte(`{"key":"value"}`)
 			return e
 		},
@@ -293,7 +285,6 @@ func TestReceive(t *testing.T) {
 			"Ce-Id":          {"def"},
 			"Ce-Source":      {"reply-source"},
 			"Ce-Specversion": {"1.0"},
-			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing.reply"},
 			"Content-Type":   {"application/json"},
 		},
@@ -302,12 +293,10 @@ func TestReceive(t *testing.T) {
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
 			"Ce-Specversion": {"1.0"},
-			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
 			"X-B3-Sampled":   {"0"},
-			"X-B3-Traceid":   {traceID},
 		},
 		wantBody: []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event {
@@ -316,7 +305,6 @@ func TestReceive(t *testing.T) {
 			e.SetType("unit.testing.reply")
 			e.SetID("def")
 			e.SetDataContentType("application/json")
-			e.SetExtension("traceparent", traceparent)
 			e.Data = []byte(`{"key2":"value2"}`)
 			e.DataEncoded = true
 			return &e
@@ -336,7 +324,6 @@ func TestReceive(t *testing.T) {
 			e.SetType("unit.testing")
 			e.SetID("abc")
 			e.SetDataContentType("application/json")
-			e.SetExtension("traceparent", traceparent)
 			e.Data = []byte(`{"key":"value"}`)
 			return e
 		},
@@ -345,12 +332,10 @@ func TestReceive(t *testing.T) {
 			"Ce-Id":          {"abc"},
 			"Ce-Source":      {"source"},
 			"Ce-Specversion": {"1.0"},
-			"Ce-Traceparent": {traceparent},
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
 			"X-B3-Sampled":   {"0"},
-			"X-B3-Traceid":   {traceID},
 		},
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
@@ -419,13 +404,14 @@ func TestReceive(t *testing.T) {
 				return n == "X-B3-Spanid"
 			})
 			options = append(options, ignoreSpanID)
-			// If it's a source, it has no parent trace id, thus we ignore it when diffing.
-			if tc.isSource {
-				ignoreTraceID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
-					return n == "X-B3-Traceid"
-				})
-				options = append(options, ignoreTraceID)
-			}
+			ignoreCeTraceparent := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
+				return n == "Ce-Traceparent"
+			})
+			options = append(options, ignoreCeTraceparent)
+			ignoreTraceID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
+				return n == "X-B3-Traceid"
+			})
+			options = append(options, ignoreTraceID)
 			if diff := cmp.Diff(tc.wantHeader, gotHeader, options...); diff != "" {
 				t.Errorf("receiver got unexpected HTTP header (-want +got): %s", diff)
 			}
