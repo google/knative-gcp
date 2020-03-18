@@ -17,6 +17,7 @@ kind: Channel
 metadata:
   name: demo
 spec:
+
 #  # If running in GKE, we will ask the metadata server, change this if required.
 #  project: MY_PROJECT
 #  # If running with workload identity enabled, update serviceAccount.
