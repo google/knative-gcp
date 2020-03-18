@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	validation_regexp = regexp.MustCompile(`^[A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com$`)
+	validation_regexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`)
 )
 
 // DefaultGoogleCloudSecretSelector is the default secret selector used to load
@@ -72,10 +72,17 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 }
 
 func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
+	// The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com
+
+	// Service account name must be between 6 and 30 characters (inclusive),
+	// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
+
+	// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
+	// must be between 6 and 30 characters.
 	match := validation_regexp.FindStringSubmatch(gServiceAccountName)
 	if len(match) == 0 {
 		return &apis.FieldError{
-			Message: fmt.Sprintf(`invalid value: %s, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com`,
+			Message: fmt.Sprintf(`invalid value: %s, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
 				gServiceAccountName),
 			Paths: []string{"serviceAccount"},
 		}

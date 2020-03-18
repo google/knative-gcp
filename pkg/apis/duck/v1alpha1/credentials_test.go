@@ -61,7 +61,7 @@ func TestValidateCredential(t *testing.T) {
 	}, {
 		name:           "nil secret, and valid service account",
 		secret:         nil,
-		serviceAccount: "test@test.iam.gserviceaccount.com",
+		serviceAccount: "test123@test123.iam.gserviceaccount.com",
 		wantErr:        false,
 	}, {
 		name:           "nil secret, and invalid service account",
