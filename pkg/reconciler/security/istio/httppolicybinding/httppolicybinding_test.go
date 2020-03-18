@@ -84,7 +84,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `failed to reconcile HTTPPolicyBinding: failed to get ref {APIVersion:duck.knative.dev/v1 Kind:KResource Namespace:testnamespace Name:not-exist Selector:nil}: kresources.duck.knative.dev "not-exist" not found`),
+			Eventf(corev1.EventTypeWarning, "InternalError", `failed to resolve subject from HTTPPolicyBinding: failed to get ref {APIVersion:duck.knative.dev/v1 Kind:KResource Namespace:testnamespace Name:not-exist Selector:nil}: kresources.duck.knative.dev "not-exist" not found`),
 		},
 		WantErr: true,
 	}, {
@@ -108,7 +108,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `failed to reconcile HTTPPolicyBinding: the reference is not an authorizable; expecting annotation "security.knative.dev/authorizableOn"`),
+			Eventf(corev1.EventTypeWarning, "InternalError", `failed to resolve subject from HTTPPolicyBinding: the reference is not an authorizable; expecting annotation "security.knative.dev/authorizableOn"`),
 		},
 		WantErr: true,
 	}, {
@@ -134,7 +134,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `failed to reconcile HTTPPolicyBinding: the reference is self authorizable but doesn't have any labels`),
+			Eventf(corev1.EventTypeWarning, "InternalError", `failed to resolve subject from HTTPPolicyBinding: the reference is self authorizable but doesn't have any labels`),
 		},
 		WantErr: true,
 	}, {
@@ -160,7 +160,7 @@ func TestAllCases(t *testing.T) {
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "InternalError", `failed to reconcile HTTPPolicyBinding: the reference doesn't have a valid subject in annotation "security.knative.dev/authorizableOn"; it must be a LabelSelector: invalid character 'r' looking for beginning of value`),
+			Eventf(corev1.EventTypeWarning, "InternalError", `failed to resolve subject from HTTPPolicyBinding: the reference doesn't have a valid subject in annotation "security.knative.dev/authorizableOn"; it must be a LabelSelector: invalid character 'r' looking for beginning of value`),
 		},
 		WantErr: true,
 	}, {

@@ -66,7 +66,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.HTTPPolicyBi
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem resolving binding subject", zap.Error(err))
 		b.Status.MarkBindingFailure("SubjectResolvingFailure", "%v", err)
-		return fmt.Errorf("failed to reconcile HTTPPolicyBinding: %w", err)
+		return fmt.Errorf("failed to resolve subject from HTTPPolicyBinding: %w", err)
 	}
 	if len(subjectSelector.MatchLabels) == 0 {
 		logging.FromContext(ctx).Error("Binding subject has zero label selector")
