@@ -77,7 +77,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
 	if scheduler.Spec.ServiceAccount != "" {
-		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler.Namespace, scheduler); err != nil {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudSchedulerSource workload identity: %s", err.Error())
 		}
 	}
@@ -191,7 +191,7 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, scheduler *v1alpha1.Cloud
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if scheduler.Spec.ServiceAccount != "" {
-		if err := r.Identity.DeleteWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler.Namespace, scheduler); err != nil {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, scheduler.Spec.Project, scheduler); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudSchedulerSource workload identity: %s", err.Error())
 		}
 	}

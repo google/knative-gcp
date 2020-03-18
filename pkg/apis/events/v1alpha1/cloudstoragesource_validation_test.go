@@ -206,9 +206,27 @@ func TestSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("name", "secret.name")
+			fe := apis.ErrMissingField("secret.name")
 			return fe
 		}(),
+	}, {
+		name: "nil secret",
+		spec: &CloudStorageSourceSpec{
+			Bucket: "my-test-bucket",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "foo",
+							Kind:       "bar",
+							Namespace:  "baz",
+							Name:       "qux",
+						},
+					},
+				},
+			},
+		},
+		want: nil,
 	}, {
 		name: "invalid gcs secret, missing key",
 		spec: &CloudStorageSourceSpec{
@@ -230,7 +248,7 @@ func TestSpecValidationFields(t *testing.T) {
 			},
 		},
 		want: func() *apis.FieldError {
-			fe := apis.ErrMissingField("key", "secret.key")
+			fe := apis.ErrMissingField("secret.key")
 			return fe
 		}(),
 	}, {
@@ -253,7 +271,7 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "invalid value: test@test.iam.kserviceaccount.com",
+				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com`,
 				Paths:   []string{"serviceAccount"},
 			}
 			return fe
@@ -278,7 +296,7 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "have GCP service account and secret in the same time",
+		name: "have GCP service account and secret at the same time",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -301,7 +319,7 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccount and spec.secret in the same time",
+				Message: "Can't have spec.serviceAccount and spec.secret at the same time",
 				Paths:   []string{""},
 			}
 			return fe
@@ -402,6 +420,21 @@ func TestCheckImmutableFields(t *testing.T) {
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret:     storageSourceSpec.Secret,
 					Project:    "some-other-project",
+				},
+			},
+			allowed: false,
+		},
+		"ServiceAccount changed": {
+			orig: &storageSourceSpec,
+			updated: CloudStorageSourceSpec{
+				Bucket:           storageSourceSpec.Bucket,
+				EventTypes:       storageSourceSpec.EventTypes,
+				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
+				PayloadFormat:    storageSourceSpec.PayloadFormat,
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					SourceSpec:     storageSourceSpec.SourceSpec,
+					Secret:         storageSourceSpec.Secret,
+					ServiceAccount: "new-service-account",
 				},
 			},
 			allowed: false,

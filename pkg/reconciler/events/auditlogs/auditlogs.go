@@ -74,7 +74,7 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1alpha1.CloudAuditLo
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
 	if s.Spec.ServiceAccount != "" {
-		if _, err := c.Identity.ReconcileWorkloadIdentity(ctx, s.Spec.Project, s.Namespace, s); err != nil {
+		if _, err := c.Identity.ReconcileWorkloadIdentity(ctx, s.Spec.Project, s); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudAuditLogsSource workload identity: %s", err.Error())
 		}
 	}
@@ -188,7 +188,7 @@ func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1alpha1.CloudAuditLog
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if s.Spec.ServiceAccount != "" {
-		if err := c.Identity.DeleteWorkloadIdentity(ctx, s.Spec.Project, s.Namespace, s); err != nil {
+		if err := c.Identity.DeleteWorkloadIdentity(ctx, s.Spec.Project, s); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudAuditLogsSource workload identity: %s", err.Error())
 		}
 	}

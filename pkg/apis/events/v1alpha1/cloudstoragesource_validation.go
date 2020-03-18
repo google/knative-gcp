@@ -58,7 +58,7 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
-	// Modification of EventType, Secret, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+	// Modification of EventType, Secret, ServiceAccount, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
 			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {

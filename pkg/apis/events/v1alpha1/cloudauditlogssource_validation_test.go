@@ -95,6 +95,13 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"nil secret": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				return *obj
+			}(),
+			error: false,
+		},
 		"invalid scheduler secret, missing key": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
@@ -113,7 +120,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret in the same time": {
+		"have GCP service account and secret at the same time": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.ServiceAccount = invalidServiceAccountName
@@ -184,6 +191,27 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
 					},
 					Project: "some-other-project",
+					SourceSpec: duckv1.SourceSpec{
+						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: false,
+		},
+		"ServiceAccount changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
+					},
+					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
 					},

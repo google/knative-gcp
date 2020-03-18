@@ -88,7 +88,7 @@ func (current *CloudPubSubSource) CheckImmutableFields(ctx context.Context, orig
 		return nil
 	}
 
-	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
+	// Modification of Topic, Secret, ServiceAccount, and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudPubSubSourceSpec{},
 			"Sink", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {

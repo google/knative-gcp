@@ -17,16 +17,11 @@ limitations under the License.
 package resources
 
 import (
-	"knative.dev/pkg/kmeta"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
 var (
@@ -54,61 +49,6 @@ func TestMakeServiceAccount(t *testing.T) {
 		},
 	}
 	got := MakeServiceAccount("default", gServiceAccountName)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-	}
-}
-
-func TestOwnerReferenceExists(t *testing.T) {
-	source := &v1alpha1.CloudSchedulerSource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "scheduler-name",
-			Namespace: "scheduler-namespace",
-			UID:       "scheduler-uid",
-		},
-		Spec: v1alpha1.CloudSchedulerSourceSpec{
-			PubSubSpec: duckv1alpha1.PubSubSpec{
-				Project: "project-123",
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "eventing-secret-name",
-					},
-					Key: "eventing-secret-key",
-				},
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "v1",
-							Kind:       "Kitchen",
-							Name:       "sink",
-						},
-					},
-				},
-			},
-		},
-	}
-	kServiceAccount := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      kServiceAccountName,
-			Annotations: map[string]string{
-				"iam.gke.io/gcp-service-account": gServiceAccountName,
-			},
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(source)},
-		},
-	}
-	ownerReference := metav1.OwnerReference{
-		APIVersion:         source.APIVersion,
-		Kind:               source.Kind,
-		Name:               source.Name,
-		UID:                "",
-		Controller:         nil,
-		BlockOwnerDeletion: nil,
-	}
-
-	want := true
-	got := OwnerReferenceExists(kServiceAccount, ownerReference)
-
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}

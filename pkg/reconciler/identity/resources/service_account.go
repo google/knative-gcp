@@ -44,14 +44,3 @@ func MakeServiceAccount(namespace string, gServiceAccount string) *corev1.Servic
 		},
 	}
 }
-
-// OwnerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
-func OwnerReferenceExists(kServiceAccount *corev1.ServiceAccount, expect metav1.OwnerReference) bool {
-	references := kServiceAccount.OwnerReferences
-	for _, reference := range references {
-		if reference.Name == expect.Name {
-			return true
-		}
-	}
-	return false
-}

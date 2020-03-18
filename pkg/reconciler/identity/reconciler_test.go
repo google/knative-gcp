@@ -22,16 +22,23 @@ import (
 	"strings"
 	"testing"
 
+	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeKubeClient "k8s.io/client-go/kubernetes/fake"
 	clientgotesting "k8s.io/client-go/testing"
+
+	duckv1 "knative.dev/pkg/apis/duck/v1"
+	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -52,7 +59,28 @@ var (
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
 	}, cmp.Ignore())
+
+	role        = "roles/iam.workloadIdentityUser"
+	addbindings = []*iam.Binding{{
+		Members: []string{"member1"},
+		Role:    role,
+	}}
+	removebindings = []*iam.Binding{{
+		Members: []string{"member1", "member2"},
+		Role:    role,
+	}}
 )
+
+func TestNew(t *testing.T) {
+	defer logtesting.ClearAll()
+	ctx, _ := SetupFakeContext(t)
+
+	c := NewIdentity(ctx)
+
+	if c == nil {
+		t.Fatal("Expected NewIdentity to return a non-nil value")
+	}
+}
 
 func TestCreates(t *testing.T) {
 	testCases := []struct {
@@ -77,7 +105,7 @@ func TestCreates(t *testing.T) {
 			}}),
 		),
 		expectedErr: fmt.Sprintf("adding iam policy binding failed with: " +
-			resources.AddIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
+			addIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
 		),
 	}, {
 		name: "k8s service account exists, but doesn't have ownerReference",
@@ -95,7 +123,7 @@ func TestCreates(t *testing.T) {
 			}}),
 		),
 		expectedErr: fmt.Sprintf("adding iam policy binding failed with: " +
-			resources.AddIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
+			addIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
 		),
 	}}
 
@@ -107,7 +135,7 @@ func TestCreates(t *testing.T) {
 		}
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, testNS, identifiable)
+		kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, identifiable)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
@@ -143,7 +171,7 @@ func TestDeletes(t *testing.T) {
 	}{{
 		name: "delete k8s service account, failed with removing iam policy binding.",
 		expectedErr: fmt.Sprintf("removing iam policy binding failed with: " +
-			resources.RemoveIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
+			removeIamPolicyBinding(context.Background(), projectID, gServiceAccountName, NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName)).Error(),
 		),
 		objects: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
@@ -189,7 +217,7 @@ func TestDeletes(t *testing.T) {
 		}
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		err := identity.DeleteWorkloadIdentity(context.Background(), projectID, testNS, identifiable)
+		err := identity.DeleteWorkloadIdentity(context.Background(), projectID, identifiable)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
@@ -220,5 +248,103 @@ func TestDeletes(t *testing.T) {
 				t.Errorf("Extra delete: %s/%s", extra.GetNamespace(), extra.GetName())
 			}
 		}
+	}
+}
+
+func TestMakeSetIamPolicyRequest(t *testing.T) {
+	testCases := []struct {
+		name string
+		want *iam.SetIamPolicyRequest
+		got  *iam.SetIamPolicyRequest
+	}{{
+		name: "Add iam policy binding",
+		want: &iam.SetIamPolicyRequest{
+			Policy: &iam.Policy{
+				Bindings: []*iam.Binding{{
+					Members: []string{"member1"},
+					Role:    role,
+				}, {
+					Members: []string{"member2"},
+					Role:    role,
+				}},
+			},
+		},
+		got: makeSetIamPolicyRequest(addbindings, "add", "member2"),
+	}, {
+		name: "Remove iam policy binding",
+		want: &iam.SetIamPolicyRequest{
+			Policy: &iam.Policy{
+				Bindings: []*iam.Binding{{
+					Members: []string{"member1"},
+					Role:    role,
+				}},
+			},
+		},
+		got: makeSetIamPolicyRequest(removebindings, "remove", "member2"),
+	}, {
+		name: "invalid iam policy binding action",
+		want: nil,
+		got:  makeSetIamPolicyRequest(removebindings, "plus", "member2"),
+	}}
+
+	for _, tc := range testCases {
+		if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+			t.Errorf("unexpected (-want, +got) = %v", diff)
+		}
+	}
+}
+
+func TestOwnerReferenceExists(t *testing.T) {
+	source := &v1alpha1.CloudSchedulerSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "scheduler-name",
+			Namespace: "scheduler-namespace",
+			UID:       "scheduler-uid",
+		},
+		Spec: v1alpha1.CloudSchedulerSourceSpec{
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Project: "project-123",
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
+				},
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "v1",
+							Kind:       "Kitchen",
+							Name:       "sink",
+						},
+					},
+				},
+			},
+		},
+	}
+	kServiceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      kServiceAccountName,
+			Annotations: map[string]string{
+				"iam.gke.io/gcp-service-account": gServiceAccountName,
+			},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(source)},
+		},
+	}
+	ownerReference := metav1.OwnerReference{
+		APIVersion:         source.APIVersion,
+		Kind:               source.Kind,
+		Name:               source.Name,
+		UID:                "",
+		Controller:         nil,
+		BlockOwnerDeletion: nil,
+	}
+
+	want := true
+	got := ownerReferenceExists(kServiceAccount, ownerReference)
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
 }

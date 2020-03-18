@@ -185,6 +185,13 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"nil service account": {
+			spec: func() CloudPubSubSourceSpec {
+				obj := pubSubSourceSpec.DeepCopy()
+				return *obj
+			}(),
+			error: false,
+		},
 		"invalid GCP service account": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
@@ -193,7 +200,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret in the same time": {
+		"have GCP service account and secret at the same time": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.ServiceAccount = invalidServiceAccountName
@@ -272,6 +279,25 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 						Key: pubSubSourceSpec.Secret.Key,
 					},
 					Project: "some-other-project",
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pubSubSourceSpec.Sink,
+					},
+				},
+				Topic: pubSubSourceSpec.Topic,
+			},
+			allowed: false,
+		},
+		"ServiceAccount changed": {
+			orig: &pubSubSourceSpec,
+			updated: CloudPubSubSourceSpec{
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pubSubSourceSpec.Secret.Name,
+						},
+						Key: pubSubSourceSpec.Secret.Key,
+					},
+					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: pubSubSourceSpec.Sink,
 					},

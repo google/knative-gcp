@@ -29,6 +29,15 @@ import (
 var (
 	validServiceAccountName   = "test@test.iam.gserviceaccount.com"
 	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
+
+	channelSpec = ChannelSpec{
+		Subscribable: &eventingduck.Subscribable{
+			Subscribers: []eventingduck.SubscriberSpec{{
+				SubscriberURI: apis.HTTP("subscriberendpoint"),
+				ReplyURI:      apis.HTTP("resultendpoint"),
+			}},
+		},
+	}
 )
 
 func TestChannelValidation(t *testing.T) {
@@ -90,6 +99,18 @@ func TestChannelValidation(t *testing.T) {
 			return errs
 		}(),
 	}, {
+		name: "nil secret",
+		cr: &Channel{
+			Spec: ChannelSpec{
+				Subscribable: &eventingduck.Subscribable{
+					Subscribers: []eventingduck.SubscriberSpec{{
+						SubscriberURI: apis.HTTP("subscriberendpoint"),
+						ReplyURI:      apis.HTTP("replyendpoint"),
+					}},
+				}},
+		},
+		want: nil,
+	}, {
 		name: "invalid GCP service account",
 		cr: &Channel{
 			Spec: ChannelSpec{
@@ -103,7 +124,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "invalid value: test@test.iam.kserviceaccount.com",
+				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com`,
 				Paths:   []string{"spec.serviceAccount"},
 			}
 			return fe
@@ -122,7 +143,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "have GCP service account and secret in the same time",
+		name: "have GCP service account and secret at the same time",
 		cr: &Channel{
 			Spec: ChannelSpec{
 				ServiceAccount: validServiceAccountName,
@@ -136,7 +157,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccount and spec.secret in the same time",
+				Message: "Can't have spec.serviceAccount and spec.secret at the same time",
 				Paths:   []string{"spec"},
 			}
 			return fe
@@ -147,6 +168,47 @@ func TestChannelValidation(t *testing.T) {
 			got := test.cr.Validate(context.TODO())
 			if diff := cmp.Diff(test.want.Error(), got.Error()); diff != "" {
 				t.Errorf("%s: validate (-want, +got) = %v", test.name, diff)
+			}
+		})
+	}
+}
+
+func TestCheckImmutableFields(t *testing.T) {
+	testCases := map[string]struct {
+		orig    interface{}
+		updated ChannelSpec
+		allowed bool
+	}{
+		"nil orig": {
+			updated: ChannelSpec{},
+			allowed: true,
+		},
+		"ServiceAccount changed": {
+			orig: &channelSpec,
+			updated: ChannelSpec{
+				ServiceAccount: "new-service-account",
+			},
+			allowed: false,
+		},
+	}
+
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var orig *Channel
+
+			if tc.orig != nil {
+				if spec, ok := tc.orig.(*ChannelSpec); ok {
+					orig = &Channel{
+						Spec: *spec,
+					}
+				}
+			}
+			updated := &Channel{
+				Spec: tc.updated,
+			}
+			err := updated.CheckImmutableFields(context.TODO(), orig)
+			if tc.allowed != (err == nil) {
+				t.Fatalf("Unexpected immutable field check. Expected %v. Actual %v", tc.allowed, err)
 			}
 		})
 	}

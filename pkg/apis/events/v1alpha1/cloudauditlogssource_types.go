@@ -49,6 +49,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudAuditLogsSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudAuditLogsSource)(nil)
 	_                              = duck.VerifyType(&CloudAuditLogsSource{}, &duckv1.Conditions{})
 )
 

@@ -25,6 +25,8 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
+
+	"github.com/google/knative-gcp/pkg/duck"
 )
 
 // +genclient
@@ -47,10 +49,13 @@ type Channel struct {
 }
 
 // Check that Channel can be validated, can be defaulted, and has immutable fields.
-var _ apis.Validatable = (*Channel)(nil)
-var _ apis.Defaultable = (*Channel)(nil)
-var _ runtime.Object = (*Channel)(nil)
-var _ resourcesemantics.GenericCRD = (*Channel)(nil)
+var (
+	_ apis.Validatable             = (*Channel)(nil)
+	_ apis.Defaultable             = (*Channel)(nil)
+	_ runtime.Object               = (*Channel)(nil)
+	_ resourcesemantics.GenericCRD = (*Channel)(nil)
+	_ duck.Identifiable            = (*Channel)(nil)
+)
 
 // ChannelSpec defines which subscribers have expressed interest in
 // receiving events from this Channel.

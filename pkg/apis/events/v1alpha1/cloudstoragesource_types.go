@@ -48,6 +48,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
 	_                              = duck.VerifyType(&CloudStorageSource{}, &duckv1.Conditions{})
 )
 

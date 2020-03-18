@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 )
 
@@ -43,14 +45,14 @@ func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-// ValidateCredential check secret and GCP service account
+// ValidateCredential checks secret and GCP service account.
 func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string) *apis.FieldError {
-	if secret != nil && gServiceAccountName != "" {
+	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && gServiceAccountName != "" {
 		return &apis.FieldError{
-			Message: "Can't have spec.serviceAccount and spec.secret in the same time",
+			Message: "Can't have spec.serviceAccount and spec.secret at the same time",
 			Paths:   []string{""},
 		}
-	} else if secret != nil {
+	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
 		return validateSecret(secret)
 	} else if gServiceAccountName != "" {
 		return validateGCPServiceAccount(gServiceAccountName)
@@ -61,13 +63,10 @@ func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName st
 func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 	var errs *apis.FieldError
 	if secret.Name == "" {
-		errs = errs.Also(apis.ErrMissingField("name"))
+		errs = errs.Also(apis.ErrMissingField("secret.name"))
 	}
 	if secret.Key == "" {
-		errs = errs.Also(apis.ErrMissingField("key"))
-	}
-	if errs != nil {
-		errs = errs.Also(errs.ViaField("secret"))
+		errs = errs.Also(apis.ErrMissingField("secret.key"))
 	}
 	return errs
 }
@@ -75,7 +74,11 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
 	match := validation_regexp.FindStringSubmatch(gServiceAccountName)
 	if len(match) == 0 {
-		return apis.ErrInvalidValue(gServiceAccountName, "serviceAccount")
+		return &apis.FieldError{
+			Message: fmt.Sprintf(`invalid value: %s, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com`,
+				gServiceAccountName),
+			Paths: []string{"serviceAccount"},
+		}
 	}
 	return nil
 }

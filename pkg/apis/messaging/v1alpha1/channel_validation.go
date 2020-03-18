@@ -64,5 +64,14 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 			}
 		}
 	}
+
+	if diff := cmp.Diff(original.Spec.ServiceAccount, current.Spec.ServiceAccount); diff != "" {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"status", "serviceAccount"},
+			Details: diff,
+		}
+	}
+
 	return nil
 }

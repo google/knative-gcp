@@ -61,6 +61,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
 	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
 )
 
