@@ -21,17 +21,6 @@ import (
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 )
 
-const (
-	// PolicyBindingClassAnnotationKey is the annotation key for policy binding class.
-	PolicyBindingClassAnnotationKey = "security.knative.dev/policybinding-class"
-
-	// AuthorizableAnnotationKey is the annotaion key for Authorizables.
-	AuthorizableAnnotationKey = "security.knative.dev/authorizableOn"
-
-	// SelfAuthorizableAnnotationValue is the annotation value if an object itself is an Authorizable.
-	SelfAuthorizableAnnotationValue = "self"
-)
-
 // StringMatch defines the specification to match a string.
 type StringMatch struct {
 	// Exact is to match the exact string.

@@ -37,6 +37,7 @@ import (
 	securitylisters "github.com/google/knative-gcp/pkg/client/listers/security/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/security"
+	"github.com/google/knative-gcp/pkg/reconciler/security/istio/httppolicybinding/resources"
 )
 
 // Reconciler reconciles the HTTPPolicyBinding.
@@ -65,19 +66,19 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.HTTPPolicyBi
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem resolving binding subject", zap.Error(err))
 		b.Status.MarkBindingFailure("SubjectResolvingFailure", "%v", err)
-		return fmt.Errorf("Failed to reconcile HTTPPolicyBinding: %w", err)
+		return fmt.Errorf("failed to reconcile HTTPPolicyBinding: %w", err)
 	}
 	if len(subjectSelector.MatchLabels) == 0 {
 		logging.FromContext(ctx).Error("Binding subject has zero label selector")
-		b.Status.MarkBindingFailure("InvalidResolevedSubject", "Resolved binding subject has zero label selector")
-		return errors.New("Binding subject has zero label selector")
+		b.Status.MarkBindingFailure("InvalidResolvedSubject", "Resolved binding subject has zero label selector")
+		return errors.New("binding subject has zero label selector")
 	}
 
 	p, err := r.policyLister.HTTPPolicies(b.Spec.Policy.Namespace).Get(b.Spec.Policy.Name)
 	if err != nil {
 		logging.FromContext(ctx).Error("Problem getting HTTPPolicy", zap.Any("HTTPPolicy", b.Spec.Policy), zap.Error(err))
 		b.Status.MarkBindingFailure("GetPolicyFailure", "%v", err)
-		return fmt.Errorf("Failed to get HTTPPolicy: %w", err)
+		return fmt.Errorf("failed to get HTTPPolicy: %w", err)
 	}
 	// Track referenced policy.
 	r.policyTracker.TrackReference(tracker.Reference{
@@ -86,9 +87,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.HTTPPolicyBi
 		Namespace:  b.Spec.Policy.Namespace,
 		Name:       b.Spec.Policy.Name,
 	}, b)
-
-	// Currently this is always compatible.
-	b.Status.MarkBindingClassCompatible()
 
 	if err := r.reconcileRequestAuthentication(ctx, b, subjectSelector, p); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling Istio RequestAuthentication", zap.Error(err))
@@ -117,16 +115,16 @@ func (r *Reconciler) reconcileRequestAuthentication(
 		return nil
 	}
 
-	desired := MakeRequestAuthentication(b, subjectSelector, *p.Spec.JWT)
+	desired := resources.MakeRequestAuthentication(b, subjectSelector, *p.Spec.JWT)
 
 	existing, err := r.authnLister.RequestAuthentications(desired.Namespace).Get(desired.Name)
 	if apierrs.IsNotFound(err) {
 		existing, err = r.istioClient.SecurityV1beta1().RequestAuthentications(desired.Namespace).Create(&desired)
 		if err != nil {
-			return fmt.Errorf("Failed to create Istio RequestAuthentication: %w", err)
-		} else if err != nil {
-			return fmt.Errorf("Failed to get Istio RequestAuthentication: %w", err)
+			return fmt.Errorf("failed to create Istio RequestAuthentication: %w", err)
 		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get Istio RequestAuthentication: %w", err)
 	}
 
 	if !equality.Semantic.DeepEqual(desired.Spec, existing.Spec) {
@@ -135,7 +133,7 @@ func (r *Reconciler) reconcileRequestAuthentication(
 		cp.Spec = desired.Spec
 		existing, err = r.istioClient.SecurityV1beta1().RequestAuthentications(cp.Namespace).Update(cp)
 		if err != nil {
-			return fmt.Errorf("Failed to update Istio RequestAuthentication: %w", err)
+			return fmt.Errorf("failed to update Istio RequestAuthentication: %w", err)
 		}
 	}
 
@@ -153,16 +151,16 @@ func (r *Reconciler) reconcileAuthorizationPolicy(
 		return nil
 	}
 
-	desired := MakeAuthorizationPolicy(b, subjectSelector, p.Spec.Rules)
+	desired := resources.MakeAuthorizationPolicy(b, subjectSelector, p.Spec.Rules)
 
 	existing, err := r.authzLister.AuthorizationPolicies(desired.Namespace).Get(desired.Name)
 	if apierrs.IsNotFound(err) {
 		existing, err = r.istioClient.SecurityV1beta1().AuthorizationPolicies(desired.Namespace).Create(&desired)
 		if err != nil {
-			return fmt.Errorf("Failed to create Istio AuthorizationPolicy: %w", err)
-		} else if err != nil {
-			return fmt.Errorf("Failed to get Istio AuthorizationPolicy: %w", err)
+			return fmt.Errorf("failed to create Istio AuthorizationPolicy: %w", err)
 		}
+	} else if err != nil {
+		return fmt.Errorf("failed to get Istio AuthorizationPolicy: %w", err)
 	}
 
 	if !equality.Semantic.DeepEqual(desired.Spec, existing.Spec) {
@@ -171,7 +169,7 @@ func (r *Reconciler) reconcileAuthorizationPolicy(
 		cp.Spec = desired.Spec
 		existing, err = r.istioClient.SecurityV1beta1().AuthorizationPolicies(cp.Namespace).Update(cp)
 		if err != nil {
-			return fmt.Errorf("Failed to update Istio AuthorizationPolicy: %w", err)
+			return fmt.Errorf("failed to update Istio AuthorizationPolicy: %w", err)
 		}
 	}
 

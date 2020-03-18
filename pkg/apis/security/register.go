@@ -18,5 +18,18 @@ limitations under the License.
 package security
 
 const (
+	// GroupName is the API group name.
 	GroupName = "security.knative.dev"
+
+	// PolicyBindingClassAnnotationKey is the annotation key for policy binding class.
+	PolicyBindingClassAnnotationKey = GroupName + "/policybinding-class"
+
+	// AuthorizableAnnotationKey is the annotaion key for Authorizables.
+	AuthorizableAnnotationKey = GroupName + "/authorizableOn"
+
+	// SelfAuthorizableAnnotationValue is the annotation value if an object itself is an Authorizable.
+	SelfAuthorizableAnnotationValue = "self"
+
+	// IstioPolicyBindingClassValue is the binding class name for Istio implementation.
+	IstioPolicyBindingClassValue = "istio"
 )

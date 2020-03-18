@@ -25,6 +25,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/tracker"
 
+	securityapi "github.com/google/knative-gcp/pkg/apis/security"
 	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	policyinformer "github.com/google/knative-gcp/pkg/client/injection/informers/security/v1alpha1/httppolicy"
 	bindinginformer "github.com/google/knative-gcp/pkg/client/injection/informers/security/v1alpha1/httppolicybinding"
@@ -34,7 +35,6 @@ import (
 	authninformer "github.com/google/knative-gcp/pkg/client/istio/injection/informers/security/v1beta1/requestauthentication"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/security"
-	"github.com/google/knative-gcp/pkg/reconciler/security/istio"
 )
 
 const (
@@ -68,7 +68,7 @@ func NewController(
 	r.Logger.Info("Setting up event handlers")
 
 	bindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: pkgreconciler.AnnotationFilterFunc(securityv1alpha1.PolicyBindingClassAnnotationKey, istio.PolicyBindingClass, false),
+		FilterFunc: pkgreconciler.AnnotationFilterFunc(securityapi.PolicyBindingClassAnnotationKey, securityapi.IstioPolicyBindingClassValue, false),
 		Handler:    controller.HandleAll(impl.Enqueue),
 	})
 

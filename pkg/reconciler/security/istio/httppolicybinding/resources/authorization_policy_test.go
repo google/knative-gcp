@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package httppolicybinding
+package resources
 
 import (
 	"testing"
@@ -28,54 +28,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 )
-
-func TestMakeRequestAuthentication(t *testing.T) {
-	b := &v1alpha1.HTTPPolicyBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testBindingName,
-			Namespace: testNamespace,
-		},
-	}
-	selector := &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			"app": "test",
-		},
-	}
-	jwt := v1alpha1.JWTSpec{
-		JwksURI: testJwksURI,
-		FromHeaders: []v1alpha1.JWTHeader{
-			{Name: "Authorization", Prefix: "Bearer"},
-			{Name: "X-Custom-Token"},
-		},
-	}
-	wantReqAuthn := istioclient.RequestAuthentication{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            testBindingName,
-			Namespace:       testNamespace,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
-		},
-		Spec: istiosecurity.RequestAuthentication{
-			Selector: &istiotype.WorkloadSelector{
-				MatchLabels: map[string]string{
-					"app": "test",
-				},
-			},
-			JwtRules: []*istiosecurity.JWTRule{{
-				JwksUri:              testJwksURI,
-				ForwardOriginalToken: true,
-				FromHeaders: []*istiosecurity.JWTHeader{
-					{Name: "Authorization", Prefix: "Bearer"},
-					{Name: "X-Custom-Token"},
-				},
-			}},
-		},
-	}
-
-	gotReqAuthn := MakeRequestAuthentication(b, selector, jwt)
-	if diff := cmp.Diff(wantReqAuthn, gotReqAuthn); diff != "" {
-		t.Errorf("MakeRequestAuthentication (-want,+got): %v", diff)
-	}
-}
 
 func TestMakeAuthorizationPolicy(t *testing.T) {
 	b := &v1alpha1.HTTPPolicyBinding{

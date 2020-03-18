@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/security"
 	"github.com/google/knative-gcp/pkg/client/clientset/versioned/scheme"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -173,7 +173,7 @@ func genObject(annotation string, labels map[string]interface{}) *unstructured.U
 	var anno map[string]interface{}
 	if annotation != "" {
 		anno = map[string]interface{}{
-			v1alpha1.AuthorizableAnnotationKey: annotation,
+			security.AuthorizableAnnotationKey: annotation,
 		}
 	}
 	return &unstructured.Unstructured{

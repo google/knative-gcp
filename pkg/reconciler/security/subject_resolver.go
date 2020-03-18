@@ -30,7 +30,7 @@ import (
 	"knative.dev/pkg/tracker"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/security"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 )
 
@@ -63,18 +63,18 @@ func (r *SubjectResolver) ResolveFromRef(ref tracker.Reference, parent interface
 	}
 
 	if err := r.tracker.TrackReference(ref, parent); err != nil {
-		return nil, fmt.Errorf("Failed to track subject %+v: %w", ref, err)
+		return nil, fmt.Errorf("failed to track subject %+v: %w", ref, err)
 	}
 
 	gvr, _ := meta.UnsafeGuessKindToResource(ref.GroupVersionKind())
 	_, lister, err := r.informerFactory.Get(gvr)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get lister for %+v: %w", gvr, err)
+		return nil, fmt.Errorf("failed to get lister for %+v: %w", gvr, err)
 	}
 
 	obj, err := lister.ByNamespace(ref.Namespace).Get(ref.Name)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get ref %+v: %w", ref, err)
+		return nil, fmt.Errorf("failed to get ref %+v: %w", ref, err)
 	}
 
 	kr, ok := obj.(*duckv1alpha1.Resource)
@@ -83,16 +83,16 @@ func (r *SubjectResolver) ResolveFromRef(ref tracker.Reference, parent interface
 	}
 
 	// Parse the annotation to resolve the subject to protect.
-	selector, ok := kr.Annotations[v1alpha1.AuthorizableAnnotationKey]
+	selector, ok := kr.Annotations[security.AuthorizableAnnotationKey]
 	if !ok {
-		return nil, fmt.Errorf("The reference is not an authorizable; expecting annotation %q", v1alpha1.AuthorizableAnnotationKey)
+		return nil, fmt.Errorf("the reference is not an authorizable; expecting annotation %q", security.AuthorizableAnnotationKey)
 	}
 	// Handle this special case where the object itself is already the workload to bind policy.
-	if selector == v1alpha1.SelfAuthorizableAnnotationValue {
+	if selector == security.SelfAuthorizableAnnotationValue {
 		if len(kr.GetLabels()) == 0 {
 			// It's probably too dangerous to apply a policy without specifying any label selector.
 			// For now, we simply disallow that.
-			return nil, errors.New("The reference is self authorizable but doesn't have any labels")
+			return nil, errors.New("the reference is self authorizable but doesn't have any labels")
 		}
 		return &metav1.LabelSelector{
 			MatchLabels: kr.GetLabels(),
@@ -101,7 +101,7 @@ func (r *SubjectResolver) ResolveFromRef(ref tracker.Reference, parent interface
 
 	var l metav1.LabelSelector
 	if err := json.Unmarshal([]byte(selector), &l); err != nil {
-		return nil, fmt.Errorf("The reference doesn't have a valid subject in annotation %q; it must be a LabelSelector: %w", v1alpha1.AuthorizableAnnotationKey, err)
+		return nil, fmt.Errorf("the reference doesn't have a valid subject in annotation %q; it must be a LabelSelector: %w", security.AuthorizableAnnotationKey, err)
 	}
 
 	return &l, nil

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package httppolicybinding
+package resources
 
 import (
 	"fmt"
@@ -33,38 +33,6 @@ const (
 	istioClaimKeyPattern  = "request.auth.claims[%s]"
 	istioHeaderKeyPattern = "request.headers[%s]"
 )
-
-// MakeRequestAuthentication makes an Istio RequestAuthentication.
-// Reference: https://istio.io/docs/reference/config/security/request_authentication/
-func MakeRequestAuthentication(
-	b *v1alpha1.HTTPPolicyBinding,
-	subjectSelector *metav1.LabelSelector,
-	jwt v1alpha1.JWTSpec) istioclient.RequestAuthentication {
-
-	var rhs []*istiosecurity.JWTHeader
-	for _, rh := range jwt.FromHeaders {
-		rhs = append(rhs, &istiosecurity.JWTHeader{Name: rh.Name, Prefix: rh.Prefix})
-	}
-
-	return istioclient.RequestAuthentication{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:            b.Name,
-			Namespace:       b.Namespace,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
-		},
-		Spec: istiosecurity.RequestAuthentication{
-			Selector: &istiotype.WorkloadSelector{
-				MatchLabels: subjectSelector.MatchLabels,
-			},
-			JwtRules: []*istiosecurity.JWTRule{{
-				Jwks:                 jwt.Jwks,
-				JwksUri:              jwt.JwksURI,
-				ForwardOriginalToken: true,
-				FromHeaders:          rhs,
-			}},
-		},
-	}
-}
 
 // MakeAuthorizationPolicy makes an Istio AuthorizationPolicy.
 // Reference: https://istio.io/docs/reference/config/security/authorization-policy/
