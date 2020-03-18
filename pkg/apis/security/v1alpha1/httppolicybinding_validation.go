@@ -30,3 +30,11 @@ func (pb *HTTPPolicyBinding) Validate(ctx context.Context) *apis.FieldError {
 	}
 	return errs
 }
+
+// CheckImmutableFields checks if any immutable fields are changed in a HTTPPolicyBinding.
+func (pb *HTTPPolicyBinding) CheckImmutableFields(ctx context.Context, original *HTTPPolicyBinding) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	return pb.Spec.CheckImmutableFields(ctx, &original.Spec)
+}
