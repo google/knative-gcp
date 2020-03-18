@@ -56,6 +56,20 @@ func WithUnstructuredAddressable(hostname string) UnstructuredOption {
 	}
 }
 
+func WithUnstructuredAnnotations(annotations map[string]interface{}) UnstructuredOption {
+	return func(s *unstructured.Unstructured) {
+		meta := s.Object["metadata"].(map[string]interface{})
+		meta["annotations"] = annotations
+	}
+}
+
+func WithUnstructuredLabels(labels map[string]interface{}) UnstructuredOption {
+	return func(s *unstructured.Unstructured) {
+		meta := s.Object["metadata"].(map[string]interface{})
+		meta["labels"] = labels
+	}
+}
+
 func apiVersion(gvk metav1.GroupVersionKind) string {
 	groupVersion := gvk.Version
 	if gvk.Group != "" {

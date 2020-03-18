@@ -36,6 +36,23 @@ type StringMatch struct {
 	Presence bool `json:"presence,omitempty"`
 }
 
+// ToExpression returns the string expression of the string match.
+func (m *StringMatch) ToExpression() string {
+	if m.Exact != "" {
+		return m.Exact
+	}
+	if m.Prefix != "" {
+		return m.Prefix + "*"
+	}
+	if m.Suffix != "" {
+		return "*" + m.Suffix
+	}
+	if m.Presence {
+		return "*"
+	}
+	return ""
+}
+
 // KeyValuesMatch defines a key and a list of string matches for the key.
 type KeyValuesMatch struct {
 	// Key is a string which could be used to retrieve a value from somewhere.

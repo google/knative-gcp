@@ -18,15 +18,11 @@ package v1alpha1
 
 import "knative.dev/pkg/apis"
 
-var policybindingCondSet = apis.NewLivingConditionSet(PolicyBindingClassCompatible)
+var policybindingCondSet = apis.NewLivingConditionSet()
 
 const (
 	// PolicyBindingConditionReady has status True when the binding is active.
 	PolicyBindingConditionReady = apis.ConditionReady
-
-	// PolicyBindingClassCompatible has status True if the binding spec is
-	// compatible with the specified binding class.
-	PolicyBindingClassCompatible apis.ConditionType = "BindingClassCompatible"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -72,16 +68,4 @@ func (pbs *PolicyBindingStatus) MarkBindingFailure(reason, messageFormat string,
 // This implements psbinding.BindableStatus.
 func (pbs *PolicyBindingStatus) MarkBindingAvailable() {
 	policybindingCondSet.Manage(pbs).MarkTrue(PolicyBindingConditionReady)
-}
-
-// MarkBindingClassCompatible marks the policy binding's class
-// compatible status to True.
-func (pbs *PolicyBindingStatus) MarkBindingClassCompatible() {
-	policybindingCondSet.Manage(pbs).MarkTrue(PolicyBindingClassCompatible)
-}
-
-// MarkBindingClassIncompatible marks the policy binding's class
-// compatible status to False.
-func (pbs *PolicyBindingStatus) MarkBindingClassIncompatible(reason, messageFormat string, messageA ...interface{}) {
-	policybindingCondSet.Manage(pbs).MarkFalse(PolicyBindingClassCompatible, reason, messageFormat, messageA...)
 }

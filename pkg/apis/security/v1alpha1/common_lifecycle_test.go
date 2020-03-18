@@ -19,10 +19,7 @@ package v1alpha1
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
-	"knative.dev/pkg/apis"
 )
 
 func TestPolicyBindingStatusIsReady(t *testing.T) {
@@ -45,21 +42,10 @@ func TestPolicyBindingStatusIsReady(t *testing.T) {
 		wantConditionStatus: corev1.ConditionUnknown,
 		wantReady:           false,
 	}, {
-		name: "incomptiable binding class",
-		s: func() *PolicyBindingStatus {
-			s := &PolicyBindingStatus{}
-			s.InitializeConditions()
-			s.MarkBindingClassIncompatible("BindingClassIncompatible", "incompatible")
-			return s
-		}(),
-		wantConditionStatus: corev1.ConditionFalse,
-		wantReady:           false,
-	}, {
 		name: "binding failure",
 		s: func() *PolicyBindingStatus {
 			s := &PolicyBindingStatus{}
 			s.InitializeConditions()
-			s.MarkBindingClassCompatible()
 			s.MarkBindingFailure("BindingFailure", "failure")
 			return s
 		}(),
@@ -70,7 +56,6 @@ func TestPolicyBindingStatusIsReady(t *testing.T) {
 		s: func() *PolicyBindingStatus {
 			s := &PolicyBindingStatus{}
 			s.InitializeConditions()
-			s.MarkBindingClassCompatible()
 			s.MarkBindingAvailable()
 			return s
 		}(),
@@ -89,70 +74,6 @@ func TestPolicyBindingStatusIsReady(t *testing.T) {
 			got := tc.s.IsReady()
 			if got != tc.wantReady {
 				t.Errorf("unexpected readiness: want %v, got %v", tc.wantReady, got)
-			}
-		})
-	}
-}
-
-func TestPolicyBindingStatusGetCondition(t *testing.T) {
-	cases := []struct {
-		name      string
-		s         *PolicyBindingStatus
-		condQuery apis.ConditionType
-		want      *apis.Condition
-	}{{
-		name:      "uninitialized",
-		s:         &PolicyBindingStatus{},
-		condQuery: PolicyBindingClassCompatible,
-		want:      nil,
-	}, {
-		name: "initialized",
-		s: func() *PolicyBindingStatus {
-			s := &PolicyBindingStatus{}
-			s.InitializeConditions()
-			return s
-		}(),
-		condQuery: PolicyBindingClassCompatible,
-		want: &apis.Condition{
-			Type:   PolicyBindingClassCompatible,
-			Status: corev1.ConditionUnknown,
-		},
-	}, {
-		name: "not ready",
-		s: func() *PolicyBindingStatus {
-			s := &PolicyBindingStatus{}
-			s.InitializeConditions()
-			s.MarkBindingClassIncompatible("Incompatible", "test message")
-			return s
-		}(),
-		condQuery: PolicyBindingClassCompatible,
-		want: &apis.Condition{
-			Type:    PolicyBindingClassCompatible,
-			Status:  corev1.ConditionFalse,
-			Reason:  "Incompatible",
-			Message: "test message",
-		},
-	}, {
-		name: "ready",
-		s: func() *PolicyBindingStatus {
-			s := &PolicyBindingStatus{}
-			s.InitializeConditions()
-			s.MarkBindingClassCompatible()
-			return s
-		}(),
-		condQuery: PolicyBindingClassCompatible,
-		want: &apis.Condition{
-			Type:   PolicyBindingClassCompatible,
-			Status: corev1.ConditionTrue,
-		},
-	}}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.s.GetCondition(tc.condQuery)
-			ignoreTime := cmpopts.IgnoreFields(apis.Condition{},
-				"LastTransitionTime", "Severity")
-			if diff := cmp.Diff(tc.want, got, ignoreTime); diff != "" {
-				t.Errorf("unexpected condition (-want, +got) = %v", diff)
 			}
 		})
 	}

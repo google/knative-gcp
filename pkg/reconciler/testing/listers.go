@@ -44,10 +44,16 @@ import (
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	securitylisters "github.com/google/knative-gcp/pkg/client/listers/security/v1alpha1"
+
+	fakeistioclientset "github.com/google/knative-gcp/pkg/client/istio/clientset/versioned/fake"
+	istiov1beta1listers "github.com/google/knative-gcp/pkg/client/istio/listers/security/v1beta1"
+	istiov1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -59,6 +65,7 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakekubeclientset.AddToScheme,
 	fakeeventsclientset.AddToScheme,
 	fakeservingclientset.AddToScheme,
+	fakeistioclientset.AddToScheme,
 	sinkAddToScheme,
 }
 
@@ -108,6 +115,10 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 
 func (l *Listers) GetServingObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeservingclientset.AddToScheme)
+}
+
+func (l *Listers) GetIstioObjects() []runtime.Object {
+	return l.sorter.ObjectsForSchemeFunc(fakeistioclientset.AddToScheme)
 }
 
 func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
@@ -180,4 +191,20 @@ func (l *Listers) GetEndpointsLister() corev1listers.EndpointsLister {
 
 func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 	return corev1listers.NewConfigMapLister(l.indexerFor(&corev1.ConfigMap{}))
+}
+
+func (l *Listers) GetHTTPPolicyLister() securitylisters.HTTPPolicyLister {
+	return securitylisters.NewHTTPPolicyLister(l.indexerFor(&securityv1alpha1.HTTPPolicy{}))
+}
+
+func (l *Listers) GetHTTPPolicyBindingLister() securitylisters.HTTPPolicyBindingLister {
+	return securitylisters.NewHTTPPolicyBindingLister(l.indexerFor(&securityv1alpha1.HTTPPolicyBinding{}))
+}
+
+func (l *Listers) GetRequestAuthenticationLister() istiov1beta1listers.RequestAuthenticationLister {
+	return istiov1beta1listers.NewRequestAuthenticationLister(l.indexerFor(&istiov1beta1.RequestAuthentication{}))
+}
+
+func (l *Listers) GetAuthorizationPolicyLister() istiov1beta1listers.AuthorizationPolicyLister {
+	return istiov1beta1listers.NewAuthorizationPolicyLister(l.indexerFor(&istiov1beta1.AuthorizationPolicy{}))
 }
