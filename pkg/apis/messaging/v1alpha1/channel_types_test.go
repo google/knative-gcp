@@ -38,3 +38,16 @@ func TestChannelGetGroupVersionKind(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestChannelGetIdentity(t *testing.T) {
+	s := &Channel{
+		Spec: ChannelSpec{
+			ServiceAccount: "test@test",
+		},
+	}
+	want := "test@test"
+	got := s.GetIdentity()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}

@@ -25,6 +25,8 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
+
+	"github.com/google/knative-gcp/pkg/duck"
 )
 
 // +genclient
@@ -47,15 +49,23 @@ type Channel struct {
 }
 
 // Check that Channel can be validated, can be defaulted, and has immutable fields.
-var _ apis.Validatable = (*Channel)(nil)
-var _ apis.Defaultable = (*Channel)(nil)
-var _ runtime.Object = (*Channel)(nil)
-var _ resourcesemantics.GenericCRD = (*Channel)(nil)
+var (
+	_ apis.Validatable             = (*Channel)(nil)
+	_ apis.Defaultable             = (*Channel)(nil)
+	_ runtime.Object               = (*Channel)(nil)
+	_ resourcesemantics.GenericCRD = (*Channel)(nil)
+	_ duck.Identifiable            = (*Channel)(nil)
+)
 
 // ChannelSpec defines which subscribers have expressed interest in
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
+	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// If not specified, defaults to use secret.
+	// +optional
+	ServiceAccount string `json:"serviceAccount,omitempty"`
+
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format
@@ -116,6 +126,11 @@ type ChannelStatus struct {
 	// TopicID is the created topic ID used by the Channel.
 	// +optional
 	TopicID string `json:"topicId,omitempty"`
+}
+
+// Methods for identifiable interface
+func (c *Channel) GetIdentity() string {
+	return c.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

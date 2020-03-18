@@ -144,27 +144,28 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:3118732af9dc74f6a1a9e366fde67a872215deae8ba1e1c19003a4cdd584a39c"
+  digest = "1:79ad6be8821ead2ac1d4f46feb7c5d583b3579ef66dba380aa8e424baf7e86dd"
   name = "github.com/cloudevents/sdk-go"
   packages = [
-    ".",
-    "pkg/cloudevents",
-    "pkg/cloudevents/client",
-    "pkg/cloudevents/context",
-    "pkg/cloudevents/datacodec",
-    "pkg/cloudevents/datacodec/json",
-    "pkg/cloudevents/datacodec/text",
-    "pkg/cloudevents/datacodec/xml",
-    "pkg/cloudevents/observability",
-    "pkg/cloudevents/transport",
-    "pkg/cloudevents/transport/http",
-    "pkg/cloudevents/transport/pubsub",
-    "pkg/cloudevents/transport/pubsub/context",
-    "pkg/cloudevents/transport/pubsub/internal",
-    "pkg/cloudevents/types",
+    "legacy",
+    "legacy/pkg/cloudevents",
+    "legacy/pkg/cloudevents/client",
+    "legacy/pkg/cloudevents/context",
+    "legacy/pkg/cloudevents/datacodec",
+    "legacy/pkg/cloudevents/datacodec/json",
+    "legacy/pkg/cloudevents/datacodec/text",
+    "legacy/pkg/cloudevents/datacodec/xml",
+    "legacy/pkg/cloudevents/extensions",
+    "legacy/pkg/cloudevents/observability",
+    "legacy/pkg/cloudevents/transport",
+    "legacy/pkg/cloudevents/transport/http",
+    "legacy/pkg/cloudevents/transport/pubsub",
+    "legacy/pkg/cloudevents/transport/pubsub/context",
+    "legacy/pkg/cloudevents/transport/pubsub/internal",
+    "legacy/pkg/cloudevents/types",
   ]
   pruneopts = "NUT"
-  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
+  revision = "v2.0.0-preview3"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -270,7 +271,7 @@
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "NUT"
-  revision = "ba53fa10e72c7373ef8068e21c9f102f0c20a940"
+  revision = "955bf358a3d8d1ebfa6204338ef3fe364255cd85"
 
 [[projects]]
   digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
@@ -396,6 +397,17 @@
   pruneopts = "NUT"
   revision = "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
   version = "v1.4.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:a12508addb76a16593d8a3cee41d782fdf738f727d421f0bcc2dd2ee76821c01"
+  name = "github.com/lightstep/tracecontext.go"
+  packages = [
+    "traceparent",
+    "tracestate",
+  ]
+  pruneopts = "NUT"
+  revision = "1757c391b1acf4147823503f13e003115ea4e5df"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -533,7 +545,7 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:b7d98c64e9467a8e5e67509031cd6baee81fba090ba2c3d30df1ff3d02d1d035"
+  digest = "1:7c3ff97df88fd061f688c42cc4b99c6636bc256aa6f5c919042bd8cffbdbd71f"
   name = "go.opencensus.io"
   packages = [
     ".",
@@ -545,6 +557,7 @@
     "plugin/ocgrpc",
     "plugin/ochttp",
     "plugin/ochttp/propagation/b3",
+    "plugin/ochttp/propagation/tracecontext",
     "resource",
     "resource/resourcekeys",
     "stats",
@@ -746,13 +759,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:28edd202f6ded3959dd52460724680a1aa5217bb14b15e23dbc768b60a081ae9"
+  digest = "1:45993e9e6182bb04c580a6043510d8c11e6660e53da1b84a05eade412a8ddd33"
   name = "google.golang.org/api"
   packages = [
     "container/v1beta1",
     "googleapi",
     "googleapi/internal/uritemplates",
     "googleapi/transport",
+    "iam/v1",
     "internal",
     "internal/gensupport",
     "iterator",
@@ -1345,7 +1359,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e3fe9ad0866a881e5c4825c30a63e23b2b1fb8fc43fd872ee80b24403520a47d"
+  digest = "1:7a923ead30aab997932d99443cd19c712c108ec808acffc537c86555d65764ea"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1388,14 +1402,36 @@
     "pkg/client/clientset/versioned/typed/sources/v1alpha1/fake",
     "pkg/client/clientset/versioned/typed/sources/v1alpha2",
     "pkg/client/clientset/versioned/typed/sources/v1alpha2/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/configs",
+    "pkg/client/informers/externalversions/configs/v1alpha1",
+    "pkg/client/informers/externalversions/eventing",
+    "pkg/client/informers/externalversions/eventing/v1alpha1",
+    "pkg/client/informers/externalversions/eventing/v1beta1",
+    "pkg/client/informers/externalversions/flows",
+    "pkg/client/informers/externalversions/flows/v1alpha1",
+    "pkg/client/informers/externalversions/flows/v1beta1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/messaging",
+    "pkg/client/informers/externalversions/messaging/v1alpha1",
+    "pkg/client/informers/externalversions/messaging/v1beta1",
+    "pkg/client/informers/externalversions/sources",
+    "pkg/client/informers/externalversions/sources/v1alpha1",
+    "pkg/client/informers/externalversions/sources/v1alpha2",
     "pkg/client/injection/client",
     "pkg/client/injection/client/fake",
+    "pkg/client/injection/informers/eventing/v1alpha1/broker",
+    "pkg/client/injection/informers/factory",
+    "pkg/client/injection/reconciler/eventing/v1alpha1/broker",
     "pkg/client/listers/configs/v1alpha1",
     "pkg/client/listers/eventing/v1alpha1",
     "pkg/client/listers/eventing/v1beta1",
     "pkg/client/listers/flows/v1alpha1",
+    "pkg/client/listers/flows/v1beta1",
     "pkg/client/listers/messaging/v1alpha1",
+    "pkg/client/listers/messaging/v1beta1",
     "pkg/client/listers/sources/v1alpha1",
+    "pkg/client/listers/sources/v1alpha2",
     "pkg/configmap",
     "pkg/duck",
     "pkg/kncloudevents",
@@ -1419,11 +1455,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "eecdd36d74a6317de6d65af0196730bc8cf44907"
+  revision = "b11c2349ec272d4ec7b7a32a4f7f7ea26346b5ff"
 
 [[projects]]
   branch = "master"
-  digest = "1:087752cbad644085941d5dbe2a04ef0c285fed9205006a5a3d3816256ac0fecd"
+  digest = "1:7fce3b5a8d117763efbf4b6b9862940a5472d276022b0b324b39b70ef4fa77bd"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1446,6 +1482,8 @@
     "client/injection/kube/informers/batch/v1/job/fake",
     "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/core/v1/secret/fake",
+    "client/injection/kube/informers/core/v1/serviceaccount",
+    "client/injection/kube/informers/core/v1/serviceaccount/fake",
     "client/injection/kube/informers/factory",
     "client/injection/kube/informers/factory/fake",
     "codegen/cmd/injection-gen",
@@ -1502,11 +1540,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "1893541a0fac5885032c8ec170fd81234de13f4a"
+  revision = "42d1b005c814b8f9ea786ff89c90c91448c1417a"
 
 [[projects]]
   branch = "master"
-  digest = "1:41696c3f42bab4dbb1027f66e7666fad0c22e2f2648919f5391a6e7b4942b13a"
+  digest = "1:fb7db63670d75f351508b56cf97d5486f11b2d350b448b713bf4ffe877eac347"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1555,18 +1593,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "34717bfa04b014f07cf52e4338afc99c60a85dda"
+  revision = "0aff6164c7ecff80e9f9bcbd1334fbfba38c3404"
 
 [[projects]]
   branch = "master"
-  digest = "1:e5bd21467544cbd14cb25553c5c78eb2e0e93baf9288a3c2ebaf1cf1fdb0c95f"
+  digest = "1:115d2f6e72ee06327259bdba21d26f28c359c62464afd73538fbab66ae2b7698"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "3f96c9e98f31595fe33eaa2d95f5e2170522acd7"
+  revision = "885ae9f1bcfcb8a876fe9a3e1dca822a1efbfe1a"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1587,12 +1625,12 @@
     "cloud.google.com/go/pubsub",
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
-    "github.com/cloudevents/sdk-go",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub",
-    "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context",
+    "github.com/cloudevents/sdk-go/legacy",
+    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents",
+    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport",
+    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/http",
+    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub",
+    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub/context",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
@@ -1613,6 +1651,7 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/http2/h2c",
+    "google.golang.org/api/iam/v1",
     "google.golang.org/api/iterator",
     "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/cloud/audit",
@@ -1694,6 +1733,8 @@
     "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/secret",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake",
     "knative.dev/pkg/codegen/cmd/injection-gen",
     "knative.dev/pkg/configmap",
     "knative.dev/pkg/controller",

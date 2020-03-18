@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	corev1 "k8s.io/api/core/v1"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -50,13 +50,8 @@ func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.Fie
 		errs = errs.Also(apis.ErrMissingField("methodName"))
 	}
 
-	if current.Secret != nil {
-		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
-			err := validateSecret(current.Secret)
-			if err != nil {
-				errs = errs.Also(err.ViaField("secret"))
-			}
-		}
+	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccount); err != nil {
+		errs = errs.Also(err)
 	}
 
 	return errs
@@ -67,7 +62,7 @@ func (current *CloudAuditLogsSource) CheckImmutableFields(ctx context.Context, o
 		return nil
 	}
 
-	// Modification of Topic, Secret, Project, ServiceName, MethodName, and ResourceName are not allowed. Everything else is mutable.
+	// Modification of Topic, Secret, ServiceAccount, Project, ServiceName, MethodName, and ResourceName are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudAuditLogsSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {

@@ -65,10 +65,8 @@ required = [
   version = "kubernetes-1.16.4"
 
 [[override]]
-  # To match eventing. HEAD as of 02-19-2020.
-  # Should be moved to a release once there is a new one.
   name = "github.com/cloudevents/sdk-go"
-  revision = "427e8cf75237fdc7d4bb6c496398d7288efb8921"
+  revision = "v2.0.0-preview3"
 
 [prune]
   go-tests = true
@@ -105,3 +103,7 @@ required = [
 [[override]]
   name = "cloud.google.com/go"
   version = "0.44.3"
+
+[[constraint]]
+  branch = "master"
+  name = "google.golang.org/api"

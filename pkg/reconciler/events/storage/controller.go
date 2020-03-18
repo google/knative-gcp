@@ -19,18 +19,20 @@ package storage
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudstoragesourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudstoragesource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	cloudstoragesourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
+	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
 const (
@@ -55,11 +57,14 @@ func NewController(
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	cloudstoragesourceInformer := cloudstoragesourceinformers.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		storageLister:  cloudstoragesourceInformer.Lister(),
-		createClientFn: gstorage.NewClient,
+		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		Identity:             identity.NewIdentity(ctx),
+		storageLister:        cloudstoragesourceInformer.Lister(),
+		createClientFn:       gstorage.NewClient,
+		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
 	impl := cloudstoragesourcereconciler.NewImpl(ctx, r)
 
@@ -73,6 +78,11 @@ func NewController(
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudStorageSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

@@ -550,21 +550,9 @@ func TestAllCases(t *testing.T) {
 				newSink(),
 				newSecret(),
 			},
-			Key:        testNS + "/" + topicName,
-			WantEvents: nil,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTopic(topicName, testNS,
-					WithTopicUID(topicUID),
-					WithTopicSpec(pubsubv1alpha1.TopicSpec{
-						Project: testProject,
-						Topic:   testTopicID,
-						Secret:  &secret,
-					}),
-					WithTopicPropagationPolicy("CreateDelete"),
-					WithTopicTopicID(""),
-					WithTopicDeleted,
-				),
-			}},
+			Key:               testNS + "/" + topicName,
+			WantEvents:        nil,
+			WantStatusUpdates: nil,
 		}, {
 			Name: "fail to delete - policy CreateDelete",
 			Objects: []runtime.Object{

@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
@@ -33,28 +34,33 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 )
 
 const (
 	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
 
-	createFailedReason      = "PullSubscriptionCreateFailed"
-	getFailedReason         = "PullSubscriptionGetFailed"
-	reconciledSuccessReason = "CloudPubSubSourceReconciled"
-	reconciledFailedReason  = "PullSubscriptionReconcileFailed"
+	createFailedReason           = "PullSubscriptionCreateFailed"
+	getFailedReason              = "PullSubscriptionGetFailed"
+	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
+	reconciledSuccessReason      = "CloudPubSubSourceReconciled"
+	reconciledFailedReason       = "PullSubscriptionReconcileFailed"
+	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler is the controller implementation for the CloudPubSubSource source.
 type Reconciler struct {
 	*reconciler.Base
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// pubsubLister for reading cloudpubsubsources.
 	pubsubLister listers.CloudPubSubSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
-
-	receiveAdapterName string
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
+	receiveAdapterName   string
 }
 
 // Check that our Reconciler implements Interface.
@@ -65,6 +71,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 
 	pubsub.Status.InitializeConditions()
 	pubsub.Status.ObservedGeneration = pubsub.Generation
+
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if pubsub.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, pubsub.Spec.Project, pubsub); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudPubSubSource workload identity: %s", err.Error())
+		}
+	}
 
 	ps, event := r.reconcilePullSubscription(ctx, pubsub)
 	if event != nil {
@@ -110,4 +123,15 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 		}
 	}
 	return ps, nil
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) pkgreconciler.Event {
+	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if pubsub.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, pubsub.Spec.Project, pubsub); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudPubSubSource workload identity: %s", err.Error())
+		}
+	}
+	return nil
 }

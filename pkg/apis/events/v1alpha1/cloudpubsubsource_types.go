@@ -50,6 +50,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
 	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
 )
 
@@ -155,4 +156,9 @@ func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
+}
+
+// Methods for identifiable interface
+func (ps *CloudPubSubSource) GetIdentity() string {
+	return ps.Spec.ServiceAccount
 }

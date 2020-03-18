@@ -29,14 +29,15 @@ import (
 // PullSubscriptionArgs are the arguments needed to create a Channel Subscriber.
 // Every field is required.
 type PullSubscriptionArgs struct {
-	Owner       kmeta.OwnerRefable
-	Name        string
-	Project     string
-	Topic       string
-	Secret      *corev1.SecretKeySelector
-	Labels      map[string]string
-	Annotations map[string]string
-	Subscriber  duckv1alpha1.SubscriberSpec
+	Owner          kmeta.OwnerRefable
+	Name           string
+	Project        string
+	Topic          string
+	ServiceAccount string
+	Secret         *corev1.SecretKeySelector
+	Labels         map[string]string
+	Annotations    map[string]string
+	Subscriber     duckv1alpha1.SubscriberSpec
 }
 
 // MakePullSubscription generates (but does not insert into K8s) the
@@ -44,9 +45,10 @@ type PullSubscriptionArgs struct {
 func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription {
 
 	spec := v1alpha1.PullSubscriptionSpec{
-		Secret:  args.Secret,
-		Project: args.Project,
-		Topic:   args.Topic,
+		ServiceAccount: args.ServiceAccount,
+		Secret:         args.Secret,
+		Project:        args.Project,
+		Topic:          args.Topic,
 	}
 
 	reply := args.Subscriber.ReplyURI

@@ -49,6 +49,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudAuditLogsSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudAuditLogsSource)(nil)
 	_                              = duck.VerifyType(&CloudAuditLogsSource{}, &duckv1.Conditions{})
 )
 
@@ -121,6 +122,11 @@ func (s *CloudAuditLogsSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 	return &auditLogsSourceCondSet
+}
+
+// Methods for identifiable interface
+func (s *CloudAuditLogsSource) GetIdentity() string {
+	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

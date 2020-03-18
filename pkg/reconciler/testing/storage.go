@@ -82,6 +82,12 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
+func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
+	return func(ps *v1alpha1.CloudStorageSource) {
+		ps.Spec.ServiceAccount = gServiceAccount
+	}
+}
+
 // WithCloudStorageSourceTopicFailed marks the condition that the
 // topic is False
 func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {

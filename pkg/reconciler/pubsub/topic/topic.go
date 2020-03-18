@@ -257,7 +257,6 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) re
 		if err := r.deleteTopic(ctx, topic); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteTopicFailed, "Failed to delete Pub/Sub topic: %s", err.Error())
 		}
-		topic.Status.TopicID = ""
 	}
 	return nil
 }

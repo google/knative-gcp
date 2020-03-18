@@ -28,12 +28,13 @@ import (
 // TopicArgs are the arguments needed to create a Channel Topic.
 // Every field is required.
 type TopicArgs struct {
-	Owner   kmeta.OwnerRefable
-	Name    string
-	Project string
-	Topic   string
-	Secret  *corev1.SecretKeySelector
-	Labels  map[string]string
+	Owner          kmeta.OwnerRefable
+	Name           string
+	Project        string
+	Topic          string
+	ServiceAccount string
+	Secret         *corev1.SecretKeySelector
+	Labels         map[string]string
 }
 
 // MakeInvoker generates (but does not insert into K8s) the Topic for Channels.
@@ -46,6 +47,7 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: v1alpha1.TopicSpec{
+			ServiceAccount:    args.ServiceAccount,
 			Secret:            args.Secret,
 			Project:           args.Project,
 			Topic:             args.Topic,

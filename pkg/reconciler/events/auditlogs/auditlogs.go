@@ -19,21 +19,24 @@ package auditlogs
 import (
 	"context"
 
+	"cloud.google.com/go/logging/logadmin"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
+
+	"knative.dev/pkg/logging"
+	"knative.dev/pkg/reconciler"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudauditlogssourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
-	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-
-	"cloud.google.com/go/logging/logadmin"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
 const (
@@ -42,17 +45,22 @@ const (
 
 	deletePubSubFailed           = "PubSubDeleteFailed"
 	deleteSinkFailed             = "SinkDeleteFailed"
+	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	reconciledFailedReason       = "SinkReconcileFailed"
 	reconciledPubSubFailedReason = "PubSubReconcileFailed"
 	reconciledSuccessReason      = "CloudAuditLogsSourceReconciled"
+	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 type Reconciler struct {
 	*pubsubreconciler.PubSubBase
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	auditLogsSourceLister  listers.CloudAuditLogsSourceLister
 	logadminClientProvider glogadmin.CreateFn
 	pubsubClientProvider   gpubsub.CreateFn
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.
@@ -63,6 +71,13 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1alpha1.CloudAuditLo
 
 	s.Status.InitializeConditions()
 	s.Status.ObservedGeneration = s.Generation
+
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if s.Spec.ServiceAccount != "" {
+		if _, err := c.Identity.ReconcileWorkloadIdentity(ctx, s.Spec.Project, s); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudAuditLogsSource workload identity: %s", err.Error())
+		}
+	}
 
 	topic := resources.GenerateTopicName(s)
 	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic, resourceGroup)
@@ -85,12 +100,12 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1alpha1.CloudAuditLo
 func (c *Reconciler) reconcileSink(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) (string, error) {
 	sink, err := c.ensureSinkCreated(ctx, s)
 	if err != nil {
-		s.Status.MarkSinkNotReady("SinkCreateFailed", "failed to ensure creation of logging sink: %v", err.Error())
+		s.Status.MarkSinkNotReady("SinkCreateFailed", "failed to ensure creation of logging sink: %s", err.Error())
 		return "", err
 	}
 	err = c.ensureSinkIsPublisher(ctx, s, sink)
 	if err != nil {
-		s.Status.MarkSinkNotReady("SinkNotPublisher", "failed to ensure sink has pubsub.publisher permission on source topic: %v", err.Error())
+		s.Status.MarkSinkNotReady("SinkNotPublisher", "failed to ensure sink has pubsub.publisher permission on source topic: %s", err.Error())
 		return "", err
 	}
 	return sink.ID, nil
@@ -170,6 +185,14 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.CloudAuditLogsS
 }
 
 func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) reconciler.Event {
+	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if s.Spec.ServiceAccount != "" {
+		if err := c.Identity.DeleteWorkloadIdentity(ctx, s.Spec.Project, s); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudAuditLogsSource workload identity: %s", err.Error())
+		}
+	}
+
 	if err := c.deleteSink(ctx, s); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, deleteSinkFailed, "Failed to delete Stackdriver sink: %s", err.Error())
 	}
