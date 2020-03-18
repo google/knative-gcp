@@ -12,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-br-default-channel
+  namespace: cloud-run-events
 data:
-  # Configuration for defaulting channels that do not specify CRD implementations.
-  default-br-config: |
-    clusterDefault:
-      brokerClass: ChannelBasedBroker
-      apiVersion: v1
-      kind: ConfigMap
-      name: config-br-default-channel
-      namespace: cloud-run-events
+  channelTemplateSpec: |
+    apiVersion: messaging.cloud.google.com/v1alpha1
+    kind: Channel
+    Spec:
+#  # If running with workload identity enabled, update spec.serviceAccount.
+#      serviceAccount: service-account@project-id@.iam.gserviceaccount.com
+#  # If running with secret, here is the default secret name and key, change this if required.
+#      secret:
+#        name: google-cloud-key
+#        key: key.json

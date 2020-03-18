@@ -15,6 +15,19 @@ Channel.
 
 ## Deployment
 
+1.  Verity the configmap `config-br-default-channel` is in the `cloud-run-events` namespace.
+    ```shell
+    kubectl get configmap config-br-default-channel -n cloud-run-events
+    ```
+    By default, it is assumed to use default secret. Modify [`config-br-default-channel`](config-br-default-channel.yaml) 
+    to use different method and apply it.
+       1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+        
+       1. If you are using non-default secret, update `project` and `secret`.
+       ```shell
+       kubectl apply -f config-br-default-channel.yaml
+       ```
+    
 1.  Patch the configmap in the `knative-eventing` namespace to use the Pub/Sub
     `Channel` as the
     [default channel](https://knative.dev/docs/eventing/channel-based-broker/)
@@ -45,7 +58,7 @@ Channel.
 
     ```shell
     NAME      READY   REASON   URL                                                        AGE
-    default   True             http://default-broker.event-example.svc.cluster.local      1m
+    default   True             http://default-broker.default.svc.cluster.local      1m
     ```
 
     When the `Broker` has the `READY=True` state, it can start processing any
