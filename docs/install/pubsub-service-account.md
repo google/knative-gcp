@@ -61,7 +61,7 @@ Service Account.
             --identity-namespace=${PROJECT_ID}.svc.id.goog
            ``` 
         1. Update `spec.serviceAccount` with [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-         when creating resources. Check docs to see [examples](https://github.com/google/knative-gcp/tree/master/docs/examples) per resources.
+         when creating resources. Check docs to see [example](https://github.com/google/knative-gcp/tree/master/docs/examples) for each resource.
     1. Export service account keys and store them as Kubernetes Secrets.
     
         1.  Download a new JSON private key for that Service Account. **Be sure not

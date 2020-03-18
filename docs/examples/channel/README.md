@@ -17,7 +17,7 @@ intended to provide a durable messaging solution.
 
 1. Create the `Channel` in [channel.yaml](channel.yaml).
    
-     1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled Service Account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
+     1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
       
      1. If you are using non-default secret, update `project` and `secret`.
    ```shell
