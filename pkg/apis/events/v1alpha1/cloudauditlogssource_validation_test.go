@@ -50,7 +50,7 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
-	validServiceAccountName   = "test@test.iam.gserviceaccount.com"
+	validServiceAccountName   = "test123@test123.iam.gserviceaccount.com"
 	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
 )
 

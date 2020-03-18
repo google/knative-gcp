@@ -295,7 +295,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com`,
+				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
 				Paths:   []string{"serviceAccount"},
 			}
 			return fe
