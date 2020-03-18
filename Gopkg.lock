@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:79ad6be8821ead2ac1d4f46feb7c5d583b3579ef66dba380aa8e424baf7e86dd"
+  digest = "1:bc6882c0c382aa5e5225bebed04aebc2525843861ce7ac83bd039328a6465967"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "legacy",
@@ -163,6 +163,20 @@
     "legacy/pkg/cloudevents/transport/pubsub/context",
     "legacy/pkg/cloudevents/transport/pubsub/internal",
     "legacy/pkg/cloudevents/types",
+    "pkg/binding",
+    "pkg/binding/format",
+    "pkg/binding/spec",
+    "pkg/binding/transformer",
+    "pkg/context",
+    "pkg/event",
+    "pkg/event/datacodec",
+    "pkg/event/datacodec/json",
+    "pkg/event/datacodec/text",
+    "pkg/event/datacodec/xml",
+    "pkg/observability",
+    "pkg/protocol",
+    "pkg/protocol/http",
+    "pkg/types",
   ]
   pruneopts = "NUT"
   revision = "v2.0.0-preview3"
@@ -1359,7 +1373,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a923ead30aab997932d99443cd19c712c108ec808acffc537c86555d65764ea"
+  digest = "1:d14b6f73c04404d74e4d01664ecbca4b529839ff369c3ff585de6880ae0695b7"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1455,7 +1469,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "b11c2349ec272d4ec7b7a32a4f7f7ea26346b5ff"
+  revision = "230deb8e77bd0157dfd6b796064962c2a90d52c2"
 
 [[projects]]
   branch = "master"
@@ -1544,7 +1558,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fb7db63670d75f351508b56cf97d5486f11b2d350b448b713bf4ffe877eac347"
+  digest = "1:678187872ff6b5e2e9e1b4022b2784ebc585fe51f5afe1879a2c58d55d25f692"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1593,7 +1607,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0aff6164c7ecff80e9f9bcbd1334fbfba38c3404"
+  revision = "0264fb04288d994cbfd847feea9491d86d739f6d"
 
 [[projects]]
   branch = "master"
@@ -1604,7 +1618,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "885ae9f1bcfcb8a876fe9a3e1dca822a1efbfe1a"
+  revision = "244b563932f959a3e18c1e03cffed8798f52d59d"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
