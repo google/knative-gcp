@@ -25,6 +25,7 @@ import (
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
 
 // PublisherArgs are the arguments needed to create a Topic publisher.
@@ -53,34 +54,51 @@ func DefaultSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
+func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
+	publisherContainer := corev1.Container{
+		Image: args.Image,
+		Env: []corev1.EnvVar{{
+			Name:  "PROJECT_ID",
+			Value: args.Topic.Spec.Project,
+		}, {
+			Name:  "PUBSUB_TOPIC_ID",
+			Value: args.Topic.Spec.Topic,
+		}, {
+			Name:  "K_TRACING_CONFIG",
+			Value: args.TracingConfig,
+		}},
+	}
+
+	// If GCP service account is specified, use that service account as credential.
+	if args.Topic.Spec.ServiceAccount != "" {
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.ServiceAccount)
+		return &corev1.PodSpec{
+			ServiceAccountName: kServiceAccountName,
+			Containers: []corev1.Container{
+				publisherContainer,
+			},
+		}
+	}
+
+	// Otherwise, use secret as credential.
 	secret := args.Topic.Spec.Secret
 	if secret == nil {
 		secret = DefaultSecretSelector()
 	}
-
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 
-	podSpec := corev1.PodSpec{
-		Containers: []corev1.Container{{
-			Image: args.Image,
-			Env: []corev1.EnvVar{{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: credsFile,
-			}, {
-				Name:  "PROJECT_ID",
-				Value: args.Topic.Spec.Project,
-			}, {
-				Name:  "PUBSUB_TOPIC_ID",
-				Value: args.Topic.Spec.Topic,
-			}, {
-				Name:  "K_TRACING_CONFIG",
-				Value: args.TracingConfig,
-			}},
-			VolumeMounts: []corev1.VolumeMount{{
-				Name:      credsVolume,
-				MountPath: credsMountPath,
-			}}},
+	publisherContainer.Env = append(publisherContainer.Env, corev1.EnvVar{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: credsFile,
+	})
+	publisherContainer.VolumeMounts = []corev1.VolumeMount{{
+		Name:      credsVolume,
+		MountPath: credsMountPath,
+	}}
+
+	return &corev1.PodSpec{
+		Containers: []corev1.Container{
+			publisherContainer,
 		},
 		Volumes: []corev1.Volume{{
 			Name: credsVolume,
@@ -91,7 +109,6 @@ func makePublisherPodSpec(args *PublisherArgs) corev1.PodSpec {
 			},
 		}},
 	}
-	return podSpec
 }
 
 // MakePublisher generates (but does not insert into K8s) the Invoker Deployment for
@@ -113,7 +130,7 @@ func MakePublisher(args *PublisherArgs) *servingv1.Service {
 						Labels: args.Labels,
 					},
 					Spec: servingv1.RevisionSpec{
-						PodSpec: podSpec,
+						PodSpec: *podSpec,
 					},
 				},
 			},

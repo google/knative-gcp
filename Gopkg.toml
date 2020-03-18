@@ -103,3 +103,7 @@ required = [
 [[override]]
   name = "cloud.google.com/go"
   version = "0.44.3"
+
+[[constraint]]
+  branch = "master"
+  name = "google.golang.org/api"

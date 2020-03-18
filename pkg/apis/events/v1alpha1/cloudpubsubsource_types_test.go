@@ -23,6 +23,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -86,6 +87,21 @@ func TestGetRetentionDuration_default(t *testing.T) {
 	s := &CloudPubSubSourceSpec{}
 	got := s.GetRetentionDuration()
 
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudPubSubSourceGetIdentity(t *testing.T) {
+	s := &CloudPubSubSource{
+		Spec: CloudPubSubSourceSpec{
+			PubSubSpec: v1alpha1.PubSubSpec{
+				ServiceAccount: "test@test",
+			},
+		},
+	}
+	want := "test@test"
+	got := s.GetIdentity()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

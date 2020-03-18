@@ -50,6 +50,8 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
+	validServiceAccountName   = "test@test.iam.gserviceaccount.com"
+	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
 )
 
 func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
@@ -77,12 +79,52 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
+		"bad sink, name": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.Sink.Ref.Name = ""
+				return *obj
+			}(),
+			error: true,
+		},
+		"bad sink, empty": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.Sink = duckv1.Destination{}
+				return *obj
+			}(),
+			error: true,
+		},
+		"nil secret": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				return *obj
+			}(),
+			error: false,
+		},
 		"invalid scheduler secret, missing key": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.Secret = &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: "test-secret"},
 				}
+				return *obj
+			}(),
+			error: true,
+		},
+		"invalid GCP service account": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.ServiceAccount = invalidServiceAccountName
+				return *obj
+			}(),
+			error: true,
+		},
+		"have GCP service account and secret at the same time": {
+			spec: func() CloudAuditLogsSourceSpec {
+				obj := auditLogsSourceSpec.DeepCopy()
+				obj.ServiceAccount = invalidServiceAccountName
+				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
 			error: true,
@@ -149,6 +191,27 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
 					},
 					Project: "some-other-project",
+					SourceSpec: duckv1.SourceSpec{
+						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
+					},
+				},
+				MethodName:   auditLogsSourceSpec.MethodName,
+				ResourceName: auditLogsSourceSpec.ResourceName,
+				ServiceName:  auditLogsSourceSpec.ServiceName,
+			},
+			allowed: false,
+		},
+		"ServiceAccount changed": {
+			orig: &auditLogsSourceSpec,
+			updated: CloudAuditLogsSourceSpec{
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
+						},
+						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
+					},
+					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
 					},

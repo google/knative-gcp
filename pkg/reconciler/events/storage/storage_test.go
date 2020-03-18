@@ -42,6 +42,7 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -69,7 +70,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -86,6 +88,8 @@ var (
 		},
 		Key: "key.json",
 	}
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
@@ -156,6 +160,51 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "k8s service account created",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, gServiceAccount),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudStorageSource",
+					Name:               "my-test-storage",
+					UID:                storageUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com: spec.serviceAccount`, storageName),
+		},
+		WantErr: true,
 	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
@@ -837,6 +886,25 @@ func TestAllCases(t *testing.T) {
 			},
 			WantStatusUpdates: nil,
 		}, {
+			Name: "delete fails with getting k8s service account error",
+			Objects: []runtime.Object{
+				NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
+					WithDeletionTimestamp(),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + storageName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			},
+			WantStatusUpdates: nil,
+		}, {
 			Name: "successfully deleted storage",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
@@ -898,9 +966,11 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:     pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			storageLister:  listers.GetCloudStorageSourceLister(),
-			createClientFn: gstorage.TestClientCreator(testData["storage"]),
+			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:             identity.NewIdentity(ctx),
+			storageLister:        listers.GetCloudStorageSourceLister(),
+			createClientFn:       gstorage.TestClientCreator(testData["storage"]),
+			serviceAccountLister: listers.GetServiceAccountLister(),
 		}
 		return cloudstoragesource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudStorageSourceLister(), r.Recorder, r)
 	}))

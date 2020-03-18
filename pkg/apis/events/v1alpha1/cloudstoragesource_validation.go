@@ -18,9 +18,7 @@ package v1alpha1
 
 import (
 	"context"
-
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -49,26 +47,10 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 		errs = errs.Also(apis.ErrMissingField("bucket"))
 	}
 
-	if current.Secret != nil {
-		if !equality.Semantic.DeepEqual(current.Secret, &corev1.SecretKeySelector{}) {
-			err := validateSecret(current.Secret)
-			if err != nil {
-				errs = errs.Also(err.ViaField("secret"))
-			}
-		}
+	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccount); err != nil {
+		errs = errs.Also(err)
 	}
 
-	return errs
-}
-
-func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
-	var errs *apis.FieldError
-	if secret.Name == "" {
-		errs = errs.Also(apis.ErrMissingField("name"))
-	}
-	if secret.Key == "" {
-		errs = errs.Also(apis.ErrMissingField("key"))
-	}
 	return errs
 }
 
@@ -76,7 +58,7 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
-	// Modification of EventType, Secret, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
+	// Modification of EventType, Secret, ServiceAccount, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
 			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {

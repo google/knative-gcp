@@ -49,11 +49,12 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret:      args.Spec.Secret,
-			Project:     args.Spec.Project,
-			Topic:       args.Topic,
-			AdapterType: args.AdapterType,
-			Mode:        args.Mode,
+			ServiceAccount: args.Spec.ServiceAccount,
+			Secret:         args.Spec.Secret,
+			Project:        args.Spec.Project,
+			Topic:          args.Topic,
+			AdapterType:    args.AdapterType,
+			Mode:           args.Mode,
 			SourceSpec: duckv1.SourceSpec{
 				Sink: args.Spec.SourceSpec.Sink,
 			},

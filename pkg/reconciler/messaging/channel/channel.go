@@ -20,14 +20,15 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"go.uber.org/zap"
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -38,24 +39,32 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
 )
 
 const (
+	resourceGroup = "channels.messaging.cloud.google.com"
+
 	reconciledSuccessReason                 = "ChannelReconciled"
 	reconciledTopicFailedReason             = "TopicReconcileFailed"
+	deleteWorkloadIdentityFailed            = "WorkloadIdentityDeleteFailed"
 	reconciledSubscribersFailedReason       = "SubscribersReconcileFailed"
 	reconciledSubscribersStatusFailedReason = "SubscribersStatusReconcileFailed"
+	workloadIdentityFailed                  = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler implements controller.Reconciler for Channel resources.
 type Reconciler struct {
 	*reconciler.Base
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// listers index properties about resources
 	channelLister          listers.ChannelLister
 	topicLister            pubsublisters.TopicLister
 	pullSubscriptionLister pubsublisters.PullSubscriptionLister
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.
@@ -66,6 +75,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 
 	channel.Status.InitializeConditions()
 	channel.Status.ObservedGeneration = channel.Generation
+
+	// If GCP ServiceAccount is provided, reconcile workload identity.
+	if channel.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Channel workload identity: %s", err.Error())
+		}
+	}
 
 	// 1. Create the Topic.
 	topic, err := r.reconcileTopic(ctx, channel)
@@ -145,14 +161,15 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		genName := resources.GenerateSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:       channel,
-			Name:        genName,
-			Project:     channel.Spec.Project,
-			Topic:       channel.Status.TopicID,
-			Secret:      channel.Spec.Secret,
-			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
-			Subscriber:  s,
+			Owner:          channel,
+			Name:           genName,
+			Project:        channel.Spec.Project,
+			Topic:          channel.Status.TopicID,
+			ServiceAccount: channel.Spec.ServiceAccount,
+			Secret:         channel.Spec.Secret,
+			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Subscriber:     s,
 		})
 		ps, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
 		if apierrs.IsAlreadyExists(err) {
@@ -179,14 +196,15 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		genName := resources.GenerateSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:       channel,
-			Name:        genName,
-			Project:     channel.Spec.Project,
-			Topic:       channel.Status.TopicID,
-			Secret:      channel.Spec.Secret,
-			Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
-			Subscriber:  s,
+			Owner:          channel,
+			Name:           genName,
+			Project:        channel.Spec.Project,
+			Topic:          channel.Status.TopicID,
+			ServiceAccount: channel.Spec.ServiceAccount,
+			Secret:         channel.Spec.Secret,
+			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Subscriber:     s,
 		})
 
 		existingPs, found := pullsubs[genName]
@@ -292,12 +310,13 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		return topic, nil
 	}
 	t := resources.MakeTopic(&resources.TopicArgs{
-		Owner:   channel,
-		Name:    resources.GeneratePublisherName(channel),
-		Project: channel.Spec.Project,
-		Secret:  channel.Spec.Secret,
-		Topic:   resources.GenerateTopicID(channel.UID),
-		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Owner:          channel,
+		Name:           resources.GeneratePublisherName(channel),
+		Project:        channel.Spec.Project,
+		ServiceAccount: channel.Spec.ServiceAccount,
+		Secret:         channel.Spec.Secret,
+		Topic:          resources.GenerateTopicID(channel.UID),
+		Labels:         resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 	})
 
 	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(t)
@@ -354,4 +373,16 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscripti
 		message = fmt.Sprintf("PullSubscription %s is not ready", ps.Name)
 	}
 	return ready, message
+}
+
+func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
+	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if channel.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Channel workload identity: %s", err.Error())
+		}
+	}
+
+	return nil
 }

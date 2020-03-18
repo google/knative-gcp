@@ -58,6 +58,11 @@ type PullSubscriptionSpec struct {
 	// inherits duckv1.SourceSpec.
 	duckv1.SourceSpec `json:",inline"`
 
+	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// If not specified, defaults to use secret.
+	// +optional
+	ServiceAccount string `json:"serviceAccount,omitempty"`
+
 	// Secret is the credential to use to create and poll the PullSubscription
 	// Subscription. The value of the secret entry must be a service account
 	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).

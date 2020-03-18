@@ -18,13 +18,13 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"testing"
-
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 
@@ -39,8 +39,8 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-
 	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
@@ -62,6 +62,9 @@ const (
 )
 
 var (
+	trueVal  = true
+	falseVal = false
+
 	topicDNS = channelName + ".mynamespace.svc.cluster.local"
 	topicURI = "http://" + topicDNS + "/"
 
@@ -76,11 +79,26 @@ var (
 
 	replyDNS = "reply.mynamespace.svc.cluster.local"
 	replyURI = apis.HTTP(replyDNS)
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
 	// Add types to scheme
 	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+}
+
+func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	var fname string
+	if add {
+		fname = fmt.Sprintf("%q", resourceGroup)
+	}
+	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
 }
 
 func TestAllCases(t *testing.T) {
@@ -92,6 +110,51 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
+	}, {
+		Name: "k8s service account created",
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithChannelGCPServiceAccount(gServiceAccount),
+			),
+		},
+		Key: testNS + "/" + channelName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com: spec.serviceAccount`, channelName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelUID(channelUID),
+				WithInitChannelConditions,
+				WithChannelSpec(v1alpha1.ChannelSpec{
+					Project: testProject,
+				}),
+				WithChannelGCPServiceAccount(gServiceAccount),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, gServiceAccount),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "messaging.cloud.google.com/v1alpha1",
+					Kind:               "Channel",
+					Name:               "chan",
+					UID:                channelUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
+		WantErr: true,
 	}, {
 		Name: "create topic",
 		Objects: []runtime.Object{
@@ -105,6 +168,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 			Eventf(corev1.EventTypeNormal, "TopicCreated", "Created Topic %q", testTopicName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
@@ -125,6 +189,9 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			newTopic(),
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
 	}, {
 		Name: "topic ready",
 		Objects: []runtime.Object{
@@ -140,6 +207,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -156,6 +224,9 @@ func TestAllCases(t *testing.T) {
 				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
 	}, {
 		Name: "the status of topic is false",
 		Objects: []runtime.Object{
@@ -171,6 +242,7 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNS + "/" + channelName,
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -188,6 +260,9 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, channelName, true),
+		},
 	},
 		{
 			Name: "new subscriber",
@@ -209,6 +284,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
@@ -234,6 +310,9 @@ func TestAllCases(t *testing.T) {
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
+			},
 		}, {
 			Name: "update subscriber",
 			Objects: []runtime.Object{
@@ -258,6 +337,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeNormal, "SubscriberUpdated", "Updated Subscriber %q", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
@@ -283,6 +363,9 @@ func TestAllCases(t *testing.T) {
 			WantUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
 			}},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
+			},
 		}, {
 			Name: "subscriber already exists owned by other channel",
 			Objects: []runtime.Object{
@@ -307,6 +390,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
 			},
@@ -329,6 +413,9 @@ func TestAllCases(t *testing.T) {
 			}},
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
 			},
 		}, {
 			Name: "subscriber already exists in status owned by other channel",
@@ -357,11 +444,15 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeWarning, "SubscriberNotOwned", "Subscriber %q is not owned by this channel", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeWarning, reconciledSubscribersFailedReason, "Reconcile Subscribers failed with: channel %q does not own subscriber %q", channelName, "cre-sub-testsubscription-abc-123"),
 			},
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
 			},
 		}, {
 			Name: "update - subscriber missing",
@@ -386,11 +477,15 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
 			WantCreates: []runtime.Object{
 				newPullSubscription(eventingduck.SubscriberSpec{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI}),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
 			},
 		}, {
 			Name: "delete subscriber",
@@ -414,6 +509,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
 				Eventf(corev1.EventTypeNormal, "SubscriberDeleted", "Deleted Subscriber %q", "cre-sub-testsubscription-abc-123"),
 				Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Channel reconciled: "%s/%s"`, testNS, channelName),
 			},
@@ -438,15 +534,39 @@ func TestAllCases(t *testing.T) {
 					Name: "cre-sub-testsubscription-abc-123",
 				},
 			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, channelName, true),
+			},
+		}, {
+			Name: "delete channel failed with getting k8s service account error",
+			Objects: []runtime.Object{
+				NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelDefaults,
+					WithChannelGCPServiceAccount(gServiceAccount),
+					WithChannelDeletionTimestamp,
+				),
+			},
+			Key: testNS + "/" + channelName,
+			WantEvents: []string{
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			},
+			WantStatusUpdates: nil,
 		}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:               identity.NewIdentity(ctx),
 			channelLister:          listers.GetChannelLister(),
 			topicLister:            listers.GetTopicLister(),
 			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))

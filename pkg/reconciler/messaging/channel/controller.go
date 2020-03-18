@@ -19,16 +19,18 @@ package channel
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
 	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 )
 
 const (
@@ -51,12 +53,15 @@ func NewController(
 
 	topicInformer := topicinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformer.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:               identity.NewIdentity(ctx),
 		channelLister:          channelInformer.Lister(),
 		topicLister:            topicInformer.Lister(),
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
+		serviceAccountLister:   serviceAccountInformer.Lister(),
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 
@@ -70,6 +75,11 @@ func NewController(
 
 	pullSubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Channel")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

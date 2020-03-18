@@ -48,6 +48,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
 	_                              = duck.VerifyType(&CloudStorageSource{}, &duckv1.Conditions{})
 )
 
@@ -140,6 +141,11 @@ func (s *CloudStorageSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
+}
+
+// Methods for identifiable interface
+func (s *CloudStorageSource) GetIdentity() string {
+	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

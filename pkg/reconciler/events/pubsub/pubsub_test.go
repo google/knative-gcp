@@ -19,9 +19,8 @@ package pubsub
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
-
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,8 +37,9 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
-
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -55,7 +55,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -72,6 +73,8 @@ var (
 		},
 		Key: "key.json",
 	}
+
+	gServiceAccount = "test@test"
 )
 
 func init() {
@@ -89,6 +92,19 @@ func ownerRef() metav1.OwnerReference {
 		Controller:         &trueVal,
 		BlockOwnerDeletion: &trueVal,
 	}
+}
+
+func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
+	action := clientgotesting.PatchActionImpl{}
+	action.Name = name
+	action.Namespace = namespace
+	var fname string
+	if add {
+		fname = fmt.Sprintf("%q", resourceGroup)
+	}
+	patch := `{"metadata":{"finalizers":[` + fname + `],"resourceVersion":""}}`
+	action.Patch = []byte(patch)
+	return action
 }
 
 func newSink() *unstructured.Unstructured {
@@ -131,6 +147,52 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
+		Name: "k8s serviceaccount created",
+		Objects: []runtime.Object{
+			NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + pubsubName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceStatusObservedGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithInitCloudPubSubSourceConditions,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewServiceAccount("test", testNS, gServiceAccount),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewServiceAccount("test", testNS, gServiceAccount,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					Name:               pubsubName,
+					UID:                pubsubUID,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
+			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: [A-Za-z0-9-]+@[A-Za-z0-9-]+\.iam.gserviceaccount.com: spec.serviceAccount`, pubsubName),
+		},
+		WantErr: true,
+	}, {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
@@ -170,7 +232,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
@@ -197,7 +263,11 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourcePullSubscriptionFailed("PullSubscriptionFalse", "status false test message"),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
@@ -224,7 +294,11 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionUnknown", "status unknown test message"),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
 		},
 	}, {
@@ -270,10 +344,32 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourcePullSubscriptionReady(),
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
 			),
 		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, pubsubName, true),
+		},
 		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
 			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+		},
+	}, {
+		Name: "pullsubscription deleted with getting k8s service account error",
+		Objects: []runtime.Object{
+			NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceDeletionTimestamp,
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+			),
+			newSink(),
+		},
+		Key:               testNS + "/" + pubsubName,
+		WantStatusUpdates: nil,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
 		},
 	}}
 
@@ -281,9 +377,11 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:               identity.NewIdentity(ctx),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
 			receiveAdapterName:     receiveAdapterName,
+			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)
 	}))
