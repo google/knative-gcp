@@ -120,10 +120,9 @@ func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace stri
 	}
 	// Specify subject either by an object reference or by label selector.
 	// Cannot be both.
-	if pbs.Subject.APIVersion != "" || pbs.Subject.Kind != "" || pbs.Subject.Name != "" {
-		if pbs.Subject.APIVersion == "" || pbs.Subject.Kind == "" || pbs.Subject.Name == "" {
-			errs = errs.Also(subjectRefErr.ViaField("subject"))
-		}
+	if !allEmpty(pbs.Subject.APIVersion, pbs.Subject.Kind, pbs.Subject.Name) &&
+		!allPresent(pbs.Subject.APIVersion, pbs.Subject.Kind, pbs.Subject.Name) {
+		errs = errs.Also(subjectRefErr.ViaField("subject"))
 	}
 	if pbs.Subject.Name == "" && pbs.Subject.Selector == nil {
 		errs = errs.Also(apis.ErrMissingOneOf("name", "selector").ViaField("subject"))
@@ -142,6 +141,24 @@ func (pbs *PolicyBindingSpec) Validate(ctx context.Context, parentNamespace stri
 		errs = errs.Also(apis.ErrInvalidValue(pbs.Policy.Namespace, "namespace").ViaField("policy"))
 	}
 	return errs
+}
+
+func allEmpty(ss ...string) bool {
+	for _, s := range ss {
+		if s != "" {
+			return false
+		}
+	}
+	return true
+}
+
+func allPresent(ss ...string) bool {
+	for _, s := range ss {
+		if s == "" {
+			return false
+		}
+	}
+	return true
 }
 
 // CheckImmutableFields checks if any immutable fields are changed in a PolicyBindingSpec.
