@@ -15,15 +15,16 @@ Channel.
 
 ## Deployment
 
-1.  Verity the configmap `config-br-default-channel` is in the `cloud-run-events` namespace.
+1.  Verify the configmap `config-br-default-channel` is in the `cloud-run-events` namespace.
     ```shell
     kubectl get configmap config-br-default-channel -n cloud-run-events
     ```
-    By default, it is assumed to use default secret. Modify [`config-br-default-channel`](config-br-default-channel.yaml) 
-    to use different method and apply it.
-       1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
+    By default, it is assumed to use a default secret. Modify [`config-br-default-channel`](config-br-default-channel.yaml) 
+    to use a different method and apply it. The two options are:
+       1. If you are in GKE and using [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
+        update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
         
-       1. If you are using non-default secret, update `project` and `secret`.
+       1. If you are using standard Kubernetes secrets, but want to use a non-default one, update `secret` with your own secret.
        ```shell
        kubectl apply -f config-br-default-channel.yaml
        ```
