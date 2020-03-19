@@ -144,42 +144,43 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:bc6882c0c382aa5e5225bebed04aebc2525843861ce7ac83bd039328a6465967"
+  digest = "1:4e42e2fd69db33fda75846a53816bdb24265f9b31ab7b4aa350c4fc2740e0cea"
   name = "github.com/cloudevents/sdk-go"
   packages = [
-    "legacy",
-    "legacy/pkg/cloudevents",
-    "legacy/pkg/cloudevents/client",
-    "legacy/pkg/cloudevents/context",
-    "legacy/pkg/cloudevents/datacodec",
-    "legacy/pkg/cloudevents/datacodec/json",
-    "legacy/pkg/cloudevents/datacodec/text",
-    "legacy/pkg/cloudevents/datacodec/xml",
-    "legacy/pkg/cloudevents/extensions",
-    "legacy/pkg/cloudevents/observability",
-    "legacy/pkg/cloudevents/transport",
-    "legacy/pkg/cloudevents/transport/http",
-    "legacy/pkg/cloudevents/transport/pubsub",
-    "legacy/pkg/cloudevents/transport/pubsub/context",
-    "legacy/pkg/cloudevents/transport/pubsub/internal",
-    "legacy/pkg/cloudevents/types",
-    "pkg/binding",
-    "pkg/binding/format",
-    "pkg/binding/spec",
-    "pkg/binding/transformer",
-    "pkg/context",
-    "pkg/event",
-    "pkg/event/datacodec",
-    "pkg/event/datacodec/json",
-    "pkg/event/datacodec/text",
-    "pkg/event/datacodec/xml",
-    "pkg/observability",
-    "pkg/protocol",
-    "pkg/protocol/http",
-    "pkg/types",
+    "v1",
+    "v1/cloudevents",
+    "v1/cloudevents/client",
+    "v1/cloudevents/context",
+    "v1/cloudevents/datacodec",
+    "v1/cloudevents/datacodec/json",
+    "v1/cloudevents/datacodec/text",
+    "v1/cloudevents/datacodec/xml",
+    "v1/cloudevents/extensions",
+    "v1/cloudevents/observability",
+    "v1/cloudevents/transport",
+    "v1/cloudevents/transport/http",
+    "v1/cloudevents/transport/pubsub",
+    "v1/cloudevents/transport/pubsub/context",
+    "v1/cloudevents/transport/pubsub/internal",
+    "v1/cloudevents/types",
+    "v2/binding",
+    "v2/binding/format",
+    "v2/binding/spec",
+    "v2/binding/transformer",
+    "v2/context",
+    "v2/event",
+    "v2/event/datacodec",
+    "v2/event/datacodec/json",
+    "v2/event/datacodec/text",
+    "v2/event/datacodec/xml",
+    "v2/observability",
+    "v2/protocol",
+    "v2/protocol/http",
+    "v2/types",
   ]
   pruneopts = "NUT"
-  revision = "v2.0.0-preview3"
+  revision = "0a5202bf31a5927f261fb8ee0bba88cef0963d8c"
+  version = "v2.0.0-preview4"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -1403,7 +1404,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d14b6f73c04404d74e4d01664ecbca4b529839ff369c3ff585de6880ae0695b7"
+  digest = "1:c9e0c66b11e90b2f23074f3e2a10c247e8b63c9e1af5999ef2dfc6a409ba6201"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1499,7 +1500,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "230deb8e77bd0157dfd6b796064962c2a90d52c2"
+  revision = "cee67274b65447e8a1dbe988aea17d6b3439d82e"
 
 [[projects]]
   branch = "master"
@@ -1637,18 +1638,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0264fb04288d994cbfd847feea9491d86d739f6d"
+  revision = "4e66cee0f993a9635952a44dbe0418ccafe6eeda"
 
 [[projects]]
   branch = "master"
-  digest = "1:115d2f6e72ee06327259bdba21d26f28c359c62464afd73538fbab66ae2b7698"
+  digest = "1:3f2366ce9a05503ac8da902b58e898c285cc9a972e0e89fda0b2a2fedcd4fb46"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "244b563932f959a3e18c1e03cffed8798f52d59d"
+  revision = "e7f947d615d5eb623e80824f71d139a958c4019f"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1669,12 +1670,12 @@
     "cloud.google.com/go/pubsub",
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
-    "github.com/cloudevents/sdk-go/legacy",
-    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents",
-    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport",
-    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/http",
-    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub",
-    "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub/context",
+    "github.com/cloudevents/sdk-go/v1",
+    "github.com/cloudevents/sdk-go/v1/cloudevents",
+    "github.com/cloudevents/sdk-go/v1/cloudevents/transport",
+    "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http",
+    "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
+    "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",

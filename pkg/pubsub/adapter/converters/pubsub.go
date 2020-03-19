@@ -20,10 +20,10 @@ import (
 	"context"
 	"time"
 
-	cloudevents "github.com/cloudevents/sdk-go/legacy"
-	. "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents"
-	cepubsub "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub/context"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
+	. "github.com/cloudevents/sdk-go/v1/cloudevents"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
+	pubsubcontext "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 

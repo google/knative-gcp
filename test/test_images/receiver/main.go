@@ -21,7 +21,7 @@ import (
 	"log"
 	"net/http"
 
-	cloudevents "github.com/cloudevents/sdk-go/legacy"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
 )
 
 type Receiver struct {
