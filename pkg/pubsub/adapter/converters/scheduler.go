@@ -21,9 +21,9 @@ import (
 	"errors"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
+	. "github.com/cloudevents/sdk-go/v1/cloudevents"
 	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 	pubsubcontext "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context"
-	. "github.com/cloudevents/sdk-go/v1/pkg/cloudevents"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
