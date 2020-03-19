@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
-	cepubsub "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 )
 
 // ModeType is the type for mode enum.

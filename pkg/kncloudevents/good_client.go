@@ -4,7 +4,7 @@ import (
 	gohttp "net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
-	"github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/http"
+	"github.com/cloudevents/sdk-go/v1/cloudevents/transport/http"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/b3"
 	"knative.dev/pkg/tracing"

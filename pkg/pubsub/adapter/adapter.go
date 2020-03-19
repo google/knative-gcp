@@ -28,9 +28,9 @@ import (
 	"go.uber.org/zap"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
-	"github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport"
-	"github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/http"
-	cepubsub "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub"
+	"github.com/cloudevents/sdk-go/v1/cloudevents/transport"
+	"github.com/cloudevents/sdk-go/v1/cloudevents/transport/http"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/utils"

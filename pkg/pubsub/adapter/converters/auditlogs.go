@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
-	cepubsub "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"

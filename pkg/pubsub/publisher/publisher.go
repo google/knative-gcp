@@ -25,7 +25,7 @@ import (
 	"context"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
-	cepubsub "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/tracing"
 )
