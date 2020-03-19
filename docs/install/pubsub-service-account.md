@@ -47,25 +47,39 @@ Service Account.
           --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
           --role roles/pubsub.editor
         ```
-
-    1.  Download a new JSON private key for that Service Account. **Be sure not
+1. Configure the authentication mechanism used for accessing the Google Cloud services. 
+   Currently, we support two methods:
+    1. Use Workload Identity.
+     
+        It is the recommended way to access Google Cloud services from within GKE due to its improved security properties and 
+        manageability. For more information about Workload Identity see [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity). 
+        
+        1. Enable Workload Identity. Skip this step if you already enable it in the control plane setup: [Install Knative-GCP](install-knative-gcp.md).
+            ```shell
+           gcloud beta container clusters update ${CLUSTER_NAME} \
+            --identity-namespace=${PROJECT_ID}.svc.id.goog
+           ``` 
+        1. Update `spec.serviceAccount` with a [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
+         when creating resources. Check docs to see [examples](https://github.com/google/knative-gcp/tree/master/docs/examples) for each resource.
+    1. Export service account keys and store them as Kubernetes Secrets.
+    
+        1.  Download a new JSON private key for that Service Account. **Be sure not
         to check this key into source control!**
 
-        ```shell
-        gcloud iam service-accounts keys create cre-pubsub.json \
-        --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
-        ```
-
-    1.  Create a secret on the Kubernetes cluster with the downloaded key.
+            ```shell
+            gcloud iam service-accounts keys create cre-pubsub.json \
+            --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+            ```
+        1.  Create a secret on the Kubernetes cluster with the downloaded key.
         Remember to create the secret in the namespace your resources will
         reside. The example below does so in the `default` namespace.
 
-        ```shell
-        kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-pubsub.json
-        ```
-
-        `google-cloud-key` and `key.json` are default values expected by our
-        resources.
+            ```shell
+            kubectl --namespace default create secret generic google-cloud-key --from-file=key.json=cre-pubsub.json
+            ```
+    
+            `google-cloud-key` and `key.json` are default values expected by our
+            resources.
 
 ## Cleaning Up
 
