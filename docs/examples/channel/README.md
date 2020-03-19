@@ -17,9 +17,11 @@ intended to provide a durable messaging solution.
 
 1. Create the `Channel` in [channel.yaml](channel.yaml).
    
-     1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
+     1. If you are in GKE and using [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
+      update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
       
-     1. If you are using non-default secret, update `project` and `secret`.
+     1. If you are using standard Kubernetes secrets, but want to use a non-default one, update `secret` with your own secret.
+
    ```shell
    kubectl apply --filename channel.yaml
    ```

@@ -72,9 +72,11 @@ Object Notifications for when a new object is added to Google Cloud Storage
    kubectl apply --filename cloudstoragesource.yaml
    ```
    **Note**:
-      1. If you are using workload identity, update `serviceAccount` with the Pub/Sub enabled Service Account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
-       
-      1. If you are using non-default secret, update `project` and `secret`.
+     1. If you are in GKE and using [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
+      update `serviceAccount` with the Pub/Sub enabled service account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
+      
+     1. If you are using standard Kubernetes secrets, but want to use a non-default one, update `secret` with your own secret.
+
 1. [Optional] If not using GKE, or want to use a Pub/Sub topic from another
    project, uncomment and replace the `MY_PROJECT` placeholder in
    [`cloudstoragesource.yaml`](cloudstoragesource.yaml) and apply it. Note that
