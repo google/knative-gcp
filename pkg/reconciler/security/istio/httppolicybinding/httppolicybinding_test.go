@@ -485,7 +485,7 @@ func withRequestAuthenticationTestSpec() RequestAuthnOption {
 func withRequestAuthenticationOwner(owner string) RequestAuthnOption {
 	return func(ra *istiosecurityclient.RequestAuthentication) {
 		trueVal := true
-		ra.ObjectMeta.OwnerReferences = []metav1.OwnerReference{metav1.OwnerReference{
+		ra.ObjectMeta.OwnerReferences = []metav1.OwnerReference{{
 			APIVersion:         "security.knative.dev/v1alpha1",
 			Kind:               "HTTPPolicyBinding",
 			Name:               owner,
@@ -552,7 +552,7 @@ func withAuthorizationPolicyTestSpec() AuthzPolicyOption {
 func withAuthorizationPolicyOwner(owner string) AuthzPolicyOption {
 	return func(ap *istiosecurityclient.AuthorizationPolicy) {
 		trueVal := true
-		ap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{metav1.OwnerReference{
+		ap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{{
 			APIVersion:         "security.knative.dev/v1alpha1",
 			Kind:               "HTTPPolicyBinding",
 			Name:               owner,
