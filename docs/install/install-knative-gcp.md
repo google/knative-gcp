@@ -44,9 +44,9 @@
 1. Configure the authentication mechanism used for accessing the Google Cloud services. Currently, we support two methods (Workload Identity and Kubernetes Secret). 
 You can choose to apply the provided initialization scripts to ease the configuration process or follow the manual steps to have a better configuration control.
    
-   1. **Initialization scripts.**
+   1. Initialization Scripts.
    
-        - Use Workload Identity.
+        - Use **Workload Identity**.
         
            Workload Identity is the recommended way to access Google Cloud services from within GKE due to its improved security properties and 
             manageability. For more information about Workload Identity, please see [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity). 
@@ -62,7 +62,7 @@ You can choose to apply the provided initialization scripts to ease the configur
           chmod +x init_control_plane_gke.sh
           ./init_control_plane_gke.sh
           ```
-        - Export service account keys and store them as Kubernetes Secrets.
+        - Export service account keys and store them as **Kubernetes Secrets**.
             
             Apply [init_control_plane](../../hack/init_control_plane.sh) to install all the configuration by running:
             
@@ -70,7 +70,7 @@ You can choose to apply the provided initialization scripts to ease the configur
           chmod +x init_control_plane.sh
           ./init_control_plane.sh
           ```
-   1. **Manual configuration steps.**
+   1. Manual configuration steps.
 
        For both methods (Workload Identity and Kubernetes Secret), the first manual step is creating a [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
        with the appropriate permissions needed for the control plane to manage native GCP resources.
@@ -109,7 +109,7 @@ You can choose to apply the provided initialization scripts to ease the configur
         --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
         --role roles/owner
       ```
-        - Use Workload Identity.
+        - Use **Workload Identity**.
          
             Workload Identity is the recommended way to access Google Cloud services from within GKE due to its improved security properties and 
             manageability. For more information about Workload Identity, please see 
@@ -138,7 +138,7 @@ You can choose to apply the provided initialization scripts to ease the configur
                kubectl annotate serviceaccount controller iam.gke.io/gcp-service-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
                --namespace cloud-run-events
                ```           
-        - Export service account keys and store them as Kubernetes Secrets.
+        - Export service account keys and store them as **Kubernetes Secrets**.
         
            1. Download a new JSON private key for that Service Account. **Be sure not to
               check this key into source control!**

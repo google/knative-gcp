@@ -67,7 +67,7 @@ Service Account.
            --identity-namespace=${PROJECT_ID}.svc.id.goog
            ```
            
-        1. Give `iam.serviceAccountAdmin` role to your control plane Google Cloud Service Account. You can skip this step if you grant `roles/owner` privileges 
+        1. Give `iam.serviceAccountAdmin` role to your control plane's Google Cloud Service Account. You can skip this step if you grant `roles/owner` privileges 
            in the control plane setup: [Install Knative-GCP](install-knative-gcp.md).
        
             ```shell 
