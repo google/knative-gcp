@@ -30,9 +30,9 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 
-	cloudevents "github.com/cloudevents/sdk-go/legacy"
-	cepubsub "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub/context"
+	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cepubsub "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub"
+	pubsubcontext "github.com/cloudevents/sdk-go/v1/pkg/cloudevents/transport/pubsub/context"
 )
 
 type mockStatsReporter struct {
