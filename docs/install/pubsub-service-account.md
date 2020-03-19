@@ -47,21 +47,20 @@ Service Account.
           --member=serviceAccount:cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
           --role roles/pubsub.editor
         ```
-1. Access Google Cloud service. There are two methods provided to access 
-    Google Cloud service with [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project),
-    you can either:
-    1. Use workload identity.
+1. Configure the authentication mechanism used for accessing the Google Cloud services. 
+   Currently, we support two methods:
+    1. Use Workload Identity.
      
         It is the recommended way to access Google Cloud services from within GKE due to its improved security properties and 
-        manageability. More information about [workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity). 
+        manageability. For more information about Workload Identity see [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity). 
         
-        1. Enable workload identity. Skip this step if it is already enabled in control plane.
+        1. Enable Workload Identity. Skip this step if you already enable it in the control plane setup: [Install Knative-GCP](install-knative-gcp.md).
             ```shell
            gcloud beta container clusters update ${CLUSTER_NAME} \
             --identity-namespace=${PROJECT_ID}.svc.id.goog
            ``` 
-        1. Update `spec.serviceAccount` with [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-         when creating resources. Check docs to see [example](https://github.com/google/knative-gcp/tree/master/docs/examples) for each resource.
+        1. Update `spec.serviceAccount` with a [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
+         when creating resources. Check docs to see [examples](https://github.com/google/knative-gcp/tree/master/docs/examples) for each resource.
     1. Export service account keys and store them as Kubernetes Secrets.
     
         1.  Download a new JSON private key for that Service Account. **Be sure not
