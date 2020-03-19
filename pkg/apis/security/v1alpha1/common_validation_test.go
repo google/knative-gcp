@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
@@ -230,8 +231,10 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		spec: PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{
 				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "foo",
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "foo",
 				},
 			},
 			Policy: duckv1.KReference{
@@ -245,8 +248,10 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		spec: PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{
 				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "bar",
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "bar",
 				},
 			},
 			Policy: duckv1.KReference{
@@ -256,6 +261,43 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		},
 		parentNamespace: "foo",
 		wantErr:         apis.ErrInvalidValue("bar", "namespace").ViaField("subject"),
+	}, {
+		name: "subject name and selector both specified",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "foo",
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         apis.ErrMultipleOneOf("name", "selector").ViaField("subject"),
+	}, {
+		name: "subject reference partially specified",
+		spec: PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Name:      "subject",
+					Namespace: "foo",
+				},
+			},
+			Policy: duckv1.KReference{
+				Name:      "policy",
+				Namespace: "foo",
+			},
+		},
+		parentNamespace: "foo",
+		wantErr:         subjectRefErr.ViaField("subject"),
 	}, {
 		name: "subject name and selector not specified",
 		spec: PolicyBindingSpec{
@@ -276,8 +318,10 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		spec: PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{
 				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "foo",
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "foo",
 				},
 			},
 			Policy: duckv1.KReference{
@@ -292,8 +336,10 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		spec: PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{
 				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "foo",
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "foo",
 				},
 			},
 			Policy: duckv1.KReference{
@@ -309,8 +355,10 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 		spec: PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{
 				Subject: tracker.Reference{
-					Name:      "subject",
-					Namespace: "foo",
+					APIVersion: "example.com/v1",
+					Kind:       "Foo",
+					Name:       "subject",
+					Namespace:  "foo",
 				},
 			},
 			Policy: duckv1.KReference{
@@ -328,6 +376,112 @@ func TestValidatePolicyBindingSpec(t *testing.T) {
 			gotErr := tc.spec.Validate(context.Background(), tc.parentNamespace)
 			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
 				t.Errorf("PolicyBindingSpec.Validate (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestPolicyBindingSpecCheckImmutableFields(t *testing.T) {
+	cases := []struct {
+		name    string
+		orignal *PolicyBindingSpec
+		updated *PolicyBindingSpec
+		wantErr *apis.FieldError
+	}{{
+		name: "subject changed",
+		orignal: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "policy",
+			},
+		},
+		updated: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "foo"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "policy",
+			},
+		},
+		wantErr: &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: "{*v1alpha1.PolicyBindingSpec}.BindingSpec.Subject.Selector.MatchLabels[\"app\"]:\n\t-: \"test\"\n\t+: \"foo\"\n",
+		},
+	}, {
+		name: "policy changed",
+		orignal: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "policy",
+			},
+		},
+		updated: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "new-policy",
+			},
+		},
+		wantErr: &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"spec"},
+			Details: "{*v1alpha1.PolicyBindingSpec}.Policy.Name:\n\t-: \"policy\"\n\t+: \"new-policy\"\n",
+		},
+	}, {
+		name: "not changed",
+		orignal: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "policy",
+			},
+		},
+		updated: &PolicyBindingSpec{
+			BindingSpec: duckv1alpha1.BindingSpec{
+				Subject: tracker.Reference{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"app": "test"},
+					},
+				},
+			},
+			Policy: duckv1.KReference{
+				Name: "policy",
+			},
+		},
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotErr := tc.updated.CheckImmutableFields(context.Background(), tc.orignal)
+			if diff := cmp.Diff(tc.wantErr.Error(), gotErr.Error()); diff != "" {
+				t.Errorf("PolicyBindingSpec.CheckImmutableFields (-want, +got) = %v", diff)
 			}
 		})
 	}

@@ -95,6 +95,14 @@ required = [
   branch = "master"
   name = "golang.org/x/net"
 
+[[override]]
+  name = "istio.io/api"
+  version = "1.5.0"
+
+[[override]]
+  name = "istio.io/client-go"
+  version = "1.5.0"
+
 # Required for opencensus.
 [[override]]
   name = "github.com/census-instrumentation/opencensus-proto"

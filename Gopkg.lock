@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:79ad6be8821ead2ac1d4f46feb7c5d583b3579ef66dba380aa8e424baf7e86dd"
+  digest = "1:bc6882c0c382aa5e5225bebed04aebc2525843861ce7ac83bd039328a6465967"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "legacy",
@@ -163,6 +163,20 @@
     "legacy/pkg/cloudevents/transport/pubsub/context",
     "legacy/pkg/cloudevents/transport/pubsub/internal",
     "legacy/pkg/cloudevents/types",
+    "pkg/binding",
+    "pkg/binding/format",
+    "pkg/binding/spec",
+    "pkg/binding/transformer",
+    "pkg/context",
+    "pkg/event",
+    "pkg/event/datacodec",
+    "pkg/event/datacodec/json",
+    "pkg/event/datacodec/text",
+    "pkg/event/datacodec/xml",
+    "pkg/observability",
+    "pkg/protocol",
+    "pkg/protocol/http",
+    "pkg/types",
   ]
   pruneopts = "NUT"
   revision = "v2.0.0-preview3"
@@ -208,11 +222,14 @@
   version = "v1.7.1"
 
 [[projects]]
-  digest = "1:633dde05baa7afd3544cfe4ac16fe3c5450b868cfc6b1558621ee39ebf2273ea"
+  digest = "1:8993d0f1f807cb88203a8009d86a401b5d7dced6b3a88b9232668e903e7a5a70"
   name = "github.com/gogo/protobuf"
   packages = [
+    "jsonpb",
     "proto",
+    "protoc-gen-gogo/descriptor",
     "sortkeys",
+    "types",
   ]
   pruneopts = "NUT"
   revision = "0ca988a254f991240804bf9821f3450d87ccbb1b"
@@ -936,6 +953,33 @@
   version = "2019.2.3"
 
 [[projects]]
+  digest = "1:d8faaec3ed345bd2b8d89021efc48c2612c507dde6417026c8f7fa2b0cf58743"
+  name = "istio.io/api"
+  packages = [
+    "security/v1beta1",
+    "type/v1beta1",
+  ]
+  pruneopts = "NUT"
+  revision = "891bf31f3c325bbf2de0e7d0ed6406bbbc93deba"
+  version = "1.5.0"
+
+[[projects]]
+  digest = "1:bd953b610d7f6d2f0fe10e5426f930ab7b889d3defa5550b6503c41c9a651e0e"
+  name = "istio.io/client-go"
+  packages = ["pkg/apis/security/v1beta1"]
+  pruneopts = "NUT"
+  revision = "23b87b42e49bd613c2fca9fe5f3a8ab62450bebb"
+  version = "1.5.0"
+
+[[projects]]
+  digest = "1:fcf227730189418d83fabd8d0a0f52562749dfe002f81507e4ccce92c607a412"
+  name = "istio.io/gogo-genproto"
+  packages = ["googleapis/google/api"]
+  pruneopts = "NUT"
+  revision = "a0338448499a99db79cf32c3b34b44670b9fb5b5"
+  version = "1.5.0"
+
+[[projects]]
   digest = "1:d77b48cc0ea74f3edbc8e0515a0ce2fa2154eb414137dd4fb5a642a73296d403"
   name = "k8s.io/api"
   packages = [
@@ -1359,7 +1403,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a923ead30aab997932d99443cd19c712c108ec808acffc537c86555d65764ea"
+  digest = "1:d14b6f73c04404d74e4d01664ecbca4b529839ff369c3ff585de6880ae0695b7"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1455,7 +1499,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "b11c2349ec272d4ec7b7a32a4f7f7ea26346b5ff"
+  revision = "230deb8e77bd0157dfd6b796064962c2a90d52c2"
 
 [[projects]]
   branch = "master"
@@ -1544,7 +1588,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fb7db63670d75f351508b56cf97d5486f11b2d350b448b713bf4ffe877eac347"
+  digest = "1:678187872ff6b5e2e9e1b4022b2784ebc585fe51f5afe1879a2c58d55d25f692"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1593,7 +1637,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0aff6164c7ecff80e9f9bcbd1334fbfba38c3404"
+  revision = "0264fb04288d994cbfd847feea9491d86d739f6d"
 
 [[projects]]
   branch = "master"
@@ -1604,7 +1648,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "885ae9f1bcfcb8a876fe9a3e1dca822a1efbfe1a"
+  revision = "244b563932f959a3e18c1e03cffed8798f52d59d"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1660,6 +1704,9 @@
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
+    "istio.io/api/security/v1beta1",
+    "istio.io/api/type/v1beta1",
+    "istio.io/client-go/pkg/apis/security/v1beta1",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
@@ -1743,6 +1790,7 @@
     "knative.dev/pkg/injection/clients/dynamicclient/fake",
     "knative.dev/pkg/injection/sharedmain",
     "knative.dev/pkg/kmeta",
+    "knative.dev/pkg/kmp",
     "knative.dev/pkg/leaderelection",
     "knative.dev/pkg/logging",
     "knative.dev/pkg/logging/testing",
