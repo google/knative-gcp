@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 
-	cepubsub "github.com/cloudevents/sdk-go/legacy/pkg/cloudevents/transport/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"

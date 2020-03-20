@@ -321,7 +321,7 @@ func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName 
 		eventingtestresources.WithAttributesTriggerFilter(
 			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
 			map[string]interface{}{"type": "e2e-testing-dummy"}),
-		eventingtestresources.WithSubscriberKServiceRefForTrigger(kserviceName),
+		eventingtestresources.WithSubscriberServiceRefForTrigger(kserviceName),
 	)
 
 	// Create a Trigger with the target Service subscriber.
