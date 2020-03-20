@@ -19,7 +19,7 @@ package memory
 import (
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 

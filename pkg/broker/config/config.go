@@ -17,9 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"sync/atomic"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 )
 
 // ReadOnlyTargets provides "read" functions for broker targets.
@@ -30,6 +31,14 @@ type ReadOnlyTargets interface {
 	Range(f func(t Target) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
+	// String returns the text format of all the targets.
+	String() string
+	// EqualsBytes checks if the current targets config equals the given
+	// targets config in bytes.
+	EqualsBytes([]byte) bool
+	// EqualsString checks if the current targets config equals the given
+	// targets config in string.
+	EqualsString(string) bool
 }
 
 // Targets provides "read" and "write" functions for broker targets.
@@ -51,6 +60,9 @@ type BaseTargets struct {
 // RangeNamespace ranges over targets in the given namespace.
 func (bt *BaseTargets) RangeNamespace(namespace string, f func(Target) bool) {
 	cfg := bt.Internal.Load().(*TargetsConfig)
+	if cfg == nil {
+		return
+	}
 	if _, ok := cfg.GetNamespaces()[namespace]; !ok {
 		return
 	}
@@ -78,4 +90,33 @@ func (bt *BaseTargets) Range(f func(Target) bool) {
 func (bt *BaseTargets) Bytes() ([]byte, error) {
 	cfg := bt.Internal.Load().(*TargetsConfig)
 	return proto.Marshal(cfg)
+}
+
+// String returns the text format of all the targets.
+func (bt *BaseTargets) String() string {
+	cfg := bt.Internal.Load().(*TargetsConfig)
+	fmt.Println(cfg.GetNamespaces()["ns1"].GetNames()["name1"].State)
+	return cfg.String()
+}
+
+// EqualsBytes checks if the current targets config equals the given
+// targets config in bytes.
+func (bt *BaseTargets) EqualsBytes(b []byte) bool {
+	self := bt.Internal.Load().(*TargetsConfig)
+	var other TargetsConfig
+	if err := proto.Unmarshal(b, &other); err != nil {
+		return false
+	}
+	return proto.Equal(self, &other)
+}
+
+// EqualsString checks if the current targets config equals the given
+// targets config in string.
+func (bt *BaseTargets) EqualsString(s string) bool {
+	self := bt.Internal.Load().(*TargetsConfig)
+	var other TargetsConfig
+	if err := proto.UnmarshalText(s, &other); err != nil {
+		return false
+	}
+	return proto.Equal(self, &other)
 }

@@ -94,7 +94,7 @@ func TestBaseTargetsRange(t *testing.T) {
 		return true
 	})
 	if gotTargets != nil {
-		t.Errorf("targets range non-existent namespace got targets %+v want nil", gotTargets)
+		t.Errorf("BaseTargets.Range non-existent namespace got=%+v, want nil", gotTargets)
 	}
 
 	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
@@ -103,7 +103,7 @@ func TestBaseTargetsRange(t *testing.T) {
 		return true
 	})
 	if !proto.Equal(gotTargets, ns1Targets) {
-		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, ns1Targets)
+		t.Errorf(`BaseTargets.RangeNamespace("ns1") got=%+v, want=%+v`, gotTargets, ns1Targets)
 	}
 
 	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
@@ -112,7 +112,7 @@ func TestBaseTargetsRange(t *testing.T) {
 		return true
 	})
 	if !proto.Equal(gotTargets, ns2Targets) {
-		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, ns2Targets)
+		t.Errorf(`BaseTargets.RangeNamespace("ns2") got=%+v, want=%+v`, gotTargets, ns2Targets)
 	}
 
 	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
@@ -121,7 +121,7 @@ func TestBaseTargetsRange(t *testing.T) {
 		return true
 	})
 	if !proto.Equal(gotTargets, allTargets) {
-		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, allTargets)
+		t.Errorf("BaseTargets.Range got=%+v, want=%+v", gotTargets, allTargets)
 	}
 }
 
@@ -159,15 +159,71 @@ func TestBaseTargetsBytes(t *testing.T) {
 	}
 	targets.Internal.Store(cfg)
 
-	var gotCfg TargetsConfig
-	b, err := targets.Bytes()
+	wantBytes, err := proto.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error from proto.Marshal: %v", err)
+	}
+
+	gotBytes, err := targets.Bytes()
 	if err != nil {
 		t.Errorf("unexpected error from targets.Byte(): %v", err)
 	}
-	if err := proto.Unmarshal(b, &gotCfg); err != nil {
-		t.Errorf("error unmarshal targets.Byte(): %v", err)
+	var gotCfg TargetsConfig
+	if err := proto.Unmarshal(gotBytes, &gotCfg); err != nil {
+		t.Errorf("unexpected error from proto.Unmarshal: %v", err)
 	}
 	if !proto.Equal(&gotCfg, cfg) {
-		t.Errorf("unmarshaled config got=%v want=%v", &gotCfg, cfg)
+		t.Errorf("got unmarshaled targets=%+v, want=%+v", gotCfg, cfg)
+	}
+
+	// Test EqualsBytes
+	if !targets.EqualsBytes(wantBytes) {
+		t.Error("BaseTargets.EqualsBytes() got=false, want=true")
+	}
+}
+
+func TestBaseTargetsString(t *testing.T) {
+	targets := &BaseTargets{}
+	cfg := &TargetsConfig{
+		Namespaces: map[string]*NamespacedTargets{
+			"ns1": &NamespacedTargets{
+				Names: map[string]*Target{
+					"name1": {
+						Id:                "uid-1",
+						Name:              "name1",
+						Namespace:         "ns1",
+						FilterAttributes:  map[string]string{"app": "foo"},
+						RetryTopic:        "abc",
+						RetrySubscription: "abc-sub",
+						State:             Target_READY,
+					},
+				},
+			},
+			"ns2": &NamespacedTargets{
+				Names: map[string]*Target{
+					"name3": {
+						Id:                "uid-3",
+						Name:              "name3",
+						Namespace:         "ns2",
+						FilterAttributes:  map[string]string{"app": "bar"},
+						RetryTopic:        "ghi",
+						RetrySubscription: "ghi-sub",
+						State:             Target_UNKNOWN,
+					},
+				},
+			},
+		},
+	}
+	targets.Internal.Store(cfg)
+
+	gotStr := targets.String()
+	wantStr := cfg.String()
+	if gotStr != wantStr {
+		t.Errorf("BaseTargets.String() got=%s, want=%s", gotStr, wantStr)
+	}
+
+	// Test EqualsString
+	if !targets.EqualsString(wantStr) {
+		t.Error("BaseTargets.EqualsString() got=false, want=true")
 	}
 }
