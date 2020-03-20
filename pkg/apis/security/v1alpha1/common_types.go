@@ -91,7 +91,7 @@ type JWTHeader struct {
 
 // JWTRule specifies a rule to check JWT attributes.
 type JWTRule struct {
-	// Principals is a list of source identities to match.
+	// Principals is a list of source identities ("iss/sub") to match.
 	// If omitted, it implies any principal is allowed.
 	Principals []string `json:"principals,omitempty"`
 
