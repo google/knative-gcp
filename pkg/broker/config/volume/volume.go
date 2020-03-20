@@ -40,6 +40,8 @@ type Targets struct {
 	path string
 }
 
+var _ config.ReadOnlyTargets = (*Targets)(nil)
+
 // Option is the option to load targets.
 type Option func(*Targets)
 
