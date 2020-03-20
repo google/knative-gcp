@@ -35,4 +35,8 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
 		ts.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 	}
+
+	if ts.AdapterLifecycle == "" {
+		ts.AdapterLifecycle = AdapterLifecycleReconcile
+	}
 }

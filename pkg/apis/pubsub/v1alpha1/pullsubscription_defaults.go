@@ -58,4 +58,8 @@ func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 		// Default is CloudEvents Binary Mode.
 		ss.Mode = ModeCloudEventsBinary
 	}
+
+	if ss.AdapterLifecycle == "" {
+		ss.AdapterLifecycle = AdapterLifecycleReconcile
+	}
 }

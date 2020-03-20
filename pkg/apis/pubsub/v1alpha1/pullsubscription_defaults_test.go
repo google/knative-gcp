@@ -64,6 +64,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 					},
 					Key: "test.json",
 				},
+				AdapterLifecycle: AdapterLifecycleReconcile,
 			},
 		},
 	}, {
@@ -79,6 +80,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				AdapterLifecycle:  AdapterLifecycleReconcile,
 			},
 		},
 	}, {
@@ -94,6 +96,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				AdapterLifecycle:  AdapterLifecycleReconcile,
 			},
 		},
 	}, {
@@ -108,6 +111,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				AdapterLifecycle:  AdapterLifecycleReconcile,
 			},
 		},
 	}, {
@@ -122,6 +126,23 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				AdapterLifecycle:  AdapterLifecycleReconcile,
+			},
+		},
+	}, {
+		name: "non-nil adapter lifecycle",
+		start: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				AdapterLifecycle: AdapterLifecycleIgnore,
+			},
+		},
+		want: &PullSubscription{
+			Spec: PullSubscriptionSpec{
+				Mode:              ModeCloudEventsBinary,
+				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
+				AckDeadline:       ptr.String(defaultAckDeadline.String()),
+				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				AdapterLifecycle:  AdapterLifecycleIgnore,
 			},
 		},
 	}}
@@ -152,6 +173,7 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 				},
 				Key: "test.json",
 			},
+			AdapterLifecycle: AdapterLifecycleReconcile,
 		},
 	}
 

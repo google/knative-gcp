@@ -113,6 +113,11 @@ type PullSubscriptionSpec struct {
 	// PullSubscription uses.
 	// +optional
 	AdapterType string `json:"adapterType,omitempty"`
+
+	// AdapterLifecycle determines how the PullSubscription receive adapter
+	// will be created or deleted. Defaults to Reconcile.
+	// +optional
+	AdapterLifecycle AdapterLifecycleType `json:"adapterLifecycle,omitempty"`
 }
 
 // GetAckDeadline parses AckDeadline and returns the default if an error occurs.

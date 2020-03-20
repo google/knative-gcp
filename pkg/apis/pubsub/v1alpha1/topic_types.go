@@ -78,6 +78,11 @@ type TopicSpec struct {
 	//PropagationPolicy defines how Topic controls the Cloud Pub/Sub topic for
 	// lifecycle changes. Defaults to TopicPolicyCreateNoDelete if empty.
 	PropagationPolicy PropagationPolicyType `json:"propagationPolicy,omitempty"`
+
+	// AdapterLifecycle determines how the Topic receive adapter will be
+	// created or deleted. Defaults to Reconcile.
+	// +optional
+	AdapterLifecycle AdapterLifecycleType `json:"adapterLifecycle,omitempty"`
 }
 
 // PropagationPolicyType defines enum type for TopicPolicy
