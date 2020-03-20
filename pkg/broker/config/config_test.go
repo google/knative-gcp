@@ -20,101 +20,151 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestBaseTargetsRange(t *testing.T) {
-	ns1Targets := []*Target{
-		{
-			Id:                "uid-1",
-			Name:              "name1",
-			Namespace:         "ns1",
-			FilterAttributes:  map[string]string{"app": "foo"},
-			RetryTopic:        "abc",
-			RetrySubscription: "abc-sub",
-			State:             Target_READY,
-		},
-		{
-			Id:                "uid-2",
-			Name:              "name2",
-			Namespace:         "ns1",
-			FilterAttributes:  map[string]string{"app": "bar"},
-			RetryTopic:        "def",
-			RetrySubscription: "def-sub",
-			State:             Target_READY,
+	// ns1Targets := []*Target{
+	// 	{
+	// 		Id:                "uid-1",
+	// 		Name:              "name1",
+	// 		Namespace:         "ns1",
+	// 		FilterAttributes:  map[string]string{"app": "foo"},
+	// 		RetryTopic:        "abc",
+	// 		RetrySubscription: "abc-sub",
+	// 		State:             Target_READY,
+	// 	},
+	// 	{
+	// 		Id:                "uid-2",
+	// 		Name:              "name2",
+	// 		Namespace:         "ns1",
+	// 		FilterAttributes:  map[string]string{"app": "bar"},
+	// 		RetryTopic:        "def",
+	// 		RetrySubscription: "def-sub",
+	// 		State:             Target_READY,
+	// 	},
+	// }
+	// ns2Targets := []*Target{
+	// 	{
+	// 		Id:                "uid-3",
+	// 		Name:              "name3",
+	// 		Namespace:         "ns2",
+	// 		FilterAttributes:  map[string]string{"app": "bar"},
+	// 		RetryTopic:        "ghi",
+	// 		RetrySubscription: "ghi-sub",
+	// 		State:             Target_UNKNOWN,
+	// 	},
+	// 	{
+	// 		Id:                "uid-4",
+	// 		Name:              "name4",
+	// 		Namespace:         "ns2",
+	// 		FilterAttributes:  map[string]string{"app": "foo"},
+	// 		RetryTopic:        "jkl",
+	// 		RetrySubscription: "jkl-sub",
+	// 		State:             Target_UNKNOWN,
+	// 	},
+	// }
+	// var allTargets []*Target
+	// allTargets = append(allTargets, ns1Targets...)
+	// allTargets = append(allTargets, ns2Targets...)
+	ns1Targets := &NamespacedTargets{
+		Names: map[string]*Target{
+			"name1": {
+				Id:                "uid-1",
+				Name:              "name1",
+				Namespace:         "ns1",
+				FilterAttributes:  map[string]string{"app": "foo"},
+				RetryTopic:        "abc",
+				RetrySubscription: "abc-sub",
+				State:             Target_READY,
+			},
+			"name2": {
+				Id:                "uid-2",
+				Name:              "name2",
+				Namespace:         "ns1",
+				FilterAttributes:  map[string]string{"app": "bar"},
+				RetryTopic:        "def",
+				RetrySubscription: "def-sub",
+				State:             Target_READY,
+			},
 		},
 	}
-	ns2Targets := []*Target{
-		{
-			Id:                "uid-3",
-			Name:              "name3",
-			Namespace:         "ns2",
-			FilterAttributes:  map[string]string{"app": "bar"},
-			RetryTopic:        "ghi",
-			RetrySubscription: "ghi-sub",
-			State:             Target_UNKNOWN,
-		},
-		{
-			Id:                "uid-4",
-			Name:              "name4",
-			Namespace:         "ns2",
-			FilterAttributes:  map[string]string{"app": "foo"},
-			RetryTopic:        "jkl",
-			RetrySubscription: "jkl-sub",
-			State:             Target_UNKNOWN,
+	ns2Targets := &NamespacedTargets{
+		Names: map[string]*Target{
+			"name3": {
+				Id:                "uid-3",
+				Name:              "name3",
+				Namespace:         "ns2",
+				FilterAttributes:  map[string]string{"app": "bar"},
+				RetryTopic:        "ghi",
+				RetrySubscription: "ghi-sub",
+				State:             Target_UNKNOWN,
+			},
+			"name4": {
+				Id:                "uid-4",
+				Name:              "name4",
+				Namespace:         "ns2",
+				FilterAttributes:  map[string]string{"app": "foo"},
+				RetryTopic:        "jkl",
+				RetrySubscription: "jkl-sub",
+				State:             Target_UNKNOWN,
+			},
 		},
 	}
-	var allTargets []*Target
-	allTargets = append(allTargets, ns1Targets...)
-	allTargets = append(allTargets, ns2Targets...)
+	allTargets := &NamespacedTargets{
+		Names: map[string]*Target{
+			"name1": ns1Targets.GetNames()["name1"],
+			"name2": ns1Targets.GetNames()["name2"],
+			"name3": ns2Targets.GetNames()["name3"],
+			"name4": ns2Targets.GetNames()["name4"],
+		},
+	}
 
 	targets := &BaseTargets{}
 	targets.Internal.Store(&TargetsConfig{
 		Namespaces: map[string]*NamespacedTargets{
-			"ns1": &NamespacedTargets{
-				Names: map[string]*Target{
-					"name1": ns1Targets[0],
-					"name2": ns1Targets[1],
-				},
-			},
-			"ns2": &NamespacedTargets{
-				Names: map[string]*Target{
-					"name3": ns2Targets[0],
-					"name4": ns2Targets[1],
-				},
-			},
+			"ns1": ns1Targets,
+			"ns2": ns2Targets,
 		},
 	})
 
-	var gotTargets []*Target
+	var gotTargets *NamespacedTargets
 	targets.RangeNamespace("non-exist", func(t Target) bool {
-		gotTargets = append(gotTargets, &t)
+		if gotTargets == nil {
+			gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
+		}
+		gotTargets.GetNames()[t.GetName()] = &t
 		return true
 	})
 	if gotTargets != nil {
 		t.Errorf("targets range non-existent namespace got targets %+v want nil", gotTargets)
 	}
 
-	gotTargets = nil
+	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
 	targets.RangeNamespace("ns1", func(t Target) bool {
-		gotTargets = append(gotTargets, &t)
+		gotTargets.GetNames()[t.GetName()] = &t
 		return true
 	})
-	cmpTargets(t, ns1Targets, gotTargets)
+	if !proto.Equal(gotTargets, ns1Targets) {
+		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, ns1Targets)
+	}
 
-	gotTargets = nil
+	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
 	targets.RangeNamespace("ns2", func(t Target) bool {
-		gotTargets = append(gotTargets, &t)
+		gotTargets.GetNames()[t.GetName()] = &t
 		return true
 	})
-	cmpTargets(t, ns2Targets, gotTargets)
+	if !proto.Equal(gotTargets, ns2Targets) {
+		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, ns2Targets)
+	}
 
-	gotTargets = nil
+	gotTargets = &NamespacedTargets{Names: make(map[string]*Target)}
 	targets.Range(func(t Target) bool {
-		gotTargets = append(gotTargets, &t)
+		gotTargets.GetNames()[t.GetName()] = &t
 		return true
 	})
-	cmpTargets(t, allTargets, gotTargets)
+	if !proto.Equal(gotTargets, allTargets) {
+		t.Errorf("namespace=ns1 targets got=%+v, want=%+v", gotTargets, allTargets)
+	}
 }
 
 func TestBaseTargetsBytes(t *testing.T) {
@@ -151,24 +201,15 @@ func TestBaseTargetsBytes(t *testing.T) {
 	}
 	targets.Internal.Store(cfg)
 
-	wantBytes, _ := proto.Marshal(cfg)
-	gotBytes, err := targets.Bytes()
+	var gotCfg TargetsConfig
+	b, err := targets.Bytes()
 	if err != nil {
-		t.Fatalf("unexpected error from targets.Bytes(): %v", err)
+		t.Errorf("unexpected error from targets.Byte(): %v", err)
 	}
-	if diff := cmp.Diff(wantBytes, gotBytes); diff != "" {
-		t.Errorf("targets.Bytes() (-want,+got): %v", diff)
+	if err := proto.Unmarshal(b, &gotCfg); err != nil {
+		t.Errorf("error unmarshal targets.Byte(): %v", err)
 	}
-}
-
-func cmpTargets(t *testing.T, t1, t2 []*Target) {
-	t.Helper()
-	if len(t1) != len(t2) {
-		t.Errorf("len(t1) = %d, len(t2) = %d", len(t1), len(t2))
-	}
-	for i, v := range t1 {
-		if !proto.Equal(v, t2[i]) {
-			t.Errorf("t1[%d] != t2[%d], %v %v", i, i, v, t2[i])
-		}
+	if !proto.Equal(&gotCfg, cfg) {
+		t.Errorf("unmarshaled config got=%v want=%v", &gotCfg, cfg)
 	}
 }

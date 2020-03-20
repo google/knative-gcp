@@ -98,7 +98,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(data, gotTargets) {
-		t.Errorf("initial targets got %v want %v", gotTargets, data)
+		t.Errorf("initial targets got=%+v, want=%+v", gotTargets, data)
 	}
 
 	data.GetNamespaces()["ns1"].GetNames()["name1"] = &config.Target{
@@ -127,6 +127,6 @@ func TestSyncConfigFromFile(t *testing.T) {
 
 	gotTargets = targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(data, gotTargets) {
-		t.Errorf("updated targets got %v want %v", gotTargets, data)
+		t.Errorf("updated targets got=%+v, want%+v", gotTargets, data)
 	}
 }

@@ -107,7 +107,7 @@ func TestUnion(t *testing.T) {
 	targets = targets.Union(*ns1Targets[1], *ns2Targets[1])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after union got %v want %v", gotTargets, wantTargets)
+		t.Errorf("targets after union got=%+v,want%+v", gotTargets, wantTargets)
 	}
 }
 
@@ -152,7 +152,7 @@ func TestExcept(t *testing.T) {
 	targets = targets.Except(*ns1Targets[1], *ns2Targets[1])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after except got %v want %v", gotTargets, wantTargets)
+		t.Errorf("targets after except got=%+v, want=%+v", gotTargets, wantTargets)
 	}
 }
 
@@ -194,6 +194,6 @@ func TestUnionExcept(t *testing.T) {
 	targets = targets.Union(*ns1Targets[1], *ns2Targets[1]).Except(*ns1Targets[0], *ns2Targets[0])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after union got %v want %v", gotTargets, wantTargets)
+		t.Errorf("targets after union got=%+v, want=%+v", gotTargets, wantTargets)
 	}
 }
