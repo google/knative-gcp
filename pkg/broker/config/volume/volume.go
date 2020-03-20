@@ -72,6 +72,7 @@ func NewTargetsFromFile(opts ...Option) (config.ReadOnlyTargets, error) {
 
 	initialized := make(chan struct{}, 1)
 	go t.watchWith(watcher, initialized)
+	// Block until we know for sure the events handler is properly set up.
 	<-initialized
 	return t, nil
 }

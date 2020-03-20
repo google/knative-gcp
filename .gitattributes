@@ -13,3 +13,4 @@
 /vendor/** coverage-excluded=true
 /test/** coverage-excluded=true
 /cmd/**/main.go coverage-excluded=true
+/pkg/broker/config/targets.pb.go coverage-excluded=true

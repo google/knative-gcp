@@ -23,49 +23,6 @@ import (
 )
 
 func TestBaseTargetsRange(t *testing.T) {
-	// ns1Targets := []*Target{
-	// 	{
-	// 		Id:                "uid-1",
-	// 		Name:              "name1",
-	// 		Namespace:         "ns1",
-	// 		FilterAttributes:  map[string]string{"app": "foo"},
-	// 		RetryTopic:        "abc",
-	// 		RetrySubscription: "abc-sub",
-	// 		State:             Target_READY,
-	// 	},
-	// 	{
-	// 		Id:                "uid-2",
-	// 		Name:              "name2",
-	// 		Namespace:         "ns1",
-	// 		FilterAttributes:  map[string]string{"app": "bar"},
-	// 		RetryTopic:        "def",
-	// 		RetrySubscription: "def-sub",
-	// 		State:             Target_READY,
-	// 	},
-	// }
-	// ns2Targets := []*Target{
-	// 	{
-	// 		Id:                "uid-3",
-	// 		Name:              "name3",
-	// 		Namespace:         "ns2",
-	// 		FilterAttributes:  map[string]string{"app": "bar"},
-	// 		RetryTopic:        "ghi",
-	// 		RetrySubscription: "ghi-sub",
-	// 		State:             Target_UNKNOWN,
-	// 	},
-	// 	{
-	// 		Id:                "uid-4",
-	// 		Name:              "name4",
-	// 		Namespace:         "ns2",
-	// 		FilterAttributes:  map[string]string{"app": "foo"},
-	// 		RetryTopic:        "jkl",
-	// 		RetrySubscription: "jkl-sub",
-	// 		State:             Target_UNKNOWN,
-	// 	},
-	// }
-	// var allTargets []*Target
-	// allTargets = append(allTargets, ns1Targets...)
-	// allTargets = append(allTargets, ns2Targets...)
 	ns1Targets := &NamespacedTargets{
 		Names: map[string]*Target{
 			"name1": {
@@ -110,6 +67,7 @@ func TestBaseTargetsRange(t *testing.T) {
 			},
 		},
 	}
+	// Use a proto message to hold all targets for easy comparison.
 	allTargets := &NamespacedTargets{
 		Names: map[string]*Target{
 			"name1": ns1Targets.GetNames()["name1"],
