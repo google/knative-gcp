@@ -83,12 +83,13 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 	watcher.Add(configDir)
 
 	go func() {
+		defer watcher.Close()
 		for {
 			select {
 			case event, ok := <-watcher.Events:
 				if !ok {
 					// 'Events' channel is closed.
-					break
+					return
 				}
 				currentConfigFile, _ := filepath.EvalSymlinks(t.path)
 
@@ -104,17 +105,16 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 					}
 				} else if filepath.Clean(event.Name) == configFile &&
 					event.Op&fsnotify.Remove != 0 {
-					break
+					return
 				}
 
 			case err, ok := <-watcher.Errors:
 				if ok {
 					log.Printf("watcher error: %v\n", err)
 				}
-				break
+				return
 			}
 		}
-		watcher.Close()
 	}()
 }
 
