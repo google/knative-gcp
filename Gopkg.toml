@@ -115,3 +115,7 @@ required = [
 [[constraint]]
   branch = "master"
   name = "google.golang.org/api"
+
+[[constraint]]
+  name = "github.com/fsnotify/fsnotify"
+  version = "1.4.9"
