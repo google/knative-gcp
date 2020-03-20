@@ -31,7 +31,7 @@ const (
 	defaultPath = "/var/run/cloud-run-events/broker/targets"
 )
 
-// Targets implementas config.ReadOnlyTargets with data
+// Targets implements config.ReadOnlyTargets with data
 // loaded from a file.
 // It also watches the file for any changes and will automatically
 // refresh the in memory cache.
@@ -72,27 +72,23 @@ func NewTargetsFromFile(opts ...Option) (config.ReadOnlyTargets, error) {
 		return nil, err
 	}
 
-	initialized := make(chan struct{}, 1)
-	go t.watchWith(watcher, initialized)
-	// Block until we know for sure the events handler is properly set up.
-	<-initialized
+	t.watchWith(watcher)
 	return t, nil
 }
 
-func (t *Targets) watchWith(watcher *fsnotify.Watcher, initialized chan struct{}) {
-	defer watcher.Close()
-	done := make(chan struct{}, 1)
+func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 	configFile := filepath.Clean(t.path)
 	configDir, _ := filepath.Split(t.path)
 	realConfigFile, _ := filepath.EvalSymlinks(t.path)
+	watcher.Add(configDir)
+
 	go func() {
 		for {
 			select {
 			case event, ok := <-watcher.Events:
 				if !ok {
 					// 'Events' channel is closed.
-					done <- struct{}{}
-					return
+					break
 				}
 				currentConfigFile, _ := filepath.EvalSymlinks(t.path)
 
@@ -108,23 +104,18 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher, initialized chan struct{}
 					}
 				} else if filepath.Clean(event.Name) == configFile &&
 					event.Op&fsnotify.Remove != 0 {
-					done <- struct{}{}
-					return
+					break
 				}
 
 			case err, ok := <-watcher.Errors:
 				if ok {
 					log.Printf("watcher error: %v\n", err)
 				}
-				done <- struct{}{}
-				return
+				break
 			}
 		}
+		watcher.Close()
 	}()
-
-	watcher.Add(configDir)
-	initialized <- struct{}{}
-	<-done
 }
 
 func (t *Targets) sync() error {

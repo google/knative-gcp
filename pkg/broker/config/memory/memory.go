@@ -43,8 +43,8 @@ func NewTargetsFromBytes(b []byte) (config.Targets, error) {
 	return t, nil
 }
 
-// Union adds the given targets.
-func (t *Targets) Union(targets ...config.Target) config.Targets {
+// Insert adds the given targets to the current list.
+func (t *Targets) Insert(targets ...config.Target) config.Targets {
 	cfg := t.Internal.Load().(*config.TargetsConfig)
 	if cfg.GetNamespaces() == nil {
 		cfg.Namespaces = make(map[string]*config.NamespacedTargets)
@@ -65,8 +65,8 @@ func (t *Targets) Union(targets ...config.Target) config.Targets {
 	return t
 }
 
-// Except removes the give targets.
-func (t *Targets) Except(targets ...config.Target) config.Targets {
+// Delete removes the give targets from the current list.
+func (t *Targets) Delete(targets ...config.Target) config.Targets {
 	cfg := t.Internal.Load().(*config.TargetsConfig)
 	for _, target := range targets {
 		if _, ok := cfg.GetNamespaces()[target.GetNamespace()]; !ok {

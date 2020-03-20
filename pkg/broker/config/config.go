@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"sync/atomic"
 
 	"github.com/golang/protobuf/proto"
@@ -45,10 +44,10 @@ type ReadOnlyTargets interface {
 type Targets interface {
 	ReadOnlyTargets
 
-	// Union adds the given targets.
-	Union(...Target) Targets
-	// Except removes the give targets.
-	Except(...Target) Targets
+	// Insert adds the given targets to the current list.
+	Insert(...Target) Targets
+	// Delete removes the give targets from the current list.
+	Delete(...Target) Targets
 }
 
 // BaseTargets provide a common field to store the targets config and
@@ -95,7 +94,6 @@ func (bt *BaseTargets) Bytes() ([]byte, error) {
 // String returns the text format of all the targets.
 func (bt *BaseTargets) String() string {
 	cfg := bt.Internal.Load().(*TargetsConfig)
-	fmt.Println(cfg.GetNamespaces()["ns1"].GetNames()["name1"].State)
 	return cfg.String()
 }
 

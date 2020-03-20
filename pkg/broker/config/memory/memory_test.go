@@ -66,7 +66,7 @@ var (
 	}
 )
 
-func TestUnion(t *testing.T) {
+func TestInsert(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
 			"ns1": &config.NamespacedTargets{
@@ -104,14 +104,14 @@ func TestUnion(t *testing.T) {
 		t.Fatalf("unexpected from NewTargetsFromBytes: %v", err)
 	}
 
-	targets = targets.Union(*ns1Targets[1], *ns2Targets[1])
+	targets = targets.Insert(*ns1Targets[1], *ns2Targets[1])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after union got=%+v,want%+v", gotTargets, wantTargets)
+		t.Errorf("targets after insert got=%+v,want%+v", gotTargets, wantTargets)
 	}
 }
 
-func TestExcept(t *testing.T) {
+func TestDelete(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
 			"ns1": &config.NamespacedTargets{
@@ -149,14 +149,14 @@ func TestExcept(t *testing.T) {
 		t.Fatalf("unexpected from NewTargetsFromBytes: %v", err)
 	}
 
-	targets = targets.Except(*ns1Targets[1], *ns2Targets[1])
+	targets = targets.Delete(*ns1Targets[1], *ns2Targets[1])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after except got=%+v, want=%+v", gotTargets, wantTargets)
+		t.Errorf("targets after delete got=%+v, want=%+v", gotTargets, wantTargets)
 	}
 }
 
-func TestUnionExcept(t *testing.T) {
+func TestInsertDelete(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
 			"ns1": &config.NamespacedTargets{
@@ -191,9 +191,9 @@ func TestUnionExcept(t *testing.T) {
 		t.Fatalf("unexpected from NewTargetsFromBytes: %v", err)
 	}
 
-	targets = targets.Union(*ns1Targets[1], *ns2Targets[1]).Except(*ns1Targets[0], *ns2Targets[0])
+	targets = targets.Insert(*ns1Targets[1], *ns2Targets[1]).Delete(*ns1Targets[0], *ns2Targets[0])
 	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
 	if !proto.Equal(wantTargets, gotTargets) {
-		t.Errorf("targets after union got=%+v, want=%+v", gotTargets, wantTargets)
+		t.Errorf("targets after insert and delete got=%+v, want=%+v", gotTargets, wantTargets)
 	}
 }
