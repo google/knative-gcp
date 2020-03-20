@@ -18,7 +18,9 @@ package v1alpha1
 
 import (
 	"context"
+	"net/http"
 
+	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
 )
@@ -27,6 +29,18 @@ var subjectRefErr = &apis.FieldError{
 	Paths:   []string{"apiVersion", "kind", "name"},
 	Message: `"apiVersion", "kind" and "name" must be specified altogether`,
 }
+
+var validHTTPMethods = sets.NewString(
+	http.MethodConnect,
+	http.MethodDelete,
+	http.MethodGet,
+	http.MethodHead,
+	http.MethodOptions,
+	http.MethodPatch,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodTrace,
+)
 
 // Validate validates a StringMatch.
 func (m *StringMatch) Validate(ctx context.Context) *apis.FieldError {
@@ -75,6 +89,9 @@ func (kvm *KeyValuesMatch) Validate(ctx context.Context) *apis.FieldError {
 // Validate validates a JWTSpec.
 func (j *JWTSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
+	if j.Issuer == "" {
+		errs = errs.Also(apis.ErrMissingField("issuer"))
+	}
 	if j.Jwks != "" && j.JwksURI != "" {
 		errs = errs.Also(apis.ErrMultipleOneOf("jwks", "jwksUri"))
 	}
@@ -93,6 +110,23 @@ func (j *JWTRule) Validate(ctx context.Context) *apis.FieldError {
 	for i, c := range j.Claims {
 		if err := c.Validate(ctx); err != nil {
 			errs = errs.Also(err.ViaFieldIndex("claims", i))
+		}
+	}
+	return errs
+}
+
+// Validate validates a RequestOperation.
+func (op *RequestOperation) Validate(ctx context.Context) *apis.FieldError {
+	var errs *apis.FieldError
+	if err := ValidateStringMatches(ctx, op.Hosts, "hosts"); err != nil {
+		errs = errs.Also(err)
+	}
+	if err := ValidateStringMatches(ctx, op.Paths, "paths"); err != nil {
+		errs = errs.Also(err)
+	}
+	for j, m := range op.Methods {
+		if !validHTTPMethods.Has(m) {
+			errs = errs.Also(apis.ErrInvalidArrayValue(m, "methods", j))
 		}
 	}
 	return errs

@@ -35,7 +35,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "my-source"}}},
 					{Type: []StringMatch{{Exact: "my-type"}}},
@@ -47,7 +51,7 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{Issuer: "example.com", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "my-source"}}},
 					{Type: []StringMatch{{Exact: "my-type"}}},
@@ -60,7 +64,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -74,11 +82,89 @@ func TestEventPolicyValidation(t *testing.T) {
 		},
 		wantErr: apis.ErrMissingField("key").ViaFieldIndex("claims", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
+		name: "invalid host",
+		p: EventPolicy{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
+			Spec: EventPolicySpec{
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
+				Rules: []EventPolicyRuleSpec{
+					{
+						Source: []StringMatch{{Exact: "my-source"}},
+						Operations: []RequestOperation{
+							{
+								Hosts:   []StringMatch{{Suffix: "svc.cluster.local", Exact: "abc"}},
+								Methods: []string{"POST"},
+								Paths:   []StringMatch{{Prefix: "/ping"}},
+							},
+						},
+					},
+				},
+			},
+		},
+		wantErr: apis.ErrMultipleOneOf("exact", "suffix").ViaFieldIndex("hosts", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+	}, {
+		name: "invalid path",
+		p: EventPolicy{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
+			Spec: EventPolicySpec{
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
+				Rules: []EventPolicyRuleSpec{
+					{
+						Source: []StringMatch{{Exact: "my-source"}},
+						Operations: []RequestOperation{
+							{
+								Hosts:   []StringMatch{{Suffix: "svc.cluster.local"}},
+								Methods: []string{"POST"},
+								Paths:   []StringMatch{{Prefix: "/ping", Exact: "abc"}},
+							},
+						},
+					},
+				},
+			},
+		},
+		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("paths", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+	}, {
+		name: "invalid method",
+		p: EventPolicy{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
+			Spec: EventPolicySpec{
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
+				Rules: []EventPolicyRuleSpec{
+					{
+						Source: []StringMatch{{Exact: "my-source"}},
+						Operations: []RequestOperation{
+							{
+								Hosts:   []StringMatch{{Suffix: "svc.cluster.local"}},
+								Methods: []string{"XXX"},
+							},
+						},
+					},
+				},
+			},
+		},
+		wantErr: apis.ErrInvalidArrayValue("XXX", "methods", 0).ViaFieldIndex("operations", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
+	}, {
 		name: "invalid id",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{ID: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -90,7 +176,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{DataSchema: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -102,7 +192,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{Source: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -114,7 +208,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{Type: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -126,7 +224,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{Subject: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -138,7 +240,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{ContentType: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -150,7 +256,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{MediaType: []StringMatch{{Exact: "id", Prefix: "abc"}}},
 				},
@@ -162,7 +272,11 @@ func TestEventPolicyValidation(t *testing.T) {
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: EventPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []EventPolicyRuleSpec{
 					{Extensions: []KeyValuesMatch{{Values: []StringMatch{{Exact: "bar"}}}}},
 				},
