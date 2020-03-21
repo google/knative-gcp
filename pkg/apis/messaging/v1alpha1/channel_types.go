@@ -26,6 +26,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
 )
 
@@ -126,11 +127,20 @@ type ChannelStatus struct {
 	// TopicID is the created topic ID used by the Channel.
 	// +optional
 	TopicID string `json:"topicId,omitempty"`
+
+	// WorkloadIdentity is the status for workload identity.
+	// +optional
+	WorkloadIdentityStatus duckv1alpha1.WorkloadIdentityStatus `json:"workloadIdentity,omitempty"`
 }
 
 // Methods for identifiable interface
+
 func (c *Channel) GetIdentity() string {
 	return c.Spec.ServiceAccount
+}
+
+func (c *Channel) WorkloadIdentityStatus() *duckv1alpha1.WorkloadIdentityStatus {
+	return &c.Status.WorkloadIdentityStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

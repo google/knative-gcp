@@ -130,6 +130,10 @@ var pubSubCondSet = apis.NewLivingConditionSet(
 type CloudPubSubSourceStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
 	duckv1.SourceStatus `json:",inline"`
+
+	// WorkloadIdentity is the status for workload identity.
+	// +optional
+	WorkloadIdentityStatus duckv1alpha1.WorkloadIdentityStatus `json:"workloadIdentity,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -159,6 +163,11 @@ func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 }
 
 // Methods for identifiable interface
+
 func (ps *CloudPubSubSource) GetIdentity() string {
 	return ps.Spec.ServiceAccount
+}
+
+func (ps *CloudPubSubSource) WorkloadIdentityStatus() *duckv1alpha1.WorkloadIdentityStatus {
+	return &ps.Status.WorkloadIdentityStatus
 }

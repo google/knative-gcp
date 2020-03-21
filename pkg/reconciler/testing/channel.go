@@ -79,6 +79,12 @@ func WithInitChannelConditions(s *v1alpha1.Channel) {
 	s.Status.InitializeConditions()
 }
 
+func WithChannelWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.WorkloadIdentityStatus.SetWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName)
+	}
+}
+
 func WithChannelTopic(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicReady()

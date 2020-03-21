@@ -92,3 +92,12 @@ func TestCloudSchedulerSourceGetIdentity(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudSchedulerSourceWorkloadIdentityStatus(t *testing.T) {
+	s := &CloudSchedulerSource{}
+	want := &v1alpha1.WorkloadIdentityStatus{}
+	got := s.WorkloadIdentityStatus()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}

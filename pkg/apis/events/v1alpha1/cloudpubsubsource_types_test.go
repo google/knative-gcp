@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func TestCloudPubSubSourceEventSource(t *testing.T) {
@@ -102,6 +102,15 @@ func TestCloudPubSubSourceGetIdentity(t *testing.T) {
 	}
 	want := "test@test"
 	got := s.GetIdentity()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudPubSubSourceWorkloadIdentityStatus(t *testing.T) {
+	s := &CloudPubSubSource{}
+	want := &v1alpha1.WorkloadIdentityStatus{}
+	got := s.WorkloadIdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

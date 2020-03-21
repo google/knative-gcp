@@ -47,6 +47,12 @@ func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
+func WithCloudAuditLogsSourceWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.WorkloadIdentityStatus.SetWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName)
+	}
+}
+
 func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkTopicFailed(reason, message)

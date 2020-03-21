@@ -70,6 +70,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
 
 	pubsub.Status.InitializeConditions()
+	pubsub.Status.WorkloadIdentityStatus.InitWorkloadIdentityStatus()
 	pubsub.Status.ObservedGeneration = pubsub.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.

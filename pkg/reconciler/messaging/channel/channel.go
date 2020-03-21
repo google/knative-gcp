@@ -74,6 +74,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("channel", channel)))
 
 	channel.Status.InitializeConditions()
+	channel.Status.WorkloadIdentityStatus.InitWorkloadIdentityStatus()
 	channel.Status.ObservedGeneration = channel.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.

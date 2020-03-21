@@ -87,6 +87,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("storage", storage)))
 
 	storage.Status.InitializeConditions()
+	storage.Status.WorkloadIdentityStatus.InitWorkloadIdentityStatus()
 	storage.Status.ObservedGeneration = storage.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.

@@ -96,7 +96,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
@@ -143,49 +143,6 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		},
-		Key: testNS + "/" + sourceName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudAuditLogsSource",
-					Name:               sourceName,
-					UID:                sourceUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, sourceName),
-		},
-		WantErr: true,
-	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
@@ -197,6 +154,7 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
@@ -239,6 +197,7 @@ func TestAllCases(t *testing.T) {
 			Object: NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName)),
 		}},
@@ -269,6 +228,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose projectid`),
 			),
 		}},
@@ -300,6 +260,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" did not expose topicid`),
 			),
 		}},
@@ -331,6 +292,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicFailed("TopicNotReady", `Topic "test-cloudauditlogssource" mismatch: expected "cloudauditlogssource-test-cloudauditlogssource-uid" got "garbaaaaage"`),
 			),
 		}},
@@ -361,6 +323,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status")),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -390,6 +353,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicUnknown("", "")),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -421,6 +385,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
@@ -473,6 +438,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
@@ -507,6 +473,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 			),
@@ -541,6 +508,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("", ""),
 			),
@@ -589,6 +557,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -632,6 +601,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -675,6 +645,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -718,6 +689,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -772,6 +744,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -826,6 +799,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -875,6 +849,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -927,6 +902,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
 				WithCloudAuditLogsSourcePullSubscriptionReady(),
 				WithCloudAuditLogsSourceSinkURI(calSinkURL),
@@ -1096,16 +1072,27 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
 		},
-		Key:               testNS + "/" + sourceName,
-		WantStatusUpdates: nil,
+		Key: testNS + "/" + sourceName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
+				WithCloudAuditLogsSourceWorkloadIdentityStatus("True", "False", deleteWorkloadIdentityFailed, `serviceaccounts "test123" not found`, "test123"),
+				WithCloudAuditLogsSourceDeletionTimestamp,
+			),
+		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 		},
 	}}
 

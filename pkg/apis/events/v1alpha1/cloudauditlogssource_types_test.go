@@ -102,3 +102,12 @@ func TestCloudAuditLogsSourceGetIdentity(t *testing.T) {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
+
+func TestCloudAuditLogsSourceWorkloadIdentityStatus(t *testing.T) {
+	s := &CloudAuditLogsSource{}
+	want := &duckv1alpha1.WorkloadIdentityStatus{}
+	got := s.WorkloadIdentityStatus()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}

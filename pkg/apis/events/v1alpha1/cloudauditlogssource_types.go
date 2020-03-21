@@ -101,6 +101,10 @@ type CloudAuditLogsSourceStatus struct {
 
 	// ID of the Stackdriver sink used to publish audit log messages.
 	StackdriverSink string `json:"stackdriverSink,omitempty"`
+
+	// WorkloadIdentity is the status for workload identity.
+	// +optional
+	WorkloadIdentityStatus duckv1alpha1.WorkloadIdentityStatus `json:"workloadIdentity,omitempty"`
 }
 
 func (*CloudAuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {
@@ -125,8 +129,13 @@ func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
 }
 
 // Methods for identifiable interface
+
 func (s *CloudAuditLogsSource) GetIdentity() string {
 	return s.Spec.ServiceAccount
+}
+
+func (s *CloudAuditLogsSource) WorkloadIdentityStatus() *duckv1alpha1.WorkloadIdentityStatus {
+	return &s.Status.WorkloadIdentityStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -99,6 +99,12 @@ func WithInitCloudSchedulerSourceConditions(s *v1alpha1.CloudSchedulerSource) {
 	s.Status.InitializeConditions()
 }
 
+func WithCloudSchedulerSourceWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.WorkloadIdentityStatus.SetWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName)
+	}
+}
+
 // WithCloudSchedulerSourceTopicFailed marks the condition that the
 // status of topic is False.
 func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerSourceOption {

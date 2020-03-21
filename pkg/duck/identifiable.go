@@ -16,10 +16,15 @@ limitations under the License.
 
 package duck
 
-import "knative.dev/pkg/kmeta"
+import (
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/kmeta"
+)
 
 type Identifiable interface {
 	kmeta.OwnerRefable
 	// GetIdentity returns identifiable's identity.
 	GetIdentity() string
+	// WorkloadIdentityStatus returns the WorkloadIdentityStatus portion of the Status.
+	WorkloadIdentityStatus() *v1alpha1.WorkloadIdentityStatus
 }

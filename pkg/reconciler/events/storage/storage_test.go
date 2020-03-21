@@ -89,7 +89,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -149,6 +149,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 	return u
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	storageSinkURL := sinkURL(t, sinkURI)
 
@@ -160,51 +161,6 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
-	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudStorageSource(storageName, testNS,
-				WithCloudStorageSourceObjectMetaGeneration(generation),
-				WithCloudStorageSourceBucket(bucket),
-				WithCloudStorageSourceSink(sinkGVK, sinkName),
-				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + storageName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudStorageSource(storageName, testNS,
-				WithCloudStorageSourceObjectMetaGeneration(generation),
-				WithCloudStorageSourceStatusObservedGeneration(generation),
-				WithCloudStorageSourceBucket(bucket),
-				WithCloudStorageSourceSink(sinkGVK, sinkName),
-				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudStorageSource",
-					Name:               "my-test-storage",
-					UID:                storageUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, storageName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, storageName),
-		},
-		WantErr: true,
 	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
@@ -223,6 +179,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
@@ -267,6 +224,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -298,6 +256,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" did not expose projectid`),
 			),
 		}},
@@ -331,6 +290,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" did not expose topicid`),
 			),
 		}},
@@ -364,6 +324,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`),
 			),
 		}},
@@ -396,6 +357,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
@@ -428,6 +390,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicUnknown("", ""),
 			),
 		}},
@@ -461,6 +424,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
@@ -515,6 +479,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
@@ -550,6 +515,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
@@ -585,6 +551,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
 					WithCloudStorageSourcePullSubscriptionUnknown("", ""),
@@ -640,6 +607,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
@@ -692,6 +660,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
@@ -744,6 +713,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
@@ -796,6 +766,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudStorageSourceObjectMetaGeneration(generation),
 					WithCloudStorageSourceTopicReady(testTopicID),
 					WithCloudStorageSourceProjectID(testProject),
@@ -901,9 +872,20 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + storageName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 			},
-			WantStatusUpdates: nil,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
+					WithDeletionTimestamp(),
+					WithCloudStorageSourceWorkloadIdentityStatus("True", "False", deleteWorkloadIdentityFailed, `serviceaccounts "test123" not found`, "test123"),
+				),
+			}},
 		}, {
 			Name: "successfully deleted storage",
 			Objects: []runtime.Object{

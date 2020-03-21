@@ -120,6 +120,10 @@ type CloudStorageSourceStatus struct {
 	// NotificationID is the ID that GCS identifies this notification as.
 	// +optional
 	NotificationID string `json:"notificationId,omitempty"`
+
+	// WorkloadIdentity is the status for workload identity.
+	// +optional
+	WorkloadIdentityStatus duckv1alpha1.WorkloadIdentityStatus `json:"workloadIdentity,omitempty"`
 }
 
 func (storage *CloudStorageSource) GetGroupVersionKind() schema.GroupVersionKind {
@@ -144,8 +148,13 @@ func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 }
 
 // Methods for identifiable interface
+
 func (s *CloudStorageSource) GetIdentity() string {
 	return s.Spec.ServiceAccount
+}
+
+func (s *CloudStorageSource) WorkloadIdentityStatus() *duckv1alpha1.WorkloadIdentityStatus {
+	return &s.Status.WorkloadIdentityStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

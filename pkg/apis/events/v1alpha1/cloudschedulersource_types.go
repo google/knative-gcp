@@ -104,6 +104,10 @@ type CloudSchedulerSourceStatus struct {
 	// JobName is the name of the created scheduler Job on success.
 	// +optional
 	JobName string `json:"jobName,omitempty"`
+
+	// WorkloadIdentity is the status for workload identity.
+	// +optional
+	WorkloadIdentityStatus duckv1alpha1.WorkloadIdentityStatus `json:"workloadIdentity,omitempty"`
 }
 
 func (scheduler *CloudSchedulerSource) GetGroupVersionKind() schema.GroupVersionKind {
@@ -127,8 +131,13 @@ func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
 }
 
 // Methods for identifiable interface
+
 func (s *CloudSchedulerSource) GetIdentity() string {
 	return s.Spec.ServiceAccount
+}
+
+func (s *CloudSchedulerSource) WorkloadIdentityStatus() *duckv1alpha1.WorkloadIdentityStatus {
+	return &s.Status.WorkloadIdentityStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

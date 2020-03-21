@@ -73,6 +73,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("scheduler", scheduler)))
 
 	scheduler.Status.InitializeConditions()
+	scheduler.Status.WorkloadIdentityStatus.InitWorkloadIdentityStatus()
 	scheduler.Status.ObservedGeneration = scheduler.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.

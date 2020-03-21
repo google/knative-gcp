@@ -90,7 +90,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -150,6 +150,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 	return u
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	schedulerSinkURL := sinkURL(t, sinkURI)
 
@@ -161,52 +162,6 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
-	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudSchedulerSource(schedulerName, testNS,
-				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-				WithCloudSchedulerSourceLocation(location),
-				WithCloudSchedulerSourceData(testData),
-				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + schedulerName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudSchedulerSource(schedulerName, testNS,
-				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-				WithCloudSchedulerSourceLocation(location),
-				WithCloudSchedulerSourceData(testData),
-				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithInitCloudSchedulerSourceConditions,
-				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudSchedulerSource",
-					Name:               "my-test-scheduler",
-					UID:                schedulerUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, schedulerName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, schedulerName),
-		},
-		WantErr: true,
 	}, {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
@@ -226,6 +181,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
@@ -271,6 +227,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -303,6 +260,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" did not expose projectid`),
 			),
 		}},
@@ -337,6 +295,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" did not expose topicid`),
 			),
 		}},
@@ -371,6 +330,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`),
 			),
 		}},
@@ -404,6 +364,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
@@ -437,6 +398,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 				WithCloudSchedulerSourceTopicUnknown("", ""),
 			),
 		}},
@@ -472,6 +434,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
@@ -524,6 +487,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
@@ -560,6 +524,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
 				),
@@ -596,6 +561,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("", ""),
 				),
@@ -641,6 +607,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-client-induced-error")),
@@ -687,6 +654,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "get-job-induced-error")),
@@ -733,6 +701,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: rpc error: code = %s desc = %s", failedToReconcileJobMsg, codes.Unknown, "get-job-induced-error")),
@@ -780,6 +749,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobNotReady(reconciledFailedReason, fmt.Sprintf("%s: %s", failedToReconcileJobMsg, "create-job-induced-error")),
@@ -826,6 +796,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobReady(jobName),
@@ -867,6 +838,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceWorkloadIdentityStatus("False", "Unknown", "", "", ""),
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
 					WithCloudSchedulerSourcePullSubscriptionReady(),
 					WithCloudSchedulerSourceJobReady(jobName),
@@ -1023,10 +995,23 @@ func TestAllCases(t *testing.T) {
 				),
 				newSink(),
 			},
-			Key:               testNS + "/" + schedulerName,
-			WantStatusUpdates: nil,
+			Key: testNS + "/" + schedulerName,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudSchedulerSource(schedulerName, testNS,
+					WithCloudSchedulerSourceProject(testProject),
+					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+					WithCloudSchedulerSourceLocation(location),
+					WithCloudSchedulerSourceData(testData),
+					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
+					WithCloudSchedulerSourceWorkloadIdentityStatus("True", "False", deleteWorkloadIdentityFailed, `serviceaccounts "test123" not found`, "test123"),
+				),
+			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 			},
 		}}
 

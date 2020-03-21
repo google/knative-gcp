@@ -82,6 +82,12 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
+func WithCloudStorageSourceWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.WorkloadIdentityStatus.SetWorkloadIdentityStatus(enabled, status, reason, message, serviceAccountName)
+	}
+}
+
 func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
 	return func(ps *v1alpha1.CloudStorageSource) {
 		ps.Spec.ServiceAccount = gServiceAccount
