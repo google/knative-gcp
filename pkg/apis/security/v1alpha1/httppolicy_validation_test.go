@@ -35,7 +35,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -59,7 +63,7 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{Issuer: "example.com", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -84,7 +88,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -109,7 +117,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -134,7 +146,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -159,7 +175,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{
@@ -184,7 +204,11 @@ func TestHTTPPolicyValidation(t *testing.T) {
 		p: HTTPPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
 			Spec: HTTPPolicySpec{
-				JWT: &JWTSpec{Jwks: "jwks", FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}}},
+				JWT: &JWTSpec{
+					Issuer:      "example.com",
+					Jwks:        "jwks",
+					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+				},
 				Rules: []HTTPPolicyRuleSpec{
 					{
 						JWTRule: JWTRule{

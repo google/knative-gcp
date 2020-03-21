@@ -149,6 +149,13 @@ func (in *EventPolicyList) DeepCopyObject() runtime.Object {
 func (in *EventPolicyRuleSpec) DeepCopyInto(out *EventPolicyRuleSpec) {
 	*out = *in
 	in.JWTRule.DeepCopyInto(&out.JWTRule)
+	if in.Operations != nil {
+		in, out := &in.Operations, &out.Operations
+		*out = make([]RequestOperation, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.ID != nil {
 		in, out := &in.ID, &out.ID
 		*out = make([]StringMatch, len(*in))

@@ -44,6 +44,11 @@ func (r *EventPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 	if err := r.JWTRule.Validate(ctx); err != nil {
 		errs = errs.Also(err)
 	}
+	for i, op := range r.Operations {
+		if err := op.Validate(ctx); err != nil {
+			errs = errs.Also(err.ViaFieldIndex("operations", i))
+		}
+	}
 	if err := ValidateStringMatches(ctx, r.ID, "id"); err != nil {
 		errs = errs.Also(err)
 	}

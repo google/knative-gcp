@@ -62,6 +62,9 @@ type EventPolicyRuleSpec struct {
 	// JWTRule inlines the rule for checking the JWT.
 	JWTRule `json:",inline"`
 
+	// Operations is a list of operation attributes to match.
+	Operations []RequestOperation `json:"operations,omitempty"`
+
 	// The following attributes map to standard CloudEvents attributes.
 
 	ID          []StringMatch    `json:"id,omitempty"`

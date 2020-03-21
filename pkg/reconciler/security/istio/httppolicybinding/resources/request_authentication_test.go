@@ -49,6 +49,7 @@ func TestMakeRequestAuthentication(t *testing.T) {
 	}
 	jwt := v1alpha1.JWTSpec{
 		JwksURI: testJwksURI,
+		Issuer:  "example.com",
 		FromHeaders: []v1alpha1.JWTHeader{
 			{Name: "Authorization", Prefix: "Bearer"},
 			{Name: "X-Custom-Token"},
@@ -67,6 +68,7 @@ func TestMakeRequestAuthentication(t *testing.T) {
 				},
 			},
 			JwtRules: []*istiosecurity.JWTRule{{
+				Issuer:               "example.com",
 				JwksUri:              testJwksURI,
 				ForwardOriginalToken: true,
 				FromHeaders: []*istiosecurity.JWTHeader{

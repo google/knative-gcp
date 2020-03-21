@@ -49,6 +49,7 @@ func MakeRequestAuthentication(
 				MatchLabels: subjectSelector.MatchLabels,
 			},
 			JwtRules: []*istiosecurity.JWTRule{{
+				Issuer:               jwt.Issuer,
 				Jwks:                 jwt.Jwks,
 				JwksUri:              jwt.JwksURI,
 				ForwardOriginalToken: true,
