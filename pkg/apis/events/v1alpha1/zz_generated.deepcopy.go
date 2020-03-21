@@ -106,6 +106,7 @@ func (in *CloudAuditLogsSourceSpec) DeepCopy() *CloudAuditLogsSourceSpec {
 func (in *CloudAuditLogsSourceStatus) DeepCopyInto(out *CloudAuditLogsSourceStatus) {
 	*out = *in
 	in.PubSubStatus.DeepCopyInto(&out.PubSubStatus)
+	out.WorkloadIdentityStatus = in.WorkloadIdentityStatus
 	return
 }
 
@@ -211,6 +212,7 @@ func (in *CloudPubSubSourceSpec) DeepCopy() *CloudPubSubSourceSpec {
 func (in *CloudPubSubSourceStatus) DeepCopyInto(out *CloudPubSubSourceStatus) {
 	*out = *in
 	in.SourceStatus.DeepCopyInto(&out.SourceStatus)
+	out.WorkloadIdentityStatus = in.WorkloadIdentityStatus
 	return
 }
 
@@ -306,6 +308,7 @@ func (in *CloudSchedulerSourceSpec) DeepCopy() *CloudSchedulerSourceSpec {
 func (in *CloudSchedulerSourceStatus) DeepCopyInto(out *CloudSchedulerSourceStatus) {
 	*out = *in
 	in.PubSubStatus.DeepCopyInto(&out.PubSubStatus)
+	out.WorkloadIdentityStatus = in.WorkloadIdentityStatus
 	return
 }
 
@@ -406,6 +409,7 @@ func (in *CloudStorageSourceSpec) DeepCopy() *CloudStorageSourceSpec {
 func (in *CloudStorageSourceStatus) DeepCopyInto(out *CloudStorageSourceStatus) {
 	*out = *in
 	in.PubSubStatus.DeepCopyInto(&out.PubSubStatus)
+	out.WorkloadIdentityStatus = in.WorkloadIdentityStatus
 	return
 }
 
