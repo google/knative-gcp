@@ -129,7 +129,7 @@ func TestBaseTargetsBytes(t *testing.T) {
 	targets := &BaseTargets{}
 	cfg := &TargetsConfig{
 		Namespaces: map[string]*NamespacedTargets{
-			"ns1": &NamespacedTargets{
+			"ns1": {
 				Names: map[string]*Target{
 					"name1": {
 						Id:                "uid-1",
@@ -142,7 +142,7 @@ func TestBaseTargetsBytes(t *testing.T) {
 					},
 				},
 			},
-			"ns2": &NamespacedTargets{
+			"ns2": {
 				Names: map[string]*Target{
 					"name3": {
 						Id:                "uid-3",
@@ -186,7 +186,7 @@ func TestBaseTargetsString(t *testing.T) {
 	targets := &BaseTargets{}
 	cfg := &TargetsConfig{
 		Namespaces: map[string]*NamespacedTargets{
-			"ns1": &NamespacedTargets{
+			"ns1": {
 				Names: map[string]*Target{
 					"name1": {
 						Id:                "uid-1",
@@ -199,7 +199,7 @@ func TestBaseTargetsString(t *testing.T) {
 					},
 				},
 			},
-			"ns2": &NamespacedTargets{
+			"ns2": {
 				Names: map[string]*Target{
 					"name3": {
 						Id:                "uid-3",

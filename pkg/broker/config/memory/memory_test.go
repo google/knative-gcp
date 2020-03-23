@@ -69,13 +69,13 @@ var (
 func TestInsert(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": ns1Targets[0],
 					"name2": ns1Targets[1],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": ns2Targets[0],
 					"name4": ns2Targets[1],
@@ -86,12 +86,12 @@ func TestInsert(t *testing.T) {
 
 	initTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": ns1Targets[0],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": ns2Targets[0],
 				},
@@ -114,12 +114,12 @@ func TestInsert(t *testing.T) {
 func TestDelete(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": ns1Targets[0],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": ns2Targets[0],
 				},
@@ -129,13 +129,13 @@ func TestDelete(t *testing.T) {
 
 	initTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": ns1Targets[0],
 					"name2": ns1Targets[1],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": ns2Targets[0],
 					"name4": ns2Targets[1],
@@ -159,12 +159,12 @@ func TestDelete(t *testing.T) {
 func TestInsertDelete(t *testing.T) {
 	wantTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name2": ns1Targets[1],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name4": ns2Targets[1],
 				},
@@ -173,12 +173,12 @@ func TestInsertDelete(t *testing.T) {
 	}
 	initTargets := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": ns1Targets[0],
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": ns2Targets[0],
 				},
