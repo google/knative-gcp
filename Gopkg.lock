@@ -1684,6 +1684,7 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
+    "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/fsnotify/fsnotify",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
