@@ -67,9 +67,6 @@ func (r *EventPolicyRuleSpec) Validate(ctx context.Context) *apis.FieldError {
 	if err := ValidateStringMatches(ctx, r.ContentType, "contenttype"); err != nil {
 		errs = errs.Also(err)
 	}
-	if err := ValidateStringMatches(ctx, r.MediaType, "mediatype"); err != nil {
-		errs = errs.Also(err)
-	}
 	for i, e := range r.Extensions {
 		if err := e.Validate(ctx); err != nil {
 			errs = errs.Also(err.ViaFieldIndex("extensions", i))

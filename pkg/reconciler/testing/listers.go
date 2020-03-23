@@ -201,6 +201,14 @@ func (l *Listers) GetHTTPPolicyBindingLister() securitylisters.HTTPPolicyBinding
 	return securitylisters.NewHTTPPolicyBindingLister(l.indexerFor(&securityv1alpha1.HTTPPolicyBinding{}))
 }
 
+func (l *Listers) GetEventPolicyLister() securitylisters.EventPolicyLister {
+	return securitylisters.NewEventPolicyLister(l.indexerFor(&securityv1alpha1.EventPolicy{}))
+}
+
+func (l *Listers) GetEventPolicyBindingLister() securitylisters.EventPolicyBindingLister {
+	return securitylisters.NewEventPolicyBindingLister(l.indexerFor(&securityv1alpha1.EventPolicyBinding{}))
+}
+
 func (l *Listers) GetRequestAuthenticationLister() istiov1beta1listers.RequestAuthenticationLister {
 	return istiov1beta1listers.NewRequestAuthenticationLister(l.indexerFor(&istiov1beta1.RequestAuthentication{}))
 }

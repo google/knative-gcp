@@ -82,8 +82,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.HTTPPolicyBi
 	}
 	// Track referenced policy.
 	r.policyTracker.TrackReference(tracker.Reference{
-		APIVersion: b.Spec.Policy.APIVersion,
-		Kind:       b.Spec.Policy.Kind,
+		APIVersion: httpPolicyGVK.GroupVersion().String(),
+		Kind:       httpPolicyGVK.Kind,
 		Namespace:  b.Spec.Policy.Namespace,
 		Name:       b.Spec.Policy.Name,
 	}, b)
