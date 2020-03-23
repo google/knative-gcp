@@ -29,7 +29,7 @@ import (
 func TestSyncConfigFromFile(t *testing.T) {
 	data := &config.TargetsConfig{
 		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": &config.NamespacedTargets{
+			"ns1": {
 				Names: map[string]*config.Target{
 					"name1": {
 						Id:                "uid-1",
@@ -51,7 +51,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 					},
 				},
 			},
-			"ns2": &config.NamespacedTargets{
+			"ns2": {
 				Names: map[string]*config.Target{
 					"name3": {
 						Id:                "uid-3",
