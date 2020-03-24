@@ -66,7 +66,7 @@ func (le *LabeledEvent) Delabeled() *cloudevents.Event {
 	e := le.event.Clone()
 	for k := range e.Extensions() {
 		if strings.HasPrefix(strings.ToLower(k), LabelPrefix) {
-			// delete(e.Extensions(), k)
+			// Set to nil to delete that extension.
 			e.SetExtension(k, nil)
 		}
 	}
