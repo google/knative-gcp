@@ -25,7 +25,6 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
 	eventingtest "knative.dev/eventing/test"
-	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/pkg/test/zipkin"
@@ -33,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/logstream"
 
-	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
@@ -124,7 +122,7 @@ func TestEventTransformationForTrigger(t *testing.T) {
 func TestBrokerChannelFlow(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerChannelFlowTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -138,7 +136,7 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {
