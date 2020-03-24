@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	// LabelPrefix is the prefix for label keys.
-	LabelPrefix = "kgcp"
+	// labelPrefix is the prefix for label keys.
+	labelPrefix = "kgcp"
 )
 
 // LabeledEvent is a wrapper of a cloudevent
@@ -40,7 +40,7 @@ func NewLabeledEvent(e *cloudevents.Event) *LabeledEvent {
 
 // WithLabel attaches a label to the event as an extension.
 func (le *LabeledEvent) WithLabel(key, value string) *LabeledEvent {
-	le.event.SetExtension(LabelPrefix+key, value)
+	le.event.SetExtension(labelPrefix+key, value)
 	return le
 }
 
@@ -49,7 +49,7 @@ func (le *LabeledEvent) GetLabels() map[string]string {
 	m := make(map[string]string)
 	exts := le.event.Extensions()
 	for k, v := range exts {
-		if strings.HasPrefix(strings.ToLower(k), LabelPrefix) {
+		if strings.HasPrefix(strings.ToLower(k), labelPrefix) {
 			m[k] = v.(string)
 		}
 	}
@@ -65,7 +65,7 @@ func (le *LabeledEvent) Event() *cloudevents.Event {
 func (le *LabeledEvent) Delabeled() *cloudevents.Event {
 	e := le.event.Clone()
 	for k := range e.Extensions() {
-		if strings.HasPrefix(strings.ToLower(k), LabelPrefix) {
+		if strings.HasPrefix(strings.ToLower(k), labelPrefix) {
 			// Set to nil to delete that extension.
 			e.SetExtension(k, nil)
 		}
