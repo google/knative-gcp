@@ -85,13 +85,13 @@ Service Account.
            for each resource. 
            
            Generally, updating `spec.serviceAccount` will trigger 
-           the controller to enable Workload Identity for sources in the data plane 
-           with the following steps (all handled by the controller):
+           the controller to enable Workload Identity for sources in the data plane. 
+           The following steps are handled by the controller:
            
            1. Create a Kubernetes Service Account and add an `OwnerReference` to it. The `OwnerReference` is referencing to the source.
            
            1. Bind the Kubernetes Service Account with Google Cloud Service Account, this will add `role/iam.workloadIdentityUser` to the Google Cloud Service Account. 
-           The scope of this role is only for this specific Google Cloud Service Account. It is equal to this command:
+           The scope of this role is only for this specific Google Cloud Service Account. It equals to this command:
            
               ```shell
                 gcloud iam service-accounts add-iam-policy-binding \
