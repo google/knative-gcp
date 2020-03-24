@@ -278,7 +278,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
+  digest = "1:f0ae868d945753df81e797524bb7f3c577bcf751ce515c18162d259ca3ff8de7"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
@@ -289,8 +289,8 @@
     "cmp/internal/value",
   ]
   pruneopts = "NUT"
-  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
-  version = "v0.3.0"
+  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:ecc8bd577aaaa8ce2c3ad060e61e1daeadbab1d14a0934f019ad2995c3a666b0"
@@ -774,6 +774,17 @@
   ]
   pruneopts = "NUT"
   revision = "90aeebe84374219b793ddaf02606e8d77a632028"
+
+[[projects]]
+  branch = "master"
+  digest = "1:325a1b73817aa79fc85f10376ed41ea607f7dd7f6c6bfa46df6a28ef2857941f"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "NUT"
+  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
 
 [[projects]]
   digest = "1:8392b5c29adedc5f85c66b48bb53b6c49dd91d8540f3cad5d43ef7277946718f"
@@ -1412,7 +1423,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c9e0c66b11e90b2f23074f3e2a10c247e8b63c9e1af5999ef2dfc6a409ba6201"
+  digest = "1:240ae9ed043cbb127a6e82006d09d9d14a2f833ecbef920c6c965a6bb0e6e4e4"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1508,11 +1519,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "f3561270b28b3759cdb198f1fab0d187c0ab6d65"
+  revision = "a16613ae8a65f9c2ab8d634207b1dacdb54b40d1"
 
 [[projects]]
   branch = "master"
-  digest = "1:94d7cfde4eee652c089b47f0200b86bc28e618de18a2e5368b0bbc8e2b601026"
+  digest = "1:7912249df5f43ca10fa1c3f8a3febdc3c0f7b320698787fa73c9fb1920a832d6"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1593,11 +1604,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "c13e86e2d4f484f1dd3b8ca6474994c16da74f20"
+  revision = "0840da9555a3a75f801abc1d654fb00dfe9a687a"
 
 [[projects]]
   branch = "master"
-  digest = "1:678187872ff6b5e2e9e1b4022b2784ebc585fe51f5afe1879a2c58d55d25f692"
+  digest = "1:a7e28db403d1991559122ff01ecd5724a5aef2c6f88f6a1227788f8145d0f76b"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1646,7 +1657,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "15c45ace67077b8a46b8c77ea385ad4699277cd4"
+  revision = "d1be5c476fef40ec5b2cfc81b9d1e41652fe37ce"
 
 [[projects]]
   branch = "master"
@@ -1657,7 +1668,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "64929018c86389e47a88782619565b6d099c0a5a"
+  revision = "0042e9ca752c8339c3c245e1d2c76b891a144b7e"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
