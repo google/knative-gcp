@@ -61,12 +61,16 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.EventPolicyB
 		return fmt.Errorf("failed to get EventPolicy: %w", err)
 	}
 	// Track referenced policy.
-	r.policyTracker.TrackReference(tracker.Reference{
+	if err := r.policyTracker.TrackReference(tracker.Reference{
 		APIVersion: eventPolicyGVK.GroupVersion().String(),
 		Kind:       eventPolicyGVK.Kind,
 		Namespace:  b.Spec.Policy.Namespace,
 		Name:       b.Spec.Policy.Name,
-	}, b)
+	}, b); err != nil {
+		logging.FromContext(ctx).Error("Problem tracking EventPolicy", zap.Any("EventPolicy", b.Spec.Policy), zap.Error(err))
+		b.Status.MarkBindingFailure("TrackPolicyFailure", "%v", err)
+		return fmt.Errorf("failed to track EventPolicy: %w", err)
+	}
 
 	hp, err := r.reconcileHTTPPolicy(ctx, b, p)
 	if err != nil {
@@ -82,15 +86,20 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.EventPolicyB
 		return err
 	}
 
-	// Copy the HTTP policy binding status.
-	b.Status = *hpb.Status.DeepCopy()
+	// Propagate the status.
+	if hpb.Status.IsReady() {
+		b.Status.MarkBindingAvailable()
+	} else {
+		st := hpb.Status.GetTopLevelCondition()
+		b.Status.MarkBindingFailure(st.Reason, st.Message)
+	}
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "EventPolicyBindingReconciled", "EventPolicyBinding reconciled: \"%s/%s\"", b.Namespace, b.Name)
 }
 
 func (r *Reconciler) reconcileHTTPPolicyBinding(
 	ctx context.Context,
 	b *v1alpha1.EventPolicyBinding,
-	p *v1alpha1.HTTPPolicy) (*v1alpha1.HTTPPolicyBinding, pkgreconciler.Event) {
+	p *v1alpha1.HTTPPolicy) (*v1alpha1.HTTPPolicyBinding, error) {
 
 	desired := resources.MakeHTTPPolicyBinding(b, p)
 	existing, err := r.httpPolicyBindingLister.HTTPPolicyBindings(desired.Namespace).Get(desired.Name)
@@ -119,7 +128,7 @@ func (r *Reconciler) reconcileHTTPPolicyBinding(
 func (r *Reconciler) reconcileHTTPPolicy(
 	ctx context.Context,
 	b *v1alpha1.EventPolicyBinding,
-	p *v1alpha1.EventPolicy) (*v1alpha1.HTTPPolicy, pkgreconciler.Event) {
+	p *v1alpha1.EventPolicy) (*v1alpha1.HTTPPolicy, error) {
 
 	desired := resources.MakeHTTPPolicy(b, p)
 	existing, err := r.httpPolicyLister.HTTPPolicies(desired.Namespace).Get(desired.Name)
