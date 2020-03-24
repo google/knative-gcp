@@ -32,8 +32,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/logstream"
 
+	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 )
 
 var channelTestRunner eventingtestlib.ChannelTestRunner
@@ -116,7 +118,7 @@ func TestChannelChain(t *testing.T) {
 func TestEventTransformationForTrigger(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
