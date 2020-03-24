@@ -66,8 +66,7 @@ required = [
 
 [[override]]
   name = "github.com/cloudevents/sdk-go"
-  # prevew7 has a typo. NVM we will update again soon.
-  version = "v2.0.0-prevew7"
+  version = "v2.0.0-preview7"
 
 [prune]
   go-tests = true
