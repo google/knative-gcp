@@ -40,7 +40,11 @@ func NewLabeledEvent(e *cloudevents.Event) *LabeledEvent {
 
 // WithLabel attaches a label to the event as an extension.
 func (le *LabeledEvent) WithLabel(key, value string) *LabeledEvent {
-	le.event.SetExtension(labelPrefix+key, value)
+	if value == "" {
+		le.event.SetExtension(labelPrefix+key, nil)
+	} else {
+		le.event.SetExtension(labelPrefix+key, value)
+	}
 	return le
 }
 
@@ -50,7 +54,7 @@ func (le *LabeledEvent) GetLabels() map[string]string {
 	exts := le.event.Extensions()
 	for k, v := range exts {
 		if strings.HasPrefix(strings.ToLower(k), labelPrefix) {
-			m[k] = v.(string)
+			m[strings.TrimPrefix(k, labelPrefix)] = v.(string)
 		}
 	}
 	return m

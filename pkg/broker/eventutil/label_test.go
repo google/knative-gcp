@@ -37,6 +37,15 @@ func TestLabeledEevent(t *testing.T) {
 
 	le := NewLabeledEvent(&e).WithLabel("label1", "val1").WithLabel("label2", "val2")
 
+	wantLabels := map[string]string{
+		"label1": "val1",
+		"label2": "val2",
+	}
+	gotLabels := le.GetLabels()
+	if diff := cmp.Diff(wantLabels, gotLabels); diff != "" {
+		t.Errorf("LabeledEvent.GetLabels() (-want,+got): %v", diff)
+	}
+
 	gotDelabeled := le.Delabeled()
 	if diff := cmp.Diff(&wantDelabeled, gotDelabeled); diff != "" {
 		t.Errorf("LabeledEvent.Delabeled() (-want,+got): %v", diff)
@@ -44,5 +53,10 @@ func TestLabeledEevent(t *testing.T) {
 	gotLabeled := le.Event()
 	if diff := cmp.Diff(&wantLabeled, gotLabeled); diff != "" {
 		t.Errorf("LabeledEvent.Event() (-want,+got): %v", diff)
+	}
+
+	le.WithLabel("label1", "").WithLabel("label2", "")
+	if gotCnt := len(le.GetLabels()); gotCnt != 0 {
+		t.Errorf("Labels count after removing labels got=%d want=0", gotCnt)
 	}
 }
