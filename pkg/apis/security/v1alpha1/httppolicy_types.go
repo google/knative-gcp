@@ -80,18 +80,6 @@ type RequestAuth struct {
 	Claims []KeyValuesMatch `json:"claims,omitempty"`
 }
 
-// RequestOperation is the operation the request is taking.
-type RequestOperation struct {
-	// Hosts is a list of host names to match.
-	Hosts []StringMatch `json:"hosts,omitempty"`
-
-	// Paths is a list of paths to match.
-	Paths []StringMatch `json:"paths,omitempty"`
-
-	// Methods is a list of methods to match.
-	Methods []string `json:"methods,omitempty"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // HTTPPolicyList is a collection of HTTPPolicy.

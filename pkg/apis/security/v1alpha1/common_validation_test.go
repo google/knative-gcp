@@ -109,18 +109,21 @@ func TestValidateJWTSpec(t *testing.T) {
 	}{{
 		name: "valid",
 		j: JWTSpec{
+			Issuer:      "example.com",
 			JwksURI:     "https://example.com",
 			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 	}, {
 		name: "valid 2",
 		j: JWTSpec{
+			Issuer:      "example.com",
 			Jwks:        "jwk",
 			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 	}, {
 		name: "both jwks and jwksUri are specified",
 		j: JWTSpec{
+			Issuer:      "example.com",
 			Jwks:        "jwk",
 			JwksURI:     "https://example.com",
 			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
@@ -129,15 +132,24 @@ func TestValidateJWTSpec(t *testing.T) {
 	}, {
 		name: "neither jwks nor jwksUri is specified",
 		j: JWTSpec{
+			Issuer:      "example.com",
 			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
 		},
 		wantErr: apis.ErrMissingOneOf("jwks", "jwksUri"),
 	}, {
 		name: "missing jwt header",
 		j: JWTSpec{
-			Jwks: "jwk",
+			Issuer: "example.com",
+			Jwks:   "jwk",
 		},
 		wantErr: apis.ErrMissingField("fromHeaders"),
+	}, {
+		name: "missing issuer",
+		j: JWTSpec{
+			Jwks:        "jwk",
+			FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
+		},
+		wantErr: apis.ErrMissingField("issuer"),
 	}}
 
 	for _, tc := range cases {

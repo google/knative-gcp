@@ -72,6 +72,9 @@ type JWTSpec struct {
 	// Can only be specified if JwksURI is not specified.
 	Jwks string `json:"jwks,omitempty"`
 
+	// Issuer is the issuer of the JWT.
+	Issuer string `json:"issuer"`
+
 	// FromHeader is the list of header locations from which JWT is expected.
 	FromHeaders []JWTHeader `json:"fromHeaders"`
 }
@@ -88,12 +91,24 @@ type JWTHeader struct {
 
 // JWTRule specifies a rule to check JWT attributes.
 type JWTRule struct {
-	// Principals is a list of source identities to match.
+	// Principals is a list of source identities ("iss/sub") to match.
 	// If omitted, it implies any principal is allowed.
 	Principals []string `json:"principals,omitempty"`
 
 	// Claims is a list of claims that should match certain patterns.
 	Claims []KeyValuesMatch `json:"claims,omitempty"`
+}
+
+// RequestOperation is the operation the request is taking.
+type RequestOperation struct {
+	// Hosts is a list of host names to match.
+	Hosts []StringMatch `json:"hosts,omitempty"`
+
+	// Paths is a list of paths to match.
+	Paths []StringMatch `json:"paths,omitempty"`
+
+	// Methods is a list of methods to match.
+	Methods []string `json:"methods,omitempty"`
 }
 
 // PolicyBindingSpec is the specification for a policy binding.

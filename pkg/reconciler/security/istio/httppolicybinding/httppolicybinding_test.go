@@ -404,6 +404,7 @@ func newTestPolicy(name, namespace string) *v1alpha1.HTTPPolicy {
 	}
 	p.Spec = v1alpha1.HTTPPolicySpec{
 		JWT: &v1alpha1.JWTSpec{
+			Issuer:  "example.com",
 			JwksURI: testJwksURI,
 			FromHeaders: []v1alpha1.JWTHeader{
 				{Name: "Authorization", Prefix: "Bearer"},
@@ -471,6 +472,7 @@ func withRequestAuthenticationTestSpec() RequestAuthnOption {
 				},
 			},
 			JwtRules: []*istiosecurity.JWTRule{{
+				Issuer:               "example.com",
 				JwksUri:              testJwksURI,
 				ForwardOriginalToken: true,
 				FromHeaders: []*istiosecurity.JWTHeader{
