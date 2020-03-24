@@ -751,7 +751,7 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
-		TransformerURI: transformerURI,
+		TransformerURI: transformer,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }
