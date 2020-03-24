@@ -47,6 +47,9 @@ message Target {
 
   // The Pubsub subscription name for retrying the events.
   string retry_subscription = 8;
+
+  // The broker name that the trigger is referencing.
+  string broker = 9;
 }
 
 // NamespacedTargets is the collection of targets grouped by namespaces.
