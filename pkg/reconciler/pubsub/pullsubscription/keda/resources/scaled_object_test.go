@@ -23,7 +23,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"knative.dev/pkg/apis"
 
