@@ -126,9 +126,12 @@ func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
 	return &schedulerCondSet
 }
 
-// Methods for identifiable interface
-func (s *CloudSchedulerSource) GetIdentity() string {
-	return s.Spec.ServiceAccount
+func (s *CloudSchedulerSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+func (s *CloudSchedulerSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

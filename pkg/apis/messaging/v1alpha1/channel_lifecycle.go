@@ -17,6 +17,7 @@
 package v1alpha1
 
 import (
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
@@ -62,6 +63,10 @@ func (cs *ChannelStatus) SetAddress(url *apis.URL) {
 // MarkTopicReady sets the condition that the topic has been created and ready.
 func (cs *ChannelStatus) MarkTopicReady() {
 	channelCondSet.Manage(cs).MarkTrue(ChannelConditionTopicReady)
+}
+
+func (cs *ChannelStatus) MarkWorkloadIdentityConfigured() {
+	channelCondSet.Manage(cs).MarkTrue(duckv1alpha1.IdentityConfigured)
 }
 
 func (cs *ChannelStatus) PropagateTopicStatus(ts *v1alpha1.TopicStatus) {

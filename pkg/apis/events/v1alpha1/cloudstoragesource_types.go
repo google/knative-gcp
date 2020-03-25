@@ -58,13 +58,6 @@ type CloudStorageSourceSpec struct {
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
-	// ServiceAccountName holds the name of the Kubernetes service account
-	// as which the underlying K8s resources should be run. If unspecified
-	// this will default to the "default" service account for the namespace
-	// in which the GCS exists.
-	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
 
@@ -138,14 +131,17 @@ func (s *CloudStorageSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
 }
 
+func (s *CloudStorageSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+func (s *CloudStorageSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
 // ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
 	return &storageCondSet
-}
-
-// Methods for identifiable interface
-func (s *CloudStorageSource) GetIdentity() string {
-	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

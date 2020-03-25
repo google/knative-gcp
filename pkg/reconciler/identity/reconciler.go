@@ -58,7 +58,12 @@ type Identity struct {
 func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) (*corev1.ServiceAccount, error) {
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.GetIdentity())
+
+	status := identifiable.IdentityStatus()
+	spec := identifiable.IdentitySpec()
+	cs := identifiable.ConditionSet()
+
+	kServiceAccount, err := i.createServiceAccount(ctx, namespace, spec.ServiceAccount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
 	}
@@ -74,9 +79,12 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	}
 
 	// Add iam policy binding to GCP ServiceAccount.
-	if err := addIamPolicyBinding(ctx, projectID, identifiable.GetIdentity(), kServiceAccount); err != nil {
+	if err := addIamPolicyBinding(ctx, projectID, spec.ServiceAccount, kServiceAccount); err != nil {
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %s", err)
 	}
+
+	status.MarkWorkloadIdentityConfigured(cs)
+
 	return kServiceAccount, nil
 }
 
@@ -84,7 +92,10 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 // if this k8s service account only has one ownerReference.
 func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) error {
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.GetIdentity())
+
+	spec := identifiable.IdentitySpec()
+
+	kServiceAccountName := resources.GenerateServiceAccountName(spec.ServiceAccount)
 	kServiceAccount, err := i.KubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		// k8s ServiceAccount should be there.
@@ -92,7 +103,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	}
 	if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 		logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-		if err := removeIamPolicyBinding(ctx, projectID, identifiable.GetIdentity(), kServiceAccount); err != nil {
+		if err := removeIamPolicyBinding(ctx, projectID, spec.ServiceAccount, kServiceAccount); err != nil {
 			return fmt.Errorf("removing iam policy binding failed with: %w", err)
 		}
 	}
