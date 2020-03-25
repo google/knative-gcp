@@ -17,7 +17,7 @@ kind: ClusterRole
 metadata:
   name: security-webhook
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
 rules:
   # For watching logging configuration and getting certs.
   - apiGroups:

@@ -17,7 +17,7 @@ kind: ClusterRole
 metadata:
   name: security-controller
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
 rules:
 
 - apiGroups:
@@ -60,3 +60,48 @@ rules:
     - authorizationpolicies/status
   verbs:
     - get
+
+# All supported subjects.
+# TODO: is there a better way to grant get/list permission
+# for all resources?
+
+- apiGroups:
+    - apps
+  resources:
+    - deployments
+  verbs:
+    - get
+    - list
+
+- apiGroups:
+    - serving.knative.dev
+  resources:
+    - services
+  verbs:
+    - get
+    - list
+
+- apiGroups:
+    - batch
+  resources:
+    - jobs
+  verbs:
+    - get
+    - list
+
+
+- apiGroups:
+    - ""
+  resources:
+    - services
+  verbs:
+    - get
+    - list
+
+- apiGroups:
+    - "eventing.knative.dev"
+  resources:
+    - "brokers"
+  verbs:
+    - get
+    - list

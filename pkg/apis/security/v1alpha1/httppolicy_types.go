@@ -70,16 +70,6 @@ type HTTPPolicyRuleSpec struct {
 	Headers []KeyValuesMatch `json:"headers,omitempty"`
 }
 
-// RequestAuth is the HTTP request authentication specification.
-type RequestAuth struct {
-	// Principals is a list of source identities to match.
-	// If omitted, it implies any principal is allowed.
-	Principals []string `json:"principals,omitempty"`
-
-	// Claims is a list of claims that should match certain patterns.
-	Claims []KeyValuesMatch `json:"claims,omitempty"`
-}
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // HTTPPolicyList is a collection of HTTPPolicy.

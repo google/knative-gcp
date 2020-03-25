@@ -11,3 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: httppolicies.security.knative.dev
+  labels:
+    security.knative.dev/release: devel
+    security.knative.dev/crd-install: "true"
+spec:
+  group: security.knative.dev
+  version: v1alpha1
+  names:
+    kind: HTTPPolicy
+    plural: httppolicies
+    singular: httppolicy
+    categories:
+    - all
+    - knative
+    - security
+  scope: Namespaced
+  additionalPrinterColumns:
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp

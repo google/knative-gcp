@@ -17,7 +17,7 @@ kind: ClusterRoleBinding
 metadata:
   name: security-controller
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
 subjects:
 - kind: ServiceAccount
   name: security-controller
@@ -34,7 +34,7 @@ kind: ClusterRoleBinding
 metadata:
   name: security-webhook
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
 subjects:
   - kind: ServiceAccount
     name: security-webhook

@@ -18,7 +18,7 @@ metadata:
   name: security-controller
   namespace: knative-security
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
 subjects:
 - kind: ServiceAccount
   name: security-controller

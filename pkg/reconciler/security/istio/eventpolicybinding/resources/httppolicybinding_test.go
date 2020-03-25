@@ -26,6 +26,7 @@ import (
 	"knative.dev/pkg/tracker"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/security"
 	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 )
 
@@ -63,6 +64,9 @@ func TestMakeHTTPPolicyBinding(t *testing.T) {
 			Name:            kmeta.ChildName("test-binding", "-httpbinding"),
 			Namespace:       "testnamespace",
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(eb)},
+			Annotations: map[string]string{
+				security.PolicyBindingClassAnnotationKey: security.IstioPolicyBindingClassValue,
+			},
 		},
 		Spec: v1alpha1.PolicyBindingSpec{
 			BindingSpec: duckv1alpha1.BindingSpec{

@@ -17,4 +17,4 @@ kind: Namespace
 metadata:
   name: knative-security
   labels:
-    events.cloud.google.com/release: devel
+    security.knative.dev/release: devel
