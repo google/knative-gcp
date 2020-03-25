@@ -22,8 +22,6 @@ import (
 
 	nethttp "net/http"
 
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/plugin/ochttp/propagation/b3"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
@@ -276,13 +274,6 @@ func (a *Adapter) newHTTPClient(ctx context.Context, target string) (cloudevents
 	t, err := cloudevents.NewHTTPTransport(tOpts...)
 	if err != nil {
 		return nil, err
-	}
-
-	// Add output tracing.
-	t.Client = &nethttp.Client{
-		Transport: &ochttp.Transport{
-			Propagation: &b3.HTTPFormat{},
-		},
 	}
 
 	// Use the transport to make a new CloudEvents client.

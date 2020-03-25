@@ -1724,8 +1724,6 @@
     "github.com/googleapis/gax-go/v2",
     "github.com/kelseyhightower/envconfig",
     "go.opencensus.io/metric/metricexport",
-    "go.opencensus.io/plugin/ochttp",
-    "go.opencensus.io/plugin/ochttp/propagation/b3",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
     "go.opencensus.io/tag",
