@@ -34,7 +34,6 @@ import (
 	"github.com/google/knative-gcp/pkg/utils"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"knative.dev/eventing/pkg/tracing"
 	"knative.dev/pkg/logging"
 )
 
@@ -177,16 +176,6 @@ func (a *Adapter) receive(ctx context.Context, event cloudevents.Event, resp *cl
 	}
 
 	var err error
-	// If the resource group is the Channel one, then we attach the span from the traceparent attribute.
-	// Otherwise, it means it's a Source, thus it does not have traceparent.
-	if a.ResourceGroup == channelGVR.GroupResource().String() {
-		// a.Sink is likely not exactly what we want...
-		ctx, err = tracing.AddSpanFromTraceparentAttribute(ctx, a.Sink, event)
-		if err != nil {
-			logger.Warnw("Unable to attach tracing to context", zap.Error(err))
-		}
-	}
-
 	// If a transformer has been configured, then transform the message.
 	// Note that this path in the code will be executed when using the receive adapter as part of the underlying Channel
 	// of a Broker. We currently set the TransformerURI to be the address of the Broker filter pod.

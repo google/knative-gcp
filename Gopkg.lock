@@ -1845,7 +1845,6 @@
     "knative.dev/pkg/test/logstream",
     "knative.dev/pkg/test/zipkin",
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
-    "knative.dev/pkg/tracing",
     "knative.dev/pkg/tracing/config",
     "knative.dev/pkg/tracker",
     "knative.dev/pkg/webhook",
