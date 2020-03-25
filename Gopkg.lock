@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:f1c479b9da374300702b9589dff5e7985dfc4ab29eca8703045342519e42bc20"
+  digest = "1:4b4b77eef38610d614ea54aceca55d9a4279858e52d62a46d317745eff452246"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -1710,11 +1710,8 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
-<<<<<<< HEAD
-    "github.com/cloudevents/sdk-go/v2/protocol/http",
-=======
     "github.com/cloudevents/sdk-go/v2",
->>>>>>> Add event wrapper to label/delabel events
+    "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/fsnotify/fsnotify",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
