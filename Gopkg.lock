@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:f1c479b9da374300702b9589dff5e7985dfc4ab29eca8703045342519e42bc20"
+  digest = "1:4b4b77eef38610d614ea54aceca55d9a4279858e52d62a46d317745eff452246"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -163,16 +163,19 @@
     "v1/cloudevents/transport/pubsub/context",
     "v1/cloudevents/transport/pubsub/internal",
     "v1/cloudevents/types",
+    "v2",
     "v2/binding",
     "v2/binding/format",
     "v2/binding/spec",
     "v2/binding/transformer",
+    "v2/client",
     "v2/context",
     "v2/event",
     "v2/event/datacodec",
     "v2/event/datacodec/json",
     "v2/event/datacodec/text",
     "v2/event/datacodec/xml",
+    "v2/extensions",
     "v2/observability",
     "v2/protocol",
     "v2/protocol/http",
@@ -1707,6 +1710,7 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
+    "github.com/cloudevents/sdk-go/v2",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/fsnotify/fsnotify",
     "github.com/golang/protobuf/jsonpb",
