@@ -24,7 +24,8 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
+	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,10 +83,10 @@ const (
 
 var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS
+	sinkURI = apis.HTTP(sinkDNS)
 
 	transformerDNS = transformerName + ".mynamespace.svc.cluster.local"
-	transformerURI = "http://" + transformerDNS
+	transformerURI = apis.HTTP(transformerDNS)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -152,7 +153,7 @@ func newSink() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"url": sinkURI,
+					"url": sinkURI.String(),
 				},
 			},
 		},
@@ -181,7 +182,7 @@ func newTransformer() *unstructured.Unstructured {
 			},
 			"status": map[string]interface{}{
 				"address": map[string]interface{}{
-					"url": transformerURI,
+					"url": transformerURI.String(),
 				},
 			},
 		},
@@ -282,7 +283,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "client-create-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -335,7 +336,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "topic-exists-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -388,7 +389,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist", failedToReconcileSubscriptionMsg, testTopicID))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -441,7 +442,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-exists-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -495,7 +496,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionMarkNoSubscription("SubscriptionReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileSubscriptionMsg, "subscription-create-induced-error"))),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -522,7 +523,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantCreates: []runtime.Object{
 			newScaledObject(newPullSubscription(testSubscriptionID)),
-			newReceiveAdapter(context.Background(), testImage),
+			newReceiveAdapter(context.Background(), testImage, nil),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPullSubscription(sourceName, testNS,
@@ -539,7 +540,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				// Updates
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -565,7 +566,7 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 			newSecret(),
-			newReceiveAdapter(context.Background(), testImage),
+			newReceiveAdapter(context.Background(), testImage, nil),
 		},
 		OtherTestData: map[string]interface{}{
 			"ps": gpubsub.TestClientData{
@@ -599,7 +600,7 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionMarkDeployed,
 				WithPullSubscriptionMarkSink(sinkURI),
 				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
-				WithPullSubscriptionTransformerURI(""),
+				WithPullSubscriptionTransformerURI(nil),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 			),
 		}},
@@ -624,7 +625,7 @@ func TestAllCases(t *testing.T) {
 			newSink(),
 			newTransformer(),
 			newSecret(),
-			newReceiveAdapter(context.Background(), "old"+testImage),
+			newReceiveAdapter(context.Background(), "old"+testImage, nil),
 		},
 		WantCreates: []runtime.Object{
 			newScaledObject(newPullSubscription(testSubscriptionID)),
@@ -775,7 +776,7 @@ func mockDiscoveryFunc(_ discovery.DiscoveryInterface, _ schema.GroupVersion) er
 	return nil
 }
 
-func newReceiveAdapter(ctx context.Context, image string, transformer ...string) runtime.Object {
+func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionAnnotations(map[string]string{
@@ -791,24 +792,20 @@ func newReceiveAdapter(ctx context.Context, image string, transformer ...string)
 			Topic:   testTopicID,
 			Secret:  &secret,
 		}))
-	transformerURI := ""
-	if len(transformer) > 0 {
-		transformerURI = transformer[0]
-	}
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,
 		Source:         source,
 		Labels:         resources.GetLabels(controllerAgentName, sourceName),
 		SubscriptionID: testSubscriptionID,
 		SinkURI:        sinkURI,
-		TransformerURI: transformerURI,
+		TransformerURI: transformer,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }
 
 func newScaledObject(ps *pubsubv1alpha1.PullSubscription) runtime.Object {
 	ctx := context.Background()
-	ra := newReceiveAdapter(ctx, testImage)
+	ra := newReceiveAdapter(ctx, testImage, nil)
 	d, _ := ra.(*v1.Deployment)
 	u := MakeScaledObject(ctx, d, ps)
 	return u

@@ -24,7 +24,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -85,15 +84,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 		return event
 	}
 	pubsub.Status.PropagatePullSubscriptionStatus(&ps.Status)
-
-	// Sink has been resolved from the underlying PullSubscription, set it here.
-	sinkURI, err := apis.ParseURL(ps.Status.SinkURI)
-	if err != nil {
-		pubsub.Status.SinkURI = nil
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciledFailedReason, "Getting sink URI failed with: %s", err.Error())
-	} else {
-		pubsub.Status.SinkURI = sinkURI
-	}
+	pubsub.Status.SinkURI = ps.Status.SinkURI
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, pubsub.Namespace, pubsub.Name)
 }
 

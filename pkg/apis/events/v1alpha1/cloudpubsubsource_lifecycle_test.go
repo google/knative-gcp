@@ -131,7 +131,7 @@ func TestCloudPubSubSourceStatusGetCondition(t *testing.T) {
 func readyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
 	pss.InitializeConditions()
-	pss.MarkSink("http://test.mynamespace.svc.cluster.local")
+	pss.MarkSink(apis.HTTP("test.mynamespace.svc.cluster.local"))
 	pss.MarkDeployed()
 	pss.MarkSubscribed("subID")
 	return pss

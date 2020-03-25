@@ -182,20 +182,19 @@ var pullSubscriptionCondSet = apis.NewLivingConditionSet(
 
 // PullSubscriptionStatus defines the observed state of PullSubscription.
 type PullSubscriptionStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"`
-
-	// SinkURI is the current active sink URI that has been configured for the
-	// PullSubscription.
-	// +optional
-	SinkURI string `json:"sinkUri,omitempty"`
+	// inherits duck/v1 SourceStatus, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last
+	//   processed by the controller.
+	// * Conditions - the latest available observations of a resource's current
+	//   state.
+	// * SinkURI - the current active sink URI that has been configured for the
+	//   Source.
+	duckv1.SourceStatus `json:",inline"`
 
 	// TransformerURI is the current active transformer URI that has been
 	// configured for the PullSubscription.
 	// +optional
-	TransformerURI string `json:"transformerUri,omitempty"`
+	TransformerURI *apis.URL `json:"transformerUri,omitempty"`
 
 	// ProjectID is the resolved project ID in use by the PullSubscription.
 	// +optional
