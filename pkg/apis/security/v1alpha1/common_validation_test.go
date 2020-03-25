@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/security"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -496,5 +497,28 @@ func TestPolicyBindingSpecCheckImmutableFields(t *testing.T) {
 				t.Errorf("PolicyBindingSpec.CheckImmutableFields (-want, +got) = %v", diff)
 			}
 		})
+	}
+}
+
+func TestCheckPolicyBindingImmutableObjectMeta(t *testing.T) {
+	m1 := &metav1.ObjectMeta{
+		Annotations: map[string]string{
+			security.PolicyBindingClassAnnotationKey: "foo",
+		},
+	}
+	m2 := &metav1.ObjectMeta{
+		Annotations: map[string]string{
+			security.PolicyBindingClassAnnotationKey: "bar",
+		},
+	}
+
+	wantErr := &apis.FieldError{
+		Message: "Immutable fields changed (-old +new)",
+		Paths:   []string{"annotations", security.PolicyBindingClassAnnotationKey},
+		Details: "-: \"foo\"\n+: \"bar\"",
+	}
+	gotErr := CheckImmutableBindingObjectMeta(context.Background(), m2, m1)
+	if diff := cmp.Diff(wantErr.Error(), gotErr.Error()); diff != "" {
+		t.Errorf("CheckImmutableBindingObjectMeta (-want, +got) = %v", diff)
 	}
 }

@@ -73,7 +73,6 @@ type EventPolicyRuleSpec struct {
 	DataSchema  []StringMatch    `json:"dataschema,omitempty"`
 	Subject     []StringMatch    `json:"subject,omitempty"`
 	ContentType []StringMatch    `json:"contenttype,omitempty"`
-	MediaType   []StringMatch    `json:"mediatype,omitempty"`
 	Extensions  []KeyValuesMatch `json:"extensions,omitempty"`
 }
 

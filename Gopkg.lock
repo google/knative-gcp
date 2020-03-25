@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:f1c479b9da374300702b9589dff5e7985dfc4ab29eca8703045342519e42bc20"
+  digest = "1:4b4b77eef38610d614ea54aceca55d9a4279858e52d62a46d317745eff452246"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -163,16 +163,19 @@
     "v1/cloudevents/transport/pubsub/context",
     "v1/cloudevents/transport/pubsub/internal",
     "v1/cloudevents/types",
+    "v2",
     "v2/binding",
     "v2/binding/format",
     "v2/binding/spec",
     "v2/binding/transformer",
+    "v2/client",
     "v2/context",
     "v2/event",
     "v2/event/datacodec",
     "v2/event/datacodec/json",
     "v2/event/datacodec/text",
     "v2/event/datacodec/xml",
+    "v2/extensions",
     "v2/observability",
     "v2/protocol",
     "v2/protocol/http",
@@ -1435,7 +1438,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:48dd3c4255714156e5dd8a4f5424b5b0dd848320e64d7e46e90ebb7c26bbf4f2"
+  digest = "1:970b0b39f05fb98a9e5927deb3e531f88250a95750fac802de9bd77c58ba764c"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1531,7 +1534,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "5a5b990db2f57f0fd95457cde1c6f3f86dadf7c9"
+  revision = "8b4a6f7b49643df73ae95d457181b6614e9d4f75"
 
 [[projects]]
   branch = "master"
@@ -1669,18 +1672,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "cded18739539d93521dcc857d87b2e0b59c4e18c"
+  revision = "aa3d5708fb6bc8e35324f3dab764c2ca0a7e6892"
 
 [[projects]]
   branch = "master"
-  digest = "1:b86423d5da68ffa9c7b91e809f2b62972c61af0adfc74971b6eeeb9285ad142a"
+  digest = "1:2987a1db00b983af9e5d5281639a754fb6449eef01e6a375894829eaec17cb2a"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "1cb8fe52b6a811b0dd0a2d9a8c50fae0534e1653"
+  revision = "9a501343b4dafbac1a1a5dcfe2cb46975a78abb5"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1707,6 +1710,8 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/http",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
+    "github.com/cloudevents/sdk-go/v2",
+    "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/fsnotify/fsnotify",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
