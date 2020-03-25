@@ -21,9 +21,11 @@ package e2e
 import (
 	"log"
 	"os"
+	"strconv"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
+	"github.com/google/knative-gcp/test"
 	eventingtest "knative.dev/eventing/test"
 	conformancehelpers "knative.dev/eventing/test/conformance/helpers"
 	e2ehelpers "knative.dev/eventing/test/e2e/helpers"
@@ -39,6 +41,8 @@ import (
 )
 
 var channelTestRunner eventingtestlib.ChannelTestRunner
+var workloadIdentity bool
+var pubsubServiceAccount string
 
 func TestMain(m *testing.M) {
 	eventingtest.InitializeEventingFlags()
@@ -57,7 +61,12 @@ func TestMain(m *testing.M) {
 		},
 		ChannelsToTest: eventingtest.EventingFlags.Channels,
 	}
-
+	test.InitializeFlags()
+	workloadIdentity, err := strconv.ParseBool(test.Flags.WorkloadIdentity)
+	if err != nil {
+		log.Fatalf("Can't parse workloadIdentity.")
+	}
+	pubsubServiceAccount = test.Flags.PubsubServiceAccount
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
@@ -163,28 +172,28 @@ func TestChannelTracing(t *testing.T) {
 func TestSmokePullSubscription(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokePullSubscriptionTestImpl(t)
+	SmokePullSubscriptionTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestPullSubscriptionWithTarget tests we can knock down a target.
 func TestPullSubscriptionWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	PullSubscriptionWithTargetTestImpl(t)
+	PullSubscriptionWithTargetTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestSmokeCloudPubSubSource makes sure we can run tests on the CloudPubSubSource.
 func TestSmokeCloudPubSubSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeCloudPubSubSourceTestImpl(t)
+	SmokeCloudPubSubSourceTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudPubSubSourceWithTarget tests we can knock down a target from a CloudPubSubSource.
 func TestCloudPubSubSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudPubSubSourceWithTargetTestImpl(t, false /*assertMetrics */)
+	CloudPubSubSourceWithTargetTestImpl(t, false /*assertMetrics */, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudPubSubSourceStackDriverMetrics tests we can knock down a target from a CloudPubSubSource and that we send metrics to StackDriver.
@@ -192,49 +201,64 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 	t.Skip("See issues https://github.com/google/knative-gcp/issues/317 and https://github.com/cloudevents/sdk-go/pull/234")
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudPubSubSourceWithTargetTestImpl(t, true /*assertMetrics */)
+	CloudPubSubSourceWithTargetTestImpl(t, true /*assertMetrics */, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
+	if workloadIdentity {
+		t.Skip("Skip this test when workloadIdentity is enabled")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	BrokerWithPubSubChannelTestImpl(t)
+	BrokerWithPubSubChannelTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
+	if workloadIdentity {
+		t.Skip("Skip this test when workloadIdentity is enabled")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	PubSubSourceBrokerWithPubSubChannelTestImpl(t)
+	PubSubSourceBrokerWithPubSubChannelTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
 func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
+	if workloadIdentity {
+		t.Skip("Skip this test when workloadIdentity is enabled")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	StorageSourceBrokerWithPubSubChannelTestImpl(t)
+	StorageSourceBrokerWithPubSubChannelTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
 func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
+	if workloadIdentity {
+		t.Skip("Skip this test when workloadIdentity is enabled")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	AuditLogsSourceBrokerWithPubSubChannelTestImpl(t)
+	AuditLogsSourceBrokerWithPubSubChannelTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
 func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
+	if workloadIdentity {
+		t.Skip("Skip this test when workloadIdentity is enabled")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	SchedulerSourceBrokerWithPubSubChannelTestImpl(t)
+	SchedulerSourceBrokerWithPubSubChannelTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudStorageSource tests we can knock down a target from a CloudStorageSource.
 func TestCloudStorageSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudStorageSourceWithTestImpl(t, false /*assertMetrics */)
+	CloudStorageSourceWithTestImpl(t, false /*assertMetrics */, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudStorageSourceStackDriverMetrics tests we can knock down a target from a CloudStorageSource and that we send metrics to StackDriver.
@@ -242,26 +266,26 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 	t.Skip("See issue https://github.com/google/knative-gcp/issues/317")
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudStorageSourceWithTestImpl(t, true /*assertMetrics */)
+	CloudStorageSourceWithTestImpl(t, true /*assertMetrics */, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudAuditLogsSourceWithTestImpl(t)
+	CloudAuditLogsSourceWithTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestSmokeCloudSchedulerSourceSetup tests if we can create a CloudSchedulerSource resource and get it to a ready state.
 func TestSmokeCloudSchedulerSourceSetup(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeCloudSchedulerSourceSetup(t)
+	SmokeCloudSchedulerSourceSetup(t, workloadIdentity, pubsubServiceAccount)
 }
 
 // TestCloudSchedulerSourceWithTargetTestImpl tests if we can receive an event on a bespoke sink from a CloudSchedulerSource source.
 func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	CloudSchedulerSourceWithTargetTestImpl(t)
+	CloudSchedulerSourceWithTargetTestImpl(t, workloadIdentity, pubsubServiceAccount)
 }

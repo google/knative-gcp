@@ -34,20 +34,21 @@ import (
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTestImpl(t *testing.T) {
+func SmokePullSubscriptionTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-sub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, workloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
-			Topic: topic,
+			Topic:          topic,
+			ServiceAccount: pubsubServiceAccount,
 		}),
 		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
@@ -56,14 +57,14 @@ func SmokePullSubscriptionTestImpl(t *testing.T) {
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T) {
+func PullSubscriptionWithTargetTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, workloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -76,7 +77,8 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
-			Topic: topicName,
+			Topic:          topicName,
+			ServiceAccount: pubsubServiceAccount,
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 

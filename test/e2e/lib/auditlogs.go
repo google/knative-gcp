@@ -26,7 +26,7 @@ import (
 )
 
 func MakeAuditLogsOrDie(client *Client,
-	auditlogsName, methodName, project, resourceName, serviceName, targetName string,
+	auditlogsName, methodName, project, resourceName, serviceName, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudAuditLogsSourceOption,
 ) {
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName))
@@ -34,6 +34,7 @@ func MakeAuditLogsOrDie(client *Client,
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 

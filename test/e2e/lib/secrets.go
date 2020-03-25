@@ -47,3 +47,9 @@ func DuplicatePubSubSecret(client *eventingtestlib.Client) {
 		client.T.Fatalf("could not create secret: %v", err)
 	}
 }
+
+func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
+	if !workloadIdentity {
+		DuplicatePubSubSecret(client)
+	}
+}
