@@ -141,6 +141,12 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
+func TestBrokerTracing(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(t, "ChannelBasedBroker", channelTestRunner, lib.DuplicatePubSubSecret)
+}
+
 func TestChannelTracing(t *testing.T) {
 	t.Skip("Skipping until https://github.com/knative/eventing/issues/2046 is fixed")
 	cancel := logstream.Start(t)
