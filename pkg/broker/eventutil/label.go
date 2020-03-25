@@ -54,7 +54,7 @@ func (le *LabeledEvent) GetLabels() map[string]string {
 	exts := le.event.Extensions()
 	for k, v := range exts {
 		if strings.HasPrefix(strings.ToLower(k), labelPrefix) {
-			m[strings.TrimPrefix(k, labelPrefix)] = v.(string)
+			m[strings.TrimPrefix(strings.ToLower(k), labelPrefix)] = v.(string)
 		}
 	}
 	return m
