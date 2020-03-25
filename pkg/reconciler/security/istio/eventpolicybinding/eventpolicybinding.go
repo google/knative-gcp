@@ -86,13 +86,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.EventPolicyB
 		return err
 	}
 
-	// Propagate the status.
-	if hpb.Status.IsReady() {
-		b.Status.MarkBindingAvailable()
-	} else {
-		st := hpb.Status.GetTopLevelCondition()
-		b.Status.MarkBindingFailure(st.Reason, st.Message)
-	}
+	b.Status.PropagateBindingStatus(&hpb.Status)
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "EventPolicyBindingReconciled", "EventPolicyBinding reconciled: \"%s/%s\"", b.Namespace, b.Name)
 }
 

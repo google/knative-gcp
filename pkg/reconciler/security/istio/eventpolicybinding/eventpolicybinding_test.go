@@ -252,6 +252,13 @@ func TestAllCases(t *testing.T) {
 				withPolicyBindingOwner(testBindingName),
 			).AsHTTPPolicyBinding(),
 		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPolicyBinding(testBindingName, testNamespace,
+				WithPolicyBindingSubject(testSubjectGVK, "subject"),
+				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingStatusInit(),
+			).AsEventPolicyBinding(),
+		}},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "EventPolicyBindingReconciled", `EventPolicyBinding reconciled: "testnamespace/testpolicybinding"`),
 		},
