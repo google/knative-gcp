@@ -21,7 +21,6 @@ package e2e
 import (
 	"log"
 	"os"
-	"strconv"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v1"
@@ -62,10 +61,7 @@ func TestMain(m *testing.M) {
 		ChannelsToTest: eventingtest.EventingFlags.Channels,
 	}
 	test.InitializeFlags()
-	workloadIdentity, err := strconv.ParseBool(test.Flags.WorkloadIdentity)
-	if err != nil {
-		log.Fatalf("Can't parse workloadIdentity.")
-	}
+	workloadIdentity = test.Flags.WorkloadIdentity
 	pubsubServiceAccount = test.Flags.PubsubServiceAccount
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
