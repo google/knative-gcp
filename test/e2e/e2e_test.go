@@ -81,7 +81,7 @@ func TestMain(m *testing.M) {
 func TestSmokeChannel(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeTestChannelImpl(t)
+	SmokeTestChannelImpl(t, workloadIdentity, pubsubServiceAccount)
 }
 
 func TestSingleBinaryEventForChannel(t *testing.T) {
