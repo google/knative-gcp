@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:4e42e2fd69db33fda75846a53816bdb24265f9b31ab7b4aa350c4fc2740e0cea"
+  digest = "1:f1c479b9da374300702b9589dff5e7985dfc4ab29eca8703045342519e42bc20"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -179,8 +179,8 @@
     "v2/types",
   ]
   pruneopts = "NUT"
-  revision = "0a5202bf31a5927f261fb8ee0bba88cef0963d8c"
-  version = "v2.0.0-preview4"
+  revision = "123def5bff3a506e15cc0bc581a72efd9bda4783"
+  version = "v2.0.0-preview7"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -278,7 +278,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:010d46ea3c1e730897e53058d1013a963f3f987675dda87df64f891b945281db"
+  digest = "1:f0ae868d945753df81e797524bb7f3c577bcf751ce515c18162d259ca3ff8de7"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
@@ -289,8 +289,8 @@
     "cmp/internal/value",
   ]
   pruneopts = "NUT"
-  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
-  version = "v0.3.0"
+  revision = "5a6f75716e1203a923a78c9efb94089d857df0f6"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:ecc8bd577aaaa8ce2c3ad060e61e1daeadbab1d14a0934f019ad2995c3a666b0"
@@ -600,6 +600,18 @@
   version = "v0.22.1"
 
 [[projects]]
+  digest = "1:8d2b2d3250f85e953a82067175733387a16d63dd234f61a7810f9e3194335a3e"
+  name = "go.opentelemetry.io/otel"
+  packages = [
+    "api/core",
+    "api/propagation",
+    "api/trace",
+  ]
+  pruneopts = "NUT"
+  revision = "a1c243965e9985555a40f3df50475b8e078fb1e0"
+  version = "v0.3.0"
+
+[[projects]]
   digest = "1:cc9d86ec4e6e3bdf87e3a421273bfeed003cf8e21351c0302fe8b0eb7b10efe6"
   name = "go.uber.org/atomic"
   packages = ["."]
@@ -774,6 +786,17 @@
   ]
   pruneopts = "NUT"
   revision = "90aeebe84374219b793ddaf02606e8d77a632028"
+
+[[projects]]
+  branch = "master"
+  digest = "1:325a1b73817aa79fc85f10376ed41ea607f7dd7f6c6bfa46df6a28ef2857941f"
+  name = "golang.org/x/xerrors"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "NUT"
+  revision = "9bdfabe68543c54f90421aeb9a60ef8061b5b544"
 
 [[projects]]
   digest = "1:8392b5c29adedc5f85c66b48bb53b6c49dd91d8540f3cad5d43ef7277946718f"
@@ -1412,7 +1435,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c9e0c66b11e90b2f23074f3e2a10c247e8b63c9e1af5999ef2dfc6a409ba6201"
+  digest = "1:48dd3c4255714156e5dd8a4f5424b5b0dd848320e64d7e46e90ebb7c26bbf4f2"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1508,11 +1531,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "f3561270b28b3759cdb198f1fab0d187c0ab6d65"
+  revision = "5a5b990db2f57f0fd95457cde1c6f3f86dadf7c9"
 
 [[projects]]
   branch = "master"
-  digest = "1:94d7cfde4eee652c089b47f0200b86bc28e618de18a2e5368b0bbc8e2b601026"
+  digest = "1:9a3d6a5933182bb0ac923b36a7e581b19ea23edeb6684eabe14002758cd7b067"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1593,11 +1616,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "c13e86e2d4f484f1dd3b8ca6474994c16da74f20"
+  revision = "9f9f7bea94e15840f36f08b90a2c03203e886f91"
 
 [[projects]]
   branch = "master"
-  digest = "1:678187872ff6b5e2e9e1b4022b2784ebc585fe51f5afe1879a2c58d55d25f692"
+  digest = "1:a7e28db403d1991559122ff01ecd5724a5aef2c6f88f6a1227788f8145d0f76b"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1646,18 +1669,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "15c45ace67077b8a46b8c77ea385ad4699277cd4"
+  revision = "cded18739539d93521dcc857d87b2e0b59c4e18c"
 
 [[projects]]
   branch = "master"
-  digest = "1:3f2366ce9a05503ac8da902b58e898c285cc9a972e0e89fda0b2a2fedcd4fb46"
+  digest = "1:b86423d5da68ffa9c7b91e809f2b62972c61af0adfc74971b6eeeb9285ad142a"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "64929018c86389e47a88782619565b6d099c0a5a"
+  revision = "1cb8fe52b6a811b0dd0a2d9a8c50fae0534e1653"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"

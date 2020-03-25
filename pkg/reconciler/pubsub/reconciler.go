@@ -123,11 +123,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		return t, ps, err
 	}
 
-	uri, err := apis.ParseURL(ps.Status.SinkURI)
-	if err != nil {
-		return t, ps, fmt.Errorf("failed to parse url %q: %w", ps.Status.SinkURI, err)
-	}
-	status.SinkURI = uri
+	status.SinkURI = ps.Status.SinkURI
 	return t, ps, nil
 }
 

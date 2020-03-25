@@ -23,8 +23,9 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"knative.dev/pkg/apis"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -55,7 +56,7 @@ func newReceiveAdapter(ps *v1alpha1.PullSubscription) *v1.Deployment {
 		Source:         ps,
 		Labels:         resources.GetLabels("agentName", "psName"),
 		SubscriptionID: "subscriptionId",
-		SinkURI:        "sinkURI",
+		SinkURI:        apis.HTTP("sinkURI"),
 	}
 	return resources.MakeReceiveAdapter(context.Background(), raArgs)
 }

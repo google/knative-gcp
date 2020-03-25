@@ -71,8 +71,14 @@ type PubSubSpec struct {
 // PubSubStatus shows how we expect folks to embed Addressable in
 // their Status field.
 type PubSubStatus struct {
-	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1.SourceStatus
+	// inherits duck/v1 SourceStatus, which currently provides:
+	// * ObservedGeneration - the 'Generation' of the Service that was last
+	//   processed by the controller.
+	// * Conditions - the latest available observations of a resource's current
+	//   state.
+	// * SinkURI - the current active sink URI that has been configured for the
+	//   Source.
+	duckv1.SourceStatus `json:",inline"`
 
 	// ProjectID is the project ID of the Topic, might have been resolved.
 	// +optional

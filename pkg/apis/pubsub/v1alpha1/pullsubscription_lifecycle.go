@@ -41,9 +41,9 @@ func (s *PullSubscriptionStatus) InitializeConditions() {
 }
 
 // MarkSink sets the condition that the source has a sink configured.
-func (s *PullSubscriptionStatus) MarkSink(uri string) {
+func (s *PullSubscriptionStatus) MarkSink(uri *apis.URL) {
 	s.SinkURI = uri
-	if len(uri) > 0 {
+	if !uri.IsEmpty() {
 		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionSinkProvided)
 	} else {
 		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionSinkProvided, "SinkEmpty", "Sink has resolved to empty")
@@ -56,9 +56,9 @@ func (s *PullSubscriptionStatus) MarkNoSink(reason, messageFormat string, messag
 }
 
 // MarkTransformer sets the condition that the source has a transformer configured.
-func (s *PullSubscriptionStatus) MarkTransformer(uri string) {
+func (s *PullSubscriptionStatus) MarkTransformer(uri *apis.URL) {
 	s.TransformerURI = uri
-	if len(uri) > 0 {
+	if !uri.IsEmpty() {
 		pullSubscriptionCondSet.Manage(s).MarkTrue(PullSubscriptionConditionTransformerProvided)
 	} else {
 		pullSubscriptionCondSet.Manage(s).MarkUnknown(PullSubscriptionConditionTransformerProvided, "TransformerEmpty", "Transformer has resolved to empty.")

@@ -50,8 +50,9 @@ diff -Naupr --no-dereference \
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/pkg" "${TMP_DIFFROOT}/pkg" || ret=1
 
-diff -Naupr --no-dereference \
-  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
+# TODO uncomment this once we fix https://github.com/google/knative-gcp/issues/702
+# diff -Naupr --no-dereference \
+#  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
 
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1

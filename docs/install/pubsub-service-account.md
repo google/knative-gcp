@@ -82,7 +82,31 @@ Service Account.
            [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
            when creating resources. Check docs to see
            [examples](https://github.com/google/knative-gcp/tree/master/docs/examples)
-           for each resource.
+           for each resource. 
+           
+           Generally, updating `spec.serviceAccount` will trigger 
+           the controller to enable Workload Identity for sources in the data plane. 
+           The following steps are handled by the controller:
+           
+           1. Create a Kubernetes Service Account and add an `OwnerReference` to it. The `OwnerReference` is referencing to the source.
+           
+           1. Bind the Kubernetes Service Account with Google Cloud Service Account, this will add `role/iam.workloadIdentityUser` to the Google Cloud Service Account. 
+           The scope of this role is only for this specific Google Cloud Service Account. It equals to this command:
+           
+              ```shell
+                gcloud iam service-accounts add-iam-policy-binding \
+                --role roles/iam.workloadIdentityUser \
+                --member serviceAccount:$PROJECT_ID.svc.id.goog[namespace/Kubernetes-service-account] \
+                GCP-service-account@$PROJECT_ID.iam.gserviceaccount.com
+              ```
+           
+           1. Annotate the Kubernetes Service Account with `iam.gke.io/gcp-service-account=GCP-service-account@PROJECT_ID.iam.gserviceaccount.com`
+           
+           For every namespace, the Kubernetes Service Account and the Google Cloud Service Account will have one to one mapping relation. 
+           If multiple source instances use the same Google Cloud Service Account, they will use the same Kubernetes Service Account as well, 
+           and the kubernetes Service Account will have multiple `OwnerReference`s.
+           If there is no source instance using a Kubernetes Service Account, this Kubernetes Service Account will be deleted, 
+           and its binding to the Google Cloud Service Account will be deleted as well.
 
     1.  Export service account keys and store them as Kubernetes Secrets.
 
