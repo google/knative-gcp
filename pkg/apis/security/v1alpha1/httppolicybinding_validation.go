@@ -36,5 +36,12 @@ func (pb *HTTPPolicyBinding) CheckImmutableFields(ctx context.Context, original 
 	if original == nil {
 		return nil
 	}
-	return pb.Spec.CheckImmutableFields(ctx, &original.Spec)
+	var errs *apis.FieldError
+	if err := CheckImmutableBindingObjectMeta(ctx, &pb.ObjectMeta, &original.ObjectMeta); err != nil {
+		errs = errs.Also(err)
+	}
+	if err := pb.Spec.CheckImmutableFields(ctx, &original.Spec); err != nil {
+		errs = errs.Also(err)
+	}
+	return errs
 }

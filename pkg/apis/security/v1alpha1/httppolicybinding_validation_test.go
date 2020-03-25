@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/security"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -275,6 +276,51 @@ func TestHTTPPolicyBindingCheckImmutableFields(t *testing.T) {
 				Name: "policy",
 			},
 		}},
+	}, {
+		name: "binding class annotation changed",
+		orignal: &HTTPPolicyBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					security.PolicyBindingClassAnnotationKey: "foo",
+				},
+			},
+			Spec: PolicyBindingSpec{
+				BindingSpec: duckv1alpha1.BindingSpec{
+					Subject: tracker.Reference{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "test"},
+						},
+					},
+				},
+				Policy: duckv1.KReference{
+					Name: "policy",
+				},
+			},
+		},
+		updated: &HTTPPolicyBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					security.PolicyBindingClassAnnotationKey: "bar",
+				},
+			},
+			Spec: PolicyBindingSpec{
+				BindingSpec: duckv1alpha1.BindingSpec{
+					Subject: tracker.Reference{
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"app": "test"},
+						},
+					},
+				},
+				Policy: duckv1.KReference{
+					Name: "policy",
+				},
+			},
+		},
+		wantErr: &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"annotations", security.PolicyBindingClassAnnotationKey},
+			Details: "-: \"foo\"\n+: \"bar\"",
+		},
 	}}
 
 	for _, tc := range cases {

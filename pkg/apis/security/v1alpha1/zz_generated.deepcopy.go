@@ -186,11 +186,6 @@ func (in *EventPolicyRuleSpec) DeepCopyInto(out *EventPolicyRuleSpec) {
 		*out = make([]StringMatch, len(*in))
 		copy(*out, *in)
 	}
-	if in.MediaType != nil {
-		in, out := &in.MediaType, &out.MediaType
-		*out = make([]StringMatch, len(*in))
-		copy(*out, *in)
-	}
 	if in.Extensions != nil {
 		in, out := &in.Extensions, &out.Extensions
 		*out = make([]KeyValuesMatch, len(*in))
