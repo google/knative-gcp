@@ -57,7 +57,7 @@ func TestMakeRequestAuthentication(t *testing.T) {
 	}
 	wantReqAuthn := istioclient.RequestAuthentication{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            testBindingName,
+			Name:            kmeta.ChildName(b.Name, "-req-authn"),
 			Namespace:       testNamespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
 		},

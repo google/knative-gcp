@@ -114,6 +114,7 @@ func TestPropagateBindingStatus(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			s := &PolicyBindingStatus{}
+			s.InitializeConditions()
 			s.PropagateBindingStatus(tc.other)
 			wantCond := tc.other.GetTopLevelCondition()
 			gotCond := s.GetTopLevelCondition()

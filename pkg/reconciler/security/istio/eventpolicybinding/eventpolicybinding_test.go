@@ -28,6 +28,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/tracker"
 
@@ -169,9 +170,9 @@ func TestAllCases(t *testing.T) {
 		},
 		WantCreates: []runtime.Object{
 			NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				WithPolicyBindingSubject(testSubjectGVK, "subject"),
-				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingPolicy(kmeta.ChildName(testPolicyName, "-http")),
 				withPolicyBindingOwner(testBindingName),
 			).AsHTTPPolicyBinding(),
 		},
@@ -201,7 +202,7 @@ func TestAllCases(t *testing.T) {
 			newTestEventPolicy(testPolicyName, testNamespace),
 			newTestHTTPPolicy(testPolicyName, testNamespace, testBindingName),
 			NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				withPolicyBindingOwner(testBindingName),
 			).AsHTTPPolicyBinding(),
 		},
@@ -211,9 +212,9 @@ func TestAllCases(t *testing.T) {
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				WithPolicyBindingSubject(testSubjectGVK, "subject"),
-				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingPolicy(kmeta.ChildName(testPolicyName, "-http")),
 				withPolicyBindingOwner(testBindingName),
 			).AsHTTPPolicyBinding(),
 		}},
@@ -246,9 +247,9 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			newTestHTTPPolicy(testPolicyName, testNamespace, testBindingName),
 			NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				WithPolicyBindingSubject(testSubjectGVK, "subject"),
-				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingPolicy(kmeta.ChildName(testPolicyName, "-http")),
 				withPolicyBindingOwner(testBindingName),
 			).AsHTTPPolicyBinding(),
 		},
@@ -276,10 +277,10 @@ func TestAllCases(t *testing.T) {
 			newTestEventPolicy(testPolicyName, testNamespace),
 			newTestHTTPPolicy(testPolicyName, testNamespace, testBindingName),
 			NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				withPolicyBindingOwner(testBindingName),
 				WithPolicyBindingSubject(testSubjectGVK, "subject"),
-				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingPolicy(kmeta.ChildName(testPolicyName, "-http")),
 				WithPolicyBindingStatusReady(),
 			).AsHTTPPolicyBinding(),
 		},
@@ -308,10 +309,10 @@ func TestAllCases(t *testing.T) {
 			newTestEventPolicy(testPolicyName, testNamespace),
 			newTestHTTPPolicy(testPolicyName, testNamespace, testBindingName),
 			NewPolicyBinding(
-				testBindingName, testNamespace,
+				kmeta.ChildName(testBindingName, "-httpbinding"), testNamespace,
 				withPolicyBindingOwner(testBindingName),
 				WithPolicyBindingSubject(testSubjectGVK, "subject"),
-				WithPolicyBindingPolicy(testPolicyName),
+				WithPolicyBindingPolicy(kmeta.ChildName(testPolicyName, "-http")),
 				WithPolicyBindingStatusFailure("SomeReason", "HTTPPolicyBinding failed"),
 			).AsHTTPPolicyBinding(),
 		},
@@ -385,11 +386,11 @@ func newTestEventPolicy(name, namespace string) *v1alpha1.EventPolicy {
 	}
 }
 
-func newEmptyHTTPPolicy(name, namespace, owner string) *v1alpha1.HTTPPolicy {
+func newEmptyHTTPPolicy(parent, namespace, owner string) *v1alpha1.HTTPPolicy {
 	trueVal := true
 	return &v1alpha1.HTTPPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      kmeta.ChildName(parent, "-http"),
 			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "security.knative.dev/v1alpha1",
@@ -403,11 +404,11 @@ func newEmptyHTTPPolicy(name, namespace, owner string) *v1alpha1.HTTPPolicy {
 	}
 }
 
-func newTestHTTPPolicy(name, namespace, owner string) *v1alpha1.HTTPPolicy {
+func newTestHTTPPolicy(parent, namespace, owner string) *v1alpha1.HTTPPolicy {
 	trueVal := true
 	return &v1alpha1.HTTPPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      kmeta.ChildName(parent, "-http"),
 			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "security.knative.dev/v1alpha1",

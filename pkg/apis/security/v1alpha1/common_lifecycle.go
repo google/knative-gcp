@@ -75,7 +75,6 @@ func (pbs *PolicyBindingStatus) PropagateBindingStatus(other *PolicyBindingStatu
 	if other == nil {
 		return
 	}
-	pbs.InitializeConditions()
 	if other.IsReady() {
 		pbs.MarkBindingAvailable()
 		return

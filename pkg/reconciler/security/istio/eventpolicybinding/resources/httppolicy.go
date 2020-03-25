@@ -27,8 +27,7 @@ import (
 func MakeHTTPPolicy(b *v1alpha1.EventPolicyBinding, p *v1alpha1.EventPolicy) *v1alpha1.HTTPPolicy {
 	hp := &v1alpha1.HTTPPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			// TODO: Consider use random suffix.
-			Name:            p.Name,
+			Name:            kmeta.ChildName(p.Name, "-http"),
 			Namespace:       p.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
 		},

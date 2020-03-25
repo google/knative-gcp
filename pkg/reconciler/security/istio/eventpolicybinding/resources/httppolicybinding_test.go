@@ -60,7 +60,7 @@ func TestMakeHTTPPolicyBinding(t *testing.T) {
 
 	wantBinding := &v1alpha1.HTTPPolicyBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "test-binding",
+			Name:            kmeta.ChildName("test-binding", "-httpbinding"),
 			Namespace:       "testnamespace",
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(eb)},
 		},
