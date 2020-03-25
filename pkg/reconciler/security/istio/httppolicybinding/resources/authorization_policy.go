@@ -98,7 +98,7 @@ func MakeAuthorizationPolicy(
 
 	return istioclient.AuthorizationPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            b.Name,
+			Name:            kmeta.ChildName(b.Name, "-authz"),
 			Namespace:       b.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
 		},

@@ -93,7 +93,7 @@ func TestMakeHTTPPolicy(t *testing.T) {
 
 	wantPolicy := &v1alpha1.HTTPPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            "test-event-policy",
+			Name:            kmeta.ChildName("test-event-policy", "-http"),
 			Namespace:       "testnamespace",
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(eb)},
 		},

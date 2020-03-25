@@ -32,6 +32,7 @@ import (
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/tracker"
 
@@ -206,7 +207,7 @@ func TestAllCases(t *testing.T) {
 			InduceFailure("create", "requestauthentications"),
 		},
 		WantCreates: []runtime.Object{
-			NewRequestAuthentication(testBindingName, testNamespace,
+			NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationOwner(testBindingName),
 				withRequestAuthenticationTestSpec(),
 			),
@@ -235,7 +236,7 @@ func TestAllCases(t *testing.T) {
 				WithUnstructuredAnnotations(map[string]interface{}{"security.knative.dev/authorizableOn": `{"matchLabels":{"app":"test"}}`}),
 			),
 			newTestPolicy(testPolicyName, testNamespace),
-			NewRequestAuthentication(testBindingName, testNamespace,
+			NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationOwner(testBindingName),
 			),
 		},
@@ -244,7 +245,7 @@ func TestAllCases(t *testing.T) {
 			InduceFailure("update", "requestauthentications"),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewRequestAuthentication(testBindingName, testNamespace,
+			Object: NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationTestSpec(),
 				withRequestAuthenticationOwner(testBindingName),
 			),
@@ -273,7 +274,7 @@ func TestAllCases(t *testing.T) {
 				WithUnstructuredAnnotations(map[string]interface{}{"security.knative.dev/authorizableOn": `{"matchLabels":{"app":"test"}}`}),
 			),
 			newTestPolicy(testPolicyName, testNamespace),
-			NewRequestAuthentication(testBindingName, testNamespace,
+			NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationTestSpec(),
 				withRequestAuthenticationOwner(testBindingName),
 			),
@@ -283,7 +284,7 @@ func TestAllCases(t *testing.T) {
 			InduceFailure("create", "authorizationpolicies"),
 		},
 		WantCreates: []runtime.Object{
-			NewAuthorizationPolicy(testBindingName, testNamespace,
+			NewAuthorizationPolicy(kmeta.ChildName(testBindingName, "-authz"), testNamespace,
 				withAuthorizationPolicyTestSpec(),
 				withAuthorizationPolicyOwner(testBindingName),
 			),
@@ -312,11 +313,11 @@ func TestAllCases(t *testing.T) {
 				WithUnstructuredAnnotations(map[string]interface{}{"security.knative.dev/authorizableOn": `{"matchLabels":{"app":"test"}}`}),
 			),
 			newTestPolicy(testPolicyName, testNamespace),
-			NewRequestAuthentication(testBindingName, testNamespace,
+			NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationTestSpec(),
 				withRequestAuthenticationOwner(testBindingName),
 			),
-			NewAuthorizationPolicy(testBindingName, testNamespace,
+			NewAuthorizationPolicy(kmeta.ChildName(testBindingName, "-authz"), testNamespace,
 				withAuthorizationPolicyOwner(testBindingName),
 			),
 		},
@@ -325,7 +326,7 @@ func TestAllCases(t *testing.T) {
 			InduceFailure("update", "authorizationpolicies"),
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewAuthorizationPolicy(testBindingName, testNamespace,
+			Object: NewAuthorizationPolicy(kmeta.ChildName(testBindingName, "-authz"), testNamespace,
 				withAuthorizationPolicyTestSpec(),
 				withAuthorizationPolicyOwner(testBindingName),
 			),
@@ -357,11 +358,11 @@ func TestAllCases(t *testing.T) {
 		},
 		Key: testNamespace + "/" + testBindingName,
 		WantCreates: []runtime.Object{
-			NewRequestAuthentication(testBindingName, testNamespace,
+			NewRequestAuthentication(kmeta.ChildName(testBindingName, "-req-authn"), testNamespace,
 				withRequestAuthenticationTestSpec(),
 				withRequestAuthenticationOwner(testBindingName),
 			),
-			NewAuthorizationPolicy(testBindingName, testNamespace,
+			NewAuthorizationPolicy(kmeta.ChildName(testBindingName, "-authz"), testNamespace,
 				withAuthorizationPolicyTestSpec(),
 				withAuthorizationPolicyOwner(testBindingName),
 			),

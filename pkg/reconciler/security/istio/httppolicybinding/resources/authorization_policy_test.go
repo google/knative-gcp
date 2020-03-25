@@ -73,7 +73,7 @@ func TestMakeAuthorizationPolicy(t *testing.T) {
 	}
 	wantAuthzPolicy := istioclient.AuthorizationPolicy{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            testBindingName,
+			Name:            kmeta.ChildName(b.Name, "-authz"),
 			Namespace:       testNamespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
 		},
