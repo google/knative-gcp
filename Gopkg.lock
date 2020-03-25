@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:4f3378de6a36e3df472219fb105dea99097f47eacffc4420597c0e067baf2502"
+  digest = "1:08550588682506a77741fad85d179a257a6d4380be63fdd1b6d0369b31443b53"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -179,6 +179,9 @@
     "v2/observability",
     "v2/protocol",
     "v2/protocol/http",
+    "v2/protocol/pubsub",
+    "v2/protocol/pubsub/context",
+    "v2/protocol/pubsub/internal",
     "v2/types",
   ]
   pruneopts = "NUT"
@@ -1711,7 +1714,11 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/cloudevents/sdk-go/v2",
+    "github.com/cloudevents/sdk-go/v2/client",
+    "github.com/cloudevents/sdk-go/v2/event",
+    "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
+    "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
     "github.com/fsnotify/fsnotify",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
