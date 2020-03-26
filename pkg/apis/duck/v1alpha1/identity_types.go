@@ -22,7 +22,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-// PubSub is an Implementable "duck type".
+// Identity is an Implementable "duck type".
 var _ duck.Implementable = (*Identity)(nil)
 
 // +genduck
@@ -93,7 +93,7 @@ func (*Identity) GetListType() runtime.Object {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IdentityList is a list of PubSub resources
+// IdentityList is a list of Identity resources
 type IdentityList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
