@@ -18,7 +18,7 @@
 
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
 readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
-readonly CLOUD_RUN_EVENTS_GKE_CONFIG="config/core/deployment/controller-gke.yaml"
+readonly CLOUD_RUN_EVENTS_GKE_CONFIG="config/core/deployments/controller-gke.yaml"
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
