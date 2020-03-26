@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -118,7 +118,7 @@ func main() {
 		ServiceName: logconfig.WebhookName(),
 		Port:        8443,
 		// SecretName must match the name of the Secret created in the configuration.
-		SecretName: "webhook-certs",
+		SecretName: "security-webhook-certs",
 	})
 
 	sharedmain.WebhookMainWithContext(ctx, logconfig.WebhookName(),

@@ -15,7 +15,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webhook
+  name: security-webhook
   namespace: knative-security
   labels:
     security.knative.dev/release: devel
@@ -24,12 +24,12 @@ spec:
   selector:
     matchLabels:
       app: knative-security
-      role: webhook
+      role: security-webhook
   template:
     metadata:
       labels:
         app: knative-security
-        role: webhook
+        role: security-webhook
         security.knative.dev/release: devel
     spec:
       serviceAccountName: security-webhook
@@ -58,4 +58,4 @@ spec:
             - name: METRICS_DOMAIN
               value: cloud.google.com/events
             - name: WEBHOOK_NAME
-              value: webhook
+              value: security-webhook

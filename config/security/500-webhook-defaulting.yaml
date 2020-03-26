@@ -23,7 +23,7 @@ webhooks:
   - v1beta1
   clientConfig:
     service:
-      name: webhook
+      name: security-webhook
       namespace: knative-security
   failurePolicy: Fail
   sideEffects: None

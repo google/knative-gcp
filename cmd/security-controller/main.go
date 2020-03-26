@@ -17,9 +17,10 @@ limitations under the License.
 package main
 
 import (
-	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	"github.com/google/knative-gcp/pkg/reconciler/security/istio/eventpolicybinding"
 	"github.com/google/knative-gcp/pkg/reconciler/security/istio/httppolicybinding"
+
+	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"knative.dev/pkg/injection/sharedmain"
