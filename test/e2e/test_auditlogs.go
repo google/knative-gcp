@@ -36,7 +36,7 @@ const (
 	methodName  = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func CloudAuditLogsSourceWithTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -44,7 +44,7 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T, workloadIdentity bool, pubsu
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -58,7 +58,7 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T, workloadIdentity bool, pubsu
 		resourceName,
 		serviceName,
 		targetName,
-		pubsubServiceAccount,
+		authConfig.PubsubServiceAccount,
 	)
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)

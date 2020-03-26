@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+chmod +x #!/usr/bin/env bash
 
 # Copyright 2020 Google LLC
 #
@@ -21,6 +21,11 @@ source $(dirname $0)/e2e-common.sh
 readonly CONTROLLER_SERVICE_ACCOUNT="controller"
 
 # Create resources required for the Control Plane setup.
+function knative_setup() {
+  control_plane_setup || return 1
+  start_knative_gcp "workloadIdentityEnabled" || return 1
+}
+
 function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
@@ -76,7 +81,7 @@ function pubsub_setup() {
     done <<<"$topics"
   fi
 
-  # When not running on Prow we need to set up a service account for PubSub
+  # When not running on Prow we need to set up a service account for PubSub.
   if (( ! IS_PROW )); then
     # Enable monitoring
     gcloud services enable monitoring
@@ -94,7 +99,7 @@ function pubsub_setup() {
 
 # Tear down resources required for Control Plane setup.
 function control_plane_teardown() {
-  # When not running on Prow we need to delete the service accounts and namespaces created
+  # When not running on Prow we need to delete the service accounts and namespaces created.
   if (( ! IS_PROW )); then
     echo "Tear down ServiceAccount for Control Plane"
     gcloud iam service-accounts keys delete -q ${CONTROL_PLANE_SERVICE_ACCOUNT_KEY} \

@@ -25,8 +25,8 @@ import (
 )
 
 // SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
-func SmokeCloudSchedulerSourceSetup(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
-	client := lib.Setup(t, true, workloadIdentity)
+func SmokeCloudSchedulerSourceSetup(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	sName := "scheduler-test"
@@ -36,7 +36,7 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T, workloadIdentity bool, pubsubS
 		kngcptesting.WithCloudSchedulerSourceData("my test data"),
 		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
 		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, "event-display"),
-		kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(pubsubServiceAccount),
+		kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(authConfig.PubsubServiceAccount),
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
@@ -45,8 +45,8 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T, workloadIdentity bool, pubsubS
 
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
 // log of the receiver.
-func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
-	client := lib.Setup(t, true, workloadIdentity)
+func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create an Addressable to receive scheduler events
@@ -57,7 +57,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, workloadIdentity bool,
 	// Create a scheduler
 	sName := "scheduler-test"
 
-	lib.MakeSchedulerOrDie(client, sName, data, targetName, pubsubServiceAccount)
+	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {

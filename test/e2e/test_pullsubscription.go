@@ -34,21 +34,21 @@ import (
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-sub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic:          topic,
-			ServiceAccount: pubsubServiceAccount,
+			ServiceAccount: authConfig.PubsubServiceAccount,
 		}),
 		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
@@ -57,14 +57,14 @@ func SmokePullSubscriptionTestImpl(t *testing.T, workloadIdentity bool, pubsubSe
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -78,7 +78,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, workloadIdentity bool, pub
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic:          topicName,
-			ServiceAccount: pubsubServiceAccount,
+			ServiceAccount: authConfig.PubsubServiceAccount,
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 

@@ -57,11 +57,11 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -91,14 +91,14 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsub
 	}
 }
 
-func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -115,7 +115,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity 
 		psName,
 		targetName,
 		topicName,
-		pubsubServiceAccount,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudPubSubSourceSinkURI(&url),
 	)
 
@@ -141,7 +141,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity 
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
-func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
@@ -150,7 +150,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target StorageJob to receive the events.
@@ -168,7 +168,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity
 		bucketName,
 		storageName,
 		targetName,
-		pubsubServiceAccount,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudStorageSourceSinkURI(&url),
 	)
 
@@ -182,7 +182,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity
 	}
 }
 
-func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -190,7 +190,7 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdenti
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -210,7 +210,7 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdenti
 		resourceName,
 		serviceName,
 		targetName,
-		pubsubServiceAccount,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
 	)
 
@@ -250,12 +250,12 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdenti
 	}
 }
 
-func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	data := "my test data"
 	targetName := "event-display"
 	sName := "scheduler-test"
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -268,7 +268,7 @@ func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, workloadIdenti
 	time.Sleep(5 * time.Second)
 
 	// Create the CloudSchedulerSource.
-	lib.MakeSchedulerOrDie(client, sName, data, targetName, pubsubServiceAccount,
+	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
 	)
 

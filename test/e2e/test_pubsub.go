@@ -34,20 +34,20 @@ import (
 )
 
 // SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state.
-func SmokeCloudPubSubSourceTestImpl(t *testing.T, workloadIdentity bool, pubsubServiceAccount string) {
+func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-pubsub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
 		Version: "v1",
-		Kind:    "Service"}, psName, svcName, topic, pubsubServiceAccount)
+		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
 
@@ -55,14 +55,14 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, workloadIdentity bool, pubsubS
 
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
-func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, workloadIdentity bool, pubsubServiceAccount string) {
+func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := lib.Setup(t, true, workloadIdentity)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
@@ -76,7 +76,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, workl
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, pubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, authConfig.PubsubServiceAccount)
 
 	topic := lib.GetTopic(t, topicName)
 
