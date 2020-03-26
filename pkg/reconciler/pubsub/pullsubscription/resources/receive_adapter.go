@@ -26,6 +26,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 
@@ -41,8 +42,8 @@ type ReceiveAdapterArgs struct {
 	Source         *v1alpha1.PullSubscription
 	Labels         map[string]string
 	SubscriptionID string
-	SinkURI        string
-	TransformerURI string
+	SinkURI        *apis.URL
+	TransformerURI *apis.URL
 	MetricsConfig  string
 	LoggingConfig  string
 	TracingConfig  string
@@ -88,6 +89,11 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		resourceName = rn
 	}
 
+	var transformerURI string
+	if args.TransformerURI != nil {
+		transformerURI = args.TransformerURI.String()
+	}
+
 	receiveAdapterContainer := corev1.Container{
 		Name:  "receive-adapter",
 		Image: args.Image,
@@ -102,10 +108,10 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Value: args.SubscriptionID,
 		}, {
 			Name:  "SINK_URI",
-			Value: args.SinkURI,
+			Value: args.SinkURI.String(),
 		}, {
 			Name:  "TRANSFORMER_URI",
-			Value: args.TransformerURI,
+			Value: transformerURI,
 		}, {
 			Name:  "ADAPTER_TYPE",
 			Value: args.Source.Spec.AdapterType,

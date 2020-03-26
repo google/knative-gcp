@@ -25,10 +25,32 @@ import (
 	"knative.dev/pkg/tracker"
 )
 
-type BindingOption func(*v1alpha1.HTTPPolicyBinding)
+type CommonBinding struct {
+	metav1.ObjectMeta
+	Spec   v1alpha1.PolicyBindingSpec
+	Status v1alpha1.PolicyBindingStatus
+}
 
-func NewPolicyBinding(name, namespace string, opts ...BindingOption) *v1alpha1.HTTPPolicyBinding {
-	b := &v1alpha1.HTTPPolicyBinding{
+func (cb *CommonBinding) AsHTTPPolicyBinding() *v1alpha1.HTTPPolicyBinding {
+	return &v1alpha1.HTTPPolicyBinding{
+		ObjectMeta: cb.ObjectMeta,
+		Spec:       cb.Spec,
+		Status:     cb.Status,
+	}
+}
+
+func (cb *CommonBinding) AsEventPolicyBinding() *v1alpha1.EventPolicyBinding {
+	return &v1alpha1.EventPolicyBinding{
+		ObjectMeta: cb.ObjectMeta,
+		Spec:       cb.Spec,
+		Status:     cb.Status,
+	}
+}
+
+type BindingOption func(*CommonBinding)
+
+func NewPolicyBinding(name, namespace string, opts ...BindingOption) *CommonBinding {
+	b := &CommonBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -38,12 +60,12 @@ func NewPolicyBinding(name, namespace string, opts ...BindingOption) *v1alpha1.H
 	for _, opt := range opts {
 		opt(b)
 	}
-	b.SetDefaults(context.Background())
+	b.Spec.SetDefaults(context.Background(), b.Namespace)
 	return b
 }
 
 func WithPolicyBindingSubject(gvk metav1.GroupVersionKind, name string) BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Spec.Subject = tracker.Reference{
 			APIVersion: apiVersion(gvk),
 			Kind:       gvk.Kind,
@@ -54,7 +76,7 @@ func WithPolicyBindingSubject(gvk metav1.GroupVersionKind, name string) BindingO
 }
 
 func WithPolicyBindingSubjectLabels(labels map[string]string) BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Spec.Subject = tracker.Reference{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -64,26 +86,26 @@ func WithPolicyBindingSubjectLabels(labels map[string]string) BindingOption {
 }
 
 func WithPolicyBindingPolicy(name string) BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Spec.Policy = duckv1.KReference{Name: name}
 	}
 }
 
 func WithPolicyBindingStatusInit() BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Status.InitializeConditions()
 	}
 }
 
 func WithPolicyBindingStatusReady() BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Status.InitializeConditions()
 		b.Status.MarkBindingAvailable()
 	}
 }
 
 func WithPolicyBindingStatusFailure(reason, message string) BindingOption {
-	return func(b *v1alpha1.HTTPPolicyBinding) {
+	return func(b *CommonBinding) {
 		b.Status.InitializeConditions()
 		b.Status.MarkBindingFailure(reason, message)
 	}

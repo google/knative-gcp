@@ -60,7 +60,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
@@ -80,7 +80,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			return s
 		}(),
@@ -91,7 +91,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			return s
@@ -103,7 +103,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			s.MarkNoSink("Testing", "")
@@ -116,7 +116,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			s.MarkNotDeployed("Testing", "")
@@ -129,7 +129,7 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkSubscribed("subID")
 			s.MarkNotDeployed("MarkNotDeployed", "")
 			s.MarkDeployed()
@@ -138,11 +138,11 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		wantConditionStatus: corev1.ConditionTrue,
 		want:                true,
 	}, {
-		name: "mark sink empty and deployed and subscribed",
+		name: "mark sink nil and deployed and subscribed",
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("")
+			s.MarkSink(nil)
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			return s
@@ -150,14 +150,27 @@ func TestPubSubStatusIsReady(t *testing.T) {
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
 	}, {
+		name: "mark sink nil and deployed and subscribed then sink",
+		s: func() *PullSubscriptionStatus {
+			s := &PullSubscriptionStatus{}
+			s.InitializeConditions()
+			s.MarkSink(nil)
+			s.MarkDeployed()
+			s.MarkSubscribed("subID")
+			s.MarkSink(apis.HTTP("example"))
+			return s
+		}(),
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
+	}, {
 		name: "mark sink empty and deployed and subscribed then sink",
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("")
+			s.MarkSink(&apis.URL{})
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			return s
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
@@ -221,7 +234,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,
@@ -262,7 +275,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkTransformer("url")
+			s.MarkTransformer(apis.HTTP("url"))
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionTransformerProvided,
@@ -275,7 +288,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkTransformer("")
+			s.MarkTransformer(nil)
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionTransformerProvided,
@@ -305,7 +318,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			return s
 		}(),
@@ -319,7 +332,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			return s
@@ -334,7 +347,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			s.MarkNoSink("Testing", "hi")
@@ -352,7 +365,7 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			s.MarkNotDeployed("Testing", "hi")
@@ -366,11 +379,11 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			Message: "hi",
 		},
 	}, {
-		name: "mark sink empty and deployed and subscribed",
+		name: "mark sink nil and deployed and subscribed",
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("")
+			s.MarkSink(nil)
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
 			return s
@@ -383,14 +396,14 @@ func TestPubSubStatusGetCondition(t *testing.T) {
 			Message: "Sink has resolved to empty",
 		},
 	}, {
-		name: "mark sink empty and deployed and subscribed then sink",
+		name: "mark sink nil and deployed and subscribed then sink",
 		s: func() *PullSubscriptionStatus {
 			s := &PullSubscriptionStatus{}
 			s.InitializeConditions()
-			s.MarkSink("")
+			s.MarkSink(nil)
 			s.MarkDeployed()
 			s.MarkSubscribed("subID")
-			s.MarkSink("uri://example")
+			s.MarkSink(apis.HTTP("example"))
 			return s
 		}(),
 		condQuery: PullSubscriptionConditionReady,

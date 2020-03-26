@@ -69,3 +69,19 @@ func (pbs *PolicyBindingStatus) MarkBindingFailure(reason, messageFormat string,
 func (pbs *PolicyBindingStatus) MarkBindingAvailable() {
 	policybindingCondSet.Manage(pbs).MarkTrue(PolicyBindingConditionReady)
 }
+
+// PropagateBindingStatus propagates the current binding status from another binding status.
+func (pbs *PolicyBindingStatus) PropagateBindingStatus(other *PolicyBindingStatus) {
+	if other == nil {
+		return
+	}
+	if other.IsReady() {
+		pbs.MarkBindingAvailable()
+		return
+	}
+	if st := other.GetTopLevelCondition(); st != nil {
+		if st.IsFalse() {
+			pbs.MarkBindingUnavailable(st.Reason, st.Message)
+		}
+	}
+}

@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -54,7 +55,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		SubscriptionID: "sub-id",
-		SinkURI:        "sink-uri",
+		SinkURI:        apis.HTTP("sink-uri"),
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
@@ -109,7 +110,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "sub-id",
 						}, {
 							Name:  "SINK_URI",
-							Value: "sink-uri",
+							Value: "http://sink-uri",
 						}, {
 							Name: "TRANSFORMER_URI",
 						}, {
@@ -208,8 +209,8 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		SubscriptionID: "sub-id",
-		SinkURI:        "sink-uri",
-		TransformerURI: "transformer-uri",
+		SinkURI:        apis.HTTP("sink-uri"),
+		TransformerURI: apis.HTTP("transformer-uri"),
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
@@ -264,10 +265,10 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "sub-id",
 						}, {
 							Name:  "SINK_URI",
-							Value: "sink-uri",
+							Value: "http://sink-uri",
 						}, {
 							Name:  "TRANSFORMER_URI",
-							Value: "transformer-uri",
+							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
 							Value: "adapter-type",
@@ -365,8 +366,8 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 			"test-key2": "test-value2",
 		},
 		SubscriptionID: "sub-id",
-		SinkURI:        "sink-uri",
-		TransformerURI: "transformer-uri",
+		SinkURI:        apis.HTTP("sink-uri"),
+		TransformerURI: apis.HTTP("transformer-uri"),
 		LoggingConfig:  "LoggingConfig-ABC123",
 		MetricsConfig:  "MetricsConfig-ABC123",
 		TracingConfig:  "TracingConfig-ABC123",
@@ -422,10 +423,10 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 							Value: "sub-id",
 						}, {
 							Name:  "SINK_URI",
-							Value: "sink-uri",
+							Value: "http://sink-uri",
 						}, {
 							Name:  "TRANSFORMER_URI",
-							Value: "transformer-uri",
+							Value: "http://transformer-uri",
 						}, {
 							Name:  "ADAPTER_TYPE",
 							Value: "adapter-type",

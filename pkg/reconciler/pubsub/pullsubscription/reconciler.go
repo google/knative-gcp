@@ -31,11 +31,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -112,7 +113,7 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription)
 	} else {
 		// If the transformer is nil, mark is as nil and clean up the URI.
 		ps.Status.MarkNoTransformer("TransformerNil", "Transformer is nil")
-		ps.Status.TransformerURI = ""
+		ps.Status.TransformerURI = nil
 	}
 
 	subscriptionID, err := r.reconcileSubscription(ctx, ps)
@@ -368,16 +369,16 @@ func (r *Base) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 	// TODO: requeue all PullSubscriptions. See https://github.com/google/knative-gcp/issues/457.
 }
 
-func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (string, error) {
+func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (*apis.URL, error) {
 	// Setting up the namespace.
 	if destination.Ref != nil {
 		destination.Ref.Namespace = ps.Namespace
 	}
 	url, err := r.UriResolver.URIFromDestinationV1(destination, ps)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return url.String(), nil
+	return url, nil
 }
 
 func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {

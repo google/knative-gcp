@@ -18,8 +18,11 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
+	"github.com/google/knative-gcp/pkg/apis/security"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmp"
@@ -215,6 +218,28 @@ func (pbs *PolicyBindingSpec) CheckImmutableFields(ctx context.Context, original
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
+		}
+	}
+	return nil
+}
+
+// CheckImmutableBindingObjectMeta checks the immutable fields in policy binding ObjectMeta.
+func CheckImmutableBindingObjectMeta(ctx context.Context, current, original *metav1.ObjectMeta) *apis.FieldError {
+	if original == nil {
+		return nil
+	}
+	var currBindingClass, originalBindingClass string
+	if current.Annotations != nil {
+		currBindingClass = current.Annotations[security.PolicyBindingClassAnnotationKey]
+	}
+	if original.Annotations != nil {
+		originalBindingClass = original.Annotations[security.PolicyBindingClassAnnotationKey]
+	}
+	if currBindingClass != originalBindingClass {
+		return &apis.FieldError{
+			Message: "Immutable fields changed (-old +new)",
+			Paths:   []string{"annotations", security.PolicyBindingClassAnnotationKey},
+			Details: fmt.Sprintf("-: %q\n+: %q", originalBindingClass, currBindingClass),
 		}
 	}
 	return nil

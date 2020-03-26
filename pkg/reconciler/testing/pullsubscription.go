@@ -118,13 +118,13 @@ func WithPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) P
 	}
 }
 
-func WithPullSubscriptionMarkSink(uri string) PullSubscriptionOption {
+func WithPullSubscriptionMarkSink(uri *apis.URL) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSink(uri)
 	}
 }
 
-func WithPullSubscriptionMarkTransformer(uri string) PullSubscriptionOption {
+func WithPullSubscriptionMarkTransformer(uri *apis.URL) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkTransformer(uri)
 	}
@@ -154,7 +154,7 @@ func WithPullSubscriptionProjectID(projectID string) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionTransformerURI(uri string) PullSubscriptionOption {
+func WithPullSubscriptionTransformerURI(uri *apis.URL) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.TransformerURI = uri
 	}
@@ -184,7 +184,7 @@ func WithPullSubscriptionSpecWithNoDefaults(spec v1alpha1.PullSubscriptionSpec) 
 	}
 }
 
-func WithPullSubscriptionReady(sink string) PullSubscriptionOption {
+func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)

@@ -59,7 +59,7 @@ var (
 	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = "http://" + sinkDNS + "/"
+	sinkURI = apis.HTTP(sinkDNS)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -125,19 +125,10 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
-// turn string into URL or terminate with t.Fatalf
-func sinkURL(t *testing.T, url string) *apis.URL {
-	u, err := apis.ParseURL(url)
-	if err != nil {
-		t.Fatalf("Failed to parse url %q", url)
-	}
-	return u
-}
-
 // TODO add a unit test for successfully creating a k8s service account, after issue issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	attempts := 0
-	pubsubSinkURL := sinkURL(t, sinkURI)
+	pubsubSinkURL := sinkURI
 
 	table := TableTest{{
 		Name: "bad workqueue key",

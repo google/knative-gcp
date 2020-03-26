@@ -40,7 +40,7 @@ func MakeRequestAuthentication(
 
 	return istioclient.RequestAuthentication{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            b.Name,
+			Name:            kmeta.ChildName(b.Name, "-req-authn"),
 			Namespace:       b.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
 		},
