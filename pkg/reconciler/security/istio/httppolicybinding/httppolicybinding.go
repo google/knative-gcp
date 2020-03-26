@@ -81,12 +81,16 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, b *v1alpha1.HTTPPolicyBi
 		return fmt.Errorf("failed to get HTTPPolicy: %w", err)
 	}
 	// Track referenced policy.
-	r.policyTracker.TrackReference(tracker.Reference{
-		APIVersion: b.Spec.Policy.APIVersion,
-		Kind:       b.Spec.Policy.Kind,
+	if err := r.policyTracker.TrackReference(tracker.Reference{
+		APIVersion: httpPolicyGVK.GroupVersion().String(),
+		Kind:       httpPolicyGVK.Kind,
 		Namespace:  b.Spec.Policy.Namespace,
 		Name:       b.Spec.Policy.Name,
-	}, b)
+	}, b); err != nil {
+		logging.FromContext(ctx).Error("Problem tracking HTTPPolicy", zap.Any("HTTPPolicy", b.Spec.Policy), zap.Error(err))
+		b.Status.MarkBindingFailure("TrackPolicyFailure", "%v", err)
+		return fmt.Errorf("failed to track HTTPPolicy: %w", err)
+	}
 
 	if err := r.reconcileRequestAuthentication(ctx, b, subjectSelector, p); err != nil {
 		logging.FromContext(ctx).Error("Problem reconciling Istio RequestAuthentication", zap.Error(err))
@@ -108,7 +112,7 @@ func (r *Reconciler) reconcileRequestAuthentication(
 	ctx context.Context,
 	b *v1alpha1.HTTPPolicyBinding,
 	subjectSelector *metav1.LabelSelector,
-	p *v1alpha1.HTTPPolicy) pkgreconciler.Event {
+	p *v1alpha1.HTTPPolicy) error {
 
 	// JWT spec missing means no authentication is required.
 	if p.Spec.JWT == nil {
@@ -144,7 +148,7 @@ func (r *Reconciler) reconcileAuthorizationPolicy(
 	ctx context.Context,
 	b *v1alpha1.HTTPPolicyBinding,
 	subjectSelector *metav1.LabelSelector,
-	p *v1alpha1.HTTPPolicy) pkgreconciler.Event {
+	p *v1alpha1.HTTPPolicy) error {
 
 	// Rules missing means no authorization is required.
 	if len(p.Spec.Rules) == 0 {

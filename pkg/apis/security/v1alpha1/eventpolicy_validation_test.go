@@ -252,22 +252,6 @@ func TestEventPolicyValidation(t *testing.T) {
 		},
 		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("contenttype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
 	}, {
-		name: "invalid media type",
-		p: EventPolicy{
-			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},
-			Spec: EventPolicySpec{
-				JWT: &JWTSpec{
-					Issuer:      "example.com",
-					Jwks:        "jwks",
-					FromHeaders: []JWTHeader{{Name: "Authorization", Prefix: "Bearer"}},
-				},
-				Rules: []EventPolicyRuleSpec{
-					{MediaType: []StringMatch{{Exact: "id", Prefix: "abc"}}},
-				},
-			},
-		},
-		wantErr: apis.ErrMultipleOneOf("exact", "prefix").ViaFieldIndex("mediatype", 0).ViaFieldIndex("rules", 0).ViaField("spec"),
-	}, {
 		name: "invalid extension",
 		p: EventPolicy{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-policy"},

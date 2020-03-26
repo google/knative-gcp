@@ -19,7 +19,10 @@ package v1alpha1
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+	"knative.dev/pkg/apis"
 )
 
 func TestPolicyBindingStatusIsReady(t *testing.T) {
@@ -74,6 +77,53 @@ func TestPolicyBindingStatusIsReady(t *testing.T) {
 			got := tc.s.IsReady()
 			if got != tc.wantReady {
 				t.Errorf("unexpected readiness: want %v, got %v", tc.wantReady, got)
+			}
+		})
+	}
+}
+
+func TestPropagateBindingStatus(t *testing.T) {
+	cases := []struct {
+		name  string
+		other *PolicyBindingStatus
+	}{{
+		name: "other is initialized",
+		other: func() *PolicyBindingStatus {
+			p := &PolicyBindingStatus{}
+			p.InitializeConditions()
+			return p
+		}(),
+	}, {
+		name: "other is ready",
+		other: func() *PolicyBindingStatus {
+			p := &PolicyBindingStatus{}
+			p.InitializeConditions()
+			p.MarkBindingAvailable()
+			return p
+		}(),
+	}, {
+		name: "other is failure",
+		other: func() *PolicyBindingStatus {
+			p := &PolicyBindingStatus{}
+			p.InitializeConditions()
+			p.MarkBindingFailure("FailureReason", "failure message")
+			return p
+		}(),
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &PolicyBindingStatus{}
+			s.InitializeConditions()
+			s.PropagateBindingStatus(tc.other)
+			wantCond := tc.other.GetTopLevelCondition()
+			gotCond := s.GetTopLevelCondition()
+			if wantCond == nil && gotCond != nil {
+				t.Errorf("propagated status top level condition got=%v, want=nil", gotCond)
+				return
+			}
+			if diff := cmp.Diff(wantCond, gotCond, cmpopts.IgnoreFields(apis.Condition{}, "LastTransitionTime")); diff != "" {
+				t.Errorf("propagated status top level condition (-want,+got): %v", diff)
 			}
 		})
 	}

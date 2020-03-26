@@ -68,7 +68,6 @@ const (
 
 	sinkName = "sink"
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI  = "http://" + sinkDNS + "/"
 
 	topicNotReadyMsg                     = `Topic "test-cloudauditlogssource" not ready`
 	pullSubscriptionNotReadyMsg          = `PullSubscription "test-cloudauditlogssource" not ready`
@@ -97,6 +96,8 @@ var (
 	}
 
 	gServiceAccount = "test@test"
+
+	sinkURI = apis.HTTP(sinkDNS)
 )
 
 func sourceOwnerRef(name string, uid types.UID) metav1.OwnerReference {
@@ -123,17 +124,8 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
-// turn string into URL or terminate with t.Fatalf
-func sinkURL(t *testing.T, url string) *apis.URL {
-	u, err := apis.ParseURL(url)
-	if err != nil {
-		t.Fatalf("Failed to parse url %q", url)
-	}
-	return u
-}
-
 func TestAllCases(t *testing.T) {
-	calSinkURL := sinkURL(t, sinkURI)
+	calSinkURL := sinkURI
 
 	table := TableTest{{
 		Name: "bad workqueue key",

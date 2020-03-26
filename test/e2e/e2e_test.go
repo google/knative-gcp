@@ -84,13 +84,13 @@ func TestChannelChain(t *testing.T) {
 func TestEventTransformationForTrigger(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerChannelFlowTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -104,7 +104,7 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {

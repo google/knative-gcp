@@ -43,6 +43,8 @@ const (
 	controllerAgentName = "istio-httppolicybinding-controller"
 )
 
+var httpPolicyGVK = securityv1alpha1.SchemeGroupVersion.WithKind("HTTPPolicy")
+
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
 func NewController(
@@ -86,7 +88,7 @@ func NewController(
 
 	r.policyTracker = tracker.New(impl.EnqueueKey, controller.GetTrackerLease(ctx))
 	policyInformer.Informer().AddEventHandler(controller.HandleAll(
-		controller.EnsureTypeMeta(r.policyTracker.OnChanged, securityv1alpha1.SchemeGroupVersion.WithKind("HTTPPolicyBinding")),
+		controller.EnsureTypeMeta(r.policyTracker.OnChanged, httpPolicyGVK),
 	))
 
 	return impl
