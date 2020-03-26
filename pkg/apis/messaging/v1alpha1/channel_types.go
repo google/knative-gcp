@@ -123,15 +123,17 @@ type ChannelStatus struct {
 }
 
 // Methods for identifiable interface.
-
+// IdentitySpec returns the IdentitySpec portion of the Spec.
 func (c *Channel) IdentitySpec() *duckv1alpha1.IdentitySpec {
 	return &c.Spec.IdentitySpec
 }
 
+// IdentityStatus returns the IdentityStatus portion of the Status.
 func (c *Channel) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &c.Status.IdentityStatus
 }
 
+// ConditionSet returns the apis.ConditionSet of the embedding object
 func (s *Channel) ConditionSet() *apis.ConditionSet {
 	return &channelCondSet
 }

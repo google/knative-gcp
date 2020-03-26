@@ -25,8 +25,10 @@ import (
 
 type Identifiable interface {
 	kmeta.OwnerRefable
-	// GetIdentity returns identifiable's identity.
+	// IdentitySpec returns the IdentitySpec portion of the Spec.
 	IdentitySpec() *duckv1alpha1.IdentitySpec
+	// IdentityStatus returns the IdentityStatus portion of the Status.
 	IdentityStatus() *duckv1alpha1.IdentityStatus
+	// ConditionSet returns the apis.ConditionSet of the embedding object
 	ConditionSet() *apis.ConditionSet
 }

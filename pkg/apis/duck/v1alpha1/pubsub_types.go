@@ -74,6 +74,11 @@ type PubSubStatus struct {
 	// +optional
 	SinkURI *apis.URL `json:"sinkUri,omitempty"`
 
+	// CloudEventAttributes are the specific attributes that the Source uses
+	// as part of its CloudEvents.
+	// +optional
+	CloudEventAttributes []duckv1.CloudEventAttributes `json:"ceAttributes,omitempty"`
+
 	// ProjectID is the project ID of the Topic, might have been resolved.
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`

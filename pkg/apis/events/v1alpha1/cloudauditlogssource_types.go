@@ -108,11 +108,12 @@ func (*CloudAuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {
 }
 
 // Methods for identifiable interface.
-
+// IdentitySpec returns the IdentitySpec portion of the Spec.
 func (s *CloudAuditLogsSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
 	return &s.Spec.IdentitySpec
 }
 
+// IdentityStatus returns the IdentityStatus portion of the Status.
 func (s *CloudAuditLogsSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }

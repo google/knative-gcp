@@ -147,11 +147,12 @@ func (s *CloudPubSubSource) GetGroupVersionKind() schema.GroupVersionKind {
 }
 
 // Methods for identifiable interface.
-
+// IdentitySpec returns the IdentitySpec portion of the Spec.
 func (s *CloudPubSubSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
 	return &s.Spec.IdentitySpec
 }
 
+// IdentityStatus returns the IdentityStatus portion of the Status.
 func (s *CloudPubSubSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
 	return &s.Status.IdentityStatus
 }
