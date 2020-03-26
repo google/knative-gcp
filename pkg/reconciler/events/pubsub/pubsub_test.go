@@ -74,7 +74,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -134,6 +134,7 @@ func sinkURL(t *testing.T, url string) *apis.URL {
 	return u
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	attempts := 0
 	pubsubSinkURL := sinkURL(t, sinkURI)
@@ -146,52 +147,6 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
-	}, {
-		Name: "k8s serviceaccount created",
-		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + pubsubName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					Name:               pubsubName,
-					UID:                pubsubUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, pubsubName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, pubsubName),
-		},
-		WantErr: true,
 	}, {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
@@ -366,10 +321,19 @@ func TestAllCases(t *testing.T) {
 			),
 			newSink(),
 		},
-		Key:               testNS + "/" + pubsubName,
-		WantStatusUpdates: nil,
+		Key: testNS + "/" + pubsubName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceDeletionTimestamp,
+				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+			),
+		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 		},
 	}}
 

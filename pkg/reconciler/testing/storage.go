@@ -82,6 +82,12 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
+func WithCloudStorageSourceWorkloadIdentityFailed(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
 	return func(ps *v1alpha1.CloudStorageSource) {
 		ps.Spec.ServiceAccount = gServiceAccount
@@ -92,7 +98,7 @@ func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorag
 // topic is False
 func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicFailed(reason, message)
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -100,7 +106,7 @@ func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourc
 // topic is False
 func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicUnknown(reason, message)
+		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -108,7 +114,7 @@ func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSour
 // topic is not ready
 func WithCloudStorageSourceTopicReady(topicID string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicReady()
+		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 	}
 }
@@ -123,7 +129,7 @@ func WithCloudStorageSourceTopicID(topicID string) CloudStorageSourceOption {
 // status of topic is False
 func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionFailed(reason, message)
+		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -131,7 +137,7 @@ func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudS
 // status of topic is Unknown.
 func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionUnknown(reason, message)
+		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -139,7 +145,7 @@ func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) Cloud
 // topic is ready.
 func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 	}
 }
 

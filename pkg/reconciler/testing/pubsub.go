@@ -87,6 +87,12 @@ func WithInitCloudPubSubSourceConditions(ps *v1alpha1.CloudPubSubSource) {
 	ps.Status.InitializeConditions()
 }
 
+func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 // WithCloudPubSubSourcePullSubscriptionFailed marks the condition that the
 // status of PullSubscription is False
 func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPubSubSourceOption {

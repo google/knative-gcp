@@ -50,10 +50,7 @@ type PubSubSpec struct {
 	// This brings in CloudEventOverrides and Sink.
 	duckv1.SourceSpec `json:",inline"`
 
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
-	// If not specified, defaults to use secret.
-	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	IdentitySpec `json:",inline"`
 
 	// Secret is the credential to use to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to:
@@ -71,8 +68,11 @@ type PubSubSpec struct {
 // PubSubStatus shows how we expect folks to embed Addressable in
 // their Status field.
 type PubSubStatus struct {
-	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1.SourceStatus
+	IdentityStatus `json:",inline"`
+
+	// SinkURI is the current active sink URI that has been configured for the Source.
+	// +optional
+	SinkURI *apis.URL `json:"sinkUri,omitempty"`
 
 	// ProjectID is the project ID of the Topic, might have been resolved.
 	// +optional

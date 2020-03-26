@@ -291,13 +291,15 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			orig: &pubSubSourceSpec,
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						ServiceAccount: "new-service-account",
+					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: pubSubSourceSpec.Secret.Name,
 						},
 						Key: pubSubSourceSpec.Secret.Key,
 					},
-					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: pubSubSourceSpec.Sink,
 					},

@@ -107,7 +107,22 @@ func (*CloudAuditLogsSource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("CloudAuditLogsSource")
 }
 
-///Methods for pubsubable interface
+// Methods for identifiable interface.
+
+func (s *CloudAuditLogsSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+func (s *CloudAuditLogsSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
+	return &auditLogsSourceCondSet
+}
+
+///Methods for pubsubable interface.
 
 // PubSubSpec returns the PubSubSpec portion of the Spec.
 func (s *CloudAuditLogsSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
@@ -117,16 +132,6 @@ func (s *CloudAuditLogsSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 // PubSubStatus returns the PubSubStatus portion of the Status.
 func (s *CloudAuditLogsSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
-}
-
-// ConditionSet returns the apis.ConditionSet of the embedding object
-func (*CloudAuditLogsSource) ConditionSet() *apis.ConditionSet {
-	return &auditLogsSourceCondSet
-}
-
-// Methods for identifiable interface
-func (s *CloudAuditLogsSource) GetIdentity() string {
-	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

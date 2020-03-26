@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	"knative.dev/pkg/apis"
-
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -40,38 +38,6 @@ func (s *CloudStorageSourceStatus) IsReady() bool {
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (s *CloudStorageSourceStatus) InitializeConditions() {
 	storageCondSet.Manage(s).InitializeConditions()
-}
-
-// MarkPullSubscriptionFailed sets the condition that the status of underlying PullSubscription
-// is False and why.
-func (s *CloudStorageSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
-}
-
-// MarkPullSubscriptionUnknown sets the condition that the status of underlying PullSubscription
-// is Unknown and why.
-func (s *CloudStorageSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
-}
-
-// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
-func (s *CloudStorageSourceStatus) MarkPullSubscriptionReady() {
-	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.PullSubscriptionReady)
-}
-
-// MarkTopicFailed sets the condition that the status of PubSub topic is False why.
-func (s *CloudStorageSourceStatus) MarkTopicFailed(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkFalse(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
-}
-
-// MarkTopicUnknown sets the condition that the status of PubSub topic is Unknown why.
-func (s *CloudStorageSourceStatus) MarkTopicUnknown(reason, messageFormat string, messageA ...interface{}) {
-	storageCondSet.Manage(s).MarkUnknown(duckv1alpha1.TopicReady, reason, messageFormat, messageA...)
-}
-
-// MarkTopicReady sets the condition that the underlying PubSub topic was created successfully.
-func (s *CloudStorageSourceStatus) MarkTopicReady() {
-	storageCondSet.Manage(s).MarkTrue(duckv1alpha1.TopicReady)
 }
 
 // MarkNotificationNotReady sets the condition that the GCS has not been configured

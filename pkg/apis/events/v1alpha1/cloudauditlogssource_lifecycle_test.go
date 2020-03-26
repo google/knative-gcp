@@ -47,24 +47,24 @@ func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 	}, {
 		name: "the status of topic is false",
 		s: func() *CloudAuditLogsSourceStatus {
-			s := &CloudAuditLogsSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkSinkReady()
-			s.MarkTopicFailed("test", "the status of topic is false")
-			return s
+			s := &CloudAuditLogsSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkSinkReady()
+			s.Status.MarkTopicFailed(s.ConditionSet(), "test", "the status of topic is false")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
 		s: func() *CloudAuditLogsSourceStatus {
-			s := &CloudAuditLogsSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkSinkReady()
-			s.MarkTopicUnknown("test", "the status of topic is unknown")
-			return s
+			s := &CloudAuditLogsSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkSinkReady()
+			s.Status.MarkTopicUnknown(s.ConditionSet(), "test", "the status of topic is unknown")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
@@ -72,23 +72,23 @@ func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 		{
 			name: "the status of pullsubscription is false",
 			s: func() *CloudAuditLogsSourceStatus {
-				s := &CloudAuditLogsSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkSinkReady()
-				s.MarkPullSubscriptionFailed("test", "the status of pullsubscription is false")
-				return s
+				s := &CloudAuditLogsSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkSinkReady()
+				s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "test", "the status of pullsubscription is false")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionFalse,
 		}, {
 			name: "the status of pullsubscription is unknown",
 			s: func() *CloudAuditLogsSourceStatus {
-				s := &CloudAuditLogsSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkSinkReady()
-				s.MarkPullSubscriptionUnknown("test", "the status of pullsubscription is unknown")
-				return s
+				s := &CloudAuditLogsSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkSinkReady()
+				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "test", "the status of pullsubscription is unknown")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
@@ -96,24 +96,24 @@ func TestCloudAuditLogsSourceStatusIsReady(t *testing.T) {
 		{
 			name: "sink is not ready",
 			s: func() *CloudAuditLogsSourceStatus {
-				s := &CloudAuditLogsSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkPullSubscriptionReady()
-				s.MarkSinkNotReady("test", "sink is not ready")
-				return s
+				s := &CloudAuditLogsSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkSinkNotReady("test", "sink is not ready")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionFalse,
 			want:                false,
 		}, {
 			name: "ready",
 			s: func() *CloudAuditLogsSourceStatus {
-				s := &CloudAuditLogsSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkPullSubscriptionReady()
-				s.MarkSinkReady()
-				return s
+				s := &CloudAuditLogsSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkSinkReady()
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionTrue,
 			want:                true,

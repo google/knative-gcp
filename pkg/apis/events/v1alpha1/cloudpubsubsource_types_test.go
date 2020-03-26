@@ -92,16 +92,31 @@ func TestGetRetentionDuration_default(t *testing.T) {
 	}
 }
 
-func TestCloudPubSubSourceGetIdentity(t *testing.T) {
+func TestCloudPubSubSourceIdentitySpec(t *testing.T) {
 	s := &CloudPubSubSource{
 		Spec: CloudPubSubSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
-				ServiceAccount: "test@test",
+				IdentitySpec: v1alpha1.IdentitySpec{
+					ServiceAccount: "test@test",
+				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.GetIdentity()
+	got := s.IdentitySpec().ServiceAccount
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudPubSubSourceIdentityStatus(t *testing.T) {
+	s := &CloudPubSubSource{
+		Status: CloudPubSubSourceStatus{
+			PubSubStatus: v1alpha1.PubSubStatus{},
+		},
+	}
+	want := &v1alpha1.IdentityStatus{}
+	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
