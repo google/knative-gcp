@@ -124,7 +124,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
-// TODO add a unit test for successfully creating a k8s service account, after issue issue https://github.com/google/knative-gcp/issues/657 gets solved.
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	calSinkURL := sinkURI
 
