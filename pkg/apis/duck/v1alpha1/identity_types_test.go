@@ -34,7 +34,7 @@ func TestIdentityGetListType(t *testing.T) {
 func TestIdentityPopulate(t *testing.T) {
 	got := &Identity{}
 	want := &Identity{
-		Spec: PubSubSpec{},
+		Spec: IdentitySpec{},
 	}
 
 	got.Populate()

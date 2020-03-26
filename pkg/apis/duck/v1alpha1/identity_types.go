@@ -32,21 +32,20 @@ type Identity struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PubSubSpec   `json:"spec"`
-	Status PubSubStatus `json:"status"`
+	Spec   IdentitySpec   `json:"spec"`
+	Status IdentityStatus `json:"status"`
 }
 
 type IdentitySpec struct {
-	// gServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to use secret.
 	// +optional
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 }
 
-// PubSubStatus shows how we expect folks to embed Addressable in
-// their Status field.
+// IdentityStatus inherits duck/v1 Status and adds a ServiceAccountName.
 type IdentityStatus struct {
-	// inherits IdentityStatus, which currently provides:
+	// Inherits duck/v1 Status,, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
 	duckv1.Status `json:",inline"`
@@ -72,7 +71,7 @@ func (ss *IdentityStatus) IsReady() bool {
 }
 
 var (
-	// Verify PubSub resources meet duck contracts.
+	// Verify Identity resources meet duck contracts.
 	_ duck.Populatable = (*Identity)(nil)
 	_ apis.Listable    = (*Identity)(nil)
 )
@@ -94,7 +93,7 @@ func (*Identity) GetListType() runtime.Object {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// PubSubList is a list of PubSub resources
+// IdentityList is a list of PubSub resources
 type IdentityList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
