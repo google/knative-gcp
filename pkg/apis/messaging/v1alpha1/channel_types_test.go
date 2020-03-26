@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"knative.dev/pkg/apis"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -64,6 +66,30 @@ func TestChannelIdentityStatus(t *testing.T) {
 	want := &duckv1alpha1.IdentityStatus{}
 	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestChannelConditionSet(t *testing.T) {
+	want := []apis.Condition{{
+		Type: ChannelConditionAddressable,
+	}, {
+		Type: ChannelConditionTopicReady,
+	}, {
+		Type: apis.ConditionReady,
+	}}
+	c := &Channel{}
+
+	c.ConditionSet().Manage(&c.Status).InitializeConditions()
+	var got []apis.Condition = c.Status.GetConditions()
+
+	compareConditionTypes := cmp.Transformer("ConditionType", func(c apis.Condition) apis.ConditionType {
+		return c.Type
+	})
+	sortConditionTypes := cmpopts.SortSlices(func(a, b apis.Condition) bool {
+		return a.Type < b.Type
+	})
+	if diff := cmp.Diff(want, got, sortConditionTypes, compareConditionTypes); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }
