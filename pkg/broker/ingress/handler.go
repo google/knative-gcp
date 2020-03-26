@@ -20,8 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cloudevents/sdk-go/v2/client"
-	"github.com/cloudevents/sdk-go/v2/event"
+	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
@@ -31,32 +30,36 @@ import (
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
 	// Send sends the event to a decoupling sink.
-	Send(ctx context.Context, event event.Event) error
+	Send(ctx context.Context, event cev2.Event) error
 }
 
 // handler receives events and persists them to storage (pubsub).
 type handler struct {
 	// inbound is the cloudevents client to receive events.
-	inbound client.Client
+	inbound cev2.Client
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 }
 
 func NewHandler(ctx context.Context, options ...Option) (*handler, error) {
 	h := &handler{}
-	var err error
-	// Create a default HTTP client for ingress.
-	if h.inbound, err = client.NewDefault(); err != nil {
-		return nil, fmt.Errorf("failed to create inbound cloudevent client: %w", err)
-	}
-	// Create a pubsub client to send events to decoupling topic.
-	if h.decouple, err = h.newDefaultPubSubClient(ctx); err != nil {
-		return nil, fmt.Errorf("failed to create decouple cloudevent client: %w", err)
-	}
-
 	for _, option := range options {
 		option(h)
 	}
+
+	var err error
+	if h.inbound == nil {
+		if h.inbound, err = newDefaultHTTPClient(); err != nil {
+			return nil, fmt.Errorf("failed to create inbound cloudevent client: %w", err)
+		}
+	}
+
+	if h.decouple == nil {
+		if h.decouple, err = h.newDefaultPubSubClient(ctx); err != nil {
+			return nil, fmt.Errorf("failed to create decouple cloudevent client: %w", err)
+		}
+	}
+
 	return h, nil
 }
 
@@ -65,13 +68,8 @@ func (h *handler) Start(ctx context.Context) error {
 }
 
 // receive receives events from inbound and sends them to decouple.
-func (h *handler) receive(ctx context.Context, event event.Event) protocol.Result {
-	// Code below is for ce v1.
-	// TODO(liu-cong) figure out tracing support for ce v2
-	// event = tracing.AddTraceparentAttributeFromContext(ctx, event)
-
+func (h *handler) receive(ctx context.Context, event cev2.Event) protocol.Result {
 	// TODO(liu-cong) add metrics
-
 	// TODO(liu-cong) route events based on broker.
 
 	if err := h.decouple.Send(ctx, event); err != nil {
@@ -82,9 +80,23 @@ func (h *handler) receive(ctx context.Context, event event.Event) protocol.Resul
 	return nil
 }
 
+// newDefaultHTTPClient provides good defaults for an HTTP client with tracing.
+func newDefaultHTTPClient() (cev2.Client, error) {
+	p, err := cev2.NewHTTP()
+	if err != nil {
+		return nil, err
+	}
+
+	return cev2.NewClientObserved(p,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
+		cev2.WithTracePropagation,
+	)
+}
+
 // newDefaultPubSubClient creates a pubsub client using env vars "GOOGLE_CLOUD_PROJECT"
 // and "PUBSUB_TOPIC"
-func (h *handler) newDefaultPubSubClient(ctx context.Context) (client.Client, error) {
+func (h *handler) newDefaultPubSubClient(ctx context.Context) (cev2.Client, error) {
 	// Make a pubsub protocol for the CloudEvents client.
 	p, err := pubsub.New(ctx,
 		pubsub.WithProjectIDFromDefaultEnv(),
@@ -94,8 +106,9 @@ func (h *handler) newDefaultPubSubClient(ctx context.Context) (client.Client, er
 	}
 
 	// Use the pubsub prototol to make a new CloudEvents client.
-	return client.NewObserved(p,
-		client.WithUUIDs(),
-		client.WithTimeNow(),
+	return cev2.NewClientObserved(p,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
+		cev2.WithTracePropagation,
 	)
 }

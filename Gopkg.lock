@@ -1715,7 +1715,6 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/cloudevents/sdk-go/v2",
     "github.com/cloudevents/sdk-go/v2/client",
-    "github.com/cloudevents/sdk-go/v2/event",
     "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
