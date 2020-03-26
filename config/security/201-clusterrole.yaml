@@ -99,9 +99,9 @@ rules:
     - list
 
 - apiGroups:
-    - "eventing.knative.dev"
+    - eventing.knative.dev
   resources:
-    - "brokers"
+    - brokers
   verbs:
     - get
     - list
