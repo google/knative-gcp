@@ -144,7 +144,13 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 func TestBrokerTracing(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(t, "ChannelBasedBroker", channelTestRunner, lib.DuplicatePubSubSecret)
+	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(
+		t, "ChannelBasedBroker", channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			lib.DuplicatePubSubSecret(client)
+			lib.SetTracingToZipkin(client)
+		},
+	)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -162,6 +168,7 @@ func TestChannelTracing(t *testing.T) {
 
 		// Copy the secret from the default namespace to the namespace used in the test.
 		lib.DuplicatePubSubSecret(client)
+		lib.SetTracingToZipkin(client)
 	})
 }
 
