@@ -95,6 +95,9 @@ function pubsub_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/monitoring.editor
+    gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY} \
+      --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    service_account_key="${PUBSUB_SERVICE_ACCOUNT_KEY}"
   fi
 }
 
