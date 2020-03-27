@@ -95,7 +95,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 
 	sinkURI = apis.HTTP(sinkDNS)
 )
@@ -124,6 +124,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	calSinkURL := sinkURI
 
@@ -134,49 +135,6 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
-	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		},
-		Key: testNS + "/" + sourceName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudAuditLogsSource",
-					Name:               sourceName,
-					UID:                sourceUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, sourceName),
-		},
-		WantErr: true,
 	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
@@ -1089,15 +1047,25 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
 		},
-		Key:               testNS + "/" + sourceName,
-		WantStatusUpdates: nil,
+		Key: testNS + "/" + sourceName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
+				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				WithCloudAuditLogsSourceDeletionTimestamp),
+		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 		},
 	}}
 

@@ -110,6 +110,22 @@ func (scheduler *CloudSchedulerSource) GetGroupVersionKind() schema.GroupVersion
 	return SchemeGroupVersion.WithKind("CloudSchedulerSource")
 }
 
+// Methods for identifiable interface
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (s *CloudSchedulerSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (s *CloudSchedulerSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
+	return &schedulerCondSet
+}
+
 // Methods for pubsubable interface
 // PubSubSpec returns the PubSubSpec portion of the Spec.
 func (s *CloudSchedulerSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
@@ -119,16 +135,6 @@ func (s *CloudSchedulerSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 // PubSubStatus returns the PubSubStatus portion of the Status.
 func (s *CloudSchedulerSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
-}
-
-// ConditionSet returns the apis.ConditionSet of the embedding object
-func (s *CloudSchedulerSource) ConditionSet() *apis.ConditionSet {
-	return &schedulerCondSet
-}
-
-// Methods for identifiable interface
-func (s *CloudSchedulerSource) GetIdentity() string {
-	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -48,36 +48,36 @@ func TestCloudStorageSourceStatusIsReady(t *testing.T) {
 	}, {
 		name: "the status of topic is false",
 		s: func() *CloudStorageSourceStatus {
-			s := &CloudStorageSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkNotificationReady("notificationID")
-			s.MarkTopicFailed("TopicFailed", "the status of topic is false")
-			return s
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkNotificationReady("notificationID")
+			s.Status.MarkTopicFailed(s.ConditionSet(), "TopicFailed", "the status of topic is false")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
 		s: func() *CloudStorageSourceStatus {
-			s := &CloudStorageSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkNotificationReady("notificationID")
-			s.MarkTopicUnknown("TopicUnknown", "the status of topic is unknown")
-			return s
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkNotificationReady("notificationID")
+			s.Status.MarkTopicUnknown(s.ConditionSet(), "TopicUnknown", "the status of topic is unknown")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
 	}, {
 		name: "the status of pullsubscription is false",
 		s: func() *CloudStorageSourceStatus {
-			s := &CloudStorageSourceStatus{}
-			s.InitializeConditions()
-			s.MarkTopicReady()
-			s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
-			s.MarkNotificationReady("notificationID")
-			return s
+			s := &CloudStorageSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkTopicReady(s.ConditionSet())
+			s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "PullSubscriptionFailed", "the status of pullsubscription is false")
+			s.Status.MarkNotificationReady("notificationID")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
@@ -85,34 +85,34 @@ func TestCloudStorageSourceStatusIsReady(t *testing.T) {
 		{
 			name: "the status of pullsubscription is unknown",
 			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
-				s.MarkNotificationReady("notificationID")
-				return s
+				s := &CloudStorageSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknown", "the status of pullsubscription is unknown")
+				s.Status.MarkNotificationReady("notificationID")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
 		}, {
 			name: "notification not ready",
 			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkPullSubscriptionReady()
-				s.MarkNotificationNotReady("NotReady", "notification not ready")
-				return s
+				s := &CloudStorageSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkNotificationNotReady("NotReady", "notification not ready")
+				return &s.Status
 			}(),
 		}, {
 			name: "ready",
 			s: func() *CloudStorageSourceStatus {
-				s := &CloudStorageSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady()
-				s.MarkPullSubscriptionReady()
-				s.MarkNotificationReady("notificationID")
-				return s
+				s := &CloudStorageSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkNotificationReady("notificationID")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionTrue,
 			want:                true,

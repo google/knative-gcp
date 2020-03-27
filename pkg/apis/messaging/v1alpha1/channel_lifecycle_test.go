@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
@@ -46,9 +47,11 @@ func TestChannelGetCondition(t *testing.T) {
 	}{{
 		name: "single condition",
 		cs: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{
-					condReady,
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{
+						condReady,
+					},
 				},
 			},
 		},
@@ -74,65 +77,75 @@ func TestChannelInitializeConditions(t *testing.T) {
 		name: "empty",
 		cs:   &ChannelStatus{},
 		want: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionTopicReady,
-					Status: corev1.ConditionUnknown,
-				}},
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{{
+						Type:   ChannelConditionAddressable,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionReady,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionTopicReady,
+						Status: corev1.ConditionUnknown,
+					}},
+				},
 			},
 		},
 	}, {
 		name: "one false",
 		cs: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionFalse,
-				}},
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{{
+						Type:   ChannelConditionAddressable,
+						Status: corev1.ConditionFalse,
+					}},
+				},
 			},
 		},
 		want: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionFalse,
-				}, {
-					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionTopicReady,
-					Status: corev1.ConditionUnknown,
-				}},
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{{
+						Type:   ChannelConditionAddressable,
+						Status: corev1.ConditionFalse,
+					}, {
+						Type:   ChannelConditionReady,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionTopicReady,
+						Status: corev1.ConditionUnknown,
+					}},
+				},
 			},
 		},
 	}, {
 		name: "one true",
 		cs: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionTrue,
-				}},
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{{
+						Type:   ChannelConditionAddressable,
+						Status: corev1.ConditionTrue,
+					}},
+				},
 			},
 		},
 		want: &ChannelStatus{
-			Status: duckv1.Status{
-				Conditions: []apis.Condition{{
-					Type:   ChannelConditionAddressable,
-					Status: corev1.ConditionTrue,
-				}, {
-					Type:   ChannelConditionReady,
-					Status: corev1.ConditionUnknown,
-				}, {
-					Type:   ChannelConditionTopicReady,
-					Status: corev1.ConditionUnknown,
-				}},
+			IdentityStatus: duckv1alpha1.IdentityStatus{
+				Status: duckv1.Status{
+					Conditions: []apis.Condition{{
+						Type:   ChannelConditionAddressable,
+						Status: corev1.ConditionTrue,
+					}, {
+						Type:   ChannelConditionReady,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   ChannelConditionTopicReady,
+						Status: corev1.ConditionUnknown,
+					}},
+				},
 			},
 		},
 	}}
@@ -207,17 +220,19 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 	}{
 		"empty string": {
 			want: &ChannelStatus{
-				Status: duckv1.Status{
-					Conditions: []apis.Condition{
-						{
-							Type:   ChannelConditionAddressable,
-							Status: corev1.ConditionFalse,
-						},
-						// Note that Ready is here because when the condition is marked False, duck
-						// automatically sets Ready to false.
-						{
-							Type:   ChannelConditionReady,
-							Status: corev1.ConditionFalse,
+				IdentityStatus: duckv1alpha1.IdentityStatus{
+					Status: duckv1.Status{
+						Conditions: []apis.Condition{
+							{
+								Type:   ChannelConditionAddressable,
+								Status: corev1.ConditionFalse,
+							},
+							// Note that Ready is here because when the condition is marked False, duck
+							// automatically sets Ready to false.
+							{
+								Type:   ChannelConditionReady,
+								Status: corev1.ConditionFalse,
+							},
 						},
 					},
 				},
@@ -235,15 +250,17 @@ func TestPubSubChannelStatus_SetAddressable(t *testing.T) {
 						},
 					},
 				},
-				Status: duckv1.Status{
-					Conditions: []apis.Condition{
-						{
-							Type:   ChannelConditionAddressable,
-							Status: corev1.ConditionTrue,
-						},
-						{
-							Type:   ChannelConditionReady,
-							Status: corev1.ConditionUnknown,
+				IdentityStatus: duckv1alpha1.IdentityStatus{
+					Status: duckv1.Status{
+						Conditions: []apis.Condition{
+							{
+								Type:   ChannelConditionAddressable,
+								Status: corev1.ConditionTrue,
+							},
+							{
+								Type:   ChannelConditionReady,
+								Status: corev1.ConditionUnknown,
+							},
 						},
 					},
 				},

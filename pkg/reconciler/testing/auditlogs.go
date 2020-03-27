@@ -49,38 +49,44 @@ func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 
 func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicFailed(reason, message)
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+func WithCloudAuditLogsSourceWorkloadIdentityFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourceTopicUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicUnknown(reason, message)
+		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourceTopicReady(topicID string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicReady()
+		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionFailed(reason, message)
+		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionUnknown(reason, message)
+		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionReady() CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 	}
 }
 

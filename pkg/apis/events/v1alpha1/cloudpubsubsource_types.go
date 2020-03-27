@@ -47,11 +47,11 @@ type CloudPubSubSource struct {
 }
 
 var (
-	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
-	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
-	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
-	_                              = duck.VerifyType(&CloudSchedulerSource{}, &duckv1.Conditions{})
+	_ kmeta.OwnerRefable           = (*CloudPubSubSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudPubSubSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudPubSubSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudPubSubSource)(nil)
+	_                              = duck.VerifyType(&CloudPubSubSource{}, &duckv1.Conditions{})
 )
 
 // CloudPubSubSourceSpec defines the desired state of the CloudPubSubSource.
@@ -129,7 +129,7 @@ var pubSubCondSet = apis.NewLivingConditionSet(
 // CloudPubSubSourceStatus defines the observed state of CloudPubSubSource.
 type CloudPubSubSourceStatus struct {
 	// This brings in duck/v1beta1 Status as well as SinkURI
-	duckv1.SourceStatus `json:",inline"`
+	duckv1alpha1.PubSubStatus `json:",inline"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -146,11 +146,15 @@ func (s *CloudPubSubSource) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("CloudPubSubSource")
 }
 
-// Methods for pubsubable interface
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (s *CloudPubSubSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
 
-// CloudPubSubSourceSpec returns the CloudPubSubSourceSpec portion of the Spec.
-func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
-	return &ps.Spec.PubSubSpec
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (s *CloudPubSubSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
 }
 
 // ConditionSet returns the apis.ConditionSet of the embedding object
@@ -158,7 +162,13 @@ func (ps *CloudPubSubSource) ConditionSet() *apis.ConditionSet {
 	return &pubSubCondSet
 }
 
-// Methods for identifiable interface
-func (ps *CloudPubSubSource) GetIdentity() string {
-	return ps.Spec.ServiceAccount
+// Methods for pubsubable interface.
+
+// CloudPubSubSourceSpec returns the CloudPubSubSourceSpec portion of the Spec.
+func (ps *CloudPubSubSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
+	return &ps.Spec.PubSubSpec
+}
+
+func (s *CloudPubSubSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
+	return &s.Status.PubSubStatus
 }

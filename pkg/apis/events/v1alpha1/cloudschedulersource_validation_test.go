@@ -280,6 +280,9 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -290,7 +293,6 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 			},
 		},
 		want: func() *apis.FieldError {
@@ -307,6 +309,9 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -317,7 +322,6 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{},
 					Key:                  "secret-test-key",
@@ -423,9 +427,11 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec:     schedulerWithSecret.SourceSpec,
-					Secret:         schedulerWithSecret.Secret,
-					ServiceAccount: "new-service-account",
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						ServiceAccount: "new-service-account",
+					},
+					SourceSpec: schedulerWithSecret.SourceSpec,
+					Secret:     schedulerWithSecret.Secret,
 				},
 			},
 			allowed: false,
