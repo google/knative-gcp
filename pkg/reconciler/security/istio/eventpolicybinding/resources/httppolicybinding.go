@@ -21,6 +21,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
+	"github.com/google/knative-gcp/pkg/apis/security"
 	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 )
 
@@ -31,6 +32,9 @@ func MakeHTTPPolicyBinding(b *v1alpha1.EventPolicyBinding, hp *v1alpha1.HTTPPoli
 			Name:            kmeta.ChildName(b.Name, "-httpbinding"),
 			Namespace:       b.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(b)},
+			Annotations: map[string]string{
+				security.PolicyBindingClassAnnotationKey: security.IstioPolicyBindingClassValue,
+			},
 		},
 		Spec: v1alpha1.PolicyBindingSpec{
 			BindingSpec: b.Spec.BindingSpec,

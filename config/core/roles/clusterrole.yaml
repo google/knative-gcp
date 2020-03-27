@@ -125,12 +125,6 @@ rules:
     - patch
 
 - apiGroups:
-    - eventing.knative.dev
-  resources:
-    - eventtypes
-  verbs: *everything
-
-- apiGroups:
     - keda.k8s.io
   resources:
     - scaledobjects
