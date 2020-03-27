@@ -25,7 +25,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
-func TestSyncConfigFromFile2(t *testing.T) {
+func TestSyncConfigFromFile(t *testing.T) {
 	data := &config.TargetsConfig{
 		Brokers: map[string]*config.Broker{
 			"ns1/broker1": {
