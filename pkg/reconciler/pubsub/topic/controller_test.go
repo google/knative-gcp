@@ -32,6 +32,7 @@ import (
 	// Fake injection informers
 
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1/service/fake"
 
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic/fake"

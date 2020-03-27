@@ -131,9 +131,11 @@ func newPullSubscription(subscriptionId string) *pubsubv1alpha1.PullSubscription
 		WithPullSubscriptionAnnotations(newAnnotations()),
 		WithPullSubscriptionObjectMetaGeneration(generation),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			Project: testProject,
-			Topic:   testTopicID,
-			Secret:  &secret,
+			Topic: testTopicID,
+			PubSubSpec: v1alpha1.PubSubSpec{
+				Secret:  &secret,
+				Project: testProject,
+			},
 		}),
 		WithPullSubscriptionSubscriptionID(subscriptionId),
 		WithInitPullSubscriptionConditions,
@@ -205,9 +207,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 			),
@@ -227,9 +231,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				// Updates
@@ -246,9 +252,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -274,9 +282,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -297,9 +307,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -327,9 +339,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -350,9 +364,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -380,9 +396,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -403,9 +421,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -433,9 +453,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -456,9 +478,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -487,9 +511,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -531,9 +557,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -558,9 +586,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 			),
@@ -589,9 +619,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -615,9 +647,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionTransformer(transformerGVK, transformerName),
@@ -656,9 +690,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -682,9 +718,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -718,9 +756,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionAnnotations(newAnnotations()),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -788,9 +828,11 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 			v1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
 		}),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			Project: testProject,
-			Topic:   testTopicID,
-			Secret:  &secret,
+			PubSubSpec: v1alpha1.PubSubSpec{
+				Secret:  &secret,
+				Project: testProject,
+			},
+			Topic: testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,

@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -144,9 +145,11 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 			Namespace: "topic-namespace",
 		},
 		Spec: v1alpha1.TopicSpec{
-			Project:        "eventing-name",
-			Topic:          "topic-name",
-			ServiceAccount: gServiceAccountName,
+			Project: "eventing-name",
+			Topic:   "topic-name",
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccount: gServiceAccountName,
+			},
 		},
 	}
 

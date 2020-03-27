@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
@@ -41,6 +42,7 @@ import (
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
 	gstatus "google.golang.org/grpc/status"
@@ -50,19 +52,24 @@ const (
 	resourceGroup = "topics.pubsub.cloud.google.com"
 
 	deleteTopicFailed               = "TopicDeleteFailed"
+	deleteWorkloadIdentityFailed    = "WorkloadIdentityDeleteFailed"
 	reconciledPublisherFailedReason = "PublisherReconcileFailed"
 	reconciledSuccessReason         = "TopicReconciled"
 	reconciledTopicFailedReason     = "TopicReconcileFailed"
+	workloadIdentityFailed          = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler implements controller.Reconciler for Topic resources.
 type Reconciler struct {
 	*pubsub.PubSubBase
-
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// topicLister index properties about topics.
 	topicLister listers.TopicLister
 	// serviceLister index properties about services.
 	serviceLister servinglisters.ServiceLister
+	// serviceAccountLister for reading serviceAccounts.
+	serviceAccountLister corev1listers.ServiceAccountLister
 
 	publisherImage string
 	tracingConfig  *tracingconfig.Config
@@ -80,6 +87,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 
 	topic.Status.InitializeConditions()
 	topic.Status.ObservedGeneration = topic.Generation
+
+	// If topic doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
+	// Otherwise, its owner will reconcile workload identity.
+	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub topic workload identity: %s", err.Error())
+		}
+	}
 
 	if err := r.reconcileTopic(ctx, topic); err != nil {
 		topic.Status.MarkNoTopic(reconciledTopicFailedReason, "Failed to reconcile Pub/Sub topic: %s", err.Error())
@@ -252,6 +267,13 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) reconciler.Event {
+	// If topic doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub topic workload identity: %s", err.Error())
+		}
+	}
 	if topic.Spec.PropagationPolicy == v1alpha1.TopicPolicyCreateDelete {
 		logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub topic")
 		if err := r.deleteTopic(ctx, topic); err != nil {

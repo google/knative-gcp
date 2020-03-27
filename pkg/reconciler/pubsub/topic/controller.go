@@ -18,6 +18,7 @@ package topic
 
 import (
 	"context"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -34,6 +35,7 @@ import (
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
@@ -58,7 +60,8 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
-	serviceinformer := serviceinformer.Get(ctx)
+	serviceInformer := serviceinformer.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
@@ -72,11 +75,13 @@ func NewController(
 	}
 
 	r := &Reconciler{
-		PubSubBase:     pubsubBase,
-		topicLister:    topicInformer.Lister(),
-		serviceLister:  serviceinformer.Lister(),
-		publisherImage: env.Publisher,
-		createClientFn: gpubsub.NewClient,
+		PubSubBase:           pubsubBase,
+		Identity:             identity.NewIdentity(ctx),
+		topicLister:          topicInformer.Lister(),
+		serviceLister:        serviceInformer.Lister(),
+		publisherImage:       env.Publisher,
+		createClientFn:       gpubsub.NewClient,
+		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
 
 	impl := topicreconciler.NewImpl(ctx, r)
@@ -84,8 +89,13 @@ func NewController(
 	pubsubBase.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

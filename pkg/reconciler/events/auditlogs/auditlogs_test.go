@@ -40,6 +40,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
@@ -378,8 +379,10 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic:       testTopicID,
-					Secret:      &secret,
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 					AdapterType: converters.CloudAuditLogsConverter,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
