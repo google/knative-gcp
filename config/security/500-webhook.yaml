@@ -25,6 +25,7 @@ spec:
     matchLabels:
       app: knative-security
       role: security-webhook
+      security.knative.dev/release: devel
   template:
     metadata:
       labels:
