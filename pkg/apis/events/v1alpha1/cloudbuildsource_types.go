@@ -54,7 +54,7 @@ var (
 // CloudBuildSourceSpec defines the desired state of the CloudBuildSource.
 type CloudBuildSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PubSub Topic to Subscribe to. It must
@@ -74,12 +74,12 @@ const (
 	CloudBuildSourceBuildStatus= "status"
 )
 
-// CloudBuildSourceEventSource returns the Cloud Pub/Sub CloudEvent source value.
+// CloudBuildSourceEventSource returns the Cloud Build CloudEvent source value.
 func CloudBuildSourceEventSource(googleCloudProject, buildId string) string {
 	return fmt.Sprintf("//cloud-build.googleapis.com/projects/%s/builds/%s", googleCloudProject, buildId)
 }
 
-// CloudBuildSourceEventSource returns the Cloud Pub/Sub CloudEvent subject value.
+// CloudBuildSourceEventSource returns the Cloud Build CloudEvent subject value.
 func CloudBuildSourceEventSubject(buildId, status string) string {
 	return fmt.Sprintf("/builds/%s/status/%s",buildId, status)
 }

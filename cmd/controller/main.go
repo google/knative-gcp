@@ -17,12 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/google/knative-gcp/pkg/reconciler/deployment"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
+	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage"

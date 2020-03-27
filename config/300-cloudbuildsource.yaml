@@ -22,7 +22,7 @@ metadata:
   annotations:
     registry.knative.dev/eventTypes: |
       [
-        { "type": "com.google.cloud.build.event", "description": "This event is sent when your build's state changes such as when your build is created, when your build transitions to a working state, and when your build completes."}
+        { "type": "com.google.cloud.build.event", "description": "This event is sent when your build's state changes, such as when your build is created, when your build transitions to a working state, and when your build completes."}
       ]
   name: cloudbuildsources.events.cloud.google.com
 spec:

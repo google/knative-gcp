@@ -53,7 +53,7 @@ var (
 // CloudStorageSourceSpec is the spec for a CloudStorageSource resource
 type CloudStorageSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// ServiceAccountName holds the name of the Kubernetes service account

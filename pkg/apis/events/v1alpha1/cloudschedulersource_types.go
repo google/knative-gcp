@@ -66,7 +66,7 @@ var (
 // CloudSchedulerSourceSpec is the spec for a CloudSchedulerSource resource
 type CloudSchedulerSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:
-	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
+	// Sink, CloudEventOverrides, Secret, and Project
 	duckv1alpha1.PubSubSpec `json:",inline"`
 
 	// Location where to create the Job in.
