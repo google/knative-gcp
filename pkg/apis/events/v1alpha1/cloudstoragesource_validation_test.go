@@ -256,6 +256,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -266,7 +269,6 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 			},
 		},
 		want: func() *apis.FieldError {
@@ -281,6 +283,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: validServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -291,7 +296,6 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: validServiceAccountName,
 			},
 		},
 		want: nil,
@@ -300,6 +304,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -310,7 +317,6 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{},
 					Key:                  "secret-test-key",
@@ -432,9 +438,11 @@ func TestCheckImmutableFields(t *testing.T) {
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec:     storageSourceSpec.SourceSpec,
-					Secret:         storageSourceSpec.Secret,
-					ServiceAccount: "new-service-account",
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						ServiceAccount: "new-service-account",
+					},
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret:     storageSourceSpec.Secret,
 				},
 			},
 			allowed: false,

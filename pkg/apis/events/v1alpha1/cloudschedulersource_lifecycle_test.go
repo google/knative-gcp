@@ -39,33 +39,33 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 	}, {
 		name: "initialized",
 		s: func() *CloudSchedulerSourceStatus {
-			s := &CloudSchedulerSourceStatus{}
-			s.InitializeConditions()
-			return s
+			s := &CloudSchedulerSource{}
+			s.Status.InitializeConditions()
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
 	}, {
 		name: "the status of topic is false",
 		s: func() *CloudSchedulerSourceStatus {
-			s := &CloudSchedulerSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
-			s.MarkTopicFailed("TopicFailed", "the status of topic is false")
-			return s
+			s := &CloudSchedulerSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkJobReady("jobName")
+			s.Status.MarkTopicFailed(s.ConditionSet(), "TopicFailed", "the status of topic is false")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionFalse,
 		want:                false,
 	}, {
 		name: "the status of topic is unknown",
 		s: func() *CloudSchedulerSourceStatus {
-			s := &CloudSchedulerSourceStatus{}
-			s.InitializeConditions()
-			s.MarkPullSubscriptionReady()
-			s.MarkJobReady("jobName")
-			s.MarkTopicUnknown("TopicUnknown", "the status of topic is unknown")
-			return s
+			s := &CloudSchedulerSource{}
+			s.Status.InitializeConditions()
+			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+			s.Status.MarkJobReady("jobName")
+			s.Status.MarkTopicUnknown(s.ConditionSet(), "TopicUnknown", "the status of topic is unknown")
+			return &s.Status
 		}(),
 		wantConditionStatus: corev1.ConditionUnknown,
 		want:                false,
@@ -73,24 +73,24 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 		{
 			name: "the status pullsubscription is false",
 			s: func() *CloudSchedulerSourceStatus {
-				s := &CloudSchedulerSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady("topicID", "projectID")
-				s.MarkPullSubscriptionFailed("PullSubscriptionFailed", "the status of pullsubscription is false")
-				s.MarkJobReady("jobName")
-				return s
+				s := &CloudSchedulerSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "PullSubscriptionFailed", "the status of pullsubscription is false")
+				s.Status.MarkJobReady("jobName")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionFalse,
 			want:                false,
 		}, {
 			name: "the status pullsubscription is unknown",
 			s: func() *CloudSchedulerSourceStatus {
-				s := &CloudSchedulerSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady("topicID", "projectID")
-				s.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "the status of pullsubscription is unknown")
-				s.MarkJobReady("jobName")
-				return s
+				s := &CloudSchedulerSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknown", "the status of pullsubscription is unknown")
+				s.Status.MarkJobReady("jobName")
+				return &s.Status
 			}(),
 			wantConditionStatus: corev1.ConditionUnknown,
 			want:                false,
@@ -98,22 +98,22 @@ func TestCloudSchedulerSourceStatusIsReady(t *testing.T) {
 		{
 			name: "job not ready",
 			s: func() *CloudSchedulerSourceStatus {
-				s := &CloudSchedulerSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady("topicID", "projectID")
-				s.MarkPullSubscriptionReady()
-				s.MarkJobNotReady("NotReady", "ps not ready")
-				return s
+				s := &CloudSchedulerSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkJobNotReady("NotReady", "ps not ready")
+				return &s.Status
 			}(),
 		}, {
 			name: "ready",
 			s: func() *CloudSchedulerSourceStatus {
-				s := &CloudSchedulerSourceStatus{}
-				s.InitializeConditions()
-				s.MarkTopicReady("topicID", "projectID")
-				s.MarkPullSubscriptionReady()
-				s.MarkJobReady("jobName")
-				return s
+				s := &CloudSchedulerSource{}
+				s.Status.InitializeConditions()
+				s.Status.MarkTopicReady(s.ConditionSet())
+				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
+				s.Status.MarkJobReady("jobName")
+				return &s.Status
 			}(),
 			want: true,
 		}}

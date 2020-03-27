@@ -126,7 +126,23 @@ func (storage *CloudStorageSource) GetGroupVersionKind() schema.GroupVersionKind
 	return SchemeGroupVersion.WithKind("CloudStorageSource")
 }
 
-// Methods for pubsubable interface
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (s *CloudStorageSource) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (s *CloudStorageSource) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
+	return &storageCondSet
+}
+
+// Methods for pubsubable interface.
 
 // PubSubSpec returns the PubSubSpec portion of the Spec.
 func (s *CloudStorageSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
@@ -136,16 +152,6 @@ func (s *CloudStorageSource) PubSubSpec() *duckv1alpha1.PubSubSpec {
 // PubSubStatus returns the PubSubStatus portion of the Status.
 func (s *CloudStorageSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 	return &s.Status.PubSubStatus
-}
-
-// ConditionSet returns the apis.ConditionSet of the embedding object
-func (s *CloudStorageSource) ConditionSet() *apis.ConditionSet {
-	return &storageCondSet
-}
-
-// Methods for identifiable interface
-func (s *CloudStorageSource) GetIdentity() string {
-	return s.Spec.ServiceAccount
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

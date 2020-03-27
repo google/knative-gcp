@@ -26,6 +26,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/duck"
 )
 
@@ -61,11 +62,7 @@ var (
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
-	// If not specified, defaults to use secret.
-	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
-
+	duckv1alpha1.IdentitySpec `json:",inline"`
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format
@@ -104,10 +101,7 @@ const (
 
 // ChannelStatus represents the current state of a Channel.
 type ChannelStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"`
+	duckv1alpha1.IdentityStatus `json:",inline"`
 
 	// Channel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
@@ -128,9 +122,20 @@ type ChannelStatus struct {
 	TopicID string `json:"topicId,omitempty"`
 }
 
-// Methods for identifiable interface
-func (c *Channel) GetIdentity() string {
-	return c.Spec.ServiceAccount
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (c *Channel) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &c.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (c *Channel) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &c.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *Channel) ConditionSet() *apis.ConditionSet {
+	return &channelCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

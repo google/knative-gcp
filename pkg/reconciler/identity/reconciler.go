@@ -38,9 +38,11 @@ import (
 )
 
 const (
-	Add    = "add"
-	Remove = "remove"
-	Role   = "roles/iam.workloadIdentityUser"
+	Add                          = "add"
+	Remove                       = "remove"
+	Role                         = "roles/iam.workloadIdentityUser"
+	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
+	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 func NewIdentity(ctx context.Context) *Identity {
@@ -56,12 +58,15 @@ type Identity struct {
 // ReconcileWorkloadIdentity will create a k8s service account, add ownerReference to it,
 // and add iam policy binding between this k8s service account and its corresponding GCP service account.
 func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) (*corev1.ServiceAccount, error) {
+	status := identifiable.IdentityStatus()
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.GetIdentity())
+	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().ServiceAccount)
 	if err != nil {
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
 	}
+	status.ServiceAccountName = kServiceAccount.Name
 	// Add ownerReference to K8s ServiceAccount.
 	expectOwnerReference := *kmeta.NewControllerRef(identifiable)
 	expectOwnerReference.Controller = ptr.Bool(false)
@@ -69,30 +74,36 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
 		if _, err := i.KubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
+			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 			return nil, fmt.Errorf("failed to update OwnerReferences: %w", err)
 		}
 	}
 
 	// Add iam policy binding to GCP ServiceAccount.
-	if err := addIamPolicyBinding(ctx, projectID, identifiable.GetIdentity(), kServiceAccount); err != nil {
+	if err := addIamPolicyBinding(ctx, projectID, identifiable.IdentitySpec().ServiceAccount, kServiceAccount); err != nil {
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %s", err)
 	}
+	status.MarkWorkloadIdentityConfigured(identifiable.ConditionSet())
 	return kServiceAccount, nil
 }
 
 // DeleteWorkloadIdentity will remove iam policy binding between k8s service account and its corresponding GCP service account,
 // if this k8s service account only has one ownerReference.
 func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) error {
+	status := identifiable.IdentityStatus()
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.GetIdentity())
+	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().ServiceAccount)
 	kServiceAccount, err := i.KubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		// k8s ServiceAccount should be there.
 		return fmt.Errorf("getting k8s service account failed with: %w", err)
 	}
 	if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 		logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-		if err := removeIamPolicyBinding(ctx, projectID, identifiable.GetIdentity(), kServiceAccount); err != nil {
+		if err := removeIamPolicyBinding(ctx, projectID, identifiable.IdentitySpec().ServiceAccount, kServiceAccount); err != nil {
+			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 			return fmt.Errorf("removing iam policy binding failed with: %w", err)
 		}
 	}

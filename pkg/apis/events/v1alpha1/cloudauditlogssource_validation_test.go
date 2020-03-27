@@ -205,13 +205,15 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			orig: &auditLogsSourceSpec,
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						ServiceAccount: "new-service-account",
+					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
 						},
 						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
 					},
-					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
 					},

@@ -80,7 +80,7 @@ var (
 	replyDNS = "reply.mynamespace.svc.cluster.local"
 	replyURI = apis.HTTP(replyDNS)
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -101,6 +101,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	table := TableTest{{
 		Name: "bad workqueue key",
@@ -110,51 +111,6 @@ func TestAllCases(t *testing.T) {
 		Name: "key not found",
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
-	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithChannelGCPServiceAccount(gServiceAccount),
-			),
-		},
-		Key: testNS + "/" + channelName,
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", channelName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, channelName),
-		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewChannel(channelName, testNS,
-				WithChannelUID(channelUID),
-				WithInitChannelConditions,
-				WithChannelSpec(v1alpha1.ChannelSpec{
-					Project: testProject,
-				}),
-				WithChannelGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "messaging.cloud.google.com/v1alpha1",
-					Kind:               "Channel",
-					Name:               "chan",
-					UID:                channelUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, channelName, true),
-		},
-		WantErr: true,
 	}, {
 		Name: "create topic",
 		Objects: []runtime.Object{
@@ -546,16 +502,28 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					}),
 					WithInitChannelConditions,
-					WithChannelDefaults,
 					WithChannelGCPServiceAccount(gServiceAccount),
+					WithChannelDefaults,
 					WithChannelDeletionTimestamp,
 				),
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
 			},
-			WantStatusUpdates: nil,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewChannel(channelName, testNS,
+					WithChannelUID(channelUID),
+					WithChannelSpec(v1alpha1.ChannelSpec{
+						Project: testProject,
+					}),
+					WithInitChannelConditions,
+					WithChannelGCPServiceAccount(gServiceAccount),
+					WithChannelDefaults,
+					WithChannelDeletionTimestamp,
+					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				),
+			}},
 		}}
 
 	defer logtesting.ClearAll()
