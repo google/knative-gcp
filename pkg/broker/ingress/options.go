@@ -22,12 +22,14 @@ import (
 
 type Option func(*handler)
 
+// WithInboundClient specifies the inbound client to receive events.
 func WithInboundClient(c client.Client) Option {
 	return func(h *handler) {
 		h.inbound = c
 	}
 }
 
+// WithDecoupleSink specifies the decouple sink for the ingress to send events to.
 func WithDecoupleSink(d DecoupleSink) Option {
 	return func(h *handler) {
 		h.decouple = d

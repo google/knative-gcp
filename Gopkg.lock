@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:08550588682506a77741fad85d179a257a6d4380be63fdd1b6d0369b31443b53"
+  digest = "1:2ce182063e810c7df2f9062da37d1cc71cf8c0f27d60c8451c1dfa12affd94e1"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -169,6 +169,7 @@
     "v2/binding/spec",
     "v2/binding/transformer",
     "v2/client",
+    "v2/client/test",
     "v2/context",
     "v2/event",
     "v2/event/datacodec",
@@ -178,6 +179,7 @@
     "v2/extensions",
     "v2/observability",
     "v2/protocol",
+    "v2/protocol/gochan",
     "v2/protocol/http",
     "v2/protocol/pubsub",
     "v2/protocol/pubsub/context",
@@ -497,6 +499,14 @@
   version = "v0.8.1"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  pruneopts = "NUT"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:097cc61836050f45cbb712ae3bb45d66fba464c16b8fac09907fa3c1f753eff6"
   name = "github.com/prometheus/client_golang"
   packages = [
@@ -575,6 +585,17 @@
   pruneopts = "NUT"
   revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
   version = "v1.0.5"
+
+[[projects]]
+  digest = "1:e6aedc9ffe708685ae5bb6c1e9fb12ce9d3ef0aa14872c620c8d34e13fc233e2"
+  name = "github.com/stretchr/testify"
+  packages = [
+    "assert",
+    "require",
+  ]
+  pruneopts = "NUT"
+  revision = "3ebf1ddaeb260c4b1ae502a01c7844fa8c1fa0e9"
+  version = "v1.5.1"
 
 [[projects]]
   digest = "1:7c3ff97df88fd061f688c42cc4b99c6636bc256aa6f5c919042bd8cffbdbd71f"
@@ -1715,6 +1736,7 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/cloudevents/sdk-go/v2",
     "github.com/cloudevents/sdk-go/v2/client",
+    "github.com/cloudevents/sdk-go/v2/client/test",
     "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
