@@ -139,7 +139,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) 
 	}
 	defer client.Close()
 
-	t := client.Topic(topic.Status.ProjectID)
+	t := client.Topic(topic.Spec.Topic)
 	exists, err := t.Exists(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to verify Pub/Sub topic exists", zap.Error(err))

@@ -32,6 +32,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/tracker"
 
+	"github.com/google/knative-gcp/pkg/apis/security"
 	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	bindingreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/security/v1alpha1/eventpolicybinding"
@@ -476,6 +477,9 @@ func withPolicyBindingOwner(owner string) BindingOption {
 	trueVal := true
 	return func(cb *CommonBinding) {
 		cb.ObjectMeta.UID = ""
+		cb.ObjectMeta.Annotations = map[string]string{
+			security.PolicyBindingClassAnnotationKey: security.IstioPolicyBindingClassValue,
+		}
 		cb.ObjectMeta.OwnerReferences = []metav1.OwnerReference{{
 			APIVersion:         "security.knative.dev/v1alpha1",
 			Kind:               "EventPolicyBinding",
