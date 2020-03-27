@@ -28,5 +28,8 @@ func (s *IdentityStatus) MarkWorkloadIdentityNotConfigured(cs *apis.ConditionSet
 func (s *IdentityStatus) MarkWorkloadIdentityFailed(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
 	cs.Manage(s).MarkFalse(IdentityConfigured, reason, messageFormat, messageA...)
 	// Set ConditionReady to be false.
+	// ConditionType IdentityConfigured is not included in apis.NewLivingConditionSet{}, so it is not counted for conditionReady.
+	// This is because if Workload Identity is not enabled, IdentityConfigured will be unknown.
+	// It will be counted for conditionReady only if it is failed.
 	cs.Manage(s).MarkFalse(apis.ConditionReady, "WorkloadIdentityFailed", messageFormat, messageA...)
 }

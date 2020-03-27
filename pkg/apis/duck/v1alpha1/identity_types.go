@@ -22,6 +22,7 @@ type IdentitySpec struct {
 	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to use secret.
 	// +optional
+	// TODO rename ServiceAccount, issue https://github.com/google/knative-gcp/issues/723
 	ServiceAccount string `json:"serviceAccount,omitempty"`
 }
 

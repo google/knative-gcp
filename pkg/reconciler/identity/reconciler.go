@@ -66,6 +66,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
 	}
+	status.ServiceAccountName = kServiceAccount.Name
 	// Add ownerReference to K8s ServiceAccount.
 	expectOwnerReference := *kmeta.NewControllerRef(identifiable)
 	expectOwnerReference.Controller = ptr.Bool(false)
