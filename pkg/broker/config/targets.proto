@@ -17,9 +17,6 @@ limitations under the License.
 syntax = "proto3";
 package config;
 
-// Metadata of an object.
-message Meta {}
-
 // The state of the object.
 // We may add additional intermediate states if needed.
 enum State {
