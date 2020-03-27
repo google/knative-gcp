@@ -22,6 +22,7 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"log"
 	"os"
+	"strings"
 )
 
 // Flags holds the command line flags specific to knative-gcp.
@@ -38,7 +39,6 @@ type EnvironmentFlags struct {
 func InitializeFlags() {
 	flag.BoolVar(&Flags.WorkloadIdentityEnabled, "workloadIdentityEnabled", false, "Indicating whether the workload identity is enabled or not.")
 	flag.StringVar(&Flags.PubsubServiceAccount, "pubsubServiceAccount", "", "Google Cloud ServiceAccount used for data plane.")
-	flag.Parse()
 
 	// WorkloadIdentity will be enabled only if the input is true.
 	if Flags.WorkloadIdentityEnabled {
@@ -46,8 +46,9 @@ func InitializeFlags() {
 		if Flags.PubsubServiceAccount == "" {
 			log.Fatalf("PubsubServiceAccount not specified.")
 		}
+		pubsub := Flags.PubsubServiceAccount
 		// The format is service-account-name@project-id.iam.gserviceaccount.com
-		Flags.PubsubServiceAccount = fmt.Sprintf("%v@%v.iam.gserviceaccount.com", Flags.PubsubServiceAccount, os.Getenv(lib.ProwProjectKey))
+		Flags.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(pubsub), os.Getenv(lib.ProwProjectKey))
 	} else {
 		Flags.PubsubServiceAccount = ""
 	}

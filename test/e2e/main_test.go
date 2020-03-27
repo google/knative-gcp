@@ -19,6 +19,7 @@ limitations under the License.
 package e2e
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -36,6 +37,7 @@ var channelTestRunner eventingtestlib.ChannelTestRunner
 var authConfig lib.AuthConfig
 
 func TestMain(m *testing.M) {
+	test.InitializeFlags()
 	eventingtest.InitializeEventingFlags()
 	channelTestRunner = eventingtestlib.ChannelTestRunner{
 		// ChannelFeatureMap saves the channel-features mapping.
@@ -52,9 +54,9 @@ func TestMain(m *testing.M) {
 		},
 		ChannelsToTest: eventingtest.EventingFlags.Channels,
 	}
-	test.InitializeFlags()
 	authConfig.WorkloadIdentityEnabled = test.Flags.WorkloadIdentityEnabled
 	authConfig.PubsubServiceAccount = test.Flags.PubsubServiceAccount
+	fmt.Printf("%v", authConfig.PubsubServiceAccount)
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
