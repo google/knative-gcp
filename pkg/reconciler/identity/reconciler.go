@@ -19,6 +19,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"google.golang.org/api/iam/v1"
@@ -38,9 +39,10 @@ import (
 )
 
 const (
-	Add    = "add"
-	Remove = "remove"
-	Role   = "roles/iam.workloadIdentityUser"
+	Add              = "add"
+	Remove           = "remove"
+	Role             = "roles/iam.workloadIdentityUser"
+	ConcurrencyError = "googleapi: Error 409: There were concurrent policy changes."
 )
 
 func NewIdentity(ctx context.Context) *Identity {
@@ -157,7 +159,12 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 	rb := makeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
-	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
+	err = fmt.Errorf(ConcurrencyError)
+	// If the setIamPolicy error is caused by concurrency, retry it.
+	for err != nil && strings.Contains(err.Error(), ConcurrencyError) {
+		_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do()
+	}
+	if err != nil {
 		return fmt.Errorf("failed to set iam policy: %w", err)
 	}
 

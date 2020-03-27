@@ -18,11 +18,7 @@ package test
 
 import (
 	"flag"
-	"fmt"
-	"github.com/google/knative-gcp/test/e2e/lib"
 	"log"
-	"os"
-	"strings"
 )
 
 // Flags holds the command line flags specific to knative-gcp.
@@ -46,9 +42,6 @@ func InitializeFlags() {
 		if Flags.PubsubServiceAccount == "" {
 			log.Fatalf("PubsubServiceAccount not specified.")
 		}
-		pubsub := Flags.PubsubServiceAccount
-		// The format is service-account-name@project-id.iam.gserviceaccount.com
-		Flags.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(pubsub), os.Getenv(lib.ProwProjectKey))
 	} else {
 		Flags.PubsubServiceAccount = ""
 	}

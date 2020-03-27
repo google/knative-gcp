@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/knative-gcp/test"
@@ -55,8 +56,8 @@ func TestMain(m *testing.M) {
 		ChannelsToTest: eventingtest.EventingFlags.Channels,
 	}
 	authConfig.WorkloadIdentityEnabled = test.Flags.WorkloadIdentityEnabled
-	authConfig.PubsubServiceAccount = test.Flags.PubsubServiceAccount
-	fmt.Printf("%v", authConfig.PubsubServiceAccount)
+	// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
+	authConfig.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(test.Flags.PubsubServiceAccount), os.Getenv(lib.ProwProjectKey))
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
