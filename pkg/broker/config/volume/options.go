@@ -14,10 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fanout
+package volume
 
-import "go.uber.org/zap"
+// Option is the option to load targets.
+type Option func(*Targets)
 
-type Handler struct {
-	Logger *zap.Logger
+// WithPath is the option to load targets from the given path.
+func WithPath(path string) Option {
+	return func(t *Targets) {
+		t.path = path
+	}
+}
+
+// WithNotifyChan is the option to notify the given channel
+// when the config cache was updated.
+func WithNotifyChan(ch chan<- struct{}) Option {
+	return func(t *Targets) {
+		t.notifyChan = ch
+	}
 }
