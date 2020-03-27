@@ -138,7 +138,7 @@ function control_plane_teardown() {
 }
 
 #create a cluster with Workload Identity enabled.
-initialize $@ --cluster-creation-flag "--workload-pool=\${E2E_PROJECT_ID}.svc.id.goog"
+initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Add annotation to Kubernetes service account.
 kubectl annotate serviceaccount ${CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
