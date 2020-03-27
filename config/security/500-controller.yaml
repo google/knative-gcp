@@ -22,12 +22,15 @@ metadata:
 spec:
   replicas: 1
   selector:
-    matchLabels: &labels
+    matchLabels:
       app: knative-security
       role: security-controller
   template:
     metadata:
-      labels: *labels
+      labels:
+        app: knative-security
+        role: security-controller
+        security.knative.dev/release: devel
     spec:
       serviceAccountName: security-controller
       containers:
