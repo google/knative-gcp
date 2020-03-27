@@ -57,7 +57,9 @@ func TestMain(m *testing.M) {
 	}
 	authConfig.WorkloadIdentityEnabled = test.Flags.WorkloadIdentityEnabled
 	// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
-	authConfig.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(test.Flags.PubsubServiceAccount), os.Getenv(lib.ProwProjectKey))
+	if authConfig.WorkloadIdentityEnabled {
+		authConfig.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(test.Flags.PubsubServiceAccount), os.Getenv(lib.ProwProjectKey))
+	}
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
 	// tests that need the tracing in place.
