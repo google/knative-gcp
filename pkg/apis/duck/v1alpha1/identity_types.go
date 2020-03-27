@@ -14,27 +14,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
-
-// Identity is an Implementable "duck type".
-var _ duck.Implementable = (*Identity)(nil)
-
-// +genduck
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-type Identity struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   IdentitySpec   `json:"spec"`
-	Status IdentityStatus `json:"status"`
-}
 
 type IdentitySpec struct {
 	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
@@ -68,35 +50,4 @@ func (ss *IdentityStatus) IsReady() bool {
 		}
 	}
 	return false
-}
-
-var (
-	// Verify Identity resources meet duck contracts.
-	_ duck.Populatable = (*Identity)(nil)
-	_ apis.Listable    = (*Identity)(nil)
-)
-
-// GetFullType implements duck.Implementable
-func (*Identity) GetFullType() duck.Populatable {
-	return &Identity{}
-}
-
-// Populate implements duck.Populatable
-func (s *Identity) Populate() {
-	s.Spec.ServiceAccount = ""
-}
-
-// GetListType implements apis.Listable
-func (*Identity) GetListType() runtime.Object {
-	return &IdentityList{}
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// IdentityList is a list of Identity resources
-type IdentityList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []Identity `json:"items"`
 }

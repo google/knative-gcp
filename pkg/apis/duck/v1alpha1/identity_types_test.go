@@ -21,40 +21,6 @@ import (
 	"testing"
 )
 
-func TestIdentityGetListType(t *testing.T) {
-	c := &Identity{}
-	switch c.GetListType().(type) {
-	case *IdentityList:
-		// expected
-	default:
-		t.Errorf("expected GetListType to return *ChannelableList, got %T", c.GetListType())
-	}
-}
-
-func TestIdentityPopulate(t *testing.T) {
-	got := &Identity{}
-	want := &Identity{
-		Spec: IdentitySpec{},
-	}
-
-	got.Populate()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unexpected difference (-want, +got): %v", diff)
-	}
-}
-
-func TestGetFullType(t *testing.T) {
-	got := &Identity{}
-	want := &Identity{}
-
-	got.GetFullType()
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Unexpected difference (-want, +got): %v", diff)
-	}
-}
-
 func TestIsReady(t *testing.T) {
 	status := &IdentityStatus{}
 	want := false
