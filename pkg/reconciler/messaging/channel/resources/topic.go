@@ -22,6 +22,7 @@ import (
 
 	"knative.dev/pkg/kmeta"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -47,7 +48,9 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: v1alpha1.TopicSpec{
-			ServiceAccount:    args.ServiceAccount,
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				ServiceAccount: args.ServiceAccount,
+			},
 			Secret:            args.Secret,
 			Project:           args.Project,
 			Topic:             args.Topic,

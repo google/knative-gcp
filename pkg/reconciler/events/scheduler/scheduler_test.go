@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
@@ -425,8 +426,10 @@ func TestAllCases(t *testing.T) {
 			WantCreates: []runtime.Object{
 				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
 					WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-						Topic:  testTopicID,
-						Secret: &secret,
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Secret: &secret,
+						},
 					}),
 					WithPullSubscriptionSink(sinkGVK, sinkName),
 					WithPullSubscriptionLabels(map[string]string{
@@ -966,6 +969,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
+					WithCloudSchedulerSourceServiceAccountName("test123"),
 				),
 				newSink(),
 			},
@@ -981,6 +985,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
+					WithCloudSchedulerSourceServiceAccountName("test123"),
 					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
 				),
 			}},

@@ -24,28 +24,32 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 var (
 	pullSubscriptionSpec = PullSubscriptionSpec{
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "secret-name",
+		PubSubSpec: v1alpha1.PubSubSpec{
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "secret-name",
+				},
+				Key: "secret-key",
 			},
-			Key: "secret-key",
-		},
-		Project: "my-eventing-project",
-		Topic:   "pubsub-topic",
-		SourceSpec: duckv1.SourceSpec{
-			Sink: duckv1.Destination{
-				Ref: &duckv1.KReference{
-					APIVersion: "foo",
-					Kind:       "bar",
-					Namespace:  "baz",
-					Name:       "qux",
+			Project: "my-eventing-project",
+			SourceSpec: duckv1.SourceSpec{
+				Sink: duckv1.Destination{
+					Ref: &duckv1.KReference{
+						APIVersion: "foo",
+						Kind:       "bar",
+						Namespace:  "baz",
+						Name:       "qux",
+					},
 				},
 			},
 		},
+		Topic: "pubsub-topic",
 		Transformer: &duckv1.Destination{
 			Ref: &duckv1.KReference{
 				APIVersion: "foo",
@@ -216,211 +220,241 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Secret.Name changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "some-other-name",
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "some-other-name",
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: pullSubscriptionSpec.Sink,
-				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Secret.Key changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: "some-other-key",
 					},
-					Key: "some-other-key",
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: pullSubscriptionSpec.Sink,
-				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Project changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: "some-other-project",
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
 				},
-				Project: "some-other-project",
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: pullSubscriptionSpec.Sink,
-				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Topic changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   "some-other-topic",
-				SourceSpec: duckv1.SourceSpec{
-					Sink: pullSubscriptionSpec.Sink,
-				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: "some-other-topic",
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: false,
 		},
 		"Sink.APIVersion changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
-				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "some-other-api-version",
-							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
-							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
-							Name:       pullSubscriptionSpec.Sink.Ref.Name,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+							},
 						},
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
 		"Sink.Kind changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
-				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
-							Kind:       "some-other-kind",
-							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
-							Name:       pullSubscriptionSpec.Sink.Ref.Name,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+								Kind:       "some-other-kind",
+								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+							},
 						},
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
 		"Sink.Namespace changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
-				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
-							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
-							Namespace:  "some-other-namespace",
-							Name:       pullSubscriptionSpec.Sink.Ref.Name,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+								Namespace:  "some-other-namespace",
+								Name:       pullSubscriptionSpec.Sink.Ref.Name,
+							},
 						},
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
 		"Sink.Name changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
-				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
-							Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
-							Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
-							Name:       "some-other-name",
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: pullSubscriptionSpec.Sink.Ref.APIVersion,
+								Kind:       pullSubscriptionSpec.Sink.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Sink.Ref.Namespace,
+								Name:       "some-other-name",
+							},
 						},
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
 		"Transformer.APIVersion changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
-				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: duckv1.Destination{
-						Ref: &duckv1.KReference{
-							APIVersion: "some-other-api-version",
-							Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
-							Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
-							Name:       pullSubscriptionSpec.Transformer.Ref.Name,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Transformer.Ref.Name,
+							},
 						},
 					},
 				},
-				Mode: pullSubscriptionSpec.Mode,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  pullSubscriptionSpec.Mode,
 			},
 			allowed: true,
 		},
 		"Transformer.Kind changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Transformer.Ref.Name,
+							},
+						},
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
+				Topic: pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
@@ -436,14 +470,26 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Transformer.Namespace changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Transformer.Ref.Name,
+							},
+						},
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
+				Topic: pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
@@ -459,14 +505,26 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Transformer.Name changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: duckv1.Destination{
+							Ref: &duckv1.KReference{
+								APIVersion: "some-other-api-version",
+								Kind:       pullSubscriptionSpec.Transformer.Ref.Kind,
+								Namespace:  pullSubscriptionSpec.Transformer.Ref.Namespace,
+								Name:       pullSubscriptionSpec.Transformer.Ref.Name,
+							},
+						},
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
+				Topic: pullSubscriptionSpec.Topic,
 				Transformer: &duckv1.Destination{
 					Ref: &duckv1.KReference{
 						APIVersion: pullSubscriptionSpec.Transformer.Ref.APIVersion,
@@ -482,18 +540,20 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		"Mode changed": {
 			orig: &pullSubscriptionSpec,
 			updated: PullSubscriptionSpec{
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: pullSubscriptionSpec.Secret.Name,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: pullSubscriptionSpec.Secret.Name,
+						},
+						Key: pullSubscriptionSpec.Secret.Key,
 					},
-					Key: pullSubscriptionSpec.Secret.Key,
+					Project: pullSubscriptionSpec.Project,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: pullSubscriptionSpec.Sink,
+					},
 				},
-				Project: pullSubscriptionSpec.Project,
-				Topic:   pullSubscriptionSpec.Topic,
-				SourceSpec: duckv1.SourceSpec{
-					Sink: pullSubscriptionSpec.Sink,
-				},
-				Mode: ModePushCompatible,
+				Topic: pullSubscriptionSpec.Topic,
+				Mode:  ModePushCompatible,
 			},
 			allowed: true,
 		},

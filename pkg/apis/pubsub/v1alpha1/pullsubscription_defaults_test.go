@@ -45,11 +45,13 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "my-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "my-cloud-key",
+						},
+						Key: "test.json",
 					},
-					Key: "test.json",
 				},
 			},
 		},
@@ -58,11 +60,13 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "my-cloud-key",
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "my-cloud-key",
+						},
+						Key: "test.json",
 					},
-					Key: "test.json",
 				},
 			},
 		},
@@ -78,7 +82,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModePushCompatible,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				},
 			},
 		},
 	}, {
@@ -93,7 +99,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				},
 			},
 		},
 	}, {
@@ -107,7 +115,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				},
 			},
 		},
 	}, {
@@ -121,7 +131,9 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
-				Secret:            duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				PubSubSpec: duckv1alpha1.PubSubSpec{
+					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+				},
 			},
 		},
 	}}
@@ -146,11 +158,13 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 			Mode:              ModeCloudEventsBinary,
 			AckDeadline:       ptr.String(secs60.String()),
 			RetentionDuration: ptr.String(days2.String()),
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "my-cloud-key",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "my-cloud-key",
+					},
+					Key: "test.json",
 				},
-				Key: "test.json",
 			},
 		},
 	}

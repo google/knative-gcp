@@ -19,13 +19,14 @@ package v1alpha1
 import (
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // +genclient
@@ -55,24 +56,8 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
-	// inherits duckv1.SourceSpec.
-	duckv1.SourceSpec `json:",inline"`
-
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
-	// If not specified, defaults to use secret.
-	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
-
-	// Secret is the credential to use to create and poll the PullSubscription
-	// Subscription. The value of the secret entry must be a service account
-	// key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
-	// +optional
-	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
-
-	// Project is the ID of the Google Cloud Project that the PullSubscription
-	// Topic exists in.
-	// +optional
-	Project string `json:"project,omitempty"`
+	v1alpha1.PubSubSpec   `json:",inline"`
+	v1alpha1.IdentitySpec `json:",inline"`
 
 	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must
 	// be in the form of the unique identifier within the project, not the
@@ -182,23 +167,12 @@ var pullSubscriptionCondSet = apis.NewLivingConditionSet(
 
 // PullSubscriptionStatus defines the observed state of PullSubscription.
 type PullSubscriptionStatus struct {
-	// inherits duck/v1 SourceStatus, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last
-	//   processed by the controller.
-	// * Conditions - the latest available observations of a resource's current
-	//   state.
-	// * SinkURI - the current active sink URI that has been configured for the
-	//   Source.
-	duckv1.SourceStatus `json:",inline"`
+	v1alpha1.PubSubStatus `json:",inline"`
 
 	// TransformerURI is the current active transformer URI that has been
 	// configured for the PullSubscription.
 	// +optional
 	TransformerURI *apis.URL `json:"transformerUri,omitempty"`
-
-	// ProjectID is the resolved project ID in use by the PullSubscription.
-	// +optional
-	ProjectID string `json:"projectId,omitempty"`
 
 	// SubscriptionID is the created subscription ID used by the PullSubscription.
 	// +optional
@@ -222,4 +196,20 @@ func (s *PullSubscription) GetGroupVersionKind() schema.GroupVersionKind {
 // GetGroupVersionKind returns the GroupVersion.
 func (s *PullSubscription) GetGroupVersion() schema.GroupVersion {
 	return SchemeGroupVersion
+}
+
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (s *PullSubscription) IdentitySpec() *v1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (s *PullSubscription) IdentityStatus() *v1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (*PullSubscription) ConditionSet() *apis.ConditionSet {
+	return &pullSubscriptionCondSet
 }

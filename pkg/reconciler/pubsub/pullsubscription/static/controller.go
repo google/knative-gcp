@@ -20,9 +20,11 @@ import (
 	"context"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
@@ -31,6 +33,7 @@ import (
 
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
@@ -65,6 +68,7 @@ func NewController(
 
 	deploymentInformer := deploymentinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformers.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
@@ -80,6 +84,7 @@ func NewController(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
+			Identity:               identity.NewIdentity(ctx),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
@@ -107,6 +112,11 @@ func NewController(
 
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: notKedaScaler,
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

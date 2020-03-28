@@ -30,10 +30,12 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	serviceinformer "knative.dev/serving/pkg/client/injection/informers/serving/v1/service"
 )
 
@@ -58,7 +60,8 @@ func NewController(
 	cmw configmap.Watcher,
 ) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
-	serviceinformer := serviceinformer.Get(ctx)
+	serviceInformer := serviceinformer.Get(ctx)
+	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	logger := logging.FromContext(ctx).Named(controllerAgentName).Desugar()
 
@@ -73,8 +76,9 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:     pubsubBase,
+		Identity:       identity.NewIdentity(ctx),
 		topicLister:    topicInformer.Lister(),
-		serviceLister:  serviceinformer.Lister(),
+		serviceLister:  serviceInformer.Lister(),
 		publisherImage: env.Publisher,
 		createClientFn: gpubsub.NewClient,
 	}
@@ -84,8 +88,13 @@ func NewController(
 	pubsubBase.Logger.Info("Setting up event handlers")
 	topicInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	serviceinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+
+	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Topic")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
