@@ -20,6 +20,7 @@ import (
 	"context"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -86,7 +87,6 @@ func NewController(
 			Identity:               identity.NewIdentity(ctx),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
-			ServiceAccountLister:   serviceAccountInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
 			CreateClientFn:         gpubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
@@ -116,7 +116,7 @@ func NewController(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(duckv1alpha1.SchemeGroupVersion.WithKind("pullsubscription")),
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

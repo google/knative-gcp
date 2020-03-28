@@ -1054,6 +1054,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123"),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -1065,7 +1066,9 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
-				WithCloudAuditLogsSourceDeletionTimestamp),
+				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123"),
+			),
 		}},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),

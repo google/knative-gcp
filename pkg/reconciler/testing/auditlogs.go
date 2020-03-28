@@ -47,6 +47,13 @@ func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudAuditLogsSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudAuditLogsSourceServiceAccountName(name string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)

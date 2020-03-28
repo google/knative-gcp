@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	pullsubscriptionreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
@@ -90,7 +91,6 @@ func NewController(
 			Identity:               identity.NewIdentity(ctx),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
-			ServiceAccountLister:   serviceAccountInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
 			CreateClientFn:         gpubsub.NewClient,
 			ControllerAgentName:    controllerAgentName,
@@ -115,7 +115,7 @@ func NewController(
 	})
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(duckv1alpha1.SchemeGroupVersion.WithKind("pullsubscription")),
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Pullsubscription")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

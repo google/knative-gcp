@@ -82,6 +82,13 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudStorageSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudStorageSourceServiceAccountName(name string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithCloudStorageSourceWorkloadIdentityFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)

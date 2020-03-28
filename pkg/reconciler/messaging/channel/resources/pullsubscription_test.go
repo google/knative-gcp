@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	pkgduckpubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckpubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -95,7 +95,7 @@ func TestMakePullSubscription(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: pkgduckpubsubv1alpha1.PubSubSpec{
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -181,7 +181,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: pkgduckpubsubv1alpha1.PubSubSpec{
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -264,7 +264,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: pkgduckpubsubv1alpha1.PubSubSpec{
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",

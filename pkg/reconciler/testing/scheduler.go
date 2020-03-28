@@ -99,6 +99,13 @@ func WithInitCloudSchedulerSourceConditions(s *v1alpha1.CloudSchedulerSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudSchedulerSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudSchedulerSourceServiceAccountName(name string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithCloudSchedulerSourceWorkloadIdentityFailed(reason, message string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)

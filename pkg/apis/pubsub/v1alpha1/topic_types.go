@@ -59,7 +59,7 @@ var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})
 // TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
 // Topic depending on the PropagationPolicy.
 type TopicSpec struct {
-	v1alpha1.IdentitySpec
+	v1alpha1.IdentitySpec `json:",inline"`
 
 	// Secret is the credential to be used to create and publish into the
 	// Cloud Pub/Sub Topic. The value of the secret entry must be a service
@@ -125,7 +125,7 @@ const (
 
 // TopicStatus represents the current state of a Topic.
 type TopicStatus struct {
-	v1alpha1.IdentityStatus
+	v1alpha1.IdentityStatus `json:",inline"`
 
 	// Topic is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the

@@ -56,8 +56,8 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
-	v1alpha1.PubSubSpec
-	v1alpha1.IdentitySpec
+	v1alpha1.PubSubSpec   `json:",inline"`
+	v1alpha1.IdentitySpec `json:",inline"`
 
 	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must
 	// be in the form of the unique identifier within the project, not the
@@ -167,7 +167,7 @@ var pullSubscriptionCondSet = apis.NewLivingConditionSet(
 
 // PullSubscriptionStatus defines the observed state of PullSubscription.
 type PullSubscriptionStatus struct {
-	v1alpha1.PubSubStatus
+	v1alpha1.PubSubStatus `json:",inline"`
 
 	// TransformerURI is the current active transformer URI that has been
 	// configured for the PullSubscription.

@@ -312,6 +312,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123"),
 			),
 			newSink(),
 		},
@@ -324,6 +325,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123"),
 			),
 		}},
 		WantEvents: []string{

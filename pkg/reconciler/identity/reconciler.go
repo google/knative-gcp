@@ -92,6 +92,10 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 // if this k8s service account only has one ownerReference.
 func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) error {
 	status := identifiable.IdentityStatus()
+	// If the ServiceAccountName wasn't set in the status, it means there are errors when reconciling workload identity.
+	// If ReconcileWorkloadIdentity error is for k8s service account, it will be handled by k8s ownerReferences Garbage collection.
+	// If ReconcileWorkloadIdentity error is for add iam policy binding, then no need to remove it.
+	// Thus, for this case, we simply return.
 	if status.ServiceAccountName == "" {
 		return nil
 	}

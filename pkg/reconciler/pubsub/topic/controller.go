@@ -18,7 +18,6 @@ package topic
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
@@ -31,6 +30,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
@@ -75,13 +75,12 @@ func NewController(
 	}
 
 	r := &Reconciler{
-		PubSubBase:           pubsubBase,
-		Identity:             identity.NewIdentity(ctx),
-		topicLister:          topicInformer.Lister(),
-		serviceLister:        serviceInformer.Lister(),
-		publisherImage:       env.Publisher,
-		createClientFn:       gpubsub.NewClient,
-		serviceAccountLister: serviceAccountInformer.Lister(),
+		PubSubBase:     pubsubBase,
+		Identity:       identity.NewIdentity(ctx),
+		topicLister:    topicInformer.Lister(),
+		serviceLister:  serviceInformer.Lister(),
+		publisherImage: env.Publisher,
+		createClientFn: gpubsub.NewClient,
 	}
 
 	impl := topicreconciler.NewImpl(ctx, r)
