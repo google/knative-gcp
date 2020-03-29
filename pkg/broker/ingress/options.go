@@ -17,21 +17,41 @@ limitations under the License.
 package ingress
 
 import (
-	"github.com/cloudevents/sdk-go/v2/client"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"knative.dev/eventing/pkg/kncloudevents"
 )
 
-type Option func(*handler)
+// HandlerOption is the option to configure ingress handler.
+type HandlerOption func(*handler)
 
-// WithInboundClient specifies the inbound client to receive events.
-func WithInboundClient(c client.Client) Option {
+// WithDecoupleSink specifies the decouple sink for the ingress to send events to.
+func WithDecoupleSink(d DecoupleSink) HandlerOption {
 	return func(h *handler) {
-		h.inbound = c
+		h.decouple = d
 	}
 }
 
-// WithDecoupleSink specifies the decouple sink for the ingress to send events to.
-func WithDecoupleSink(d DecoupleSink) Option {
+// WithPort specifies the port number that ingress listens on. It will create an HttpMessageReceiver for that port.
+func WithPort(port int) HandlerOption {
 	return func(h *handler) {
-		h.decouple = d
+		h.httpReceiver = kncloudevents.NewHttpMessageReceiver(port)
+	}
+}
+
+// MultiTopicDecoupleSinkOption is the option to configure multiTopicDecoupleSink.
+type MultiTopicDecoupleSinkOption func(sink *multiTopicDecoupleSink)
+
+// WithPubsubClient specifies the pubsub client to use.
+func WithPubsubClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
+	return func(sink *multiTopicDecoupleSink) {
+		sink.client = client
+	}
+}
+
+// WithBrokerConfig specifies the broker config. It can be created by reading a configmap mount.
+func WithBrokerConfig(brokerConfig config.ReadonlyTargets) MultiTopicDecoupleSinkOption {
+	return func(sink *multiTopicDecoupleSink) {
+		sink.brokerConfig = brokerConfig
 	}
 }

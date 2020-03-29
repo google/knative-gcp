@@ -17,12 +17,17 @@ limitations under the License.
 package main
 
 import (
-	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"go.uber.org/zap"
+
+	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
 )
 
+// main creates and starts an ingress handler using default options.
+// 1. it listens on port 8080
+// 2. it reads "GOOGLE_CLOUD_PROJECT" env var for pubsub project.
+// 3. it expects broker configmap mounted at "/var/run/cloud-run-events/broker/targets"
 func main() {
 	// Since we pass nil, a default config with no error will be returned.
 	cfg, _ := logging.NewConfigFromMap(nil)

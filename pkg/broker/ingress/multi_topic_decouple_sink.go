@@ -1,0 +1,104 @@
+package ingress
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	cecontext "github.com/cloudevents/sdk-go/v2/context"
+	"github.com/cloudevents/sdk-go/v2/protocol"
+	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	"knative.dev/eventing/pkg/logging"
+)
+
+// NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
+func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (*multiTopicDecoupleSink, error) {
+	sink := &multiTopicDecoupleSink{
+		logger: logging.FromContext(ctx),
+	}
+
+	for _, opt := range options {
+		opt(sink)
+	}
+
+	// Aplly defaults
+	if sink.client == nil {
+		client, err := newDefaultPubSubClient(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create pubsub client: %w", err)
+		}
+		sink.client = client
+	}
+	if sink.brokerConfig == nil {
+		brokerConfig, err := volume.NewTargetsFromFile()
+		if err != nil {
+			return nil, errors.Wrap(err, "creating broker config for default multi topic decouple sink")
+		}
+		sink.brokerConfig = brokerConfig
+	}
+
+	return sink, nil
+}
+
+// multiTopicDecoupleSink implements DecoupleSink and routes events to pubsub topics corresponding
+// to the broker to which the events are sent.
+type multiTopicDecoupleSink struct {
+	// client talks to pubsub.
+	client cev2.Client
+	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
+	// the broker controller.
+	brokerConfig config.ReadonlyTargets
+	logger       *zap.Logger
+}
+
+// Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
+func (m *multiTopicDecoupleSink) Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result {
+	topic, err := m.getTopicForBroker(ns, broker)
+	if err != nil {
+		return err
+	}
+	ctx = cecontext.WithTopic(ctx, topic)
+	return m.client.Send(ctx, event)
+}
+
+// getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker
+// configmap volume.
+func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, error) {
+	brokerConfig, ok := m.brokerConfig.GetBroker(ns, broker)
+	if !ok {
+		// There is an propagation delay between the controller reconciles the broker config and
+		// the config being pushed to the configmap volume in the ingress pod.
+		// TODO(liu-cong) Should we wait (with a timeout) for the configmap volume update instead of
+		// returning error immediately?
+		msg := fmt.Sprintf("config is not found for %v/%v", ns, broker)
+		m.logger.Warn(msg)
+		return "", errors.New(msg)
+	}
+	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
+		msg := fmt.Sprintf("DecouplQueue or topic missing for broker, this should NOT happen. BrokerConfig: %+v", brokerConfig)
+		m.logger.Error(msg)
+		return "", errors.New(msg)
+	}
+	return brokerConfig.DecoupleQueue.Topic, nil
+}
+
+// newDefaultPubSubClient creates a pubsub client using env var "GOOGLE_CLOUD_PROJECT".
+func newDefaultPubSubClient(ctx context.Context) (cev2.Client, error) {
+	// Make a pubsub protocol for the CloudEvents client.
+	p, err := pubsub.New(ctx, pubsub.WithProjectIDFromDefaultEnv())
+	if err != nil {
+		return nil, err
+	}
+
+	// Use the pubsub prototol to make a new CloudEvents client.
+	return cev2.NewClientObserved(p,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
+		cev2.WithTracePropagation,
+	)
+}
