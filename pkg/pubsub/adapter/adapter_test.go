@@ -196,10 +196,6 @@ func TestInboundConvert(t *testing.T) {
 }
 
 func TestReceive(t *testing.T) {
-	// Trace ID and Traceparent are no longer deterministic by default since v2.0.0preview3. Re-enable checks for these once https://github.com/knative/eventing/issues/2559 issue is resolved.
-	// traceID := "1234567890abcdef1234567890abcdef"
-	// spanID := "1234567890abcdef"
-	// traceparent := fmt.Sprintf("00-%s-%s-00", traceID, spanID)
 	cases := []struct {
 		name           string
 		eventFn        func() cloudevents.Event
