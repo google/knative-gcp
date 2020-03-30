@@ -107,7 +107,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 		newVal = &config.TargetsConfig{}
 	}
 
-	if newVal != nil && newVal.Brokers != nil {
+	if newVal.Brokers != nil {
 		if existing, ok := newVal.Brokers[config.BrokerKey(namespace, name)]; ok {
 			b = existing
 		}

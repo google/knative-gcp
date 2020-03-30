@@ -265,6 +265,10 @@ func TestCachedTargetsBytes(t *testing.T) {
 	if !targets.EqualsBytes(wantBytes) {
 		t.Error("CachedTargets.EqualsBytes() got=false, want=true")
 	}
+
+	if targets.EqualsBytes([]byte("random")) {
+		t.Error("CachedTargets.EqualBytes() with random bytes got=true, want=false")
+	}
 }
 
 func TestCachedTargetsString(t *testing.T) {
@@ -361,5 +365,9 @@ func TestCachedTargetsString(t *testing.T) {
 	// Test EqualsString
 	if !targets.EqualsString(wantStr) {
 		t.Error("BaseTargets.EqualsString() got=false, want=true")
+	}
+
+	if targets.EqualsString("random") {
+		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
 	}
 }
