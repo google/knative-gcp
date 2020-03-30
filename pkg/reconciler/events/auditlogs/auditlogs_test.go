@@ -40,6 +40,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
@@ -378,8 +379,10 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic:       testTopicID,
-					Secret:      &secret,
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 					AdapterType: converters.CloudAuditLogsConverter,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -1051,6 +1054,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123"),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -1062,7 +1066,9 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
-				WithCloudAuditLogsSourceDeletionTimestamp),
+				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123"),
+			),
 		}},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),

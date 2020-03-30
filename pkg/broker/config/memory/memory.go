@@ -18,66 +18,115 @@ package memory
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
-// Targets implements config.Targets with data stored in memory.
-type Targets struct {
-	config.BaseTargets
+type brokerMutation struct {
+	b      *config.Broker
+	delete bool
 }
 
-var _ config.Targets = (*Targets)(nil)
+func (m *brokerMutation) SetID(id string) config.BrokerMutation {
+	m.b.Id = id
+	return m
+}
 
-// NewTargetsFromBytes initializes the in memory targets from bytes.
-func NewTargetsFromBytes(b []byte) (config.Targets, error) {
-	t := &Targets{
-		BaseTargets: config.BaseTargets{},
+func (m *brokerMutation) SetAddress(address string) config.BrokerMutation {
+	m.b.Address = address
+	return m
+}
+
+func (m *brokerMutation) SetDecoupleQueue(q *config.Queue) config.BrokerMutation {
+	m.b.DecoupleQueue = q
+	return m
+}
+
+func (m *brokerMutation) SetState(s config.State) config.BrokerMutation {
+	m.b.State = s
+	return m
+}
+
+func (m *brokerMutation) InsertTargets(targets ...*config.Target) config.BrokerMutation {
+	if m.b.Targets == nil {
+		m.b.Targets = make(map[string]*config.Target)
 	}
+	for _, t := range targets {
+		m.b.Targets[t.Name] = t
+	}
+	return m
+}
+
+func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerMutation {
+	for _, t := range targets {
+		delete(m.b.Targets, t.Name)
+	}
+	return m
+}
+
+func (m *brokerMutation) Delete() {
+	m.delete = true
+}
+
+type memoryTargets struct {
+	config.CachedTargets
+	mux sync.Mutex
+}
+
+var _ config.Targets = (*memoryTargets)(nil)
+
+// NewTargetsFromBytes creates a mutable Targets in memory.
+func NewTargetsFromBytes(b []byte) (config.Targets, error) {
 	pb := config.TargetsConfig{}
 	if err := proto.Unmarshal(b, &pb); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal bytes to TargetsConfig: %w", err)
 	}
-	t.Internal.Store(&pb)
-	return t, nil
+	m := &memoryTargets{mux: sync.Mutex{}}
+	m.Store(&pb)
+	return m, nil
 }
 
-// Insert adds the given targets to the current list.
-func (t *Targets) Insert(targets ...config.Target) config.Targets {
-	cfg := t.Internal.Load().(*config.TargetsConfig)
-	if cfg.GetNamespaces() == nil {
-		cfg.Namespaces = make(map[string]*config.NamespacedTargets)
-	}
-	for _, target := range targets {
-		local := target
-		if _, ok := cfg.GetNamespaces()[target.GetNamespace()]; ok {
-			cfg.GetNamespaces()[target.GetNamespace()].GetNames()[target.GetName()] = &local
-		} else {
-			cfg.GetNamespaces()[target.GetNamespace()] = &config.NamespacedTargets{
-				Names: map[string]*config.Target{
-					target.GetName(): &local,
-				},
-			}
-		}
-	}
-	t.Internal.Store(cfg)
-	return t
-}
+// MutateBroker mutates a broker by namespace and name.
+// If the broker doesn't exist, it will be added (unless Delete() is called).
+// This function is thread-safe.
+func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.BrokerMutation)) {
+	// Sync writes.
+	m.mux.Lock()
+	defer m.mux.Unlock()
 
-// Delete removes the give targets from the current list.
-func (t *Targets) Delete(targets ...config.Target) config.Targets {
-	cfg := t.Internal.Load().(*config.TargetsConfig)
-	for _, target := range targets {
-		if _, ok := cfg.GetNamespaces()[target.GetNamespace()]; !ok {
-			continue
-		}
-		delete(cfg.GetNamespaces()[target.GetNamespace()].GetNames(), target.GetName())
-		if len(cfg.GetNamespaces()[target.GetNamespace()].GetNames()) == 0 {
-			// If no more targets in the namespace, also delete the namespace.
-			delete(cfg.GetNamespaces(), target.GetNamespace())
+	b := &config.Broker{Name: name, Namespace: namespace}
+	var newVal *config.TargetsConfig
+	val := m.Load()
+	if val != nil {
+		// Don't modify the existing copy because it
+		// will break the atomic store/load.
+		newVal = proto.Clone(val).(*config.TargetsConfig)
+	} else {
+		newVal = &config.TargetsConfig{}
+	}
+
+	if newVal.Brokers != nil {
+		if existing, ok := newVal.Brokers[config.BrokerKey(namespace, name)]; ok {
+			b = existing
 		}
 	}
-	t.Internal.Store(cfg)
-	return t
+
+	// The mutation will work on a copy of the data.
+	mutation := &brokerMutation{b: b}
+	mutate(mutation)
+
+	if mutation.delete {
+		delete(newVal.Brokers, config.BrokerKey(namespace, name))
+	} else {
+		if newVal.Brokers == nil {
+			newVal.Brokers = make(map[string]*config.Broker)
+		}
+		newVal.Brokers[config.BrokerKey(namespace, name)] = b
+	}
+
+	// Update the atomic value to be the copy.
+	// This works like a commit.
+	m.Store(newVal)
 }

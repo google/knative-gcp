@@ -79,6 +79,13 @@ func WithInitChannelConditions(s *v1alpha1.Channel) {
 	s.Status.InitializeConditions()
 }
 
+// WithChannelServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithChannelServiceAccountName(name string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithChannelWorkloadIdentityFailed(reason, message string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)

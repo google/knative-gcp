@@ -87,6 +87,13 @@ func WithInitCloudPubSubSourceConditions(ps *v1alpha1.CloudPubSubSource) {
 	ps.Status.InitializeConditions()
 }
 
+// WithCloudPubSubSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudPubSubSourceServiceAccountName(name string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPubSubSourceOption {
 	return func(s *v1alpha1.CloudPubSubSource) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)

@@ -26,6 +26,8 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	duckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/webhook/resourcesemantics"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 // +genclient
@@ -57,10 +59,7 @@ var _ = duck.VerifyType(&Topic{}, &duckv1.Conditions{})
 // TopicSpec defines parameters for creating or publishing to a Cloud Pub/Sub
 // Topic depending on the PropagationPolicy.
 type TopicSpec struct {
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
-	// If not specified, defaults to use secret.
-	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	v1alpha1.IdentitySpec `json:",inline"`
 
 	// Secret is the credential to be used to create and publish into the
 	// Cloud Pub/Sub Topic. The value of the secret entry must be a service
@@ -126,10 +125,7 @@ const (
 
 // TopicStatus represents the current state of a Topic.
 type TopicStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"`
+	v1alpha1.IdentityStatus `json:",inline"`
 
 	// Topic is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
@@ -160,4 +156,20 @@ type TopicList struct {
 // GetGroupVersionKind returns GroupVersionKind for Pub/Sub backed Topic.
 func (t *Topic) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Topic")
+}
+
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (s *Topic) IdentitySpec() *v1alpha1.IdentitySpec {
+	return &s.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (s *Topic) IdentityStatus() *v1alpha1.IdentityStatus {
+	return &s.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (ps *Topic) ConditionSet() *apis.ConditionSet {
+	return &topicCondSet
 }

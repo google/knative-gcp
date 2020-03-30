@@ -32,6 +32,7 @@ import (
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -318,8 +319,10 @@ func TestCreates(t *testing.T) {
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-				Topic:  testTopicID,
-				Secret: &secret,
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -334,8 +337,10 @@ func TestCreates(t *testing.T) {
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -366,8 +371,10 @@ func TestCreates(t *testing.T) {
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -397,8 +404,10 @@ func TestCreates(t *testing.T) {
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-				Topic:  testTopicID,
-				Secret: &secret,
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -429,8 +438,10 @@ func TestCreates(t *testing.T) {
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -461,8 +472,10 @@ func TestCreates(t *testing.T) {
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-				Topic:  testTopicID,
-				Secret: &secret,
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -494,8 +507,10 @@ func TestCreates(t *testing.T) {
 			),
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -526,8 +541,10 @@ func TestCreates(t *testing.T) {
 		),
 		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 			rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
-				Topic:  testTopicID,
-				Secret: &secret,
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,

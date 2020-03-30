@@ -16,18 +16,17 @@ limitations under the License.
 
 package config
 
-import (
-	"sync/atomic"
-
-	"github.com/golang/protobuf/proto"
-)
-
-// ReadOnlyTargets provides "read" functions for broker targets.
-type ReadOnlyTargets interface {
-	// RangeNamespace ranges over targets in the given namespace.
-	RangeNamespace(namespace string, f func(t Target) bool)
-	// Range ranges over all targets.
-	Range(f func(t Target) bool)
+// ReadonlyTargets provides "read" functions for brokers and targets.
+type ReadonlyTargets interface {
+	// RangeAllTargets ranges over all targets.
+	// Do not modify the given Target copy.
+	RangeAllTargets(func(*Target) bool)
+	// GetBroker returns a broker and its targets if it exists.
+	// Do not modify the returned Broker copy.
+	GetBroker(namespace, name string) (*Broker, bool)
+	// RangeBrokers ranges over all brokers.
+	// Do not modify the given Broker copy.
+	RangeBrokers(func(*Broker) bool)
 	// Bytes serializes all the targets.
 	Bytes() ([]byte, error)
 	// String returns the text format of all the targets.
@@ -40,81 +39,34 @@ type ReadOnlyTargets interface {
 	EqualsString(string) bool
 }
 
+// BrokerMutation provides functions to mutate a Broker.
+// The changes made via the BrokerMutation must be "commited" altogether.
+type BrokerMutation interface {
+	// SetID sets the broker ID.
+	SetID(id string) BrokerMutation
+	// SetAddress sets the broker address.
+	SetAddress(address string) BrokerMutation
+	// SetDecoupleQueue sets the broker decouple queue.
+	SetDecoupleQueue(q *Queue) BrokerMutation
+	// SetState sets the broker state.
+	SetState(s State) BrokerMutation
+	// InsertTargets inserts Targets to the broker.
+	InsertTargets(...*Target) BrokerMutation
+	// DeleteTargets targets deletes Targets from the broker.
+	DeleteTargets(...*Target) BrokerMutation
+	// Delete deletes the broker.
+	Delete()
+}
+
 // Targets provides "read" and "write" functions for broker targets.
 type Targets interface {
-	ReadOnlyTargets
-
-	// Insert adds the given targets to the current list.
-	Insert(...Target) Targets
-	// Delete removes the give targets from the current list.
-	Delete(...Target) Targets
+	ReadonlyTargets
+	// MutateBroker mutates a broker by namespace and name.
+	// If the broker doesn't exist, it will be added (unless Delete() is called).
+	MutateBroker(namespace, name string, mutate func(BrokerMutation))
 }
 
-// BaseTargets provide a common field to store the targets config and
-// implements common functionalities.
-type BaseTargets struct {
-	Internal atomic.Value
-}
-
-// RangeNamespace ranges over targets in the given namespace.
-func (bt *BaseTargets) RangeNamespace(namespace string, f func(Target) bool) {
-	cfg := bt.Internal.Load().(*TargetsConfig)
-	if cfg == nil {
-		return
-	}
-	if _, ok := cfg.GetNamespaces()[namespace]; !ok {
-		return
-	}
-
-	for _, target := range cfg.GetNamespaces()[namespace].GetNames() {
-		if c := f(*target); !c {
-			break
-		}
-	}
-}
-
-// Range ranges over all targets.
-func (bt *BaseTargets) Range(f func(Target) bool) {
-	cfg := bt.Internal.Load().(*TargetsConfig)
-	for _, nt := range cfg.GetNamespaces() {
-		for _, target := range nt.GetNames() {
-			if c := f(*target); !c {
-				break
-			}
-		}
-	}
-}
-
-// Bytes serializes all the targets.
-func (bt *BaseTargets) Bytes() ([]byte, error) {
-	cfg := bt.Internal.Load().(*TargetsConfig)
-	return proto.Marshal(cfg)
-}
-
-// String returns the text format of all the targets.
-func (bt *BaseTargets) String() string {
-	cfg := bt.Internal.Load().(*TargetsConfig)
-	return cfg.String()
-}
-
-// EqualsBytes checks if the current targets config equals the given
-// targets config in bytes.
-func (bt *BaseTargets) EqualsBytes(b []byte) bool {
-	self := bt.Internal.Load().(*TargetsConfig)
-	var other TargetsConfig
-	if err := proto.Unmarshal(b, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
-}
-
-// EqualsString checks if the current targets config equals the given
-// targets config in string.
-func (bt *BaseTargets) EqualsString(s string) bool {
-	self := bt.Internal.Load().(*TargetsConfig)
-	var other TargetsConfig
-	if err := proto.UnmarshalText(s, &other); err != nil {
-		return false
-	}
-	return proto.Equal(self, &other)
+// BrokerKey returns the key of a broker.
+func BrokerKey(namespace, name string) string {
+	return namespace + "/" + name
 }

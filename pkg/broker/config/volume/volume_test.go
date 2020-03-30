@@ -20,7 +20,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -28,53 +27,80 @@ import (
 
 func TestSyncConfigFromFile(t *testing.T) {
 	data := &config.TargetsConfig{
-		Namespaces: map[string]*config.NamespacedTargets{
-			"ns1": {
-				Names: map[string]*config.Target{
+		Brokers: map[string]*config.Broker{
+			"ns1/broker1": {
+				Id:        "b-uid-1",
+				Address:   "broker1.ns1.example.com",
+				Name:      "broker1",
+				Namespace: "ns1",
+				DecoupleQueue: &config.Queue{
+					Topic:        "topic1",
+					Subscription: "sub1",
+				},
+				State: config.State_READY,
+				Targets: map[string]*config.Target{
 					"name1": {
-						Id:                "uid-1",
-						Name:              "name1",
-						Namespace:         "ns1",
-						FilterAttributes:  map[string]string{"app": "foo"},
-						RetryTopic:        "abc",
-						RetrySubscription: "abc-sub",
-						State:             config.Target_READY,
+						Id:               "uid-1",
+						Name:             "name1",
+						Namespace:        "ns1",
+						FilterAttributes: map[string]string{"app": "foo"},
+						RetryQueue: &config.Queue{
+							Topic:        "abc",
+							Subscription: "abc-sub",
+						},
+						State: config.State_READY,
 					},
 					"name2": {
-						Id:                "uid-2",
-						Name:              "name2",
-						Namespace:         "ns1",
-						FilterAttributes:  map[string]string{"app": "bar"},
-						RetryTopic:        "def",
-						RetrySubscription: "def-sub",
-						State:             config.Target_READY,
+						Id:               "uid-2",
+						Name:             "name2",
+						Namespace:        "ns1",
+						FilterAttributes: map[string]string{"app": "bar"},
+						RetryQueue: &config.Queue{
+							Topic:        "def",
+							Subscription: "def-sub",
+						},
+						State: config.State_READY,
 					},
 				},
 			},
-			"ns2": {
-				Names: map[string]*config.Target{
+			"ns2/broker2": {
+				Id:        "b-uid-2",
+				Address:   "broker2.ns2.example.com",
+				Name:      "broker2",
+				Namespace: "ns2",
+				DecoupleQueue: &config.Queue{
+					Topic:        "topic2",
+					Subscription: "sub2",
+				},
+				State: config.State_READY,
+				Targets: map[string]*config.Target{
 					"name3": {
-						Id:                "uid-3",
-						Name:              "name3",
-						Namespace:         "ns2",
-						FilterAttributes:  map[string]string{"app": "bar"},
-						RetryTopic:        "ghi",
-						RetrySubscription: "ghi-sub",
-						State:             config.Target_UNKNOWN,
+						Id:               "uid-3",
+						Name:             "name3",
+						Namespace:        "ns2",
+						FilterAttributes: map[string]string{"app": "foo"},
+						RetryQueue: &config.Queue{
+							Topic:        "ghi",
+							Subscription: "ghi-sub",
+						},
+						State: config.State_UNKNOWN,
 					},
 					"name4": {
-						Id:                "uid-4",
-						Name:              "name4",
-						Namespace:         "ns2",
-						FilterAttributes:  map[string]string{"app": "foo"},
-						RetryTopic:        "jkl",
-						RetrySubscription: "jkl-sub",
-						State:             config.Target_UNKNOWN,
+						Id:               "uid-4",
+						Name:             "name4",
+						Namespace:        "ns2",
+						FilterAttributes: map[string]string{"app": "bar"},
+						RetryQueue: &config.Queue{
+							Topic:        "jkl",
+							Subscription: "jkl-sub",
+						},
+						State: config.State_UNKNOWN,
 					},
 				},
 			},
 		},
 	}
+
 	b, _ := proto.Marshal(data)
 	dir, err := ioutil.TempDir("", "configtest-*")
 	if err != nil {
@@ -91,41 +117,48 @@ func TestSyncConfigFromFile(t *testing.T) {
 	tmp.Write(b)
 	tmp.Close()
 
-	targets, err := NewTargetsFromFile(WithPath(tmp.Name()))
+	ch := make(chan struct{}, 1)
+
+	targets, err := NewTargetsFromFile(WithPath(tmp.Name()), WithNotifyChan(ch))
 	if err != nil {
 		t.Fatalf("unexpected error from NewTargetsFromFile: %v", err)
 	}
 
-	gotTargets := targets.(*Targets).Internal.Load().(*config.TargetsConfig)
+	gotTargets := targets.(*Targets).Load()
 	if !proto.Equal(data, gotTargets) {
 		t.Errorf("initial targets got=%+v, want=%+v", gotTargets, data)
 	}
 
-	data.GetNamespaces()["ns1"].GetNames()["name1"] = &config.Target{
-		Id:                "uid-1",
-		Name:              "name1",
-		Namespace:         "ns1",
-		FilterAttributes:  map[string]string{"app": "zzz"},
-		RetryTopic:        "abc",
-		RetrySubscription: "abc-sub",
-		State:             config.Target_UNKNOWN,
+	data.Brokers["ns1/broker1"].Targets["name1"] = &config.Target{
+		Id:               "uid-1",
+		Name:             "name1",
+		Namespace:        "ns1",
+		FilterAttributes: map[string]string{"app": "zzz"},
+		RetryQueue: &config.Queue{
+			Topic:        "abc",
+			Subscription: "abc-sub",
+		},
+		State: config.State_UNKNOWN,
 	}
-	data.GetNamespaces()["ns2"].GetNames()["name3"] = &config.Target{
-		Id:                "uid-3",
-		Name:              "name3",
-		Namespace:         "ns2",
-		FilterAttributes:  map[string]string{"app": "xxx"},
-		RetryTopic:        "ghi",
-		RetrySubscription: "ghi-sub",
-		State:             config.Target_READY,
+	data.Brokers["ns2/broker2"].Targets["name3"] = &config.Target{
+		Id:               "uid-3",
+		Name:             "name3",
+		Namespace:        "ns2",
+		FilterAttributes: map[string]string{"app": "xxx"},
+		RetryQueue: &config.Queue{
+			Topic:        "ghi",
+			Subscription: "ghi-sub",
+		},
+		State: config.State_READY,
 	}
-	delete(data.GetNamespaces()["ns2"].GetNames(), "name4")
+
+	delete(data.Brokers["ns2/broker2"].Targets, "name4")
 	b, _ = proto.Marshal(data)
 	ioutil.WriteFile(tmp.Name(), b, 0644)
 
-	<-time.After(3 * time.Second)
+	<-ch
 
-	gotTargets = targets.(*Targets).Internal.Load().(*config.TargetsConfig)
+	gotTargets = targets.(*Targets).Load()
 	if !proto.Equal(data, gotTargets) {
 		t.Errorf("updated targets got=%+v, want%+v", gotTargets, data)
 	}

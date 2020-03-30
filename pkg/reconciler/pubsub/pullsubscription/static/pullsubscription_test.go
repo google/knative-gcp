@@ -42,6 +42,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
@@ -169,9 +170,11 @@ func TestAllCases(t *testing.T) {
 			NewPullSubscription(sourceName, testNS,
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 			),
@@ -191,9 +194,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				// updates
@@ -208,9 +213,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -235,9 +242,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -257,9 +266,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -289,9 +300,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -308,9 +321,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -340,9 +355,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -359,9 +376,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -391,9 +410,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -410,9 +431,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -443,9 +466,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -462,9 +487,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionSink(sinkGVK, sinkName),
@@ -493,9 +520,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -519,9 +548,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 			),
@@ -549,9 +580,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -571,9 +604,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionTransformer(transformerGVK, transformerName),
@@ -612,9 +647,11 @@ func TestAllCases(t *testing.T) {
 				//WithPullSubscriptionFinalizers(resourceGroup),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithInitPullSubscriptionConditions,
 				WithPullSubscriptionProjectID(testProject),
@@ -634,9 +671,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -670,9 +709,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionStatusObservedGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -699,9 +740,11 @@ func TestAllCases(t *testing.T) {
 				WithPullSubscriptionUID(sourceUID),
 				WithPullSubscriptionObjectMetaGeneration(generation),
 				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -741,9 +784,11 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 	source := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-			Project: testProject,
-			Topic:   testTopicID,
-			Secret:  &secret,
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret:  &secret,
+				Project: testProject,
+			},
+			Topic: testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,

@@ -35,6 +35,7 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
@@ -163,8 +164,10 @@ func TestAllCases(t *testing.T) {
 		WantCreates: []runtime.Object{
 			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
 				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionMode(pubsubv1alpha1.ModePushCompatible),
@@ -309,6 +312,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123"),
 			),
 			newSink(),
 		},
@@ -321,6 +325,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123"),
 			),
 		}},
 		WantEvents: []string{

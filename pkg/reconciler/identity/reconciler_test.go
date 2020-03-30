@@ -55,7 +55,8 @@ var (
 	falseVal = false
 
 	identifiable = NewCloudPubSubSource(identifiableName, testNS,
-		WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
+		WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
+		WithCloudPubSubSourceServiceAccountName("test"))
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
 	}, cmp.Ignore())

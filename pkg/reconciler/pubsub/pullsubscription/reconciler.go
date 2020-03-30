@@ -30,18 +30,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
-	tracingconfig "knative.dev/pkg/tracing/config"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
+	tracingconfig "knative.dev/pkg/tracing/config"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	"github.com/google/knative-gcp/pkg/tracing"
@@ -53,18 +55,24 @@ const (
 	channelComponent = "channel"
 
 	deletePubSubFailedReason        = "SubscriptionDeleteFailed"
+	deleteWorkloadIdentityFailed    = "WorkloadIdentityDeleteFailed"
 	reconciledPubSubFailedReason    = "SubscriptionReconcileFailed"
 	reconciledDataPlaneFailedReason = "DataPlaneReconcileFailed"
 	reconciledSuccessReason         = "PullSubscriptionReconciled"
+	workloadIdentityFailed          = "WorkloadIdentityReconcileFailed"
 )
 
 // Base implements the core controller logic for pullsubscription.
 type Base struct {
 	*pubsub.PubSubBase
+	// identity reconciler for reconciling workload identity.
+	*identity.Identity
 	// DeploymentLister index properties about deployments.
 	DeploymentLister appsv1listers.DeploymentLister
 	// PullSubscriptionLister index properties about pullsubscriptions.
 	PullSubscriptionLister listers.PullSubscriptionLister
+	// serviceAccountLister for reading serviceAccounts.
+	ServiceAccountLister corev1listers.ServiceAccountLister
 
 	UriResolver *resolver.URIResolver
 
@@ -92,6 +100,14 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription)
 
 	ps.Status.InitializeConditions()
 	ps.Status.ObservedGeneration = ps.Generation
+
+	// If pullsubscription doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
+	// Otherwise, its owner will reconcile workload identity.
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub subscription workload identity: %s", err.Error())
+		}
+	}
 
 	// Sink is required.
 	sinkURI, err := r.resolveDestination(ctx, ps.Spec.Sink, ps)
@@ -382,6 +398,14 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 }
 
 func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
+	// If pullsubscription doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
+	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccount != "" {
+		if err := r.Identity.DeleteWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {
+			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub subscription workload identity: %s", err.Error())
+		}
+	}
+
 	logging.FromContext(ctx).Desugar().Debug("Deleting Pub/Sub subscription")
 	if err := r.deleteSubscription(ctx, ps); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
