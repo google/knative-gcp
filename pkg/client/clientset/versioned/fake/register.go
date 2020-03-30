@@ -21,8 +21,8 @@ package fake
 import (
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,8 +36,8 @@ var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
 	eventsv1alpha1.AddToScheme,
 	messagingv1alpha1.AddToScheme,
+	policyv1alpha1.AddToScheme,
 	pubsubv1alpha1.AddToScheme,
-	securityv1alpha1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition
