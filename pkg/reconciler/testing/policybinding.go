@@ -19,7 +19,7 @@ package testing
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/tracker"
