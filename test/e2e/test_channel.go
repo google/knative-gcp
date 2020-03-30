@@ -27,7 +27,7 @@ import (
 
 // SmokeTestChannelImpl makes sure we can run tests.
 func SmokeTestChannelImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace, kngcptesting.WithChannelGCPServiceAccount(authConfig.PubsubServiceAccount))

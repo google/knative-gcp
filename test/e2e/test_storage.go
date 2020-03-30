@@ -43,7 +43,7 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool, authConfig
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}

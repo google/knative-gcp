@@ -44,7 +44,7 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.

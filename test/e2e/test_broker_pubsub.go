@@ -61,7 +61,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -98,7 +98,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.Au
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -150,7 +150,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.A
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target StorageJob to receive the events.
@@ -190,7 +190,7 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -255,7 +255,7 @@ func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib
 	targetName := "event-display"
 	sName := "scheduler-test"
 
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.

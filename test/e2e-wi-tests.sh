@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-chmod +x e2e-wi-tests.sh
+#chmod +x e2e-wi-tests.sh
 
 # Copyright 2020 Google LLC
 #
@@ -145,6 +145,6 @@ kubectl annotate serviceaccount ${CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-ser
 --namespace ${CONTROL_PLANE_NAMESPACE}
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=20m -parallel=12 ./test/e2e -workloadIdentityEnabled=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT} || fail_test
+go_test_e2e -timeout=20m -parallel=12 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT} || fail_test
 
 success

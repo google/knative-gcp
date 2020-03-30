@@ -26,7 +26,7 @@ import (
 
 // SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
 func SmokeCloudSchedulerSourceSetup(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	sName := "scheduler-test"
@@ -46,7 +46,7 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T, authConfig lib.AuthConfig) {
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
 // log of the receiver.
 func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
-	client := lib.Setup(t, true, authConfig.WorkloadIdentityEnabled)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create an Addressable to receive scheduler events

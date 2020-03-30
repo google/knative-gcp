@@ -70,7 +70,7 @@ func TestChannelNamespaceDefaulter(t *testing.T) {
 }
 
 func TestEventTransformationForSubscription(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -79,7 +79,7 @@ func TestEventTransformationForSubscription(t *testing.T) {
 }
 
 func TestChannelChain(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -88,7 +88,7 @@ func TestChannelChain(t *testing.T) {
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -97,7 +97,7 @@ func TestEventTransformationForTrigger(t *testing.T) {
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -139,7 +139,7 @@ func TestChannelTracing(t *testing.T) {
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
 func TestSmokePullSubscription(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("PullSubscription doesn't support workload identity.")
 	}
 	cancel := logstream.Start(t)
@@ -149,7 +149,7 @@ func TestSmokePullSubscription(t *testing.T) {
 
 // TestPullSubscriptionWithTarget tests we can knock down a target.
 func TestPullSubscriptionWithTarget(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("PullSubscription doesn't support workload identity.")
 	}
 	cancel := logstream.Start(t)
@@ -181,7 +181,7 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -191,7 +191,7 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -201,7 +201,7 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
 func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -211,7 +211,7 @@ func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
 func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)
@@ -221,7 +221,7 @@ func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
 func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled.")
 	}
 	cancel := logstream.Start(t)

@@ -55,9 +55,9 @@ func TestMain(m *testing.M) {
 		},
 		ChannelsToTest: eventingtest.EventingFlags.Channels,
 	}
-	authConfig.WorkloadIdentityEnabled = test.Flags.WorkloadIdentityEnabled
+	authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
 	// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
-	if authConfig.WorkloadIdentityEnabled {
+	if authConfig.WorkloadIdentity {
 		authConfig.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(test.Flags.PubsubServiceAccount), os.Getenv(lib.ProwProjectKey))
 	}
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY

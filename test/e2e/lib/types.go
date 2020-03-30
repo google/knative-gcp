@@ -21,6 +21,6 @@ type TargetOutput struct {
 }
 
 type AuthConfig struct {
-	WorkloadIdentityEnabled bool
-	PubsubServiceAccount    string
+	WorkloadIdentity     bool
+	PubsubServiceAccount string
 }
