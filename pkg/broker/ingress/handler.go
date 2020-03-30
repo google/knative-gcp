@@ -24,7 +24,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
-	"knative.dev/pkg/logging"
+	"knative.dev/eventing/pkg/logging"
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -73,7 +73,7 @@ func (h *handler) receive(ctx context.Context, event cev2.Event) protocol.Result
 	// TODO(liu-cong) route events based on broker.
 
 	if err := h.decouple.Send(ctx, event); err != nil {
-		logging.FromContext(ctx).Desugar().Error("Error publishing to PubSub", zap.String("event", event.String()), zap.Error(err))
+		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("event", event.String()), zap.Error(err))
 		return err
 	}
 

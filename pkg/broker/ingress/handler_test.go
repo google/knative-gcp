@@ -13,7 +13,8 @@ import (
 func TestHandlerChannelInbound(t *testing.T) {
 	inbound, ic := test.NewMockReceiverClient(t, 1)
 	decouple, dc := test.NewMockSenderClient(t, 1)
-	createAndStartIngress(t, inbound, decouple)
+	_, cleanup := createAndStartIngress(t, inbound, decouple)
+	defer cleanup()
 
 	input := createTestEvent()
 	// Send an event to the inbound receiver client.
@@ -30,7 +31,8 @@ func TestHandlerChannelInbound(t *testing.T) {
 // sink.
 func TestHandlerDefaultHTTPInbound(t *testing.T) {
 	decouple, dc := test.NewMockSenderClient(t, 1)
-	createAndStartIngress(t, nil, decouple)
+	_, cleanup := createAndStartIngress(t, nil, decouple)
+	defer cleanup()
 
 	input := createTestEvent()
 	// Send an event to the inbound receiver client.
@@ -58,7 +60,7 @@ func sendEventOverHTTP(t *testing.T, url string, events ...cloudevents.Event) {
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(t *testing.T, inbound cloudevents.Client, decouple DecoupleSink) *handler {
+func createAndStartIngress(t *testing.T, inbound cloudevents.Client, decouple DecoupleSink) (h *handler, cleanup func()) {
 	ctx := context.Background()
 	h, err := NewHandler(ctx,
 		WithInboundClient(inbound),
@@ -67,7 +69,10 @@ func createAndStartIngress(t *testing.T, inbound cloudevents.Client, decouple De
 		t.Fatalf("Failed to create ingress handler: %+v", err)
 	}
 	go h.Start(ctx)
-	return h
+	cleanup = func() {
+		// Any cleanup steps should go here. For now none.
+	}
+	return h, cleanup
 }
 
 func createTestEvent() cloudevents.Event {

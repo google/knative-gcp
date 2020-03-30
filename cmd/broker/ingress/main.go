@@ -28,15 +28,15 @@ func main() {
 	cfg, _ := logging.NewConfigFromMap(nil)
 	logger, _ := logging.NewLoggerFromConfig(cfg, "broker-ingress")
 	ctx := signals.NewContext()
-	logging.WithLogger(ctx, logger)
+	ctx = logging.WithLogger(ctx, logger)
 
 	ingress, err := ingress.NewHandler(ctx)
 	if err != nil {
-		logger.Fatal("Unable to create ingress handler: ", zap.Error(err))
+		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
 	}
 
 	logger.Info("Starting ingress.", zap.Any("ingress", ingress))
 	if err := ingress.Start(ctx); err != nil {
-		logger.Fatal("failed to start ingress: ", zap.Error(err))
+		logger.Desugar().Fatal("failed to start ingress: ", zap.Error(err))
 	}
 }

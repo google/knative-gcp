@@ -72,7 +72,7 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:77dfd27299a11fa91e91c93e5155eda28e3e22897f20abd59be1bc5194315856"
+  digest = "1:4f3378de6a36e3df472219fb105dea99097f47eacffc4420597c0e067baf2502"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -1822,6 +1822,7 @@
     "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
+    "knative.dev/eventing/pkg/logging",
     "knative.dev/eventing/pkg/tracing",
     "knative.dev/eventing/test",
     "knative.dev/eventing/test/conformance/helpers",
