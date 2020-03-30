@@ -53,16 +53,16 @@ function control_plane_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/cloudscheduler.admin
+        # Give iam.serviceAccountAdmin role to the Google service account.
+    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
+      --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+      --role roles/iam.serviceAccountAdmin
   fi
-  # Give iam.serviceAccountAdmin role to the Google service account.
-  gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-    --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-    --role roles/iam.serviceAccountAdmin
   # Allow the Kubernetes service account to use Google service account.
   MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${CONTROLLER_SERVICE_ACCOUNT}]"
   gcloud iam service-accounts add-iam-policy-binding \
-  --role roles/iam.workloadIdentityUser \
-  --member $MEMBER ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    --role roles/iam.workloadIdentityUser \
+    --member $MEMBER ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
 }
 
 # Create resources required for Pub/Sub Admin setup.
@@ -142,7 +142,7 @@ initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Add annotation to Kubernetes service account.
 kubectl annotate serviceaccount ${CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
---namespace ${CONTROL_PLANE_NAMESPACE}
+  --namespace ${CONTROL_PLANE_NAMESPACE}
 
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=20m -parallel=12 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT} || fail_test
