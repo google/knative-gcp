@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"knative.dev/pkg/apis"
-	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
