@@ -49,6 +49,10 @@
    configuration control.
 
    1. Initialization Scripts.
+   
+        Before applying initialization scripts, make sure your default zone is set to be the same as your 
+        current cluster. You may use ` gcloud container clusters describe $CLUSTER_NAME` to get zone
+        and apply `gcloud config set compute/zone $ZONE` to set it.
 
       - Use **Workload Identity**.
 
@@ -60,10 +64,10 @@
         In order to make controller compatible with Workload Identity, use
         [ko](http://github.com/google/ko) to apply
         [controller-gke](../../config/core/deployments/controller-gke.yaml)
-        first.
+        first. It is in `config/core/deployments`.
 
         ```shell
-        ko apply -f controller-gke.yaml
+        ko apply -f config/core/deployments/controller-gke.yaml
         ```
 
         Then you can apply
@@ -72,7 +76,7 @@
 
         ```shell
         chmod +x init_control_plane_gke.sh
-        ./init_control_plane_gke.sh
+        ./hack/init_control_plane_gke.sh
         ```
 
       - Export service account keys and store them as **Kubernetes Secrets**.
@@ -80,8 +84,11 @@
         all the configuration by running:
         ```shell
         chmod +x init_control_plane.sh
-        ./init_control_plane.sh
+        ./hack/init_control_plane.sh
         ```
+        
+       - ***Note***: Both scripts will have a step to create a Google Cloud Service Account `cloud-run-events`.
+        Ignore the error message if you already had this service account (error for 'service account already exists').
 
    1. Manual configuration steps.
 
