@@ -148,7 +148,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 			Project: "eventing-name",
 			Topic:   "topic-name",
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: gServiceAccountName,
+				GoogleServiceAccount: gServiceAccountName,
 			},
 		},
 	}

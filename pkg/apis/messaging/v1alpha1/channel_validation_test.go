@@ -117,7 +117,7 @@ func TestChannelValidation(t *testing.T) {
 		cr: &Channel{
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: invalidServiceAccountName,
+					GoogleServiceAccount: invalidServiceAccountName,
 				},
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -138,7 +138,7 @@ func TestChannelValidation(t *testing.T) {
 		cr: &Channel{
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: validServiceAccountName,
+					GoogleServiceAccount: validServiceAccountName,
 				},
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -153,7 +153,7 @@ func TestChannelValidation(t *testing.T) {
 		cr: &Channel{
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: validServiceAccountName,
+					GoogleServiceAccount: validServiceAccountName,
 				},
 				Secret: defaultSecretSelector(),
 				Subscribable: &eventingduck.Subscribable{
@@ -195,7 +195,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			orig: &channelSpec,
 			updated: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: "new-service-account",
+					GoogleServiceAccount: "new-service-account",
 				},
 			},
 			allowed: false,

@@ -366,7 +366,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 				},
 			},
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: gServiceAccountName,
+				GoogleServiceAccount: gServiceAccountName,
 			},
 			Topic:       "topic",
 			AdapterType: "adapter-type",

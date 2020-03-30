@@ -42,7 +42,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.ServiceAccount); err != nil {
+	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.GoogleServiceAccount); err != nil {
 		errs = errs.Also(err)
 	}
 
@@ -65,7 +65,7 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 		}
 	}
 
-	if diff := cmp.Diff(original.Spec.ServiceAccount, current.Spec.ServiceAccount); diff != "" {
+	if diff := cmp.Diff(original.Spec.GoogleServiceAccount, current.Spec.GoogleServiceAccount); diff != "" {
 		return &apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"status", "serviceAccount"},

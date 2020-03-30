@@ -44,7 +44,7 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 }
 
 func (cs *ChannelSpec) SetDefaults(ctx context.Context) {
-	if cs.ServiceAccount == "" && (cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{})) {
+	if cs.GoogleServiceAccount == "" && (cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{})) {
 		cs.Secret = defaultSecretSelector()
 	}
 }
