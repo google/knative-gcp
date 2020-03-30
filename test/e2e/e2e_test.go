@@ -154,7 +154,6 @@ func TestBrokerTracing(t *testing.T) {
 }
 
 func TestChannelTracing(t *testing.T) {
-	t.Skip("Skipping until https://github.com/knative/eventing/issues/2046 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
