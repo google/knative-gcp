@@ -233,7 +233,6 @@ func TestReceive(t *testing.T) {
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
-			"X-B3-Sampled":   {"0"},
 		},
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
@@ -263,7 +262,6 @@ func TestReceive(t *testing.T) {
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
-			"X-B3-Sampled":   {"0"},
 		},
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
@@ -300,7 +298,6 @@ func TestReceive(t *testing.T) {
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
-			"X-B3-Sampled":   {"0"},
 		},
 		wantBody: []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event {
@@ -339,7 +336,6 @@ func TestReceive(t *testing.T) {
 			"Ce-Type":        {"unit.testing"},
 			"Content-Length": {"15"},
 			"Content-Type":   {"application/json"},
-			"X-B3-Sampled":   {"0"},
 		},
 		wantBody:    []byte(`{"key":"value"}`),
 		wantEventFn: func() *cloudevents.Event { return nil },
@@ -404,18 +400,14 @@ func TestReceive(t *testing.T) {
 			}
 
 			options := make([]cmp.Option, 0)
-			ignoreSpanID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
-				return n == "X-B3-Spanid"
-			})
-			options = append(options, ignoreSpanID)
 			ignoreCeTraceparent := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
 				return n == "Ce-Traceparent"
 			})
 			options = append(options, ignoreCeTraceparent)
-			ignoreTraceID := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
-				return n == "X-B3-Traceid"
+			ignoreTraceParent := cmpopts.IgnoreMapEntries(func(n string, _ []string) bool {
+				return n == "Traceparent"
 			})
-			options = append(options, ignoreTraceID)
+			options = append(options, ignoreTraceParent)
 			if diff := cmp.Diff(tc.wantHeader, gotHeader, options...); diff != "" {
 				t.Errorf("receiver got unexpected HTTP header (-want +got): %s", diff)
 			}
