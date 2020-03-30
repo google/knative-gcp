@@ -266,11 +266,11 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:10aa62acd56f635de190110a836aa261b3774e697b2b6a7af27d8263cf856d47"
+  digest = "1:ecc8bd577aaaa8ce2c3ad060e61e1daeadbab1d14a0934f019ad2995c3a666b0"
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "NUT"
-  revision = "b02d448a3705facf11018efff34f1d2830be5724"
+  revision = "955bf358a3d8d1ebfa6204338ef3fe364255cd85"
 
 [[projects]]
   digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
@@ -1345,7 +1345,7 @@
 
 [[projects]]
   branch = "release-0.13"
-  digest = "1:f4dcb79e9b01236fe9fb89e7740af183af737c0a7c62ebd68d9ee9d33904abd5"
+  digest = "1:8c79753b03a6656d3fb3bd585334b7e2b11a77f780e38e0d1eb24492771b7ddf"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1428,11 +1428,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "200ea1aebdbf9a71068f3fd59205f3bf07ba65e6"
+  revision = "133ec838f2706b18dab87c7f1b2cb6cccd9409f1"
 
 [[projects]]
   branch = "release-0.13"
-  digest = "1:77db7d7e7364e6acb7fe627ddb377f94e5199b020be96aa0e8654cd864db2d7a"
+  digest = "1:333539485c96ddf9d1ac20c5141a27044890c7d5b7f5de85f28a9267120acb4c"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1509,7 +1509,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "2006e107e39eb0e661e4437ba76b16465162689e"
+  revision = "a56a6ea3fa56b9c9c2482a5bda0005dd2364d183"
 
 [[projects]]
   branch = "release-0.13"
@@ -1562,18 +1562,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "804b3bb854ea94a17f4348f8afca48c8b413c566"
+  revision = "aa470a6af2da383a5cc81483dfd476d41bbd1830"
 
 [[projects]]
   branch = "master"
-  digest = "1:e7ea104eff9c91ce48f1730ab8b4098faa1ea519162ccbbbca68c205428f0e21"
+  digest = "1:2987a1db00b983af9e5d5281639a754fb6449eef01e6a375894829eaec17cb2a"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "83fb33bf8fcfe5c0e021eb6c9bb8733a5b8423c0"
+  revision = "d878fef854182d0cb2ab2190c66a785b8f05e3e2"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
