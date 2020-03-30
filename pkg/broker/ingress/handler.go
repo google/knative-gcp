@@ -30,7 +30,7 @@ import (
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
 	// Send sends the event to a decoupling sink.
-	Send(ctx context.Context, event cev2.Event) error
+	Send(ctx context.Context, event cev2.Event) protocol.Result
 }
 
 // handler receives events and persists them to storage (pubsub).
@@ -72,9 +72,9 @@ func (h *handler) receive(ctx context.Context, event cev2.Event) protocol.Result
 	// TODO(liu-cong) add metrics
 	// TODO(liu-cong) route events based on broker.
 
-	if err := h.decouple.Send(ctx, event); err != nil {
-		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("event", event.String()), zap.Error(err))
-		return err
+	if res := h.decouple.Send(ctx, event); !cev2.IsACK(res) {
+		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("event", event.String()), zap.Error(res))
+		return res
 	}
 
 	return nil
