@@ -350,14 +350,14 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: gServiceAccountName,
+				},
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
 					},
 					Key: "eventing-secret-key",
-				},
-				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: gServiceAccountName,
 				},
 				Project: "eventing-name",
 				SourceSpec: duckv1.SourceSpec{
