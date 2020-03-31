@@ -75,7 +75,6 @@
         install all the configuration by running:
 
         ```shell
-        chmod +x init_control_plane_gke.sh
         ./hack/init_control_plane_gke.sh
         ```
 
@@ -83,7 +82,6 @@
         Apply [init_control_plane](../../hack/init_control_plane.sh) to install
         all the configuration by running:
         ```shell
-        chmod +x init_control_plane.sh
         ./hack/init_control_plane.sh
         ```
         
