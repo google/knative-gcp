@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pubsub
+package build
 
 import (
 	"context"
 
 	"go.uber.org/zap"
+
 	corev1 "k8s.io/api/core/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
@@ -27,7 +28,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
+	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -35,48 +36,51 @@ import (
 )
 
 const (
-	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
+	finalizerName = controllerAgentName
 
+	resourceGroup = "cloudbuildsources.events.cloud.google.com"
+
+	createFailedReason           = "PullSubscriptionCreateFailed"
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
-	reconciledSuccessReason      = "CloudPubSubSourceReconciled"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
+	reconciledSuccessReason      = "CloudBuildSourceReconciled"
 )
 
-// Reconciler is the controller implementation for the CloudPubSubSource source.
+// Reconciler is the controller implementation for the CloudBuildSource source.
 type Reconciler struct {
 	*pubsub.PubSubBase
+
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
-	// pubsubLister for reading cloudpubsubsources.
-	pubsubLister listers.CloudPubSubSourceLister
+	// buildLister for reading cloudbuildsources.
+	buildLister listers.CloudBuildSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
-	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
-	receiveAdapterName   string
+	serviceAccountLister   corev1listers.ServiceAccountLister
+	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 }
 
 // Check that our Reconciler implements Interface.
-var _ cloudpubsubsourcereconciler.Interface = (*Reconciler)(nil)
+var _ cloudbuildsourcereconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) pkgreconciler.Event {
-	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("pubsub", pubsub)))
+func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1alpha1.CloudBuildSource) pkgreconciler.Event {
+	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("build", build)))
 
-	pubsub.Status.InitializeConditions()
-	pubsub.Status.ObservedGeneration = pubsub.Generation
+	build.Status.InitializeConditions()
+	build.Status.ObservedGeneration = build.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
-	if pubsub.Spec.ServiceAccount != "" {
-		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, pubsub.Spec.Project, pubsub); err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudPubSubSource workload identity: %s", err.Error())
+	if build.Spec.ServiceAccount != "" {
+		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, build.Spec.Project, build); err != nil {
+			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudBuildSource workload identity: %s", err.Error())
 		}
 	}
-
-	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, pubsub, pubsub.Spec.Topic, resourceGroup, true)
+	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, build, build.Spec.Topic, resourceGroup, false)
 	if event != nil {
 		return event
 	}
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, pubsub.Namespace, pubsub.Name)
+
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudBuildSource reconciled: "%s/%s"`, build.Namespace, build.Name)
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) pkgreconciler.Event {
