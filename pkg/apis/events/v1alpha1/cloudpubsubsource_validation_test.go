@@ -195,7 +195,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		"invalid GCP service account": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
@@ -203,7 +203,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		"have GCP service account and secret at the same time": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
@@ -292,7 +292,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						ServiceAccount: "new-service-account",
+						GoogleServiceAccount: "new-service-account",
 					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

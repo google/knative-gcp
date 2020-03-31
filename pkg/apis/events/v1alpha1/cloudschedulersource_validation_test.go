@@ -281,7 +281,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: invalidServiceAccountName,
+					GoogleServiceAccount: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -310,7 +310,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: invalidServiceAccountName,
+					GoogleServiceAccount: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -428,7 +428,7 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						ServiceAccount: "new-service-account",
+						GoogleServiceAccount: "new-service-account",
 					},
 					SourceSpec: schedulerWithSecret.SourceSpec,
 					Secret:     schedulerWithSecret.Secret,

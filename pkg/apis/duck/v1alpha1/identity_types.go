@@ -19,11 +19,10 @@ import (
 )
 
 type IdentitySpec struct {
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
+	// GoogleServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
 	// If not specified, defaults to use secret.
 	// +optional
-	// TODO rename ServiceAccount, issue https://github.com/google/knative-gcp/issues/723
-	ServiceAccount string `json:"serviceAccount,omitempty"`
+	GoogleServiceAccount string `json:"googleServiceAccount,omitempty"`
 }
 
 // IdentityStatus inherits duck/v1 Status and adds a ServiceAccountName.
