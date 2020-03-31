@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"knative.dev/pkg/apis"
 	"testing"
+
+	"knative.dev/pkg/apis"
 )
 
 func TestMarkWorkloadIdentityConfigured(t *testing.T) {

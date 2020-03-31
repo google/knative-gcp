@@ -17,10 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"knative.dev/pkg/apis"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"knative.dev/pkg/apis"
 
 	"knative.dev/pkg/ptr"
 
@@ -99,13 +100,13 @@ func TestCloudPubSubSourceIdentitySpec(t *testing.T) {
 		Spec: CloudPubSubSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
 				IdentitySpec: v1alpha1.IdentitySpec{
-					ServiceAccount: "test@test",
+					GoogleServiceAccount: "test@test",
 				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.IdentitySpec().ServiceAccount
+	got := s.IdentitySpec().GoogleServiceAccount
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

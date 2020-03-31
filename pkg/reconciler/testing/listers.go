@@ -43,13 +43,13 @@ import (
 
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
+	policylisters "github.com/google/knative-gcp/pkg/client/listers/policy/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	securitylisters "github.com/google/knative-gcp/pkg/client/listers/security/v1alpha1"
 
 	fakeistioclientset "github.com/google/knative-gcp/pkg/client/istio/clientset/versioned/fake"
 	istiov1beta1listers "github.com/google/knative-gcp/pkg/client/istio/listers/security/v1beta1"
@@ -193,20 +193,20 @@ func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 	return corev1listers.NewConfigMapLister(l.indexerFor(&corev1.ConfigMap{}))
 }
 
-func (l *Listers) GetHTTPPolicyLister() securitylisters.HTTPPolicyLister {
-	return securitylisters.NewHTTPPolicyLister(l.indexerFor(&securityv1alpha1.HTTPPolicy{}))
+func (l *Listers) GetHTTPPolicyLister() policylisters.HTTPPolicyLister {
+	return policylisters.NewHTTPPolicyLister(l.indexerFor(&policyv1alpha1.HTTPPolicy{}))
 }
 
-func (l *Listers) GetHTTPPolicyBindingLister() securitylisters.HTTPPolicyBindingLister {
-	return securitylisters.NewHTTPPolicyBindingLister(l.indexerFor(&securityv1alpha1.HTTPPolicyBinding{}))
+func (l *Listers) GetHTTPPolicyBindingLister() policylisters.HTTPPolicyBindingLister {
+	return policylisters.NewHTTPPolicyBindingLister(l.indexerFor(&policyv1alpha1.HTTPPolicyBinding{}))
 }
 
-func (l *Listers) GetEventPolicyLister() securitylisters.EventPolicyLister {
-	return securitylisters.NewEventPolicyLister(l.indexerFor(&securityv1alpha1.EventPolicy{}))
+func (l *Listers) GetEventPolicyLister() policylisters.EventPolicyLister {
+	return policylisters.NewEventPolicyLister(l.indexerFor(&policyv1alpha1.EventPolicy{}))
 }
 
-func (l *Listers) GetEventPolicyBindingLister() securitylisters.EventPolicyBindingLister {
-	return securitylisters.NewEventPolicyBindingLister(l.indexerFor(&securityv1alpha1.EventPolicyBinding{}))
+func (l *Listers) GetEventPolicyBindingLister() policylisters.EventPolicyBindingLister {
+	return policylisters.NewEventPolicyBindingLister(l.indexerFor(&policyv1alpha1.EventPolicyBinding{}))
 }
 
 func (l *Listers) GetRequestAuthenticationLister() istiov1beta1listers.RequestAuthenticationLister {

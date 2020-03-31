@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"knative.dev/pkg/apis"
-	"testing"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -46,12 +47,12 @@ func TestChannelIdentitySpec(t *testing.T) {
 	s := &Channel{
 		Spec: ChannelSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: "test@test",
+				GoogleServiceAccount: "test@test",
 			},
 		},
 	}
 	want := "test@test"
-	got := s.IdentitySpec().ServiceAccount
+	got := s.IdentitySpec().GoogleServiceAccount
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

@@ -1,0 +1,61 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-webhook
+  namespace: cloud-run-policy
+  labels:
+    policy.run.cloud.google.com/release: devel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-run-policy
+      role: policy-webhook
+  template:
+    metadata:
+      labels:
+        app: cloud-run-policy
+        role: policy-webhook
+        policy.run.cloud.google.com/release: devel
+    spec:
+      serviceAccountName: policy-webhook
+      containers:
+        - name: policy-webhook
+          terminationMessagePolicy: FallbackToLogsOnError
+          # This is the Go import path for the binary that is containerized
+          # and substituted here.
+          image: ko://github.com/google/knative-gcp/cmd/policy/webhook
+          resources:
+            requests:
+              # taken from serving.
+              cpu: 20m
+              memory: 20Mi
+            limits:
+              # taken from serving.
+              cpu: 200m
+              memory: 200Mi
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging
+            - name: METRICS_DOMAIN
+              value: cloud.google.com/events
+            - name: WEBHOOK_NAME
+              value: policy-webhook

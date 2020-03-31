@@ -357,7 +357,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					Key: "eventing-secret-key",
 				},
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: gServiceAccountName,
+					GoogleServiceAccount: gServiceAccountName,
 				},
 				Project: "eventing-name",
 				SourceSpec: duckv1.SourceSpec{

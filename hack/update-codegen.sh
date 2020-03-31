@@ -36,14 +36,14 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 security:v1alpha1" \
+  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 policy:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 duck:v1alpha1 security:v1alpha1" \
+  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 duck:v1alpha1 policy:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Generate our own client for istio (otherwise injection won't work)

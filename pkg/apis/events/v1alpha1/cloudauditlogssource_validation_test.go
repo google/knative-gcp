@@ -115,7 +115,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 		"invalid GCP service account": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
@@ -123,7 +123,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 		"have GCP service account and secret at the same time": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
@@ -206,7 +206,7 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						ServiceAccount: "new-service-account",
+						GoogleServiceAccount: "new-service-account",
 					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
