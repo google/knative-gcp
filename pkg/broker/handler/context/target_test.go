@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Knative Authors
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package metrics
+package context
 
 import (
-	"knative.dev/pkg/metrics/metricskey"
+	"context"
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
-type Global struct{}
-
-func (g *Global) MonitoredResource() (resType string, labels map[string]string) {
-	return "global", nil
-}
-
-func valueOrUnknown(key string, tagsMap map[string]string) string {
-	if value, ok := tagsMap[key]; ok {
-		return value
+func TestTarget(t *testing.T) {
+	wantTarget := &config.Target{
+		Name:      "target",
+		Namespace: "ns",
+		Address:   "address",
+		Broker:    "broker",
 	}
-	return metricskey.ValueUnknown
+	ctx := WithTarget(context.Background(), wantTarget)
+	gotTarget := GetTarget(ctx)
+	if diff := cmp.Diff(wantTarget, gotTarget); diff != "" {
+		t.Errorf("target from context (-want,+got): %v", diff)
+	}
 }

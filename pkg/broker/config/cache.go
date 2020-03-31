@@ -59,11 +59,17 @@ func (ct *CachedTargets) RangeAllTargets(f func(*Target) bool) {
 // GetBroker returns a broker and its targets if it exists.
 // Do not modify the returned Broker copy.
 func (ct *CachedTargets) GetBroker(namespace, name string) (*Broker, bool) {
+	return ct.GetBrokerByKey(BrokerKey(namespace, name))
+}
+
+// GetBrokerByKey returns a broker and its targets if it exists.
+// Do not modify the returned Broker copy.
+func (ct *CachedTargets) GetBrokerByKey(key string) (*Broker, bool) {
 	val := ct.Load()
 	if val == nil || val.Brokers == nil {
 		return nil, false
 	}
-	b, ok := val.Brokers[BrokerKey(namespace, name)]
+	b, ok := val.Brokers[key]
 	return b, ok
 }
 
