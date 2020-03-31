@@ -66,11 +66,12 @@ function control_plane_setup() {
       --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   else
     PROJECT_NAME=$(cut -d'.' -f1 <<< $(cut -d'@' -f2 <<< ${AUTHENTICATED_SERVICE_ACCOUNT}))
-    MEMBER="serviceAccount:${PROJECT_NAME}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
     echo ${MEMBER}
     gcloud iam service-accounts add-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
+      --role=roles/iam.workloadIdentityUser \
+      --member=${MEMBER} \
+      --project=${PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT}
   fi
   # Allow the Kubernetes service account to use Google service account.
 }
@@ -148,11 +149,13 @@ function control_plane_teardown() {
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   else
+    PROJECT_NAME=$(cut -d'.' -f1 <<< $(cut -d'@' -f2 <<< ${AUTHENTICATED_SERVICE_ACCOUNT}))
     MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
     echo ${MEMBER}
     gcloud iam service-accounts remove-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
+      --role=roles/iam.workloadIdentityUser \
+      --member=${MEMBER} \
+      --project=${PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT}
   fi
 }
 
