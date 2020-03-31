@@ -65,7 +65,8 @@ function control_plane_setup() {
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
   else
-    MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    PROJECT_NAME=$(cut -d'.' -f1 <<< $(cut -d'@' -f2 <<< ${AUTHENTICATED_SERVICE_ACCOUNT}))
+    MEMBER="serviceAccount:${PROJECT_NAME}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
     echo ${MEMBER}
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
