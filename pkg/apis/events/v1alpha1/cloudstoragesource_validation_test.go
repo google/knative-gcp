@@ -257,7 +257,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: invalidServiceAccountName,
+					GoogleServiceAccount: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -284,7 +284,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: validServiceAccountName,
+					GoogleServiceAccount: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -305,7 +305,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccount: invalidServiceAccountName,
+					GoogleServiceAccount: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -439,7 +439,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						ServiceAccount: "new-service-account",
+						GoogleServiceAccount: "new-service-account",
 					},
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret:     storageSourceSpec.Secret,

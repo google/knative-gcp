@@ -22,7 +22,7 @@ import (
 )
 
 func (s *PubSubSpec) SetPubSubDefaults() {
-	if s.ServiceAccount == "" && (s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
+	if s.GoogleServiceAccount == "" && (s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
 		s.Secret = DefaultGoogleCloudSecretSelector()
 	}
 }

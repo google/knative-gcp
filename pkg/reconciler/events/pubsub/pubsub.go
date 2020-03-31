@@ -72,7 +72,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 	pubsub.Status.ObservedGeneration = pubsub.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
-	if pubsub.Spec.ServiceAccount != "" {
+	if pubsub.Spec.GoogleServiceAccount != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, pubsub.Spec.Project, pubsub); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudPubSubSource workload identity: %s", err.Error())
 		}
@@ -119,7 +119,7 @@ func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1al
 func (r *Reconciler) FinalizeKind(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) pkgreconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if pubsub.Spec.ServiceAccount != "" {
+	if pubsub.Spec.GoogleServiceAccount != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, pubsub.Spec.Project, pubsub); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete CloudPubSubSource workload identity: %s", err.Error())
 		}

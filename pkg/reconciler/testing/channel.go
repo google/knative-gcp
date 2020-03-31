@@ -129,7 +129,7 @@ func WithChannelDefaults(s *v1alpha1.Channel) {
 
 func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
 	return func(ps *v1alpha1.Channel) {
-		ps.Spec.ServiceAccount = gServiceAccount
+		ps.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 

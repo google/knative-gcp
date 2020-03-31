@@ -49,7 +49,7 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 		},
 		Spec: v1alpha1.TopicSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: args.ServiceAccount,
+				GoogleServiceAccount: args.ServiceAccount,
 			},
 			Secret:            args.Secret,
 			Project:           args.Project,

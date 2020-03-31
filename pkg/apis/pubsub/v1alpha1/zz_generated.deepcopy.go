@@ -92,7 +92,6 @@ func (in *PullSubscriptionList) DeepCopyObject() runtime.Object {
 func (in *PullSubscriptionSpec) DeepCopyInto(out *PullSubscriptionSpec) {
 	*out = *in
 	in.PubSubSpec.DeepCopyInto(&out.PubSubSpec)
-	out.IdentitySpec = in.IdentitySpec
 	if in.AckDeadline != nil {
 		in, out := &in.AckDeadline, &out.AckDeadline
 		*out = new(string)
