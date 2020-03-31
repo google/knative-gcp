@@ -40,7 +40,7 @@ type ReadonlyTargets interface {
 }
 
 // BrokerMutation provides functions to mutate a Broker.
-// The changes made via the BrokerMutation must be "commited" altogether.
+// The changes made via the BrokerMutation must be "committed" altogether.
 type BrokerMutation interface {
 	// SetID sets the broker ID.
 	SetID(id string) BrokerMutation
