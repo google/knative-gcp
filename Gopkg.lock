@@ -72,7 +72,7 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:4f3378de6a36e3df472219fb105dea99097f47eacffc4420597c0e067baf2502"
+  digest = "1:77dfd27299a11fa91e91c93e5155eda28e3e22897f20abd59be1bc5194315856"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -144,7 +144,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:2ce182063e810c7df2f9062da37d1cc71cf8c0f27d60c8451c1dfa12affd94e1"
+  digest = "1:1b399a0ddf382b595f2e96abe6d2eb227558efea79562b8a0fb0c4920cae64f0"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
