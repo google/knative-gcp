@@ -56,8 +56,7 @@ var _ = duck.VerifyType(&PullSubscription{}, &duckv1.Conditions{})
 
 // PullSubscriptionSpec defines the desired state of the PullSubscription.
 type PullSubscriptionSpec struct {
-	v1alpha1.PubSubSpec   `json:",inline"`
-	v1alpha1.IdentitySpec `json:",inline"`
+	v1alpha1.PubSubSpec `json:",inline"`
 
 	// Topic is the ID of the PullSubscription Topic to Subscribe to. It must
 	// be in the form of the unique identifier within the project, not the

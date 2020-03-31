@@ -18,13 +18,11 @@
 source $(dirname $0)/e2e-common.sh
 
 # Override the setup and teardown functions to install wi-enabled control plane components.
-
 readonly K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
 readonly AUTHENTICATED_SERVICE_ACCOUNT=$(gcloud config list account --format "value(core.account)")
-readonly A=$(gcloud config get-value accoun)
+readonly A=$(gcloud config get-value account)
 echo ${AUTHENTICATED_SERVICE_ACCOUNT}
 echo ${A}
-echo ${E2E_PROJECT_ID}
 
 # Create resources required for the Control Plane setup.
 function knative_setup() {
@@ -37,7 +35,6 @@ function control_plane_setup() {
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     gcloud iam service-accounts create ${CONTROL_PLANE_SERVICE_ACCOUNT}
-    AUTHENTICATED_SERVICE_ACCOUNT=${CONTROL_PLANE_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/pubsub.admin
@@ -63,13 +60,18 @@ function control_plane_setup() {
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/iam.serviceAccountAdmin
+    MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+  else
+    MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    echo ${MEMBER}
+    gcloud iam service-accounts add-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
   fi
   # Allow the Kubernetes service account to use Google service account.
-  MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
-  echo ${MEMBER}
-  gcloud iam service-accounts add-iam-policy-binding \
-    --role roles/iam.workloadIdentityUser \
-    --member $MEMBER ${AUTHENTICATED_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
 }
 
 # Create resources required for Pub/Sub Admin setup.
@@ -140,7 +142,16 @@ function control_plane_teardown() {
     gcloud projects remove-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
       --role roles/iam.serviceAccountAdmin
-    gcloud iam service-accounts delete -q ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    gcloud iam service-accounts remove-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+  else
+    MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+    echo ${MEMBER}
+    gcloud iam service-accounts remove-iam-policy-binding \
+      --role roles/iam.workloadIdentityUser \
+      --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
   fi
 }
 
@@ -148,10 +159,15 @@ function control_plane_teardown() {
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Add annotation to Kubernetes service account.
-kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-  --namespace ${CONTROL_PLANE_NAMESPACE}
+if (( ! IS_PROW )); then
+  kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
+    --namespace ${CONTROL_PLANE_NAMESPACE}
+else
+  kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
+    --namespace ${CONTROL_PLANE_NAMESPACE}
+fi
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=20m -parallel=12 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT} || fail_test
+go_test_e2e -timeout=30m -parallel=1 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT} || fail_test
 
 success

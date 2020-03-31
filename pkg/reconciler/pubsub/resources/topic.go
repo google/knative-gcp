@@ -45,7 +45,7 @@ func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: args.Spec.ServiceAccount,
+				ServiceAccount: args.Spec.IdentitySpec.ServiceAccount,
 			},
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,

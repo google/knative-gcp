@@ -98,8 +98,10 @@ func TestGetRetentionDuration_default(t *testing.T) {
 func TestPullSubscriptionIdentitySpec(t *testing.T) {
 	s := &PullSubscription{
 		Spec: PullSubscriptionSpec{
-			IdentitySpec: v1alpha1.IdentitySpec{
-				ServiceAccount: "test@test",
+			PubSubSpec: v1alpha1.PubSubSpec{
+				IdentitySpec: v1alpha1.IdentitySpec{
+					ServiceAccount: "test@test",
+				},
 			},
 		},
 	}

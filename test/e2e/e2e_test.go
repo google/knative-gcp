@@ -139,9 +139,6 @@ func TestChannelTracing(t *testing.T) {
 
 // TestSmokePullSubscription makes sure we can run tests on PullSubscriptions.
 func TestSmokePullSubscription(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("PullSubscription doesn't support workload identity.")
-	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	SmokePullSubscriptionTestImpl(t, authConfig)
@@ -149,9 +146,6 @@ func TestSmokePullSubscription(t *testing.T) {
 
 // TestPullSubscriptionWithTarget tests we can knock down a target.
 func TestPullSubscriptionWithTarget(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("PullSubscription doesn't support workload identity.")
-	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	PullSubscriptionWithTargetTestImpl(t, authConfig)

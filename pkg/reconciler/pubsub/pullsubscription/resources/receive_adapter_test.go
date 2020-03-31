@@ -356,6 +356,9 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 					Key: "eventing-secret-key",
 				},
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					ServiceAccount: gServiceAccountName,
+				},
 				Project: "eventing-name",
 				SourceSpec: duckv1.SourceSpec{
 					CloudEventOverrides: &duckv1.CloudEventOverrides{
@@ -364,9 +367,6 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 						},
 					},
 				},
-			},
-			IdentitySpec: duckv1alpha1.IdentitySpec{
-				ServiceAccount: gServiceAccountName,
 			},
 			Topic:       "topic",
 			AdapterType: "adapter-type",

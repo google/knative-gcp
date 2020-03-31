@@ -49,8 +49,10 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
-			IdentitySpec: duckv1alpha1.IdentitySpec{
-				authConfig.PubsubServiceAccount,
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					authConfig.PubsubServiceAccount,
+				},
 			},
 		}),
 		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
@@ -81,8 +83,10 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
 		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
-			IdentitySpec: duckv1alpha1.IdentitySpec{
-				authConfig.PubsubServiceAccount,
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					authConfig.PubsubServiceAccount,
+				},
 			},
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
