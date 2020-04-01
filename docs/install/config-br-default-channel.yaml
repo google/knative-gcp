@@ -22,8 +22,8 @@ data:
     apiVersion: messaging.cloud.google.com/v1alpha1
     kind: Channel
     Spec:
-#  # If running with workload identity enabled, update spec.serviceAccount.
-#      serviceAccount: service-account@project-id@.iam.gserviceaccount.com
+#  # If running with workload identity enabled, update spec.googleServiceAccount.
+#      googleServiceAccount: service-account@project-id@.iam.gserviceaccount.com
 #  # If running with secret, here is the default secret name and key, change this if required.
 #      secret:
 #        name: google-cloud-key

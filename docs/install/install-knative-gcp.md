@@ -143,6 +143,7 @@
         1. Enable Workload Identity.
 
            ```shell
+           gcloud services enable iamcredentials.googleapis.com
            gcloud beta container clusters update $CLUSTER_NAME \
            --identity-namespace=$PROJECT_ID.svc.id.goog
            ```
