@@ -64,7 +64,7 @@
         In order to make controller compatible with Workload Identity, use
         [ko](http://github.com/google/ko) to apply
         [controller-gke](../../config/core/deployments/controller-gke.yaml)
-        first. It is in `config/core/deployments`.
+        first.
 
         ```shell
         ko apply -f config/core/deployments/controller-gke.yaml
