@@ -30,6 +30,7 @@ gcloud services enable storage-api.googleapis.com
 gcloud services enable cloudscheduler.googleapis.com
 gcloud services enable logging.googleapis.com
 gcloud services enable stackdriver.googleapis.com
+gcloud services enable iamcredentials.googleapis.com
 
 # Enable workload identity.
 gcloud beta container clusters update ${CLUSTER_NAME} \

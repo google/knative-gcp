@@ -43,6 +43,8 @@ function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
+    # Enable iamcredentials.googleapis.com service for Workload Identity.
+    gcloud services enable iamcredentials.googleapis.com
     gcloud iam service-accounts create ${CONTROL_PLANE_SERVICE_ACCOUNT}
     gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
       --member=serviceAccount:${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
