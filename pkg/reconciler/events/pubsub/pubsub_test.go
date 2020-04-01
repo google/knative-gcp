@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +40,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -336,11 +336,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
+			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			Identity:               identity.NewIdentity(ctx),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
 			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
-			receiveAdapterName:     receiveAdapterName,
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)

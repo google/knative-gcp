@@ -19,6 +19,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudbuildsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -58,13 +59,13 @@ func NewController(
 		serviceAccountLister:   serviceAccountInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 	}
-	impl := controller.NewImpl(r, r.Logger, reconcilerName)
+	impl := cloudbuildsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
 	cloudbuildsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

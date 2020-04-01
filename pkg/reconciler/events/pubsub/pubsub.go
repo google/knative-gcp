@@ -53,7 +53,6 @@ type Reconciler struct {
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
 	serviceAccountLister corev1listers.ServiceAccountLister
-	receiveAdapterName   string
 }
 
 // Check that our Reconciler implements Interface.
