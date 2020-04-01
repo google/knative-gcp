@@ -24,7 +24,8 @@ readonly CLOUD_RUN_EVENTS_GKE_CONFIG="config/core/deployments/controller-gke.yam
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
   start_latest_knative_eventing || return 1
-  cloud_run_events_setup "$1" || return 1
+  start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
+  cloud_run_events_setup "$1"  || return 1
   istio_patch || return 1
 }
 

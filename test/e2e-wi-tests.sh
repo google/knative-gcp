@@ -181,6 +181,6 @@ kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp
     --namespace ${CONTROL_PLANE_NAMESPACE}
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=45m -parallel=1 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
+go_test_e2e -timeout=30m -parallel=1 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
 
 success

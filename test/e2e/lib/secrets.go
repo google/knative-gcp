@@ -17,6 +17,9 @@ limitations under the License.
 package lib
 
 import (
+	"sync"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingtestlib "knative.dev/eventing/test/lib"
@@ -26,6 +29,8 @@ const (
 	pubSubSecretName      = "google-cloud-key"
 	pubSubSecretNamespace = "default"
 )
+
+var setTracingConfigOnce = sync.Once{}
 
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.
 func DuplicatePubSubSecret(client *eventingtestlib.Client) {
@@ -52,4 +57,18 @@ func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
 	if !workloadIdentity {
 		DuplicatePubSubSecret(client)
 	}
+}
+
+func SetTracingToZipkin(client *eventingtestlib.Client) {
+	setTracingConfigOnce.Do(func() {
+		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+			"backend":         "zipkin",
+			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
+		})
+		if err != nil {
+			client.T.Fatalf("Unable to set the ConfigMap: %v", err)
+		}
+		// Wait for 5 seconds to let the ConfigMap be synced up.
+		time.Sleep(5 * time.Second)
+	})
 }
