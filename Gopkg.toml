@@ -6,6 +6,7 @@ required = [
   "knative.dev/test-infra/tools/dep-collector",
   # for integration tests
   "knative.dev/eventing/test/test_images/logevents",
+  "knative.dev/eventing/test/test_images/recordevents",
   "knative.dev/eventing/test/test_images/sendevents",
   "knative.dev/eventing/test/test_images/transformevents",
 
