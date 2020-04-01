@@ -24,7 +24,7 @@ readonly PROW_SERVICE_ACCOUNT=$(gcloud config list account --format "value(core.
 if (( ! IS_PROW )); then
   readonly AUTHENTICATED_SERVICE_ACCOUNT="${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
-  readonly DATA_PLANE_SERVICE_ACCOUNT=${PUBSUB_SERVICE_ACCOUNT}
+  readonly DATA_PLANE_SERVICE_ACCOUNT="${PUBSUB_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
 else
   readonly AUTHENTICATED_SERVICE_ACCOUNT=${PROW_SERVICE_ACCOUNT}
   readonly MEMBER="serviceAccount:${PROJECT}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
@@ -165,7 +165,6 @@ function control_plane_teardown() {
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
   else
-    echo ${MEMBER}
     gcloud iam service-accounts remove-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} \
@@ -173,14 +172,12 @@ function control_plane_teardown() {
   fi
 }
 
-#create a cluster with Workload Identity enabled.
+# Create a cluster with Workload Identity enabled.
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
-echo ${AUTHENTICATED_SERVICE_ACCOUNT}
 kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
     --namespace ${CONTROL_PLANE_NAMESPACE}
 
-echo ${DATA_PLANE_SERVICE_ACCOUNT}
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=1 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
 
