@@ -19,10 +19,8 @@ limitations under the License.
 package e2e
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/google/knative-gcp/test"
@@ -58,7 +56,7 @@ func TestMain(m *testing.M) {
 	authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
 	// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
 	if authConfig.WorkloadIdentity {
-		authConfig.PubsubServiceAccount = fmt.Sprintf("%s@%s.iam.gserviceaccount.com", strings.TrimSpace(test.Flags.PubsubServiceAccount), os.Getenv(lib.ProwProjectKey))
+		authConfig.PubsubServiceAccount = test.Flags.PubsubServiceAccount
 	}
 	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 	// place that cleans it up. If an individual test calls this instead, then it will break other
