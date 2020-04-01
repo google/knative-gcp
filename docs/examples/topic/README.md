@@ -21,11 +21,11 @@ construct used by higher-level objects, such as `Channel`.
    gcloud pubsub topics create $TOPIC_NAME
    ```
 
-1. Update `serviceAccount` / `secret` in the [`topic.yaml`](topic.yaml)
+1. Update `googleServiceAccount` / `secret` in the [`topic.yaml`](topic.yaml)
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
-      update `serviceAccount` with the Pub/Sub enabled service account you
+      update `googleServiceAccount` with the Pub/Sub enabled service account you
       created in
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 
