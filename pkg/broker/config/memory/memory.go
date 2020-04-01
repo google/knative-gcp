@@ -49,11 +49,13 @@ func (m *brokerMutation) SetState(s config.State) config.BrokerMutation {
 	return m
 }
 
-func (m *brokerMutation) InsertTargets(targets ...*config.Target) config.BrokerMutation {
+func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerMutation {
 	if m.b.Targets == nil {
 		m.b.Targets = make(map[string]*config.Target)
 	}
 	for _, t := range targets {
+		t.Namespace = m.b.Namespace
+		t.Broker = m.b.Name
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -76,6 +78,15 @@ type memoryTargets struct {
 }
 
 var _ config.Targets = (*memoryTargets)(nil)
+
+// NewEmptyTargets returns an empty mutable Targets in memory.
+func NewEmptyTargets() config.Targets {
+	t := &memoryTargets{
+		mux: sync.Mutex{},
+	}
+	t.Store(&config.TargetsConfig{Brokers: make(map[string]*config.Broker)})
+	return t
+}
 
 // NewTargetsFromBytes creates a mutable Targets in memory.
 func NewTargetsFromBytes(b []byte) (config.Targets, error) {
