@@ -19,7 +19,7 @@ source $(dirname $0)/e2e-common.sh
 
 # Override the setup and teardown functions to install wi-enabled control plane components.
 readonly K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
-readonly PROW_SERVICE_ACCOUNT=$(gcloud config list account --format "value(core.account)")
+readonly PROW_SERVICE_ACCOUNT=$(gcloud config get-value core/account)
 
 if (( ! IS_PROW )); then
   readonly AUTHENTICATED_SERVICE_ACCOUNT="${CONTROL_PLANE_SERVICE_ACCOUNT}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
@@ -76,7 +76,11 @@ function control_plane_setup() {
       --member ${MEMBER} ${AUTHENTICATED_SERVICE_ACCOUNT}
   else
     # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
-    members=$(gcloud iam service-accounts get-iam-policy --project=${PROW_PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT} --format="value(bindings.members)" --filter="bindings.role:roles/iam.workloadIdentityUser" --flatten="bindings[].members")
+    members=$(gcloud iam service-accounts get-iam-policy \
+      --project=${PROW_PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT} \
+      --format="value(bindings.members)" \
+      --filter="bindings.role:roles/iam.workloadIdentityUser" \
+      --flatten="bindings[].members")
     while read -r member_name
     do
       # Only delete the iam bindings that is related to the current boskos project.
@@ -87,12 +91,14 @@ function control_plane_setup() {
           --project ${PROW_PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT}
       fi
     done <<< "$members"
+    # Allow the Kubernetes service account to use Google service account.
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} \
       --project ${PROW_PROJECT_NAME} ${AUTHENTICATED_SERVICE_ACCOUNT}
   fi
-  # Allow the Kubernetes service account to use Google service account.
+  kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
+    --namespace ${CONTROL_PLANE_NAMESPACE}
 }
 
 # Create resources required for Pub/Sub Admin setup.
@@ -176,9 +182,6 @@ function control_plane_teardown() {
 
 # Create a cluster with Workload Identity enabled.
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
-
-kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
-    --namespace ${CONTROL_PLANE_NAMESPACE}
 
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=3 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test

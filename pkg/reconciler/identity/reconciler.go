@@ -166,7 +166,7 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	// Extract gServiceAccount's project name.
+	// Extract gServiceAccount's project name. The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com.
 	gsaProject := strings.Split(strings.Split(gServiceAccount, "@")[1], ".")[0]
 	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", gsaProject, gServiceAccount)
 	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
