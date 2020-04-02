@@ -138,6 +138,9 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 }
 
 func TestBrokerTracing(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(
@@ -150,6 +153,9 @@ func TestBrokerTracing(t *testing.T) {
 }
 
 func TestChannelTracing(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
