@@ -35,7 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// SyncPool is the sync pool far fanout handlers.
+// SyncPool is the sync pool for fanout handlers.
 // For each broker in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
@@ -108,11 +108,15 @@ func (p *SyncPool) sync(ctx context.Context) error {
 			),
 		}
 		// Start the handler with broker key in context.
-		if err := h.Start(handlerctx.WithBrokerKey(ctx, bk)); err != nil {
-			logging.FromContext(ctx).Error("failed to start event handler", zap.String("broker", bk), zap.Error(err))
-			errs++
-			return true
-		}
+		h.Start(handlerctx.WithBrokerKey(ctx, bk), func(err error) {
+			if err != nil {
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
+			} else {
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", bk))
+			}
+			// Make sure the handler is deleted from the pool.
+			p.pool.Delete(h)
+		})
 
 		p.pool.Store(bk, h)
 		return true

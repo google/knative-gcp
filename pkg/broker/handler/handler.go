@@ -45,17 +45,14 @@ type Handler struct {
 }
 
 // Start starts the handler.
-func (h *Handler) Start(ctx context.Context) error {
+// done will be called if the pubsub inbound is closed.
+func (h *Handler) Start(ctx context.Context, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
-	var err error
 	go func() {
-		err = h.PubsubEvents.OpenInbound(ctx)
+		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
-	if err != nil {
-		return err
-	}
+
 	go h.handle(ctx)
-	return nil
 }
 
 // Stop stops the handlers.

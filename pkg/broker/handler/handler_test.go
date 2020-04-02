@@ -33,34 +33,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
-// type fakeProcessor struct {
-// 	once              sync.Once
-// 	oneTimeErr        bool
-// 	blockUntilTimeout bool
-// 	eventCh           chan *event.Event
-// }
-
-// func (p *fakeProcessor) Process(ctx context.Context, event *event.Event) error {
-// 	p.eventCh <- event
-// 	if p.blockUntilTimeout {
-// 		<-ctx.Done()
-// 	}
-
-// 	if !p.oneTimeErr {
-// 		return nil
-// 	}
-
-// 	var err error
-// 	p.once.Do(func() {
-// 		err = errors.New("process error")
-// 	})
-// 	return err
-// }
-
-// func (p *fakeProcessor) Next() Processor {
-// 	return nil
-// }
-
 func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
 	t.Helper()
 	srv := pstest.NewServer()
@@ -111,9 +83,11 @@ func TestHandler(t *testing.T) {
 		Processor:    processor,
 		Timeout:      time.Second,
 	}
-	if err := h.Start(ctx); err != nil {
-		t.Fatalf("unexpected error starting the handler: %v", err)
-	}
+	h.Start(ctx, func(err error) {
+		if err != nil {
+			t.Fatalf("handler stopped with unexpected error: %v", err)
+		}
+	})
 
 	testEvent := event.New()
 	testEvent.SetID("id")
