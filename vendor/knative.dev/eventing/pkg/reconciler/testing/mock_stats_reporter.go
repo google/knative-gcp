@@ -14,23 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package testing
 
 import (
-	"context"
+	"fmt"
+
+	"knative.dev/pkg/source"
 )
 
-func (s *ApiServerSource) SetDefaults(ctx context.Context) {
-	s.Spec.SetDefaults(ctx)
+type MockStatsReporter struct {
+	EventCount int
 }
 
-func (ss *ApiServerSourceSpec) SetDefaults(ctx context.Context) {
+func (r *MockStatsReporter) ReportEventCount(args *source.ReportArgs, responseCode int) error {
+	r.EventCount += 1
+	return nil
+}
 
-	if ss.EventMode == "" {
-		ss.EventMode = ReferenceMode
+func (r *MockStatsReporter) ValidateEventCount(want int) error {
+	if r.EventCount != want {
+		return fmt.Errorf("expected %d for metric, got %d", want, r.EventCount)
 	}
-
-	if ss.ServiceAccountName == "" {
-		ss.ServiceAccountName = "default"
-	}
+	return nil
 }
