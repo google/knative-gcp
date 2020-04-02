@@ -75,6 +75,15 @@ func (p *SyncPool) watch(ctx context.Context) {
 
 func (p *SyncPool) sync(ctx context.Context) error {
 	var errs int
+
+	p.pool.Range(func(key, value interface{}) bool {
+		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
+			value.(*handler.Handler).Stop()
+			p.pool.Delete(key)
+		}
+		return true
+	})
+
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
 		bk := config.BrokerKey(b.Namespace, b.Name)
 
@@ -119,14 +128,6 @@ func (p *SyncPool) sync(ctx context.Context) error {
 		})
 
 		p.pool.Store(bk, h)
-		return true
-	})
-
-	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
-			value.(*handler.Handler).Stop()
-			p.pool.Delete(key)
-		}
 		return true
 	})
 
