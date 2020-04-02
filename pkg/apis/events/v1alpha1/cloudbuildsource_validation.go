@@ -48,7 +48,7 @@ func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldEr
 		errs = errs.Also(err.ViaField("sink"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccount); err != nil {
+	if err := duckv1alpha1.ValidateCredential(current.Secret, current.GoogleServiceAccount); err != nil {
 		errs = errs.Also(err)
 	}
 

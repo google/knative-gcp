@@ -49,7 +49,7 @@ func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string) *apis.FieldError {
 	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && gServiceAccountName != "" {
 		return &apis.FieldError{
-			Message: "Can't have spec.serviceAccount and spec.secret at the same time",
+			Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
 			Paths:   []string{""},
 		}
 	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
@@ -82,9 +82,9 @@ func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
 	match := validation_regexp.FindStringSubmatch(gServiceAccountName)
 	if len(match) == 0 {
 		return &apis.FieldError{
-			Message: fmt.Sprintf(`invalid value: %s, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
+			Message: fmt.Sprintf(`invalid value: %s, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
 				gServiceAccountName),
-			Paths: []string{"serviceAccount"},
+			Paths: []string{"googleServiceAccount"},
 		}
 	}
 	return nil

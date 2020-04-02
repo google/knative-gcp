@@ -98,13 +98,15 @@ func TestGetRetentionDuration_default(t *testing.T) {
 func TestPullSubscriptionIdentitySpec(t *testing.T) {
 	s := &PullSubscription{
 		Spec: PullSubscriptionSpec{
-			IdentitySpec: v1alpha1.IdentitySpec{
-				ServiceAccount: "test@test",
+			PubSubSpec: v1alpha1.PubSubSpec{
+				IdentitySpec: v1alpha1.IdentitySpec{
+					GoogleServiceAccount: "test@test",
+				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.IdentitySpec().ServiceAccount
+	got := s.IdentitySpec().GoogleServiceAccount
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

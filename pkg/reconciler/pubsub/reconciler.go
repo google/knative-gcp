@@ -36,10 +36,10 @@ import (
 )
 
 const (
-	nilPubsubableReason = "NilPubsubable"
-	pullSubscriptionGetFailedReason              = "PullSubscriptionGetFailed"
-	pullSubscriptionCreateFailedReason           = "PullSubscriptionCreateFailed"
-	pullSubscriptionStatusPropagateFailedReason           = "PullSubscriptionStatusPropagateFailed"
+	nilPubsubableReason                         = "NilPubsubable"
+	pullSubscriptionGetFailedReason             = "PullSubscriptionGetFailed"
+	pullSubscriptionCreateFailedReason          = "PullSubscriptionCreateFailed"
+	PullSubscriptionStatusPropagateFailedReason = "PullSubscriptionStatusPropagateFailed"
 )
 
 type PubSubBase struct {
@@ -151,7 +151,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	if err := propagatePullSubscriptionStatus(ps, status, cs); err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to propagate PullSubscription status: %s", zap.Error(err))
-		return ps, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionStatusPropagateFailedReason , "Failed to propagate PullSubscription status: %s", err.Error())
+		return ps, pkgreconciler.NewEvent(corev1.EventTypeWarning, PullSubscriptionStatusPropagateFailedReason, "Failed to propagate PullSubscription status: %s", err.Error())
 	}
 
 	status.SinkURI = ps.Status.SinkURI

@@ -54,12 +54,12 @@ Object Notifications for when a new object is added to Google Cloud Storage
 
 ## Deployment
 
-1. Update `serviceAccount` / `secret` in the
+1. Update `googleServiceAccount` / `secret` in the
    [`cloudstoragesource.yaml`](cloudstoragesource.yaml)
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
-      update `serviceAccount` with the Pub/Sub enabled service account you
+      update `googleServiceAccount` with the Pub/Sub enabled service account you
       created in
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 

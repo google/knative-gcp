@@ -141,8 +141,19 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
+func TestBrokerTracing(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(
+		t, "ChannelBasedBroker", channelTestRunner,
+		func(client *eventingtestlib.Client) {
+			lib.DuplicatePubSubSecret(client)
+			lib.SetTracingToZipkin(client)
+		},
+	)
+}
+
 func TestChannelTracing(t *testing.T) {
-	t.Skip("Skipping until https://github.com/knative/eventing/issues/2046 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
 	conformancehelpers.ChannelTracingTestHelper(t, metav1.TypeMeta{
@@ -156,6 +167,7 @@ func TestChannelTracing(t *testing.T) {
 
 		// Copy the secret from the default namespace to the namespace used in the test.
 		lib.DuplicatePubSubSecret(client)
+		lib.SetTracingToZipkin(client)
 	})
 }
 

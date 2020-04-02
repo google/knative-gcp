@@ -41,6 +41,7 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	reconcilerpubsub "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
 )
@@ -53,6 +54,7 @@ const (
 	testNS      = "testnamespace"
 	testTopicID = "test-topic"
 	generation  = 1
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
 var (
@@ -186,7 +188,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is false",
@@ -217,7 +219,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
@@ -248,7 +250,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
