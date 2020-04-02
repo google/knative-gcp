@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/ptr"
 )
 
 func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError {
@@ -33,11 +34,11 @@ func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldEr
 	var errs *apis.FieldError
 
 	// Topic [optional], if specified , it has to equal to the "cloud-builds"
-	if current.Topic == "" {
+	if current.Topic == nil {
 		errs = errs.Also(apis.ErrMissingField("topic"))
 	}
 
-	if current.Topic != DefaultTopic {
+	if current.Topic != ptr.String(DefaultTopic) {
 		errs = errs.Also(apis.ErrInvalidValue(current.Topic, "topic"))
 	}
 

@@ -43,6 +43,7 @@ var (
 	_ kmeta.OwnerRefable           = (*CloudBuildSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudBuildSource)(nil)
 	_ kngcpduck.PubSubable         = (*CloudBuildSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudBuildSource)(nil)
 	_                              = duck.VerifyType(&CloudBuildSource{}, &duckv1.Conditions{})
 )
 
@@ -57,8 +58,8 @@ type CloudBuildSourceSpec struct {
 	// entire name. E.g. it must be 'laconia', not
 	// 'projects/my-proj/topics/laconia'.
 	// It is optional. Defaults to 'cloud-builds' and the topic must be 'cloud-builds'
-	Topic string `json:"topic, omitempty"`
-
+	// +optional
+	Topic *string `json:"topic,omitempty"`
 }
 
 const (

@@ -18,7 +18,6 @@ package build
 
 import (
 	"context"
-
 	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
@@ -68,14 +67,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, build *v1alpha1.CloudBui
 
 	build.Status.InitializeConditions()
 	build.Status.ObservedGeneration = build.Generation
-
 	// If GCP ServiceAccount is provided, reconcile workload identity.
 	if build.Spec.GoogleServiceAccount != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, build.Spec.Project, build); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile CloudBuildSource workload identity: %s", err.Error())
 		}
 	}
-	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, build, build.Spec.Topic, resourceGroup, false)
+	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, build, v1alpha1.DefaultTopic, resourceGroup, false)
 	if event != nil {
 		return event
 	}
