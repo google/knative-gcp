@@ -139,7 +139,9 @@ func TestHandler(t *testing.T) {
 	// 	t.Errorf("failed to seed event to pubsub: %v", err)
 	// }
 
+	unlock := processor.Lock()
 	processor.BlockUntilCancel = true
+	unlock()
 	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
 		t.Errorf("failed to seed event to pubsub: %v", err)
 	}
@@ -147,9 +149,11 @@ func TestHandler(t *testing.T) {
 	if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
 		t.Errorf("processed event (-want,+got): %v", diff)
 	}
+	unlock = processor.Lock()
 	if !processor.WasCancelled {
 		t.Error("processor was not cancelled on timeout")
 	}
+	unlock()
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {

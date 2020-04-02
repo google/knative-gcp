@@ -81,14 +81,15 @@ func (h *Handler) handle(ctx context.Context) {
 
 		// Don't block new events.
 		go func() {
+			pctx := ctx
+			var cancel context.CancelFunc
 			if h.Timeout != 0 {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, h.Timeout)
+				pctx, cancel = context.WithTimeout(ctx, h.Timeout)
 				defer cancel()
 			}
-			err := h.Processor.Process(ctx, event)
+			err := h.Processor.Process(pctx, event)
 			if err != nil {
-				logging.FromContext(ctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
+				logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
 			}
 			// This will ack/nack the message.
 			msg.Finish(err)

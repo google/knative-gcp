@@ -48,6 +48,7 @@ type FakeProcessor struct {
 	// WasCancelled records whether the processing was cancelled.
 	WasCancelled bool
 
+	mux  sync.Mutex
 	once sync.Once
 }
 
@@ -55,6 +56,9 @@ var _ Processor = (*FakeProcessor)(nil)
 
 // Process processes the event.
 func (p *FakeProcessor) Process(ctx context.Context, event *event.Event) error {
+	p.mux.Lock()
+	defer p.mux.Unlock()
+
 	p.PrevEventsCh <- event
 
 	if p.AlwaysErr {
@@ -82,4 +86,11 @@ func (p *FakeProcessor) Process(ctx context.Context, event *event.Event) error {
 		ne = p.InterceptFunc(ctx, event)
 	}
 	return p.Next().Process(ctx, ne)
+}
+
+// Lock locks the FakeProcessor for any
+// shared state change in different goroutines.
+func (p *FakeProcessor) Lock() func() {
+	p.mux.Lock()
+	return p.mux.Unlock
 }
