@@ -54,7 +54,7 @@ spec:
       properties:
         spec:
           properties:
-            serviceAccount:
+            googleServiceAccount:
               type: string
               description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
             secret:
