@@ -42,6 +42,9 @@ func TestSmokeChannel(t *testing.T) {
 }
 
 func TestSingleBinaryEventForChannel(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -49,6 +52,9 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -56,6 +62,9 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -63,6 +72,9 @@ func TestChannelClusterDefaulter(t *testing.T) {
 }
 
 func TestChannelNamespaceDefaulter(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/knative/eventing-contrib/issues/627 is fixed")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -71,7 +83,7 @@ func TestChannelNamespaceDefaulter(t *testing.T) {
 
 func TestEventTransformationForSubscription(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -80,7 +92,7 @@ func TestEventTransformationForSubscription(t *testing.T) {
 
 func TestChannelChain(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -89,7 +101,7 @@ func TestChannelChain(t *testing.T) {
 
 func TestEventTransformationForTrigger(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -98,7 +110,7 @@ func TestEventTransformationForTrigger(t *testing.T) {
 
 func TestBrokerChannelFlow(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this eventing related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -106,6 +118,9 @@ func TestBrokerChannelFlow(t *testing.T) {
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -113,6 +128,9 @@ func TestChannelDeadLetterSink(t *testing.T) {
 }
 
 func TestBrokerDeadLetterSink(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
+	}
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -125,7 +143,7 @@ func TestBrokerTracing(t *testing.T) {
 	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(
 		t, "ChannelBasedBroker", channelTestRunner,
 		func(client *eventingtestlib.Client) {
-			lib.DuplicatePubSubSecret(client)
+			lib.GetCredential(client, authConfig.WorkloadIdentity)
 			lib.SetTracingToZipkin(client)
 		},
 	)
@@ -144,7 +162,7 @@ func TestChannelTracing(t *testing.T) {
 		// repo whose functionality we need to copy here.
 
 		// Copy the secret from the default namespace to the namespace used in the test.
-		lib.DuplicatePubSubSecret(client)
+		lib.GetCredential(client, authConfig.WorkloadIdentity)
 		lib.SetTracingToZipkin(client)
 	})
 }
@@ -188,7 +206,7 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -198,7 +216,7 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -208,7 +226,7 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
 func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -218,7 +236,7 @@ func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
 // TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
 func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -228,7 +246,7 @@ func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
 // TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
 func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled.")
+		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
