@@ -58,7 +58,7 @@ func TestSync(t *testing.T) {
 	}
 	signal <- struct{}{}
 	// Wait a short period for the handlers to be updated.
-	<-time.After(500 * time.Millisecond)
+	<-time.After(time.Second)
 	assertHandlers(t, p, targets)
 
 	// Delete old and add new.
@@ -82,7 +82,7 @@ func TestSync(t *testing.T) {
 	}
 	signal <- struct{}{}
 	// Wait a short period for the handlers to be updated.
-	<-time.After(500 * time.Millisecond)
+	<-time.After(time.Second)
 	assertHandlers(t, p, targets)
 }
 
