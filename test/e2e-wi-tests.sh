@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#chmod +x e2e-wi-tests.sh
 
 # Copyright 2020 Google LLC
 #
