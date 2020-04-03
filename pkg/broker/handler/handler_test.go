@@ -54,7 +54,6 @@ func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pub
 func TestHandler(t *testing.T) {
 	ctx := context.Background()
 	c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
 
 	topic, err := c.CreateTopic(ctx, "test-topic")
 	if err != nil {
@@ -88,7 +87,10 @@ func TestHandler(t *testing.T) {
 			t.Fatalf("handler stopped with unexpected error: %v", err)
 		}
 	})
-	defer h.Stop()
+	defer func() {
+		h.Stop()
+		close()
+	}()
 
 	testEvent := event.New()
 	testEvent.SetID("id")
