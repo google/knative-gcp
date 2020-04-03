@@ -9,6 +9,7 @@ spec:
       apiVersion: v1
       kind: Service
       name: event-display
+  googleServiceAccount: cre-pubsub@xiyue-opensource-project-gke.iam.gserviceaccount.com
 
 #    # If running in GKE, we will ask the metadata server, change this if required.
 #  project: MY_PROJECT

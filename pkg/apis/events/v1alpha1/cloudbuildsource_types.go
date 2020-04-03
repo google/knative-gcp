@@ -76,11 +76,6 @@ func CloudBuildSourceEventSource(googleCloudProject, buildId string) string {
 	return fmt.Sprintf("//cloudbuild.googleapis.com/projects/%s/builds/%s", googleCloudProject, buildId)
 }
 
-// CloudBuildSourceEventSource returns the Cloud Build CloudEvent subject value.
-func CloudBuildSourceEventSubject(buildId, status string) string {
-	return fmt.Sprintf("/builds/%s/status/%s",buildId, status)
-}
-
 const (
 	// CloudBuildSourceConditionReady has status True when the CloudBuildSource is
 	// ready to send events.

@@ -26,21 +26,21 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
+func TestCloudBuildSourceStatusIsReady(t *testing.T) {
 	tests := []struct {
 		name                string
-		s                   *CloudPubSubSourceStatus
+		s                   *CloudBuildSourceStatus
 		wantConditionStatus corev1.ConditionStatus
 		want                bool
 	}{
 		{
 			name: "uninitialized",
-			s:    &CloudPubSubSourceStatus{},
+			s:    &CloudBuildSourceStatus{},
 			want: false,
 		}, {
 			name: "initialized",
-			s: func() *CloudPubSubSourceStatus {
-				s := &CloudPubSubSource{}
+			s: func() *CloudBuildSourceStatus {
+				s := &CloudBuildSource{}
 				s.Status.InitializeConditions()
 				return &s.Status
 			}(),
@@ -49,8 +49,8 @@ func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
 		},
 		{
 			name: "the status of pullsubscription is false",
-			s: func() *CloudPubSubSourceStatus {
-				s := &CloudPubSubSource{}
+			s: func() *CloudBuildSourceStatus {
+				s := &CloudBuildSource{}
 				s.Status.InitializeConditions()
 				s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "PullSubscriptionFalse", "status false test message")
 				return &s.Status
@@ -58,8 +58,8 @@ func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
 			wantConditionStatus: corev1.ConditionFalse,
 		}, {
 			name: "the status of pullsubscription is unknown",
-			s: func() *CloudPubSubSourceStatus {
-				s := &CloudPubSubSource{}
+			s: func() *CloudBuildSourceStatus {
+				s := &CloudBuildSource{}
 				s.Status.InitializeConditions()
 				s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), "PullSubscriptionUnknonw", "status unknown test message")
 				return &s.Status
@@ -68,8 +68,8 @@ func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
 		},
 		{
 			name: "ready",
-			s: func() *CloudPubSubSourceStatus {
-				s := &CloudPubSubSource{}
+			s: func() *CloudBuildSourceStatus {
+				s := &CloudBuildSource{}
 				s.Status.InitializeConditions()
 				s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 				return &s.Status
@@ -92,33 +92,34 @@ func TestCloudPubSubSourceStatusIsReady(t *testing.T) {
 		})
 	}
 }
-func TestCloudPubSubSourceStatusGetCondition(t *testing.T) {
+func TestCloudBuildSourceStatusGetCondition(t *testing.T) {
 	tests := []struct {
 		name      string
-		s         *CloudPubSubSourceStatus
+		s         *CloudBuildSourceStatus
 		condQuery apis.ConditionType
 		want      *apis.Condition
 	}{{
 		name:      "uninitialized",
-		s:         &CloudPubSubSourceStatus{},
-		condQuery: CloudPubSubSourceConditionReady,
+		s:         &CloudBuildSourceStatus{},
+		condQuery: CloudBuildSourceConditionReady,
 		want:      nil,
 	}, {
 		name: "initialized",
-		s: func() *CloudPubSubSourceStatus {
-			s := &CloudPubSubSourceStatus{}
+		s: func() *CloudBuildSourceStatus {
+			s := &CloudBuildSourceStatus{}
 			s.InitializeConditions()
 			return s
 		}(),
-		condQuery: CloudPubSubSourceConditionReady,
+		condQuery: CloudBuildSourceConditionReady,
 		want: &apis.Condition{
-			Type:   CloudPubSubSourceConditionReady,
+			Type:   CloudBuildSourceConditionReady,
 			Status: corev1.ConditionUnknown,
 		},
 	}, {
 		name: "not ready",
-		s: func() *CloudPubSubSourceStatus {
-			s := &CloudPubSubSource{}
+
+		s: func() *CloudBuildSourceStatus {
+			s := &CloudBuildSource{}
 			s.Status.InitializeConditions()
 			s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), "NotReady", "test message")
 			return &s.Status
@@ -132,8 +133,8 @@ func TestCloudPubSubSourceStatusGetCondition(t *testing.T) {
 		},
 	}, {
 		name: "ready",
-		s: func() *CloudPubSubSourceStatus {
-			s := &CloudPubSubSource{}
+		s: func() *CloudBuildSourceStatus {
+			s := &CloudBuildSource{}
 			s.Status.InitializeConditions()
 			s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 			return &s.Status

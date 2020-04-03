@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -41,6 +40,7 @@ import (
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	reconcilerpubsub "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -51,9 +51,9 @@ const (
 	pubsubUID  = "test-pubsub-uid"
 	sinkName   = "sink"
 
-	testNS      = "testnamespace"
-	testTopicID = "test-topic"
-	generation  = 1
+	testNS                                     = "testnamespace"
+	testTopicID                                = "test-topic"
+	generation                                 = 1
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 

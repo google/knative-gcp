@@ -16,13 +16,13 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/ptr"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError {
@@ -33,12 +33,7 @@ func (current *CloudBuildSource) Validate(ctx context.Context) *apis.FieldError 
 func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
-	// Topic [optional], if specified , it has to equal to the "cloud-builds"
-	if current.Topic == nil {
-		errs = errs.Also(apis.ErrMissingField("topic"))
-	}
-
-	if current.Topic != ptr.String(DefaultTopic) {
+	if current.Topic != nil && (!equality.Semantic.DeepEqual(*current.Topic, DefaultTopic)) {
 		errs = errs.Also(apis.ErrInvalidValue(current.Topic, "topic"))
 	}
 

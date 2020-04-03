@@ -46,16 +46,16 @@ func convertCloudBuild(ctx context.Context, msg *cepubsub.Message, sendMode Mode
 	event.SetDataSchema(buildSchemaUrl)
 
 	// Set the source and subject if it comes as an attribute.
-	buildId, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildId]
-	if !ok {
+	if buildId, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildId]; !ok {
 		return nil, errors.New("received event did not have buildId")
+	} else {
+		event.SetSource(v1alpha1.CloudBuildSourceEventSource(tx.Project, buildId))
 	}
-	buildStatus, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildStatus]
-	if !ok {
+	if buildStatus, ok := msg.Attributes[v1alpha1.CloudBuildSourceBuildStatus]; !ok {
 		return nil, errors.New("received event did not have build status")
+	} else {
+		event.SetSubject(buildStatus)
 	}
-	event.SetSource(v1alpha1.CloudBuildSourceEventSource(tx.Project, buildId))
-	event.SetSubject(v1alpha1.CloudBuildSourceEventSubject(buildId, buildStatus))
 
 	// Set the mode to be an extension attribute.
 	event.SetExtension("knativecemode", string(sendMode))
