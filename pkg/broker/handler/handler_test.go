@@ -88,6 +88,7 @@ func TestHandler(t *testing.T) {
 			t.Fatalf("handler stopped with unexpected error: %v", err)
 		}
 	})
+	defer h.Stop()
 
 	testEvent := event.New()
 	testEvent.SetID("id")
