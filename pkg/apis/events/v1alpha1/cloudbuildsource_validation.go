@@ -15,6 +15,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
@@ -34,7 +35,7 @@ func (current *CloudBuildSourceSpec) Validate(ctx context.Context) *apis.FieldEr
 	var errs *apis.FieldError
 
 	if current.Topic != nil && (!equality.Semantic.DeepEqual(*current.Topic, DefaultTopic)) {
-		errs = errs.Also(apis.ErrInvalidValue(current.Topic, "topic"))
+		errs = errs.Also(apis.ErrGeneric(fmt.Sprintf("topic should be omitted or must be equal to %q", DefaultTopic), "topic"))
 	}
 
 	// Sink [required]

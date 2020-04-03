@@ -54,9 +54,9 @@ type Reconciler struct {
 	// buildLister for reading cloudbuildsources.
 	buildLister listers.CloudBuildSourceLister
 	// pullsubscriptionLister for reading pullsubscriptions.
+	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
 	serviceAccountLister   corev1listers.ServiceAccountLister
-	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 }
 
 // Check that our Reconciler implements Interface.
