@@ -84,6 +84,21 @@ func TestSync(t *testing.T) {
 	// Wait a short period for the handlers to be updated.
 	<-time.After(time.Second)
 	assertHandlers(t, p, targets)
+
+	// clean up all brokers
+	for i := 0; i < 2; i++ {
+		for j := 0; j < 2; j++ {
+			ns2 := fmt.Sprintf("ns-%d", i+2)
+			bn2 := fmt.Sprintf("broker-%d", j+2)
+			targets.MutateBroker(ns2, bn2, func(bm config.BrokerMutation) {
+				bm.Delete()
+			})
+		}
+	}
+	signal <- struct{}{}
+	// Wait a short period for the handlers to be updated.
+	<-time.After(time.Second)
+	assertHandlers(t, p, targets)
 }
 
 func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
