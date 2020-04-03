@@ -44,6 +44,8 @@ const (
 	Role                         = "roles/iam.workloadIdentityUser"
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
+	concurrencyError             = "googleapi: Error 409: There were concurrent policy changes."
+	concurrencyMaxRetryTime      = 3
 )
 
 func NewIdentity(ctx context.Context) *Identity {
@@ -178,7 +180,14 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 	rb := makeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
-	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
+	err = fmt.Errorf("%s", concurrencyError)
+	retryCount := 0
+	// If the setIamPolicy error is caused by concurrency, retry it until it reaches max retry time.
+	for err != nil && strings.Contains(err.Error(), concurrencyError) && retryCount < concurrencyMaxRetryTime {
+		_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do()
+		retryCount++
+	}
+	if err != nil {
 		return fmt.Errorf("failed to set iam policy: %w", err)
 	}
 
