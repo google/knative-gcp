@@ -50,8 +50,10 @@ type BrokerMutation interface {
 	SetDecoupleQueue(q *Queue) BrokerMutation
 	// SetState sets the broker state.
 	SetState(s State) BrokerMutation
-	// InsertTargets inserts Targets to the broker.
-	InsertTargets(...*Target) BrokerMutation
+	// UpsertTargets upserts Targets to the broker.
+	// The targets' namespace and broker will be forced to be
+	// the same as the broker's namespace and name.
+	UpsertTargets(...*Target) BrokerMutation
 	// DeleteTargets targets deletes Targets from the broker.
 	DeleteTargets(...*Target) BrokerMutation
 	// Delete deletes the broker.

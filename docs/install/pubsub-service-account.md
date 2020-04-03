@@ -81,12 +81,13 @@ Service Account.
 
         1. Update `spec.googleServiceAccount` with the
            [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-           you just created when creating resources. Check [example](https://github.com/google/knative-gcp/tree/master/docs/examples) 
+           you just created when creating resources. Check
+           [example](https://github.com/google/knative-gcp/tree/master/docs/examples)
            of each resource for detail.
 
-           Generally, updating `spec.googleServiceAccount` will trigger the controller
-           to enable Workload Identity for sources in the data plane. The
-           following steps are handled by the controller:
+           Generally, updating `spec.googleServiceAccount` will trigger the
+           controller to enable Workload Identity for sources in the data plane.
+           The following steps are handled by the controller:
 
            1. Create a Kubernetes Service Account and add an `OwnerReference` to
               it. The `OwnerReference` is referencing to the source.

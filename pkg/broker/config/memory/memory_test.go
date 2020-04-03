@@ -25,6 +25,41 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
+func TestNewEmptyTargets(t *testing.T) {
+	v := NewEmptyTargets()
+	wantTargets := &config.TargetsConfig{Brokers: make(map[string]*config.Broker)}
+	gotTargets := v.(*memoryTargets).Load()
+	if !proto.Equal(wantTargets, gotTargets) {
+		t.Errorf("NewEmptyTargets have targets got=%+v, want=%+v", gotTargets, wantTargets)
+	}
+}
+
+func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
+	v := NewEmptyTargets()
+	wantTarget := &config.Target{
+		Name:      "target",
+		Namespace: "ns",
+		Broker:    "broker",
+	}
+	v.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.UpsertTargets(&config.Target{
+			Name:      "target",
+			Namespace: "other-namespace",
+			Broker:    "other-broker",
+		})
+	})
+
+	var gotTarget *config.Target
+	v.RangeAllTargets(func(t *config.Target) bool {
+		gotTarget = t
+		return false
+	})
+
+	if !proto.Equal(wantTarget, gotTarget) {
+		t.Errorf("Upserted target got=%+v, want=%+v", gotTarget, wantTarget)
+	}
+}
+
 func TestMutateBroker(t *testing.T) {
 	val := &config.TargetsConfig{}
 	b, err := proto.Marshal(val)
@@ -117,7 +152,7 @@ func TestMutateBroker(t *testing.T) {
 		}
 		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
 			// Intentionally call insert twice to verify they can be chained.
-			m.InsertTargets(t1).InsertTargets(t2)
+			m.UpsertTargets(t1).UpsertTargets(t2)
 		})
 		assertBroker(t, wantBroker, "ns", "broker", targets)
 	})
@@ -127,7 +162,7 @@ func TestMutateBroker(t *testing.T) {
 		wantBroker.Targets["t3"] = t3
 		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
 			// Chain insert and delete.
-			m.InsertTargets(t3).DeleteTargets(t2)
+			m.UpsertTargets(t3).DeleteTargets(t2)
 		})
 		assertBroker(t, wantBroker, "ns", "broker", targets)
 	})
@@ -172,7 +207,7 @@ func ExampleMutateBroker() {
 			Topic:        "topic",
 			Subscription: "sub",
 		})
-		m.InsertTargets(&config.Target{
+		m.UpsertTargets(&config.Target{
 			Id:      "uid-1",
 			Address: "consumer1.example.com",
 			Broker:  "broker",

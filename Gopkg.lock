@@ -305,7 +305,7 @@
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "NUT"
-  revision = "955bf358a3d8d1ebfa6204338ef3fe364255cd85"
+  revision = "3d03ed9b1ca2ad5d78d43832e8e46adc31d2b961"
 
 [[projects]]
   digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
@@ -1462,7 +1462,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ee0c86b91db0bc5c77299384b9c5ef23c15624b95e746a26f6ec49285d161ed0"
+  digest = "1:b261b433f51547c014f72a80ad8d896e4a142c5e952c6a87f44376ea9de05023"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1554,15 +1554,16 @@
     "test/lib/duck",
     "test/lib/resources",
     "test/test_images/logevents",
+    "test/test_images/recordevents",
     "test/test_images/sendevents",
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "02d2642e4264fcf25302c6b49b9a12e2694c1865"
+  revision = "448b4e91c132e1e435667223bbf650f29f769ef5"
 
 [[projects]]
   branch = "master"
-  digest = "1:1cfbe38d639ea8c4aeb9f1b0b98ac80b0004ef612f0b48eb572ba6bb23bdc003"
+  digest = "1:ae72dd6d2950c1ffe31061c827bb8904fce102f9134c4309cca0fe1ac5864c26"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1643,11 +1644,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "94b2b6aaaf4b81c3b26b269bd477518094aa31a5"
+  revision = "55250e6aab62f767b8680a12ddeb771c519d78fe"
 
 [[projects]]
   branch = "master"
-  digest = "1:0bc60da073ff7cc7e7cf75e8d35e0ba9d4bf15e9ff5784c20b337e19acd6a69f"
+  digest = "1:e0cd1e330acf78bc5eb2af050342995a7f1e5a29a9b9fa19f403ca3821748a5b"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1696,7 +1697,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "bc1ede0e108ebac35804ce8ccae8cbac73b44670"
+  revision = "33e843e36ca13c6699508d55e988d7f3d1565644"
 
 [[projects]]
   branch = "master"
@@ -1707,7 +1708,7 @@
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "0a121dae7dccefb0d3dd56a97a3cd5264a455a7c"
+  revision = "163337c1d67d883a84d10c4e769e6fc493649341"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1829,6 +1830,7 @@
     "knative.dev/eventing/test/lib/duck",
     "knative.dev/eventing/test/lib/resources",
     "knative.dev/eventing/test/test_images/logevents",
+    "knative.dev/eventing/test/test_images/recordevents",
     "knative.dev/eventing/test/test_images/sendevents",
     "knative.dev/eventing/test/test_images/transformevents",
     "knative.dev/pkg/apis",
