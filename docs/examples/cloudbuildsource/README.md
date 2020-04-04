@@ -25,7 +25,7 @@ and when your build completes.
 
 ## Deployment
 
-1. Create a [`CloudBuildSource`](cloudsbuildsource.yaml)
+1. Create a [`CloudBuildSource`](cloudbuildsource.yaml)
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
