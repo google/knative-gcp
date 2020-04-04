@@ -183,6 +183,6 @@ function control_plane_teardown() {
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=30m -parallel=12 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
+go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
 
 success
