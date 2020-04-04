@@ -62,14 +62,7 @@ func TestUpsertTargetsWithNamespaceBrokerEnforced(t *testing.T) {
 
 func TestMutateBroker(t *testing.T) {
 	val := &config.TargetsConfig{}
-	b, err := proto.Marshal(val)
-	if err != nil {
-		t.Fatalf("unexpected error from proto.Marshal: %v", err)
-	}
-	targets, err := NewTargetsFromBytes(b)
-	if err != nil {
-		t.Fatalf("unexpected error from NewTargetsFromBytes: %v", err)
-	}
+	targets := NewTargets(val)
 
 	wantBroker := &config.Broker{
 		Id:        "b-uid",
@@ -197,8 +190,7 @@ func assertBroker(t *testing.T, want *config.Broker, namespace, name string, tar
 
 func ExampleMutateBroker() {
 	val := &config.TargetsConfig{}
-	b, _ := proto.Marshal(val)
-	targets, _ := NewTargetsFromBytes(b)
+	targets := NewTargets(val)
 
 	// Create a new broker with targets.
 	targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
