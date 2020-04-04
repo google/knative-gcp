@@ -347,7 +347,7 @@
   version = "v2.0.5"
 
 [[projects]]
-  digest = "1:5e092394bed250d7fda36cef8b7e1d22bb2d5f71878bbb137be5fc1c2705f965"
+  digest = "1:7e0eb2ee87b3ce6e617522e181968f7c964a80364a6d1ef68396826f5c9e1ba7"
   name = "github.com/googleapis/gnostic"
   packages = [
     "OpenAPIv2",
@@ -355,8 +355,8 @@
     "extensions",
   ]
   pruneopts = "NUT"
-  revision = "ab0dd09aa10e2952b28e12ecd35681b20463ebab"
-  version = "v0.3.1"
+  revision = "99384834bf8c58ce7ab88db353283bedcb53e1ca"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:e9c0bf861ea69dd6de1ff7ac2a0485e84743e163853ca973177fba7a50d1b769"
@@ -1697,7 +1697,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "44befeddeef77c5a65b040e4cb678c6b9a09fab5"
+  revision = "33e843e36ca13c6699508d55e988d7f3d1565644"
 
 [[projects]]
   branch = "master"

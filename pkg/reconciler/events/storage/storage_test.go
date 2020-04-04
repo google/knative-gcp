@@ -63,11 +63,12 @@ const (
 	generation     = 1
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilepullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToReconcileNotificationMsg     = `Failed to reconcile CloudStorageSource notification`
-	failedToReconcilePubSubMsg           = `Failed to reconcile CloudStorageSource PubSub`
-	failedToDeleteNotificationMsg        = `Failed to delete CloudStorageSource notification`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilepullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToReconcileNotificationMsg           = `Failed to reconcile CloudStorageSource notification`
+	failedToReconcilePubSubMsg                 = `Failed to reconcile CloudStorageSource PubSub`
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
+	failedToDeleteNotificationMsg              = `Failed to delete CloudStorageSource notification`
 )
 
 var (
@@ -438,7 +439,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
 		},
 	},
 		{
@@ -475,7 +476,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -510,7 +511,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -545,7 +546,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, storageName)),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
 			},
 		},
 		{

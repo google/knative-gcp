@@ -153,6 +153,10 @@ func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLi
 	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
 }
 
+func (l *Listers) GetCloudBuildSourceLister() eventslisters.CloudBuildSourceLister {
+	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1alpha1.CloudBuildSource{}))
+}
+
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
 }

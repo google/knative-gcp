@@ -21,36 +21,30 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
 const (
 	resourceGroup = "cloudpubsubsources.events.cloud.google.com"
 
-	createFailedReason           = "PullSubscriptionCreateFailed"
-	getFailedReason              = "PullSubscriptionGetFailed"
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	reconciledSuccessReason      = "CloudPubSubSourceReconciled"
-	reconciledFailedReason       = "PullSubscriptionReconcileFailed"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
 // Reconciler is the controller implementation for the CloudPubSubSource source.
 type Reconciler struct {
-	*reconciler.Base
+	*pubsub.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// pubsubLister for reading cloudpubsubsources.
@@ -59,7 +53,6 @@ type Reconciler struct {
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
 	serviceAccountLister corev1listers.ServiceAccountLister
-	receiveAdapterName   string
 }
 
 // Check that our Reconciler implements Interface.
@@ -78,42 +71,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, pubsub *v1alpha1.CloudPu
 		}
 	}
 
-	ps, event := r.reconcilePullSubscription(ctx, pubsub)
+	_, event := r.PubSubBase.ReconcilePullSubscription(ctx, pubsub, pubsub.Spec.Topic, resourceGroup, true)
 	if event != nil {
-		pubsub.Status.MarkPullSubscriptionFailed(reconciledFailedReason, "Failed to reconcile PullSubscription: %s", event.Error())
 		return event
 	}
-	pubsub.Status.PropagatePullSubscriptionStatus(&ps.Status)
-	pubsub.Status.SinkURI = ps.Status.SinkURI
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, pubsub.Namespace, pubsub.Name)
-}
-
-func (r *Reconciler) reconcilePullSubscription(ctx context.Context, source *v1alpha1.CloudPubSubSource) (*pubsubv1alpha1.PullSubscription, pkgreconciler.Event) {
-	ps, err := r.pullsubscriptionLister.PullSubscriptions(source.Namespace).Get(source.Name)
-	if err != nil {
-		if !apierrs.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, getFailedReason, "Getting PullSubscription failed with: %s", err.Error())
-		}
-		args := &resources.PullSubscriptionArgs{
-			Namespace:   source.Namespace,
-			Name:        source.Name,
-			Spec:        &source.Spec.PubSubSpec,
-			Owner:       source,
-			Topic:       source.Spec.Topic,
-			Mode:        pubsubv1alpha1.ModePushCompatible,
-			Labels:      resources.GetLabels(r.receiveAdapterName, source.Name),
-			Annotations: resources.GetAnnotations(source.Annotations, resourceGroup),
-		}
-		newPS := resources.MakePullSubscription(args)
-		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
-		ps, err = r.RunClientSet.PubsubV1alpha1().PullSubscriptions(newPS.Namespace).Create(newPS)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Error(err))
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, createFailedReason, "Creating PullSubscription failed with: %s", err.Error())
-		}
-	}
-	return ps, nil
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, pubsub *v1alpha1.CloudPubSubSource) pkgreconciler.Event {
