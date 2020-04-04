@@ -181,12 +181,16 @@ Data,
 
 ## What's Next
 
+1. For more details on Cloud Pub/Sub formats refer to the
+   [Subscriber overview guide](https://cloud.google.com/pubsub/docs/subscriber).
 1. For integrating with Cloud Pub/Sub, see the
    [PubSub example](../../examples/cloudpubsubsource/README.md).
 1. For integrating with Cloud Scheduler see the
    [Scheduler example](../../examples/cloudschedulersource/README.md).
 1. For integrating with Cloud Audit Logs see the
    [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For integrating with Cloud Build see the
+   [Build example](../../examples/cloudbuildsource/README.md).
 1. For more information about CloudEvents, see the
    [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
