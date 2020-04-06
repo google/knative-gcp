@@ -110,6 +110,8 @@ Data,
    [Scheduler example](../../examples/cloudschedulersource/README.md).
 1. For integrating with Cloud Audit Logs see the
    [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For integrating with Cloud Build see the
+   [Build example](../../examples/cloudbuildsource/README.md).
 1. For more information about CloudEvents, see the
    [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 
