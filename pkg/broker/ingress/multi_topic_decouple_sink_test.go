@@ -17,15 +17,14 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 )
 
-type brokerTestCase struct {
-	ns          string
-	broker      string
-	topic       string
-	clientErrFn func(client *fakePubsubClient)
-	wantErr     bool
-}
-
 func TestMultiTopicDecoupleSink(t *testing.T) {
+	type brokerTestCase struct {
+		ns          string
+		broker      string
+		topic       string
+		clientErrFn func(client *fakePubsubClient)
+		wantErr     bool
+	}
 	tests := []struct {
 		name         string
 		brokerConfig *config.TargetsConfig

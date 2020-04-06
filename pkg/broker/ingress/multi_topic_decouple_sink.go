@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -37,7 +36,7 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 	if sink.brokerConfig == nil {
 		brokerConfig, err := volume.NewTargetsFromFile()
 		if err != nil {
-			return nil, errors.Wrap(err, "creating broker config for default multi topic decouple sink")
+			return nil, fmt.Errorf("creating broker config for default multi topic decouple sink")
 		}
 		sink.brokerConfig = brokerConfig
 	}
@@ -66,23 +65,19 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, ns, broker string, ev
 	return m.client.Send(ctx, event)
 }
 
-// getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker
-// configmap volume.
+// getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
 func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, error) {
 	brokerConfig, ok := m.brokerConfig.GetBroker(ns, broker)
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
-		// the config being pushed to the configmap volume in the ingress pod.
-		// TODO(liu-cong) Should we wait (with a timeout) for the configmap volume update instead of
-		// returning error immediately?
-		msg := fmt.Sprintf("config is not found for %v/%v", ns, broker)
-		m.logger.Warn(msg)
-		return "", errors.New(msg)
+		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
+		// an error even if the request is valid.
+		m.logger.Warn("config is not found for", zap.Any("ns", ns), zap.Any("broker", broker))
+		return "", fmt.Errorf("%q/%q: %w", ns, broker, ErrNotFound)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
-		msg := fmt.Sprintf("DecoupleQueue or topic missing for broker, this should NOT happen. BrokerConfig: %+v", brokerConfig)
-		m.logger.Error(msg)
-		return "", errors.New(msg)
+		m.logger.Error("DecoupleQueue or topic missing for broker, this should NOT happen.", zap.Any("brokerConfig", brokerConfig))
+		return "", fmt.Errorf("decouple queue of %q/%q: %w", ns, broker, ErrIncomplete)
 	}
 	return brokerConfig.DecoupleQueue.Topic, nil
 }

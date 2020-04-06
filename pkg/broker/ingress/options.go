@@ -32,6 +32,13 @@ func WithDecoupleSink(d DecoupleSink) HandlerOption {
 	}
 }
 
+// WithHttpReceiver specifies the HTTP receiver. It's used in tests to specify a test receiver.
+func WithHttpReceiver(receiver HttpMessageReceiver) HandlerOption {
+	return func(h *handler) {
+		h.httpReceiver = receiver
+	}
+}
+
 // WithPort specifies the port number that ingress listens on. It will create an HttpMessageReceiver for that port.
 func WithPort(port int) HandlerOption {
 	return func(h *handler) {

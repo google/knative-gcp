@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	nethttp "net/http"
-	"strconv"
+	"net/http/httptest"
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -23,18 +23,25 @@ var brokerConfig = &config.TargetsConfig{
 			Id:        "b-uid-1",
 			Name:      "broker1",
 			Namespace: "ns1",
-			DecoupleQueue: &config.Queue{
-				Topic: topic,
-			},
+			DecoupleQueue: &config.Queue{Topic: topic,},
+		},
+		"ns2/broker2": {
+			Id:        "b-uid-2",
+			Name:      "broker2",
+			Namespace: "ns2",
+			DecoupleQueue: nil,
+		},
+		"ns3/broker3": {
+			Id:        "b-uid-3",
+			Name:      "broker3",
+			Namespace: "ns3",
+			DecoupleQueue: &config.Queue{Topic: "",},
 		},
 	},
 }
 
 type testCase struct {
-	name    string
-	options []HandlerOption
-	// If port is different than the default(8080), a matching WithPort option should be provided.
-	port int
+	name string
 	// in happy case, path should match the /<ns>/<broker> in the brokerConfig.
 	path  string
 	event *cloudevents.Event
@@ -52,15 +59,6 @@ func TestHandler(t *testing.T) {
 			name:     "happy case",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			port:     defaultPort,
-			wantCode: nethttp.StatusOK,
-		},
-		{
-			name:     "with custom port number",
-			path:     "/ns1/broker1",
-			event:    createTestEvent("test-event"),
-			port:     8081,
-			options:  []HandlerOption{WithPort(8081)},
 			wantCode: nethttp.StatusOK,
 		},
 		{
@@ -68,20 +66,17 @@ func TestHandler(t *testing.T) {
 			method:   "PUT",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			port:     defaultPort,
 			wantCode: nethttp.StatusMethodNotAllowed,
 		},
 		{
 			name:     "malformed path",
 			path:     "/ns1/broker1/and/something/else",
 			event:    createTestEvent("test-event"),
-			port:     defaultPort,
 			wantCode: nethttp.StatusNotFound,
 		},
 		{
 			name:     "request is not an event",
 			path:     "/ns1/broker1",
-			port:     defaultPort,
 			wantCode: nethttp.StatusBadRequest,
 			header:   nethttp.Header{},
 		},
@@ -89,14 +84,24 @@ func TestHandler(t *testing.T) {
 			name:     "wrong path - broker doesn't exist in given namespace",
 			path:     "/ns1/broker-not-exist",
 			event:    createTestEvent("test-event"),
-			port:     defaultPort,
-			wantCode: nethttp.StatusInternalServerError,
+			wantCode: nethttp.StatusNotFound,
 		},
 		{
 			name:     "wrong path - namespace doesn't exist",
 			path:     "/ns-not-exist/broker1",
 			event:    createTestEvent("test-event"),
-			port:     defaultPort,
+			wantCode: nethttp.StatusNotFound,
+		},
+		{
+			name:     "broker queue is nil",
+			path:     "/ns2/broker2",
+			event:    createTestEvent("test-event"),
+			wantCode: nethttp.StatusInternalServerError,
+		},
+		{
+			name:     "broker queue topic is empty",
+			path:     "/ns3/broker3",
+			event:    createTestEvent("test-event"),
 			wantCode: nethttp.StatusInternalServerError,
 		},
 	}
@@ -105,10 +110,10 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h, cleanup := createAndStartIngress(t, tc)
+			h, url, cleanup := createAndStartIngress(t, tc)
 			defer cleanup()
 
-			res, err := client.Do(createRequest(tc))
+			res, err := client.Do(createRequest(tc, url))
 			if err != nil {
 				t.Fatalf("Unexpected error from http client: %v", err)
 			}
@@ -133,25 +138,36 @@ func TestHandler(t *testing.T) {
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(t *testing.T, tc testCase) (h *handler, cleanup func()) {
+func createAndStartIngress(t *testing.T, tc testCase) (h *handler, url string, cleanup func()) {
 	decouple, err1 := NewMultiTopicDecoupleSink(context.Background(),
 		WithBrokerConfig(memory.NewTargets(brokerConfig)),
 		WithPubsubClient(newFakePubsubClient(t)))
 	if err1 != nil {
 		t.Fatalf("Failed to create decouple sink: %v", err1)
 	}
-	opts := append(tc.options, WithDecoupleSink(decouple))
 	ctx, cancel := context.WithCancel(context.Background())
-	h, err2 := NewHandler(ctx, opts...)
+	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
+	h, err2 := NewHandler(ctx, WithDecoupleSink(decouple), WithHttpReceiver(receiver))
 	if err2 != nil {
 		t.Fatalf("Failed to create ingress handler: %+v", err2)
 	}
-	go h.Start(ctx)
+
 	cleanup = func() {
 		// Any cleanup steps should go here.
 		cancel()
 	}
-	return h, cleanup
+
+	errCh := make(chan error)
+	go func() {
+		errCh <- h.Start(ctx)
+	}()
+	select {
+	case err := <-errCh:
+		t.Fatalf("Failed to start ingress: %v", err)
+	case url = <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
+		return h, url, cleanup
+	}
+	return h, "", cleanup
 }
 
 func createTestEvent(id string) *cloudevents.Event {
@@ -163,14 +179,13 @@ func createTestEvent(id string) *cloudevents.Event {
 }
 
 // createRequest creates an http request from the test case. If event is specified, it converts the event to a request.
-func createRequest(tc testCase) *nethttp.Request {
+func createRequest(tc testCase, url string) *nethttp.Request {
 	method := "POST"
 	if tc.method != "" {
 		method = tc.method
 	}
-	url := "http://localhost:" + strconv.Itoa(tc.port) + tc.path
 	body, _ := json.Marshal(tc.body)
-	request, _ := nethttp.NewRequest(method, url, bytes.NewBuffer(body))
+	request, _ := nethttp.NewRequest(method, url+tc.path, bytes.NewBuffer(body))
 	if tc.header != nil {
 		request.Header = tc.header
 	}
@@ -180,4 +195,23 @@ func createRequest(tc testCase) *nethttp.Request {
 		http.WriteRequest(context.Background(), message, request)
 	}
 	return request
+}
+
+// testHttpMessageReceiver implements HttpMessageReceiver. When created, it creates an httptest.Server,
+// which starts a server with any available port.
+type testHttpMessageReceiver struct {
+	// once the server is started, the server's url is sent to this channel.
+	urlCh chan string
+}
+
+func (recv *testHttpMessageReceiver) StartListen(ctx context.Context, handler nethttp.Handler) error {
+	// NewServer creates a new server and starts it. It is non-blocking.
+	server := httptest.NewServer(handler)
+	defer server.Close()
+	recv.urlCh <- server.URL
+	select {
+	case <-ctx.Done():
+		server.Close()
+	}
+	return nil
 }

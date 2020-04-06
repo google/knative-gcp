@@ -18,11 +18,11 @@ package ingress
 
 import (
 	"context"
+	"errors"
 	nethttp "net/http"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
@@ -46,13 +46,18 @@ type DecoupleSink interface {
 	Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result
 }
 
+// HttpMessageReceiver is an interface to listen on http requests.
+type HttpMessageReceiver interface {
+	StartListen(ctx context.Context, handler nethttp.Handler) error
+}
+
 // handler receives events and persists them to storage (pubsub).
 // TODO(liu-cong) add metrics
 // TODO(liu-cong) add tracing
 // TODO(liu-cong) support event TTL
 type handler struct {
 	// httpReceiver is an HTTP server to receive events.
-	httpReceiver *kncloudevents.HttpMessageReceiver
+	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
@@ -75,7 +80,7 @@ func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error)
 	if h.decouple == nil {
 		sink, err := NewMultiTopicDecoupleSink(ctx)
 		if err != nil {
-			return nil, errors.Wrap(err, "creating default multi topic decouple sink")
+			return nil, err
 		}
 		h.decouple = sink
 	}
@@ -100,7 +105,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	// Path should be in the form of "/<ns>/<broker>"
+	// Path should be in the form of "/<ns>/<broker>".
 	pieces := strings.Split(request.URL.Path, "/")
 	if len(pieces) != 3 {
 		h.logger.Info("Malformed request path", zap.String("path", request.URL.Path))
@@ -119,7 +124,11 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	defer cancel()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		h.logger.Error("Error publishing to PubSub", zap.String("event", event.String()), zap.String("ns", ns), zap.String("broker", broker), zap.Error(res))
-		response.WriteHeader(nethttp.StatusInternalServerError)
+		statusCode := nethttp.StatusInternalServerError
+		if errors.Is(res, ErrNotFound) {
+			statusCode = nethttp.StatusNotFound
+		}
+		response.WriteHeader(statusCode)
 		return
 	}
 
