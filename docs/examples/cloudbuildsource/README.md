@@ -34,7 +34,7 @@ and when your build completes.
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 
    1. If you are using standard Kubernetes secrets, but want to use a
-      non-default one, update `secret` with your own secret.
+      non-default one, update `secret` with your own secret which has the permission of `roles/pubsub.subscriber`.
 
    ```shell
    kubectl apply --filename cloudbuildsource.yaml
