@@ -20,13 +20,16 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
@@ -45,8 +48,18 @@ const (
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 	concurrencyError             = "googleapi: Error 409: There were concurrent policy changes."
-	concurrencyMaxRetryTime      = 3
 )
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 100ms and is multiplied by factor 2.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    3,
+	Duration: 100 * time.Millisecond,
+	Factor:   2.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and 10ms (jitter*duration).
+	Jitter: 0.1,
+}
 
 func NewIdentity(ctx context.Context) *Identity {
 	return &Identity{
@@ -180,18 +193,13 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 	rb := makeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
-	err = fmt.Errorf("%s", concurrencyError)
-	retryCount := 0
-	// If the setIamPolicy error is caused by concurrency, retry it until it reaches max retry time.
-	for err != nil && strings.Contains(err.Error(), concurrencyError) && retryCount < concurrencyMaxRetryTime {
-		_, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do()
-		retryCount++
-	}
-	if err != nil {
-		return fmt.Errorf("failed to set iam policy: %w", err)
-	}
-
-	return nil
+	// Repeat setting iam policy binding with exponential backoff when there is concurrency issue.
+	return retry.OnError(defaultRetry, isConflict, func() error {
+		if _, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to set iam policy: %w", err)
+		}
+		return nil
+	})
 }
 
 func makeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember string) *iam.SetIamPolicyRequest {
@@ -223,6 +231,11 @@ func makeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember stri
 		}
 	}
 	return nil
+}
+
+// isConflict determines if the err is an error which indicates concurrency issue.
+func isConflict(err error) bool {
+	return strings.Contains(err.Error(), concurrencyError)
 }
 
 // ownerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
