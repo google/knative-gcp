@@ -18,8 +18,9 @@ package v1alpha1
 
 import (
 	"context"
-	"knative.dev/pkg/ptr"
 	"testing"
+
+	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"

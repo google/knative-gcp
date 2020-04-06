@@ -14,9 +14,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"testing"
+
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"knative.dev/pkg/apis"
-	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"

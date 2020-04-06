@@ -40,13 +40,13 @@ import (
 )
 
 const (
-	testNS             = "test-namespace"
-	name               = "obj-name"
-	testTopicID        = "topic"
-	testProjectID      = "project"
-	receiveAdapterName = "test-receive-adapter"
-	resourceGroup      = "test-resource-group"
-	sinkName           = "sink"
+	testNS                                     = "test-namespace"
+	name                                       = "obj-name"
+	testTopicID                                = "topic"
+	testProjectID                              = "project"
+	receiveAdapterName                         = "test-receive-adapter"
+	resourceGroup                              = "test-resource-group"
+	sinkName                                   = "sink"
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 

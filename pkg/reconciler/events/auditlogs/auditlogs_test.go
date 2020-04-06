@@ -70,13 +70,13 @@ const (
 	sinkName = "sink"
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
 
-	topicNotReadyMsg                     = `Topic "test-cloudauditlogssource" not ready`
-	pullSubscriptionNotReadyMsg          = `PullSubscription "test-cloudauditlogssource" not ready`
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToCreateSinkMsg                = `failed to ensure creation of logging sink`
-	failedToSetPermissionsMsg            = `failed to ensure sink has pubsub.publisher permission on source topic`
-	failedToDeleteSinkMsg                = `Failed to delete Stackdriver sink`
+	topicNotReadyMsg                           = `Topic "test-cloudauditlogssource" not ready`
+	pullSubscriptionNotReadyMsg                = `PullSubscription "test-cloudauditlogssource" not ready`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToCreateSinkMsg                      = `failed to ensure creation of logging sink`
+	failedToSetPermissionsMsg                  = `failed to ensure sink has pubsub.publisher permission on source topic`
+	failedToDeleteSinkMsg                      = `Failed to delete Stackdriver sink`
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 

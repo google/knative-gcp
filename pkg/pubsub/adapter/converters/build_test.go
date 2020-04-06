@@ -87,9 +87,8 @@ func TestConvertCloudBuild(t *testing.T) {
 		{
 			name: "no attributes",
 			message: &cepubsub.Message{
-				Data: []byte("test data"),
-				Attributes: map[string]string{
-				},
+				Data:       []byte("test data"),
+				Attributes: map[string]string{},
 			},
 			sendMode: Binary,
 			wantErr:  true,

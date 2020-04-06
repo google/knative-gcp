@@ -15,6 +15,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +69,7 @@ const (
 	// CloudBuildSourceBuildId is the Pub/Sub message attribute key with the CloudBuildSource's buildId.
 	CloudBuildSourceBuildId = "buildId"
 	// CloudBuildSourceBuildStatus is the Pub/Sub message attribute key with the CloudBuildSource's build status.
-	CloudBuildSourceBuildStatus= "status"
+	CloudBuildSourceBuildStatus = "status"
 )
 
 // CloudBuildSourceEventSource returns the Cloud Build CloudEvent source value.
@@ -130,4 +131,3 @@ func (bs *CloudBuildSource) PubSubStatus() *duckv1alpha1.PubSubStatus {
 func (bs *CloudBuildSource) ConditionSet() *apis.ConditionSet {
 	return &buildCondSet
 }
-

@@ -18,6 +18,7 @@ package build
 
 import (
 	"context"
+
 	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
@@ -56,7 +57,7 @@ type Reconciler struct {
 	// pullsubscriptionLister for reading pullsubscriptions.
 	pullsubscriptionLister pubsublisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister   corev1listers.ServiceAccountLister
+	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.

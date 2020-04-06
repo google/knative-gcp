@@ -18,8 +18,9 @@ package testing
 
 import (
 	"context"
-	"knative.dev/pkg/ptr"
 	"time"
+
+	"knative.dev/pkg/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -149,4 +150,3 @@ func WithCloudBuildSourceObjectMetaGeneration(generation int64) CloudBuildSource
 		bs.ObjectMeta.Generation = generation
 	}
 }
-
