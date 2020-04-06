@@ -59,7 +59,7 @@ Once the build's state changes, we will verify that the published event was sent
 service that this CloudBuildSource sinks to.
 
 1. We need to wait for the downstream pods to get started and receive our event,
-   wait 60 seconds. You can check the status of the downstream pods with:
+   wait up to 60 seconds. You can check the status of the downstream pods with:
 
    ```shell
    kubectl get pods --selector app=event-display
@@ -72,7 +72,7 @@ service that this CloudBuildSource sinks to.
    ```shell
    kubectl logs --selector app=event-display -c user-container --tail=200
    ```
-You maybe see multiple events since the `CloudBuildSource` fires a new event each time when your build's state changes.                                       
+You may see multiple events since the `CloudBuildSource` fires a new event each time when your build's state changes.
 You should see log lines similar to:
 
 ```shell
