@@ -86,8 +86,15 @@ func TestHandler(t *testing.T) {
 			header:   nethttp.Header{},
 		},
 		{
-			name:     "wrong path - broker doesn't exist in config",
-			path:     "/ns-1/broker2",
+			name:     "wrong path - broker doesn't exist in given namespace",
+			path:     "/ns1/broker-not-exist",
+			event:    createTestEvent("test-event"),
+			port:     defaultPort,
+			wantCode: nethttp.StatusInternalServerError,
+		},
+		{
+			name:     "wrong path - namespace doesn't exist",
+			path:     "/ns-not-exist/broker1",
 			event:    createTestEvent("test-event"),
 			port:     defaultPort,
 			wantCode: nethttp.StatusInternalServerError,
@@ -134,14 +141,15 @@ func createAndStartIngress(t *testing.T, tc testCase) (h *handler, cleanup func(
 		t.Fatalf("Failed to create decouple sink: %v", err1)
 	}
 	opts := append(tc.options, WithDecoupleSink(decouple))
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	h, err2 := NewHandler(ctx, opts...)
 	if err2 != nil {
 		t.Fatalf("Failed to create ingress handler: %+v", err2)
 	}
 	go h.Start(ctx)
 	cleanup = func() {
-		// Any cleanup steps should go here. For now none.
+		// Any cleanup steps should go here.
+		cancel()
 	}
 	return h, cleanup
 }

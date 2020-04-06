@@ -26,7 +26,7 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 		opt(sink)
 	}
 
-	// Aplly defaults
+	// Apply defaults
 	if sink.client == nil {
 		client, err := newDefaultPubSubClient(ctx)
 		if err != nil {
@@ -80,7 +80,7 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 		return "", errors.New(msg)
 	}
 	if brokerConfig.DecoupleQueue == nil || brokerConfig.DecoupleQueue.Topic == "" {
-		msg := fmt.Sprintf("DecouplQueue or topic missing for broker, this should NOT happen. BrokerConfig: %+v", brokerConfig)
+		msg := fmt.Sprintf("DecoupleQueue or topic missing for broker, this should NOT happen. BrokerConfig: %+v", brokerConfig)
 		m.logger.Error(msg)
 		return "", errors.New(msg)
 	}

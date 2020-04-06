@@ -51,7 +51,7 @@ type DecoupleSink interface {
 // TODO(liu-cong) add tracing
 // TODO(liu-cong) support event TTL
 type handler struct {
-	// httpReceiver starts an HTTP server to receive events.
+	// httpReceiver is an HTTP server to receive events.
 	httpReceiver *kncloudevents.HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
@@ -115,7 +115,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), decoupleSinkTimeout)
+	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		h.logger.Error("Error publishing to PubSub", zap.String("event", event.String()), zap.String("ns", ns), zap.String("broker", broker), zap.Error(res))
@@ -139,7 +139,7 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, statusCo
 		h.logger.Debug("Encoding is unknown. Not a cloud event?", zap.Any("request", request))
 		return nil, nethttp.StatusBadRequest
 	}
-	event, err := binding.ToEvent(context.Background(), message, transformer.AddTimeNow)
+	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
 		h.logger.Error("Failed to convert request to event", zap.Error(err))
 		return nil, nethttp.StatusBadRequest
