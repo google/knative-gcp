@@ -15,8 +15,10 @@ limitations under the License.
 */
 package resources
 
-import "knative.dev/pkg/apis"
-import  pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+import (
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"knative.dev/pkg/apis"
+)
 
 func ReadyPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss := &pubsubv1alpha1.PullSubscriptionStatus{}
@@ -39,4 +41,3 @@ func UnknownPullSubscriptionStatus() *pubsubv1alpha1.PullSubscriptionStatus {
 	pss.InitializeConditions()
 	return pss
 }
-

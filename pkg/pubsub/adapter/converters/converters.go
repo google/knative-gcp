@@ -57,7 +57,7 @@ func init() {
 		CloudAuditLogsConverter: convertCloudAuditLogs,
 		CloudStorageConverter:   convertCloudStorage,
 		CloudSchedulerConverter: convertCloudScheduler,
-		CloudBuildConverter    : convertCloudBuild,
+		CloudBuildConverter:     convertCloudBuild,
 	}
 }
 

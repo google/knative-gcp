@@ -65,11 +65,11 @@ const (
 	onceAMinuteSchedule = "* * * * *"
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToReconcileJobMsg              = `Failed to reconcile CloudSchedulerSource job`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToReconcileJobMsg                    = `Failed to reconcile CloudSchedulerSource job`
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
-	failedToDeleteJobMsg                 = `Failed to delete CloudSchedulerSource job`
+	failedToDeleteJobMsg                       = `Failed to delete CloudSchedulerSource job`
 )
 
 var (
