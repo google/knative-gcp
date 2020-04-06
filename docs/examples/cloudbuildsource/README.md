@@ -165,7 +165,7 @@ Data,
         "gcr.io/PROJECT_ID/quickstart-image"
       ]
     },
-    "logsBucket": "gs://64838069510.cloudbuild-logs.googleusercontent.com",
+    "logsBucket": "gs://25338030513.cloudbuild-logs.googleusercontent.com",
     "sourceProvenance": {
       "resolvedStorageSource": {
         "bucket": "PROJECT_ID_cloudbuild",
@@ -186,7 +186,7 @@ Data,
     "options": {
       "logging": "LEGACY"
     },
-    "logUrl": "https://console.cloud.google.com/cloud-build/builds/BUILD_ID?project=64838069510",
+    "logUrl": "https://console.cloud.google.com/cloud-build/builds/BUILD_ID?project=25338030513",
     "timing": {
       "BUILD": {
         "startTime": "2020-04-03T23:51:20.489188704Z",
