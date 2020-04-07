@@ -85,6 +85,7 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 	go func() {
 		defer close(out)
 		for target := range tc {
+			// Timeout is controller by the context.
 			ctx = handlerctx.WithTarget(ctx, target)
 			out <- &fanoutResult{err: p.Next().Process(ctx, event)}
 		}

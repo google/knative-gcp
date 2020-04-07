@@ -17,6 +17,7 @@ limitations under the License.
 package pool
 
 import (
+	"runtime"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -25,11 +26,12 @@ import (
 )
 
 var (
-	defaultMaxConcurrency = 1
-	defaultTimeout        = 10 * time.Minute
+	defaultHandlerConcurrency     = runtime.NumCPU()
+	defaultMaxConcurrencyPerEvent = 1
+	defaultTimeout                = 10 * time.Minute
 )
 
-var defaultCeClinet ceclient.Client
+var defaultCeClient ceclient.Client
 
 func init() {
 	p, err := cev2.NewHTTP()
@@ -44,14 +46,17 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defaultCeClinet = c
+	defaultCeClient = c
 }
 
 // Options holds all the options for create handler pool.
 type Options struct {
 	// ProjectID is the project for pubsub.
 	ProjectID string
-	// MaxConcurrencyPerEvent is the max number of goroutine
+	// HandlerConcurrency is the number of goroutines
+	// will be spawned in each handler.
+	HandlerConcurrency int
+	// MaxConcurrencyPerEvent is the max number of goroutines
 	// will be spawned to handle an event.
 	MaxConcurrencyPerEvent int
 	// TimeoutPerEvent is the timeout for handling an event.
@@ -67,7 +72,8 @@ type Options struct {
 // NewOptions creates a Options.
 func NewOptions(opts ...Option) *Options {
 	opt := &Options{
-		MaxConcurrencyPerEvent: defaultMaxConcurrency,
+		HandlerConcurrency:     defaultHandlerConcurrency,
+		MaxConcurrencyPerEvent: defaultMaxConcurrencyPerEvent,
 		TimeoutPerEvent:        defaultTimeout,
 		PubsubReceiveSettings:  pubsub.DefaultReceiveSettings,
 	}
@@ -75,7 +81,7 @@ func NewOptions(opts ...Option) *Options {
 		o(opt)
 	}
 	if opt.EventRequester == nil {
-		opt.EventRequester = defaultCeClinet
+		opt.EventRequester = defaultCeClient
 	}
 	return opt
 }
@@ -90,7 +96,14 @@ func WithProjectID(id string) Option {
 	}
 }
 
-// WithMaxConcurrentPerEvent set MaxConcurrencyPerEvent.
+// WithHandlerConcurrency sets HandlerConcurrency.
+func WithHandlerConcurrency(c int) Option {
+	return func(o *Options) {
+		o.HandlerConcurrency = c
+	}
+}
+
+// WithMaxConcurrentPerEvent sets MaxConcurrencyPerEvent.
 func WithMaxConcurrentPerEvent(c int) Option {
 	return func(o *Options) {
 		o.MaxConcurrencyPerEvent = c

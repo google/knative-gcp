@@ -23,6 +23,9 @@ import (
 )
 
 // Processor is the interface to process an event.
+// If a processor can rely on its successor(s) for timeout,
+// then it shouldn't explicitly handle timeout. If a processor has some
+// internal long running processing, then it must handle timeout by itself.
 type Processor interface {
 	// Process processes an event. It may decide to terminate the processing early
 	// or it can pass the event to the next Processor for further processing.

@@ -32,6 +32,14 @@ func TestWithProjectID(t *testing.T) {
 	}
 }
 
+func TestWithHandlerConcurrency(t *testing.T) {
+	want := 10
+	opt := NewOptions(WithHandlerConcurrency(want))
+	if opt.HandlerConcurrency != want {
+		t.Errorf("options handler concurrency got=%d, want=%d", opt.HandlerConcurrency, want)
+	}
+}
+
 func TestWithMaxConcurrency(t *testing.T) {
 	want := 10
 	opt := NewOptions(WithMaxConcurrentPerEvent(want))

@@ -51,7 +51,7 @@ func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...
 		targets: targets,
 		options: pool.NewOptions(opts...),
 	}
-	if err := p.sync(ctx); err != nil {
+	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
 	}
 	if p.options.SyncSignal != nil {
@@ -66,14 +66,14 @@ func (p *SyncPool) watch(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-p.options.SyncSignal:
-			if err := p.sync(ctx); err != nil {
+			if err := p.syncOnce(ctx); err != nil {
 				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
 			}
 		}
 	}
 }
 
-func (p *SyncPool) sync(ctx context.Context) error {
+func (p *SyncPool) syncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {

@@ -40,6 +40,11 @@ type Handler struct {
 	// Timeout is the timeout for processing each individual event.
 	Timeout time.Duration
 
+	// Concurrency is the number of goroutines that will
+	// concurrently process events. If not positive, will fall back
+	// to 1.
+	Concurrency int
+
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
 }
@@ -52,7 +57,13 @@ func (h *Handler) Start(ctx context.Context, done func(error)) {
 		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
 
-	go h.handle(ctx)
+	curr := h.Concurrency
+	if curr <= 0 {
+		curr = 1
+	}
+	for i := 0; i < curr; i++ {
+		go h.handle(ctx)
+	}
 }
 
 // Stop stops the handlers.
@@ -72,24 +83,22 @@ func (h *Handler) handle(ctx context.Context) {
 
 		event, err := binding.ToEvent(ctx, msg)
 		if err != nil {
-			logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Error(err))
+			logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
 			continue
 		}
 
-		// Don't block new events.
-		go func() {
-			pctx := ctx
-			if h.Timeout != 0 {
-				var cancel context.CancelFunc
-				pctx, cancel = context.WithTimeout(ctx, h.Timeout)
-				defer cancel()
-			}
-			err := h.Processor.Process(pctx, event)
-			if err != nil {
-				logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
-			}
-			// This will ack/nack the message.
-			msg.Finish(err)
-		}()
+		pctx := ctx
+		if h.Timeout != 0 {
+			var cancel context.CancelFunc
+			pctx, cancel = context.WithTimeout(ctx, h.Timeout)
+			defer cancel()
+		}
+		if err := h.Processor.Process(pctx, event); err != nil {
+			logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
+		}
+		// This will ack/nack the message.
+		if err := msg.Finish(err); err != nil {
+			logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
+		}
 	}
 }

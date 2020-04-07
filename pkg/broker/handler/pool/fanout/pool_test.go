@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 )
 
-func TestSync(t *testing.T) {
+func TestWatchAndSync(t *testing.T) {
 	testProject := "test-project"
 	signal := make(chan struct{})
 	targets := memory.NewEmptyTargets()
