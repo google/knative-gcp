@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package ingress
 
 import (
@@ -13,6 +29,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"knative.dev/eventing/pkg/logging"
 )
 
 var topic = "topic1"
@@ -20,21 +37,21 @@ var topic = "topic1"
 var brokerConfig = &config.TargetsConfig{
 	Brokers: map[string]*config.Broker{
 		"ns1/broker1": {
-			Id:        "b-uid-1",
-			Name:      "broker1",
-			Namespace: "ns1",
+			Id:            "b-uid-1",
+			Name:          "broker1",
+			Namespace:     "ns1",
 			DecoupleQueue: &config.Queue{Topic: topic,},
 		},
 		"ns2/broker2": {
-			Id:        "b-uid-2",
-			Name:      "broker2",
-			Namespace: "ns2",
+			Id:            "b-uid-2",
+			Name:          "broker2",
+			Namespace:     "ns2",
 			DecoupleQueue: nil,
 		},
 		"ns3/broker3": {
-			Id:        "b-uid-3",
-			Name:      "broker3",
-			Namespace: "ns3",
+			Id:            "b-uid-3",
+			Name:          "broker3",
+			Namespace:     "ns3",
 			DecoupleQueue: &config.Queue{Topic: "",},
 		},
 	},
@@ -110,7 +127,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h, url, cleanup := createAndStartIngress(t, tc)
+			h, url, cleanup := createAndStartIngress(t)
 			defer cleanup()
 
 			res, err := client.Do(createRequest(tc, url))
@@ -138,7 +155,7 @@ func TestHandler(t *testing.T) {
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(t *testing.T, tc testCase) (h *handler, url string, cleanup func()) {
+func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()) {
 	decouple, err1 := NewMultiTopicDecoupleSink(context.Background(),
 		WithBrokerConfig(memory.NewTargets(brokerConfig)),
 		WithPubsubClient(newFakePubsubClient(t)))
@@ -147,9 +164,10 @@ func createAndStartIngress(t *testing.T, tc testCase) (h *handler, url string, c
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	h, err2 := NewHandler(ctx, WithDecoupleSink(decouple), WithHttpReceiver(receiver))
-	if err2 != nil {
-		t.Fatalf("Failed to create ingress handler: %+v", err2)
+	h = &handler{
+		logger:       logging.FromContext(ctx),
+		httpReceiver: receiver,
+		decouple:     decouple,
 	}
 
 	cleanup = func() {

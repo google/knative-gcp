@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package ingress
 
 import (
@@ -17,6 +33,8 @@ import (
 	"knative.dev/eventing/pkg/logging"
 )
 
+const projectEnvKey = "PROJECT_ID"
+
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
 func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (*multiTopicDecoupleSink, error) {
 	sink := &multiTopicDecoupleSink{
@@ -29,7 +47,11 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 
 	// Apply defaults
 	if sink.client == nil {
-		client, err := newDefaultPubSubClient(ctx)
+		projectID, err := utils.ProjectID(os.Getenv(projectEnvKey))
+		if err != nil {
+			return nil, err
+		}
+		client, err := newPubSubClient(ctx, projectID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create pubsub client: %v", err)
 		}
@@ -84,15 +106,10 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 	return brokerConfig.DecoupleQueue.Topic, nil
 }
 
-// newDefaultPubSubClient creates a pubsub client using project ID from GCE metadata. Project ID can be overridden by
-// env var "GOOGLE_CLOUD_PROJECT".
-func newDefaultPubSubClient(ctx context.Context) (cev2.Client, error) {
-	project, err := utils.ProjectID(os.Getenv(pubsub.DefaultProjectEnvKey))
-	if err != nil {
-		return nil, err
-	}
+// newPubSubClient creates a pubsub client using the given project ID.
+func newPubSubClient(ctx context.Context, projectID string) (cev2.Client, error) {
 	// Make a pubsub protocol for the CloudEvents client.
-	p, err := pubsub.New(ctx, pubsub.WithProjectID(project))
+	p, err := pubsub.New(ctx, pubsub.WithProjectID(projectID))
 	if err != nil {
 		return nil, err
 	}

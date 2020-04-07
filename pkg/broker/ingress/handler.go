@@ -34,11 +34,13 @@ import (
 	"knative.dev/eventing/pkg/logging"
 )
 
-// TODO(liu-cong) configurable timeout
-const decoupleSinkTimeout = 30 * time.Second
+const (
+	// TODO(liu-cong) configurable timeout
+	decoupleSinkTimeout = 30 * time.Second
 
-// defaultPort is the defaultPort number for the ingress HTTP receiver.
-const defaultPort = 8080
+	// defaultPort is the defaultPort number for the ingress HTTP receiver.
+	defaultPort = 8080
+)
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
@@ -70,7 +72,9 @@ func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error)
 	}
 
 	for _, option := range options {
-		option(h)
+		if err := option(h); err != nil {
+			return nil, err
+		}
 	}
 
 	if h.httpReceiver == nil {

@@ -17,32 +17,35 @@ limitations under the License.
 package ingress
 
 import (
+	"context"
+	"fmt"
+
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"knative.dev/eventing/pkg/kncloudevents"
 )
 
 // HandlerOption is the option to configure ingress handler.
-type HandlerOption func(*handler)
-
-// WithDecoupleSink specifies the decouple sink for the ingress to send events to.
-func WithDecoupleSink(d DecoupleSink) HandlerOption {
-	return func(h *handler) {
-		h.decouple = d
-	}
-}
-
-// WithHttpReceiver specifies the HTTP receiver. It's used in tests to specify a test receiver.
-func WithHttpReceiver(receiver HttpMessageReceiver) HandlerOption {
-	return func(h *handler) {
-		h.httpReceiver = receiver
-	}
-}
+type HandlerOption func(*handler) error
 
 // WithPort specifies the port number that ingress listens on. It will create an HttpMessageReceiver for that port.
 func WithPort(port int) HandlerOption {
-	return func(h *handler) {
+	return func(h *handler) error {
 		h.httpReceiver = kncloudevents.NewHttpMessageReceiver(port)
+		return nil
+	}
+}
+
+// WithProjectID creates a pubsub client for the given project ID to communicate with pubsusb decouple topics.
+func WithProjectID(id string) HandlerOption {
+	return func(h *handler) error {
+		ctx := context.Background()
+		client, err := newPubSubClient(ctx, id)
+		if err != nil {
+			return fmt.Errorf("failed to create pubsub client: %v", err)
+		}
+		h.decouple, err = NewMultiTopicDecoupleSink(context.Background(), WithPubsubClient(client))
+		return err
 	}
 }
 
