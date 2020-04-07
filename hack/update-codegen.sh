@@ -27,7 +27,7 @@ KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./ven
 # Only deepcopy the Duck types, as they are not real resources.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "duck:v1alpha1" \
+  "duck:v1alpha1 duck:v1beta1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # generate the code with:
@@ -43,7 +43,7 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
 # Knative Injection
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 duck:v1alpha1 policy:v1alpha1" \
+  "pubsub:v1alpha1 messaging:v1alpha1 events:v1alpha1 duck:v1alpha1 duck:v1beta1 policy:v1alpha1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
 # Generate our own client for istio (otherwise injection won't work)
