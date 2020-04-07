@@ -1562,8 +1562,8 @@
   revision = "54cee987710e6d3ca3d1ea3af1e7dedd138be341"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9b83d1c207c67003de88414626add45e9bce8c47502e07cbe6cb5fd48e39f2df"
+  branch = "release-0.14"
+  digest = "1:20ae66cd133413ed130ba9bd3b63143b87b103647971c2956410e5b109f0ae13"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1644,7 +1644,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "92cdec5b35931192590f5d8affad86898b6c50d6"
+  revision = "0c36abbff9e5ad06cbea50d55c0989485c236180"
 
 [[projects]]
   branch = "master"
