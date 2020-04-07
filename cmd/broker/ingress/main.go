@@ -25,9 +25,10 @@ import (
 )
 
 // main creates and starts an ingress handler using default options.
-// 1. it listens on port 8080
-// 2. it reads "GOOGLE_CLOUD_PROJECT" env var for pubsub project.
-// 3. it expects broker configmap mounted at "/var/run/cloud-run-events/broker/targets"
+// 1. It listens on port 8080
+// 2. It reads "GOOGLE_CLOUD_PROJECT" env var for pubsub project. If the env var is empty, it retrieves project ID from
+//    GCE metadata.
+// 3. It expects broker configmap mounted at "/var/run/cloud-run-events/broker/targets"
 func main() {
 	// Since we pass nil, a default config with no error will be returned.
 	cfg, _ := logging.NewConfigFromMap(nil)

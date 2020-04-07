@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.uber.org/zap"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/eventing/pkg/logging"
 )
 
@@ -82,10 +84,15 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 	return brokerConfig.DecoupleQueue.Topic, nil
 }
 
-// newDefaultPubSubClient creates a pubsub client using env var "GOOGLE_CLOUD_PROJECT".
+// newDefaultPubSubClient creates a pubsub client using project ID from GCE metadata. Project ID can be overridden by
+// env var "GOOGLE_CLOUD_PROJECT".
 func newDefaultPubSubClient(ctx context.Context) (cev2.Client, error) {
+	project, err := utils.ProjectID(os.Getenv(pubsub.DefaultProjectEnvKey))
+	if err != nil {
+		return nil, err
+	}
 	// Make a pubsub protocol for the CloudEvents client.
-	p, err := pubsub.New(ctx, pubsub.WithProjectIDFromDefaultEnv())
+	p, err := pubsub.New(ctx, pubsub.WithProjectID(project))
 	if err != nil {
 		return nil, err
 	}
