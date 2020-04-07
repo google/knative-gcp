@@ -54,11 +54,11 @@ const (
 // The duration starts from 100ms and is multiplied by factor 2.0 for each iteration.
 var defaultRetry = wait.Backoff{
 	Steps:    3,
-	Duration: 100 * time.Millisecond,
+	Duration: 200 * time.Millisecond,
 	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
-	// amount chosen uniformly at random from the interval between 0 and 10ms (jitter*duration).
-	Jitter: 0.1,
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 0.5,
 }
 
 func NewIdentity(ctx context.Context) *Identity {
