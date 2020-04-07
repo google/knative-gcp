@@ -29,7 +29,7 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 	if sink.client == nil {
 		client, err := newDefaultPubSubClient(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create pubsub client: %w", err)
+			return nil, fmt.Errorf("failed to create pubsub client: %v", err)
 		}
 		sink.client = client
 	}
