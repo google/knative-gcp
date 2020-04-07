@@ -99,35 +99,41 @@ var (
 		},
 	}
 
+	completeIdentitySpec = duckv1alpha1.IdentitySpec{
+		GoogleServiceAccount: "googleServiceAccount",
+	}
+
+	completeSecret = &v1.SecretKeySelector{
+		LocalObjectReference: v1.LocalObjectReference{
+			Name: "name",
+		},
+		Key:      "key",
+		Optional: &trueVal,
+	}
+
 	completePubSubSpec = duckv1alpha1.PubSubSpec{
-		SourceSpec: completeSourceSpec,
-		IdentitySpec: duckv1alpha1.IdentitySpec{
-			GoogleServiceAccount: "googleServiceAccount",
-		},
-		Secret: &v1.SecretKeySelector{
-			LocalObjectReference: v1.LocalObjectReference{
-				Name: "name",
+		SourceSpec:   completeSourceSpec,
+		IdentitySpec: completeIdentitySpec,
+		Secret:       completeSecret,
+		Project:      "project",
+	}
+
+	completeIdentityStatus = duckv1alpha1.IdentityStatus{
+		Status: duckv1.Status{
+			ObservedGeneration: 7,
+			Conditions: duckv1.Conditions{
+				{
+					Type:   "Ready",
+					Status: "True",
+				},
 			},
-			Key:      "key",
-			Optional: &trueVal,
 		},
-		Project: "project",
+		ServiceAccountName: "serviceAccountName",
 	}
 
 	completePubSubStatus = duckv1alpha1.PubSubStatus{
-		IdentityStatus: duckv1alpha1.IdentityStatus{
-			Status: duckv1.Status{
-				ObservedGeneration: 7,
-				Conditions: duckv1.Conditions{
-					{
-						Type:   "Ready",
-						Status: "True",
-					},
-				},
-			},
-			ServiceAccountName: "serviceAccountName",
-		},
-		SinkURI: &completeURL,
+		IdentityStatus: completeIdentityStatus,
+		SinkURI:        &completeURL,
 		CloudEventAttributes: []duckv1.CloudEventAttributes{
 			{
 				Type:   "type",

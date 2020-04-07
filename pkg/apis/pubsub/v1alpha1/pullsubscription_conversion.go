@@ -92,7 +92,7 @@ func convertToV1beta1ModeType(from ModeType) (v1beta1.ModeType, error) {
 	case "":
 		return "", nil
 	default:
-		return v1beta1.ModeCloudEventsBinary, fmt.Errorf("unknown ModeType %v", from)
+		return "unknown", fmt.Errorf("unknown ModeType %v", from)
 	}
 }
 
@@ -107,7 +107,7 @@ func convertFromV1beta1ModeType(from v1beta1.ModeType) (ModeType, error) {
 	case "":
 		return "", nil
 	default:
-		return ModeCloudEventsBinary, fmt.Errorf("unknown ModeType %v", from)
+		return "unknown", fmt.Errorf("unknown ModeType %v", from)
 	}
 }
 

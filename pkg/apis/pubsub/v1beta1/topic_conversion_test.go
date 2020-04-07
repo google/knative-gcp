@@ -18,17 +18,17 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
-
-	"knative.dev/pkg/apis"
+	"testing"
 )
 
-// ConvertTo implements apis.Convertible.
-func (*PullSubscription) ConvertTo(_ context.Context, to apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
-}
+func TestTopicConversionBadType(t *testing.T) {
+	good, bad := &Topic{}, &Topic{}
 
-// ConvertFrom implements apis.Convertible.
-func (*PullSubscription) ConvertFrom(_ context.Context, from apis.Convertible) error {
-	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+	if err := good.ConvertTo(context.Background(), bad); err == nil {
+		t.Errorf("ConvertTo() = %#v, wanted error", bad)
+	}
+
+	if err := good.ConvertFrom(context.Background(), bad); err == nil {
+		t.Errorf("ConvertFrom() = %#v, wanted error", good)
+	}
 }

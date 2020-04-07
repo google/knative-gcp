@@ -24,11 +24,11 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-func (*PullSubscription) ConvertTo(_ context.Context, to apis.Convertible) error {
+func (*Topic) ConvertTo(_ context.Context, to apis.Convertible) error {
 	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
 }
 
 // ConvertFrom implements apis.Convertible.
-func (*PullSubscription) ConvertFrom(_ context.Context, from apis.Convertible) error {
+func (*Topic) ConvertFrom(_ context.Context, from apis.Convertible) error {
 	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
 }
