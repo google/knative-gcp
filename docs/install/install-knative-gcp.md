@@ -117,7 +117,7 @@
       |       CloudStorageSource        |                              roles/storage.admin                               |
       |      CloudSchedulerSource       |                           roles/cloudscheduler.admin                           |
       |      CloudAuditLogsSource       | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer |
-      |      CloudBuildSource           |                             roles/pubsub.subscriber                            |
+      |        CloudBuildSource         |                            roles/pubsub.subscriber                             |
       |             Channel             |                              roles/pubsub.editor                               |
       |        PullSubscription         |                              roles/pubsub.editor                               |
       |              Topic              |                              roles/pubsub.editor                               |

@@ -3,10 +3,9 @@
 ## Overview
 
 This sample shows how to configure `CloudBuildSources`. The `CloudBuildSource`
-fires a new event each time when your build's state changes, 
-such as when your build is created, 
-when your build transitions to a working state, 
-and when your build completes.
+fires a new event each time when your build's state changes, such as when your
+build is created, when your build transitions to a working state, and when your
+build completes.
 
 ## Prerequisites
 
@@ -14,14 +13,17 @@ and when your build completes.
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
-1. Enable the `Cloud Build API` and `Cloud Pub/Sub API`,  on your project:
+1. Enable the `Cloud Build API` and `Cloud Pub/Sub API`, on your project:
 
    ```shell
    gcloud services enable cloudbuild.googleapis.com
    gcloud services enable pubsub.googleapis.com
    ```
-   The Pub/Sub topic to which Cloud Build publishes these build update messages is called `cloud-builds`. 
-   When you enable the `Cloud Build API` and `Cloud Pub/Sub API`, the `cloud-builds` topic will automatically be created for you. 
+
+   The Pub/Sub topic to which Cloud Build publishes these build update messages
+   is called `cloud-builds`. When you enable the `Cloud Build API` and
+   `Cloud Pub/Sub API`, the `cloud-builds` topic will automatically be created
+   for you.
 
 ## Deployment
 
@@ -34,29 +36,34 @@ and when your build completes.
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 
    1. If you are using standard Kubernetes secrets, but want to use a
-      non-default one, update `secret` with your own secret which has the permission of `roles/pubsub.subscriber`.
+      non-default one, update `secret` with your own secret which has the
+      permission of `roles/pubsub.subscriber`.
 
    ```shell
    kubectl apply --filename cloudbuildsource.yaml
    ```
 
-1. Create a [`Service`](event-display.yaml) that the Build notifications
-   will sink into:
+1. Create a [`Service`](event-display.yaml) that the Build notifications will
+   sink into:
 
    ```shell
    kubectl apply --filename event-display.yaml
    ```
+
 ## Publish
 
-You can refer to [Cloud Build Quick Start: preparing source files](https://cloud.google.com/cloud-build/docs/quickstart-build#preparing_source_files) to prepare source files.
-You can refer to 
- [Cloud Build Quick Start: build using dockerfile](https://cloud.google.com/cloud-build/docs/quickstart-build#build_using_dockerfile) or 
- [Cloud Build Quick Start: build using a build config file](https://cloud.google.com/cloud-build/docs/quickstart-build#build_using_a_build_config_file) to trigger a build.
+You can refer to
+[Cloud Build Quick Start: preparing source files](https://cloud.google.com/cloud-build/docs/quickstart-build#preparing_source_files)
+to prepare source files. You can refer to
+[Cloud Build Quick Start: build using dockerfile](https://cloud.google.com/cloud-build/docs/quickstart-build#build_using_dockerfile)
+or
+[Cloud Build Quick Start: build using a build config file](https://cloud.google.com/cloud-build/docs/quickstart-build#build_using_a_build_config_file)
+to trigger a build.
 
 ## Verify
 
-Once the build's state changes, we will verify that the published event was sent by looking at the logs of the
-service that this CloudBuildSource sinks to.
+Once the build's state changes, we will verify that the published event was sent
+by looking at the logs of the service that this CloudBuildSource sinks to.
 
 1. We need to wait for the downstream pods to get started and receive our event,
    wait up to 60 seconds. You can check the status of the downstream pods with:
@@ -72,8 +79,10 @@ service that this CloudBuildSource sinks to.
    ```shell
    kubectl logs --selector app=event-display -c user-container --tail=200
    ```
-You may see multiple events since the `CloudBuildSource` fires a new event each time when your build's state changes.
-You should see log lines similar to:
+
+   You may see multiple events since the `CloudBuildSource` fires a new event
+   each time when your build's state changes. You should see log lines similar
+   to:
 
 ```shell
 ☁️  cloudevents.Event
