@@ -39,14 +39,11 @@ func TestChainProcessors(t *testing.T) {
 	e := event.New()
 	e.SetID("p0")
 
-	go func() {
+	defer func() {
 		gotEvent1 := <-eventCh
 		if gotEvent1.ID() != "p0" {
 			t.Errorf("processor1 previous event id got=%s, want=p0", gotEvent1.ID())
 		}
-	}()
-
-	go func() {
 		gotEvent2 := <-eventCh
 		if gotEvent2.ID() != "p1" {
 			t.Errorf("processor2 previous value got=%s, want=p1", gotEvent2.ID())
@@ -56,5 +53,4 @@ func TestChainProcessors(t *testing.T) {
 	if err := all.Process(context.Background(), &e); err != nil {
 		t.Errorf("chained processors got unexpected error: %v", err)
 	}
-	close(eventCh)
 }

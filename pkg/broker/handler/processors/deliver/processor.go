@@ -29,7 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
-// Processor delives events based on the broker/target in the context.
+// Processor delivers events based on the broker/target in the context.
 type Processor struct {
 	processors.BaseProcessor
 

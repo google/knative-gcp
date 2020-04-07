@@ -43,7 +43,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	if p.passFilter(ctx, target.FilterAttributes, event) {
 		return p.Next().Process(ctx, event)
 	}
-	logging.FromContext(ctx).Info("event is filtered for target", zap.Any("target", target))
+	logging.FromContext(ctx).Info("event does not pass filter for target", zap.Any("target", target))
 	return nil
 }
 

@@ -43,23 +43,23 @@ type ChainableProcessor interface {
 // next processor. It can gracefully handle the case where the next
 // processor doesn't exist.
 type BaseProcessor struct {
-	N ChainableProcessor
+	n ChainableProcessor
 }
 
 // Next returns the next processor otherwise it will return a
 // no-op processor so that caller doesn't need to worry about
 // calling a nil processor.
 func (p *BaseProcessor) Next() Processor {
-	if p.N == nil {
+	if p.n == nil {
 		return noop
 	}
-	return p.N
+	return p.n
 }
 
 // WithNext sets the next Processor to pass the event.
 func (p *BaseProcessor) WithNext(n ChainableProcessor) ChainableProcessor {
-	p.N = n
-	return p.N
+	p.n = n
+	return p.n
 }
 
 // ChainProcessors chains the given processors in order.
@@ -79,6 +79,8 @@ func (p noOpProcessor) Process(_ context.Context, _ *event.Event) error {
 	return nil
 }
 
+// Next here shouldn't really be called because
+// reaching noop-processor already means the chain of processors hit a nil.
 func (p noOpProcessor) Next() Processor {
-	return noop
+	return nil
 }

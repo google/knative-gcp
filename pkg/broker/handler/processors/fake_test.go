@@ -30,7 +30,7 @@ func TestFakeProcessorAlwaysError(t *testing.T) {
 	event := event.New()
 	p := &FakeProcessor{AlwaysErr: true, PrevEventsCh: ch}
 
-	go func() {
+	defer func() {
 		gotEvent := <-ch
 		if diff := cmp.Diff(&event, gotEvent); diff != "" {
 			t.Errorf("processed event (-want,+got): %v", diff)
@@ -40,7 +40,6 @@ func TestFakeProcessorAlwaysError(t *testing.T) {
 	if err := p.Process(context.Background(), &event); err == nil {
 		t.Error("expected error when AlwaysErr is set to true")
 	}
-	close(ch)
 }
 
 func TestFakeProcessorOneTimeError(t *testing.T) {
@@ -48,7 +47,7 @@ func TestFakeProcessorOneTimeError(t *testing.T) {
 	event := event.New()
 	p := &FakeProcessor{OneTimeErr: true, PrevEventsCh: ch}
 
-	go func() {
+	defer func() {
 		for i := 0; i < 2; i++ {
 			gotEvent := <-ch
 			if diff := cmp.Diff(&event, gotEvent); diff != "" {
@@ -64,8 +63,6 @@ func TestFakeProcessorOneTimeError(t *testing.T) {
 	if err := p.Process(context.Background(), &event); err != nil {
 		t.Error("expected non-error the second time when OneTimeErr is set to true")
 	}
-
-	close(ch)
 }
 
 func TestFakeProcessorBlock(t *testing.T) {
@@ -73,7 +70,7 @@ func TestFakeProcessorBlock(t *testing.T) {
 	event := event.New()
 	p := &FakeProcessor{BlockUntilCancel: true, PrevEventsCh: ch}
 
-	go func() {
+	defer func() {
 		gotEvent := <-ch
 		if diff := cmp.Diff(&event, gotEvent); diff != "" {
 			t.Errorf("processed event (-want,+got): %v", diff)
@@ -85,7 +82,6 @@ func TestFakeProcessorBlock(t *testing.T) {
 	if err := p.Process(ctx, &event); err != nil {
 		t.Errorf("unexpected error from blocking: %v", err)
 	}
-	close(ch)
 	if !p.WasCancelled {
 		t.Error("FakeProcessor.WasCancelled got=false, want=true")
 	}
@@ -119,6 +115,4 @@ func TestFakeProcessorModifyEvent(t *testing.T) {
 	if err := p1.Process(context.Background(), &origin); err != nil {
 		t.Errorf("unexpected error from processing: %v", err)
 	}
-	close(ch1)
-	close(ch2)
 }

@@ -27,7 +27,7 @@ import (
 	"knative.dev/eventing/pkg/logging"
 )
 
-// Handler pulls Pubsub messages as events and process them
+// Handler pulls Pubsub messages as events and processes them
 // with chain of processors.
 type Handler struct {
 	// PubsubEvents is the CloudEvents Pubsub protocol to pull
@@ -79,8 +79,8 @@ func (h *Handler) handle(ctx context.Context) {
 		// Don't block new events.
 		go func() {
 			pctx := ctx
-			var cancel context.CancelFunc
 			if h.Timeout != 0 {
+				var cancel context.CancelFunc
 				pctx, cancel = context.WithTimeout(ctx, h.Timeout)
 				defer cancel()
 			}

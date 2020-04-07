@@ -31,7 +31,7 @@ type FakeProcessor struct {
 	// AlwaysErr once set will always immediately return error.
 	AlwaysErr bool
 
-	// OneTimeErr once set will for once immediately return error.
+	// OneTimeErr once set will immediately return an error exactly once.
 	OneTimeErr bool
 
 	// BlockUntilCancel will block until context gets cancelled only

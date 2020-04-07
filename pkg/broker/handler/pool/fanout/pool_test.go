@@ -120,3 +120,5 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 		t.Errorf("handlers map (-want,+got): %v", diff)
 	}
 }
+
+// TODO(yolocs): add semi-e2e tests for fanout pool.

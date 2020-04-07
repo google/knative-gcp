@@ -48,7 +48,9 @@ func TestDeliverSuccess(t *testing.T) {
 		t.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
 	targetSvr := httptest.NewServer(targetClient)
+	defer targetSvr.Close()
 	ingressSvr := httptest.NewServer(ingressClient)
+	defer ingressSvr.Close()
 	p := &Processor{Requester: requester}
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker", Address: ingressSvr.URL}
@@ -121,6 +123,7 @@ func TestDeliverFailure(t *testing.T) {
 		t.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
 	targetSvr := httptest.NewServer(targetClient)
+	defer targetSvr.Close()
 	p := &Processor{Requester: requester}
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}

@@ -29,6 +29,24 @@ var (
 	defaultTimeout        = 10 * time.Minute
 )
 
+var defaultCeClinet ceclient.Client
+
+func init() {
+	p, err := cev2.NewHTTP()
+	if err != nil {
+		panic(err)
+	}
+	c, err := cev2.NewClientObserved(p,
+		ceclient.WithUUIDs(),
+		ceclient.WithTimeNow(),
+		ceclient.WithTracePropagation(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defaultCeClinet = c
+}
+
 // Options holds all the options for create handler pool.
 type Options struct {
 	// ProjectID is the project for pubsub.
@@ -57,25 +75,9 @@ func NewOptions(opts ...Option) *Options {
 		o(opt)
 	}
 	if opt.EventRequester == nil {
-		opt.EventRequester = mustNewCeClient()
+		opt.EventRequester = defaultCeClinet
 	}
 	return opt
-}
-
-func mustNewCeClient() ceclient.Client {
-	p, err := cev2.NewHTTP()
-	if err != nil {
-		panic(err)
-	}
-	c, err := cev2.NewClientObserved(p,
-		ceclient.WithUUIDs(),
-		ceclient.WithTimeNow(),
-		ceclient.WithTracePropagation(),
-	)
-	if err != nil {
-		panic(err)
-	}
-	return c
 }
 
 // Option is for providing individual option.

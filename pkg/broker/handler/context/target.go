@@ -19,8 +19,6 @@ package context
 import (
 	"context"
 
-	"knative.dev/pkg/logging"
-
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
@@ -35,7 +33,7 @@ func WithTarget(ctx context.Context, t *config.Target) context.Context {
 func GetTarget(ctx context.Context) *config.Target {
 	untyped := ctx.Value(targetKey{})
 	if untyped == nil {
-		logging.FromContext(ctx).Panic("Unable to fetch Target from context.")
+		return nil
 	}
 	return untyped.(*config.Target)
 }

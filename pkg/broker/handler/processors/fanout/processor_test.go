@@ -32,7 +32,7 @@ import (
 )
 
 func TestFanoutSuccess(t *testing.T) {
-	ch := make(chan *event.Event)
+	ch := make(chan *event.Event, 4)
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
@@ -60,7 +60,7 @@ func TestFanoutSuccess(t *testing.T) {
 	e.SetSubject("subject")
 	e.SetType("type")
 
-	go func() {
+	defer func() {
 		gotNum := 0
 		for gotEvent := range ch {
 			if diff := cmp.Diff(&e, gotEvent); diff != "" {
@@ -77,6 +77,7 @@ func TestFanoutSuccess(t *testing.T) {
 	if err := p.Process(ctx, &e); err != nil {
 		t.Errorf("unexpected error from processing: %v", err)
 	}
+	// Close the channel so that the defer func will finish.
 	close(ch)
 
 	// Make sure the processor sets the broker and targets in the context.
@@ -86,7 +87,7 @@ func TestFanoutSuccess(t *testing.T) {
 }
 
 func TestFanoutPartialFailure(t *testing.T) {
-	ch := make(chan *event.Event)
+	ch := make(chan *event.Event, 4)
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
@@ -106,7 +107,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 	e.SetSubject("subject")
 	e.SetType("type")
 
-	go func() {
+	defer func() {
 		gotNum := 0
 		for gotEvent := range ch {
 			if diff := cmp.Diff(&e, gotEvent); diff != "" {
@@ -123,6 +124,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 	if err := p.Process(ctx, &e); err == nil {
 		t.Error("expect error from processing")
 	}
+	// Close the channel so that the defer func will finish.
 	close(ch)
 }
 

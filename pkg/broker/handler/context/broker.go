@@ -19,12 +19,13 @@ package context
 import (
 	"context"
 
-	"knative.dev/pkg/logging"
-
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
+// The key used to store/retrieve broker key in the context.
 type brokerKeyKey struct{}
+
+// The key used to store/retrieve broker in the context.
 type brokerKey struct{}
 
 // WithBrokerKey sets a broker key in the context.
@@ -36,7 +37,7 @@ func WithBrokerKey(ctx context.Context, key string) context.Context {
 func GetBrokerKey(ctx context.Context) string {
 	untyped := ctx.Value(brokerKeyKey{})
 	if untyped == nil {
-		logging.FromContext(ctx).Panic("Unable to fetch Broker key from context.")
+		return ""
 	}
 	return untyped.(string)
 }
@@ -50,7 +51,7 @@ func WithBroker(ctx context.Context, b *config.Broker) context.Context {
 func GetBroker(ctx context.Context) *config.Broker {
 	untyped := ctx.Value(brokerKey{})
 	if untyped == nil {
-		logging.FromContext(ctx).Panic("Unable to fetch Broker from context.")
+		return nil
 	}
 	return untyped.(*config.Broker)
 }
