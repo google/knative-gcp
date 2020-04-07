@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
@@ -30,9 +31,23 @@ import (
 func (source *PullSubscription) ConvertTo(_ context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.PullSubscription:
-		// The conversions are lossless, so we can just use the other direction here. If the
-		// conversion eventually becomes lossy, then we won't be able to do this.
-		return sink.ConvertFrom(nil, source)
+		sink.ObjectMeta = source.ObjectMeta
+		sink.Spec.PubSubSpec = convertToV1beta1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.Topic = source.Spec.Topic
+		sink.Spec.AckDeadline = source.Spec.AckDeadline
+		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
+		sink.Spec.RetentionDuration = source.Spec.RetentionDuration
+		sink.Spec.Transformer = source.Spec.Transformer
+		if mode, err := convertToV1beta1ModeType(source.Spec.Mode); err != nil {
+			return err
+		} else {
+			sink.Spec.Mode = mode
+		}
+		sink.Spec.AdapterType = source.Spec.AdapterType
+		sink.Status.PubSubStatus = convertToV1beta1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.TransformerURI = source.Status.TransformerURI
+		sink.Status.SubscriptionID = source.Status.SubscriptionID
+		return nil
 	default:
 		return fmt.Errorf("unknown conversion, got: %T", sink)
 
@@ -66,6 +81,21 @@ func (sink *PullSubscription) ConvertFrom(_ context.Context, from apis.Convertib
 	}
 }
 
+func convertToV1beta1ModeType(from ModeType) (v1beta1.ModeType, error) {
+	switch from {
+	case ModeCloudEventsBinary:
+		return v1beta1.ModeCloudEventsBinary, nil
+	case ModeCloudEventsStructured:
+		return v1beta1.ModeCloudEventsStructured, nil
+	case ModePushCompatible:
+		return v1beta1.ModePushCompatible, nil
+	case "":
+		return "", nil
+	default:
+		return v1beta1.ModeCloudEventsBinary, fmt.Errorf("unknown ModeType %v", from)
+	}
+}
+
 func convertFromV1beta1ModeType(from v1beta1.ModeType) (ModeType, error) {
 	switch from {
 	case v1beta1.ModeCloudEventsBinary:
@@ -74,11 +104,21 @@ func convertFromV1beta1ModeType(from v1beta1.ModeType) (ModeType, error) {
 		return ModeCloudEventsStructured, nil
 	case v1beta1.ModePushCompatible:
 		return ModePushCompatible, nil
+	case "":
+		return "", nil
 	default:
-		return ModeCloudEventsBinary, fmt.Errorf("unknown ModeTypes %v", from)
+		return ModeCloudEventsBinary, fmt.Errorf("unknown ModeType %v", from)
 	}
 }
 
+func convertToV1beta1PubSubSpec(from v1alpha1.PubSubSpec) duckv1beta1.PubSubSpec {
+	to := duckv1beta1.PubSubSpec{}
+	to.SourceSpec = from.SourceSpec
+	to.IdentitySpec = convertToV1beta1IdentitySpec(from.IdentitySpec)
+	to.Secret = from.Secret
+	to.Project = from.Project
+	return to
+}
 func convertFromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) v1alpha1.PubSubSpec {
 	to := v1alpha1.PubSubSpec{}
 	to.SourceSpec = from.SourceSpec
@@ -88,12 +128,27 @@ func convertFromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) v1alpha1.PubSubSp
 	return to
 }
 
+func convertToV1beta1IdentitySpec(from v1alpha1.IdentitySpec) duckv1beta1.IdentitySpec {
+	to := duckv1beta1.IdentitySpec{}
+	to.GoogleServiceAccount = from.GoogleServiceAccount
+	return to
+}
 func convertFromV1beta1IdentitySpec(from duckv1beta1.IdentitySpec) v1alpha1.IdentitySpec {
 	to := v1alpha1.IdentitySpec{}
 	to.GoogleServiceAccount = from.GoogleServiceAccount
 	return to
 }
 
+func convertToV1beta1PubSubStatus(from v1alpha1.PubSubStatus) duckv1beta1.PubSubStatus {
+	to := duckv1beta1.PubSubStatus{}
+	to.IdentityStatus = convertToV1beta1IdentityStatus(from.IdentityStatus)
+	to.SinkURI = from.SinkURI
+	to.CloudEventAttributes = from.CloudEventAttributes
+	to.ProjectID = from.ProjectID
+	to.TopicID = from.TopicID
+	to.SubscriptionID = from.SubscriptionID
+	return to
+}
 func convertFromV1beta1PubSubStatus(from duckv1beta1.PubSubStatus) v1alpha1.PubSubStatus {
 	to := v1alpha1.PubSubStatus{}
 	to.IdentityStatus = convertFromV1beta1IdentityStatus(from.IdentityStatus)
@@ -105,6 +160,12 @@ func convertFromV1beta1PubSubStatus(from duckv1beta1.PubSubStatus) v1alpha1.PubS
 	return to
 }
 
+func convertToV1beta1IdentityStatus(from v1alpha1.IdentityStatus) duckv1beta1.IdentityStatus {
+	to := duckv1beta1.IdentityStatus{}
+	to.Status = from.Status
+	to.ServiceAccountName = from.ServiceAccountName
+	return to
+}
 func convertFromV1beta1IdentityStatus(from duckv1beta1.IdentityStatus) v1alpha1.IdentityStatus {
 	to := v1alpha1.IdentityStatus{}
 	to.Status = from.Status
