@@ -52,7 +52,7 @@ type FakeProcessor struct {
 	once sync.Once
 }
 
-var _ Processor = (*FakeProcessor)(nil)
+var _ Interface = (*FakeProcessor)(nil)
 
 // Process processes the event.
 func (p *FakeProcessor) Process(ctx context.Context, event *event.Event) error {

@@ -32,6 +32,8 @@ type Processor struct {
 	processors.BaseProcessor
 }
 
+var _ processors.Interface = (*Processor)(nil)
+
 // Process passes the event to the next processor if the event passes the filter.
 // Otherwise it simply returns.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
@@ -46,7 +48,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	if p.passFilter(ctx, target.FilterAttributes, event) {
 		return p.Next().Process(ctx, event)
 	}
-	logging.FromContext(ctx).Info("event does not pass filter for target", zap.Any("target", target))
+	logging.FromContext(ctx).Debug("event does not pass filter for target", zap.Any("target", target))
 	return nil
 }
 

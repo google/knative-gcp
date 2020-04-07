@@ -35,7 +35,7 @@ type Handler struct {
 	PubsubEvents *pubsub.Protocol
 
 	// Processor is the processor to process events.
-	Processor processors.Processor
+	Processor processors.Interface
 
 	// Timeout is the timeout for processing each individual event.
 	Timeout time.Duration

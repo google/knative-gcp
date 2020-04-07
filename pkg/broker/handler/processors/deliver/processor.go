@@ -37,6 +37,8 @@ type Processor struct {
 	Requester ceclient.Client
 }
 
+var _ processors.Interface = (*Processor)(nil)
+
 // Process delivers the event based on the broker/target in the context.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	broker, err := handlerctx.GetBroker(ctx)

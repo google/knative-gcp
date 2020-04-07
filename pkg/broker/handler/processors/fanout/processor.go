@@ -47,6 +47,8 @@ type Processor struct {
 	Targets config.ReadonlyTargets
 }
 
+var _ processors.Interface = (*Processor)(nil)
+
 // Process fanouts the given event.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	bk, err := handlerctx.GetBrokerKey(ctx)
