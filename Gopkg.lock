@@ -1087,7 +1087,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:3aa0a021f9a82a7ba13003e10136447c1e0e9fa4b754bf4ceebdb40ba87c2ab8"
+  digest = "1:afd0dcc3994c4cb27d6322160bae23e602ccca2050b18b8d0f178224acd71c04"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -1100,6 +1100,12 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1/fake",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/apiextensions",
+    "pkg/client/informers/externalversions/apiextensions/v1",
+    "pkg/client/informers/externalversions/apiextensions/v1beta1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/listers/apiextensions/v1",
     "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "NUT"
@@ -1573,6 +1579,9 @@
     "apis/duck/v1beta1",
     "apis/testing/fuzzer",
     "changeset",
+    "client/injection/apiextensions/client",
+    "client/injection/apiextensions/informers/apiextensions/v1beta1/customresourcedefinition",
+    "client/injection/apiextensions/informers/factory",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
     "client/injection/ducks/duck/v1alpha1/addressable",
@@ -1640,6 +1649,7 @@
     "webhook/certificates/resources",
     "webhook/configmaps",
     "webhook/resourcesemantics",
+    "webhook/resourcesemantics/conversion",
     "webhook/resourcesemantics/defaulting",
     "webhook/resourcesemantics/validation",
   ]
@@ -1882,6 +1892,7 @@
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",
     "knative.dev/pkg/webhook/resourcesemantics",
+    "knative.dev/pkg/webhook/resourcesemantics/conversion",
     "knative.dev/pkg/webhook/resourcesemantics/defaulting",
     "knative.dev/pkg/webhook/resourcesemantics/validation",
     "knative.dev/serving/pkg/apis/serving/v1",
