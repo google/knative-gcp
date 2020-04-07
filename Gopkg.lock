@@ -427,6 +427,14 @@
   version = "v0.9.1"
 
 [[projects]]
+  branch = "master"
+  digest = "1:cf68a79fd02ab0f6942b9567d03d054b6568212fcc22de2a4afdefd096923749"
+  name = "github.com/kballard/go-shellquote"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "95032a82bc518f77982ea72343cc1ade730072f0"
+
+[[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
   name = "github.com/kelseyhightower/envconfig"
   packages = ["."]
@@ -1561,11 +1569,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "8edb67b3ef33da54df9137b3be4c5447d59909b4"
+  revision = "350da952b050ec2c7afdacbc2f698d0f8437af74"
 
 [[projects]]
-  branch = "master"
-  digest = "1:b608c5aa58f33859735c419f4e4a165f33bf878e3e1b5e331783ea6ef7163b3f"
+  branch = "release-0.14"
+  digest = "1:20ae66cd133413ed130ba9bd3b63143b87b103647971c2956410e5b109f0ae13"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1623,6 +1631,7 @@
     "system",
     "system/testing",
     "test",
+    "test/cmd",
     "test/gke",
     "test/helpers",
     "test/ingress",
@@ -1646,7 +1655,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "d22642244e45bfa1dc59919a4fd4867cc7f27a48"
+  revision = "0c36abbff9e5ad06cbea50d55c0989485c236180"
 
 [[projects]]
   branch = "master"
@@ -1699,18 +1708,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0e8f7a9e34f0dbb1342fa9bfbe4d164e71271194"
+  revision = "698ee466cc94fe5b9eb16c568e3f29b28e3773c9"
 
 [[projects]]
   branch = "master"
-  digest = "1:d8858077778bca77705b26d5b5262bf33a6bfbaa701fffca1578fd7ef4c4b975"
+  digest = "1:ce8214f24f811aa582a58b2680e3380ff3fac7668a00d490fb23349a21051dcb"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "e84f0d1a364732918a6635cb07d895ff77ecba76"
+  revision = "6c5068f73cdc9dfbf0287d0b26523ebdabb08c3a"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
