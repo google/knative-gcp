@@ -21,7 +21,6 @@ metadata:
   name: pullsubscriptions.pubsub.cloud.google.com
 spec:
   group: pubsub.cloud.google.com
-  version: v1alpha1
   names:
     categories:
     - all
@@ -42,6 +41,14 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+    - name: v1beta1
+      served: true
+      storage: false
+  # They happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
       properties:
@@ -137,8 +144,8 @@ spec:
                   type:
                     type: string
                 required:
-                - type
-                - status
+                  - type
+                  - status
                 type: object
               type: array
             sinkUri:
