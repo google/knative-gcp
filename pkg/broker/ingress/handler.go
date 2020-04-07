@@ -19,6 +19,7 @@ package ingress
 import (
 	"context"
 	"errors"
+	"fmt"
 	nethttp "net/http"
 	"strings"
 	"time"
@@ -112,27 +113,32 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	// Path should be in the form of "/<ns>/<broker>".
 	pieces := strings.Split(request.URL.Path, "/")
 	if len(pieces) != 3 {
-		h.logger.Info("Malformed request path", zap.String("path", request.URL.Path))
+		msg := fmt.Sprintf("Malformed request path. want: '/<ns>/<broker>'; got: %v..", request.URL.Path)
+		h.logger.Info(msg)
 		response.WriteHeader(nethttp.StatusNotFound)
+		response.Write([]byte(msg))
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
 
-	event, statusCode := h.toEvent(request)
+	event, msg, statusCode := h.toEvent(request)
 	if event == nil {
 		response.WriteHeader(statusCode)
+		response.Write([]byte(msg))
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
-		h.logger.Error("Error publishing to PubSub", zap.String("event", event.String()), zap.String("ns", ns), zap.String("broker", broker), zap.Error(res))
+		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
+		h.logger.Error(msg)
 		statusCode := nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
 		}
 		response.WriteHeader(statusCode)
+		response.Write([]byte(msg))
 		return
 	}
 
@@ -140,7 +146,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 }
 
 // toEvent converts an http request to an event.
-func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, statusCode int) {
+func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg string, statusCode int) {
 	message := http.NewMessageFromHttpRequest(request)
 	defer func() {
 		if err := message.Finish(nil); err != nil {
@@ -149,13 +155,15 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, statusCo
 	}()
 	// If encoding is unknown, the message is not an event.
 	if message.ReadEncoding() == binding.EncodingUnknown {
-		h.logger.Debug("Encoding is unknown. Not a cloud event?", zap.Any("request", request))
-		return nil, nethttp.StatusBadRequest
+		msg := fmt.Sprintf("Encoding is unknown. Not a cloud event? request: %+v", request)
+		h.logger.Debug(msg)
+		return nil, msg, nethttp.StatusBadRequest
 	}
 	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
-		h.logger.Error("Failed to convert request to event", zap.Error(err))
-		return nil, nethttp.StatusBadRequest
+		msg := fmt.Sprintf("Failed to convert request to event: %v", err)
+		h.logger.Error(msg)
+		return nil, msg, nethttp.StatusBadRequest
 	}
-	return event, nethttp.StatusOK
+	return event, "", nethttp.StatusOK
 }
