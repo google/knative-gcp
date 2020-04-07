@@ -158,7 +158,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 
 	delete(data.Brokers["ns2/broker2"].Targets, "name4")
 	b, _ = proto.Marshal(data)
-	atomicWriteFile(t, dir, tmp.Name(), b)
+	atomicWriteFile(t, tmp.Name(), b)
 
 	<-ch
 
@@ -168,12 +168,16 @@ func TestSyncConfigFromFile(t *testing.T) {
 	}
 }
 
-func atomicWriteFile(t *testing.T, tempDir, file string, bytes []byte) {
+func atomicWriteFile(t *testing.T, file string, bytes []byte) {
 	t.Helper()
 	// In order to more closely replicate how K8s writes ConfigMaps to the file system, we will
 	// atomically swap out the file by writing it to a temp directory, then renaming it into the
 	// directory we are watching.
-	tmpFile, err := ioutil.TempFile(tempDir, "temp-*")
+	dir, err := ioutil.TempDir("", "temp-*")
+	if err != nil {
+		t.Fatalf("unexpected error from creating temp dir: %v", err)
+	}
+	tmpFile, err := ioutil.TempFile(dir, "temp-*")
 	if err != nil {
 		t.Fatalf("unexpected error from creating temp file: %v", err)
 	}
