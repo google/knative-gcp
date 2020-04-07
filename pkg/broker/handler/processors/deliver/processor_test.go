@@ -34,6 +34,21 @@ import (
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 )
 
+func TestInvalidContext(t *testing.T) {
+	p := &Processor{}
+	e := event.New()
+	err := p.Process(context.Background(), &e)
+	if err != handlerctx.ErrBrokerNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerNotPresent)
+	}
+
+	ctx := handlerctx.WithBroker(context.Background(), &config.Broker{})
+	err = p.Process(ctx, &e)
+	if err != handlerctx.ErrTargetNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetNotPresent)
+	}
+}
+
 func TestDeliverSuccess(t *testing.T) {
 	targetClient, err := cehttp.New()
 	if err != nil {

@@ -39,8 +39,14 @@ type Processor struct {
 
 // Process delivers the event based on the broker/target in the context.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	broker := handlerctx.GetBroker(ctx)
-	target := handlerctx.GetTarget(ctx)
+	broker, err := handlerctx.GetBroker(ctx)
+	if err != nil {
+		return err
+	}
+	target, err := handlerctx.GetTarget(ctx)
+	if err != nil {
+		return err
+	}
 
 	resp, res := p.Requester.Request(cecontext.WithTarget(ctx, target.Address), *event)
 	if !protocol.IsACK(res) {

@@ -31,6 +31,15 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
+func TestInvalidContext(t *testing.T) {
+	p := &Processor{}
+	e := event.New()
+	err := p.Process(context.Background(), &e)
+	if err != handlerctx.ErrBrokerKeyNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerKeyNotPresent)
+	}
+}
+
 func TestFanoutSuccess(t *testing.T) {
 	ch := make(chan *event.Event, 4)
 	ns, broker := "ns", "broker"
@@ -42,8 +51,8 @@ func TestFanoutSuccess(t *testing.T) {
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		InterceptFunc: func(ctx context.Context, e *event.Event) *event.Event {
-			b := handlerctx.GetBroker(ctx)
-			t := handlerctx.GetTarget(ctx)
+			b, _ := handlerctx.GetBroker(ctx)
+			t, _ := handlerctx.GetTarget(ctx)
 			gotTargets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
 				bm.UpsertTargets(t)
 			})

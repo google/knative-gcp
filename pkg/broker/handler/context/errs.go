@@ -16,24 +16,10 @@ limitations under the License.
 
 package context
 
-import (
-	"context"
+import "errors"
 
-	"github.com/google/knative-gcp/pkg/broker/config"
+var (
+	ErrTargetNotPresent    = errors.New("target not present in the context")
+	ErrBrokerNotPresent    = errors.New("broker not present in the context")
+	ErrBrokerKeyNotPresent = errors.New("broker key not present in the context")
 )
-
-type targetKey struct{}
-
-// WithTarget sets a target in the context.
-func WithTarget(ctx context.Context, t *config.Target) context.Context {
-	return context.WithValue(ctx, targetKey{}, t)
-}
-
-// GetTarget gets a target from the context.
-func GetTarget(ctx context.Context) (*config.Target, error) {
-	untyped := ctx.Value(targetKey{})
-	if untyped == nil {
-		return nil, ErrTargetNotPresent
-	}
-	return untyped.(*config.Target), nil
-}

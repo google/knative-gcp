@@ -26,15 +26,28 @@ import (
 )
 
 func TestBrokerKey(t *testing.T) {
+	_, err := GetBrokerKey(context.Background())
+	if err != ErrBrokerKeyNotPresent {
+		t.Errorf("error from GetBrokerKey got=%v, want=%v", err, ErrBrokerKeyNotPresent)
+	}
+
 	wantKey := "key"
 	ctx := WithBrokerKey(context.Background(), wantKey)
-	gotKey := GetBrokerKey(ctx)
+	gotKey, err := GetBrokerKey(ctx)
+	if err != nil {
+		t.Errorf("unexpected error from GetBrokerKey: %v", err)
+	}
 	if gotKey != wantKey {
 		t.Errorf("broker key from context got=%s, want=%s", gotKey, wantKey)
 	}
 }
 
 func TestBroker(t *testing.T) {
+	_, err := GetBroker(context.Background())
+	if err != ErrBrokerNotPresent {
+		t.Errorf("error from GetBroker got=%v, want=%v", err, ErrBrokerNotPresent)
+	}
+
 	wantBroker := &config.Broker{
 		Name:      "broker",
 		Namespace: "ns",
@@ -48,7 +61,10 @@ func TestBroker(t *testing.T) {
 	}
 
 	ctx := WithBroker(context.Background(), wantBroker)
-	gotBroker := GetBroker(ctx)
+	gotBroker, err := GetBroker(ctx)
+	if err != nil {
+		t.Errorf("unexpected error from GetBroker: %v", err)
+	}
 
 	if diff := cmp.Diff(wantBroker, gotBroker); diff != "" {
 		t.Errorf("broker from context (-want,+got): %v", diff)

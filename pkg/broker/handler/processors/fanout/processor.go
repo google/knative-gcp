@@ -49,7 +49,10 @@ type Processor struct {
 
 // Process fanouts the given event.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	bk := handlerctx.GetBrokerKey(ctx)
+	bk, err := handlerctx.GetBrokerKey(ctx)
+	if err != nil {
+		return err
+	}
 	broker, ok := p.Targets.GetBrokerByKey(bk)
 	if !ok {
 		return fmt.Errorf("event broker %q doesn't exist in config", bk)
@@ -90,7 +93,10 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 }
 
 func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutResult) error {
-	bk := handlerctx.GetBrokerKey(ctx)
+	bk, err := handlerctx.GetBrokerKey(ctx)
+	if err != nil {
+		return err
+	}
 	var wg sync.WaitGroup
 	var errs, passes int32
 

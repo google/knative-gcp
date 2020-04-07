@@ -26,6 +26,11 @@ import (
 )
 
 func TestTarget(t *testing.T) {
+	_, err := GetTarget(context.Background())
+	if err != ErrTargetNotPresent {
+		t.Errorf("error from GetTarget got=%v, want=%v", err, ErrTargetNotPresent)
+	}
+
 	wantTarget := &config.Target{
 		Name:      "target",
 		Namespace: "ns",
@@ -33,7 +38,10 @@ func TestTarget(t *testing.T) {
 		Broker:    "broker",
 	}
 	ctx := WithTarget(context.Background(), wantTarget)
-	gotTarget := GetTarget(ctx)
+	gotTarget, err := GetTarget(ctx)
+	if err != nil {
+		t.Errorf("unexpected error from GetTarget: %v", err)
+	}
 	if diff := cmp.Diff(wantTarget, gotTarget); diff != "" {
 		t.Errorf("target from context (-want,+got): %v", diff)
 	}

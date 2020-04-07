@@ -35,7 +35,10 @@ type Processor struct {
 // Process passes the event to the next processor if the event passes the filter.
 // Otherwise it simply returns.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	target := handlerctx.GetTarget(ctx)
+	target, err := handlerctx.GetTarget(ctx)
+	if err != nil {
+		return err
+	}
 	if target.FilterAttributes == nil {
 		return p.Next().Process(ctx, event)
 	}

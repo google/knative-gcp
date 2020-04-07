@@ -29,6 +29,15 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
+func TestInvalidContext(t *testing.T) {
+	p := &Processor{}
+	e := event.New()
+	err := p.Process(context.Background(), &e)
+	if err != handlerctx.ErrTargetNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetNotPresent)
+	}
+}
+
 func TestFilterProcessor(t *testing.T) {
 	tn := time.Now()
 	cases := []struct {

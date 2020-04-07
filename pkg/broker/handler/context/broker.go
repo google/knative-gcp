@@ -34,12 +34,12 @@ func WithBrokerKey(ctx context.Context, key string) context.Context {
 }
 
 // GetBrokerKey gets the broker key from the context.
-func GetBrokerKey(ctx context.Context) string {
+func GetBrokerKey(ctx context.Context) (string, error) {
 	untyped := ctx.Value(brokerKeyKey{})
 	if untyped == nil {
-		return ""
+		return "", ErrBrokerKeyNotPresent
 	}
-	return untyped.(string)
+	return untyped.(string), nil
 }
 
 // WithBroker sets a broker in the context.
@@ -48,10 +48,10 @@ func WithBroker(ctx context.Context, b *config.Broker) context.Context {
 }
 
 // GetBroker gets a broker from the context.
-func GetBroker(ctx context.Context) *config.Broker {
+func GetBroker(ctx context.Context) (*config.Broker, error) {
 	untyped := ctx.Value(brokerKey{})
 	if untyped == nil {
-		return nil
+		return nil, ErrBrokerNotPresent
 	}
-	return untyped.(*config.Broker)
+	return untyped.(*config.Broker), nil
 }
