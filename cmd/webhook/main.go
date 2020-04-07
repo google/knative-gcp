@@ -141,7 +141,7 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 			// pubsub
 			pubsubv1beta1.Kind("PullSubscription"): {
 				DefinitionName: pubsub.PullSubscriptionsResource.String(),
-				HubVersion:     pubsubv1beta1_,
+				HubVersion:     pubsubv1alpha1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
 					pubsubv1alpha1_: &pubsubv1alpha1.PullSubscription{},
 					pubsubv1beta1_:  &pubsubv1beta1.PullSubscription{},
@@ -149,7 +149,7 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 			},
 			pubsubv1beta1.Kind("Topic"): {
 				DefinitionName: pubsub.TopicsResource.String(),
-				HubVersion:     pubsubv1beta1_,
+				HubVersion:     pubsubv1alpha1_,
 				Zygotes: map[string]conversion.ConvertibleObject{
 					pubsubv1alpha1_: &pubsubv1alpha1.Topic{},
 					pubsubv1beta1_:  &pubsubv1beta1.Topic{},

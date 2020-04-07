@@ -32,6 +32,13 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        name: webhook
+        namespace: cloud-run-events
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -55,8 +62,10 @@ spec:
   # They happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
+          type: object
           required:
             - topic
           properties:
