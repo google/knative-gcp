@@ -40,7 +40,7 @@ var brokerConfig = &config.TargetsConfig{
 			Id:            "b-uid-1",
 			Name:          "broker1",
 			Namespace:     "ns1",
-			DecoupleQueue: &config.Queue{Topic: topic,},
+			DecoupleQueue: &config.Queue{Topic: topic},
 		},
 		"ns2/broker2": {
 			Id:            "b-uid-2",
@@ -52,7 +52,7 @@ var brokerConfig = &config.TargetsConfig{
 			Id:            "b-uid-3",
 			Name:          "broker3",
 			Namespace:     "ns3",
-			DecoupleQueue: &config.Queue{Topic: "",},
+			DecoupleQueue: &config.Queue{Topic: ""},
 		},
 	},
 }
