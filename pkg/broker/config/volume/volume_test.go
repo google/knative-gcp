@@ -177,7 +177,7 @@ func atomicWriteFile(t *testing.T, file string, bytes []byte) {
 	if err != nil {
 		t.Fatalf("unexpected error from creating temp dir: %v", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer os.RemoveAll(dir)
 	tmpFile, err := ioutil.TempFile(dir, "temp-*")
 	if err != nil {
 		t.Fatalf("unexpected error from creating temp file: %v", err)
