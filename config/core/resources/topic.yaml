@@ -21,7 +21,6 @@ metadata:
     duck.knative.dev/addressable: "true"
 spec:
   group: pubsub.cloud.google.com
-  version: v1alpha1
   names:
     kind: Topic
     plural: topics
@@ -33,6 +32,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -46,10 +46,17 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  # All versions happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
+          type: object
           required:
             - topic
           properties:
@@ -106,3 +113,4 @@ spec:
               properties:
                 url:
                   type: string
+
