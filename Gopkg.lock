@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:a9b445167089a8fbd072ce9586c977ecc385613a19e40603f116a8867d711bb3"
+  digest = "1:67381a5551ce8b88d587e87099c28a21db6a6192729dcc617f5131fc466af100"
   name = "cloud.google.com/go"
   packages = [
     ".",
@@ -11,6 +11,7 @@
     "iam",
     "internal",
     "internal/optional",
+    "internal/testutil",
     "internal/trace",
     "internal/version",
     "logging",
@@ -21,6 +22,7 @@
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "pubsub/pstest",
     "scheduler/apiv1",
     "storage",
     "trace/apiv2",
@@ -1736,6 +1738,7 @@
     "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
+    "cloud.google.com/go/pubsub/pstest",
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go/v1",
@@ -1747,6 +1750,7 @@
     "github.com/cloudevents/sdk-go/v2",
     "github.com/cloudevents/sdk-go/v2/binding",
     "github.com/cloudevents/sdk-go/v2/binding/transformer",
+    "github.com/cloudevents/sdk-go/v2/client",
     "github.com/cloudevents/sdk-go/v2/client/test",
     "github.com/cloudevents/sdk-go/v2/context",
     "github.com/cloudevents/sdk-go/v2/event",
@@ -1781,6 +1785,7 @@
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
+    "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
     "istio.io/api/security/v1beta1",
