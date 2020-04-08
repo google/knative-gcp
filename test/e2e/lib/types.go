@@ -19,3 +19,8 @@ package lib
 type TargetOutput struct {
 	Success bool `json:"success"`
 }
+
+type AuthConfig struct {
+	WorkloadIdentity     bool
+	PubsubServiceAccount string
+}

@@ -53,6 +53,12 @@ func DuplicatePubSubSecret(client *eventingtestlib.Client) {
 	}
 }
 
+func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
+	if !workloadIdentity {
+		DuplicatePubSubSecret(client)
+	}
+}
+
 func SetTracingToZipkin(client *eventingtestlib.Client) {
 	setTracingConfigOnce.Do(func() {
 		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{

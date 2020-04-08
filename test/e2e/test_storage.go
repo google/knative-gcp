@@ -35,7 +35,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
+func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
@@ -43,7 +43,7 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
@@ -55,7 +55,7 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool) {
 	lib.MakeStorageJobOrDie(client, fileName, targetName)
 
 	// Create the Storage source.
-	lib.MakeStorageOrDie(client, bucketName, storageName, targetName)
+	lib.MakeStorageOrDie(client, bucketName, storageName, targetName, authConfig.PubsubServiceAccount)
 
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, t, bucketName, fileName, project)

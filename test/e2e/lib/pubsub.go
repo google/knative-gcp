@@ -31,11 +31,12 @@ import (
 
 func MakePubSubOrDie(client *Client,
 	gvk metav1.GroupVersionKind,
-	psName, targetName, topicName string,
+	psName, targetName, topicName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudPubSubSourceOption,
 ) {
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(gvk, targetName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
+	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubsub)
 
