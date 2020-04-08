@@ -54,6 +54,7 @@ type Handler struct {
 func (h *Handler) Start(ctx context.Context, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
 	go func() {
+		defer h.cancel()
 		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
 

@@ -74,7 +74,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		curr = p.MaxConcurrency
 	}
 
-	var resChs []<-chan *fanoutResult
+	resChs := make([]<-chan *fanoutResult, 0, curr)
 	for i := 0; i < curr; i++ {
 		resChs = append(resChs, p.fanoutEvent(ctx, event, tc))
 	}
