@@ -1897,6 +1897,7 @@
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
     "knative.dev/pkg/tracing/config",
     "knative.dev/pkg/tracker",
+    "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",
