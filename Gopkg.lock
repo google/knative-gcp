@@ -1428,7 +1428,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "133ec838f2706b18dab87c7f1b2cb6cccd9409f1"
+  revision = "cf969fd68cb9311b19eafeec5163a8c66247337f"
 
 [[projects]]
   branch = "release-0.13"
@@ -1566,14 +1566,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2987a1db00b983af9e5d5281639a754fb6449eef01e6a375894829eaec17cb2a"
+  digest = "1:50482e6fd500cf50c4a29d640cda026206145c6716dff72e4368a5e57fdb7095"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "d878fef854182d0cb2ab2190c66a785b8f05e3e2"
+  revision = "193c078363dbb0b817068820dcbe7b238dd2eb02"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
