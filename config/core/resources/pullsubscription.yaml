@@ -79,7 +79,7 @@ spec:
                 key:
                   type: string
                 optional:
-                  type: bool
+                  type: boolean
             project:
               type: string
               description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
