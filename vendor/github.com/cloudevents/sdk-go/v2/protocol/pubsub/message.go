@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/format"
 	"github.com/cloudevents/sdk-go/v2/binding/spec"
@@ -20,44 +21,38 @@ var specs = spec.WithPrefix(prefix)
 // Message represents a Pub/Sub message.
 // This message *can* be read several times safely
 type Message struct {
-	// Data is the actual data in the message.
-	Data []byte
-
-	// Attributes represents the key-value pairs the current message
-	// is labelled with.
-	Attributes map[string]string
-
-	format  format.Format
-	version spec.Version
+	internal *pubsub.Message
+	format   format.Format
+	version  spec.Version
 }
 
 // NewMessage returns a binding.Message with data and attributes.
 // This message *can* be read several times safely
-func NewMessage(data []byte, attributes map[string]string) *Message {
+func NewMessage(pm *pubsub.Message) *Message {
 	var f format.Format = nil
 	var version spec.Version = nil
-	if attributes != nil {
+	if pm.Attributes != nil {
 		// Use Content-type attr to determine if message is structured and
 		// set format.
-		if s := attributes[contentType]; format.IsFormat(s) {
+		if s := pm.Attributes[contentType]; format.IsFormat(s) {
 			f = format.Lookup(s)
 		}
 		// Binary v0.3:
-		if s := attributes[specs.PrefixedSpecVersionName()]; s != "" {
+		if s := pm.Attributes[specs.PrefixedSpecVersionName()]; s != "" {
 			version = specs.Version(s)
 		}
 	}
 
 	return &Message{
-		Data:       data,
-		Attributes: attributes,
-		format:     f,
-		version:    version,
+		internal: pm,
+		format:   f,
+		version:  version,
 	}
 }
 
 // Check if pubsub.Message implements binding.Message
 var _ binding.Message = (*Message)(nil)
+var _ binding.MessageMetadataReader = (*Message)(nil)
 
 func (m *Message) ReadEncoding() binding.Encoding {
 	if m.version != nil {
@@ -73,20 +68,15 @@ func (m *Message) ReadStructured(ctx context.Context, encoder binding.Structured
 	if m.version != nil {
 		return binding.ErrNotStructured
 	}
-	return encoder.SetStructuredEvent(ctx, m.format, bytes.NewReader(m.Data))
+	return encoder.SetStructuredEvent(ctx, m.format, bytes.NewReader(m.internal.Data))
 }
 
-func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) error {
+func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) (err error) {
 	if m.format != nil {
 		return binding.ErrNotBinary
 	}
 
-	err := encoder.Start(ctx)
-	if err != nil {
-		return err
-	}
-
-	for k, v := range m.Attributes {
+	for k, v := range m.internal.Attributes {
 		if strings.HasPrefix(k, prefix) {
 			attr := m.version.Attribute(k)
 			if attr != nil {
@@ -102,14 +92,33 @@ func (m *Message) ReadBinary(ctx context.Context, encoder binding.BinaryWriter) 
 		}
 	}
 
-	err = encoder.SetData(bytes.NewReader(m.Data))
-	if err != nil {
-		return err
+	if m.internal.Data != nil {
+		return encoder.SetData(bytes.NewReader(m.internal.Data))
 	}
 
-	return encoder.End(ctx)
+	return
 }
 
+func (m *Message) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
+	attr := m.version.AttributeFromKind(k)
+	if attr != nil {
+		return attr, m.internal.Attributes[prefix+attr.Name()]
+	}
+	return nil, nil
+}
+
+func (m *Message) GetExtension(name string) interface{} {
+	return m.internal.Attributes[prefix+name]
+}
+
+// Finish marks the message to be forgotten.
+// If err is nil, the underlying Psubsub message will be acked;
+// otherwise nacked.
 func (m *Message) Finish(err error) error {
+	if err != nil {
+		m.internal.Nack()
+	} else {
+		m.internal.Ack()
+	}
 	return nil
 }
