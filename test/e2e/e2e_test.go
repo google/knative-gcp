@@ -41,29 +41,31 @@ import (
 var channelTestRunner eventingtestlib.ChannelTestRunner
 
 func TestMain(m *testing.M) {
-	eventingtest.InitializeEventingFlags()
-	channelTestRunner = eventingtestlib.ChannelTestRunner{
-		// ChannelFeatureMap saves the channel-features mapping.
-		// Each pair means the channel support the given list of features.
-		ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
-			{
-				APIVersion: resources.MessagingAPIVersion,
-				Kind:       "Channel",
-			}: {
-				eventingtestlib.FeatureBasic,
-				eventingtestlib.FeatureRedelivery,
-				eventingtestlib.FeaturePersistence,
+	os.Exit(func() int {
+		eventingtest.InitializeEventingFlags()
+		channelTestRunner = eventingtestlib.ChannelTestRunner{
+			// ChannelFeatureMap saves the channel-features mapping.
+			// Each pair means the channel support the given list of features.
+			ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
+				{
+					APIVersion: resources.MessagingAPIVersion,
+					Kind:       "Channel",
+				}: {
+					eventingtestlib.FeatureBasic,
+					eventingtestlib.FeatureRedelivery,
+					eventingtestlib.FeaturePersistence,
+				},
 			},
-		},
-		ChannelsToTest: eventingtest.EventingFlags.Channels,
-	}
+			ChannelsToTest: eventingtest.EventingFlags.Channels,
+		}
 
-	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
-	// place that cleans it up. If an individual test calls this instead, then it will break other
-	// tests that need the tracing in place.
-	defer zipkin.CleanupZipkinTracingSetup(log.Printf)
+		// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
+		// place that cleans it up. If an individual test calls this instead, then it will break other
+		// tests that need the tracing in place.
+		defer zipkin.CleanupZipkinTracingSetup(log.Printf)
 
-	os.Exit(m.Run())
+		return m.Run()
+	}())
 }
 
 // All e2e tests go below:
