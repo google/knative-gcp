@@ -50,7 +50,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path single broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"},},
+					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -65,8 +65,8 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "happy path multiple brokers",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1",},},
-					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2",},},
+					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
+					"test_ns_2/test_broker_2": {DecoupleQueue: &config.Queue{Topic: "test_topic_2"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -86,7 +86,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "client returns error",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"},},
+					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "test_topic_1"}},
 				},
 			},
 			cases: []brokerTestCase{
@@ -115,7 +115,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "decouple queue is nil for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: nil,},
+					"test_ns_1/test_broker_1": {DecoupleQueue: nil},
 				},
 			},
 			cases: []brokerTestCase{
@@ -131,7 +131,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			name: "empty topic for broker",
 			brokerConfig: &config.TargetsConfig{
 				Brokers: map[string]*config.Broker{
-					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: "",},},
+					"test_ns_1/test_broker_1": {DecoupleQueue: &config.Queue{Topic: ""}},
 				},
 			},
 			cases: []brokerTestCase{
