@@ -25,8 +25,8 @@ import (
 )
 
 // SmokeCloudSchedulerSourceSetup tests if a CloudSchedulerSource object can be created and be made ready.
-func SmokeCloudSchedulerSourceSetup(t *testing.T) {
-	client := lib.Setup(t, true)
+func SmokeCloudSchedulerSourceSetup(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	sName := "scheduler-test"
@@ -36,6 +36,7 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T) {
 		kngcptesting.WithCloudSchedulerSourceData("my test data"),
 		kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"),
 		kngcptesting.WithCloudSchedulerSourceSink(lib.ServiceGVK, "event-display"),
+		kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(authConfig.PubsubServiceAccount),
 	)
 
 	client.CreateSchedulerOrFail(scheduler)
@@ -44,8 +45,8 @@ func SmokeCloudSchedulerSourceSetup(t *testing.T) {
 
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the
 // log of the receiver.
-func CloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
-	client := lib.Setup(t, true)
+func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create an Addressable to receive scheduler events
@@ -56,7 +57,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	// Create a scheduler
 	sName := "scheduler-test"
 
-	lib.MakeSchedulerOrDie(client, sName, data, targetName)
+	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {
