@@ -123,6 +123,7 @@ func main() {
 		if err := tracing.SetupStaticPublishing(logger.Sugar(), "", tracing.AlwaysSample); err != nil {
 			log.Fatalf("Unable to setup trace publishing: %v", err)
 		}
+		defer tracing.SetupStaticPublishing(logger.Sugar(), "", nil)
 	}
 
 	c, err := cloudevents.NewClient(t,

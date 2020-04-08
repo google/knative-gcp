@@ -1471,8 +1471,8 @@
   revision = "69764acb6e8e900b7c05296c5d3c9c19545475f9"
 
 [[projects]]
-  branch = "master"
-  digest = "1:280e1d832694d7ea76e06dadf1d41aacf1af4832c8079aa0770b0d584a8dae57"
+  branch = "sendevents-flush-trace"
+  digest = "1:13019f117b0a57970ab484d37b71e58564be1e788a62c92873b3783e32684dc7"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1569,7 +1569,8 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "350da952b050ec2c7afdacbc2f698d0f8437af74"
+  revision = "ddb320a8ae634bf6661573f115610fc1c4cebad0"
+  source = "github.com/ian-mi/eventing"
 
 [[projects]]
   branch = "release-0.14"

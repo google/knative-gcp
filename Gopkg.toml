@@ -34,7 +34,8 @@ required = [
 # This is a preemptive override.
 [[override]]
   name = "knative.dev/eventing"
-  branch = "master"
+  source = "github.com/ian-mi/eventing"
+  branch = "sendevents-flush-trace"
 
 # This is a preemptive override.
 [[override]]
