@@ -16,11 +16,11 @@
 
 1. Install the Knative-GCP constructs. You can either:
 
-   - Install from master using [ko](http://github.com/google/ko)  
-      ```shell
-      ko apply -f ./config
-      ```
-      OR
+   - Install from master using [ko](http://github.com/google/ko)
+     ```shell
+     ko apply -f ./config
+     ```
+     OR
    - Install a [release](https://github.com/google/knative-gcp/releases).
      Remember to update `{{< version >}}` in the commands below with the
      appropriate release version.
