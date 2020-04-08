@@ -70,13 +70,14 @@ const (
 	sinkName = "sink"
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
 
-	topicNotReadyMsg                     = `Topic "test-cloudauditlogssource" not ready`
-	pullSubscriptionNotReadyMsg          = `PullSubscription "test-cloudauditlogssource" not ready`
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToCreateSinkMsg                = `failed to ensure creation of logging sink`
-	failedToSetPermissionsMsg            = `failed to ensure sink has pubsub.publisher permission on source topic`
-	failedToDeleteSinkMsg                = `Failed to delete Stackdriver sink`
+	topicNotReadyMsg                           = `Topic "test-cloudauditlogssource" not ready`
+	pullSubscriptionNotReadyMsg                = `PullSubscription "test-cloudauditlogssource" not ready`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToCreateSinkMsg                      = `failed to ensure creation of logging sink`
+	failedToSetPermissionsMsg                  = `failed to ensure sink has pubsub.publisher permission on source topic`
+	failedToDeleteSinkMsg                      = `Failed to delete Stackdriver sink`
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
 var (
@@ -401,7 +402,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
@@ -435,7 +436,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -469,7 +470,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is False", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: the status of PullSubscription %q is False`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -503,7 +504,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is Unknown", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "logging client create fails",

@@ -24,6 +24,8 @@ type ReadonlyTargets interface {
 	// GetBroker returns a broker and its targets if it exists.
 	// Do not modify the returned Broker copy.
 	GetBroker(namespace, name string) (*Broker, bool)
+	// GetBroker by its key (namespace/name).
+	GetBrokerByKey(key string) (*Broker, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
 	RangeBrokers(func(*Broker) bool)
@@ -50,8 +52,10 @@ type BrokerMutation interface {
 	SetDecoupleQueue(q *Queue) BrokerMutation
 	// SetState sets the broker state.
 	SetState(s State) BrokerMutation
-	// InsertTargets inserts Targets to the broker.
-	InsertTargets(...*Target) BrokerMutation
+	// UpsertTargets upserts Targets to the broker.
+	// The targets' namespace and broker will be forced to be
+	// the same as the broker's namespace and name.
+	UpsertTargets(...*Target) BrokerMutation
 	// DeleteTargets targets deletes Targets from the broker.
 	DeleteTargets(...*Target) BrokerMutation
 	// Delete deletes the broker.

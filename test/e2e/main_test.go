@@ -36,32 +36,34 @@ var channelTestRunner eventingtestlib.ChannelTestRunner
 var authConfig lib.AuthConfig
 
 func TestMain(m *testing.M) {
-	test.InitializeFlags()
-	eventingtest.InitializeEventingFlags()
-	channelTestRunner = eventingtestlib.ChannelTestRunner{
-		// ChannelFeatureMap saves the channel-features mapping.
-		// Each pair means the channel support the given list of features.
-		ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
-			{
-				APIVersion: resources.MessagingAPIVersion,
-				Kind:       "Channel",
-			}: {
-				eventingtestlib.FeatureBasic,
-				eventingtestlib.FeatureRedelivery,
-				eventingtestlib.FeaturePersistence,
+	os.Exit(func() int {
+		test.InitializeFlags()
+		eventingtest.InitializeEventingFlags()
+		channelTestRunner = eventingtestlib.ChannelTestRunner{
+			// ChannelFeatureMap saves the channel-features mapping.
+			// Each pair means the channel support the given list of features.
+			ChannelFeatureMap: map[metav1.TypeMeta][]eventingtestlib.Feature{
+				{
+					APIVersion: resources.MessagingAPIVersion,
+					Kind:       "Channel",
+				}: {
+					eventingtestlib.FeatureBasic,
+					eventingtestlib.FeatureRedelivery,
+					eventingtestlib.FeaturePersistence,
+				},
 			},
-		},
-		ChannelsToTest: eventingtest.EventingFlags.Channels,
-	}
-	authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
-	// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
-	if authConfig.WorkloadIdentity {
-		authConfig.PubsubServiceAccount = test.Flags.PubsubServiceAccount
-	}
-	// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
-	// place that cleans it up. If an individual test calls this instead, then it will break other
-	// tests that need the tracing in place.
-	defer zipkin.CleanupZipkinTracingSetup(log.Printf)
+			ChannelsToTest: eventingtest.EventingFlags.Channels,
+		}
+		authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
+		// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
+		if authConfig.WorkloadIdentity {
+			authConfig.PubsubServiceAccount = test.Flags.PubsubServiceAccount
+		}
+		// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
+		// place that cleans it up. If an individual test calls this instead, then it will break other
+		// tests that need the tracing in place.
+		defer zipkin.CleanupZipkinTracingSetup(log.Printf)
 
-	os.Exit(m.Run())
+		return m.Run()
+	}())
 }

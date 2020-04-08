@@ -40,13 +40,14 @@ import (
 )
 
 const (
-	testNS             = "test-namespace"
-	name               = "obj-name"
-	testTopicID        = "topic"
-	testProjectID      = "project"
-	receiveAdapterName = "test-receive-adapter"
-	resourceGroup      = "test-resource-group"
-	sinkName           = "sink"
+	testNS                                     = "test-namespace"
+	name                                       = "obj-name"
+	testTopicID                                = "topic"
+	testProjectID                              = "project"
+	receiveAdapterName                         = "test-receive-adapter"
+	resourceGroup                              = "test-resource-group"
+	sinkName                                   = "sink"
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
 var (
@@ -333,7 +334,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-		expectedErr: fmt.Sprintf("PullSubscription %q has not yet been reconciled", name),
+		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
 				rectesting.WithPullSubscriptionSpecWithNoDefaults(pubsubsourcev1alpha1.PullSubscriptionSpec{
@@ -418,7 +419,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
-		expectedErr: fmt.Sprintf("PullSubscription %q has not yet been reconciled", name),
+		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 	}, {
 		name: "topic exists and is ready, pullsubscription exists and the status is false",
 		objects: []runtime.Object{
@@ -487,7 +488,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionFailed(),
 		),
-		expectedErr: fmt.Sprintf("the status of PullSubscription %q is False", name),
+		expectedErr: fmt.Sprintf("%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, name),
 	}, {
 		name: "topic exists and is ready, pullsubscription exists and the status is unknown",
 		objects: []runtime.Object{
@@ -556,7 +557,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionUnknown(),
 		),
-		expectedErr: fmt.Sprintf("the status of PullSubscription %q is Unknown", name),
+		expectedErr: fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, name),
 	}}
 
 	defer logtesting.ClearAll()

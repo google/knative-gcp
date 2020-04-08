@@ -17,7 +17,6 @@ limitations under the License.
 package memory
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -49,11 +48,13 @@ func (m *brokerMutation) SetState(s config.State) config.BrokerMutation {
 	return m
 }
 
-func (m *brokerMutation) InsertTargets(targets ...*config.Target) config.BrokerMutation {
+func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerMutation {
 	if m.b.Targets == nil {
 		m.b.Targets = make(map[string]*config.Target)
 	}
 	for _, t := range targets {
+		t.Namespace = m.b.Namespace
+		t.Broker = m.b.Name
 		m.b.Targets[t.Name] = t
 	}
 	return m
@@ -77,15 +78,16 @@ type memoryTargets struct {
 
 var _ config.Targets = (*memoryTargets)(nil)
 
-// NewTargetsFromBytes creates a mutable Targets in memory.
-func NewTargetsFromBytes(b []byte) (config.Targets, error) {
-	pb := config.TargetsConfig{}
-	if err := proto.Unmarshal(b, &pb); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal bytes to TargetsConfig: %w", err)
-	}
+// NewEmptyTargets returns an empty mutable Targets in memory.
+func NewEmptyTargets() config.Targets {
+	return NewTargets(&config.TargetsConfig{Brokers: make(map[string]*config.Broker)})
+}
+
+// NewTargets returns a new mutable Targets in memory.
+func NewTargets(pb *config.TargetsConfig) config.Targets {
 	m := &memoryTargets{mux: sync.Mutex{}}
-	m.Store(&pb)
-	return m, nil
+	m.Store(pb)
+	return m
 }
 
 // MutateBroker mutates a broker by namespace and name.

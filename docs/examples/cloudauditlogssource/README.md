@@ -35,7 +35,7 @@ directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
-      update `serviceAccount` with the Pub/Sub enabled service account you
+      update `googleServiceAccount` with the Pub/Sub enabled service account you
       created in
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 
@@ -162,12 +162,16 @@ Data,
 
 ## What's Next
 
+1. For more details on Cloud Pub/Sub formats refer to the
+   [Subscriber overview guide](https://cloud.google.com/pubsub/docs/subscriber).
 1. For integrating with Cloud Pub/Sub, see the
    [PubSub example](../../examples/cloudpubsubsource/README.md).
 1. For integrating with Cloud Storage see the
    [Storage example](../../examples/cloudstoragesource/README.md).
 1. For integrating with Cloud Scheduler see the
    [Scheduler example](../../examples/cloudschedulersource/README.md).
+1. For integrating with Cloud Build see the
+   [Build example](../../examples/cloudbuildsource/README.md).
 1. For more information about CloudEvents, see the
    [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 

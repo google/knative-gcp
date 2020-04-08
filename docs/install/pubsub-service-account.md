@@ -63,6 +63,7 @@ Service Account.
            [Install Knative-GCP](install-knative-gcp.md).
 
            ```shell
+           gcloud services enable iamcredentials.googleapis.com
            gcloud beta container clusters update ${CLUSTER_NAME} \
            --identity-namespace=${PROJECT_ID}.svc.id.goog
            ```
@@ -78,15 +79,15 @@ Service Account.
            --role roles/iam.serviceAccountAdmin
            ```
 
-        1. Update `spec.serviceAccount` with a
+        1. Update `spec.googleServiceAccount` with the
            [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-           when creating resources. Check docs to see
-           [examples](https://github.com/google/knative-gcp/tree/master/docs/examples)
-           for each resource.
+           you just created when creating resources. Check
+           [example](https://github.com/google/knative-gcp/tree/master/docs/examples)
+           of each resource for detail.
 
-           Generally, updating `spec.serviceAccount` will trigger the controller
-           to enable Workload Identity for sources in the data plane. The
-           following steps are handled by the controller:
+           Generally, updating `spec.googleServiceAccount` will trigger the
+           controller to enable Workload Identity for sources in the data plane.
+           The following steps are handled by the controller:
 
            1. Create a Kubernetes Service Account and add an `OwnerReference` to
               it. The `OwnerReference` is referencing to the source.

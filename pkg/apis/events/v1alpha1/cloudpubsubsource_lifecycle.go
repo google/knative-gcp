@@ -17,9 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 )
 
@@ -41,45 +38,4 @@ func (ps *CloudPubSubSourceStatus) IsReady() bool {
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (ps *CloudPubSubSourceStatus) InitializeConditions() {
 	pubSubCondSet.Manage(ps).InitializeConditions()
-}
-
-// MarkPullSubscriptionFailed sets the condition that the underlying PullSubscription
-// is False and why.
-func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionFailed(reason, messageFormat string, messageA ...interface{}) {
-	pubSubCondSet.Manage(ps).MarkFalse(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
-}
-
-// MarkPullSubscriptionNotConfigured changes the PullSubscriptionReady condition to be unknown to reflect
-// that the PullSubscription does not yet have a Status.
-func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionNotConfigured() {
-	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
-}
-
-// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is ready.
-func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionReady() {
-	pubSubCondSet.Manage(ps).MarkTrue(duckv1alpha1.PullSubscriptionReady)
-}
-
-// MarkPullSubscriptionReady sets the condition that the underlying PullSubscription is Unknown and why.
-func (ps *CloudPubSubSourceStatus) MarkPullSubscriptionUnknown(reason, messageFormat string, messageA ...interface{}) {
-	pubSubCondSet.Manage(ps).MarkUnknown(duckv1alpha1.PullSubscriptionReady, reason, messageFormat, messageA...)
-}
-
-func (ps *CloudPubSubSourceStatus) PropagatePullSubscriptionStatus(pss *v1alpha1.PullSubscriptionStatus) {
-	psc := pss.GetTopLevelCondition()
-	if psc == nil {
-		ps.MarkPullSubscriptionNotConfigured()
-		return
-	}
-
-	switch {
-	case psc.Status == corev1.ConditionUnknown:
-		ps.MarkPullSubscriptionUnknown(psc.Reason, psc.Message)
-	case psc.Status == corev1.ConditionTrue:
-		ps.MarkPullSubscriptionReady()
-	case psc.Status == corev1.ConditionFalse:
-		ps.MarkPullSubscriptionFailed(psc.Reason, psc.Message)
-	default:
-		ps.MarkPullSubscriptionUnknown("PullSubscriptionUnknown", "The status of PullSubscription is invalid: %v", psc.Status)
-	}
 }

@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:a9b445167089a8fbd072ce9586c977ecc385613a19e40603f116a8867d711bb3"
+  digest = "1:67381a5551ce8b88d587e87099c28a21db6a6192729dcc617f5131fc466af100"
   name = "cloud.google.com/go"
   packages = [
     ".",
@@ -11,6 +11,7 @@
     "iam",
     "internal",
     "internal/optional",
+    "internal/testutil",
     "internal/trace",
     "internal/version",
     "logging",
@@ -21,6 +22,7 @@
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "pubsub/pstest",
     "scheduler/apiv1",
     "storage",
     "trace/apiv2",
@@ -305,7 +307,7 @@
   name = "github.com/google/go-containerregistry"
   packages = ["pkg/name"]
   pruneopts = "NUT"
-  revision = "955bf358a3d8d1ebfa6204338ef3fe364255cd85"
+  revision = "3d03ed9b1ca2ad5d78d43832e8e46adc31d2b961"
 
 [[projects]]
   digest = "1:3ec6c8e4b700377066dbb5ab3155c55f97109ab6147fee9423a68506d79bbafa"
@@ -347,7 +349,7 @@
   version = "v2.0.5"
 
 [[projects]]
-  digest = "1:5e092394bed250d7fda36cef8b7e1d22bb2d5f71878bbb137be5fc1c2705f965"
+  digest = "1:7e0eb2ee87b3ce6e617522e181968f7c964a80364a6d1ef68396826f5c9e1ba7"
   name = "github.com/googleapis/gnostic"
   packages = [
     "OpenAPIv2",
@@ -355,8 +357,8 @@
     "extensions",
   ]
   pruneopts = "NUT"
-  revision = "ab0dd09aa10e2952b28e12ecd35681b20463ebab"
-  version = "v0.3.1"
+  revision = "99384834bf8c58ce7ab88db353283bedcb53e1ca"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:e9c0bf861ea69dd6de1ff7ac2a0485e84743e163853ca973177fba7a50d1b769"
@@ -423,6 +425,14 @@
   pruneopts = "NUT"
   revision = "cc1f095d5cc5eca2844f5c5ea7bb37f6b9bf6cac"
   version = "v0.9.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cf68a79fd02ab0f6942b9567d03d054b6568212fcc22de2a4afdefd096923749"
+  name = "github.com/kballard/go-shellquote"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "95032a82bc518f77982ea72343cc1ade730072f0"
 
 [[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
@@ -1462,7 +1472,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ecadff29e872c291eeb4f05ed8875bdb75a9d206cf483afa333e86b690eed7aa"
+  digest = "1:280e1d832694d7ea76e06dadf1d41aacf1af4832c8079aa0770b0d584a8dae57"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1559,11 +1569,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "02d2642e4264fcf25302c6b49b9a12e2694c1865"
+  revision = "350da952b050ec2c7afdacbc2f698d0f8437af74"
 
 [[projects]]
-  branch = "master"
-  digest = "1:1cfbe38d639ea8c4aeb9f1b0b98ac80b0004ef612f0b48eb572ba6bb23bdc003"
+  branch = "release-0.14"
+  digest = "1:20ae66cd133413ed130ba9bd3b63143b87b103647971c2956410e5b109f0ae13"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1621,6 +1631,7 @@
     "system",
     "system/testing",
     "test",
+    "test/cmd",
     "test/gke",
     "test/helpers",
     "test/ingress",
@@ -1644,11 +1655,11 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "94b2b6aaaf4b81c3b26b269bd477518094aa31a5"
+  revision = "0c36abbff9e5ad06cbea50d55c0989485c236180"
 
 [[projects]]
   branch = "master"
-  digest = "1:0bc60da073ff7cc7e7cf75e8d35e0ba9d4bf15e9ff5784c20b337e19acd6a69f"
+  digest = "1:a3257060d5f0c2442b88617191b33fbd21ae6e45216d23ad7dedda35034e0834"
   name = "knative.dev/serving"
   packages = [
     "pkg/apis/autoscaling",
@@ -1697,18 +1708,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "bc1ede0e108ebac35804ce8ccae8cbac73b44670"
+  revision = "698ee466cc94fe5b9eb16c568e3f29b28e3773c9"
 
 [[projects]]
   branch = "master"
-  digest = "1:5da0f15efcd7dafa6296be9cd4a630fcb5253cf202e54638299221ae7df419ab"
+  digest = "1:ce8214f24f811aa582a58b2680e3380ff3fac7668a00d490fb23349a21051dcb"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "0a121dae7dccefb0d3dd56a97a3cd5264a455a7c"
+  revision = "6c5068f73cdc9dfbf0287d0b26523ebdabb08c3a"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1727,6 +1738,7 @@
     "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
+    "cloud.google.com/go/pubsub/pstest",
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go/v1",
@@ -1736,8 +1748,12 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/cloudevents/sdk-go/v2",
+    "github.com/cloudevents/sdk-go/v2/binding",
+    "github.com/cloudevents/sdk-go/v2/binding/transformer",
     "github.com/cloudevents/sdk-go/v2/client",
     "github.com/cloudevents/sdk-go/v2/client/test",
+    "github.com/cloudevents/sdk-go/v2/context",
+    "github.com/cloudevents/sdk-go/v2/event",
     "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
@@ -1750,8 +1766,10 @@
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/google/uuid",
     "github.com/googleapis/gax-go/v2",
     "github.com/kelseyhightower/envconfig",
+    "github.com/pkg/errors",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
@@ -1767,6 +1785,7 @@
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
+    "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
     "istio.io/api/security/v1beta1",
@@ -1831,6 +1850,7 @@
     "knative.dev/eventing/test/lib/duck",
     "knative.dev/eventing/test/lib/resources",
     "knative.dev/eventing/test/test_images/logevents",
+    "knative.dev/eventing/test/test_images/recordevents",
     "knative.dev/eventing/test/test_images/sendevents",
     "knative.dev/eventing/test/test_images/transformevents",
     "knative.dev/pkg/apis",

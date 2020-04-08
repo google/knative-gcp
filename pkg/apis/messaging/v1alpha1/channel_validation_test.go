@@ -128,8 +128,8 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"spec.serviceAccount"},
+				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
+				Paths:   []string{"spec.googleServiceAccount"},
 			}
 			return fe
 		}(),
@@ -165,7 +165,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccount and spec.secret at the same time",
+				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
 				Paths:   []string{"spec"},
 			}
 			return fe

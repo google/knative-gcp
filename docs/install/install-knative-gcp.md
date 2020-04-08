@@ -16,8 +16,11 @@
 
 1. Install the Knative-GCP constructs. You can either:
 
-   - Install from master using [ko](http://github.com/google/ko)  
-      `shell ko apply -f ./config` OR
+   - Install from master using [ko](http://github.com/google/ko)
+     ```shell
+     ko apply -f ./config
+     ```
+     OR
    - Install a [release](https://github.com/google/knative-gcp/releases).
      Remember to update `{{< version >}}` in the commands below with the
      appropriate release version.
@@ -50,6 +53,11 @@
 
    1. Initialization Scripts.
 
+      Before applying initialization scripts, make sure your default zone is set
+      to be the same as your current cluster. You may use
+      `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
+      `gcloud config set compute/zone $ZONE` to set it.
+
       - Use **Workload Identity**.
 
         Workload Identity is the recommended way to access Google Cloud services
@@ -63,7 +71,7 @@
         first.
 
         ```shell
-        ko apply -f controller-gke.yaml
+        ko apply -f config/core/deployments/controller-gke.yaml
         ```
 
         Then you can apply
@@ -71,17 +79,21 @@
         install all the configuration by running:
 
         ```shell
-        chmod +x init_control_plane_gke.sh
-        ./init_control_plane_gke.sh
+        ./hack/init_control_plane_gke.sh
         ```
 
       - Export service account keys and store them as **Kubernetes Secrets**.
         Apply [init_control_plane](../../hack/init_control_plane.sh) to install
         all the configuration by running:
+
         ```shell
-        chmod +x init_control_plane.sh
-        ./init_control_plane.sh
+        ./hack/init_control_plane.sh
         ```
+
+      - **_Note_**: Both scripts will have a step to create a Google Cloud
+        Service Account `cloud-run-events`. Ignore the error message if you
+        already had this service account (error for 'service account already
+        exists').
 
    1. Manual configuration steps.
 
@@ -108,6 +120,7 @@
       |       CloudStorageSource        |                              roles/storage.admin                               |
       |      CloudSchedulerSource       |                           roles/cloudscheduler.admin                           |
       |      CloudAuditLogsSource       | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer |
+      |        CloudBuildSource         |                            roles/pubsub.subscriber                             |
       |             Channel             |                              roles/pubsub.editor                               |
       |        PullSubscription         |                              roles/pubsub.editor                               |
       |              Topic              |                              roles/pubsub.editor                               |
@@ -138,6 +151,7 @@
         1. Enable Workload Identity.
 
            ```shell
+           gcloud services enable iamcredentials.googleapis.com
            gcloud beta container clusters update $CLUSTER_NAME \
            --identity-namespace=$PROJECT_ID.svc.id.goog
            ```

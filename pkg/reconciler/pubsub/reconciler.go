@@ -20,19 +20,26 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/logging"
-
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	"github.com/google/knative-gcp/pkg/duck"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/logging"
+	pkgreconciler "knative.dev/pkg/reconciler"
+)
+
+const (
+	nilPubsubableReason                         = "NilPubsubable"
+	pullSubscriptionGetFailedReason             = "PullSubscriptionGetFailed"
+	pullSubscriptionCreateFailedReason          = "PullSubscriptionCreateFailed"
+	PullSubscriptionStatusPropagateFailedReason = "PullSubscriptionStatusPropagateFailed"
 )
 
 type PubSubBase struct {
@@ -59,7 +66,6 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
-	annotations := pubsubable.GetObjectMeta().GetAnnotations()
 	spec := pubsubable.PubSubSpec()
 	status := pubsubable.PubSubStatus()
 
@@ -93,13 +99,32 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		return t, nil, err
 	}
 
-	// Ok, so the Topic is ready, let's reconcile PullSubscription.
+	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
+	if err != nil {
+		return t, ps, err
+	}
+	return t, ps, nil
+}
+
+func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*pubsubv1alpha1.PullSubscription, pkgreconciler.Event) {
+	if pubsubable == nil {
+		logging.FromContext(ctx).Desugar().Error("Nil pubsubable passed in")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, nilPubsubableReason, "nil pubsubable passed in")
+	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	annotations := pubsubable.GetObjectMeta().GetAnnotations()
+	spec := pubsubable.PubSubSpec()
+	status := pubsubable.PubSubStatus()
+
+	cs := pubsubable.ConditionSet()
+
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
-			return t, nil, fmt.Errorf("failed to get Pullsubscription: %w", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionGetFailedReason, "Getting PullSubscription failed with: %s", err.Error())
 		}
 		args := &resources.PullSubscriptionArgs{
 			Namespace:   namespace,
@@ -111,20 +136,26 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			Labels:      resources.GetLabels(psb.receiveAdapterName, name),
 			Annotations: resources.GetAnnotations(annotations, resourceGroup),
 		}
+		if isPushCompatible {
+			args.Mode = pubsubv1alpha1.ModePushCompatible
+		}
+
 		newPS := resources.MakePullSubscription(args)
+		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
-			return t, nil, fmt.Errorf("failed to create PullSubscription: %w", err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionCreateFailedReason, "Creating PullSubscription failed with: %s", err.Error())
 		}
 	}
 
 	if err := propagatePullSubscriptionStatus(ps, status, cs); err != nil {
-		return t, ps, err
+		logging.FromContext(ctx).Desugar().Error("Failed to propagate PullSubscription status: %s", zap.Error(err))
+		return ps, pkgreconciler.NewEvent(corev1.EventTypeWarning, PullSubscriptionStatusPropagateFailedReason, "Failed to propagate PullSubscription status: %s", err.Error())
 	}
 
 	status.SinkURI = ps.Status.SinkURI
-	return t, ps, nil
+	return ps, nil
 }
 
 func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {

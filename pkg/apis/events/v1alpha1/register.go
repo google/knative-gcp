@@ -53,6 +53,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CloudSchedulerSourceList{},
 		&CloudPubSubSource{},
 		&CloudPubSubSourceList{},
+		&CloudBuildSource{},
+		&CloudBuildSourceList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -104,7 +104,7 @@ func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPu
 // status of PullSubscription is False
 func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionFailed(reason, message)
+		ps.Status.MarkPullSubscriptionFailed(ps.ConditionSet(), reason, message)
 	}
 }
 
@@ -112,7 +112,7 @@ func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPu
 // topic is Unknown
 func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionUnknown(reason, message)
+		ps.Status.MarkPullSubscriptionUnknown(ps.ConditionSet(), reason, message)
 	}
 }
 
@@ -120,7 +120,7 @@ func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudP
 // topic is not ready
 func WithCloudPubSubSourcePullSubscriptionReady() CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionReady()
+		ps.Status.MarkPullSubscriptionReady(ps.ConditionSet())
 	}
 }
 
