@@ -57,11 +57,11 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -91,14 +91,14 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 }
 
-func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -115,6 +115,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 		psName,
 		targetName,
 		topicName,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudPubSubSourceSinkURI(&url),
 	)
 
@@ -140,7 +141,7 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
-func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
@@ -149,7 +150,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	targetName := helpers.AppendRandomString(bucketName + "-target")
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target StorageJob to receive the events.
@@ -167,6 +168,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 		bucketName,
 		storageName,
 		targetName,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudStorageSourceSinkURI(&url),
 	)
 
@@ -180,7 +182,7 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 }
 
-func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -188,7 +190,7 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -208,6 +210,7 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 		resourceName,
 		serviceName,
 		targetName,
+		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
 	)
 
@@ -247,12 +250,12 @@ func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	}
 }
 
-func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
+func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	data := "my test data"
 	targetName := "event-display"
 	sName := "scheduler-test"
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -265,7 +268,7 @@ func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T) {
 	time.Sleep(5 * time.Second)
 
 	// Create the CloudSchedulerSource.
-	lib.MakeSchedulerOrDie(client, sName, data, targetName,
+	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
 	)
 

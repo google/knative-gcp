@@ -42,7 +42,7 @@ import (
 )
 
 // Setup runs the Setup in the common eventing test framework.
-func Setup(t *testing.T, runInParallel bool) *Client {
+func Setup(t *testing.T, runInParallel, workloadIdentity bool) *Client {
 	client, err := newClient(pkgTest.Flags.Kubeconfig, pkgTest.Flags.Cluster)
 	if err != nil {
 		t.Fatalf("Failed to initialize client for Knative GCP: %v", err)
@@ -53,7 +53,7 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 	client.Namespace = coreClient.Namespace
 	client.Tracker = coreClient.Tracker
 	client.T = t
-	DuplicatePubSubSecret(coreClient)
+	GetCredential(coreClient, workloadIdentity)
 	return client
 }
 

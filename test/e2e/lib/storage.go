@@ -29,11 +29,12 @@ import (
 )
 
 func MakeStorageOrDie(client *Client,
-	bucketName, storageName, targetName string,
+	bucketName, storageName, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudStorageSourceOption,
 ) {
 	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
 	so = append(so, kngcptesting.WithCloudStorageSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
 
