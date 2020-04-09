@@ -131,6 +131,9 @@ spec:
             retentionDuration:
               type: string
               description: "How long to retain messages in backlog, from the time of publish. If retainAckedMessages is true, this duration affects the retention of acknowledged messages, otherwise only unacknowledged messages are retained. Defaults to 7 days (`168h`). Cannot be longer than 7 days or shorter than 10 minutes. Valid time units are `s`, `m`, `h`."
+            adapterType:
+              type: string
+              description: "AdapterType determines the type of receive adapter that a PullSubscription uses."
         status:
           type: object
           properties:
