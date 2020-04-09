@@ -29,7 +29,7 @@ function start_knative_gcp() {
   # the webhook to fail. So rather than installing the latest, install the previous nightly.
   # TODO(harwayne): Remove on 2020-04-10.
   # start_latest_knative_eventing || return 1
-  start_knative_eventing "gs://knative-nightly/eventing/previous/v20200408-7e588048/eventing.yaml" || return 1
+  start_knative_eventing "https://storage.googleapis.com/knative-nightly/eventing/previous/v20200408-7e588048/eventing.yaml" || return 1
 
   start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup "$1"  || return 1
