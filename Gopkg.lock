@@ -1472,7 +1472,7 @@
 
 [[projects]]
   branch = "sendevents-flush-trace"
-  digest = "1:13019f117b0a57970ab484d37b71e58564be1e788a62c92873b3783e32684dc7"
+  digest = "1:1ba87a0e63fe0d5eef592e3427b147a9318bdcd0627092d736ca03a7b69c4280"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1569,7 +1569,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "ddb320a8ae634bf6661573f115610fc1c4cebad0"
+  revision = "9ce3b593f4f668c55c06711ea5a1006a4e763533"
   source = "github.com/ian-mi/eventing"
 
 [[projects]]
