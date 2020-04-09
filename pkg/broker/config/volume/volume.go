@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
@@ -118,13 +117,7 @@ func (t *Targets) sync() error {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var val config.TargetsConfig
-	if err := proto.Unmarshal(b, &val); err != nil {
-		return fmt.Errorf("failed to unmarshal config file: %w", err)
-	}
-
-	t.Store(&val)
-	return nil
+	return t.StoreWithEncodedString(string(b))
 }
 
 func (t *Targets) readFile() ([]byte, error) {

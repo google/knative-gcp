@@ -158,7 +158,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	})
 }
 
-func TestCachedTargetsBytes(t *testing.T) {
+func TestCachedTargetsEncodedString(t *testing.T) {
 	t1 := &Target{
 		Id:               "uid-1",
 		Name:             "name1",
@@ -243,31 +243,18 @@ func TestCachedTargetsBytes(t *testing.T) {
 	targets := &CachedTargets{}
 	targets.Store(val)
 
-	wantBytes, err := proto.Marshal(val)
+	gotEncoded, err := targets.EncodedString()
 	if err != nil {
-		t.Fatalf("unexpected error from proto.Marshal: %v", err)
-	}
-
-	gotBytes, err := targets.Bytes()
-	if err != nil {
-		t.Errorf("unexpected error from targets.Byte(): %v", err)
-	}
-
-	var gotVal TargetsConfig
-	if err := proto.Unmarshal(gotBytes, &gotVal); err != nil {
-		t.Errorf("unexpected error from proto.Unmarshal: %v", err)
-	}
-	if !proto.Equal(&gotVal, val) {
-		t.Errorf("got unmarshaled targets=%+v, want=%+v", gotVal, val)
+		t.Errorf("unexpected error from targets.EncodedString(): %v", err)
 	}
 
 	// Test EqualsBytes
-	if !targets.EqualsBytes(wantBytes) {
-		t.Error("CachedTargets.EqualsBytes() got=false, want=true")
+	if !targets.EqualsEncodedString(gotEncoded) {
+		t.Error("CachedTargets.EqualsEncodedString() got=false, want=true")
 	}
 
-	if targets.EqualsBytes([]byte("random")) {
-		t.Error("CachedTargets.EqualBytes() with random bytes got=true, want=false")
+	if targets.EqualsEncodedString("random") {
+		t.Error("CachedTargets.EqualsEncodedString() with random string got=true, want=false")
 	}
 }
 

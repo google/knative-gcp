@@ -29,13 +29,13 @@ type ReadonlyTargets interface {
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
 	RangeBrokers(func(*Broker) bool)
-	// Bytes serializes all the targets.
-	Bytes() ([]byte, error)
-	// String returns the text format of all the targets.
+	// EncodedString encodes all the targets as a string.
+	EncodedString() (string, error)
+	// String returns the human-readable text format of all the targets.
 	String() string
-	// EqualsBytes checks if the current targets config equals the given
-	// targets config in bytes.
-	EqualsBytes([]byte) bool
+	// EqualsEncodedString checks if the current targets config equals the given
+	// targets config in encoded string.
+	EqualsEncodedString(string) bool
 	// EqualsString checks if the current targets config equals the given
 	// targets config in string.
 	EqualsString(string) bool

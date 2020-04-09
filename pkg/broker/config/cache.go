@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"encoding/base64"
 	"sync/atomic"
 
 	"github.com/golang/protobuf/proto"
@@ -87,26 +88,48 @@ func (ct *CachedTargets) RangeBrokers(f func(*Broker) bool) {
 	}
 }
 
-// Bytes serializes all the targets.
-func (ct *CachedTargets) Bytes() ([]byte, error) {
-	val := ct.Load()
-	return proto.Marshal(val)
+// StoreWithEncodedString stores the targets from an encoded string.
+func (ct *CachedTargets) StoreWithEncodedString(s string) error {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return err
+	}
+	var val TargetsConfig
+	if err := proto.Unmarshal(b, &val); err != nil {
+		return err
+	}
+	ct.Store(&val)
+	return nil
 }
 
-// String returns the text format of all the targets.
+// EncodedString encodes all targets to string.
+func (ct *CachedTargets) EncodedString() (string, error) {
+	val := ct.Load()
+	b, err := proto.Marshal(val)
+	if err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
+// String returns the human-readable text format of all the targets.
 func (ct *CachedTargets) String() string {
 	val := ct.Load()
 	return val.String()
 }
 
-// EqualsBytes checks if the current targets config equals the given
-// targets config in bytes.
-func (ct *CachedTargets) EqualsBytes(b []byte) bool {
-	self := ct.Load()
+// EqualsEncodedString checks if the current targets config equals the given
+// targets config in encoded string.
+func (ct *CachedTargets) EqualsEncodedString(s string) bool {
+	b, err := base64.StdEncoding.DecodeString(s)
+	if err != nil {
+		return false
+	}
 	var other TargetsConfig
 	if err := proto.Unmarshal(b, &other); err != nil {
 		return false
 	}
+	self := ct.Load()
 	return proto.Equal(self, &other)
 }
 

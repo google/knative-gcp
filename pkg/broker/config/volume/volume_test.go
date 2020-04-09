@@ -101,7 +101,12 @@ func TestSyncConfigFromFile(t *testing.T) {
 		},
 	}
 
-	b, _ := proto.Marshal(data)
+	ct := &config.CachedTargets{}
+	ct.Store(data)
+	encoded, err := ct.EncodedString()
+	if err != nil {
+		t.Fatalf("failed to get encoded string for test targets: %v", err)
+	}
 	dir, err := ioutil.TempDir("", "configtest-*")
 	if err != nil {
 		t.Fatalf("unexpected error from creating temp dir: %v", err)
@@ -114,7 +119,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 		tmp.Close()
 		os.RemoveAll(dir)
 	}()
-	if _, err := tmp.Write(b); err != nil {
+	if _, err := tmp.Write([]byte(encoded)); err != nil {
 		t.Fatalf("unexpected error from writing config file: %v", err)
 	}
 	if err := tmp.Close(); err != nil {
@@ -157,8 +162,11 @@ func TestSyncConfigFromFile(t *testing.T) {
 	}
 
 	delete(data.Brokers["ns2/broker2"].Targets, "name4")
-	b, _ = proto.Marshal(data)
-	atomicWriteFile(t, tmp.Name(), b)
+	encoded, err = ct.EncodedString()
+	if err != nil {
+		t.Fatalf("failed to get encoded string for test targets: %v", err)
+	}
+	atomicWriteFile(t, tmp.Name(), []byte(encoded))
 
 	<-ch
 
