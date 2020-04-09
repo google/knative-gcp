@@ -59,7 +59,7 @@ spec:
     - name: v1beta1
       served: true
       storage: false
-  # They happen to have the same schema today. They will likely diverge in the future.
+  # All versions happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
       type: object

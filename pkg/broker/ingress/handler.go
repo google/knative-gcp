@@ -18,97 +18,152 @@ package ingress
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	nethttp "net/http"
+	"strings"
+	"time"
+
+	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
-	"go.uber.org/zap"
+	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
+)
+
+const (
+	// TODO(liu-cong) configurable timeout
+	decoupleSinkTimeout = 30 * time.Second
+
+	// defaultPort is the defaultPort number for the ingress HTTP receiver.
+	defaultPort = 8080
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
 type DecoupleSink interface {
-	// Send sends the event to a decoupling sink.
-	Send(ctx context.Context, event cev2.Event) protocol.Result
+	// Send sends the event from a broker to the corresponding decoupling sink.
+	Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result
+}
+
+// HttpMessageReceiver is an interface to listen on http requests.
+type HttpMessageReceiver interface {
+	StartListen(ctx context.Context, handler nethttp.Handler) error
 }
 
 // handler receives events and persists them to storage (pubsub).
+// TODO(liu-cong) add metrics
+// TODO(liu-cong) add tracing
+// TODO(liu-cong) support event TTL
 type handler struct {
-	// inbound is the cloudevents client to receive events.
-	inbound cev2.Client
+	// httpReceiver is an HTTP server to receive events.
+	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
+	logger   *zap.Logger
 }
 
-func NewHandler(ctx context.Context, options ...Option) (*handler, error) {
-	h := &handler{}
-	for _, option := range options {
-		option(h)
+// NewHandler creates a new ingress handler.
+func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+	h := &handler{
+		logger: logging.FromContext(ctx),
 	}
 
-	var err error
-	if h.inbound == nil {
-		if h.inbound, err = newDefaultHTTPClient(); err != nil {
-			return nil, fmt.Errorf("failed to create inbound cloudevent client: %w", err)
+	for _, option := range options {
+		if err := option(h); err != nil {
+			return nil, err
 		}
+	}
+
+	if h.httpReceiver == nil {
+		h.httpReceiver = kncloudevents.NewHttpMessageReceiver(defaultPort)
 	}
 
 	if h.decouple == nil {
-		if h.decouple, err = h.newDefaultPubSubClient(ctx); err != nil {
-			return nil, fmt.Errorf("failed to create decouple cloudevent client: %w", err)
+		sink, err := NewMultiTopicDecoupleSink(ctx)
+		if err != nil {
+			return nil, err
 		}
+		h.decouple = sink
 	}
 
 	return h, nil
 }
 
+// Start blocks to receive events over HTTP.
 func (h *handler) Start(ctx context.Context) error {
-	return h.inbound.StartReceiver(ctx, h.receive)
+	return h.httpReceiver.StartListen(ctx, h)
 }
 
-// receive receives events from inbound and sends them to decouple.
-func (h *handler) receive(ctx context.Context, event cev2.Event) protocol.Result {
-	// TODO(liu-cong) add metrics
-	// TODO(liu-cong) route events based on broker.
-
-	if res := h.decouple.Send(ctx, event); !cev2.IsACK(res) {
-		logging.FromContext(ctx).Error("Error publishing to PubSub", zap.String("event", event.String()), zap.Error(res))
-		return res
+// ServeHTTP implements net/http Handler interface method.
+// 1. Performs basic validation of the request.
+// 2. Parse request URL to get namespace and broker.
+// 3. Convert request to event.
+// 4. Send event to decouple sink.
+func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
+	h.logger.Debug("Serving http", zap.Any("request", request))
+	if request.Method != nethttp.MethodPost {
+		response.WriteHeader(nethttp.StatusMethodNotAllowed)
+		return
 	}
 
-	return nil
+	// Path should be in the form of "/<ns>/<broker>".
+	pieces := strings.Split(request.URL.Path, "/")
+	if len(pieces) != 3 {
+		msg := fmt.Sprintf("Malformed request path. want: '/<ns>/<broker>'; got: %v..", request.URL.Path)
+		h.logger.Info(msg)
+		response.WriteHeader(nethttp.StatusNotFound)
+		response.Write([]byte(msg))
+		return
+	}
+	ns, broker := pieces[1], pieces[2]
+
+	event, msg, statusCode := h.toEvent(request)
+	if event == nil {
+		response.WriteHeader(statusCode)
+		response.Write([]byte(msg))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
+	defer cancel()
+	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
+		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
+		h.logger.Error(msg)
+		statusCode := nethttp.StatusInternalServerError
+		if errors.Is(res, ErrNotFound) {
+			statusCode = nethttp.StatusNotFound
+		}
+		response.WriteHeader(statusCode)
+		response.Write([]byte(msg))
+		return
+	}
+
+	response.WriteHeader(nethttp.StatusOK)
 }
 
-// newDefaultHTTPClient provides good defaults for an HTTP client with tracing.
-func newDefaultHTTPClient() (cev2.Client, error) {
-	p, err := cev2.NewHTTP()
+// toEvent converts an http request to an event.
+func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg string, statusCode int) {
+	message := http.NewMessageFromHttpRequest(request)
+	defer func() {
+		if err := message.Finish(nil); err != nil {
+			h.logger.Error("Failed to close message", zap.Any("message", message), zap.Error(err))
+		}
+	}()
+	// If encoding is unknown, the message is not an event.
+	if message.ReadEncoding() == binding.EncodingUnknown {
+		msg := fmt.Sprintf("Encoding is unknown. Not a cloud event? request: %+v", request)
+		h.logger.Debug(msg)
+		return nil, msg, nethttp.StatusBadRequest
+	}
+	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
-		return nil, err
+		msg := fmt.Sprintf("Failed to convert request to event: %v", err)
+		h.logger.Error(msg)
+		return nil, msg, nethttp.StatusBadRequest
 	}
-
-	return cev2.NewClientObserved(p,
-		cev2.WithUUIDs(),
-		cev2.WithTimeNow(),
-		cev2.WithTracePropagation,
-	)
-}
-
-// newDefaultPubSubClient creates a pubsub client using env vars "GOOGLE_CLOUD_PROJECT"
-// and "PUBSUB_TOPIC"
-func (h *handler) newDefaultPubSubClient(ctx context.Context) (cev2.Client, error) {
-	// Make a pubsub protocol for the CloudEvents client.
-	p, err := pubsub.New(ctx,
-		pubsub.WithProjectIDFromDefaultEnv(),
-		pubsub.WithTopicIDFromDefaultEnv())
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the pubsub prototol to make a new CloudEvents client.
-	return cev2.NewClientObserved(p,
-		cev2.WithUUIDs(),
-		cev2.WithTimeNow(),
-		cev2.WithTracePropagation,
-	)
+	return event, "", nethttp.StatusOK
 }

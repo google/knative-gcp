@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:a9b445167089a8fbd072ce9586c977ecc385613a19e40603f116a8867d711bb3"
+  digest = "1:67381a5551ce8b88d587e87099c28a21db6a6192729dcc617f5131fc466af100"
   name = "cloud.google.com/go"
   packages = [
     ".",
@@ -11,6 +11,7 @@
     "iam",
     "internal",
     "internal/optional",
+    "internal/testutil",
     "internal/trace",
     "internal/version",
     "logging",
@@ -21,6 +22,7 @@
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "pubsub/pstest",
     "scheduler/apiv1",
     "storage",
     "trace/apiv2",
@@ -423,6 +425,14 @@
   pruneopts = "NUT"
   revision = "cc1f095d5cc5eca2844f5c5ea7bb37f6b9bf6cac"
   version = "v0.9.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:cf68a79fd02ab0f6942b9567d03d054b6568212fcc22de2a4afdefd096923749"
+  name = "github.com/kballard/go-shellquote"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "95032a82bc518f77982ea72343cc1ade730072f0"
 
 [[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
@@ -1468,7 +1478,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:07bcaca37fcf696c246e6acf3da10a2c7633fa2f1263d1b2bf1af4e89524a790"
+  digest = "1:280e1d832694d7ea76e06dadf1d41aacf1af4832c8079aa0770b0d584a8dae57"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1565,11 +1575,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "54cee987710e6d3ca3d1ea3af1e7dedd138be341"
+  revision = "350da952b050ec2c7afdacbc2f698d0f8437af74"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9b83d1c207c67003de88414626add45e9bce8c47502e07cbe6cb5fd48e39f2df"
+  branch = "release-0.14"
+  digest = "1:20ae66cd133413ed130ba9bd3b63143b87b103647971c2956410e5b109f0ae13"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1630,6 +1640,7 @@
     "system",
     "system/testing",
     "test",
+    "test/cmd",
     "test/gke",
     "test/helpers",
     "test/ingress",
@@ -1654,7 +1665,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "92cdec5b35931192590f5d8affad86898b6c50d6"
+  revision = "0c36abbff9e5ad06cbea50d55c0989485c236180"
 
 [[projects]]
   branch = "master"
@@ -1707,18 +1718,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "0e8f7a9e34f0dbb1342fa9bfbe4d164e71271194"
+  revision = "698ee466cc94fe5b9eb16c568e3f29b28e3773c9"
 
 [[projects]]
   branch = "master"
-  digest = "1:d8858077778bca77705b26d5b5262bf33a6bfbaa701fffca1578fd7ef4c4b975"
+  digest = "1:ce8214f24f811aa582a58b2680e3380ff3fac7668a00d490fb23349a21051dcb"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "e84f0d1a364732918a6635cb07d895ff77ecba76"
+  revision = "6c5068f73cdc9dfbf0287d0b26523ebdabb08c3a"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1737,6 +1748,7 @@
     "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
+    "cloud.google.com/go/pubsub/pstest",
     "cloud.google.com/go/scheduler/apiv1",
     "cloud.google.com/go/storage",
     "github.com/cloudevents/sdk-go/v1",
@@ -1746,8 +1758,12 @@
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub",
     "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context",
     "github.com/cloudevents/sdk-go/v2",
+    "github.com/cloudevents/sdk-go/v2/binding",
+    "github.com/cloudevents/sdk-go/v2/binding/transformer",
     "github.com/cloudevents/sdk-go/v2/client",
     "github.com/cloudevents/sdk-go/v2/client/test",
+    "github.com/cloudevents/sdk-go/v2/context",
+    "github.com/cloudevents/sdk-go/v2/event",
     "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
@@ -1760,8 +1776,10 @@
     "github.com/golang/protobuf/ptypes/timestamp",
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
+    "github.com/google/uuid",
     "github.com/googleapis/gax-go/v2",
     "github.com/kelseyhightower/envconfig",
+    "github.com/pkg/errors",
     "go.opencensus.io/metric/metricexport",
     "go.opencensus.io/stats",
     "go.opencensus.io/stats/view",
@@ -1777,6 +1795,7 @@
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
+    "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
     "istio.io/api/security/v1beta1",
@@ -1821,6 +1840,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
+    "k8s.io/client-go/util/retry",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",

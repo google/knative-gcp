@@ -24,6 +24,8 @@ type ReadonlyTargets interface {
 	// GetBroker returns a broker and its targets if it exists.
 	// Do not modify the returned Broker copy.
 	GetBroker(namespace, name string) (*Broker, bool)
+	// GetBroker by its key (namespace/name).
+	GetBrokerByKey(key string) (*Broker, bool)
 	// RangeBrokers ranges over all brokers.
 	// Do not modify the given Broker copy.
 	RangeBrokers(func(*Broker) bool)
