@@ -157,7 +157,7 @@ func TestSyncPoolE2E(t *testing.T) {
 	t.Run("broker's targets receive fanout events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
 		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, time.Second)
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
 		// Targets for broker1 should both receive the event.
@@ -178,7 +178,7 @@ func TestSyncPoolE2E(t *testing.T) {
 
 		// Set timeout context so that verification can be done before
 		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, time.Second)
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
 		// The old targets for broker1 should still receive the event.
@@ -198,7 +198,7 @@ func TestSyncPoolE2E(t *testing.T) {
 	t.Run("event sent to a broker didn't reach another broker's targets", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
 		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, time.Second)
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
 		// This time targets for broker1 shouldn't receive any event.
