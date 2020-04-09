@@ -21,7 +21,6 @@ metadata:
     duck.knative.dev/addressable: "true"
 spec:
   group: pubsub.cloud.google.com
-  version: v1alpha1
   names:
     kind: Topic
     plural: topics
@@ -33,6 +32,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -46,10 +46,17 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  # All versions happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
+          type: object
           required:
             - topic
           properties:
@@ -58,7 +65,14 @@ spec:
               description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
             secret:
               type: object
-              description: "Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). If omitted, defaults to 'google-cloud-key'."
+              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
             project:
               type: string
               description: "ID of the Google Cloud Project to own the Pub/Sub credentials. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
@@ -106,3 +120,4 @@ spec:
               properties:
                 url:
                   type: string
+
