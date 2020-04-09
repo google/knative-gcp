@@ -19,13 +19,17 @@ package identity
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/api/iam/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/kmeta"
@@ -43,7 +47,19 @@ const (
 	Role                         = "roles/iam.workloadIdentityUser"
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
+	concurrencyError             = "googleapi: Error 409: There were concurrent policy changes."
 )
+
+// defaultRetry represents that there will be 3 iterations.
+// The duration starts from 100ms and is multiplied by factor 2.0 for each iteration.
+var defaultRetry = wait.Backoff{
+	Steps:    3,
+	Duration: 200 * time.Millisecond,
+	Factor:   2.0,
+	// The sleep at each iteration is the duration plus an additional
+	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
+	Jitter: 0.5,
+}
 
 func NewIdentity(ctx context.Context) *Identity {
 	return &Identity{
@@ -165,7 +181,9 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", projectId, gServiceAccount)
+	// Extract gServiceAccount's project name. The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com.
+	gsaProject := strings.Split(strings.Split(gServiceAccount, "@")[1], ".")[0]
+	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", gsaProject, gServiceAccount)
 	resp, err := iamService.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	if err != nil {
 		return fmt.Errorf("failed to get iam policy: %w", err)
@@ -175,11 +193,13 @@ func setIamPolicy(ctx context.Context, action, projectID string, gServiceAccount
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 	rb := makeSetIamPolicyRequest(resp.Bindings, action, currentMember)
 
-	if _, err := iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
-		return fmt.Errorf("failed to set iam policy: %w", err)
-	}
-
-	return nil
+	// Repeat setting iam policy binding with exponential backoff when there is concurrency issue.
+	return retry.OnError(defaultRetry, isConflict, func() error {
+		if _, err = iamService.Projects.ServiceAccounts.SetIamPolicy(resource, rb).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to set iam policy: %w", err)
+		}
+		return nil
+	})
 }
 
 func makeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember string) *iam.SetIamPolicyRequest {
@@ -211,6 +231,11 @@ func makeSetIamPolicyRequest(bindings []*iam.Binding, action, currentMember stri
 		}
 	}
 	return nil
+}
+
+// isConflict determines if the err is an error which indicates concurrency issue.
+func isConflict(err error) bool {
+	return strings.Contains(err.Error(), concurrencyError)
 }
 
 // ownerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
