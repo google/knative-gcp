@@ -427,14 +427,6 @@
   version = "v0.9.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:cf68a79fd02ab0f6942b9567d03d054b6568212fcc22de2a4afdefd096923749"
-  name = "github.com/kballard/go-shellquote"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "95032a82bc518f77982ea72343cc1ade730072f0"
-
-[[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
   name = "github.com/kelseyhightower/envconfig"
   packages = ["."]
@@ -1472,7 +1464,7 @@
 
 [[projects]]
   branch = "sendevents-flush-trace"
-  digest = "1:1ba87a0e63fe0d5eef592e3427b147a9318bdcd0627092d736ca03a7b69c4280"
+  digest = "1:b79fa1ed2f0e1baace14403155ac78a9caa6a8dfd11206bffba8b492a05caa21"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1569,7 +1561,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "9ce3b593f4f668c55c06711ea5a1006a4e763533"
+  revision = "2ba8965938b99bb6d3d971b49ec03cdd97fca1b0"
   source = "github.com/ian-mi/eventing"
 
 [[projects]]
@@ -1632,7 +1624,6 @@
     "system",
     "system/testing",
     "test",
-    "test/cmd",
     "test/gke",
     "test/helpers",
     "test/ingress",
@@ -1709,18 +1700,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "698ee466cc94fe5b9eb16c568e3f29b28e3773c9"
+  revision = "aaaea21c047b542529c0ff9e68dfdb2ce7b99909"
 
 [[projects]]
   branch = "master"
-  digest = "1:ce8214f24f811aa582a58b2680e3380ff3fac7668a00d490fb23349a21051dcb"
+  digest = "1:50482e6fd500cf50c4a29d640cda026206145c6716dff72e4368a5e57fdb7095"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "6c5068f73cdc9dfbf0287d0b26523ebdabb08c3a"
+  revision = "9fa5882b65c5fe7e177bb74874e9a5ac87b84e98"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
