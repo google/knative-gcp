@@ -53,7 +53,7 @@ func (ts *TopicStatus) SetAddress(url *apis.URL) {
 		topicCondSet.Manage(ts).MarkTrue(TopicConditionAddressable)
 	} else {
 		ts.Address.URL = nil
-		topicCondSet.Manage(ts).MarkFalse(TopicConditionAddressable, "emptyHostname", "hostname is the empty string")
+		topicCondSet.Manage(ts).MarkFalse(TopicConditionAddressable, "emptyUrl", "url is the empty string")
 	}
 }
 
