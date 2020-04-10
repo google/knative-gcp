@@ -23,7 +23,7 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
-	"github.com/google/knative-gcp/pkg/duck"
+	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
 	"go.uber.org/zap"

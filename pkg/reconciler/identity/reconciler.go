@@ -36,7 +36,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
-	"github.com/google/knative-gcp/pkg/duck"
+	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
