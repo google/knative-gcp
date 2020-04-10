@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/eventing/pkg/logging"
 )
@@ -57,13 +57,6 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 		}
 		sink.client = client
 	}
-	if sink.brokerConfig == nil {
-		brokerConfig, err := volume.NewTargetsFromFile()
-		if err != nil {
-			return nil, fmt.Errorf("creating broker config for default multi topic decouple sink")
-		}
-		sink.brokerConfig = brokerConfig
-	}
 
 	return sink, nil
 }
@@ -73,10 +66,13 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 type multiTopicDecoupleSink struct {
 	// client talks to pubsub.
 	client cev2.Client
-	// brokerConfig holds configurations for all brokers. It's a view of a configmap populated by
+
+	// targetsConfig contains configurations for all brokers. It's a view of a configmap populated by
 	// the broker controller.
-	brokerConfig config.ReadonlyTargets
-	logger       *zap.Logger
+	targetsConfigMut sync.RWMutex
+	targetsConfig    *config.TargetsConfig
+
+	logger *zap.Logger
 }
 
 // Send sends incoming event to its corresponding pubsub topic based on which broker it belongs to.
@@ -91,7 +87,7 @@ func (m *multiTopicDecoupleSink) Send(ctx context.Context, ns, broker string, ev
 
 // getTopicForBroker finds the corresponding decouple topic for the broker from the mounted broker configmap volume.
 func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, error) {
-	brokerConfig, ok := m.brokerConfig.GetBroker(ns, broker)
+	brokerConfig, ok := m.getConfig().Brokers[fmt.Sprintf("%s/%s", ns, broker)]
 	if !ok {
 		// There is an propagation delay between the controller reconciles the broker config and
 		// the config being pushed to the configmap volume in the ingress pod. So sometimes we return
@@ -120,4 +116,16 @@ func newPubSubClient(ctx context.Context, projectID string) (cev2.Client, error)
 		cev2.WithTimeNow(),
 		cev2.WithTracePropagation,
 	)
+}
+
+func (m *multiTopicDecoupleSink) getConfig() *config.TargetsConfig {
+	m.targetsConfigMut.RLock()
+	defer m.targetsConfigMut.RUnlock()
+	return m.targetsConfig
+}
+
+func (m *multiTopicDecoupleSink) setConfig(c *config.TargetsConfig) {
+	m.targetsConfigMut.Lock()
+	defer m.targetsConfigMut.Unlock()
+	m.targetsConfig = c
 }

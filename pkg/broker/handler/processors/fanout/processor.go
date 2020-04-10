@@ -42,24 +42,16 @@ type Processor struct {
 	// MaxConcurrency is the max number of goroutine it will spawn
 	// for each event.
 	MaxConcurrency int
-
-	// Targets is the targets from config.
-	Targets config.ReadonlyTargets
 }
 
 var _ processors.Interface = (*Processor)(nil)
 
 // Process fanouts the given event.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	bk, err := handlerctx.GetBrokerKey(ctx)
+	broker, err := handlerctx.GetBroker(ctx)
 	if err != nil {
 		return err
 	}
-	broker, ok := p.Targets.GetBrokerByKey(bk)
-	if !ok {
-		return fmt.Errorf("event broker %q doesn't exist in config", bk)
-	}
-	ctx = handlerctx.WithBroker(ctx, broker)
 
 	tc := make(chan *config.Target)
 	go func() {
@@ -96,7 +88,7 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 }
 
 func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutResult) error {
-	bk, err := handlerctx.GetBrokerKey(ctx)
+	b, err := handlerctx.GetBroker(ctx)
 	if err != nil {
 		return err
 	}
@@ -124,6 +116,6 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 		return fmt.Errorf("event fanout passed %d targets, failed %d targets", passes, errs)
 	}
 
-	logging.FromContext(ctx).Info("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
+	logging.FromContext(ctx).Info("event fanout successful", zap.Any("broker", b), zap.Int32("count", passes))
 	return nil
 }

@@ -66,10 +66,3 @@ func TestWithReceiveSettings(t *testing.T) {
 		t.Errorf("options ReceiveSettings (-want,+got): %v", diff)
 	}
 }
-
-func TestWithSignal(t *testing.T) {
-	opt := NewOptions(WithSyncSignal(make(chan struct{})))
-	if opt.SyncSignal == nil {
-		t.Error("options SyncSignal is nil")
-	}
-}

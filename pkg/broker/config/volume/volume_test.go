@@ -121,14 +121,12 @@ func TestSyncConfigFromFile(t *testing.T) {
 		t.Fatalf("unexpected error from closing config file: %v", err)
 	}
 
-	ch := make(chan struct{}, 1)
-
-	targets, err := NewTargetsFromFile(WithPath(tmp.Name()), WithNotifyChan(ch))
+	targets, err := NewTargetsFromFile(WithPath(tmp.Name()))
 	if err != nil {
 		t.Fatalf("unexpected error from NewTargetsFromFile: %v", err)
 	}
 
-	gotTargets := targets.(*Targets).Load()
+	gotTargets := <-targets
 	if !proto.Equal(data, gotTargets) {
 		t.Errorf("initial targets got=%+v, want=%+v", gotTargets, data)
 	}
@@ -160,9 +158,7 @@ func TestSyncConfigFromFile(t *testing.T) {
 	b, _ = proto.Marshal(data)
 	atomicWriteFile(t, tmp.Name(), b)
 
-	<-ch
-
-	gotTargets = targets.(*Targets).Load()
+	gotTargets = <-targets
 	if !proto.Equal(data, gotTargets) {
 		t.Errorf("updated targets got=%+v, want=%+v", gotTargets, data)
 	}

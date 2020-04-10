@@ -29,8 +29,8 @@ import (
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
-	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/broker/config"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 )
@@ -42,12 +42,6 @@ const (
 	// defaultPort is the defaultPort number for the ingress HTTP receiver.
 	defaultPort = 8080
 )
-
-// DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
-type DecoupleSink interface {
-	// Send sends the event from a broker to the corresponding decoupling sink.
-	Send(ctx context.Context, ns, broker string, event cev2.Event) protocol.Result
-}
 
 // HttpMessageReceiver is an interface to listen on http requests.
 type HttpMessageReceiver interface {
@@ -62,12 +56,13 @@ type handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
-	decouple DecoupleSink
-	logger   *zap.Logger
+	decouple  *multiTopicDecoupleSink
+	targetsCh <-chan *config.TargetsConfig
+	logger    *zap.Logger
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+func NewHandler(ctx context.Context, targetsCh <-chan *config.TargetsConfig, options ...HandlerOption) (*handler, error) {
 	h := &handler{
 		logger: logging.FromContext(ctx),
 	}
@@ -95,7 +90,14 @@ func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error)
 
 // Start blocks to receive events over HTTP.
 func (h *handler) Start(ctx context.Context) error {
+	go h.updateConfig()
 	return h.httpReceiver.StartListen(ctx, h)
+}
+
+func (m *handler) updateConfig() {
+	for targets := range m.targetsCh {
+		m.decouple.setConfig(targets)
+	}
 }
 
 // ServeHTTP implements net/http Handler interface method.

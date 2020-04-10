@@ -27,7 +27,6 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
-	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
@@ -40,23 +39,18 @@ import (
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
 type SyncPool struct {
-	options *pool.Options
-	targets config.ReadonlyTargets
-	pool    sync.Map
+	options   *pool.Options
+	targetsCh <-chan *config.TargetsConfig
+	pool      sync.Map
 }
 
 // StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+func StartSyncPool(ctx context.Context, targetsCh <-chan *config.TargetsConfig, opts ...pool.Option) (*SyncPool, error) {
 	p := &SyncPool{
-		targets: targets,
-		options: pool.NewOptions(opts...),
+		targetsCh: targetsCh,
+		options:   pool.NewOptions(opts...),
 	}
-	if err := p.syncOnce(ctx); err != nil {
-		return nil, err
-	}
-	if p.options.SyncSignal != nil {
-		go p.watch(ctx)
-	}
+	go p.watch(ctx)
 	return p, nil
 }
 
@@ -65,31 +59,37 @@ func (p *SyncPool) watch(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-p.options.SyncSignal:
-			if err := p.syncOnce(ctx); err != nil {
+		case targets := <-p.targetsCh:
+			if err := p.syncTargets(ctx, targets); err != nil {
 				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
 			}
 		}
 	}
 }
 
-func (p *SyncPool) syncOnce(ctx context.Context) error {
+// BrokerKey returns the key of a broker.
+func brokerKey(namespace, name string) string {
+	return namespace + "/" + name
+}
+
+func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfig) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
+		if _, ok := targets.Brokers[key.(string)]; !ok {
 			value.(*handler.Handler).Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		bk := config.BrokerKey(b.Namespace, b.Name)
+	for _, b := range targets.Brokers {
+		bk := brokerKey(b.Namespace, b.Name)
 
-		// There is already a handler for the broker, skip.
-		if _, ok := p.pool.Load(bk); ok {
-			return true
+		// Update config of existing handler
+		if h, ok := p.pool.Load(bk); ok {
+			h.(*handler.Handler).UpdateConfig(b)
+			continue
 		}
 
 		projectIDOpt := pubsub.WithProjectIDFromDefaultEnv()
@@ -104,20 +104,20 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
 			errs++
-			return true
+			continue
 		}
 
 		h := &handler.Handler{
 			Timeout:      p.options.TimeoutPerEvent,
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
-				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
+				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent},
 				&filter.Processor{},
 				&deliver.Processor{Requester: p.options.EventRequester},
 			),
 		}
 		// Start the handler with broker key in context.
-		h.Start(handlerctx.WithBrokerKey(ctx, bk), func(err error) {
+		h.Start(ctx, b, func(err error) {
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
 			} else {
@@ -128,8 +128,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		})
 
 		p.pool.Store(bk, h)
-		return true
-	})
+	}
 
 	if errs > 0 {
 		return fmt.Errorf("%d errors happened during handlers pool sync", errs)

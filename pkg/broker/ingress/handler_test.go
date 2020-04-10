@@ -28,7 +28,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"go.uber.org/zap/zaptest"
 	"knative.dev/eventing/pkg/logging"
 )
 
@@ -141,7 +141,7 @@ func TestHandler(t *testing.T) {
 			// If event is accepted, check that it's stored in the decouple sink.
 			if res.StatusCode == nethttp.StatusOK {
 				// Retrieve the event from the decouple sink.
-				fakeClient := h.decouple.(*multiTopicDecoupleSink).client.(*fakePubsubClient)
+				fakeClient := h.decouple.client.(*fakePubsubClient)
 				savedToSink := <-fakeClient.topics[topic]
 				if tc.event.ID() != savedToSink.ID() {
 					t.Errorf("Event ID mismatch. got: %v, want: %v", savedToSink.ID(), tc.event.ID())
@@ -156,8 +156,10 @@ func TestHandler(t *testing.T) {
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
 func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()) {
-	decouple, err1 := NewMultiTopicDecoupleSink(context.Background(),
-		WithBrokerConfig(memory.NewTargets(brokerConfig)),
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(t))
+	decouple, err1 := NewMultiTopicDecoupleSink(
+		ctx,
+		WithBrokerConfig(brokerConfig),
 		WithPubsubClient(newFakePubsubClient(t)))
 	if err1 != nil {
 		t.Fatalf("Failed to create decouple sink: %v", err1)
@@ -165,7 +167,7 @@ func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()
 	ctx, cancel := context.WithCancel(context.Background())
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	h = &handler{
-		logger:       logging.FromContext(ctx),
+		logger:       zaptest.NewLogger(t),
 		httpReceiver: receiver,
 		decouple:     decouple,
 	}

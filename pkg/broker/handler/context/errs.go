@@ -19,7 +19,6 @@ package context
 import "errors"
 
 var (
-	ErrTargetNotPresent    = errors.New("target not present in the context")
-	ErrBrokerNotPresent    = errors.New("broker not present in the context")
-	ErrBrokerKeyNotPresent = errors.New("broker key not present in the context")
+	ErrTargetNotPresent = errors.New("target not present in the context")
+	ErrBrokerNotPresent = errors.New("broker not present in the context")
 )

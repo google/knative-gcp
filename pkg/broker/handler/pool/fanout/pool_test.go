@@ -25,83 +25,70 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 )
 
 func TestWatchAndSync(t *testing.T) {
 	testProject := "test-project"
-	signal := make(chan struct{})
-	targets := memory.NewEmptyTargets()
-	p, err := StartSyncPool(context.Background(), targets,
-		pool.WithProjectID(testProject),
-		pool.WithSyncSignal(signal),
-	)
+	targets := make(chan *config.TargetsConfig)
+	emptyTargetConfig := new(config.TargetsConfig)
+	p, err := StartSyncPool(context.Background(), targets, pool.WithProjectID(testProject))
 	if err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
-	assertHandlers(t, p, targets)
+	assertHandlers(t, p, emptyTargetConfig)
 
+	targetConfig := &config.TargetsConfig{Brokers: make(map[string]*config.Broker)}
 	// First add some brokers.
 	for i := 0; i < 2; i++ {
 		for j := 0; j < 2; j++ {
 			ns := fmt.Sprintf("ns-%d", i)
 			bn := fmt.Sprintf("broker-%d", j)
-			targets.MutateBroker(ns, bn, func(bm config.BrokerMutation) {
-				bm.SetAddress("address")
-				bm.SetDecoupleQueue(&config.Queue{
+			targetConfig.Brokers[fmt.Sprintf("%s/%s", ns, bn)] = &config.Broker{
+				Namespace: ns,
+				Name:      bn,
+				Address:   "address",
+				DecoupleQueue: &config.Queue{
 					Topic:        fmt.Sprintf("t-%d-%d", i, j),
 					Subscription: fmt.Sprintf("sub-%d-%d", i, j),
-				})
-			})
+				},
+			}
 		}
 	}
-	signal <- struct{}{}
+	targets <- targetConfig
 	// Wait a short period for the handlers to be updated.
 	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+	assertHandlers(t, p, targetConfig)
 
-	// Delete old and add new.
+	newTargetConfig := &config.TargetsConfig{Brokers: make(map[string]*config.Broker)}
+	// First add some brokers.
 	for i := 0; i < 2; i++ {
 		for j := 0; j < 2; j++ {
-			ns := fmt.Sprintf("ns-%d", i)
-			bn := fmt.Sprintf("broker-%d", j)
-			targets.MutateBroker(ns, bn, func(bm config.BrokerMutation) {
-				bm.Delete()
-			})
-			ns2 := fmt.Sprintf("ns-%d", i+2)
-			bn2 := fmt.Sprintf("broker-%d", j+2)
-			targets.MutateBroker(ns2, bn2, func(bm config.BrokerMutation) {
-				bm.SetAddress("address")
-				bm.SetDecoupleQueue(&config.Queue{
-					Topic:        fmt.Sprintf("t-%d-%d", i+2, j+2),
-					Subscription: fmt.Sprintf("sub-%d-%d", i+2, j+2),
-				})
-			})
+			ns := fmt.Sprintf("ns-%d", i+2)
+			bn := fmt.Sprintf("broker-%d", j+2)
+			newTargetConfig.Brokers[fmt.Sprintf("%s/%s", ns, bn)] = &config.Broker{
+				Namespace: ns,
+				Name:      bn,
+				Address:   "address",
+				DecoupleQueue: &config.Queue{
+					Topic:        fmt.Sprintf("t-%d-%d", i, j),
+					Subscription: fmt.Sprintf("sub-%d-%d", i, j),
+				},
+			}
 		}
 	}
-	signal <- struct{}{}
+	targets <- newTargetConfig
 	// Wait a short period for the handlers to be updated.
 	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+	assertHandlers(t, p, newTargetConfig)
 
-	// clean up all brokers
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
-			ns2 := fmt.Sprintf("ns-%d", i+2)
-			bn2 := fmt.Sprintf("broker-%d", j+2)
-			targets.MutateBroker(ns2, bn2, func(bm config.BrokerMutation) {
-				bm.Delete()
-			})
-		}
-	}
-	signal <- struct{}{}
+	targets <- emptyTargetConfig
 	// Wait a short period for the handlers to be updated.
 	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+	assertHandlers(t, p, emptyTargetConfig)
 }
 
-func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
+func assertHandlers(t *testing.T, p *SyncPool, c *config.TargetsConfig) {
 	t.Helper()
 	gotHandlers := make(map[string]bool)
 	wantHandlers := make(map[string]bool)
@@ -111,10 +98,9 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 		return true
 	})
 
-	targets.RangeBrokers(func(b *config.Broker) bool {
-		wantHandlers[config.BrokerKey(b.Namespace, b.Name)] = true
-		return true
-	})
+	for _, b := range c.GetBrokers() {
+		wantHandlers[fmt.Sprintf("%s/%s", b.Namespace, b.Name)] = true
+	}
 
 	if diff := cmp.Diff(wantHandlers, gotHandlers); diff != "" {
 		t.Errorf("handlers map (-want,+got): %v", diff)

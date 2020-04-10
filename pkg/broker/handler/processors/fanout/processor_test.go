@@ -24,9 +24,10 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/zap/zaptest"
+	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -35,32 +36,32 @@ func TestInvalidContext(t *testing.T) {
 	p := &Processor{}
 	e := event.New()
 	err := p.Process(context.Background(), &e)
-	if err != handlerctx.ErrBrokerKeyNotPresent {
-		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerKeyNotPresent)
+	if err != handlerctx.ErrBrokerNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerNotPresent)
 	}
 }
 
 func TestFanoutSuccess(t *testing.T) {
 	ch := make(chan *event.Event, 4)
 	ns, broker := "ns", "broker"
-	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	wantTargets := newTestTargets(ns, broker, wantNum)
-	gotTargets := memory.NewEmptyTargets()
+	brokerConfig := newBrokerConfig(ns, broker, wantNum)
+	targetCh := make(chan *config.Target, wantNum)
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		InterceptFunc: func(ctx context.Context, e *event.Event) *event.Event {
-			b, _ := handlerctx.GetBroker(ctx)
 			t, _ := handlerctx.GetTarget(ctx)
-			gotTargets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
-				bm.UpsertTargets(t)
-			})
-			return e
+			select {
+			case targetCh <- t:
+				return e
+			default:
+				return nil
+			}
 		},
 	}
 
-	p := &Processor{MaxConcurrency: 2, Targets: wantTargets}
+	p := &Processor{MaxConcurrency: 2}
 	p.WithNext(next)
 
 	e := event.New()
@@ -82,32 +83,37 @@ func TestFanoutSuccess(t *testing.T) {
 		}
 	}()
 
-	ctx := handlerctx.WithBrokerKey(context.Background(), bk)
+	ctx := handlerctx.WithBroker(context.Background(), brokerConfig)
+	ctx = logging.WithLogger(ctx, zaptest.NewLogger(t))
 	if err := p.Process(ctx, &e); err != nil {
 		t.Errorf("unexpected error from processing: %v", err)
 	}
+	close(targetCh)
 	// Close the channel so that the defer func will finish.
 	close(ch)
 
+	gotTargets := make(map[string]*config.Target)
+	for target := range targetCh {
+		gotTargets[target.Name] = target
+	}
 	// Make sure the processor sets the broker and targets in the context.
-	if !gotTargets.EqualsString(wantTargets.String()) {
-		t.Errorf("targets received in the context got=%s, want=%s", gotTargets.String(), wantTargets.String())
+	if diff := cmp.Diff(brokerConfig.Targets, gotTargets); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
 }
 
 func TestFanoutPartialFailure(t *testing.T) {
 	ch := make(chan *event.Event, 4)
 	ns, broker := "ns", "broker"
-	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	wantTargets := newTestTargets(ns, broker, wantNum)
+	brokerConfig := newBrokerConfig(ns, broker, wantNum)
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		OneTimeErr:   true,
 	}
 
-	p := &Processor{MaxConcurrency: 2, Targets: wantTargets}
+	p := &Processor{MaxConcurrency: 2}
 	p.WithNext(next)
 
 	e := event.New()
@@ -129,7 +135,7 @@ func TestFanoutPartialFailure(t *testing.T) {
 		}
 	}()
 
-	ctx := handlerctx.WithBrokerKey(context.Background(), bk)
+	ctx := handlerctx.WithBroker(context.Background(), brokerConfig)
 	if err := p.Process(ctx, &e); err == nil {
 		t.Error("expect error from processing")
 	}
@@ -137,18 +143,23 @@ func TestFanoutPartialFailure(t *testing.T) {
 	close(ch)
 }
 
-func newTestTargets(ns, broker string, num int) config.ReadonlyTargets {
-	targets := memory.NewEmptyTargets()
-	targets.MutateBroker(ns, broker, func(bm config.BrokerMutation) {
-		for i := 0; i < num; i++ {
-			bm.UpsertTargets(&config.Target{
-				Name: fmt.Sprintf("target-%d", i),
-				Id:   fmt.Sprintf("target-%d", i),
-				FilterAttributes: map[string]string{
-					"target": strconv.Itoa(i),
-				},
-			})
+func newBrokerConfig(ns, broker string, num int) *config.Broker {
+	targets := make(map[string]*config.Target)
+	for i := 0; i < num; i++ {
+		name := fmt.Sprintf("target-%d", i)
+		targets[name] = &config.Target{
+			Namespace: ns,
+			Name:      name,
+			Broker:    broker,
+			Id:        fmt.Sprintf("target-%d", i),
+			FilterAttributes: map[string]string{
+				"target": strconv.Itoa(i),
+			},
 		}
-	})
-	return targets
+	}
+	return &config.Broker{
+		Namespace: ns,
+		Name:      broker,
+		Targets:   targets,
+	}
 }

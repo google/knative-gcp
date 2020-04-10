@@ -18,10 +18,13 @@ package handler
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
@@ -45,14 +48,18 @@ type Handler struct {
 	// to 1.
 	Concurrency int
 
+	configMut sync.RWMutex
+	config    *config.Broker
+
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
 }
 
 // Start starts the handler.
 // done func will be called if the pubsub inbound is closed.
-func (h *Handler) Start(ctx context.Context, done func(error)) {
+func (h *Handler) Start(ctx context.Context, c *config.Broker, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
+	h.config = c
 	go func() {
 		defer h.cancel()
 		done(h.PubsubEvents.OpenInbound(ctx))
@@ -65,6 +72,18 @@ func (h *Handler) Start(ctx context.Context, done func(error)) {
 	for i := 0; i < curr; i++ {
 		go h.handle(ctx)
 	}
+}
+
+func (h *Handler) UpdateConfig(c *config.Broker) {
+	h.configMut.Lock()
+	defer h.configMut.Unlock()
+	h.config = c
+}
+
+func (h *Handler) getConfig() *config.Broker {
+	h.configMut.RLock()
+	defer h.configMut.RUnlock()
+	return h.config
 }
 
 // Stop stops the handlers.
@@ -87,6 +106,8 @@ func (h *Handler) handle(ctx context.Context) {
 			logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
 			continue
 		}
+
+		ctx = handlerctx.WithBroker(ctx, h.getConfig())
 
 		pctx := ctx
 		if h.Timeout != 0 {

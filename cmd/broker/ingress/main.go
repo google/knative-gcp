@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/kelseyhightower/envconfig"
@@ -52,7 +53,11 @@ func main() {
 	}
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 
-	ingress, err := ingress.NewHandler(ctx, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
+	targets, err := volume.NewTargetsFromFile()
+	if err != nil {
+		logger.Desugar().Fatal("Unable to get targets config: %v", zap.Error(err))
+	}
+	ingress, err := ingress.NewHandler(ctx, targets, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
 	}

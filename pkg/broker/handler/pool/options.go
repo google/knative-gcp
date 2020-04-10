@@ -65,8 +65,6 @@ type Options struct {
 	PubsubReceiveSettings pubsub.ReceiveSettings
 	// EventRequester is the cloudevents client to deliver events.
 	EventRequester ceclient.Client
-	// SyncSignal is the signal to sync handler pool.
-	SyncSignal <-chan struct{}
 }
 
 // NewOptions creates a Options.
@@ -121,12 +119,5 @@ func WithTimeoutPerEvent(t time.Duration) Option {
 func WithPubsubReceiveSettings(s pubsub.ReceiveSettings) Option {
 	return func(o *Options) {
 		o.PubsubReceiveSettings = s
-	}
-}
-
-// WithSyncSignal sets SyncSignal.
-func WithSyncSignal(s <-chan struct{}) Option {
-	return func(o *Options) {
-		o.SyncSignal = s
 	}
 }

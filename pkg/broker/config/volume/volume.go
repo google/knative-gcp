@@ -31,102 +31,132 @@ const (
 	defaultPath = "/var/run/cloud-run-events/broker/targets"
 )
 
-// Targets implements config.ReadonlyTargets with data
-// loaded from a file.
-// It also watches the file for any changes and will automatically
-// refresh the in memory cache.
-type Targets struct {
-	config.CachedTargets
-	path       string
-	notifyChan chan<- struct{}
+// targets watches a target config file and config updates to targetChan
+type targets struct {
+	path           string
+	targetChan     chan<- *config.TargetsConfig
+	realConfigFile string
+	watcher        *fsnotify.Watcher
 }
 
-var _ config.ReadonlyTargets = (*Targets)(nil)
-
-// NewTargetsFromFile initializes the targets config from a file.
-func NewTargetsFromFile(opts ...Option) (config.ReadonlyTargets, error) {
-	t := &Targets{
-		CachedTargets: config.CachedTargets{},
-		path:          defaultPath,
+// NewTargetsFromFile initializes the targets config from a file and returns the target chan.
+func NewTargetsFromFile(opts ...Option) (<-chan *config.TargetsConfig, error) {
+	ch := make(chan *config.TargetsConfig)
+	t := &targets{
+		path:       defaultPath,
+		targetChan: ch,
 	}
 
 	for _, opt := range opts {
 		opt(t)
 	}
 
-	if err := t.sync(); err != nil {
+	if watcher, err := fsnotify.NewWatcher(); err != nil {
 		return nil, err
+	} else {
+		t.watcher = watcher
 	}
-
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		return nil, err
-	}
-
-	t.watchWith(watcher)
-	return t, nil
+	go t.watch()
+	return ch, nil
 }
 
-func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
+func (t *targets) watch() {
+	defer close(t.targetChan)
+	defer t.watcher.Close()
 	configFile := filepath.Clean(t.path)
 	configDir, _ := filepath.Split(t.path)
-	realConfigFile, _ := filepath.EvalSymlinks(t.path)
-	watcher.Add(configDir)
+	t.realConfigFile, _ = filepath.EvalSymlinks(t.path)
+	t.watcher.Add(configDir)
+
+	// send initial config
+	if config, err := t.sync(); err != nil {
+		log.Printf("error syncing config: %v\n", err)
+	} else {
+		t.sendConfig(config)
+	}
+
+	for {
+		select {
+		case event, ok := <-t.watcher.Events:
+			if !ok {
+				// 'Events' channel is closed.
+				return
+			}
+			if t.shouldSync(&event) {
+				if config, err := t.sync(); err != nil {
+					log.Printf("error syncing config: %v\n", err)
+				} else {
+					t.sendConfig(config)
+				}
+			} else {
+				if filepath.Clean(event.Name) == configFile && event.Op&fsnotify.Remove != 0 {
+					return
+				}
+			}
+
+		case err, ok := <-t.watcher.Errors:
+			if ok {
+				log.Printf("watcher error: %v\n", err)
+			}
+			return
+		}
+	}
+}
+
+func (t *targets) sendConfig(config *config.TargetsConfig) {
+	for {
+		select {
+		case t.targetChan <- config:
+			return
+		case event := <-t.watcher.Events:
+			if t.shouldSync(&event) {
+				if newConfig, err := t.sync(); err != nil {
+					log.Printf("error syncing config: %v\n", err)
+				} else {
+					config = newConfig
+				}
+			}
+		}
+	}
+
+}
+
+func (t *targets) shouldSync(event *fsnotify.Event) bool {
+	configFile := filepath.Clean(t.path)
+	currentConfigFile, _ := filepath.EvalSymlinks(t.path)
+	// Re-sync if the file was updated/created or
+	// if the real file was replaced.
+	const writeOrCreateMask = fsnotify.Write | fsnotify.Create
+
+	fileChanged := filepath.Clean(event.Name) == configFile && event.Op&writeOrCreateMask != 0
+	fileReplaced := currentConfigFile != "" && currentConfigFile != t.realConfigFile
+	if fileReplaced {
+		t.realConfigFile = currentConfigFile
+	}
+	return fileChanged || fileReplaced
+}
+
+func (t *targets) watchWith(watcher *fsnotify.Watcher) {
 
 	go func() {
 		defer watcher.Close()
-		for {
-			select {
-			case event, ok := <-watcher.Events:
-				if !ok {
-					// 'Events' channel is closed.
-					return
-				}
-				currentConfigFile, _ := filepath.EvalSymlinks(t.path)
-
-				// Re-sync if the file was updated/created or
-				// if the real file was replaced.
-				const writeOrCreateMask = fsnotify.Write | fsnotify.Create
-				if (filepath.Clean(event.Name) == configFile &&
-					event.Op&writeOrCreateMask != 0) ||
-					(currentConfigFile != "" && currentConfigFile != realConfigFile) {
-					realConfigFile = currentConfigFile
-					if err := t.sync(); err != nil {
-						log.Printf("error syncing config: %v\n", err)
-					} else if t.notifyChan != nil {
-						// File got updated and notify the external channel.
-						t.notifyChan <- struct{}{}
-					}
-				} else if filepath.Clean(event.Name) == configFile &&
-					event.Op&fsnotify.Remove != 0 {
-					return
-				}
-
-			case err, ok := <-watcher.Errors:
-				if ok {
-					log.Printf("watcher error: %v\n", err)
-				}
-				return
-			}
-		}
 	}()
 }
 
-func (t *Targets) sync() error {
+func (t *targets) sync() (*config.TargetsConfig, error) {
 	b, err := t.readFile()
 	if err != nil {
-		return fmt.Errorf("failed to read config file: %w", err)
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 
 	var val config.TargetsConfig
 	if err := proto.Unmarshal(b, &val); err != nil {
-		return fmt.Errorf("failed to unmarshal config file: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 
-	t.Store(&val)
-	return nil
+	return &val, nil
 }
 
-func (t *Targets) readFile() ([]byte, error) {
+func (t *targets) readFile() ([]byte, error) {
 	return ioutil.ReadFile(t.path)
 }

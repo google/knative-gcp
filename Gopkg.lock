@@ -1778,6 +1778,7 @@
     "go.opencensus.io/trace",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
+    "go.uber.org/zap/zaptest",
     "golang.org/x/net/http2/h2c",
     "google.golang.org/api/iam/v1",
     "google.golang.org/api/iterator",

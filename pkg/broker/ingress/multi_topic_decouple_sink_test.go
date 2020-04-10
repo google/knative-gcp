@@ -22,6 +22,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.uber.org/zap/zaptest"
+	"knative.dev/eventing/pkg/logging"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/client/test"
@@ -30,7 +32,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 )
 
 func TestMultiTopicDecoupleSink(t *testing.T) {
@@ -147,19 +148,19 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeClient := newFakePubsubClient(t)
-			brokerConfig := memory.NewTargets(tt.brokerConfig)
 			for _, testCase := range tt.cases {
+				ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(t))
 				if testCase.clientErrFn != nil {
 					testCase.clientErrFn(fakeClient)
 				}
-				sink, err := NewMultiTopicDecoupleSink(context.Background(), WithBrokerConfig(brokerConfig), WithPubsubClient(fakeClient))
+				sink, err := NewMultiTopicDecoupleSink(ctx, WithBrokerConfig(tt.brokerConfig), WithPubsubClient(fakeClient))
 				if err != nil {
 					t.Fatalf("Failed to create decouple sink: %v", err)
 				}
 
 				// Send events
 				event := createTestEvent(uuid.New().String())
-				err = sink.Send(context.Background(), testCase.ns, testCase.broker, *event)
+				err = sink.Send(ctx, testCase.ns, testCase.broker, *event)
 
 				// Verify results.
 				if testCase.wantErr && err == nil {

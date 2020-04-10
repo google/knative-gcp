@@ -59,9 +59,9 @@ func WithPubsubClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
 	}
 }
 
-// WithBrokerConfig specifies the broker config. It can be created by reading a configmap mount.
-func WithBrokerConfig(brokerConfig config.ReadonlyTargets) MultiTopicDecoupleSinkOption {
+// WithBrokerConfig specifies the initial broker config. It can be created by reading a configmap mount.
+func WithBrokerConfig(targetsConfig *config.TargetsConfig) MultiTopicDecoupleSinkOption {
 	return func(sink *multiTopicDecoupleSink) {
-		sink.brokerConfig = brokerConfig
+		sink.targetsConfig = targetsConfig
 	}
 }

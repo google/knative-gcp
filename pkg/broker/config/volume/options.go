@@ -17,19 +17,11 @@ limitations under the License.
 package volume
 
 // Option is the option to load targets.
-type Option func(*Targets)
+type Option func(*targets)
 
 // WithPath is the option to load targets from the given path.
 func WithPath(path string) Option {
-	return func(t *Targets) {
+	return func(t *targets) {
 		t.path = path
-	}
-}
-
-// WithNotifyChan is the option to notify the given channel
-// when the config cache was updated.
-func WithNotifyChan(ch chan<- struct{}) Option {
-	return func(t *Targets) {
-		t.notifyChan = ch
 	}
 }
