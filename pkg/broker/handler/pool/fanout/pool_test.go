@@ -40,7 +40,8 @@ import (
 )
 
 func TestWatchAndSync(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	testProject := "test-project"
 	ps, psclose := testPubsubClient(ctx, t, testProject)
 	defer psclose()
@@ -105,7 +106,8 @@ func TestWatchAndSync(t *testing.T) {
 }
 
 func TestSyncPoolE2E(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	testProject := "test-project"
 
 	ps, psclose := testPubsubClient(ctx, t, testProject)

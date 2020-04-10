@@ -129,10 +129,10 @@ func main() {
 	// block the targets config update?
 	targetsUpdateCh := make(chan struct{})
 	targetsConifg, err := volume.NewTargetsFromFile(
-		volume.WithPath(env.TargetsConifgPath),
+		volume.WithPath(env.TargetsConfigPath),
 		volume.WithNotifyChan(targetsUpdateCh))
 	if err != nil {
-		logger.Fatalw("Failed to load targets config", zap.String("path", env.TargetsConifgPath), zap.Error(err))
+		logger.Fatalw("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
 	}
 
 	logger.Info("Starting the broker fanout")
