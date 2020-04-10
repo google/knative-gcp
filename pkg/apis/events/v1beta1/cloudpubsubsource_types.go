@@ -21,7 +21,7 @@ import (
 	"time"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"

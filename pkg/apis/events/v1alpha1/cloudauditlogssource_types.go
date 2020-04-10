@@ -28,7 +28,7 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
