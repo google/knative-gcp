@@ -26,7 +26,7 @@ type subscriptionWithTopic struct {
 
 // Protocol acts as both a pubsub topic and a pubsub subscription .
 type Protocol struct {
-	transformers binding.TransformerFactories
+	transformers binding.Transformers
 
 	// PubSub
 
@@ -41,9 +41,8 @@ type Protocol struct {
 	// subscription if it does not exist.
 	AllowCreateSubscription bool
 
-	projectID      string
-	topicID        string
-	subscriptionID string
+	projectID string
+	topicID   string
 
 	gccMux sync.Mutex
 
@@ -75,11 +74,11 @@ func New(ctx context.Context, opts ...Option) (*Protocol, error) {
 	}
 
 	if t.connectionsBySubscription == nil {
-		t.connectionsBySubscription = make(map[string]*internal.Connection, 0)
+		t.connectionsBySubscription = make(map[string]*internal.Connection)
 	}
 
 	if t.connectionsByTopic == nil {
-		t.connectionsByTopic = make(map[string]*internal.Connection, 0)
+		t.connectionsByTopic = make(map[string]*internal.Connection)
 	}
 	return t, nil
 }
@@ -106,7 +105,7 @@ func (t *Protocol) Send(ctx context.Context, in binding.Message) error {
 	conn := t.getOrCreateConnection(ctx, topic, "")
 
 	msg := &pubsub.Message{}
-	if err := WritePubSubMessage(ctx, in, msg, t.transformers); err != nil {
+	if err := WritePubSubMessage(ctx, in, msg, t.transformers...); err != nil {
 		return err
 	}
 
@@ -167,9 +166,7 @@ func (t *Protocol) Receive(ctx context.Context) (binding.Message, error) {
 		return nil, io.EOF
 	}
 
-	msg := NewMessage(m.Data, m.Attributes)
-	m.Ack()
-	// TODO: when to do m.Nack()?
+	msg := NewMessage(&m)
 	return msg, nil
 }
 
