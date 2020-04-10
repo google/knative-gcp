@@ -48,7 +48,7 @@ func (p *PullSubscription) PubSubMode() ModeType {
 	return p.Spec.Mode
 }
 
-// CHeck that PullSubscription can be converted to other versions.
+// Check that PullSubscription can be converted to other versions.
 var _ apis.Convertible = (*PullSubscription)(nil)
 
 // Check that PullSubscription can be validated and can be defaulted.
