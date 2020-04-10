@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package pubsub contains Cloud Run Events API versions for pubsub components
-package pubsub
+package v1beta1
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
-
-const (
-	GroupName = "pubsub.cloud.google.com"
+import (
+	"context"
+	"testing"
 )
 
-var (
-	// PullSubscriptionsResource represents a PubSub PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
+func TestTopicConversionBadType(t *testing.T) {
+	good, bad := &Topic{}, &Topic{}
+
+	if err := good.ConvertTo(context.Background(), bad); err == nil {
+		t.Errorf("ConvertTo() = %#v, wanted error", bad)
 	}
-	// TopicsResource represents a PubSub Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
+
+	if err := good.ConvertFrom(context.Background(), bad); err == nil {
+		t.Errorf("ConvertFrom() = %#v, wanted error", good)
 	}
-)
+}
