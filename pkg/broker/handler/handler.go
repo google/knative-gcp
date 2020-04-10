@@ -94,11 +94,12 @@ func (h *Handler) handle(ctx context.Context) {
 			pctx, cancel = context.WithTimeout(ctx, h.Timeout)
 			defer cancel()
 		}
-		if err := h.Processor.Process(pctx, event); err != nil {
-			logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
+		perr := h.Processor.Process(pctx, event)
+		if perr != nil {
+			logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(perr))
 		}
 		// This will ack/nack the message.
-		if err := msg.Finish(err); err != nil {
+		if err := msg.Finish(perr); err != nil {
 			logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
 		}
 	}

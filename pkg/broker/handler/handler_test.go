@@ -92,39 +92,50 @@ func TestHandler(t *testing.T) {
 	testEvent.SetSubject("subject")
 	testEvent.SetType("type")
 
-	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-		t.Errorf("failed to seed event to pubsub: %v", err)
-	}
-	gotEvent := nextEventWithTimeout(eventCh)
-	if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
-		t.Errorf("processed event (-want,+got): %v", diff)
-	}
+	t.Run("handle event success", func(t *testing.T) {
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Errorf("failed to seed event to pubsub: %v", err)
+		}
+		gotEvent := nextEventWithTimeout(eventCh)
+		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+			t.Errorf("processed event (-want,+got): %v", diff)
+		}
+	})
 
-	// TODO(yolocs): when nack is ready.
-	// processor.oneTimeErr = true
-	// go func() {
-	// 	assertNextEvent(t, &testEvent, eventCh)
-	// 	assertNextEvent(t, &testEvent, eventCh)
-	// }()
-	// if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-	// 	t.Errorf("failed to seed event to pubsub: %v", err)
-	// }
+	t.Run("retry event on processing failure", func(t *testing.T) {
+		unlock := processor.Lock()
+		processor.OneTimeErr = true
+		unlock()
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Errorf("failed to seed event to pubsub: %v", err)
+		}
+		// On failure, the handler should nack the pubsub message.
+		// And we should expect two deliveries.
+		for i := 0; i < 2; i++ {
+			gotEvent := nextEventWithTimeout(eventCh)
+			if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+				t.Errorf("processed event (-want,+got): %v", diff)
+			}
+		}
+	})
 
-	unlock := processor.Lock()
-	processor.BlockUntilCancel = true
-	unlock()
-	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-		t.Errorf("failed to seed event to pubsub: %v", err)
-	}
-	gotEvent = nextEventWithTimeout(eventCh)
-	if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
-		t.Errorf("processed event (-want,+got): %v", diff)
-	}
-	unlock = processor.Lock()
-	if !processor.WasCancelled {
-		t.Error("processor was not cancelled on timeout")
-	}
-	unlock()
+	t.Run("timeout on event processing", func(t *testing.T) {
+		unlock := processor.Lock()
+		processor.BlockUntilCancel = true
+		unlock()
+		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+			t.Errorf("failed to seed event to pubsub: %v", err)
+		}
+		gotEvent := nextEventWithTimeout(eventCh)
+		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
+			t.Errorf("processed event (-want,+got): %v", diff)
+		}
+		unlock = processor.Lock()
+		if !processor.WasCancelled {
+			t.Error("processor was not cancelled on timeout")
+		}
+		unlock()
+	})
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {
