@@ -40,6 +40,11 @@ required = [
   name = "knative.dev/serving"
   branch = "release-0.13"
 
+# This is a preemptive override.
+[[override]]
+  name = "knative.dev/test-infra"
+  branch = "release-0.13"
+
 [[override]]
   name = "go.uber.org/zap"
   revision = "67bc79d13d155c02fd008f721863ff8cc5f30659"
