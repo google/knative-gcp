@@ -89,7 +89,7 @@ func main() {
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", zap.Error(err))
+		log.Fatal("Failed to process env var", err)
 	}
 
 	kubeClient := kubeclient.Get(ctx)
