@@ -18,7 +18,6 @@ package fanout
 
 import (
 	"context"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -41,10 +40,14 @@ import (
 )
 
 func TestWatchAndSync(t *testing.T) {
+	ctx := context.Background()
 	testProject := "test-project"
+	ps, psclose := testPubsubClient(ctx, t, testProject)
+	defer psclose()
 	signal := make(chan struct{})
 	targets := memory.NewEmptyTargets()
-	p, err := StartSyncPool(context.Background(), targets,
+	p, err := StartSyncPool(ctx, targets,
+		pool.WithPubsubClient(ps),
 		pool.WithProjectID(testProject),
 		pool.WithSyncSignal(signal),
 	)
@@ -52,64 +55,53 @@ func TestWatchAndSync(t *testing.T) {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 	assertHandlers(t, p, targets)
+	bs := make([]*config.Broker, 0, 4)
 
-	// First add some brokers.
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
-			ns := fmt.Sprintf("ns-%d", i)
-			bn := fmt.Sprintf("broker-%d", j)
-			targets.MutateBroker(ns, bn, func(bm config.BrokerMutation) {
-				bm.SetAddress("address")
-				bm.SetDecoupleQueue(&config.Queue{
-					Topic:        fmt.Sprintf("t-%d-%d", i, j),
-					Subscription: fmt.Sprintf("sub-%d-%d", i, j),
-				})
+	t.Run("adding new brokers creates new handlers", func(t *testing.T) {
+		// First add some brokers.
+		for i := 0; i < 4; i++ {
+			b := genTestBroker(ctx, t, ps)
+			bs = append(bs, b)
+			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+				bm.SetDecoupleQueue(b.DecoupleQueue)
 			})
 		}
-	}
-	signal <- struct{}{}
-	// Wait a short period for the handlers to be updated.
-	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+		signal <- struct{}{}
+		// Wait a short period for the handlers to be updated.
+		<-time.After(time.Second)
+		assertHandlers(t, p, targets)
+	})
 
-	// Delete old and add new.
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
-			ns := fmt.Sprintf("ns-%d", i)
-			bn := fmt.Sprintf("broker-%d", j)
-			targets.MutateBroker(ns, bn, func(bm config.BrokerMutation) {
+	t.Run("adding and deleting brokers changes handlers", func(t *testing.T) {
+		// Delete old and add new.
+		for i := 0; i < 2; i++ {
+			targets.MutateBroker(bs[i].Namespace, bs[i].Name, func(bm config.BrokerMutation) {
 				bm.Delete()
 			})
-			ns2 := fmt.Sprintf("ns-%d", i+2)
-			bn2 := fmt.Sprintf("broker-%d", j+2)
-			targets.MutateBroker(ns2, bn2, func(bm config.BrokerMutation) {
-				bm.SetAddress("address")
-				bm.SetDecoupleQueue(&config.Queue{
-					Topic:        fmt.Sprintf("t-%d-%d", i+2, j+2),
-					Subscription: fmt.Sprintf("sub-%d-%d", i+2, j+2),
-				})
+			b := genTestBroker(ctx, t, ps)
+			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+				bm.SetDecoupleQueue(b.DecoupleQueue)
 			})
 		}
-	}
-	signal <- struct{}{}
-	// Wait a short period for the handlers to be updated.
-	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+		signal <- struct{}{}
+		// Wait a short period for the handlers to be updated.
+		<-time.After(time.Second)
+		assertHandlers(t, p, targets)
+	})
 
-	// clean up all brokers
-	for i := 0; i < 2; i++ {
-		for j := 0; j < 2; j++ {
-			ns2 := fmt.Sprintf("ns-%d", i+2)
-			bn2 := fmt.Sprintf("broker-%d", j+2)
-			targets.MutateBroker(ns2, bn2, func(bm config.BrokerMutation) {
+	t.Run("deleting all brokers deletes all handlers", func(t *testing.T) {
+		// clean up all brokers
+		targets.RangeBrokers(func(b *config.Broker) bool {
+			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
 				bm.Delete()
 			})
-		}
-	}
-	signal <- struct{}{}
-	// Wait a short period for the handlers to be updated.
-	<-time.After(time.Second)
-	assertHandlers(t, p, targets)
+			return true
+		})
+		signal <- struct{}{}
+		// Wait a short period for the handlers to be updated.
+		<-time.After(time.Second)
+		assertHandlers(t, p, targets)
+	})
 }
 
 func TestSyncPoolE2E(t *testing.T) {
