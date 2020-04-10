@@ -28,6 +28,8 @@ import (
 	fakepolicyv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/policy/v1alpha1/fake"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	fakepubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1"
+	fakepubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -100,4 +102,9 @@ func (c *Clientset) PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface {
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
 func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
 	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
+}
+
+// PubsubV1beta1 retrieves the PubsubV1beta1Client
+func (c *Clientset) PubsubV1beta1() pubsubv1beta1.PubsubV1beta1Interface {
+	return &fakepubsubv1beta1.FakePubsubV1beta1{Fake: &c.Fake}
 }
