@@ -53,7 +53,7 @@ func TestBroker(t *testing.T) {
 		Namespace: "ns",
 		Address:   "address",
 		Targets: map[string]*config.Target{
-			"target": &config.Target{
+			"target": {
 				Name:      "target",
 				Namespace: "ns",
 			},
