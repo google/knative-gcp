@@ -53,12 +53,12 @@ const (
 // defaultRetry represents that there will be 3 iterations.
 // The duration starts from 100ms and is multiplied by factor 2.0 for each iteration.
 var defaultRetry = wait.Backoff{
-	Steps:    3,
-	Duration: 200 * time.Millisecond,
+	Steps:    5,
+	Duration: 500 * time.Millisecond,
 	Factor:   2.0,
 	// The sleep at each iteration is the duration plus an additional
 	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
-	Jitter: 0.5,
+	Jitter: 1.0,
 }
 
 func NewIdentity(ctx context.Context) *Identity {
