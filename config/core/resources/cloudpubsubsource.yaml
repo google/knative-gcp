@@ -27,7 +27,6 @@ metadata:
   name: cloudpubsubsources.events.cloud.google.com
 spec:
   group: events.cloud.google.com
-  version: v1alpha1
   names:
     categories:
     - all
@@ -39,6 +38,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -49,8 +49,13 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         spec:
           required:
@@ -63,36 +68,41 @@ spec:
             secret:
               type: object
               description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
             project:
               type: string
-              description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
+              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
             sink:
               type: object
-              description: "Reference to an object that will resolve to a domain name to use as the sink."
-              anyOf:
-                - type: object
+              description: "Sink which receives the notifications."
+              properties:
+                uri:
+                  type: string
+                  minLength: 1
+                ref:
+                  type: object
+                  required:
+                    - apiVersion
+                    - kind
+                    - name
                   properties:
-                    uri:
+                    apiVersion:
                       type: string
                       minLength: 1
-                - type: object
-                  properties:
-                    ref:
-                      type: object
-                      required:
-                        - apiVersion
-                        - kind
-                        - name
-                      properties:
-                        apiVersion:
-                          type: string
-                          minLength: 1
-                        kind:
-                          type: string
-                          minLength: 1
-                        name:
-                          type: string
-                          minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    namespace:
+                      type: string
+                    name:
+                      type: string
+                      minLength: 1
             ceOverrides:
               type: object
               description: "Defines overrides to control modifications of the event sent to the sink."
@@ -100,6 +110,7 @@ spec:
                 extensions:
                   type: object
                   description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
+                  x-kubernetes-preserve-unknown-fields: true
             topic:
               type: string
               description: "ID of the Cloud Pub/Sub Topic to Subscribe to. It must be in the form of the unique identifier within the project, not the entire name. E.g. it must be 'laconia', not 'projects/my-gcp-project/topics/laconia'."
@@ -114,12 +125,15 @@ spec:
               description: "How long to retain messages in backlog, from the time of publish. If retainAckedMessages is true, this duration affects the retention of acknowledged messages, otherwise only unacknowledged messages are retained. Defaults to 7 days (`168h`). Cannot be longer than 7 days or shorter than 10 minutes. Valid time units are `s`, `m`, `h`."
           type: object
         status:
+          type: object
           properties:
             observedGeneration:
               type: integer
               format: int64
             conditions:
+              type: array
               items:
+                type: object
                 properties:
                   lastTransitionTime:
                     # we use a string in the stored object but a wrapper object
@@ -136,10 +150,24 @@ spec:
                   type:
                     type: string
                 required:
-                - type
-                - status
-                type: object
-              type: array
+                  - type
+                  - status
+            serviceAccountName:
+              type: string
             sinkUri:
               type: string
-          type: object
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
+            projectId:
+              type: string
+            topicId:
+              type: string
+            subscriptionId:
+              type: string
