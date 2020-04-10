@@ -120,6 +120,8 @@ spec:
                 required:
                   - type
                   - status
+            serviceAccountName:
+              type: string
             projectId:
               type: string
             topicId:
