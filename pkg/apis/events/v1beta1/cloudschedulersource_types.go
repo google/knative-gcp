@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/apis/duck"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
