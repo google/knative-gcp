@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package v1alpha1
+package v1beta1
 
 import (
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1alpha1"
+	"knative.dev/pkg/apis/duck/v1beta1"
 	v1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
@@ -44,17 +44,14 @@ func (ts *TopicStatus) InitializeConditions() {
 	topicCondSet.Manage(ts).InitializeConditions()
 }
 
-// TODO: Use the new beta duck types.
 func (ts *TopicStatus) SetAddress(url *apis.URL) {
 	if ts.Address == nil {
-		ts.Address = &v1alpha1.Addressable{}
+		ts.Address = &v1beta1.Addressable{}
 	}
 	if url != nil {
-		ts.Address.Hostname = url.Host
 		ts.Address.URL = url
 		topicCondSet.Manage(ts).MarkTrue(TopicConditionAddressable)
 	} else {
-		ts.Address.Hostname = ""
 		ts.Address.URL = nil
 		topicCondSet.Manage(ts).MarkFalse(TopicConditionAddressable, "emptyUrl", "url is the empty string")
 	}
