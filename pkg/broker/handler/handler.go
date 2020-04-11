@@ -18,7 +18,7 @@ package handler
 
 import (
 	"context"
-	"sync"
+	"errors"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -48,8 +48,7 @@ type Handler struct {
 	// to 1.
 	Concurrency int
 
-	configMut sync.RWMutex
-	config    *config.Broker
+	ConfigCh chan *config.Broker
 
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
@@ -57,33 +56,14 @@ type Handler struct {
 
 // Start starts the handler.
 // done func will be called if the pubsub inbound is closed.
-func (h *Handler) Start(ctx context.Context, c *config.Broker, done func(error)) {
+func (h *Handler) Start(ctx context.Context, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
-	h.config = c
 	go func() {
 		defer h.cancel()
 		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
 
-	curr := h.Concurrency
-	if curr <= 0 {
-		curr = 1
-	}
-	for i := 0; i < curr; i++ {
-		go h.handle(ctx)
-	}
-}
-
-func (h *Handler) UpdateConfig(c *config.Broker) {
-	h.configMut.Lock()
-	defer h.configMut.Unlock()
-	h.config = c
-}
-
-func (h *Handler) getConfig() *config.Broker {
-	h.configMut.RLock()
-	defer h.configMut.RUnlock()
-	return h.config
+	go h.handle(ctx)
 }
 
 // Stop stops the handlers.
@@ -92,7 +72,52 @@ func (h *Handler) Stop() {
 }
 
 func (h *Handler) handle(ctx context.Context) {
+	limit := h.Concurrency
+	if limit < 1 {
+		limit = 1
+	}
+	handleCh := make(chan struct{}, limit)
+	msgCh := make(chan binding.Message)
+
+	go h.pullMessages(ctx, msgCh)
+
+	config := new(config.Broker)
 	for {
+		var msg binding.Message
+	GetMessage:
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case config = <-h.ConfigCh:
+			case msg = <-msgCh:
+				break GetMessage
+			}
+		}
+	HandleMessage:
+		for {
+			select {
+			case <-ctx.Done():
+				if err := msg.Finish(errors.New("message processing cancelled")); err != nil {
+					logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
+				}
+				return
+			case config = <-h.ConfigCh:
+			case handleCh <- struct{}{}:
+				go h.handleMessage(handlerctx.WithBroker(ctx, config), msg, handleCh)
+				break HandleMessage
+			}
+		}
+	}
+}
+
+func (h *Handler) pullMessages(ctx context.Context, msgCh chan<- binding.Message) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 		// TODO(yolocs): we need to update dep for fix:
 		// https://github.com/cloudevents/sdk-go/pull/430
 		msg, err := h.PubsubEvents.Receive(ctx)
@@ -100,27 +125,36 @@ func (h *Handler) handle(ctx context.Context) {
 			logging.FromContext(ctx).Error("failed to receive the next message from Pubsub", zap.Error(err))
 			continue
 		}
+		select {
+		case <-ctx.Done():
+			if err := msg.Finish(errors.New("message processing cancelled")); err != nil {
+				logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
+			}
+			return
+		case msgCh <- msg:
+		}
+	}
+}
 
-		event, err := binding.ToEvent(ctx, msg)
-		if err != nil {
-			logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
-			continue
-		}
+func (h *Handler) handleMessage(ctx context.Context, msg binding.Message, doneCh <-chan struct{}) {
+	defer func() { <-doneCh }()
 
-		ctx = handlerctx.WithBroker(ctx, h.getConfig())
+	event, err := binding.ToEvent(ctx, msg)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
+		return
+	}
 
-		pctx := ctx
-		if h.Timeout != 0 {
-			var cancel context.CancelFunc
-			pctx, cancel = context.WithTimeout(ctx, h.Timeout)
-			defer cancel()
-		}
-		if err := h.Processor.Process(pctx, event); err != nil {
-			logging.FromContext(pctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
-		}
-		// This will ack/nack the message.
-		if err := msg.Finish(err); err != nil {
-			logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
-		}
+	if h.Timeout != 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, h.Timeout)
+		defer cancel()
+	}
+	if err := h.Processor.Process(ctx, event); err != nil {
+		logging.FromContext(ctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
+	}
+	// This will ack/nack the message.
+	if err := msg.Finish(err); err != nil {
+		logging.FromContext(ctx).Warn("failed to finish the message", zap.Any("message", msg), zap.Error(err))
 	}
 }

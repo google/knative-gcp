@@ -88,7 +88,7 @@ func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfi
 
 		// Update config of existing handler
 		if h, ok := p.pool.Load(bk); ok {
-			h.(*handler.Handler).UpdateConfig(b)
+			h.(*handler.Handler).ConfigCh <- b
 			continue
 		}
 
@@ -115,9 +115,10 @@ func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfi
 				&filter.Processor{},
 				&deliver.Processor{Requester: p.options.EventRequester},
 			),
+			ConfigCh: make(chan *config.Broker),
 		}
 		// Start the handler with broker key in context.
-		h.Start(ctx, b, func(err error) {
+		h.Start(ctx, func(err error) {
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
 			} else {

@@ -30,7 +30,6 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 
-	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
@@ -84,7 +83,7 @@ func TestHandler(t *testing.T) {
 		Processor:    processor,
 		Timeout:      time.Second,
 	}
-	h.Start(ctx, new(config.Broker), func(err error) {})
+	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 
 	testEvent := event.New()
