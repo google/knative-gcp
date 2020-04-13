@@ -1,0 +1,19 @@
+{{ replace_with 0 "identity_status" }}
+sinkUri:
+  type: string
+ceAttributes:
+  type: array
+  items:
+    type: object
+    properties:
+      type:
+        type: string
+      source:
+        type: string
+projectId:
+  type: string
+topicId:
+  type: string
+subscriptionId:
+  type: string
+

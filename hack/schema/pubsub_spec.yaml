@@ -1,0 +1,22 @@
+{{ replace_with 0 "source_spec" }}
+{{ replace_with 0 "identity_spec" }}
+secret:
+  type: object
+  description: >
+    Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+    Subscription, only to poll it. The value of the secret entry must be a service account key in
+    the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+    Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+  properties:
+    name:
+      type: string
+    key:
+      type: string
+    optional:
+      type: boolean
+project:
+  type: string
+  description: >
+    Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+    the Project ID from the GKE cluster metadata service.
+

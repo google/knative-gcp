@@ -104,5 +104,31 @@ func readInGenerics(wd string) (map[string]string, error) {
 		fileNameWithoutExtension := strings.TrimSuffix(f.Name(), ".yaml")
 		generic[fileNameWithoutExtension] = contents
 	}
-	return generic, nil
+	return preprocessGeneric(generic)
+}
+
+func preprocessGeneric(generics map[string]string) (map[string]string, error) {
+	changed := true
+	for changed {
+		changed = false
+		newGenerics := make(map[string]string, len(generics))
+
+		tmpl := template.New("").Funcs(funcMap(generics))
+		for n, v := range generics {
+			t, err := tmpl.Parse(v)
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse template %v, %q", err, v)
+			}
+			var w bytes.Buffer
+			if err := t.Execute(&w, generics); err != nil {
+				return nil, fmt.Errorf("unable to execute template: %v", err)
+			}
+			newGenerics[n] = w.String()
+			if newGenerics[n] != generics[n] {
+				changed = true
+			}
+		}
+		generics = newGenerics
+	}
+	return generics, nil
 }

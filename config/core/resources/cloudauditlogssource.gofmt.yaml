@@ -42,15 +42,7 @@ spec:
     status: {}
   preserveUnknownFields: false
   additionalPrinterColumns:
-    - name: Ready
-      type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
-    - name: Reason
-      type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
-    - name: Age
-      type: date
-      JSONPath: .metadata.creationTimestamp
+    {{- replace_with 4 "ready_reason_age" }}
   versions:
     - name: v1alpha1
       served: true
@@ -66,7 +58,7 @@ spec:
             - serviceName
             - methodName
           properties:
-            {{- replace_with 12 "pubsubspec" }}
+            {{- replace_with 12 "pubsub_spec" }}
             serviceName:
               type: string
             methodName:
@@ -76,7 +68,7 @@ spec:
         status:
           type: object
           properties:
-            {{- replace_with 12 "pubsubstatus" }}
+            {{- replace_with 12 "pubsub_status" }}
             stackdriverSink:
               type: string
               description: >

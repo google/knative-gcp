@@ -1,0 +1,3 @@
+{{ replace_with 0 "duck_status" }}
+serviceAccountName:
+  type: string
