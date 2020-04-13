@@ -23,14 +23,7 @@ readonly CLOUD_RUN_EVENTS_GKE_CONFIG="config/core/deployments/controller-gke.yam
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
-
-  # Hack! Hack! Hack!
-  # The 20200409 release seems to be unusable, it doesn't install config-br-defaults, which causes
-  # the webhook to fail. So rather than installing the latest, install the previous nightly.
-  # TODO(harwayne): Remove on 2020-04-10.
-  # start_latest_knative_eventing || return 1
-  start_knative_eventing "https://storage.googleapis.com/knative-nightly/eventing/previous/v20200408-7e588048/eventing.yaml" || return 1
-
+  start_latest_knative_eventing || return 1
   start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup "$1"  || return 1
   istio_patch || return 1
