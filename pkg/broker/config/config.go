@@ -91,6 +91,7 @@ func TriggerKey(namespace, broker, target string) string {
 	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)
 }
 
+// SplitTriggerKey splits a trigger key into namespace, brokerName, targetName.
 func SplitTriggerKey(key string) (string, string, string) {
 	keys := strings.Split(key, "/")
 	return keys[0], keys[1], keys[2]

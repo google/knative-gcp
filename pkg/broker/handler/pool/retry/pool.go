@@ -87,21 +87,29 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		tk := config.TriggerKey(t.Namespace, t.Broker, t.Name)
+		bk := config.BrokerKey(t.Namespace, t.Broker)
 
 		// There is already a handler for the trigger, skip.
 		if _, ok := p.pool.Load(tk); ok {
 			return true
 		}
 
-		projectIDOpt := pubsub.WithProjectIDFromDefaultEnv()
-		if p.options.ProjectID != "" {
-			projectIDOpt = pubsub.WithProjectID(p.options.ProjectID)
-		}
-		ps, err := pubsub.New(ctx,
-			projectIDOpt,
+		opts := []pubsub.Option{
 			pubsub.WithTopicID(t.RetryQueue.Topic),
 			pubsub.WithSubscriptionID(t.RetryQueue.Subscription),
-		)
+			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		}
+
+		if p.options.ProjectID != "" {
+			opts = append(opts, pubsub.WithProjectID(p.options.ProjectID))
+		} else {
+			opts = append(opts, pubsub.WithProjectIDFromDefaultEnv())
+		}
+
+		if p.options.PubsubClient != nil {
+			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
+		}
+		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("trigger", t.Name), zap.Error(err))
 			errs++
@@ -116,8 +124,11 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 				&deliver.Processor{Requester: p.options.EventRequester},
 			),
 		}
+
+		// Deliver processor needs the broker in the context for reply.
+		tctx := handlerctx.WithBrokerKey(ctx, bk)
 		// Start the handler with target in context.
-		h.Start(handlerctx.WithTarget(ctx, t), func(err error) {
+		h.Start(handlerctx.WithTarget(tctx, t), func(err error) {
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("trigger", t.Name), zap.Error(err))
 			} else {
