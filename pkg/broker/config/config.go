@@ -16,11 +16,22 @@ limitations under the License.
 
 package config
 
+import (
+	"fmt"
+	"strings"
+)
+
 // ReadonlyTargets provides "read" functions for brokers and targets.
 type ReadonlyTargets interface {
 	// RangeAllTargets ranges over all targets.
 	// Do not modify the given Target copy.
 	RangeAllTargets(func(*Target) bool)
+	// GetTarget returns a target.
+	// Do not modify the returned Target copy.
+	GetTarget(namespace, brokerName, targetName string) (*Target, bool)
+	// GetTargetByKey returns a target by its trigger key. The format of trigger key is namespace/brokerName/targetName.
+	// Do not modify the returned Target copy.
+	GetTargetByKey(key string) (*Target, bool)
 	// GetBroker returns a broker and its targets if it exists.
 	// Do not modify the returned Broker copy.
 	GetBroker(namespace, name string) (*Broker, bool)
@@ -73,4 +84,14 @@ type Targets interface {
 // BrokerKey returns the key of a broker.
 func BrokerKey(namespace, name string) string {
 	return namespace + "/" + name
+}
+
+// TriggerKey returns the key of a trigger. Format is namespace/brokerName/targetName.
+func TriggerKey(namespace, broker, target string) string {
+	return fmt.Sprintf("%s/%s/%s", namespace, broker, target)
+}
+
+func SplitTriggerKey(key string) (string, string, string) {
+	keys := strings.Split(key, "/")
+	return keys[0], keys[1], keys[2]
 }
