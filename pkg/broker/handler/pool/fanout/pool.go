@@ -19,7 +19,6 @@ package fanout
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
@@ -41,7 +40,7 @@ import (
 type SyncPool struct {
 	options        *pool.Options
 	targetsWatcher config.TargetsWatcher
-	pool           sync.Map
+	pool           map[string]*handler.Handler
 }
 
 // StartSyncPool starts the sync pool.
@@ -49,6 +48,7 @@ func StartSyncPool(ctx context.Context, targetsWatcher config.TargetsWatcher, op
 	p := &SyncPool{
 		targetsWatcher: targetsWatcher,
 		options:        pool.NewOptions(opts...),
+		pool:           make(map[string]*handler.Handler),
 	}
 	go p.watch(ctx)
 	return p, nil
@@ -68,29 +68,27 @@ func (p *SyncPool) watch(ctx context.Context) {
 	}
 }
 
-// BrokerKey returns the key of a broker.
-func brokerKey(namespace, name string) string {
-	return namespace + "/" + name
-}
-
 func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfig) error {
 	var errs int
 
-	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := targets.Brokers[key.(string)]; !ok {
-			value.(*handler.Handler).Stop()
-			p.pool.Delete(key)
+	for key, handler := range p.pool {
+		if _, ok := targets.Brokers[key]; !ok {
+			handler.Stop()
+			delete(p.pool, key)
 		}
-		return true
-	})
+	}
 
 	for _, b := range targets.Brokers {
-		bk := brokerKey(b.Namespace, b.Name)
+		bk := config.BrokerKey(b.Namespace, b.Name)
 
 		// Update config of existing handler
-		if h, ok := p.pool.Load(bk); ok {
-			h.(*handler.Handler).ConfigCh <- b
-			continue
+		if h, ok := p.pool[bk]; ok {
+			select {
+			case h.ConfigCh <- b:
+				continue
+			case <-h.Done():
+				delete(p.pool, bk)
+			}
 		}
 
 		opts := []pubsub.Option{
@@ -125,17 +123,8 @@ func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfi
 			),
 			ConfigCh: make(chan *config.Broker),
 		}
-		h.Start(ctx, b, func(err error) {
-			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
-			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", bk))
-			}
-			// Make sure the handler is deleted from the pool.
-			p.pool.Delete(h)
-		})
-
-		p.pool.Store(bk, h)
+		h.Start(ctx, b)
+		p.pool[bk] = h
 	}
 
 	if errs > 0 {

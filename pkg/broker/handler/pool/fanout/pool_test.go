@@ -308,10 +308,9 @@ func assertHandlers(t *testing.T, p *SyncPool, c *config.TargetsConfig) {
 	gotHandlers := make(map[string]bool)
 	wantHandlers := make(map[string]bool)
 
-	p.pool.Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
-		return true
-	})
+	for key := range p.pool {
+		gotHandlers[key] = true
+	}
 
 	for _, b := range c.GetBrokers() {
 		wantHandlers[config.BrokerKey(b.Namespace, b.Name)] = true

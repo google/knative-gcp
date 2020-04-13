@@ -51,15 +51,19 @@ type Handler struct {
 
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
+
+	done <-chan struct{}
 }
 
 // Start starts the handler.
 // done func will be called if the pubsub inbound is closed.
-func (h *Handler) Start(ctx context.Context, config *config.Broker, done func(error)) {
+func (h *Handler) Start(ctx context.Context, config *config.Broker) {
 	ctx, h.cancel = context.WithCancel(ctx)
+	h.done = ctx.Done()
 	go func() {
 		defer h.cancel()
-		done(h.PubsubEvents.OpenInbound(ctx))
+		err := h.PubsubEvents.OpenInbound(ctx)
+		logging.FromContext(ctx).Error("pubsub client closed", zap.Error(err))
 	}()
 
 	go h.handle(ctx, config)
@@ -68,6 +72,11 @@ func (h *Handler) Start(ctx context.Context, config *config.Broker, done func(er
 // Stop stops the handlers.
 func (h *Handler) Stop() {
 	h.cancel()
+}
+
+// Done returns a channel indicating when the handler has stopped.
+func (h *Handler) Done() <-chan struct{} {
+	return h.done
 }
 
 type pubsubResponse struct {

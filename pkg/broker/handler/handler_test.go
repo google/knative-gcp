@@ -84,7 +84,7 @@ func TestHandler(t *testing.T) {
 		Processor:    processor,
 		Timeout:      time.Second,
 	}
-	h.Start(ctx, new(config.Broker), func(err error) {})
+	h.Start(ctx, new(config.Broker))
 	defer h.Stop()
 
 	testEvent := event.New()
