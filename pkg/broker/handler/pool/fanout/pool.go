@@ -39,16 +39,16 @@ import (
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
 type SyncPool struct {
-	options   *pool.Options
-	targetsCh <-chan *config.TargetsConfig
-	pool      sync.Map
+	options        *pool.Options
+	targetsWatcher config.TargetsWatcher
+	pool           sync.Map
 }
 
 // StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, targetsCh <-chan *config.TargetsConfig, opts ...pool.Option) (*SyncPool, error) {
+func StartSyncPool(ctx context.Context, targetsWatcher config.TargetsWatcher, opts ...pool.Option) (*SyncPool, error) {
 	p := &SyncPool{
-		targetsCh: targetsCh,
-		options:   pool.NewOptions(opts...),
+		targetsWatcher: targetsWatcher,
+		options:        pool.NewOptions(opts...),
 	}
 	go p.watch(ctx)
 	return p, nil
@@ -56,13 +56,14 @@ func StartSyncPool(ctx context.Context, targetsCh <-chan *config.TargetsConfig, 
 
 func (p *SyncPool) watch(ctx context.Context) {
 	for {
+		targets := p.targetsWatcher.Targets()
+		if err := p.syncTargets(ctx, targets.Config); err != nil {
+			logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
+		}
 		select {
 		case <-ctx.Done():
 			return
-		case targets := <-p.targetsCh:
-			if err := p.syncTargets(ctx, targets); err != nil {
-				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
-			}
+		case <-targets.Updated:
 		}
 	}
 }

@@ -31,8 +31,9 @@ import (
 func TestWatchAndSync(t *testing.T) {
 	testProject := "test-project"
 	targets := make(chan *config.TargetsConfig)
+	defer close(targets)
 	emptyTargetConfig := new(config.TargetsConfig)
-	p, err := StartSyncPool(context.Background(), targets, pool.WithProjectID(testProject))
+	p, err := StartSyncPool(context.Background(), config.NewTargetsWatcher(targets), pool.WithProjectID(testProject))
 	if err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
