@@ -66,3 +66,14 @@ func TestWithReceiveSettings(t *testing.T) {
 		t.Errorf("options ReceiveSettings (-want,+got): %v", diff)
 	}
 }
+
+func TestWithPubsubClient(t *testing.T) {
+	opt := NewOptions()
+	if opt.PubsubClient != nil {
+		t.Errorf("options PubsubClient got=%v, want=nil", opt.PubsubClient)
+	}
+	opt = NewOptions(WithPubsubClient(&pubsub.Client{}))
+	if opt.PubsubClient == nil {
+		t.Error("options PubsubClient got=nil, want=non-nil client")
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
@@ -13,8 +14,8 @@ func TestWatcherNoConfig(t *testing.T) {
 	defer close(in)
 	watcher := config.NewTargetsWatcher(in)
 	targets := watcher.Targets()
-	if targets.Config != nil {
-		t.Errorf("expected targets.Config to be nil, got: %v", targets.Config)
+	if diff := cmp.Diff(config.TargetsConfig{}, *targets.Config); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
 }
 

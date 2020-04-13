@@ -31,7 +31,10 @@ func NewTargetsWatcher(in <-chan *TargetsConfig) TargetsWatcher {
 
 func watch(in <-chan *TargetsConfig, out chan<- Targets) {
 	defer close(out)
-	targets := Targets{Updated: make(chan struct{})}
+	targets := Targets{
+		Config:  new(TargetsConfig),
+		Updated: make(chan struct{}),
+	}
 	for {
 		select {
 		case out <- targets:

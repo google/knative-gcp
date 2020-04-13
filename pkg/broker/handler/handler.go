@@ -135,7 +135,7 @@ func (h *Handler) handleMessage(ctx context.Context, msg binding.Message, doneCh
 		ctx, cancel = context.WithTimeout(ctx, h.Timeout)
 		defer cancel()
 	}
-	if err := h.Processor.Process(ctx, event); err != nil {
+	if err = h.Processor.Process(ctx, event); err != nil {
 		logging.FromContext(ctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
 	}
 	// This will ack/nack the message.

@@ -93,15 +93,22 @@ func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfi
 			continue
 		}
 
-		projectIDOpt := pubsub.WithProjectIDFromDefaultEnv()
-		if p.options.ProjectID != "" {
-			projectIDOpt = pubsub.WithProjectID(p.options.ProjectID)
-		}
-		ps, err := pubsub.New(ctx,
-			projectIDOpt,
+		opts := []pubsub.Option{
 			pubsub.WithTopicID(b.DecoupleQueue.Topic),
 			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
-		)
+			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		}
+
+		if p.options.ProjectID != "" {
+			opts = append(opts, pubsub.WithProjectID(p.options.ProjectID))
+		} else {
+			opts = append(opts, pubsub.WithProjectIDFromDefaultEnv())
+		}
+
+		if p.options.PubsubClient != nil {
+			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
+		}
+		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
 			errs++
@@ -118,8 +125,7 @@ func (p *SyncPool) syncTargets(ctx context.Context, targets *config.TargetsConfi
 			),
 			ConfigCh: make(chan *config.Broker),
 		}
-		// Start the handler with broker key in context.
-		h.Start(ctx, func(err error) {
+		h.Start(ctx, b, func(err error) {
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
 			} else {
