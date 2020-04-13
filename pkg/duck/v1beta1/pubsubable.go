@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package duck
+package v1beta1
 
 import (
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 )
 
-// PubSubable is an interface that each duckv1alpha1.PubSub duck type must
+// PubSubable is an interface that each duckv1beta1.PubSub duck type must
 // support in order to get reconciled properly in a generic way.
 type PubSubable interface {
 	Identifiable
 	// PubSubSpec returns the PubSubSpec portion of the Spec.
-	PubSubSpec() *duckv1alpha1.PubSubSpec
+	PubSubSpec() *duckv1beta1.PubSubSpec
 	// PubSubStatus returns the PubSubStatus portion of the Status.
-	PubSubStatus() *duckv1alpha1.PubSubStatus
+	PubSubStatus() *duckv1beta1.PubSubStatus
 }
