@@ -58,5 +58,8 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   "security:v1beta1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+# Generate the templated CRDs.
+source $(dirname $0)/crdgeneration/generate_crds.sh
+
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
