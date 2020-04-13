@@ -21,8 +21,10 @@ function crdGeneration() {
     > "${file//.gofmt/}"
 }
 function allCrdGeneration() {
+  trap "$(shopt -p globstar)" RETURN
+  shopt -s globstar
   local file=""
-  for file in ${REPO_ROOT_DIR}/config/core/resources/*.gofmt.yaml; do
+  for file in ${REPO_ROOT_DIR}/config/**/*.gofmt.yaml; do
     crdGeneration "${file}"
   done
 }
