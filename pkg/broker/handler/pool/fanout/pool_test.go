@@ -48,7 +48,8 @@ func TestWatchAndSync(t *testing.T) {
 	targets := make(chan *config.TargetsConfig)
 	defer close(targets)
 	emptyTargetConfig := new(config.TargetsConfig)
-	p, err := StartSyncPool(ctx, config.NewTargetsWatcher(targets),
+	watcher := config.NewTargetsWatcher(targets)
+	p, err := StartSyncPool(ctx, watcher,
 		pool.WithPubsubClient(ps),
 		pool.WithProjectID(testProject),
 	)
@@ -69,8 +70,19 @@ func TestWatchAndSync(t *testing.T) {
 		targets <- targetConfig
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
+		cancel()
 		assertHandlers(t, p, targetConfig)
 	})
+
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	p, err = StartSyncPool(ctx, watcher,
+		pool.WithPubsubClient(ps),
+		pool.WithProjectID(testProject),
+	)
+	if err != nil {
+		t.Errorf("unexpected error from starting sync pool: %v", err)
+	}
 
 	t.Run("adding and deleting brokers changes handlers", func(t *testing.T) {
 		newTargetConfig := &config.TargetsConfig{Brokers: make(map[string]*config.Broker)}
@@ -83,8 +95,19 @@ func TestWatchAndSync(t *testing.T) {
 		targets <- newTargetConfig
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
+		cancel()
 		assertHandlers(t, p, newTargetConfig)
 	})
+
+	ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	p, err = StartSyncPool(ctx, watcher,
+		pool.WithPubsubClient(ps),
+		pool.WithProjectID(testProject),
+	)
+	if err != nil {
+		t.Errorf("unexpected error from starting sync pool: %v", err)
+	}
 
 	t.Run("deleting all brokers deletes all handlers", func(t *testing.T) {
 		// clean up all brokers
