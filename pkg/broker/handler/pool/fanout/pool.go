@@ -19,6 +19,7 @@ package fanout
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
@@ -55,8 +56,8 @@ func StartSyncPool(ctx context.Context, targetsWatcher config.TargetsWatcher, op
 }
 
 func (p *SyncPool) watch(ctx context.Context) {
+	targets := p.targetsWatcher.Targets()
 	for {
-		targets := p.targetsWatcher.Targets()
 		if err := p.syncTargets(ctx, targets.Config); err != nil {
 			logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
 		}
@@ -64,6 +65,8 @@ func (p *SyncPool) watch(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-targets.Updated:
+			targets = p.targetsWatcher.Targets()
+		case <-time.After(15 * time.Second):
 		}
 	}
 }
