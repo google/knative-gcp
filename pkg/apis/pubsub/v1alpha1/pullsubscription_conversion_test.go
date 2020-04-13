@@ -145,7 +145,7 @@ var (
 		SubscriptionID: "subscriptionID",
 	}
 
-	// completePullSubscription is a PullSubscription with every filled in, except TypeMeta.
+	// completePullSubscription is a PullSubscription with every field filled in, except TypeMeta.
 	// TypeMeta is excluded because conversions do not convert it and this variable was created to
 	// test conversions.
 	completePullSubscription = &PullSubscription{
