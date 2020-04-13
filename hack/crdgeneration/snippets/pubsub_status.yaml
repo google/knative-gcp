@@ -1,4 +1,4 @@
-{{ replace_with 0 "identity_status" }}
+{{- replace_with 0 "identity_status" }}
 sinkUri:
   type: string
 ceAttributes:

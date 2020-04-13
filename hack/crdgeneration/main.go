@@ -86,7 +86,7 @@ func funcMap(snippets map[string]string) template.FuncMap {
 }
 
 func readInSnippets(wd string) (map[string]string, error) {
-	dir := wd + "/hack/schema/"
+	dir := wd + "/hack/crdgeneration/snippets/"
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
