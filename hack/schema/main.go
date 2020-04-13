@@ -37,20 +37,20 @@ func main() {
 	}
 	contents := string(b)
 
-	generics, err := readInGenerics(wd)
+	snippets, err := readInSnippets(wd)
 	if err != nil {
-		fmt.Printf("Unable to read generics: %v\n", err)
+		fmt.Printf("Unable to read snippets: %v\n", err)
 		os.Exit(1)
 	}
 
-	tmpl, err := template.New("").Funcs(funcMap(generics)).Parse(contents)
+	tmpl, err := template.New("").Funcs(funcMap(snippets)).Parse(contents)
 	if err != nil {
 		fmt.Printf("Unable to parse contents of file: %v\n%v\n", err, contents)
 		os.Exit(1)
 	}
 
 	var w bytes.Buffer
-	if err := tmpl.Execute(&w, generics); err != nil {
+	if err := tmpl.Execute(&w, snippets); err != nil {
 		fmt.Printf("Unable to execute template: %v\n", err)
 		os.Exit(1)
 	}
@@ -58,10 +58,10 @@ func main() {
 	fmt.Print(w.String())
 }
 
-func funcMap(generics map[string]string) template.FuncMap {
+func funcMap(snippets map[string]string) template.FuncMap {
 	return template.FuncMap{
 		"replace_with": func(numSpaces int, file string) (string, error) {
-			v, present := generics[file]
+			v, present := snippets[file]
 			if !present {
 				return "", fmt.Errorf("unable to find %q", file)
 			}
@@ -69,6 +69,7 @@ func funcMap(generics map[string]string) template.FuncMap {
 			spaces := "\n" + strings.Repeat(" ", numSpaces)
 			sb := strings.Builder{}
 			for _, line := range strings.Split(v, "\n") {
+				// Skip blank lines.
 				if strings.TrimSpace(line) == "" {
 					continue
 				}
@@ -84,13 +85,13 @@ func funcMap(generics map[string]string) template.FuncMap {
 	}
 }
 
-func readInGenerics(wd string) (map[string]string, error) {
+func readInSnippets(wd string) (map[string]string, error) {
 	dir := wd + "/hack/schema/"
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
-	generic := make(map[string]string)
+	snippet := make(map[string]string)
 	for _, f := range files {
 		if !strings.HasSuffix(f.Name(), ".yaml") {
 			continue
@@ -102,33 +103,33 @@ func readInGenerics(wd string) (map[string]string, error) {
 		contents := string(b)
 
 		fileNameWithoutExtension := strings.TrimSuffix(f.Name(), ".yaml")
-		generic[fileNameWithoutExtension] = contents
+		snippet[fileNameWithoutExtension] = contents
 	}
-	return preprocessGeneric(generic)
+	return preprocessSnippet(snippet)
 }
 
-func preprocessGeneric(generics map[string]string) (map[string]string, error) {
+func preprocessSnippet(snippets map[string]string) (map[string]string, error) {
 	changed := true
 	for changed {
 		changed = false
-		newGenerics := make(map[string]string, len(generics))
+		newSnippets := make(map[string]string, len(snippets))
 
-		tmpl := template.New("").Funcs(funcMap(generics))
-		for n, v := range generics {
+		tmpl := template.New("").Funcs(funcMap(snippets))
+		for n, v := range snippets {
 			t, err := tmpl.Parse(v)
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse template %v, %q", err, v)
 			}
 			var w bytes.Buffer
-			if err := t.Execute(&w, generics); err != nil {
+			if err := t.Execute(&w, snippets); err != nil {
 				return nil, fmt.Errorf("unable to execute template: %v", err)
 			}
-			newGenerics[n] = w.String()
-			if newGenerics[n] != generics[n] {
+			newSnippets[n] = w.String()
+			if newSnippets[n] != snippets[n] {
 				changed = true
 			}
 		}
-		generics = newGenerics
+		snippets = newSnippets
 	}
-	return generics, nil
+	return snippets, nil
 }
