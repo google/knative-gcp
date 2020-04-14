@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is a generated file, do not alter it.
+
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -58,29 +60,15 @@ spec:
       type: object
       properties:
         spec:
+          type: object
           required:
             - sink
             - topic
           properties:
-            googleServiceAccount:
-              type: string
-              description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
-            secret:
-              type: object
-              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
-              properties:
-                name:
-                  type: string
-                key:
-                  type: string
-                optional:
-                  type: boolean
-            project:
-              type: string
-              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
             sink:
               type: object
-              description: "Sink which receives the notifications."
+              description: >
+                Sink which receives the notifications.
               properties:
                 uri:
                   type: string
@@ -105,25 +93,66 @@ spec:
                       minLength: 1
             ceOverrides:
               type: object
-              description: "Defines overrides to control modifications of the event sent to the sink."
+              description: >
+                Defines overrides to control modifications of the event sent to the sink.
               properties:
                 extensions:
                   type: object
-                  description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
+                  description: >
+                    Extensions specify what attribute are added or overridden on the outbound event. Each
+                    `Extensions` key-value pair are set on the event as an attribute extension independently.
                   x-kubernetes-preserve-unknown-fields: true
+            googleServiceAccount:
+              type: string
+              description: >
+                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                account must be a valid Google service account (see
+                https://cloud.google.com/iam/docs/service-accounts)."
+            secret:
+              type: object
+              description: >
+                Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+                Subscription, only to poll it. The value of the secret entry must be a service account key in
+                the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+                Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
+            project:
+              type: string
+              description: >
+                Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                the Project ID from the GKE cluster metadata service.
             topic:
               type: string
-              description: "ID of the Cloud Pub/Sub Topic to Subscribe to. It must be in the form of the unique identifier within the project, not the entire name. E.g. it must be 'laconia', not 'projects/my-gcp-project/topics/laconia'."
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be in the form of the unique
+                identifier within the project, not the entire name. E.g. it must be 'laconia', not
+                'projects/my-gcp-project/topics/laconia'.
             ackDeadline:
               type: string
-              description:  "The default maximum time after a subscriber receives a message before the subscriber should acknowledge the message. Defaults to `30s`. Valid time units are `s`, `m`, `h`. The minimum deadline you can specify is 0 seconds. The maximum deadline you can specify is 600 seconds (10 minutes)."
+              description: >
+                The default maximum time after a subscriber receives a message before the subscriber
+                should acknowledge the message. Defaults to `30s`. Valid time units are `s`, `m`,
+                `h`. The minimum deadline you can specify is 0 seconds. The maximum deadline you can
+                specify is 600 seconds (10 minutes).
             retainAckedMessages:
               type: boolean
-              description: "Whether to retain acknowledged messages. If true, acknowledged messages will not be expunged until they fall out of the RetentionDuration window."
+              description: >
+                Whether to retain acknowledged messages. If true, acknowledged messages will not be
+                expunged until they fall out of the RetentionDuration window.
             retentionDuration:
               type: string
-              description: "How long to retain messages in backlog, from the time of publish. If retainAckedMessages is true, this duration affects the retention of acknowledged messages, otherwise only unacknowledged messages are retained. Defaults to 7 days (`168h`). Cannot be longer than 7 days or shorter than 10 minutes. Valid time units are `s`, `m`, `h`."
-          type: object
+              description: >
+                How long to retain messages in backlog, from the time of publish. If
+                retainAckedMessages is true, this duration affects the retention of acknowledged
+                messages, otherwise only unacknowledged messages are retained. Defaults to 7 days
+                (`168h`). Cannot be longer than 7 days or shorter than 10 minutes. Valid time units
+                are `s`, `m`, `h`.
         status:
           type: object
           properties:
@@ -136,8 +165,7 @@ spec:
                 type: object
                 properties:
                   lastTransitionTime:
-                    # we use a string in the stored object but a wrapper object
-                    # at runtime.
+                    # we use a string in the stored object but a wrapper object at runtime.
                     type: string
                   message:
                     type: string
