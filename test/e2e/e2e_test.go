@@ -138,6 +138,7 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 }
 
 func TestBrokerTracing(t *testing.T) {
+	t.Skip("Skipping tracing tests due to flakiness. See https://github.com/google/knative-gcp/issues/818.")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}

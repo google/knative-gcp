@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -160,7 +161,11 @@ func TestSyncConfigFromFile(t *testing.T) {
 	b, _ = proto.Marshal(data)
 	atomicWriteFile(t, tmp.Name(), b)
 
-	<-ch
+	select {
+	case <-ch:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("Timeout waiting for the notification")
+	}
 
 	gotTargets = targets.(*Targets).Load()
 	if !proto.Equal(data, gotTargets) {

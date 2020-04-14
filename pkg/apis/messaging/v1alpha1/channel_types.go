@@ -27,7 +27,7 @@ import (
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/duck"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 )
 
 // +genclient
@@ -55,7 +55,7 @@ var (
 	_ apis.Defaultable             = (*Channel)(nil)
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
-	_ duck.Identifiable            = (*Channel)(nil)
+	_ kngcpduck.Identifiable       = (*Channel)(nil)
 )
 
 // ChannelSpec defines which subscribers have expressed interest in

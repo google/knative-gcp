@@ -146,7 +146,7 @@
   version = "v0.2.1"
 
 [[projects]]
-  digest = "1:1b399a0ddf382b595f2e96abe6d2eb227558efea79562b8a0fb0c4920cae64f0"
+  digest = "1:2a119e60598f653511769759862206696903f66798c908e45f5002b1f543b289"
   name = "github.com/cloudevents/sdk-go"
   packages = [
     "v1",
@@ -189,8 +189,8 @@
     "v2/types",
   ]
   pruneopts = "NUT"
-  revision = "6dc020a8df7f3ee38d729e53cde2193ea7edf12a"
-  version = "v2.0.0-preview8"
+  revision = "3638af885cfe1cc7dd7421d23ebe4dbf278d1937"
+  version = "v2.0.0-RC1"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -425,14 +425,6 @@
   pruneopts = "NUT"
   revision = "cc1f095d5cc5eca2844f5c5ea7bb37f6b9bf6cac"
   version = "v0.9.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:cf68a79fd02ab0f6942b9567d03d054b6568212fcc22de2a4afdefd096923749"
-  name = "github.com/kballard/go-shellquote"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "95032a82bc518f77982ea72343cc1ade730072f0"
 
 [[projects]]
   digest = "1:08c58ac78a8c1f61e9a96350066d30fe194b8779799bd932a79932a5166a173f"
@@ -1097,7 +1089,7 @@
   version = "kubernetes-1.16.4"
 
 [[projects]]
-  digest = "1:3aa0a021f9a82a7ba13003e10136447c1e0e9fa4b754bf4ceebdb40ba87c2ab8"
+  digest = "1:afd0dcc3994c4cb27d6322160bae23e602ccca2050b18b8d0f178224acd71c04"
   name = "k8s.io/apiextensions-apiserver"
   packages = [
     "pkg/apis/apiextensions",
@@ -1110,6 +1102,12 @@
     "pkg/client/clientset/clientset/typed/apiextensions/v1/fake",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/apiextensions",
+    "pkg/client/informers/externalversions/apiextensions/v1",
+    "pkg/client/informers/externalversions/apiextensions/v1beta1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/listers/apiextensions/v1",
     "pkg/client/listers/apiextensions/v1beta1",
   ]
   pruneopts = "NUT"
@@ -1472,7 +1470,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:280e1d832694d7ea76e06dadf1d41aacf1af4832c8079aa0770b0d584a8dae57"
+  digest = "1:05e723445ee52e531b632e193ef9081d6599621360917753d877469ef031cda8"
   name = "knative.dev/eventing"
   packages = [
     "pkg/apis/config",
@@ -1569,7 +1567,7 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "350da952b050ec2c7afdacbc2f698d0f8437af74"
+  revision = "1e68f1cfe5bb4f8c67aca7b09b36b973cde278dc"
 
 [[projects]]
   branch = "release-0.14"
@@ -1583,6 +1581,9 @@
     "apis/duck/v1beta1",
     "apis/testing/fuzzer",
     "changeset",
+    "client/injection/apiextensions/client",
+    "client/injection/apiextensions/informers/apiextensions/v1beta1/customresourcedefinition",
+    "client/injection/apiextensions/informers/factory",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
     "client/injection/ducks/duck/v1alpha1/addressable",
@@ -1631,7 +1632,6 @@
     "system",
     "system/testing",
     "test",
-    "test/cmd",
     "test/gke",
     "test/helpers",
     "test/ingress",
@@ -1651,6 +1651,7 @@
     "webhook/certificates/resources",
     "webhook/configmaps",
     "webhook/resourcesemantics",
+    "webhook/resourcesemantics/conversion",
     "webhook/resourcesemantics/defaulting",
     "webhook/resourcesemantics/validation",
   ]
@@ -1708,18 +1709,18 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "698ee466cc94fe5b9eb16c568e3f29b28e3773c9"
+  revision = "f38e9768cb66b2d556b191887769a02abf860336"
 
 [[projects]]
-  branch = "master"
-  digest = "1:ce8214f24f811aa582a58b2680e3380ff3fac7668a00d490fb23349a21051dcb"
+  branch = "release-0.14"
+  digest = "1:50482e6fd500cf50c4a29d640cda026206145c6716dff72e4368a5e57fdb7095"
   name = "knative.dev/test-infra"
   packages = [
     "scripts",
     "tools/dep-collector",
   ]
   pruneopts = "UT"
-  revision = "6c5068f73cdc9dfbf0287d0b26523ebdabb08c3a"
+  revision = "9fa5882b65c5fe7e177bb74874e9a5ac87b84e98"
 
 [[projects]]
   digest = "1:8730e0150dfb2b7e173890c8b9868e7a273082ef8e39f4940e3506a481cf895c"
@@ -1898,10 +1899,12 @@
     "knative.dev/pkg/testutils/clustermanager/perf-tests",
     "knative.dev/pkg/tracing/config",
     "knative.dev/pkg/tracker",
+    "knative.dev/pkg/version",
     "knative.dev/pkg/webhook",
     "knative.dev/pkg/webhook/certificates",
     "knative.dev/pkg/webhook/configmaps",
     "knative.dev/pkg/webhook/resourcesemantics",
+    "knative.dev/pkg/webhook/resourcesemantics/conversion",
     "knative.dev/pkg/webhook/resourcesemantics/defaulting",
     "knative.dev/pkg/webhook/resourcesemantics/validation",
     "knative.dev/serving/pkg/apis/serving/v1",
