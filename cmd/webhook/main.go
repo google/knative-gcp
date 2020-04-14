@@ -156,6 +156,7 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				},
 			},
 		},
+		// We don't want to alter the incoming context, so just pass it as-is.
 		func(ctx context.Context) context.Context {
 			return ctx
 		},

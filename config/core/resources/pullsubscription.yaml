@@ -171,11 +171,24 @@ spec:
                   - status
                 type: object
               type: array
+            serviceAccountName:
+              type: string
             sinkUri:
               type: string
-            transformerUri:
-              type: string
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
             projectId:
               type: string
+            topicId:
+              type: string
             subscriptionId:
+              type: string
+            transformerUri:
               type: string
