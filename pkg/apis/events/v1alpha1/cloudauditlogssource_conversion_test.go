@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -35,9 +35,8 @@ import (
 // These variables are used to create a 'complete' version of CloudAuditLogsSource where every field is
 // filled in.
 var (
-	trueVal  = true
-	seconds  = int64(314)
-	duration = "30s"
+	trueVal = true
+	seconds = int64(314)
 
 	completeObjectMeta = metav1.ObjectMeta{
 		Name:            "name",
@@ -151,25 +150,20 @@ var (
 	completeCloudAuditLogsSource = &CloudAuditLogsSource{
 		ObjectMeta: completeObjectMeta,
 		Spec: CloudAuditLogsSourceSpec{
-			PubSubSpec:          completePubSubSpec,
-			Topic:               "topic",
-			AckDeadline:         &duration,
-			RetainAckedMessages: false,
-			RetentionDuration:   &duration,
-			Transformer:         &completeDestination,
-			Mode:                ModeCloudEventsBinary,
-			AdapterType:         "adapterType",
+			PubSubSpec:   completePubSubSpec,
+			ServiceName:  "serviceName",
+			MethodName:   "methodName",
+			ResourceName: "resourceName",
 		},
 		Status: CloudAuditLogsSourceStatus{
-			PubSubStatus:   completePubSubStatus,
-			TransformerURI: &completeURL,
-			SubscriptionID: "subscriptionID",
+			PubSubStatus:    completePubSubStatus,
+			StackdriverSink: "stackdriverSink",
 		},
 	}
 )
 
 func TestCloudAuditLogsSourceConversionBadType(t *testing.T) {
-	good, bad := &CloudAuditLogsSource{}, &Topic{}
+	good, bad := &CloudAuditLogsSource{}, &CloudStorageSource{}
 
 	if err := good.ConvertTo(context.Background(), bad); err == nil {
 		t.Errorf("ConvertTo() = %#v, wanted error", bad)
