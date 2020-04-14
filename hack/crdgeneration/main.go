@@ -17,7 +17,7 @@ func main() {
 
 	wd, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("cannot get working directory: %v\n", err)
+		fmt.Fprintf(os.Stderr, "cannot get working directory: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -32,26 +32,26 @@ func main() {
 	}
 	b, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		fmt.Printf("Unable to read file %q, %v\n", fileName, err)
+		fmt.Fprintf(os.Stderr, "Unable to read file %q, %v\n", fileName, err)
 		os.Exit(1)
 	}
 	contents := string(b)
 
 	snippets, err := readInSnippets(wd)
 	if err != nil {
-		fmt.Printf("Unable to read snippets: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to read snippets: %v\n", err)
 		os.Exit(1)
 	}
 
 	tmpl, err := template.New("").Funcs(funcMap(snippets)).Parse(contents)
 	if err != nil {
-		fmt.Printf("Unable to parse contents of file: %v\n%v\n", err, contents)
+		fmt.Fprintf(os.Stderr, "Unable to parse contents of file: %v\n%v\n", err, contents)
 		os.Exit(1)
 	}
 
 	var w bytes.Buffer
 	if err := tmpl.Execute(&w, snippets); err != nil {
-		fmt.Printf("Unable to execute template: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Unable to execute template: %v\n", err)
 		os.Exit(1)
 	}
 

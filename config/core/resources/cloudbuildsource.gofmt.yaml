@@ -1,0 +1,67 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{ replace_with 0 "generated_header" }}
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        { "type": "com.google.cloud.build.event", "description": "This event is sent when your build's state changes, such as when your build is created, when your build transitions to a working state, and when your build completes."}
+      ]
+  name: cloudbuildsources.events.cloud.google.com
+spec:
+  group: events.cloud.google.com
+  version: v1alpha1
+  names:
+    categories:
+      - all
+      - knative
+      - cloudbuildsource
+      - sources
+    kind: CloudBuildSource
+    plural: cloudbuildsources
+  scope: Namespaced
+  subresources:
+    status: {}
+  preserveUnknownFields: false
+  additionalPrinterColumns:
+    {{- replace_with 4 "ready_reason_age" }}
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          type: object
+          required:
+            - sink
+          properties:
+            {{- replace_with 12 "pubsub_spec" }}
+            topic:
+              type: string
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if
+                specified. Defaults to `cloud-builds`.
+        status:
+          type: object
+          properties:
+            {{- replace_with 12 "pubsub_status" }}

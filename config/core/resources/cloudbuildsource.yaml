@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is a generated file, do not alter it.
+
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -39,6 +41,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -49,68 +52,98 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
   validation:
     openAPIV3Schema:
       properties:
         spec:
+          type: object
           required:
             - sink
           properties:
-            secret:
-              type: object
-              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
-            project:
-              type: string
-              description: "ID of the Google Cloud Project that the Pub/Sub Topic exists in. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
             sink:
               type: object
-              description: "Reference to an object that will resolve to a domain name to use as the sink."
-              anyOf:
-                - type: object
+              description: >
+                Sink which receives the notifications.
+              properties:
+                uri:
+                  type: string
+                  minLength: 1
+                ref:
+                  type: object
+                  required:
+                    - apiVersion
+                    - kind
+                    - name
                   properties:
-                    uri:
+                    apiVersion:
                       type: string
                       minLength: 1
-                - type: object
-                  properties:
-                    ref:
-                      type: object
-                      required:
-                        - apiVersion
-                        - kind
-                        - name
-                      properties:
-                        apiVersion:
-                          type: string
-                          minLength: 1
-                        kind:
-                          type: string
-                          minLength: 1
-                        name:
-                          type: string
-                          minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    namespace:
+                      type: string
+                    name:
+                      type: string
+                      minLength: 1
             ceOverrides:
               type: object
-              description: "Defines overrides to control modifications of the event sent to the sink."
+              description: >
+                Defines overrides to control modifications of the event sent to the sink.
               properties:
                 extensions:
                   type: object
-                  description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
+                  description: >
+                    Extensions specify what attribute are added or overridden on the outbound event. Each
+                    `Extensions` key-value pair are set on the event as an attribute extension independently.
+                  x-kubernetes-preserve-unknown-fields: true
+            googleServiceAccount:
+              type: string
+              description: >
+                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                account must be a valid Google service account (see
+                https://cloud.google.com/iam/docs/service-accounts)."
+            secret:
+              type: object
+              description: >
+                Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+                Subscription, only to poll it. The value of the secret entry must be a service account key in
+                the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+                Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
+            project:
+              type: string
+              description: >
+                Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                the Project ID from the GKE cluster metadata service.
             topic:
               type: string
-              description: "ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if specified. Defaults to `cloud-builds`"
-          type: object
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if
+                specified. Defaults to `cloud-builds`.
         status:
+          type: object
           properties:
             observedGeneration:
               type: integer
               format: int64
             conditions:
+              type: array
               items:
+                type: object
                 properties:
                   lastTransitionTime:
-                    # we use a string in the stored object but a wrapper object
-                    # at runtime.
+                    # we use a string in the stored object but a wrapper object at runtime.
                     type: string
                   message:
                     type: string
@@ -125,8 +158,22 @@ spec:
                 required:
                   - type
                   - status
-                type: object
-              type: array
+            serviceAccountName:
+              type: string
             sinkUri:
               type: string
-          type: object
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
+            projectId:
+              type: string
+            topicId:
+              type: string
+            subscriptionId:
+              type: string

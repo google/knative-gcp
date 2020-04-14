@@ -16,9 +16,10 @@
 
 function crdGeneration() {
   local file="$1"
+  local output="${file//.gofmt/}"
   go run ${REPO_ROOT_DIR}/hack/crdgeneration/main.go \
     --file="${file}" \
-    > "${file//.gofmt/}"
+    > "${output}"
 }
 function allCrdGeneration() {
   trap "$(shopt -p globstar)" RETURN
