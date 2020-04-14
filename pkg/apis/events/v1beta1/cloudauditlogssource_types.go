@@ -20,16 +20,16 @@ import (
 	"crypto/md5"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 // +genclient
@@ -45,12 +45,16 @@ type CloudAuditLogsSource struct {
 	Status CloudAuditLogsSourceStatus `json:"status"`
 }
 
+// Verify that CloudAuditLogsSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudAuditLogsSource)(nil)
+	_ apis.Defaultable             = (*CloudAuditLogsSource)(nil)
+	_ apis.Validatable             = (*CloudAuditLogsSource)(nil)
+	_ runtime.Object               = (*CloudAuditLogsSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudAuditLogsSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudAuditLogsSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudAuditLogsSource)(nil)
-	_                              = duck.VerifyType(&CloudAuditLogsSource{}, &duckv1.Conditions{})
+	_ kngcpduck.PubSubable         = (*CloudAuditLogsSource)(nil)
 )
 
 const (
@@ -77,6 +81,16 @@ func CloudAuditLogsSourceEventID(id, logName, timestamp string) string {
 	// Hash the concatenation of the three fields.
 	return fmt.Sprintf("%x", md5.Sum([]byte(id+logName+timestamp)))
 }
+
+// Verify that CloudAuditLogsSource matches various duck types.
+var (
+	_ apis.Convertible       = (*CloudAuditLogsSource)(nil)
+	_ apis.Defaultable       = (*CloudAuditLogsSource)(nil)
+	_ apis.Validatable       = (*CloudAuditLogsSource)(nil)
+	_ runtime.Object         = (*CloudAuditLogsSource)(nil)
+	_ kngcpduck.Identifiable = (*CloudAuditLogsSource)(nil)
+	_ kngcpduck.PubSubable   = (*CloudAuditLogsSource)(nil)
+)
 
 type CloudAuditLogsSourceSpec struct {
 	// This brings in the PubSub based Source Specs. Includes:

@@ -19,6 +19,8 @@ package v1beta1
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -43,6 +45,18 @@ type CloudSchedulerSource struct {
 	Spec   CloudSchedulerSourceSpec   `json:"spec"`
 	Status CloudSchedulerSourceStatus `json:"status"`
 }
+
+// Verify that CloudSchedulerSource matches various duck types.
+var (
+	_ apis.Convertible             = (*CloudSchedulerSource)(nil)
+	_ apis.Defaultable             = (*CloudSchedulerSource)(nil)
+	_ apis.Validatable             = (*CloudSchedulerSource)(nil)
+	_ runtime.Object               = (*CloudSchedulerSource)(nil)
+	_ kmeta.OwnerRefable           = (*CloudSchedulerSource)(nil)
+	_ resourcesemantics.GenericCRD = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.Identifiable       = (*CloudSchedulerSource)(nil)
+	_ kngcpduck.PubSubable         = (*CloudSchedulerSource)(nil)
+)
 
 const (
 	// CloudEvent types used by CloudSchedulerSource.
