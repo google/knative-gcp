@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is a generated file, do not alter it.
+
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -30,7 +32,6 @@ metadata:
   name: cloudstoragesources.events.cloud.google.com
 spec:
   group: events.cloud.google.com
-  version: v1alpha1
   names:
     categories:
     - all
@@ -42,6 +43,7 @@ spec:
   scope: Namespaced
   subresources:
     status: {}
+  preserveUnknownFields: false
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -52,66 +54,97 @@ spec:
     - name: Age
       type: date
       JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
   validation:
     openAPIV3Schema:
       properties:
         spec:
+          type: object
+          required:
+            - bucket
+            - sink
           properties:
-            googleServiceAccount:
-              type: string
-              description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
-            secret:
-              type: object
-              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
-            serviceAccountName:
-              type: string
-              description: "Service Account to run Receive Adapter as. If omitted, uses 'default'."
-            project:
-              type: string
-              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
-            bucket:
-              type: string
-              description: "GCS bucket to subscribe to. For example my-test-bucket"
-            objectNamePrefix:
-              type: string
-              description: "Optional prefix to only notify when objects match this prefix."
-            payloadFormat:
-              type: string
-              description: "Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1."
             sink:
               type: object
-              description: "Sink which receives the notifications."
-              anyOf:
-                - type: object
+              description: >
+                Sink which receives the notifications.
+              properties:
+                uri:
+                  type: string
+                  minLength: 1
+                ref:
+                  type: object
+                  required:
+                    - apiVersion
+                    - kind
+                    - name
                   properties:
-                    uri:
+                    apiVersion:
                       type: string
                       minLength: 1
-                - type: object
-                  properties:
-                    ref:
-                      type: object
-                      required:
-                        - apiVersion
-                        - kind
-                        - name
-                      properties:
-                        apiVersion:
-                          type: string
-                          minLength: 1
-                        kind:
-                          type: string
-                          minLength: 1
-                        name:
-                          type: string
-                          minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    namespace:
+                      type: string
+                    name:
+                      type: string
+                      minLength: 1
             ceOverrides:
               type: object
-              description: "Defines overrides to control modifications of the event sent to the sink."
+              description: >
+                Defines overrides to control modifications of the event sent to the sink.
               properties:
                 extensions:
                   type: object
-                  description: "Extensions specify what attribute are added or overridden on the outbound event. Each `Extensions` key-value pair are set on the event as an attribute extension independently."
+                  description: >
+                    Extensions specify what attribute are added or overridden on the outbound event. Each
+                    `Extensions` key-value pair are set on the event as an attribute extension independently.
+                  x-kubernetes-preserve-unknown-fields: true
+            googleServiceAccount:
+              type: string
+              description: >
+                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                account must be a valid Google service account (see
+                https://cloud.google.com/iam/docs/service-accounts)."
+            secret:
+              type: object
+              description: >
+                Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+                Subscription, only to poll it. The value of the secret entry must be a service account key in
+                the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+                Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
+            project:
+              type: string
+              description: >
+                Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                the Project ID from the GKE cluster metadata service.
+            serviceAccountName:
+              type: string
+              description: >
+                Service Account to run Receive Adapter as. If omitted, uses 'default'.
+            bucket:
+              type: string
+              description: >
+                GCS bucket to subscribe to. For example 'my-test-bucket'.
+            objectNamePrefix:
+              type: string
+              description: >
+                Optional prefix to only notify when objects match this prefix.
+            payloadFormat:
+              type: string
+              description: >
+                Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1.
             eventTypes:
               type: array
               items:
@@ -121,12 +154,10 @@ spec:
                   - com.google.cloud.storage.object.delete
                   - com.google.cloud.storage.object.archive
                   - com.google.cloud.storage.object.metadataUpdate
-          required:
-          - bucket
-          - sink
         status:
           type: object
           properties:
+            
             observedGeneration:
               type: integer
               format: int64
@@ -136,8 +167,7 @@ spec:
                 type: object
                 properties:
                   lastTransitionTime:
-                    # we use a string in the stored object but a wrapper object
-                    # at runtime.
+                    # we use a string in the stored object but a wrapper object at runtime.
                     type: string
                   message:
                     type: string
@@ -150,15 +180,26 @@ spec:
                   type:
                     type: string
                 required:
-                - type
-                - status
+                  - type
+                  - status
+            serviceAccountName:
+              type: string
             sinkUri:
               type: string
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
             projectId:
               type: string
             topicId:
               type: string
-            notificationId:
-              type: string
             subscriptionId:
+              type: string
+            notificationId:
               type: string

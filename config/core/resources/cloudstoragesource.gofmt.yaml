@@ -1,0 +1,92 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{ replace_with 0 "generated_header" }}
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        { "type": "com.google.cloud.storage.object.finalize", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when a new object (or a new generation of an existing object) is successfully created in the bucket. This includes copying or rewriting an existing object. A failed upload does not trigger this event." },
+        { "type": "com.google.cloud.storage.object.delete", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when an object has been permanently deleted. This includes objects that are overwritten or are deleted as part of the bucket's lifecycle configuration. For buckets with object versioning enabled, this is not sent when an object is archived."},
+        { "type": "com.google.cloud.storage.object.archive", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Only sent when a bucket has enabled object versioning. This event indicates that the live version of an object has become an archived version, either because it was archived or because it was overwritten by the upload of an object of the same name."},
+        { "type": "com.google.cloud.storage.object.metadataUpdate", "schema": "https://raw.githubusercontent.com/google/knative-gcp/master/schemas/storage/schema.json", "description": "Sent when the metadata of an existing object changes." }
+      ]
+  name: cloudstoragesources.events.cloud.google.com
+spec:
+  group: events.cloud.google.com
+  names:
+    categories:
+    - all
+    - knative
+    - cloudstoragesource
+    - sources
+    kind: CloudStorageSource
+    plural: cloudstoragesources
+  scope: Namespaced
+  subresources:
+    status: {}
+  preserveUnknownFields: false
+  additionalPrinterColumns:
+    {{- replace_with 4 "ready_reason_age" }}
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          type: object
+          required:
+            - bucket
+            - sink
+          properties:
+            {{- replace_with 12 "pubsub_spec" }}
+            serviceAccountName:
+              type: string
+              description: >
+                Service Account to run Receive Adapter as. If omitted, uses 'default'.
+            bucket:
+              type: string
+              description: >
+                GCS bucket to subscribe to. For example 'my-test-bucket'.
+            objectNamePrefix:
+              type: string
+              description: >
+                Optional prefix to only notify when objects match this prefix.
+            payloadFormat:
+              type: string
+              description: >
+                Optional payload format. Either NONE or JSON_API_V1. If omitted, uses JSON_API_V1.
+            eventTypes:
+              type: array
+              items:
+                type: string
+                enum:
+                  - com.google.cloud.storage.object.finalize
+                  - com.google.cloud.storage.object.delete
+                  - com.google.cloud.storage.object.archive
+                  - com.google.cloud.storage.object.metadataUpdate
+        status:
+          type: object
+          properties:
+            {{ replace_with 12 "pubsub_status" }}
+            notificationId:
+              type: string
