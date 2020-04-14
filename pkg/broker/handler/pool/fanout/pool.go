@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 // SyncPool is the sync pool for fanout handlers.
@@ -40,16 +41,23 @@ import (
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
 type SyncPool struct {
-	options *pool.Options
-	targets config.ReadonlyTargets
-	pool    sync.Map
+	options   *pool.Options
+	targets   config.ReadonlyTargets
+	pool      sync.Map
+	projectID string
 }
 
 // StartSyncPool starts the sync pool.
 func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+	options := pool.NewOptions(opts...)
+	projectID, err := utils.ProjectID(options.ProjectID)
+	if err != nil {
+		return nil, err
+	}
 	p := &SyncPool{
-		targets: targets,
-		options: pool.NewOptions(opts...),
+		targets:   targets,
+		options:   options,
+		projectID: projectID,
 	}
 	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
@@ -93,15 +101,10 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		}
 
 		opts := []pubsub.Option{
+			pubsub.WithProjectID(p.projectID),
 			pubsub.WithTopicID(b.DecoupleQueue.Topic),
 			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
 			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
-		}
-
-		if p.options.ProjectID != "" {
-			opts = append(opts, pubsub.WithProjectID(p.options.ProjectID))
-		} else {
-			opts = append(opts, pubsub.WithProjectIDFromDefaultEnv())
 		}
 
 		if p.options.PubsubClient != nil {
