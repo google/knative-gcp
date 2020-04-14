@@ -49,6 +49,9 @@ type Topic struct {
 	Status TopicStatus `json:"status,omitempty"`
 }
 
+// Check that PullSubscription can be converted to other versions.
+var _ apis.Convertible = (*Topic)(nil)
+
 // Check that Topic can be validated, can be defaulted, and has immutable fields.
 var _ runtime.Object = (*Topic)(nil)
 var _ resourcesemantics.GenericCRD = (*Topic)(nil)

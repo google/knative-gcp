@@ -61,6 +61,8 @@ type Options struct {
 	MaxConcurrencyPerEvent int
 	// TimeoutPerEvent is the timeout for handling an event.
 	TimeoutPerEvent time.Duration
+	// PubsubClient is the pubsub client used to receive pubsub messages.
+	PubsubClient *pubsub.Client
 	// PubsubReceiveSettings is the pubsub receive settings.
 	PubsubReceiveSettings pubsub.ReceiveSettings
 	// EventRequester is the cloudevents client to deliver events.
@@ -114,6 +116,13 @@ func WithMaxConcurrentPerEvent(c int) Option {
 func WithTimeoutPerEvent(t time.Duration) Option {
 	return func(o *Options) {
 		o.TimeoutPerEvent = t
+	}
+}
+
+// WithPubsubClient sets the PubsubClient.
+func WithPubsubClient(c *pubsub.Client) Option {
+	return func(o *Options) {
+		o.PubsubClient = c
 	}
 }
 
