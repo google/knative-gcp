@@ -1,0 +1,79 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+{{ replace_with 0 "generated_header" }}
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        { "type": "com.google.cloud.scheduler.job.execute", "description": "This event is sent when a job is executed in Cloud Scheduler."}
+      ]
+  name: cloudschedulersources.events.cloud.google.com
+spec:
+  group: events.cloud.google.com
+  names:
+    categories:
+    - all
+    - knative
+    - cloudschedulersource
+    - sources
+    kind: CloudSchedulerSource
+    plural: cloudschedulersources
+  scope: Namespaced
+  subresources:
+    status: {}
+  preserveUnknownFields: false
+  additionalPrinterColumns:
+    {{- replace_with 4 "ready_reason_age" }}
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        spec:
+          type: object
+          required:
+            - location
+            - schedule
+            - sink
+            - data
+          properties:
+            {{- replace_with 12 "pubsub_spec" }}
+            location:
+              type: string
+              description: >
+                Location to create the Scheduler job in.
+            schedule:
+              type: string
+              description: >
+                Frequency using the unix-cron format. Or App Engine Cron format.
+            data:
+              type: string
+              description: >
+                Data to send in the payload of the Event.
+        status:
+          type: object
+          properties:
+            {{- replace_with 12 "pubsub_status" }}
+            jobName:
+              type: string
