@@ -28,6 +28,7 @@ import (
 	cloudpubsubsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudpubsubsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
@@ -65,7 +66,8 @@ func NewController(
 	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
-	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	cloudpubsubsourceInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),
