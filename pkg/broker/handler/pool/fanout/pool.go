@@ -92,15 +92,22 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			return true
 		}
 
-		projectIDOpt := pubsub.WithProjectIDFromDefaultEnv()
-		if p.options.ProjectID != "" {
-			projectIDOpt = pubsub.WithProjectID(p.options.ProjectID)
-		}
-		ps, err := pubsub.New(ctx,
-			projectIDOpt,
+		opts := []pubsub.Option{
 			pubsub.WithTopicID(b.DecoupleQueue.Topic),
 			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
-		)
+			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		}
+
+		if p.options.ProjectID != "" {
+			opts = append(opts, pubsub.WithProjectID(p.options.ProjectID))
+		} else {
+			opts = append(opts, pubsub.WithProjectIDFromDefaultEnv())
+		}
+
+		if p.options.PubsubClient != nil {
+			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
+		}
+		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
 			errs++

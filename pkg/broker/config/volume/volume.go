@@ -63,15 +63,19 @@ func NewTargetsFromFile(opts ...Option) (config.ReadonlyTargets, error) {
 		return nil, err
 	}
 
-	t.watchWith(watcher)
+	if err := t.watchWith(watcher); err != nil {
+		return nil, err
+	}
 	return t, nil
 }
 
-func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
+func (t *Targets) watchWith(watcher *fsnotify.Watcher) error {
 	configFile := filepath.Clean(t.path)
 	configDir, _ := filepath.Split(t.path)
 	realConfigFile, _ := filepath.EvalSymlinks(t.path)
-	watcher.Add(configDir)
+	if err := watcher.Add(configDir); err != nil {
+		return err
+	}
 
 	go func() {
 		defer watcher.Close()
@@ -97,9 +101,6 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 						// File got updated and notify the external channel.
 						t.notifyChan <- struct{}{}
 					}
-				} else if filepath.Clean(event.Name) == configFile &&
-					event.Op&fsnotify.Remove != 0 {
-					return
 				}
 
 			case err, ok := <-watcher.Errors:
@@ -110,6 +111,7 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 			}
 		}
 	}()
+	return nil
 }
 
 func (t *Targets) sync() error {
