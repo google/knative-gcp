@@ -1469,7 +1469,7 @@
   revision = "69764acb6e8e900b7c05296c5d3c9c19545475f9"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.14"
   digest = "1:05e723445ee52e531b632e193ef9081d6599621360917753d877469ef031cda8"
   name = "knative.dev/eventing"
   packages = [
@@ -1659,7 +1659,7 @@
   revision = "2a1db869228ceaca9df34790b49cdf4893a5d39d"
 
 [[projects]]
-  branch = "master"
+  branch = "release-0.14"
   digest = "1:a3257060d5f0c2442b88617191b33fbd21ae6e45216d23ad7dedda35034e0834"
   name = "knative.dev/serving"
   packages = [
@@ -1709,7 +1709,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "3b0753f3c5bc3794f82dbab06b152ca69a06bbbb"
+  revision = "f87352b72c48286f164838ddc6684c805ea082a9"
 
 [[projects]]
   branch = "release-0.14"
