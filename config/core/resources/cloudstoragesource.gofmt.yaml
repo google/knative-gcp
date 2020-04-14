@@ -87,6 +87,6 @@ spec:
         status:
           type: object
           properties:
-            {{ replace_with 12 "pubsub_status" }}
+            {{- replace_with 12 "pubsub_status" }}
             notificationId:
               type: string

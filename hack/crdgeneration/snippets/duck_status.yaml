@@ -7,7 +7,7 @@ conditions:
     type: object
     properties:
       lastTransitionTime:
-        # we use a string in the stored object but a wrapper object at runtime.
+        # We use a string in the stored object but a wrapper object at runtime.
         type: string
       message:
         type: string
