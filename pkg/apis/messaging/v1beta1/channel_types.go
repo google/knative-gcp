@@ -77,7 +77,7 @@ type ChannelSpec struct {
 
 	// Channel conforms to Duck type Subscribable.
 	// +optional
-	Subscribable *eventingduck.Subscribable `json:"subscribable,omitempty"`
+	Subscribable *eventingduck.SubscribableSpec `json:"subscribable,omitempty"`
 }
 
 var channelCondSet = apis.NewLivingConditionSet(
@@ -110,8 +110,8 @@ type ChannelStatus struct {
 	// It generally has the form {channel}.{namespace}.svc.{cluster domain name}
 	duckv1.AddressStatus `json:",inline"`
 
-	// SubscribableTypeStatus is populated with the statuses of each of the Channelable's subscribers.
-	eventingduck.SubscribableTypeStatus `json:",inline"`
+	// SubscribableStatus is populated with the statuses of each of the Channelable's subscribers.
+	eventingduck.SubscribableStatus `json:",inline"`
 
 	// ProjectID is the resolved project ID in use by the Channel.
 	// +optional

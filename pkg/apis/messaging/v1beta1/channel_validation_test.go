@@ -33,7 +33,7 @@ var (
 	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
 
 	channelSpec = ChannelSpec{
-		Subscribable: &eventingduck.Subscribable{
+		Subscribable: &eventingduck.SubscribableSpec{
 			Subscribers: []eventingduck.SubscriberSpec{{
 				SubscriberURI: apis.HTTP("subscriberendpoint"),
 				ReplyURI:      apis.HTTP("resultendpoint"),
@@ -57,7 +57,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "valid subscribers array",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("resultendpoint"),
@@ -69,7 +69,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "empty subscriber at index 1",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
@@ -85,7 +85,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "2 empty subscribers",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{}, {}},
 				},
 			},
@@ -104,7 +104,7 @@ func TestChannelValidation(t *testing.T) {
 		name: "nil secret",
 		cr: &Channel{
 			Spec: ChannelSpec{
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
@@ -119,7 +119,7 @@ func TestChannelValidation(t *testing.T) {
 				IdentitySpec: duckv1beta1.IdentitySpec{
 					GoogleServiceAccount: invalidServiceAccountName,
 				},
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
@@ -140,7 +140,7 @@ func TestChannelValidation(t *testing.T) {
 				IdentitySpec: duckv1beta1.IdentitySpec{
 					GoogleServiceAccount: validServiceAccountName,
 				},
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
@@ -156,7 +156,7 @@ func TestChannelValidation(t *testing.T) {
 					GoogleServiceAccount: validServiceAccountName,
 				},
 				Secret: defaultSecretSelector(),
-				Subscribable: &eventingduck.Subscribable{
+				Subscribable: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
 						ReplyURI:      apis.HTTP("replyendpoint"),
