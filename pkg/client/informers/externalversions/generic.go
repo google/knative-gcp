@@ -23,9 +23,10 @@ import (
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	v1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	v1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -72,6 +73,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
 
+		// Group=messaging.cloud.google.com, Version=v1beta1
+	case v1beta1.SchemeGroupVersion.WithResource("channels"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1beta1().Channels().Informer()}, nil
+
 		// Group=policy.run.cloud.google.com, Version=v1alpha1
 	case policyv1alpha1.SchemeGroupVersion.WithResource("eventpolicies"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().EventPolicies().Informer()}, nil
@@ -89,9 +94,9 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().Topics().Informer()}, nil
 
 		// Group=pubsub.cloud.google.com, Version=v1beta1
-	case v1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
+	case pubsubv1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().PullSubscriptions().Informer()}, nil
-	case v1beta1.SchemeGroupVersion.WithResource("topics"):
+	case pubsubv1beta1.SchemeGroupVersion.WithResource("topics"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().Topics().Informer()}, nil
 
 	}

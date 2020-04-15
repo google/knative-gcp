@@ -98,7 +98,7 @@ func (in *ChannelSpec) DeepCopyInto(out *ChannelSpec) {
 	}
 	if in.Subscribable != nil {
 		in, out := &in.Subscribable, &out.Subscribable
-		*out = new(duckv1beta1.Subscribable)
+		*out = new(duckv1beta1.SubscribableSpec)
 		(*in).DeepCopyInto(*out)
 	}
 	return
@@ -119,7 +119,7 @@ func (in *ChannelStatus) DeepCopyInto(out *ChannelStatus) {
 	*out = *in
 	in.IdentityStatus.DeepCopyInto(&out.IdentityStatus)
 	in.AddressStatus.DeepCopyInto(&out.AddressStatus)
-	in.SubscribableTypeStatus.DeepCopyInto(&out.SubscribableTypeStatus)
+	in.SubscribableStatus.DeepCopyInto(&out.SubscribableStatus)
 	return
 }
 
