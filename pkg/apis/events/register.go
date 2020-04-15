@@ -27,21 +27,21 @@ var (
 	// CloudAuditLogsSourcesResource represents a CloudAuditLogsSource.
 	CloudAuditLogsSourcesResource = schema.GroupResource{
 		Group:    GroupName,
-		Resource: "cloudauditlogssource",
+		Resource: "cloudauditlogssources",
 	}
 	// CloudPubSubSourcesResource represents a CloudPubSubSource.
 	CloudPubSubSourcesResource = schema.GroupResource{
 		Group:    GroupName,
-		Resource: "cloudpubsubsource",
+		Resource: "cloudpubsubsources",
 	}
 	// CloudSchedulerSourcesResource represents a CloudSchedulerSource.
 	CloudSchedulerSourcesResource = schema.GroupResource{
 		Group:    GroupName,
-		Resource: "cloudschedulersource",
+		Resource: "cloudschedulersources",
 	}
 	// CloudStorageSourcesResource represents a CloudStorageSource.
 	CloudStorageSourcesResource = schema.GroupResource{
 		Group:    GroupName,
-		Resource: "cloudstoragesource",
+		Resource: "cloudstoragesources",
 	}
 )
