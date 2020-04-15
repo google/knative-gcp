@@ -1,0 +1,32 @@
+subscribable:
+  type: object
+  properties:
+    subscribers:
+      type: array
+      items:
+        type: object
+        required:
+          - uid
+        properties:
+          uid:
+            type: string
+            minLength: 1
+          generation:
+            type: integer
+          subscriberURI:
+            type: string
+          replyURI:
+            type: string
+          deadLetterSink:
+            type: string
+          delivery:
+            type: object
+            properties:
+              deadLetterSink:
+                {{ replace_with 16 "destination" }}
+              retry:
+                type: integer
+              backoffPolicy:
+                type: string
+              backoffDelay:
+                type: string

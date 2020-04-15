@@ -124,6 +124,18 @@ func preprocessSnippet(snippets map[string]string) (map[string]string, error) {
 			if err := t.Execute(&w, snippets); err != nil {
 				return nil, fmt.Errorf("unable to execute template: %v", err)
 			}
+			if strings.Contains(w.String(), "{{ replace_with ") {
+				// The generated snippet still has a replace_with directive, which means that the
+				// snippet that was just pushed into this snippet must still have it. In order to
+				// correctly handle left whitespace, skip this for now. The snippet that was pushed
+				// into the generated snippet will be updated in this iteration and we will try to
+				// update this generated snippet next iteration.
+				// Note that if two snippets include each other, then they won't be replaced and we
+				// will have bad outputs.
+				// TODO return an error if any of the final snippets still include replace_with
+				// directives.
+				w = *bytes.NewBufferString(v)
+			}
 			newSnippets[n] = w.String()
 			if newSnippets[n] != snippets[n] {
 				changed = true

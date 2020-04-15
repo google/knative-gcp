@@ -1,0 +1,6 @@
+type: object
+properties:
+  ref:
+    {{ replace_with 4 "k_reference" }}
+  uri:
+    type: string

@@ -1,0 +1,5 @@
+address:
+  type: object
+  properties:
+    url:
+      type: string
