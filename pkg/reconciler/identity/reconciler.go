@@ -100,7 +100,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	// Add iam policy binding to GCP ServiceAccount.
 	if err := i.addIamPolicyBinding(ctx, projectID, identifiable.IdentitySpec().GoogleServiceAccount, kServiceAccount); err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
-		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %s", err)
+		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %w", err)
 	}
 	status.ServiceAccountName = kServiceAccount.Name
 	status.MarkWorkloadIdentityConfigured(identifiable.ConditionSet())
