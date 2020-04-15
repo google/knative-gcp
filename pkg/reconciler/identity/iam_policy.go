@@ -34,6 +34,7 @@ const (
 	Remove
 )
 
+// GServiceAccount identifies a Google service account by project and name.
 type GServiceAccount struct {
 	ProjectID string
 	Name      string
@@ -66,6 +67,8 @@ type getPolicyResponse struct {
 type setPolicyResponse struct {
 }
 
+// IAMPolicyManager serializes and batches IAM policy changes to a Google
+// Service Account to avoid conflicting changes.
 type IAMPolicyManager struct {
 	iam         gclient.IamClient
 	requestCh   chan *modificationRequest
@@ -73,6 +76,8 @@ type IAMPolicyManager struct {
 	getPolicyCh chan *getPolicyResponse
 }
 
+// NewIAMPolicyManager creates an IAMPolicyManager using the given
+// IamClient. The IAMPolicyManager will execute until ctx is cancelled.
 func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (*IAMPolicyManager, error) {
 	m := &IAMPolicyManager{
 		iam:         client,
@@ -84,6 +89,9 @@ func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (*IAMPol
 	return m, nil
 }
 
+// AddIAMPolicyBinding adds or updates an IAM policy binding for the given account
+// and role to include member. This call will block until the IAM update
+// succeeds or fails or until ctx is cancelled.
 func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
@@ -94,6 +102,9 @@ func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GSer
 	})
 }
 
+// RemoveIAMPolicyBinding removes or updates an IAM policy binding for the given
+// account and role to remove member. This call will block until the IAM update
+// succeeds or fails or until ctx is cancelled.
 func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
