@@ -21,14 +21,12 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
 	"cloud.google.com/go/iam/admin/apiv1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -45,19 +43,7 @@ const (
 	Role                         = "roles/iam.workloadIdentityUser"
 	deleteWorkloadIdentityFailed = "WorkloadIdentityDeleteFailed"
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
-	concurrencyError             = "googleapi: Error 409: There were concurrent policy changes."
 )
-
-// defaultRetry represents that there will be 3 iterations.
-// The duration starts from 100ms and is multiplied by factor 2.0 for each iteration.
-var defaultRetry = wait.Backoff{
-	Steps:    5,
-	Duration: 100 * time.Millisecond,
-	Factor:   2.0,
-	// The sleep at each iteration is the duration plus an additional
-	// amount chosen uniformly at random from the interval between 0 and jitter*duration.
-	Jitter: 1.0,
-}
 
 // TODO remove global instance
 var (
