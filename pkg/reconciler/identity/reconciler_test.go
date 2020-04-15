@@ -56,23 +56,11 @@ var (
 	trueVal  = true
 	falseVal = false
 
-	identifiable = NewCloudPubSubSource(identifiableName, testNS,
-		WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
-		WithCloudPubSubSourceServiceAccountName("test"))
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
 	}, cmp.Ignore())
 
 	role = "roles/iam.workloadIdentityUser"
-	/*
-		addbindings = []*iam.Binding{{
-			Members: []string{"member1"},
-			Role:    role,
-		}}
-		removebindings = []*iam.Binding{{
-			Members: []string{"member1", "member2"},
-			Role:    role,
-		}}*/
 )
 
 func TestCreates(t *testing.T) {
@@ -134,6 +122,9 @@ func TestCreates(t *testing.T) {
 				KubeClient:    cs,
 				PolicyManager: m,
 			}
+			identifiable := NewCloudPubSubSource(identifiableName, testNS,
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
+				WithCloudPubSubSourceServiceAccountName("test"))
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, identifiable)
@@ -234,6 +225,9 @@ func TestDeletes(t *testing.T) {
 				KubeClient:    cs,
 				PolicyManager: m,
 			}
+			identifiable := NewCloudPubSubSource(identifiableName, testNS,
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
+				WithCloudPubSubSourceServiceAccountName("test"))
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			err = identity.DeleteWorkloadIdentity(context.Background(), projectID, identifiable)
