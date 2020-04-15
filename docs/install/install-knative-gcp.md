@@ -30,8 +30,6 @@
         which cause intermittent errors:
 
         ```shell
-        kubectl apply --selector pubsub.cloud.google.com/crd-install=true \
-        --filename https://github.com/google/knative-gcp/releases/download/{{< version >}}/cloud-run-events.yaml
         kubectl apply --selector messaging.cloud.google.com/crd-install=true \
         --filename https://github.com/google/knative-gcp/releases/download/{{< version >}}/cloud-run-events.yaml
         kubectl apply --selector events.cloud.google.com/crd-install=true \
