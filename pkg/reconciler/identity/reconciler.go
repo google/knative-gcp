@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
+	"cloud.google.com/go/iam/admin/apiv1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -58,17 +60,23 @@ var defaultRetry = wait.Backoff{
 }
 
 // TODO remove global instance
-var policyManager *IAMPolicyManager
-
-func init() {
-	m, err := NewIAMPolicyManager(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	policyManager = m
-}
+var (
+	policyManager       *IAMPolicyManager
+	createPolicyManager sync.Once
+)
 
 func NewIdentity(ctx context.Context) *Identity {
+	createPolicyManager.Do(func() {
+		c, err := admin.NewIamClient(context.Background())
+		if err != nil {
+			panic(err)
+		}
+		m, err := NewIAMPolicyManager(context.Background(), c)
+		if err != nil {
+			panic(err)
+		}
+		policyManager = m
+	})
 	return &Identity{
 		KubeClient:    kubeclient.Get(ctx),
 		PolicyManager: policyManager,
