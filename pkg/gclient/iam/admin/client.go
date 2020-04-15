@@ -31,6 +31,12 @@ type client struct {
 	policies map[string]*iam.Policy
 }
 
+func NewTestClient() IamClient {
+	return client{
+		policies: make(map[string]*iam.Policy),
+	}
+}
+
 func (c client) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest) (*iam.Policy, error) {
 	if policy := c.policies[req.Resource]; policy == nil {
 		return nil, status.Error(codes.NotFound, "service account not found")
@@ -40,10 +46,6 @@ func (c client) GetIamPolicy(ctx context.Context, req *iampb.GetIamPolicyRequest
 }
 
 func (c client) SetIamPolicy(ctx context.Context, req *admin.SetIamPolicyRequest) (*iam.Policy, error) {
-	if req.Policy == nil {
-		delete(c.policies, req.Resource)
-		return nil, nil
-	}
 	c.policies[req.Resource] = &iam.Policy{InternalProto: proto.Clone(req.Policy.InternalProto).(*iampb.Policy)}
 	return &iam.Policy{InternalProto: proto.Clone(c.policies[req.Resource].InternalProto).(*iampb.Policy)}, nil
 }

@@ -73,13 +73,9 @@ type IAMPolicyManager struct {
 	getPolicyCh chan *getPolicyResponse
 }
 
-func NewIAMPolicyManager(ctx context.Context) (*IAMPolicyManager, error) {
-	svc, err := admin.NewIamClient(ctx)
-	if err != nil {
-		return nil, err
-	}
+func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (*IAMPolicyManager, error) {
 	m := &IAMPolicyManager{
-		iam:         svc,
+		iam:         client,
 		requestCh:   make(chan *modificationRequest),
 		pending:     make(map[GServiceAccount]*batchedModifications),
 		getPolicyCh: make(chan *getPolicyResponse),
@@ -140,6 +136,7 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 					go sendResponse(ctx, listener, getPolicy.err)
 				}
 				delete(m.pending, getPolicy.account)
+				break
 			}
 			m.pending[getPolicy.account] = &batchedModifications{
 				roleModifications: make(map[iam.RoleName]*roleModification),
@@ -161,7 +158,10 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 
 func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *modificationRequest) error {
 	batched := m.pending[req.serviceAccount]
-	mod := batched.roleModifications[req.role]
+	var mod *roleModification
+	if batched != nil {
+		mod = batched.roleModifications[req.role]
+	}
 	if mod == nil {
 		mod = &roleModification{
 			addMembers:    make(map[string]bool),
@@ -198,7 +198,6 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 
 func (m *IAMPolicyManager) getPolicy(ctx context.Context, account GServiceAccount) {
 	policy, err := m.iam.GetIamPolicy(ctx, &iampb.GetIamPolicyRequest{Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name)})
-	//Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	select {
 	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
 	case <-ctx.Done():
