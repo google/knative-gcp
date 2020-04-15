@@ -91,6 +91,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		broker, ok := p.targets.GetBrokerByKey(bk)
 		if !ok {
 			// If corresponding broker doesn't exist, no need to process retry.
+			// TODO Need to revisit it for desired behavior of retry if the broker gets deleted.
 			logging.FromContext(ctx).Error(fmt.Sprintf("event broker %q doesn't exist in config", bk), zap.String("trigger", t.Name))
 			return true
 		}

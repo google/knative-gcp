@@ -172,7 +172,7 @@ func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
 	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
 	// NumGoroutines is ignored.
-	// TODO For the case when synchronous is true, default value of MaxOutstandingMessages and MaxOutstandingBytes might need to override.
+	// TODO Need to revisit it. For the case when synchronous is true, default value of MaxOutstandingMessages and MaxOutstandingBytes might need to override.
 	rs.Synchronous = true
 	var opts []pool.Option
 	if env.HandlerConcurrency > 0 {
