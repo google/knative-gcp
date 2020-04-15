@@ -2,13 +2,14 @@
 
 
 [[projects]]
-  digest = "1:67381a5551ce8b88d587e87099c28a21db6a6192729dcc617f5131fc466af100"
+  digest = "1:4b3ac5d7fcc481283fbfb04ac4794672213e7a06b4826867a280b321dc277a69"
   name = "cloud.google.com/go"
   packages = [
     ".",
     "compute/metadata",
     "container/apiv1",
     "iam",
+    "iam/admin/apiv1",
     "internal",
     "internal/optional",
     "internal/testutil",
@@ -882,7 +883,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0bc16e64dba11f01b4d0fde4411813f3569e49fde3ca248960ebb6b265a3324d"
+  digest = "1:56245807311fc47ceb78871e4f0f8709ad025be67eee55a5c66b1c79bbfb9115"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -897,6 +898,7 @@
     "googleapis/cloud/scheduler/v1",
     "googleapis/container/v1",
     "googleapis/devtools/cloudtrace/v2",
+    "googleapis/iam/admin/v1",
     "googleapis/iam/v1",
     "googleapis/logging/type",
     "googleapis/logging/v2",
@@ -1736,6 +1738,7 @@
   input-imports = [
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/iam",
+    "cloud.google.com/go/iam/admin/apiv1",
     "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
@@ -1784,6 +1787,7 @@
     "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/cloud/audit",
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
+    "google.golang.org/genproto/googleapis/iam/admin/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc",

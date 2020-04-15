@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"google.golang.org/api/iam/v1"
+	"cloud.google.com/go/iam"
+	"cloud.google.com/go/iam/admin/apiv1"
+	iampb "google.golang.org/genproto/googleapis/iam/v1"
 )
 
 type action = int
@@ -22,7 +24,7 @@ type GServiceAccount struct {
 
 type modificationRequest struct {
 	serviceAccount GServiceAccount
-	role           string
+	role           iam.RoleName
 	member         string
 	action         action
 	respCh         chan error
@@ -34,7 +36,7 @@ type roleModification struct {
 }
 
 type batchedModifications struct {
-	roleModifications map[string]*roleModification
+	roleModifications map[iam.RoleName]*roleModification
 	listeners         []chan<- error
 }
 
@@ -48,14 +50,14 @@ type setPolicyResponse struct {
 }
 
 type IAMPolicyManager struct {
-	iam         *iam.Service
+	iam         *admin.IamClient
 	requestCh   chan *modificationRequest
 	pending     map[GServiceAccount]*batchedModifications
 	getPolicyCh chan *getPolicyResponse
 }
 
 func NewIAMPolicyManager(ctx context.Context) (*IAMPolicyManager, error) {
-	svc, err := iam.NewService(ctx)
+	svc, err := admin.NewIamClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +71,7 @@ func NewIAMPolicyManager(ctx context.Context) (*IAMPolicyManager, error) {
 	return m, nil
 }
 
-func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member, role string) error {
+func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
 		role:           role,
@@ -79,7 +81,7 @@ func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GSer
 	})
 }
 
-func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member, role string) error {
+func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
 		role:           role,
@@ -123,7 +125,7 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 				delete(m.pending, getPolicy.account)
 			}
 			m.pending[getPolicy.account] = &batchedModifications{
-				roleModifications: make(map[string]*roleModification),
+				roleModifications: make(map[iam.RoleName]*roleModification),
 			}
 			go m.applyBatchedModifications(ctx, getPolicy.account, getPolicy.policy, batched)
 		case <-ctx.Done():
@@ -166,7 +168,7 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 	}
 	if batched == nil {
 		batched = &batchedModifications{
-			roleModifications: map[string]*roleModification{
+			roleModifications: map[iam.RoleName]*roleModification{
 				req.role: mod,
 			},
 		}
@@ -178,8 +180,8 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 }
 
 func (m *IAMPolicyManager) getPolicy(ctx context.Context, account GServiceAccount) {
-	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", account.ProjectID, account.Name)
-	policy, err := m.iam.Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
+	policy, err := m.iam.GetIamPolicy(ctx, &iampb.GetIamPolicyRequest{Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name)})
+	//Projects.ServiceAccounts.GetIamPolicy(resource).Context(ctx).Do()
 	select {
 	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
 	case <-ctx.Done():
@@ -190,8 +192,10 @@ func (m *IAMPolicyManager) applyBatchedModifications(ctx context.Context, accoun
 	for role, mod := range batched.roleModifications {
 		applyRoleModifications(policy, role, mod)
 	}
-	resource := fmt.Sprintf("projects/%s/serviceAccounts/%s", account.ProjectID, account.Name)
-	policy, err := m.iam.Projects.ServiceAccounts.SetIamPolicy(resource, &iam.SetIamPolicyRequest{Policy: policy}).Context(ctx).Do()
+	policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
+		Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name),
+		Policy:   policy,
+	})
 	for _, listener := range batched.listeners {
 		go sendResponse(ctx, listener, err)
 	}
@@ -201,36 +205,12 @@ func (m *IAMPolicyManager) applyBatchedModifications(ctx context.Context, accoun
 	}
 }
 
-func applyRoleModifications(policy *iam.Policy, role string, mod *roleModification) {
-	for i, binding := range policy.Bindings {
-		if binding.Condition != nil || binding.Role != role {
-			continue
-		}
-		members := make(map[string]struct{})
-		for _, member := range binding.Members {
-			if !mod.removeMembers[member] {
-				members[member] = struct{}{}
-			}
-		}
-		for member := range mod.addMembers {
-			members[member] = struct{}{}
-		}
-		if len(members) == 0 {
-			policy.Bindings = append(policy.Bindings[:i], policy.Bindings[i+1:]...)
-		} else {
-			binding.Members = make([]string, 0, len(members))
-			for member := range members {
-				binding.Members = append(binding.Members, member)
-			}
-		}
-		return
+func applyRoleModifications(policy *iam.Policy, role iam.RoleName, mod *roleModification) {
+	for member := range mod.addMembers {
+		policy.Add(member, role)
 	}
-	if len(mod.addMembers) > 0 {
-		members := make([]string, 0, len(mod.addMembers))
-		for member := range mod.addMembers {
-			members = append(members, member)
-		}
-		policy.Bindings = append(policy.Bindings, &iam.Binding{Role: role, Members: members})
+	for member := range mod.removeMembers {
+		policy.Remove(member, role)
 	}
 }
 
