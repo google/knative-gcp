@@ -23,7 +23,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"knative.dev/pkg/logging"
+	"knative.dev/eventing/pkg/logging"
 
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -88,6 +88,12 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		tk := config.TriggerKey(t.Namespace, t.Broker, t.Name)
 		bk := config.BrokerKey(t.Namespace, t.Broker)
+		broker, ok := p.targets.GetBrokerByKey(bk)
+		if !ok {
+			// If corresponding broker doesn't exist, no need to process retry.
+			logging.FromContext(ctx).Error(fmt.Sprintf("event broker %q doesn't exist in config", bk), zap.String("trigger", t.Name))
+			return true
+		}
 
 		// There is already a handler for the trigger, skip.
 		if _, ok := p.pool.Load(tk); ok {
@@ -126,7 +132,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		}
 
 		// Deliver processor needs the broker in the context for reply.
-		tctx := handlerctx.WithBrokerKey(ctx, bk)
+		tctx := handlerctx.WithBroker(ctx, broker)
 		// Start the handler with target in context.
 		h.Start(handlerctx.WithTarget(tctx, t), func(err error) {
 			if err != nil {

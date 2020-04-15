@@ -75,12 +75,12 @@ func main() {
 
 	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
-		log.Fatal("Error building kubeconfig", err)
+		log.Fatalf("Error building kubeconfig: %v", err)
 	}
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", zap.Error(err))
+		log.Fatalf("Failed to process env var: %v", err)
 	}
 
 	kubeClient := kubeclient.Get(ctx)
@@ -92,14 +92,14 @@ func main() {
 		}
 		return err == nil, nil
 	}); perr != nil {
-		log.Fatal("Timed out attempting to get k8s version: ", err)
+		log.Fatalf("Timed out attempting to get k8s version: %v", err)
 	}
 
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
 	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
 	if err != nil {
-		log.Fatal("Error loading/parsing logging configuration:", err)
+		log.Fatalf("Error loading/parsing logging configuration: %v", err)
 	}
 
 	sugaredLogger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
@@ -107,7 +107,7 @@ func main() {
 	ctx = logging.WithLogger(ctx, sugaredLogger)
 
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
-	// Watch the observability config map
+	// Watch the observability config map.
 	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.ConfigMapWatcher(component, nil, sugaredLogger))
 	// Watch the logging config map and dynamically update logging levels.
 	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(sugaredLogger, atomicLevel, component))
@@ -169,6 +169,11 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 
 func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 	rs := pubsub.DefaultReceiveSettings
+	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
+	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
+	// NumGoroutines is ignored.
+	// TODO For the case when synchronous is true, default value of MaxOutstandingMessages and MaxOutstandingBytes might need to override.
+	rs.Synchronous = true
 	var opts []pool.Option
 	if env.HandlerConcurrency > 0 {
 		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))

@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -29,20 +28,10 @@ func TestBrokerKey(t *testing.T) {
 	}
 }
 
-func TestTriggerKey(t *testing.T) {
+func TestTriggerKeyAndSplitTriggerKey(t *testing.T) {
 	want := "namespace/broker/target"
-	got := TriggerKey("namespace", "broker", "target")
+	got := TriggerKey(SplitTriggerKey(want))
 	if got != want {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
-	}
-}
-
-func TestSplitTriggerKey(t *testing.T) {
-	wantNS, wantBroker, wantTarget := "namespace", "broker", "target"
-	gotNS, gotBroker, gotTarge := SplitTriggerKey("namespace/broker/target")
-	if gotNS != wantNS || gotBroker != wantBroker || gotTarge != wantTarget {
-		t.Errorf("unexpected readiness: want %v, got %v",
-			fmt.Sprintf("%s/%s/%s", wantNS, wantBroker, wantTarget),
-			fmt.Sprintf("%s/%s/%s", gotNS, gotBroker, gotTarge))
 	}
 }
