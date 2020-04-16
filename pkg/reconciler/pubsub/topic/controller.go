@@ -76,7 +76,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:     pubsubBase,
-		Identity:       identity.NewIdentity(ctx),
+		Identity:       identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceInformer.Lister(),
 		publisherImage: env.Publisher,

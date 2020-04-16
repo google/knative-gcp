@@ -64,7 +64,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
-		Identity:               identity.NewIdentity(ctx),
+		Identity:               identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
 		pubsubClientProvider:   gpubsub.NewClient,

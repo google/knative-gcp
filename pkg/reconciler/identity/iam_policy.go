@@ -19,6 +19,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"cloud.google.com/go/iam"
 	"cloud.google.com/go/iam/admin/apiv1"
@@ -67,6 +68,27 @@ type setPolicyResponse struct {
 type IAMPolicyManager interface {
 	AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error
 	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error
+}
+
+var (
+	globalManager       IAMPolicyManager
+	createGlobalManager sync.Once
+)
+
+// DefaultIAMPolicyManager returns a shared global policy manager.
+func DefaultIAMPolicyManager() IAMPolicyManager {
+	createGlobalManager.Do(func() {
+		c, err := admin.NewIamClient(context.Background())
+		if err != nil {
+			panic(err)
+		}
+		m, err := NewIAMPolicyManager(context.Background(), c)
+		if err != nil {
+			panic(err)
+		}
+		globalManager = m
+	})
+	return globalManager
 }
 
 // manager is an IAMPolicyManager which serializes and batches IAM policy changes to a Google

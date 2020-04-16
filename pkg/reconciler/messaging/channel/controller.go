@@ -57,7 +57,7 @@ func NewController(
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:               identity.NewIdentity(ctx),
+		Identity:               identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		channelLister:          channelInformer.Lister(),
 		topicLister:            topicInformer.Lister(),
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),

@@ -84,7 +84,7 @@ func NewController(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
-			Identity:               identity.NewIdentity(ctx),
+			Identity:               identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,

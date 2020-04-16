@@ -57,7 +57,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:               identity.NewIdentity(ctx),
+		Identity:               identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		pubsubLister:           cloudpubsubsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		serviceAccountLister:   serviceAccountInformer.Lister(),

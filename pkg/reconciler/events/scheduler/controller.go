@@ -61,7 +61,7 @@ func NewController(
 
 	c := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx),
+		Identity:             identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		schedulerLister:      cloudschedulersourceInformer.Lister(),
 		createClientFn:       gscheduler.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),

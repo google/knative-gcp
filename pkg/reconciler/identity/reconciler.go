@@ -20,9 +20,7 @@ package identity
 import (
 	"context"
 	"fmt"
-	"sync"
 
-	"cloud.google.com/go/iam/admin/apiv1"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -45,24 +43,7 @@ const (
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
-// TODO remove global instance
-var (
-	policyManager       IAMPolicyManager
-	createPolicyManager sync.Once
-)
-
-func NewIdentity(ctx context.Context) *Identity {
-	createPolicyManager.Do(func() {
-		c, err := admin.NewIamClient(context.Background())
-		if err != nil {
-			panic(err)
-		}
-		m, err := NewIAMPolicyManager(ctx, c)
-		if err != nil {
-			panic(err)
-		}
-		policyManager = m
-	})
+func NewIdentity(ctx context.Context, policyManager IAMPolicyManager) *Identity {
 	return &Identity{
 		KubeClient:    kubeclient.Get(ctx),
 		PolicyManager: policyManager,

@@ -61,7 +61,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx),
+		Identity:             identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
 		storageLister:        cloudstoragesourceInformer.Lister(),
 		createClientFn:       gstorage.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),
