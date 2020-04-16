@@ -57,6 +57,8 @@
       to be the same as your current cluster. You may use
       `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
       `gcloud config set compute/zone $ZONE` to set it.
+      
+      Then, you can either:
 
       - Use **Workload Identity**.
 
@@ -64,17 +66,8 @@
         from within GKE due to its improved security properties and
         manageability. For more information about Workload Identity, please see
         [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
-
-        In order to make controller compatible with Workload Identity, use
-        [ko](http://github.com/google/ko) to apply
-        [controller-gke](../../config/core/deployments/controller-gke.yaml)
-        first.
-
-        ```shell
-        ko apply -f config/core/deployments/controller-gke.yaml
-        ```
-
-        Then you can apply
+        
+        Apply
         [init_control_plane_gke](../../hack/init_control_plane_gke.sh) to
         install all the configuration by running:
 
@@ -82,7 +75,7 @@
         ./hack/init_control_plane_gke.sh
         ```
 
-      - Export service account keys and store them as **Kubernetes Secrets**.
+      - ***OR*** Export service account keys and store them as **Kubernetes Secrets**.
         Apply [init_control_plane](../../hack/init_control_plane.sh) to install
         all the configuration by running:
 
@@ -90,7 +83,7 @@
         ./hack/init_control_plane.sh
         ```
 
-      - **_Note_**: Both scripts will have a step to create a Google Cloud
+      **_Note_**: Both scripts will have a step to create a Google Cloud
         Service Account `cloud-run-events`. Ignore the error message if you
         already had this service account (error for 'service account already
         exists').
@@ -141,6 +134,8 @@
         --role roles/owner
       ```
 
+      Then, you can either:
+      
       - Use **Workload Identity**.
 
         Workload Identity is the recommended way to access Google Cloud services
@@ -174,7 +169,7 @@
            --namespace cloud-run-events
            ```
 
-      - Export service account keys and store them as **Kubernetes Secrets**.
+      - ***OR*** Export service account keys and store them as **Kubernetes Secrets**.
 
         1. Download a new JSON private key for that Service Account. **Be sure
            not to check this key into source control!**
@@ -192,4 +187,10 @@
            ```
 
            Note that `google-cloud-key` and `key.json` are default values
-           expected by our control plane.
+           expected by our control plane. 
+        
+        1. Restart controller with:
+        
+           ```shell
+           kubectl delete pod -n cloud-run-events --selector role=controller
+           ```
