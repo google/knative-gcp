@@ -58,7 +58,7 @@ func NewIdentity(ctx context.Context) *Identity {
 		if err != nil {
 			panic(err)
 		}
-		m, err := NewIAMPolicyManager(context.Background(), c)
+		m, err := NewIAMPolicyManager(ctx, c)
 		if err != nil {
 			panic(err)
 		}

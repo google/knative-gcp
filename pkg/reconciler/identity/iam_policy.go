@@ -29,8 +29,8 @@ import (
 type action = int
 
 const (
-	Add = iota
-	Remove
+	ActionAdd action = iota
+	ActionRemove
 )
 
 // GServiceAccount identifies a Google service account by project and name.
