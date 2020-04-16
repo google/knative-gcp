@@ -67,17 +67,17 @@ type getPolicyResponse struct {
 type setPolicyResponse struct {
 }
 
-// IAMPolicyManager serializes and batches IAM policy changes to a Google
-// Service Account to avoid conflicting changes.
+// IAMPolicyManager serializes and batches IAM policy changes to a Google Service Account to avoid
+// conflicting changes.
 type IAMPolicyManager struct {
 	iam         gclient.IamClient
 	requestCh   chan *modificationRequest
-	pending     map[GServiceAccount]*batchedModifications
+	pending     map[GServiceAccount]*batchedModifications // a non-nil batch indicates an outstanding request
 	getPolicyCh chan *getPolicyResponse
 }
 
-// NewIAMPolicyManager creates an IAMPolicyManager using the given
-// IamClient. The IAMPolicyManager will execute until ctx is cancelled.
+// NewIAMPolicyManager creates an IAMPolicyManager using the given IamClient. The IAMPolicyManager
+// will execute until ctx is cancelled.
 func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (*IAMPolicyManager, error) {
 	m := &IAMPolicyManager{
 		iam:         client,
@@ -89,9 +89,9 @@ func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (*IAMPol
 	return m, nil
 }
 
-// AddIAMPolicyBinding adds or updates an IAM policy binding for the given account
-// and role to include member. This call will block until the IAM update
-// succeeds or fails or until ctx is cancelled.
+// AddIAMPolicyBinding adds or updates an IAM policy binding for the given account and role to
+// include member. This call will block until the IAM update succeeds or fails or until ctx is
+// cancelled.
 func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
@@ -102,9 +102,9 @@ func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GSer
 	})
 }
 
-// RemoveIAMPolicyBinding removes or updates an IAM policy binding for the given
-// account and role to remove member. This call will block until the IAM update
-// succeeds or fails or until ctx is cancelled.
+// RemoveIAMPolicyBinding removes or updates an IAM policy binding for the given account and role to
+// remove member. This call will block until the IAM update succeeds or fails or until ctx is
+// cancelled.
 func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
@@ -129,6 +129,13 @@ func (m *IAMPolicyManager) doRequest(ctx context.Context, req *modificationReque
 	}
 }
 
+// manage receives requests on m.requestCh and adds their modifications to the service account's
+// modification batch in m.pending. When a new batch is created, manage will initiate a call to
+// GetIAMPolicy which will return its result on m.getPolicyCh. When manage receives a policy on
+// getPolicyCh it will apply all batched modifications to that policy and initiate a call to
+// SetIAMPolicy which will also return its result m.getPolicyCh. When there are no batched
+// modifications to apply to a policy, manage will instead discard the policy and delete the service
+// account's entry in m.pending.
 func (m *IAMPolicyManager) manage(ctx context.Context) {
 	for {
 		select {
@@ -164,6 +171,8 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 	}
 }
 
+// makeModificationRequest adds the modification request to the service account's existing batch if
+// one exists. Otherwise it will create a new batch and start a call to getPolicy.
 func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *modificationRequest) error {
 	batched := m.pending[req.serviceAccount]
 	var mod *roleModification
@@ -204,6 +213,7 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 	return nil
 }
 
+// getPolicy calls GetIamPolicy for the given service account and puts the result in m.getPolicyCh.
 func (m *IAMPolicyManager) getPolicy(ctx context.Context, account GServiceAccount) {
 	policy, err := m.iam.GetIamPolicy(ctx, &iampb.GetIamPolicyRequest{Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name)})
 	select {
@@ -212,6 +222,8 @@ func (m *IAMPolicyManager) getPolicy(ctx context.Context, account GServiceAccoun
 	}
 }
 
+// applyBatchedModifications applies given set of batched modifications to the IAM policy and calls
+// SetIAMPolicy for the given service account placing the result in m.getPolicyCh.
 func (m *IAMPolicyManager) applyBatchedModifications(ctx context.Context, account GServiceAccount, policy *iam.Policy, batched *batchedModifications) {
 	for role, mod := range batched.roleModifications {
 		applyRoleModifications(policy, role, mod)
