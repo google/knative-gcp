@@ -21,6 +21,9 @@ import (
 	"net/url"
 	"testing"
 
+	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -32,7 +35,10 @@ import (
 )
 
 var (
-	trueVal = true
+	trueVal       = true
+	three         = int32(3)
+	backoffPolicy = eventingduckv1beta1.BackoffPolicyExponential
+	backoffDelay  = "backoffDelay"
 
 	completeURL = apis.URL{
 		Scheme:     "scheme",
@@ -117,6 +123,24 @@ var (
 			Hostname: completeURL.Host,
 		},
 	}
+
+	completeSubscribable = &eventingduckv1alpha1.Subscribable{
+		Subscribers: []eventingduckv1alpha1.SubscriberSpec{
+			{
+				UID:               "uid-1",
+				Generation:        1,
+				SubscriberURI:     &completeURL,
+				ReplyURI:          &completeURL,
+				DeadLetterSinkURI: &completeURL,
+				Delivery: &eventingduckv1beta1.DeliverySpec{
+					DeadLetterSink: &completeDestination,
+					Retry:          &three,
+					BackoffPolicy:  &backoffPolicy,
+					BackoffDelay:   &backoffDelay,
+				},
+			},
+		},
+	}
 )
 
 func TestV1beta1PubSubSpec(t *testing.T) {
@@ -176,6 +200,23 @@ func TestV1beta1AddressStatus(t *testing.T) {
 			}
 			got.Address = want.Address
 		}
+	}
+
+	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
+	if diff := cmp.Diff(want, got, ignoreUsername); diff != "" {
+		t.Errorf("Unexpected difference (-want +got): %v", diff)
+	}
+}
+
+func TestV1beta1SubscribableSpec(t *testing.T) {
+	want := completeSubscribable
+	v1b1 := convert.ToV1beta1SubscribableSpec(want)
+	got := convert.FromV1beta1SubscribableSpec(v1b1)
+
+	// DeadLetterSinkURI exists exclusively in v1alpha1, it has not yet been promoted to
+	// v1beta1. So it won't round trip, it will be silently removed.
+	for i := range want.Subscribers {
+		want.Subscribers[i].DeadLetterSinkURI = nil
 	}
 
 	ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
