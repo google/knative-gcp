@@ -118,15 +118,16 @@ func ToV1beta1SubscribableSpec(from *eventingduckv1alpha1.Subscribable) *eventin
 		return nil
 	}
 	to := eventingduckv1beta1.SubscribableSpec{}
-	for _, sub := range from.Subscribers {
-		to.Subscribers = append(to.Subscribers, eventingduckv1beta1.SubscriberSpec{
+	to.Subscribers = make([]eventingduckv1beta1.SubscriberSpec, len(from.Subscribers))
+	for i, sub := range from.Subscribers {
+		to.Subscribers[i] = eventingduckv1beta1.SubscriberSpec{
 			UID:           sub.UID,
 			Generation:    sub.Generation,
 			SubscriberURI: sub.SubscriberURI,
 			ReplyURI:      sub.ReplyURI,
 			// DeadLetterSinkURI doesn't exist in v1beta1, so don't translate it.
 			Delivery: sub.Delivery,
-		})
+		}
 	}
 	return &to
 }
@@ -136,47 +137,16 @@ func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *ev
 		return nil
 	}
 	to := eventingduckv1alpha1.Subscribable{}
-	for _, sub := range from.Subscribers {
-		to.Subscribers = append(to.Subscribers, eventingduckv1alpha1.SubscriberSpec{
+	to.Subscribers = make([]eventingduckv1alpha1.SubscriberSpec, len(from.Subscribers))
+	for i, sub := range from.Subscribers {
+		to.Subscribers[i] = eventingduckv1alpha1.SubscriberSpec{
 			UID:           sub.UID,
 			Generation:    sub.Generation,
 			SubscriberURI: sub.SubscriberURI,
 			ReplyURI:      sub.ReplyURI,
 			// DeadLetterSinkURI doesn't exist in v1beta1, so don't translate it.
 			Delivery: sub.Delivery,
-		})
+		}
 	}
 	return &to
-}
-
-func ToV1beta1SubscribableStatus(from eventingduckv1alpha1.SubscribableTypeStatus) eventingduckv1beta1.SubscribableStatus {
-	to := eventingduckv1beta1.SubscribableStatus{}
-	if from.SubscribableStatus == nil {
-		return to
-	}
-	for _, sub := range from.SubscribableStatus.Subscribers {
-		to.Subscribers = append(to.Subscribers, eventingduckv1beta1.SubscriberStatus{
-			UID:                sub.UID,
-			ObservedGeneration: sub.ObservedGeneration,
-			Ready:              sub.Ready,
-			Message:            sub.Message,
-		})
-	}
-	return to
-}
-
-func FromV1beta1SubscribableStatus(from eventingduckv1beta1.SubscribableStatus) eventingduckv1alpha1.SubscribableTypeStatus {
-	to := eventingduckv1alpha1.SubscribableTypeStatus{}
-	if len(from.Subscribers) > 0 {
-		to.SubscribableStatus = &eventingduckv1alpha1.SubscribableStatus{}
-	}
-	for _, sub := range from.Subscribers {
-		to.SubscribableStatus.Subscribers = append(to.SubscribableStatus.Subscribers, eventingduckv1alpha1.SubscriberStatus{
-			UID:                sub.UID,
-			ObservedGeneration: sub.ObservedGeneration,
-			Ready:              sub.Ready,
-			Message:            sub.Message,
-		})
-	}
-	return to
 }

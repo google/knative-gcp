@@ -27,7 +27,7 @@ import (
 
 // ConvertTo implements apis.Convertible.
 // Converts source (from v1beta1.PullSubscription) into v1alpha1.PullSubscription.
-func (source *Channel) ConvertTo(_ context.Context, to apis.Convertible) error {
+func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.Channel:
 		sink.ObjectMeta = source.ObjectMeta
@@ -37,7 +37,7 @@ func (source *Channel) ConvertTo(_ context.Context, to apis.Convertible) error {
 		sink.Spec.Subscribable = convert.ToV1beta1SubscribableSpec(source.Spec.Subscribable)
 		sink.Status.IdentityStatus = convert.ToV1beta1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
-		sink.Status.SubscribableStatus = convert.ToV1beta1SubscribableStatus(source.Status.SubscribableTypeStatus)
+		source.Status.SubscribableTypeStatus.ConvertTo(ctx, &sink.Status.SubscribableStatus)
 		sink.Status.ProjectID = source.Status.ProjectID
 		sink.Status.TopicID = source.Status.TopicID
 		return nil
@@ -49,7 +49,7 @@ func (source *Channel) ConvertTo(_ context.Context, to apis.Convertible) error {
 
 // ConvertFrom implements apis.Convertible.
 // Converts obj from v1alpha1.PullSubscription into v1beta1.PullSubscription.
-func (sink *Channel) ConvertFrom(_ context.Context, from apis.Convertible) error {
+func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.Channel:
 		sink.ObjectMeta = source.ObjectMeta
@@ -59,7 +59,9 @@ func (sink *Channel) ConvertFrom(_ context.Context, from apis.Convertible) error
 		sink.Spec.Subscribable = convert.FromV1beta1SubscribableSpec(source.Spec.Subscribable)
 		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
-		sink.Status.SubscribableTypeStatus = convert.FromV1beta1SubscribableStatus(source.Status.SubscribableStatus)
+		if err := sink.Status.SubscribableTypeStatus.ConvertFrom(ctx, source.Status.SubscribableStatus); err != nil {
+			return err
+		}
 		sink.Status.ProjectID = source.Status.ProjectID
 		sink.Status.TopicID = source.Status.TopicID
 		return nil
