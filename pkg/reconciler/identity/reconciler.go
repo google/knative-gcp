@@ -47,7 +47,7 @@ const (
 
 // TODO remove global instance
 var (
-	policyManager       *IAMPolicyManager
+	policyManager       IAMPolicyManager
 	createPolicyManager sync.Once
 )
 
@@ -71,7 +71,7 @@ func NewIdentity(ctx context.Context) *Identity {
 
 type Identity struct {
 	KubeClient    kubernetes.Interface
-	PolicyManager *IAMPolicyManager
+	PolicyManager IAMPolicyManager
 }
 
 // ReconcileWorkloadIdentity will create a k8s service account, add ownerReference to it,
