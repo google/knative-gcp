@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -33,8 +34,8 @@ func TestInvalidContext(t *testing.T) {
 	p := &Processor{}
 	e := event.New()
 	err := p.Process(context.Background(), &e)
-	if err != handlerctx.ErrTargetNotPresent {
-		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetNotPresent)
+	if err != handlerctx.ErrTargetKeyNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetKeyNotPresent)
 	}
 }
 
@@ -242,19 +243,23 @@ func TestFilterProcessor(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			testTarget := &config.Target{
+				Name:             "target",
+				Broker:           "broker",
+				Namespace:        "ns",
+				FilterAttributes: tc.filter,
+			}
+			testTargets := memory.NewEmptyTargets()
+			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+				bm.UpsertTargets(testTarget)
+			})
+
 			next := &processors.FakeProcessor{}
-			p := &Processor{}
+			p := &Processor{Targets: testTargets}
 			p.WithNext(next)
 			ch := make(chan *event.Event, 1)
 			next.PrevEventsCh = ch
-			ctx := handlerctx.WithTarget(
-				context.Background(),
-				&config.Target{
-					Name:             "name",
-					Namespace:        "namespace",
-					FilterAttributes: tc.filter,
-				},
-			)
+			ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())
 
 			defer func() {
 				gotEvent := <-ch

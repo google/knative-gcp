@@ -26,7 +26,10 @@ import (
 
 func TestWithProjectID(t *testing.T) {
 	want := "random"
-	opt := NewOptions(WithProjectID(want))
+	opt, err := NewOptions(WithProjectID(want))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.ProjectID != want {
 		t.Errorf("options project id got=%s, want=%s", opt.ProjectID, want)
 	}
@@ -34,7 +37,11 @@ func TestWithProjectID(t *testing.T) {
 
 func TestWithHandlerConcurrency(t *testing.T) {
 	want := 10
-	opt := NewOptions(WithHandlerConcurrency(want))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithHandlerConcurrency(want), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.HandlerConcurrency != want {
 		t.Errorf("options handler concurrency got=%d, want=%d", opt.HandlerConcurrency, want)
 	}
@@ -42,7 +49,11 @@ func TestWithHandlerConcurrency(t *testing.T) {
 
 func TestWithMaxConcurrency(t *testing.T) {
 	want := 10
-	opt := NewOptions(WithMaxConcurrentPerEvent(want))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithMaxConcurrentPerEvent(want), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.MaxConcurrencyPerEvent != want {
 		t.Errorf("options max concurrency per event got=%d, want=%d", opt.MaxConcurrencyPerEvent, want)
 	}
@@ -50,7 +61,11 @@ func TestWithMaxConcurrency(t *testing.T) {
 
 func TestWithTimeout(t *testing.T) {
 	want := 10 * time.Minute
-	opt := NewOptions(WithTimeoutPerEvent(want))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithTimeoutPerEvent(want), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.TimeoutPerEvent != want {
 		t.Errorf("options timeout per event got=%v, want=%v", opt.TimeoutPerEvent, want)
 	}
@@ -61,25 +76,41 @@ func TestWithReceiveSettings(t *testing.T) {
 		NumGoroutines: 10,
 		MaxExtension:  time.Minute,
 	}
-	opt := NewOptions(WithPubsubReceiveSettings(want))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithPubsubReceiveSettings(want), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if diff := cmp.Diff(want, opt.PubsubReceiveSettings); diff != "" {
 		t.Errorf("options ReceiveSettings (-want,+got): %v", diff)
 	}
 }
 
 func TestWithPubsubClient(t *testing.T) {
-	opt := NewOptions()
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.PubsubClient != nil {
 		t.Errorf("options PubsubClient got=%v, want=nil", opt.PubsubClient)
 	}
-	opt = NewOptions(WithPubsubClient(&pubsub.Client{}))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err = NewOptions(WithPubsubClient(&pubsub.Client{}), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.PubsubClient == nil {
 		t.Error("options PubsubClient got=nil, want=non-nil client")
 	}
 }
 
 func TestWithSignal(t *testing.T) {
-	opt := NewOptions(WithSyncSignal(make(chan struct{})))
+	// Always add project id because in some env the default value can't be retrieved.
+	opt, err := NewOptions(WithSyncSignal(make(chan struct{})), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
 	if opt.SyncSignal == nil {
 		t.Error("options SyncSignal is nil")
 	}
