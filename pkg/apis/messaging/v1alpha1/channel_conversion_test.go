@@ -24,8 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
@@ -199,7 +199,7 @@ func TestChannelConversionBadType(t *testing.T) {
 
 func TestChannelConversion(t *testing.T) {
 	// Just one for now, just adding the for loop for ease of future changes.
-	versions := []apis.Convertible{&v1beta1.PullSubscription{}}
+	versions := []apis.Convertible{&v1beta1.Channel{}}
 
 	tests := []struct {
 		name string
@@ -208,8 +208,8 @@ func TestChannelConversion(t *testing.T) {
 		name: "min configuration",
 		in: &Channel{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:       "ps-name",
-				Namespace:  "ps-ns",
+				Name:       "c-name",
+				Namespace:  "c-ns",
 				Generation: 17,
 			},
 			Spec: ChannelSpec{},
@@ -229,6 +229,15 @@ func TestChannelConversion(t *testing.T) {
 				if err := got.ConvertFrom(context.Background(), ver); err != nil {
 					t.Errorf("ConvertFrom() = %v", err)
 				}
+
+				// DeadLetterSinkURI exists exclusively in v1alpha1, it has not yet been promoted to
+				// v1beta1. So it won't round trip, it will be silently removed.
+				if test.in.Spec.Subscribable != nil {
+					for i := range test.in.Spec.Subscribable.Subscribers {
+						test.in.Spec.Subscribable.Subscribers[i].DeadLetterSinkURI = nil
+					}
+				}
+
 				ignoreUsername := cmp.AllowUnexported(url.Userinfo{})
 				if diff := cmp.Diff(test.in, got, ignoreUsername); diff != "" {
 					t.Errorf("roundtrip (-want, +got) = %v", diff)

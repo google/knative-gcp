@@ -114,6 +114,9 @@ func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressSt
 }
 
 func ToV1beta1SubscribableSpec(from *eventingduckv1alpha1.Subscribable) *eventingduckv1beta1.SubscribableSpec {
+	if from == nil {
+		return nil
+	}
 	to := eventingduckv1beta1.SubscribableSpec{}
 	for _, sub := range from.Subscribers {
 		to.Subscribers = append(to.Subscribers, eventingduckv1beta1.SubscriberSpec{
@@ -129,6 +132,9 @@ func ToV1beta1SubscribableSpec(from *eventingduckv1alpha1.Subscribable) *eventin
 }
 
 func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *eventingduckv1alpha1.Subscribable {
+	if from == nil {
+		return nil
+	}
 	to := eventingduckv1alpha1.Subscribable{}
 	for _, sub := range from.Subscribers {
 		to.Subscribers = append(to.Subscribers, eventingduckv1alpha1.SubscriberSpec{
@@ -145,6 +151,9 @@ func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *ev
 
 func ToV1beta1SubscribableStatus(from eventingduckv1alpha1.SubscribableTypeStatus) eventingduckv1beta1.SubscribableStatus {
 	to := eventingduckv1beta1.SubscribableStatus{}
+	if from.SubscribableStatus == nil {
+		return to
+	}
 	for _, sub := range from.SubscribableStatus.Subscribers {
 		to.Subscribers = append(to.Subscribers, eventingduckv1beta1.SubscriberStatus{
 			UID:                sub.UID,
