@@ -37,7 +37,7 @@ func TestWithProjectID(t *testing.T) {
 
 func TestWithHandlerConcurrency(t *testing.T) {
 	want := 10
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithHandlerConcurrency(want), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -49,7 +49,7 @@ func TestWithHandlerConcurrency(t *testing.T) {
 
 func TestWithMaxConcurrency(t *testing.T) {
 	want := 10
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithMaxConcurrentPerEvent(want), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -61,7 +61,7 @@ func TestWithMaxConcurrency(t *testing.T) {
 
 func TestWithTimeout(t *testing.T) {
 	want := 10 * time.Minute
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithTimeoutPerEvent(want), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -76,7 +76,7 @@ func TestWithReceiveSettings(t *testing.T) {
 		NumGoroutines: 10,
 		MaxExtension:  time.Minute,
 	}
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithPubsubReceiveSettings(want), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -87,7 +87,7 @@ func TestWithReceiveSettings(t *testing.T) {
 }
 
 func TestWithPubsubClient(t *testing.T) {
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -95,7 +95,7 @@ func TestWithPubsubClient(t *testing.T) {
 	if opt.PubsubClient != nil {
 		t.Errorf("options PubsubClient got=%v, want=nil", opt.PubsubClient)
 	}
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err = NewOptions(WithPubsubClient(&pubsub.Client{}), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
@@ -106,7 +106,7 @@ func TestWithPubsubClient(t *testing.T) {
 }
 
 func TestWithSignal(t *testing.T) {
-	// Always add project id because in some env the default value can't be retrieved.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithSyncSignal(make(chan struct{})), WithProjectID("pid"))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
