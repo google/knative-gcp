@@ -31,21 +31,22 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 )
 
 func TestInvalidContext(t *testing.T) {
-	p := &Processor{}
+	p := &Processor{Targets: memory.NewEmptyTargets()}
 	e := event.New()
 	err := p.Process(context.Background(), &e)
-	if err != handlerctx.ErrBrokerNotPresent {
-		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerNotPresent)
+	if err != handlerctx.ErrBrokerKeyNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrBrokerKeyNotPresent)
 	}
 
-	ctx := handlerctx.WithBroker(context.Background(), &config.Broker{})
+	ctx := handlerctx.WithBrokerKey(context.Background(), "key")
 	err = p.Process(ctx, &e)
-	if err != handlerctx.ErrTargetNotPresent {
-		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetNotPresent)
+	if err != handlerctx.ErrTargetKeyNotPresent {
+		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetKeyNotPresent)
 	}
 }
 
@@ -66,12 +67,18 @@ func TestDeliverSuccess(t *testing.T) {
 	defer targetSvr.Close()
 	ingressSvr := httptest.NewServer(ingressClient)
 	defer ingressSvr.Close()
-	p := &Processor{Requester: requester}
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker", Address: ingressSvr.URL}
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
-	ctx := handlerctx.WithBroker(context.Background(), broker)
-	ctx = handlerctx.WithTarget(ctx, target)
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.SetAddress(ingressSvr.URL)
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{Requester: requester, Targets: testTargets}
 
 	origin := event.New()
 	origin.SetID("id")
@@ -139,12 +146,17 @@ func TestDeliverFailure(t *testing.T) {
 	}
 	targetSvr := httptest.NewServer(targetClient)
 	defer targetSvr.Close()
-	p := &Processor{Requester: requester}
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
-	ctx := handlerctx.WithBroker(context.Background(), broker)
-	ctx = handlerctx.WithTarget(ctx, target)
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{Requester: requester, Targets: testTargets}
 
 	origin := event.New()
 	origin.SetID("id")

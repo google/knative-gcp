@@ -33,7 +33,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
-	"github.com/google/knative-gcp/pkg/utils"
 )
 
 // SyncPool is the sync pool for fanout handlers.
@@ -49,15 +48,13 @@ type SyncPool struct {
 
 // StartSyncPool starts the sync pool.
 func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
-	options := pool.NewOptions(opts...)
-	projectID, err := utils.ProjectID(options.ProjectID)
+	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 	p := &SyncPool{
-		targets:   targets,
-		options:   options,
-		projectID: projectID,
+		targets: targets,
+		options: options,
 	}
 	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
@@ -93,15 +90,13 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 	})
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		bk := config.BrokerKey(b.Namespace, b.Name)
-
 		// There is already a handler for the broker, skip.
-		if _, ok := p.pool.Load(bk); ok {
+		if _, ok := p.pool.Load(b.Key()); ok {
 			return true
 		}
 
 		opts := []pubsub.Option{
-			pubsub.WithProjectID(p.projectID),
+			pubsub.WithProjectID(p.options.ProjectID),
 			pubsub.WithTopicID(b.DecoupleQueue.Topic),
 			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
 			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
@@ -112,7 +107,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		}
 		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
-			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
+			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", b.Key()), zap.Error(err))
 			errs++
 			return true
 		}
@@ -122,22 +117,22 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
 				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
-				&filter.Processor{},
-				&deliver.Processor{Requester: p.options.EventRequester},
+				&filter.Processor{Targets: p.targets},
+				&deliver.Processor{Requester: p.options.EventRequester, Targets: p.targets},
 			),
 		}
 		// Start the handler with broker key in context.
-		h.Start(handlerctx.WithBrokerKey(ctx, bk), func(err error) {
+		h.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", bk))
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
 			}
 			// Make sure the handler is deleted from the pool.
 			p.pool.Delete(h)
 		})
 
-		p.pool.Store(bk, h)
+		p.pool.Store(b.Key(), h)
 		return true
 	})
 

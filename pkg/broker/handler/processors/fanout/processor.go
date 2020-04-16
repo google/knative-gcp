@@ -57,9 +57,10 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 	broker, ok := p.Targets.GetBrokerByKey(bk)
 	if !ok {
-		return fmt.Errorf("event broker %q doesn't exist in config", bk)
+		// If the broker no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		return nil
 	}
-	ctx = handlerctx.WithBroker(ctx, broker)
 
 	tc := make(chan *config.Target)
 	go func() {
@@ -88,7 +89,7 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 		defer close(out)
 		for target := range tc {
 			// Timeout is controller by the context.
-			ctx = handlerctx.WithTarget(ctx, target)
+			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 			out <- &fanoutResult{err: p.Next().Process(ctx, event)}
 		}
 	}()

@@ -19,10 +19,6 @@ package context
 import (
 	"context"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
-
-	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 func TestBrokerKey(t *testing.T) {
@@ -39,34 +35,5 @@ func TestBrokerKey(t *testing.T) {
 	}
 	if gotKey != wantKey {
 		t.Errorf("broker key from context got=%s, want=%s", gotKey, wantKey)
-	}
-}
-
-func TestBroker(t *testing.T) {
-	_, err := GetBroker(context.Background())
-	if err != ErrBrokerNotPresent {
-		t.Errorf("error from GetBroker got=%v, want=%v", err, ErrBrokerNotPresent)
-	}
-
-	wantBroker := &config.Broker{
-		Name:      "broker",
-		Namespace: "ns",
-		Address:   "address",
-		Targets: map[string]*config.Target{
-			"target": {
-				Name:      "target",
-				Namespace: "ns",
-			},
-		},
-	}
-
-	ctx := WithBroker(context.Background(), wantBroker)
-	gotBroker, err := GetBroker(ctx)
-	if err != nil {
-		t.Errorf("unexpected error from GetBroker: %v", err)
-	}
-
-	if diff := cmp.Diff(wantBroker, gotBroker); diff != "" {
-		t.Errorf("broker from context (-want,+got): %v", diff)
 	}
 }

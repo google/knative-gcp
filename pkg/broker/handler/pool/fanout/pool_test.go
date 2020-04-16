@@ -122,8 +122,8 @@ func TestSyncPoolE2E(t *testing.T) {
 	b2 := genTestBroker(ctx, t, ps)
 	targets := memory.NewTargets(&config.TargetsConfig{
 		Brokers: map[string]*config.Broker{
-			config.BrokerKey(b1.Namespace, b1.Name): b1,
-			config.BrokerKey(b2.Namespace, b2.Name): b2,
+			b1.Key(): b1,
+			b2.Key(): b2,
 		},
 	})
 	b1t1, b1t1Client, b1t1close := addTestTargetToBroker(t, targets, b1.Name, nil)
@@ -319,7 +319,7 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 	})
 
 	targets.RangeBrokers(func(b *config.Broker) bool {
-		wantHandlers[config.BrokerKey(b.Namespace, b.Name)] = true
+		wantHandlers[b.Key()] = true
 		return true
 	})
 
