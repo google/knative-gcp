@@ -159,26 +159,26 @@ func (i *Identity) createServiceAccount(ctx context.Context, namespace, gService
 // TODO he iam policy binding should be mocked so that we can unit test it. issue https://github.com/google/knative-gcp/issues/657
 // addIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
 func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectId, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID)
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
-	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
+	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
 
 	return i.PolicyManager.AddIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
 }
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
 func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectId, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID)
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
-	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
+	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
 
 	return i.PolicyManager.RemoveIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
 }
