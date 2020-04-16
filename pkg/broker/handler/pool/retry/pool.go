@@ -14,50 +14,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fanout
+package retry
 
 import (
 	"context"
 	"fmt"
 	"sync"
 
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
+
 	"knative.dev/eventing/pkg/logging"
 
+	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
-	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
-	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
-	"github.com/google/knative-gcp/pkg/utils"
 )
 
-// SyncPool is the sync pool for fanout handlers.
-// For each broker in the config, it will attempt to create a handler.
-// It will also stop/delete the handler if the corresponding broker is deleted
+// TODO Retry and Fanout are using similar SyncPool struct, needing an interface to reduce redundancies.
+// SyncPool is the sync pool for retry handlers.
+// For each trigger in the config, it will attempt to create a handler.
+// It will also stop/delete the handler if the corresponding trigger is deleted
 // in the config.
 type SyncPool struct {
-	options   *pool.Options
-	targets   config.ReadonlyTargets
-	pool      sync.Map
-	projectID string
+	options *pool.Options
+	targets config.ReadonlyTargets
+	pool    sync.Map
 }
 
 // StartSyncPool starts the sync pool.
 func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
-	options := pool.NewOptions(opts...)
-	projectID, err := utils.ProjectID(options.ProjectID)
-	if err != nil {
-		return nil, err
-	}
 	p := &SyncPool{
-		targets:   targets,
-		options:   options,
-		projectID: projectID,
+		targets: targets,
+		options: pool.NewOptions(opts...),
 	}
 	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
@@ -85,26 +77,40 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
-		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
+		// Each target represents a trigger.
+		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
 			value.(*handler.Handler).Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
-	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		bk := config.BrokerKey(b.Namespace, b.Name)
+	p.targets.RangeAllTargets(func(t *config.Target) bool {
+		tk := config.TriggerKey(t.Namespace, t.Broker, t.Name)
+		bk := config.BrokerKey(t.Namespace, t.Broker)
+		broker, ok := p.targets.GetBrokerByKey(bk)
+		if !ok {
+			// If corresponding broker doesn't exist, no need to process retry.
+			// TODO Need to revisit it for desired behavior of retry if the broker gets deleted.
+			logging.FromContext(ctx).Error(fmt.Sprintf("event broker %q doesn't exist in config", bk), zap.String("trigger", t.Name))
+			return true
+		}
 
-		// There is already a handler for the broker, skip.
-		if _, ok := p.pool.Load(bk); ok {
+		// There is already a handler for the trigger, skip.
+		if _, ok := p.pool.Load(tk); ok {
 			return true
 		}
 
 		opts := []pubsub.Option{
-			pubsub.WithProjectID(p.projectID),
-			pubsub.WithTopicID(b.DecoupleQueue.Topic),
-			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
+			pubsub.WithTopicID(t.RetryQueue.Topic),
+			pubsub.WithSubscriptionID(t.RetryQueue.Subscription),
 			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		}
+
+		if p.options.ProjectID != "" {
+			opts = append(opts, pubsub.WithProjectID(p.options.ProjectID))
+		} else {
+			opts = append(opts, pubsub.WithProjectIDFromDefaultEnv())
 		}
 
 		if p.options.PubsubClient != nil {
@@ -112,7 +118,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		}
 		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
-			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
+			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("trigger", t.Name), zap.Error(err))
 			errs++
 			return true
 		}
@@ -121,23 +127,25 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			Timeout:      p.options.TimeoutPerEvent,
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
-				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
-				&filter.Processor{},
+				// TODO filter processor may be added in the future, but need more discussion for that.
 				&deliver.Processor{Requester: p.options.EventRequester},
 			),
 		}
-		// Start the handler with broker key in context.
-		h.Start(handlerctx.WithBrokerKey(ctx, bk), func(err error) {
+
+		// Deliver processor needs the broker in the context for reply.
+		tctx := handlerctx.WithBroker(ctx, broker)
+		// Start the handler with target in context.
+		h.Start(handlerctx.WithTarget(tctx, t), func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("trigger", t.Name), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", bk))
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("trigger", t.Name))
 			}
 			// Make sure the handler is deleted from the pool.
 			p.pool.Delete(h)
 		})
 
-		p.pool.Store(bk, h)
+		p.pool.Store(tk, h)
 		return true
 	})
 

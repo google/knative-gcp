@@ -20,16 +20,14 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/webhook/resourcesemantics"
-
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/webhook/resourcesemantics"
 )
 
 // +genclient

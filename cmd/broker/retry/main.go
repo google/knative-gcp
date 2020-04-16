@@ -20,7 +20,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"os"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -28,12 +27,13 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
+
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
-	pkglogging "knative.dev/pkg/logging"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/system"
@@ -41,32 +41,29 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
+	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
 )
 
 const (
-	component = "broker-fanout"
+	component = "broker-retry"
 )
 
 var (
-	masterURL = flag.String("master", "", "The address of the Kubernetes API server. "+
-		"Overrides any value in kubeconfig. Only required if out-of-cluster.")
+	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 type envConfig struct {
-	PodName                string        `envconfig:"POD_NAME" required:"true"`
-	ProjectID              string        `envconfig:"PROJECT_ID"`
-	TargetsConfigPath      string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
-	HandlerConcurrency     int           `envconfig:"HANDLER_CONCURRENCY"`
-	MaxConcurrencyPerEvent int           `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
-	TimeoutPerEvent        time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
+	PodName            string        `envconfig:"POD_NAME" required:"true"`
+	ProjectID          string        `envconfig:"PROJECT_ID"`
+	TargetsConfigPath  string        `envconfig:"TARGETS_CONFIG_PATH"`
+	HandlerConcurrency int           `envconfig:"HANDLER_CONCURRENCY"`
+	TimeoutPerEvent    time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
 
 func main() {
 	flag.Parse()
 
-	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
 	ctx := signals.NewContext()
 
 	// Report stats on Go memory usage every 30 seconds.
@@ -78,52 +75,55 @@ func main() {
 
 	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
-		log.Fatal("Error building kubeconfig:", err)
+		log.Fatalf("Error building kubeconfig: %v", err)
 	}
-
-	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
-	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", err)
+		log.Fatalf("Failed to process env var: %v", err)
 	}
 
 	kubeClient := kubeclient.Get(ctx)
 
-	// We sometimes startup faster than we can reach kube-api. Poll on failure to prevent us terminating
+	// We sometimes startup faster than we can reach kube-api. Poll on failure to prevent us terminating.
 	if perr := wait.PollImmediate(time.Second, 60*time.Second, func() (bool, error) {
 		if err = version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
 			log.Printf("Failed to get k8s version %v", err)
 		}
 		return err == nil, nil
 	}); perr != nil {
-		log.Fatal("Timed out attempting to get k8s version: ", err)
+		log.Fatalf("Timed out attempting to get k8s version: %v", err)
 	}
 
-	// Set up our logger.
+	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+
 	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
 	if err != nil {
-		log.Fatal("Error loading/parsing logging configuration: ", err)
+		log.Fatalf("Error loading/parsing logging configuration: %v", err)
 	}
 
-	logger, atomicLevel := pkglogging.NewLoggerFromConfig(loggingConfig, component)
-	defer flush(logger)
-	ctx = pkglogging.WithLogger(ctx, logger)
-
-	// Run informers instead of starting them from the factory to prevent the sync hanging because of empty handler.
-	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
-		logger.Fatalw("Failed to start informers", zap.Error(err))
-	}
+	sugaredLogger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
+	defer flush(sugaredLogger)
+	ctx = logging.WithLogger(ctx, sugaredLogger)
 
 	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
+	// Watch the observability config map.
+	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.ConfigMapWatcher(component, nil, sugaredLogger))
 	// Watch the logging config map and dynamically update logging levels.
-	configMapWatcher.Watch(pkglogging.ConfigMapName(), pkglogging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-	// Watch the observability config map
-	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
+	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(sugaredLogger, atomicLevel, component))
+
+	logger := sugaredLogger.Desugar()
+
+	// configMapWatcher does not block, so start it first.
+	if err = configMapWatcher.Start(ctx.Done()); err != nil {
+		logger.Warn("Failed to start ConfigMap watcher", zap.Error(err))
+	}
+
+	// Start all of the informers and wait for them to sync.
+	logger.Info("Starting informers.")
+	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
+		logger.Fatal("Failed to start informers", zap.Error(err))
+	}
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
@@ -132,21 +132,19 @@ func main() {
 		volume.WithPath(env.TargetsConfigPath),
 		volume.WithNotifyChan(targetsUpdateCh))
 	if err != nil {
-		logger.Fatalw("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
+		logger.Fatal("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
 	}
 
-	logger.Info("Starting the broker fanout")
+	logger.Info("Starting the broker retry")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	if _, err := fanout.StartSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...); err != nil {
-		logger.Fatalw("Failed to start fanout sync pool", zap.Error(err))
+	if _, err := retry.StartSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...); err != nil {
+		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 
 	// Context will be done if a TERM signal is issued.
 	<-ctx.Done()
-	// Wait a grace period for the handlers to shutdown.
-	time.Sleep(30 * time.Second)
-	logger.Info("Done waiting, exit.")
+	logger.Info("Exiting...")
 }
 
 func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan struct{} {
@@ -171,14 +169,15 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 
 func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 	rs := pubsub.DefaultReceiveSettings
+	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
+	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
+	// NumGoroutines is ignored.
+	// TODO Need to revisit it. For the case when synchronous is true, default value of MaxOutstandingMessages and MaxOutstandingBytes might need to override.
+	rs.Synchronous = true
 	var opts []pool.Option
 	if env.HandlerConcurrency > 0 {
-		// Let the pubsub subscription and handler have the same concurrency?
 		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))
 		rs.NumGoroutines = env.HandlerConcurrency
-	}
-	if env.MaxConcurrencyPerEvent > 0 {
-		opts = append(opts, pool.WithMaxConcurrentPerEvent(env.MaxConcurrencyPerEvent))
 	}
 	if env.ProjectID != "" {
 		opts = append(opts, pool.WithProjectID(env.ProjectID))
@@ -193,8 +192,6 @@ func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 }
 
 func flush(logger *zap.SugaredLogger) {
-	logger.Sync()
-	os.Stdout.Sync()
-	os.Stderr.Sync()
+	_ = logger.Sync()
 	metrics.FlushExporter()
 }
