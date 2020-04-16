@@ -127,7 +127,7 @@ func TestCreates(t *testing.T) {
 				WithCloudPubSubSourceServiceAccountName("test"))
 
 			arl := pkgtesting.ActionRecorderList{cs}
-			kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, identifiable)
+			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
 
 			var statusErr interface{ GRPCStatus() *status.Status }
 			if errors.As(err, &statusErr) {
@@ -230,7 +230,7 @@ func TestDeletes(t *testing.T) {
 				WithCloudPubSubSourceServiceAccountName("test"))
 
 			arl := pkgtesting.ActionRecorderList{cs}
-			err = identity.DeleteWorkloadIdentity(context.Background(), projectID, identifiable)
+			err = identity.DeleteWorkloadIdentity(ctx, projectID, identifiable)
 
 			var statusErr interface{ GRPCStatus() *status.Status }
 			if errors.As(err, &statusErr) {
