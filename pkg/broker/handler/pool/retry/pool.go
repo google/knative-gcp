@@ -117,7 +117,7 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
 				// TODO filter processor may be added in the future, but need more discussion for that.
-				&deliver.Processor{Requester: p.options.EventRequester},
+				&deliver.Processor{Requester: p.options.EventRequester, Targets: p.targets},
 			),
 		}
 
