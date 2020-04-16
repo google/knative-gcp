@@ -34,11 +34,7 @@ const (
 	actionRemove
 )
 
-// GServiceAccount identifies a Google service account by project and name.
-type GServiceAccount struct {
-	ProjectID string
-	Name      string
-}
+type GServiceAccount string
 
 type modificationRequest struct {
 	serviceAccount GServiceAccount
@@ -215,7 +211,7 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 
 // getPolicy calls GetIamPolicy for the given service account and puts the result in m.getPolicyCh.
 func (m *IAMPolicyManager) getPolicy(ctx context.Context, account GServiceAccount) {
-	policy, err := m.iam.GetIamPolicy(ctx, &iampb.GetIamPolicyRequest{Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name)})
+	policy, err := m.iam.GetIamPolicy(ctx, &iampb.GetIamPolicyRequest{Resource: admin.IamServiceAccountPath("-", string(account))})
 	select {
 	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
 	case <-ctx.Done():
@@ -229,7 +225,7 @@ func (m *IAMPolicyManager) applyBatchedModifications(ctx context.Context, accoun
 		applyRoleModifications(policy, role, mod)
 	}
 	policy, err := m.iam.SetIamPolicy(ctx, &admin.SetIamPolicyRequest{
-		Resource: admin.IamServiceAccountPath(account.ProjectID, account.Name),
+		Resource: admin.IamServiceAccountPath("-", string(account)),
 		Policy:   policy,
 	})
 	for _, listener := range batched.listeners {

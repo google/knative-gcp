@@ -32,9 +32,8 @@ import (
 )
 
 const (
-	testProject  = "project"
 	testAccount  = "account"
-	testResource = "projects/project/serviceAccounts/account"
+	testResource = "projects/-/serviceAccounts/account"
 	member1      = "member1"
 	member2      = "member2"
 	member3      = "member3"
@@ -124,7 +123,7 @@ func TestAddPolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.AddIAMPolicyBinding(ctx, identity.GServiceAccount{ProjectID: testProject, Name: testAccount}, tc.member, tc.role)
+			err = m.AddIAMPolicyBinding(ctx, identity.GServiceAccount(testAccount), tc.member, tc.role)
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}
@@ -218,7 +217,7 @@ func TestRemovePolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.RemoveIAMPolicyBinding(ctx, identity.GServiceAccount{ProjectID: testProject, Name: testAccount}, tc.member, tc.role)
+			err = m.RemoveIAMPolicyBinding(ctx, identity.GServiceAccount(testAccount), tc.member, tc.role)
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}

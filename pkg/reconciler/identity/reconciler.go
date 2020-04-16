@@ -20,7 +20,6 @@ package identity
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"cloud.google.com/go/iam/admin/apiv1"
@@ -165,13 +164,10 @@ func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceA
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	// Extract gServiceAccount's project name. The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com.
-	gsaProject := strings.Split(strings.Split(gServiceAccount, "@")[1], ".")[0]
-
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 
-	return i.PolicyManager.AddIAMPolicyBinding(ctx, GServiceAccount{ProjectID: gsaProject, Name: gServiceAccount}, currentMember, Role)
+	return i.PolicyManager.AddIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
 }
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
@@ -181,13 +177,10 @@ func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServi
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
-	// Extract gServiceAccount's project name. The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com.
-	gsaProject := strings.Split(strings.Split(gServiceAccount, "@")[1], ".")[0]
-
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectId, kServiceAccount.Namespace, kServiceAccount.Name)
 
-	return i.PolicyManager.RemoveIAMPolicyBinding(ctx, GServiceAccount{ProjectID: gsaProject, Name: gServiceAccount}, currentMember, Role)
+	return i.PolicyManager.RemoveIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
 }
 
 // ownerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
