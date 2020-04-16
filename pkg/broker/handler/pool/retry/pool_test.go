@@ -111,7 +111,7 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 	})
 
 	targets.RangeAllTargets(func(t *config.Target) bool {
-		wantHandlers[config.TriggerKey(t.Namespace, t.Broker, t.Name)] = true
+		wantHandlers[t.Key()] = true
 		return true
 	})
 

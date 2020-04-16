@@ -96,3 +96,13 @@ func SplitTriggerKey(key string) (string, string, string) {
 	keys := strings.Split(key, "/")
 	return keys[0], keys[1], keys[2]
 }
+
+// Key returns the target key.
+func (t *Target) Key() string {
+	return TriggerKey(t.Namespace, t.Broker, t.Name)
+}
+
+// Key returns the broker key.
+func (b *Broker) Key() string {
+	return BrokerKey(b.Namespace, b.Name)
+}
