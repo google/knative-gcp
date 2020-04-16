@@ -27,3 +27,11 @@ func TestBrokerKey(t *testing.T) {
 		t.Errorf("unexpected readiness: want %v, got %v", want, got)
 	}
 }
+
+func TestTriggerKeyAndSplitTriggerKey(t *testing.T) {
+	want := "namespace/broker/target"
+	got := TriggerKey(SplitTriggerKey(want))
+	if got != want {
+		t.Errorf("unexpected readiness: want %v, got %v", want, got)
+	}
+}
