@@ -24,13 +24,14 @@ import (
 	"cloud.google.com/go/iam/admin/apiv1"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type action = int
 
 const (
-	ActionAdd action = iota
-	ActionRemove
+	actionAdd action = iota
+	actionRemove
 )
 
 // GServiceAccount identifies a Google service account by project and name.
@@ -48,8 +49,8 @@ type modificationRequest struct {
 }
 
 type roleModification struct {
-	addMembers    map[string]bool
-	removeMembers map[string]bool
+	addMembers    sets.String
+	removeMembers sets.String
 }
 
 type batchedModifications struct {
@@ -96,7 +97,7 @@ func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GSer
 		serviceAccount: account,
 		role:           role,
 		member:         member,
-		action:         Add,
+		action:         actionAdd,
 		respCh:         make(chan error, 1),
 	})
 }
@@ -109,7 +110,7 @@ func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account G
 		serviceAccount: account,
 		role:           role,
 		member:         member,
-		action:         Remove,
+		action:         actionRemove,
 		respCh:         make(chan error, 1),
 	})
 }
@@ -171,24 +172,24 @@ func (m *IAMPolicyManager) makeModificationRequest(ctx context.Context, req *mod
 	}
 	if mod == nil {
 		mod = &roleModification{
-			addMembers:    make(map[string]bool),
-			removeMembers: make(map[string]bool),
+			addMembers:    sets.NewString(),
+			removeMembers: sets.NewString(),
 		}
 		if batched != nil {
 			batched.roleModifications[req.role] = mod
 		}
 	}
 	switch req.action {
-	case Add:
-		if mod.removeMembers[req.member] {
+	case actionAdd:
+		if mod.removeMembers.Has(req.member) {
 			return fmt.Errorf("conflicting remove of member %s", req.member)
 		}
-		mod.addMembers[req.member] = true
-	case Remove:
-		if mod.addMembers[req.member] {
+		mod.addMembers.Insert(req.member)
+	case actionRemove:
+		if mod.addMembers.Has(req.member) {
 			return fmt.Errorf("conflicting add of member %s", req.member)
 		}
-		mod.removeMembers[req.member] = true
+		mod.removeMembers.Insert(req.member)
 	}
 	if batched == nil {
 		batched = &batchedModifications{
