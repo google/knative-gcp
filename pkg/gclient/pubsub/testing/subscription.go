@@ -25,6 +25,7 @@ import (
 // testSubscription is a test Pub/Sub subscription.
 type testSubscription struct {
 	data TestSubscriptionData
+	id   string
 }
 
 // TestSubscriptionData is the data used to configure the test Subscription.
@@ -57,4 +58,8 @@ func (s *testSubscription) Update(ctx context.Context, cfg pubsub.SubscriptionCo
 // Delete implements Subscription.Delete.
 func (s *testSubscription) Delete(ctx context.Context) error {
 	return s.data.DeleteErr
+}
+
+func (s *testSubscription) ID() string {
+	return s.id
 }
