@@ -19,7 +19,6 @@ package identity
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"cloud.google.com/go/iam"
 	"cloud.google.com/go/iam/admin/apiv1"
@@ -98,7 +97,7 @@ func (m *IAMPolicyManager) AddIAMPolicyBinding(ctx context.Context, account GSer
 		role:           role,
 		member:         member,
 		action:         Add,
-		respCh:         make(chan error),
+		respCh:         make(chan error, 1),
 	})
 }
 
@@ -111,7 +110,7 @@ func (m *IAMPolicyManager) RemoveIAMPolicyBinding(ctx context.Context, account G
 		role:           role,
 		member:         member,
 		action:         Remove,
-		respCh:         make(chan error),
+		respCh:         make(chan error, 1),
 	})
 }
 
@@ -134,7 +133,7 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 		select {
 		case req := <-m.requestCh:
 			if err := m.makeModificationRequest(ctx, req); err != nil {
-				go sendResponse(ctx, req.respCh, err)
+				req.respCh <- err
 			}
 		case getPolicy := <-m.getPolicyCh:
 			batched := m.pending[getPolicy.account]
@@ -144,7 +143,7 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 			}
 			if getPolicy.err != nil {
 				for _, listener := range batched.listeners {
-					go sendResponse(ctx, listener, getPolicy.err)
+					listener <- getPolicy.err
 				}
 				delete(m.pending, getPolicy.account)
 				break
@@ -156,10 +155,7 @@ func (m *IAMPolicyManager) manage(ctx context.Context) {
 		case <-ctx.Done():
 			for _, batched := range m.pending {
 				for _, listener := range batched.listeners {
-					select {
-					case listener <- ctx.Err():
-					default:
-					}
+					listener <- ctx.Err()
 				}
 			}
 			return
@@ -224,7 +220,7 @@ func (m *IAMPolicyManager) applyBatchedModifications(ctx context.Context, accoun
 		Policy:   policy,
 	})
 	for _, listener := range batched.listeners {
-		go sendResponse(ctx, listener, err)
+		listener <- err
 	}
 	select {
 	case m.getPolicyCh <- &getPolicyResponse{account: account, policy: policy, err: err}:
@@ -238,14 +234,5 @@ func applyRoleModifications(policy *iam.Policy, role iam.RoleName, mod *roleModi
 	}
 	for member := range mod.removeMembers {
 		policy.Remove(member, role)
-	}
-}
-
-func sendResponse(ctx context.Context, respCh chan<- error, err error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-	select {
-	case respCh <- err:
-	case <-ctx.Done():
 	}
 }
