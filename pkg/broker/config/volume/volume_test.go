@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestSyncConfigFromFile(t *testing.T) {
