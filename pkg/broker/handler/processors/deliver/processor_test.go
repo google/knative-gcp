@@ -140,223 +140,105 @@ func TestDeliverSuccess(t *testing.T) {
 	}
 }
 
-func TestDeliverFailureNoRetry(t *testing.T) {
-	targetClient, err := cehttp.New()
-	if err != nil {
-		t.Fatalf("failed to create target cloudevents client: %v", err)
-	}
-	requester, err := cev2.NewDefaultClient()
-	if err != nil {
-		t.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-	targetSvr := httptest.NewServer(targetClient)
-	defer targetSvr.Close()
+func TestDeliverFailure(t *testing.T) {
+	cases := []struct {
+		name      string
+		withRetry bool
+		failRetry bool
+		wantErr   bool
+	}{{
+		name:    "no retry",
+		wantErr: true,
+	}, {
+		name:      "retry success",
+		withRetry: true,
+	}, {
+		name:      "retry failure",
+		withRetry: true,
+		failRetry: true,
+		wantErr:   true,
+	}}
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.UpsertTargets(target)
-	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			targetClient, err := cehttp.New()
+			if err != nil {
+				t.Fatalf("failed to create target cloudevents client: %v", err)
+			}
+			requester, err := cev2.NewDefaultClient()
+			if err != nil {
+				t.Fatalf("failed to create requester cloudevents client: %v", err)
+			}
+			targetSvr := httptest.NewServer(targetClient)
+			defer targetSvr.Close()
 
-	p := &Processor{Requester: requester, Targets: testTargets}
+			_, c, close := testPubsubClient(ctx, t, "test-project")
+			defer close()
 
-	origin := event.New()
-	origin.SetID("id")
-	origin.SetSource("source")
-	origin.SetSubject("subject")
-	origin.SetType("type")
-	origin.SetTime(time.Now())
+			// Don't create the retry topic to make it fail.
+			if !tc.failRetry {
+				if _, err := c.CreateTopic(ctx, "test-retry-topic"); err != nil {
+					t.Fatalf("failed to create test pubsub topc: %v", err)
+				}
+			}
 
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		msg, resp, err := targetClient.Respond(ctx)
-		if err != nil {
-			t.Errorf("unexpected error from target receiving event: %v", err)
-		}
-		// Due to https://github.com/cloudevents/sdk-go/issues/433
-		// it's not possible to use Receive to easily return error.
-		if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
-			t.Errorf("unexpected error from target responding event: %v", err)
-		}
-		defer msg.Finish(nil)
-		gotEvent, err := binding.ToEvent(ctx, msg)
-		if err != nil {
-			t.Errorf("target received message cannot be converted to an event: %v", err)
-		}
-		// Force the time to be the same so that we can compare easier.
-		gotEvent.SetTime(origin.Time())
-		if diff := cmp.Diff(&origin, gotEvent); diff != "" {
-			t.Errorf("target received event (-want,+got): %v", diff)
-		}
-	}()
+			ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
+			if err != nil {
+				t.Fatalf("failed to create pubsub protocol: %v", err)
+			}
 
-	if err := p.Process(ctx, &origin); err == nil {
-		t.Error("expected error from processing")
-	}
-}
+			broker := &config.Broker{Namespace: "ns", Name: "broker"}
+			target := &config.Target{
+				Namespace: "ns",
+				Name:      "target",
+				Broker:    "broker",
+				Address:   targetSvr.URL,
+				RetryQueue: &config.Queue{
+					Topic: "test-retry-topic",
+				},
+			}
+			testTargets := memory.NewEmptyTargets()
+			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+				bm.UpsertTargets(target)
+			})
+			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
+			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
-func TestDeliverFailureRetrySuccess(t *testing.T) {
-	ctx := context.Background()
-	targetClient, err := cehttp.New()
-	if err != nil {
-		t.Fatalf("failed to create target cloudevents client: %v", err)
-	}
-	requester, err := cev2.NewDefaultClient()
-	if err != nil {
-		t.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-	targetSvr := httptest.NewServer(targetClient)
-	defer targetSvr.Close()
+			p := &Processor{
+				Requester:      requester,
+				Targets:        testTargets,
+				RetryOnFailure: tc.withRetry,
+				RetryEvents:    ps,
+			}
 
-	srv, c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
-	if _, err := c.CreateTopic(ctx, "test-retry-topic"); err != nil {
-		t.Fatalf("failed to create test pubsub topc: %v", err)
-	}
-	ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
-	if err != nil {
-		t.Fatalf("failed to create pubsub protocol: %v", err)
-	}
+			origin := event.New()
+			origin.SetID("id")
+			origin.SetSource("source")
+			origin.SetSubject("subject")
+			origin.SetType("type")
+			origin.SetTime(time.Now())
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{
-		Namespace: "ns",
-		Name:      "target",
-		Broker:    "broker",
-		Address:   targetSvr.URL,
-		RetryQueue: &config.Queue{
-			Topic: "test-retry-topic",
-		},
-	}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.UpsertTargets(target)
-	})
-	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				msg, resp, err := targetClient.Respond(ctx)
+				if err != nil {
+					t.Errorf("unexpected error from target receiving event: %v", err)
+				}
+				// Due to https://github.com/cloudevents/sdk-go/issues/433
+				// it's not possible to use Receive to easily return error.
+				if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
+					t.Errorf("unexpected error from target responding event: %v", err)
+				}
+				defer msg.Finish(nil)
+			}()
 
-	p := &Processor{
-		Requester:      requester,
-		Targets:        testTargets,
-		RetryOnFailure: true,
-		RetryEvents:    ps,
-	}
-
-	origin := event.New()
-	origin.SetID("id")
-	origin.SetSource("source")
-	origin.SetSubject("subject")
-	origin.SetType("type")
-	origin.SetTime(time.Now())
-
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		msg, resp, err := targetClient.Respond(ctx)
-		if err != nil {
-			t.Errorf("unexpected error from target receiving event: %v", err)
-		}
-		// Due to https://github.com/cloudevents/sdk-go/issues/433
-		// it's not possible to use Receive to easily return error.
-		if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
-			t.Errorf("unexpected error from target responding event: %v", err)
-		}
-		defer msg.Finish(nil)
-	}()
-
-	if err := p.Process(ctx, &origin); err != nil {
-		t.Errorf("unexpected error from processing: %v", err)
-	}
-
-	// Verify pubsub message published.
-	if len(srv.Messages()) != 1 {
-		t.Errorf("pubsub messages published count got=%d, want=1", len(srv.Messages()))
-	}
-	ceMsg := cepubsub.NewMessage(toFakePubsubMessage(srv.Messages()[0]))
-	gotEvent, err := binding.ToEvent(ctx, ceMsg)
-	if err != nil {
-		t.Errorf("retry message sent couldn't be decode as a cloudevent: %v", err)
-	}
-	// Force the time to be the same so that we can compare easier.
-	gotEvent.SetTime(origin.Time())
-	if diff := cmp.Diff(&origin, gotEvent); diff != "" {
-		t.Errorf("retry message as event (-want,+got): %v", diff)
-	}
-}
-
-func TestDeliverFailureRetryFailure(t *testing.T) {
-	ctx := context.Background()
-	targetClient, err := cehttp.New()
-	if err != nil {
-		t.Fatalf("failed to create target cloudevents client: %v", err)
-	}
-	requester, err := cev2.NewDefaultClient()
-	if err != nil {
-		t.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-	targetSvr := httptest.NewServer(targetClient)
-	defer targetSvr.Close()
-
-	_, c, close := testPubsubClient(ctx, t, "test-project")
-	defer close()
-	// Don't create the retry topic to make it fail.
-	ps, err := cepubsub.New(ctx, cepubsub.WithClient(c), cepubsub.WithProjectID("test-project"))
-	if err != nil {
-		t.Fatalf("failed to create pubsub protocol: %v", err)
-	}
-
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{
-		Namespace: "ns",
-		Name:      "target",
-		Broker:    "broker",
-		Address:   targetSvr.URL,
-		RetryQueue: &config.Queue{
-			Topic: "test-retry-topic",
-		},
-	}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.UpsertTargets(target)
-	})
-	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
-
-	p := &Processor{
-		Requester:      requester,
-		Targets:        testTargets,
-		RetryOnFailure: true,
-		RetryEvents:    ps,
-	}
-
-	origin := event.New()
-	origin.SetID("id")
-	origin.SetSource("source")
-	origin.SetSubject("subject")
-	origin.SetType("type")
-	origin.SetTime(time.Now())
-
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		msg, resp, err := targetClient.Respond(ctx)
-		if err != nil {
-			t.Errorf("unexpected error from target receiving event: %v", err)
-		}
-		// Due to https://github.com/cloudevents/sdk-go/issues/433
-		// it's not possible to use Receive to easily return error.
-		if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
-			t.Errorf("unexpected error from target responding event: %v", err)
-		}
-		defer msg.Finish(nil)
-	}()
-
-	if err := p.Process(ctx, &origin); err == nil {
-		t.Error("expected error from processing")
+			err = p.Process(ctx, &origin)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
+			}
+		})
 	}
 }
 
