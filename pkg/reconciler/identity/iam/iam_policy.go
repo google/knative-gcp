@@ -200,18 +200,19 @@ func (m *manager) manage(ctx context.Context) {
 // one exists. Otherwise it will create a new batch and start a call to getPolicy.
 func (m *manager) makeModificationRequest(ctx context.Context, req *modificationRequest) error {
 	batched := m.pending[req.serviceAccount]
-	var mod *roleModification
-	if batched != nil {
-		mod = batched.roleModifications[req.role]
+	if batched == nil {
+		batched = &batchedModifications{roleModifications: make(map[iam.RoleName]*roleModification)}
+		m.pending[req.serviceAccount] = batched
+		go m.getPolicy(ctx, req.serviceAccount)
 	}
+
+	mod := batched.roleModifications[req.role]
 	if mod == nil {
 		mod = &roleModification{
 			addMembers:    sets.NewString(),
 			removeMembers: sets.NewString(),
 		}
-		if batched != nil {
-			batched.roleModifications[req.role] = mod
-		}
+		batched.roleModifications[req.role] = mod
 	}
 	switch req.action {
 	case actionAdd:
@@ -224,15 +225,6 @@ func (m *manager) makeModificationRequest(ctx context.Context, req *modification
 			return fmt.Errorf("conflicting add of member %s", req.member)
 		}
 		mod.removeMembers.Insert(req.member)
-	}
-	if batched == nil {
-		batched = &batchedModifications{
-			roleModifications: map[iam.RoleName]*roleModification{
-				req.role: mod,
-			},
-		}
-		m.pending[req.serviceAccount] = batched
-		go m.getPolicy(ctx, req.serviceAccount)
 	}
 	batched.listeners = append(batched.listeners, req.respCh)
 	return nil
