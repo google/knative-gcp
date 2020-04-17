@@ -26,7 +26,6 @@ import (
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -66,7 +65,6 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		endpointsLister:    endpointsInformer.Lister(),
 		deploymentLister:   deploymentInformer.Lister(),
 		podLister:          podInformer.Lister(),
-		CreateClientFn:     gpubsub.NewClient,
 		targetsNeedsUpdate: make(chan struct{}),
 	}
 
@@ -85,8 +83,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
 
 	tr := &TriggerReconciler{
-		Base:           reconciler.NewBase(ctx, controllerAgentName, cmw),
-		CreateClientFn: gpubsub.NewClient,
+		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
 	triggerReconciler := triggerreconciler.NewReconciler(
