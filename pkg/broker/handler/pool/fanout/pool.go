@@ -35,50 +35,37 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// SyncPool is the sync pool for fanout handlers.
+// FanoutSyncPool is the sync pool for fanout handlers.
 // For each broker in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
-type SyncPool struct {
-	options   *pool.Options
-	targets   config.ReadonlyTargets
-	pool      sync.Map
-	projectID string
+type FanoutSyncPool struct {
+	options *pool.Options
+	targets config.ReadonlyTargets
+	pool    sync.Map
 }
 
-// StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*FanoutSyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
-	p := &SyncPool{
+	p := &FanoutSyncPool{
 		targets: targets,
 		options: options,
-	}
-	if err := p.syncOnce(ctx); err != nil {
-		return nil, err
-	}
-	if p.options.SyncSignal != nil {
-		go p.watch(ctx)
 	}
 	return p, nil
 }
 
-func (p *SyncPool) watch(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-p.options.SyncSignal:
-			if err := p.syncOnce(ctx); err != nil {
-				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
-			}
-		}
-	}
+func (p *FanoutSyncPool) GetSyncSignal() <-chan struct{} {
+	return p.options.SyncSignal
 }
 
-func (p *SyncPool) syncOnce(ctx context.Context) error {
+func (p *FanoutSyncPool) GetPool() *sync.Map {
+	return &p.pool
+}
+
+func (p *FanoutSyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {

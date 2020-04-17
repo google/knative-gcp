@@ -34,50 +34,37 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 )
 
-// TODO Retry and Fanout are using similar SyncPool struct, needing an interface to reduce redundancies.
-// SyncPool is the sync pool for retry handlers.
+// RetrySyncPool is the sync pool for retry handlers.
 // For each trigger in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding trigger is deleted
 // in the config.
-type SyncPool struct {
+type RetrySyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
 }
 
-// StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*RetrySyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
-	p := &SyncPool{
+	p := &RetrySyncPool{
 		targets: targets,
 		options: options,
-	}
-	if err := p.syncOnce(ctx); err != nil {
-		return nil, err
-	}
-	if p.options.SyncSignal != nil {
-		go p.watch(ctx)
 	}
 	return p, nil
 }
 
-func (p *SyncPool) watch(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-p.options.SyncSignal:
-			if err := p.syncOnce(ctx); err != nil {
-				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
-			}
-		}
-	}
+func (p *RetrySyncPool) GetSyncSignal() <-chan struct{} {
+	return p.options.SyncSignal
 }
 
-func (p *SyncPool) syncOnce(ctx context.Context) error {
+func (p *RetrySyncPool) GetPool() *sync.Map {
+	return &p.pool
+}
+
+func (p *RetrySyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
@@ -127,9 +114,9 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 		// Start the handler with target in context.
 		h.Start(tctx, func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("trigger", t.Key()))
+				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", t.Key()))
 			}
 			// Make sure the handler is deleted from the pool.
 			p.pool.Delete(h)
