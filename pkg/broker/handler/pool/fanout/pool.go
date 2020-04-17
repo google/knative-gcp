@@ -40,10 +40,13 @@ import (
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
 type SyncPool struct {
-	options   *pool.Options
-	targets   config.ReadonlyTargets
-	pool      sync.Map
-	projectID string
+	options *pool.Options
+	targets config.ReadonlyTargets
+	pool    sync.Map
+
+	// For sending retry events, we only need a shared pubsub protocol.
+	// And we can set retry topic dynamically.
+	retryps *pubsub.Protocol
 }
 
 // StartSyncPool starts the sync pool.
@@ -52,9 +55,14 @@ func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...
 	if err != nil {
 		return nil, err
 	}
+	rps, err := defaultRetryPubsubProtocol(ctx, options)
+	if err != nil {
+		return nil, err
+	}
 	p := &SyncPool{
 		targets: targets,
 		options: options,
+		retryps: rps,
 	}
 	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
@@ -76,6 +84,16 @@ func (p *SyncPool) watch(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func defaultRetryPubsubProtocol(ctx context.Context, options *pool.Options) (*pubsub.Protocol, error) {
+	opts := []pubsub.Option{
+		pubsub.WithProjectID(options.ProjectID),
+	}
+	if options.PubsubClient != nil {
+		opts = append(opts, pubsub.WithClient(options.PubsubClient))
+	}
+	return pubsub.New(ctx, opts...)
 }
 
 func (p *SyncPool) syncOnce(ctx context.Context) error {
@@ -118,7 +136,12 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			Processor: processors.ChainProcessors(
 				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
 				&filter.Processor{Targets: p.targets},
-				&deliver.Processor{Requester: p.options.EventRequester, Targets: p.targets},
+				&deliver.Processor{
+					Requester:      p.options.EventRequester,
+					Targets:        p.targets,
+					RetryOnFailure: true,
+					RetryEvents:    p.retryps,
+				},
 			),
 		}
 		// Start the handler with broker key in context.
