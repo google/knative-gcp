@@ -154,13 +154,19 @@ func (m *manager) doRequest(ctx context.Context, req *modificationRequest) error
 	}
 }
 
-// manage receives requests on m.requestCh and adds their modifications to the service account's
-// modification batch in m.pending. When a new batch is created, manage will initiate a call to
-// GetIAMPolicy which will return its result on m.getPolicyCh. When manage receives a policy on
-// getPolicyCh it will apply all batched modifications to that policy and initiate a call to
-// SetIAMPolicy which will also return its result m.getPolicyCh. When there are no batched
-// modifications to apply to a policy, manage will instead discard the policy and delete the service
-// account's entry in m.pending.
+// manage serializes IAM updates by batching updates for each service account in m.pending and
+// applying those updates once the service account's policy has been retrieved. manage maintains the
+// invariant that only one set or get request can be outstanding for a given service account by
+// starting a request whenever a batch is added to m.pending and by removing a batch from m.pending
+// whenever a response is received.
+//
+// manage receives requests on m.requestCh and adds their modifications to
+// the service account's modification batch in m.pending. When a new batch is created, manage will
+// initiate a call to GetIAMPolicy which will return its result on m.getPolicyCh. When manage
+// receives a policy on getPolicyCh it will apply all batched modifications to that policy and
+// initiate a call to SetIAMPolicy which will also return its result m.getPolicyCh. When there are
+// no batched modifications to apply to a policy, manage will instead discard the policy and delete
+// the service account's entry in m.pending.
 func (m *manager) manage(ctx context.Context) {
 	for {
 		select {
