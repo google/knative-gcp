@@ -19,18 +19,17 @@ package testing
 import (
 	"context"
 
-	"cloud.google.com/go/iam"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 )
 
-var NoopIAMPolicyManager identity.IAMPolicyManager = noopManager(struct{}{})
+var NoopIAMPolicyManager iam.IAMPolicyManager = noopManager(struct{}{})
 
 type noopManager struct{}
 
-func (noopManager) AddIAMPolicyBinding(ctx context.Context, account identity.GServiceAccount, member string, role iam.RoleName) error {
+func (noopManager) AddIAMPolicyBinding(ctx context.Context, account iam.GServiceAccount, member string, role iam.RoleName) error {
 	return nil
 }
 
-func (noopManager) RemoveIAMPolicyBinding(ctx context.Context, account identity.GServiceAccount, member string, role iam.RoleName) error {
+func (noopManager) RemoveIAMPolicyBinding(ctx context.Context, account iam.GServiceAccount, member string, role iam.RoleName) error {
 	return nil
 }

@@ -33,6 +33,7 @@ import (
 	"knative.dev/pkg/ptr"
 
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
@@ -43,16 +44,16 @@ const (
 	workloadIdentityFailed       = "WorkloadIdentityReconcileFailed"
 )
 
-func NewIdentity(ctx context.Context, policyManager IAMPolicyManager) *Identity {
+func NewIdentity(ctx context.Context, policyManager iam.IAMPolicyManager) *Identity {
 	return &Identity{
-		KubeClient:    kubeclient.Get(ctx),
-		PolicyManager: policyManager,
+		kubeClient:    kubeclient.Get(ctx),
+		policyManager: policyManager,
 	}
 }
 
 type Identity struct {
-	KubeClient    kubernetes.Interface
-	PolicyManager IAMPolicyManager
+	kubeClient    kubernetes.Interface
+	policyManager iam.IAMPolicyManager
 }
 
 // ReconcileWorkloadIdentity will create a k8s service account, add ownerReference to it,
@@ -71,7 +72,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	expectOwnerReference.Controller = ptr.Bool(false)
 	if !ownerReferenceExists(kServiceAccount, expectOwnerReference) {
 		kServiceAccount.OwnerReferences = append(kServiceAccount.OwnerReferences, expectOwnerReference)
-		if _, err := i.KubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
+		if _, err := i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Update(kServiceAccount); err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update OwnerReferences", zap.Error(err))
 			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 			return nil, fmt.Errorf("failed to update OwnerReferences: %w", err)
@@ -101,7 +102,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	}
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount)
-	kServiceAccount, err := i.KubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
+	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		// k8s ServiceAccount should be there.
@@ -119,12 +120,12 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 
 func (i *Identity) createServiceAccount(ctx context.Context, namespace, gServiceAccount string) (*corev1.ServiceAccount, error) {
 	kServiceAccountName := resources.GenerateServiceAccountName(gServiceAccount)
-	kServiceAccount, err := i.KubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
+	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		if apierrs.IsNotFound(err) {
 			expect := resources.MakeServiceAccount(namespace, gServiceAccount)
 			logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
-			kServiceAccount, err := i.KubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
+			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 			if err != nil {
 				logging.FromContext(ctx).Desugar().Error("Failed to create k8s service account", zap.Error(err))
 				return nil, fmt.Errorf("failed to create k8s service account: %w", err)
@@ -148,7 +149,7 @@ func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceA
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
 
-	return i.PolicyManager.AddIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
+	return i.policyManager.AddIAMPolicyBinding(ctx, iam.GServiceAccount(gServiceAccount), currentMember, Role)
 }
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
@@ -161,7 +162,7 @@ func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServi
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
 	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
 
-	return i.PolicyManager.RemoveIAMPolicyBinding(ctx, GServiceAccount(gServiceAccount), currentMember, Role)
+	return i.policyManager.RemoveIAMPolicyBinding(ctx, iam.GServiceAccount(gServiceAccount), currentMember, Role)
 }
 
 // ownerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference

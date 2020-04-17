@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package identity
+package iam
 
 import (
 	"context"
@@ -36,6 +36,7 @@ const (
 )
 
 type GServiceAccount string
+type RoleName iam.RoleName
 
 type modificationRequest struct {
 	serviceAccount GServiceAccount
@@ -66,8 +67,8 @@ type setPolicyResponse struct {
 
 // IAMPolicyManager is an interface for making changes to a Google service account's IAM policy.
 type IAMPolicyManager interface {
-	AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error
-	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error
+	AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error
+	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error
 }
 
 var (
@@ -116,10 +117,10 @@ func NewIAMPolicyManager(ctx context.Context, client gclient.IamClient) (IAMPoli
 // AddIAMPolicyBinding adds or updates an IAM policy binding for the given account and role to
 // include member. This call will block until the IAM update succeeds or fails or until ctx is
 // cancelled.
-func (m *manager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
+func (m *manager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
-		role:           role,
+		role:           iam.RoleName(role),
 		member:         member,
 		action:         actionAdd,
 		respCh:         make(chan error, 1),
@@ -129,10 +130,10 @@ func (m *manager) AddIAMPolicyBinding(ctx context.Context, account GServiceAccou
 // RemoveIAMPolicyBinding removes or updates an IAM policy binding for the given account and role to
 // remove member. This call will block until the IAM update succeeds or fails or until ctx is
 // cancelled.
-func (m *manager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role iam.RoleName) error {
+func (m *manager) RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error {
 	return m.doRequest(ctx, &modificationRequest{
 		serviceAccount: account,
-		role:           role,
+		role:           iam.RoleName(role),
 		member:         member,
 		action:         actionRemove,
 		respCh:         make(chan error, 1),

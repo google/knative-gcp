@@ -41,6 +41,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -113,14 +114,14 @@ func TestCreates(t *testing.T) {
 			defer cancel()
 
 			cs := fakeKubeClient.NewSimpleClientset(tc.objects...)
-			iam := gclient.NewTestClient()
-			m, err := NewIAMPolicyManager(ctx, iam)
+			iamClient := gclient.NewTestClient()
+			m, err := iam.NewIAMPolicyManager(ctx, iamClient)
 			if err != nil {
 				t.Fatal(err)
 			}
 			identity := &Identity{
-				KubeClient:    cs,
-				PolicyManager: m,
+				kubeClient:    cs,
+				policyManager: m,
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
@@ -216,14 +217,14 @@ func TestDeletes(t *testing.T) {
 			defer cancel()
 
 			cs := fakeKubeClient.NewSimpleClientset(tc.objects...)
-			iam := gclient.NewTestClient()
-			m, err := NewIAMPolicyManager(ctx, iam)
+			iamClient := gclient.NewTestClient()
+			m, err := iam.NewIAMPolicyManager(ctx, iamClient)
 			if err != nil {
 				t.Fatal(err)
 			}
 			identity := &Identity{
-				KubeClient:    cs,
-				PolicyManager: m,
+				kubeClient:    cs,
+				policyManager: m,
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),

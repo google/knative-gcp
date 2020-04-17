@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package identity_test
+package iam_test
 
 import (
+	. "github.com/google/knative-gcp/pkg/reconciler/identity/iam"
+
 	"context"
 	"testing"
 
@@ -25,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
-	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -112,7 +113,7 @@ func TestAddPolicyBinding(t *testing.T) {
 			client := gclient.NewTestClient()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			m, err := identity.NewIAMPolicyManager(ctx, client)
+			m, err := NewIAMPolicyManager(ctx, client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -123,7 +124,7 @@ func TestAddPolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.AddIAMPolicyBinding(ctx, identity.GServiceAccount(testAccount), tc.member, tc.role)
+			err = m.AddIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, tc.role)
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}
@@ -206,7 +207,7 @@ func TestRemovePolicyBinding(t *testing.T) {
 			client := gclient.NewTestClient()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			m, err := identity.NewIAMPolicyManager(ctx, client)
+			m, err := NewIAMPolicyManager(ctx, client)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -217,7 +218,7 @@ func TestRemovePolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.RemoveIAMPolicyBinding(ctx, identity.GServiceAccount(testAccount), tc.member, tc.role)
+			err = m.RemoveIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, tc.role)
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}

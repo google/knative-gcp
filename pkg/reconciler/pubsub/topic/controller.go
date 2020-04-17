@@ -31,6 +31,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
@@ -76,7 +77,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:     pubsubBase,
-		Identity:       identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
+		Identity:       identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceInformer.Lister(),
 		publisherImage: env.Publisher,

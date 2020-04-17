@@ -32,6 +32,7 @@ import (
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
@@ -61,7 +62,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx, identity.DefaultIAMPolicyManager()),
+		Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 		storageLister:        cloudstoragesourceInformer.Lister(),
 		createClientFn:       gstorage.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),
