@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
 	policyv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
@@ -34,6 +35,7 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
+	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
 	PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface
 	PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface
@@ -45,6 +47,7 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	eventsV1alpha1    *eventsv1alpha1.EventsV1alpha1Client
+	eventsV1beta1     *eventsv1beta1.EventsV1beta1Client
 	messagingV1alpha1 *messagingv1alpha1.MessagingV1alpha1Client
 	policyV1alpha1    *policyv1alpha1.PolicyV1alpha1Client
 	pubsubV1alpha1    *pubsubv1alpha1.PubsubV1alpha1Client
@@ -54,6 +57,11 @@ type Clientset struct {
 // EventsV1alpha1 retrieves the EventsV1alpha1Client
 func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
 	return c.eventsV1alpha1
+}
+
+// EventsV1beta1 retrieves the EventsV1beta1Client
+func (c *Clientset) EventsV1beta1() eventsv1beta1.EventsV1beta1Interface {
+	return c.eventsV1beta1
 }
 
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
@@ -101,6 +109,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.eventsV1beta1, err = eventsv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.messagingV1alpha1, err = messagingv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -130,6 +142,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.eventsV1alpha1 = eventsv1alpha1.NewForConfigOrDie(c)
+	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.NewForConfigOrDie(c)
 	cs.policyV1alpha1 = policyv1alpha1.NewForConfigOrDie(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.NewForConfigOrDie(c)
@@ -143,6 +156,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.eventsV1alpha1 = eventsv1alpha1.New(c)
+	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.New(c)
 	cs.policyV1alpha1 = policyv1alpha1.New(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.New(c)

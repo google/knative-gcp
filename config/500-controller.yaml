@@ -1,1 +1,1 @@
-core/deployments/controller-non-gke.yaml
+core/deployments/controller.yaml

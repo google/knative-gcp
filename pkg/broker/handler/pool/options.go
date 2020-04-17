@@ -17,12 +17,14 @@ limitations under the License.
 package pool
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 var (
@@ -30,24 +32,6 @@ var (
 	defaultMaxConcurrencyPerEvent = 1
 	defaultTimeout                = 10 * time.Minute
 )
-
-var defaultCeClient ceclient.Client
-
-func init() {
-	p, err := cev2.NewHTTP()
-	if err != nil {
-		panic(err)
-	}
-	c, err := cev2.NewClientObserved(p,
-		ceclient.WithUUIDs(),
-		ceclient.WithTimeNow(),
-		ceclient.WithTracePropagation(),
-	)
-	if err != nil {
-		panic(err)
-	}
-	defaultCeClient = c
-}
 
 // Options holds all the options for create handler pool.
 type Options struct {
@@ -72,7 +56,7 @@ type Options struct {
 }
 
 // NewOptions creates a Options.
-func NewOptions(opts ...Option) *Options {
+func NewOptions(opts ...Option) (*Options, error) {
 	opt := &Options{
 		HandlerConcurrency:     defaultHandlerConcurrency,
 		MaxConcurrencyPerEvent: defaultMaxConcurrencyPerEvent,
@@ -82,10 +66,33 @@ func NewOptions(opts ...Option) *Options {
 	for _, o := range opts {
 		o(opt)
 	}
-	if opt.EventRequester == nil {
-		opt.EventRequester = defaultCeClient
+	if opt.ProjectID == "" {
+		pid, err := utils.ProjectID(opt.ProjectID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get default ProjectID: %w", err)
+		}
+		opt.ProjectID = pid
 	}
-	return opt
+	if opt.EventRequester == nil {
+		c, err := defaultCeClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default CloudEvents client: %w", err)
+		}
+		opt.EventRequester = c
+	}
+	return opt, nil
+}
+
+func defaultCeClient() (ceclient.Client, error) {
+	p, err := cev2.NewHTTP()
+	if err != nil {
+		panic(err)
+	}
+	return cev2.NewClientObserved(p,
+		ceclient.WithUUIDs(),
+		ceclient.WithTimeNow(),
+		ceclient.WithTracePropagation(),
+	)
 }
 
 // Option is for providing individual option.

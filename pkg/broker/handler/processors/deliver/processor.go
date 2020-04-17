@@ -24,7 +24,10 @@ import (
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -35,19 +38,34 @@ type Processor struct {
 
 	// Requester is the cloudevents client to send events.
 	Requester ceclient.Client
+
+	// Targets is the targets from config.
+	Targets config.ReadonlyTargets
 }
 
 var _ processors.Interface = (*Processor)(nil)
 
 // Process delivers the event based on the broker/target in the context.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	broker, err := handlerctx.GetBroker(ctx)
+	bk, err := handlerctx.GetBrokerKey(ctx)
 	if err != nil {
 		return err
 	}
-	target, err := handlerctx.GetTarget(ctx)
+	tk, err := handlerctx.GetTargetKey(ctx)
 	if err != nil {
 		return err
+	}
+	broker, ok := p.Targets.GetBrokerByKey(bk)
+	if !ok {
+		// If the broker no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		return nil
+	}
+	target, ok := p.Targets.GetTargetByKey(tk)
+	if !ok {
+		// If the target no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
+		return nil
 	}
 
 	resp, res := p.Requester.Request(cecontext.WithTarget(ctx, target.Address), *event)
