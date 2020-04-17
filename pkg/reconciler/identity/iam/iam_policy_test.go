@@ -124,7 +124,7 @@ func TestAddPolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.AddIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, tc.role)
+			err = m.AddIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, RoleName(tc.role))
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}
@@ -218,7 +218,7 @@ func TestRemovePolicyBinding(t *testing.T) {
 				}
 			}
 
-			err = m.RemoveIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, tc.role)
+			err = m.RemoveIAMPolicyBinding(ctx, GServiceAccount(testAccount), tc.member, RoleName(tc.role))
 			if code := status.Code(err); tc.wantErrCode != code {
 				t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 			}
