@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package lib
+package pool
 
 import (
 	"context"
@@ -35,12 +35,6 @@ import (
 	"cloud.google.com/go/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-)
-
-const (
-	FanoutSyncPool = "fanout"
-	RetrySyncPool  = "retry"
 )
 
 func CreateTestPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
@@ -59,35 +53,6 @@ func CreateTestPubsubClient(ctx context.Context, t *testing.T, projectID string)
 		t.Fatalf("failed to create test pubsub client: %v", err)
 	}
 	return c, close
-}
-
-func AssertHandlers(t *testing.T, p pool.SyncPool, syncPoolName string, targets config.Targets) {
-	t.Helper()
-	gotHandlers := make(map[string]bool)
-	wantHandlers := make(map[string]bool)
-
-	p.GetPool().Range(func(key, value interface{}) bool {
-		gotHandlers[key.(string)] = true
-		return true
-	})
-
-	if syncPoolName == RetrySyncPool {
-		targets.RangeAllTargets(func(t *config.Target) bool {
-			wantHandlers[t.Key()] = true
-			return true
-		})
-	} else if syncPoolName == FanoutSyncPool {
-		targets.RangeBrokers(func(b *config.Broker) bool {
-			wantHandlers[b.Key()] = true
-			return true
-		})
-	} else {
-		t.Errorf("can't assert %s syncPool, only FanoutSyncPool and RetrySyncPool are allowed", syncPoolName)
-	}
-
-	if diff := cmp.Diff(wantHandlers, gotHandlers); diff != "" {
-		t.Errorf("handlers map (-want,+got): %v", diff)
-	}
 }
 
 func GenTestBroker(ctx context.Context, t *testing.T, ps *pubsub.Client) *config.Broker {
@@ -137,15 +102,6 @@ func GenTestTarget(ctx context.Context, t *testing.T, ps *pubsub.Client, filters
 		},
 		State: config.State_READY,
 	}
-}
-
-func GenTestEvent(subject, t, id, source string) event.Event {
-	e := event.New()
-	e.SetSubject(subject)
-	e.SetType(t)
-	e.SetID(id)
-	e.SetSource(source)
-	return e
 }
 
 func AddTestTargetToBroker(t *testing.T, targets config.Targets, target *config.Target, broker string) (string, *cehttp.Protocol, func()) {

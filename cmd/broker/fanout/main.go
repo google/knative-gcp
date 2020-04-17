@@ -142,7 +142,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get fanout sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool); err != nil {
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
 		logger.Fatalw("Failed to start fanout sync pool", zap.Error(err))
 	}
 

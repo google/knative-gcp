@@ -35,37 +35,29 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// FanoutSyncPool is the sync pool for fanout handlers.
+// SyncPool is the sync pool for fanout handlers.
 // For each broker in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
-type FanoutSyncPool struct {
+type SyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
 }
 
-func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*FanoutSyncPool, error) {
+func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
-	p := &FanoutSyncPool{
+	p := &SyncPool{
 		targets: targets,
 		options: options,
 	}
 	return p, nil
 }
 
-func (p *FanoutSyncPool) GetSyncSignal() <-chan struct{} {
-	return p.options.SyncSignal
-}
-
-func (p *FanoutSyncPool) GetPool() *sync.Map {
-	return &p.pool
-}
-
-func (p *FanoutSyncPool) SyncOnce(ctx context.Context) error {
+func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {

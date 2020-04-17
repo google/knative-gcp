@@ -18,35 +18,32 @@ package pool
 
 import (
 	"context"
-	"sync"
 
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 )
 
 type SyncPool interface {
-	GetSyncSignal() <-chan struct{}
-	GetPool() *sync.Map
 	SyncOnce(ctx context.Context) error
 }
 
 // StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, syncPool SyncPool) (SyncPool, error) {
+func StartSyncPool(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}) (SyncPool, error) {
 	if err := syncPool.SyncOnce(ctx); err != nil {
 		return nil, err
 	}
-	if syncPool.GetSyncSignal() != nil {
-		go watch(ctx, syncPool)
+	if syncSignal != nil {
+		go watch(ctx, syncPool, syncSignal)
 	}
 	return syncPool, nil
 }
 
-func watch(ctx context.Context, syncPool SyncPool) {
+func watch(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-syncPool.GetSyncSignal():
+		case <-syncSignal:
 			if err := syncPool.SyncOnce(ctx); err != nil {
 				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
 			}

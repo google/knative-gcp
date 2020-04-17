@@ -19,7 +19,6 @@ package pool
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,7 +33,7 @@ func TestSyncPool(t *testing.T) {
 	t.Run("StartSyncPool returns error", func(t *testing.T) {
 		// Add some brokers with their targets.
 		tctx := context.WithValue(ctx, "error", "true")
-		_, gotErr := StartSyncPool(tctx, syncPool)
+		_, gotErr := StartSyncPool(tctx, syncPool, make(chan struct{}))
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -46,21 +45,13 @@ func TestSyncPool(t *testing.T) {
 	t.Run("Work done with StartSyncPool", func(t *testing.T) {
 		// Add some brokers with their targets.
 		tctx := context.WithValue(ctx, "error", "false")
-		if _, err := StartSyncPool(tctx, syncPool); err != nil {
+		if _, err := StartSyncPool(tctx, syncPool, make(chan struct{})); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 	})
 }
 
 type FakeSyncPool struct{}
-
-func (p *FakeSyncPool) GetSyncSignal() <-chan struct{} {
-	return make(chan struct{})
-}
-
-func (p *FakeSyncPool) GetPool() *sync.Map {
-	return nil
-}
 
 func (p *FakeSyncPool) SyncOnce(ctx context.Context) error {
 	if ctx.Value("error") == "true" {

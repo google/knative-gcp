@@ -34,37 +34,29 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 )
 
-// RetrySyncPool is the sync pool for retry handlers.
+// SyncPool is the sync pool for retry handlers.
 // For each trigger in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding trigger is deleted
 // in the config.
-type RetrySyncPool struct {
+type SyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
 }
 
-func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*RetrySyncPool, error) {
+func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
-	p := &RetrySyncPool{
+	p := &SyncPool{
 		targets: targets,
 		options: options,
 	}
 	return p, nil
 }
 
-func (p *RetrySyncPool) GetSyncSignal() <-chan struct{} {
-	return p.options.SyncSignal
-}
-
-func (p *RetrySyncPool) GetPool() *sync.Map {
-	return &p.pool
-}
-
-func (p *RetrySyncPool) SyncOnce(ctx context.Context) error {
+func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
