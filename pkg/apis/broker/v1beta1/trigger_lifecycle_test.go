@@ -258,90 +258,109 @@ func TestTriggerInitializeConditions(t *testing.T) {
 
 func TestTriggerConditionStatus(t *testing.T) {
 	tests := []struct {
-		name                       string
-		brokerStatus               *BrokerStatus
-		topicStatus                bool
-		subscriptionStatus         bool
-		subscriberResolvedStatus   bool
-		dependencyAnnotationExists bool
-		dependencyStatus           corev1.ConditionStatus
-		wantConditionStatus        corev1.ConditionStatus
+		name                     string
+		brokerStatus             *BrokerStatus
+		topicStatus              bool
+		subscriptionStatus       bool
+		subscriberResolvedStatus corev1.ConditionStatus
+		dependencyStatus         *duckv1.KResource
+		wantConditionStatus      corev1.ConditionStatus
 	}{{
-		name:                       "all happy",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: false,
-		wantConditionStatus:        corev1.ConditionTrue,
+		name:                     "all happy",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionTrue,
 	}, {
-		name:                       "broker status unknown",
-		brokerStatus:               TestHelper.UnknownBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: false,
-		wantConditionStatus:        corev1.ConditionUnknown,
+		name:                     "broker status unconfigured",
+		brokerStatus:             TestHelper.UnconfiguredBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionUnknown,
 	}, {
-		name:                       "broker status false",
-		brokerStatus:               TestHelper.FalseBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: false,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "broker status unconfigured",
+		brokerStatus:             TestHelper.UnknownBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionUnknown,
 	}, {
-		name:                       "subscription sad",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         false,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: false,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "broker status false",
+		brokerStatus:             TestHelper.FalseBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionFalse,
 	}, {
-		name:                       "topic sad",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                false,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: false,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "subscription sad",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       false,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionFalse,
 	}, {
-		name:                       "failed to resolve subscriber",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   false,
-		dependencyAnnotationExists: true,
-		dependencyStatus:           corev1.ConditionTrue,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "topic sad",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              false,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         nil,
+		wantConditionStatus:      corev1.ConditionFalse,
 	}, {
-		name:                       "dependency unknown",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: true,
-		dependencyStatus:           corev1.ConditionUnknown,
-		wantConditionStatus:        corev1.ConditionUnknown,
+		name:                     "failed to resolve subscriber",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionFalse,
+		dependencyStatus:         TestHelper.ReadyDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionFalse,
 	}, {
-		name:                       "dependency false",
-		brokerStatus:               TestHelper.ReadyBrokerStatus(),
-		subscriptionStatus:         true,
-		topicStatus:                true,
-		subscriberResolvedStatus:   true,
-		dependencyAnnotationExists: true,
-		dependencyStatus:           corev1.ConditionFalse,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "resolve subscriber unknown",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionUnknown,
+		dependencyStatus:         TestHelper.ReadyDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionUnknown,
 	}, {
-		name:                       "all sad",
-		brokerStatus:               TestHelper.FalseBrokerStatus(),
-		subscriptionStatus:         false,
-		topicStatus:                false,
-		subscriberResolvedStatus:   false,
-		dependencyAnnotationExists: true,
-		dependencyStatus:           corev1.ConditionFalse,
-		wantConditionStatus:        corev1.ConditionFalse,
+		name:                     "dependency unconfigured",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         TestHelper.UnconfiguredDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionUnknown,
+	}, {
+		name:                     "dependency unknown",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         TestHelper.UnknownDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionUnknown,
+	}, {
+		name:                     "dependency false",
+		brokerStatus:             TestHelper.ReadyBrokerStatus(),
+		subscriptionStatus:       true,
+		topicStatus:              true,
+		subscriberResolvedStatus: corev1.ConditionTrue,
+		dependencyStatus:         TestHelper.FalseDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionFalse,
+	}, {
+		name:                     "all sad",
+		brokerStatus:             TestHelper.FalseBrokerStatus(),
+		subscriptionStatus:       false,
+		topicStatus:              false,
+		subscriberResolvedStatus: corev1.ConditionFalse,
+		dependencyStatus:         TestHelper.FalseDependencyStatus(),
+		wantConditionStatus:      corev1.ConditionFalse,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -359,25 +378,32 @@ func TestTriggerConditionStatus(t *testing.T) {
 			} else {
 				ts.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
 			}
-			if test.subscriberResolvedStatus {
+			if test.subscriberResolvedStatus == corev1.ConditionTrue {
 				ts.MarkSubscriberResolvedSucceeded()
+			} else if test.subscriberResolvedStatus == corev1.ConditionUnknown {
+				ts.MarkSubscriberResolvedUnknown("Status of Subscriber URI is unknown", "induced failure")
 			} else {
 				ts.MarkSubscriberResolvedFailed("Unable to get the Subscriber's URI", "subscriber not found")
 			}
-			if !test.dependencyAnnotationExists {
+			if test.dependencyStatus == nil {
 				ts.MarkDependencySucceeded()
 			} else {
-				if test.dependencyStatus == corev1.ConditionTrue {
-					ts.MarkDependencySucceeded()
-				} else if test.dependencyStatus == corev1.ConditionUnknown {
-					ts.MarkDependencyUnknown("The status of dependency is unknown", "The status of dependency is unknown: nil")
-				} else {
-					ts.MarkDependencyFailed("The status of dependency is false", "The status of dependency is unknown: nil")
-				}
+				ts.PropagateDependencyStatus(test.dependencyStatus)
 			}
 			got := ts.GetTopLevelCondition().Status
 			if test.wantConditionStatus != got {
 				t.Errorf("unexpected readiness: want %v, got %v", test.wantConditionStatus, got)
+			}
+			happy := ts.IsReady()
+			switch test.wantConditionStatus {
+			case corev1.ConditionTrue:
+				if !happy {
+					t.Error("expected happy true, got false")
+				}
+			case corev1.ConditionFalse, corev1.ConditionUnknown:
+				if happy {
+					t.Error("expected happy false, got true")
+				}
 			}
 		})
 	}

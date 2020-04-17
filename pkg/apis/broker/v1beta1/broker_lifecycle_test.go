@@ -320,6 +320,17 @@ func TestBrokerConditionStatus(t *testing.T) {
 			if test.wantConditionStatus != got {
 				t.Errorf("unexpected readiness: want %v, got %v", test.wantConditionStatus, got)
 			}
+			happy := bs.IsReady()
+			switch test.wantConditionStatus {
+			case corev1.ConditionTrue:
+				if !happy {
+					t.Error("expected happy true, got false")
+				}
+			case corev1.ConditionFalse, corev1.ConditionUnknown:
+				if happy {
+					t.Error("expected happy false, got true")
+				}
+			}
 		})
 	}
 }

@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
 func TestBroker_GetGroupVersionKind(t *testing.T) {
@@ -33,5 +34,15 @@ func TestBroker_GetGroupVersionKind(t *testing.T) {
 	got := b.GetGroupVersionKind()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("(GetGroupVersionKind (-want +got): %v", diff)
+	}
+}
+
+func TestBroker_GetUntypedSpec(t *testing.T) {
+	b := Broker{
+		Spec: eventingv1beta1.BrokerSpec{},
+	}
+	s := b.GetUntypedSpec()
+	if _, ok := s.(eventingv1beta1.BrokerSpec); !ok {
+		t.Errorf("untyped spec was not a BrokerSpec")
 	}
 }
