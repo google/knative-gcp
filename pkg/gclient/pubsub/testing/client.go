@@ -19,25 +19,26 @@ package testing
 import (
 	"context"
 
+	"cloud.google.com/go/pubsub"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
-	"github.com/google/knative-gcp/pkg/gclient/pubsub"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"google.golang.org/api/option"
 )
 
 // TestClientCreator returns a pubsub.CreateFn used to construct the test Pub/Sub client.
-func TestClientCreator(value interface{}) pubsub.CreateFn {
+func TestClientCreator(value interface{}) gpubsub.CreateFn {
 	var data TestClientData
 	var ok bool
 	if data, ok = value.(TestClientData); !ok {
 		data = TestClientData{}
 	}
 	if data.CreateClientErr != nil {
-		return func(ctx context.Context, projectID string, opts ...option.ClientOption) (pubsub.Client, error) {
+		return func(ctx context.Context, projectID string, opts ...option.ClientOption) (gpubsub.Client, error) {
 			return nil, data.CreateClientErr
 		}
 	}
 
-	return func(ctx context.Context, projectID string, opts ...option.ClientOption) (pubsub.Client, error) {
+	return func(ctx context.Context, projectID string, opts ...option.ClientOption) (gpubsub.Client, error) {
 		return &testClient{
 			data: data,
 		}, nil
@@ -61,7 +62,7 @@ type testClient struct {
 }
 
 // Verify that it satisfies the pubsub.Client interface.
-var _ pubsub.Client = &testClient{}
+var _ gpubsub.Client = &testClient{}
 
 // Close implements client.Close
 func (c *testClient) Close() error {
@@ -69,21 +70,25 @@ func (c *testClient) Close() error {
 }
 
 // Topic implements Client.Topic.
-func (c *testClient) Topic(id string) pubsub.Topic {
-	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData}
+func (c *testClient) Topic(id string) gpubsub.Topic {
+	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData, id: id}
 }
 
 // Subscription implements Client.Subscription.
-func (c *testClient) Subscription(id string) pubsub.Subscription {
-	return &testSubscription{data: c.data.SubscriptionData}
+func (c *testClient) Subscription(id string) gpubsub.Subscription {
+	return &testSubscription{data: c.data.SubscriptionData, id: id}
 }
 
 // CreateSubscription implements Client.CreateSubscription.
-func (c *testClient) CreateSubscription(ctx context.Context, id string, cfg pubsub.SubscriptionConfig) (pubsub.Subscription, error) {
-	return &testSubscription{data: c.data.SubscriptionData}, c.data.CreateSubscriptionErr
+func (c *testClient) CreateSubscription(ctx context.Context, id string, cfg gpubsub.SubscriptionConfig) (gpubsub.Subscription, error) {
+	return &testSubscription{data: c.data.SubscriptionData, id: id}, c.data.CreateSubscriptionErr
 }
 
 // CreateTopic implements pubsub.Client.CreateTopic
-func (c *testClient) CreateTopic(ctx context.Context, id string) (pubsub.Topic, error) {
-	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData}, c.data.CreateTopicErr
+func (c *testClient) CreateTopic(ctx context.Context, id string) (gpubsub.Topic, error) {
+	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData, id: id}, c.data.CreateTopicErr
+}
+
+func (c *testClient) CreateTopicWithConfig(ctx context.Context, id string, cfg *pubsub.TopicConfig) (gpubsub.Topic, error) {
+	return &testTopic{data: c.data.TopicData, handleData: c.data.HandleData, id: id, config: cfg}, c.data.CreateTopicErr
 }

@@ -1567,11 +1567,11 @@
     "test/test_images/transformevents",
   ]
   pruneopts = "UT"
-  revision = "618199c51d896ccdf32dc653128f15500773de52"
+  revision = "70641d5414152e406d78f9d34a822ef711282566"
 
 [[projects]]
   branch = "master"
-  digest = "1:581d6dbec2ea9cd6a213545bb1066f0c7d1cb8d1c8620a8e0b465382e38eaeaa"
+  digest = "1:0dad40d47b86a73d04830e077504d31f508d6e13b802ca53521a5d5d0e4fa4ed"
   name = "knative.dev/pkg"
   packages = [
     "apis",
@@ -1586,6 +1586,8 @@
     "client/injection/apiextensions/informers/factory",
     "client/injection/ducks/duck/v1/addressable",
     "client/injection/ducks/duck/v1/addressable/fake",
+    "client/injection/ducks/duck/v1/conditions",
+    "client/injection/ducks/duck/v1/conditions/fake",
     "client/injection/ducks/duck/v1alpha1/addressable",
     "client/injection/kube/client",
     "client/injection/kube/client/fake",
@@ -1595,6 +1597,10 @@
     "client/injection/kube/informers/apps/v1/deployment/fake",
     "client/injection/kube/informers/batch/v1/job",
     "client/injection/kube/informers/batch/v1/job/fake",
+    "client/injection/kube/informers/core/v1/configmap",
+    "client/injection/kube/informers/core/v1/configmap/fake",
+    "client/injection/kube/informers/core/v1/endpoints",
+    "client/injection/kube/informers/core/v1/endpoints/fake",
     "client/injection/kube/informers/core/v1/secret",
     "client/injection/kube/informers/core/v1/secret/fake",
     "client/injection/kube/informers/core/v1/serviceaccount",
@@ -1656,7 +1662,7 @@
     "webhook/resourcesemantics/validation",
   ]
   pruneopts = "T"
-  revision = "f68639f04b397e9b24ee9d8591db43fa448d2a9e"
+  revision = "9d7c06b6ab647bcb2e414e90d740b26915917cbf"
 
 [[projects]]
   branch = "master"
@@ -1709,7 +1715,7 @@
     "pkg/client/listers/serving/v1beta1",
   ]
   pruneopts = "NUT"
-  revision = "316c55fedc44985ed66ef3d05ea982b59f793127"
+  revision = "4832e3ce5b12cc4b45d5185d9508964dc1914dd5"
 
 [[projects]]
   branch = "master"
@@ -1759,6 +1765,7 @@
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
     "github.com/fsnotify/fsnotify",
+    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
@@ -1837,13 +1844,18 @@
     "k8s.io/code-generator/cmd/defaulter-gen",
     "k8s.io/code-generator/cmd/informer-gen",
     "k8s.io/code-generator/cmd/lister-gen",
+    "knative.dev/eventing/pkg/apis/duck",
     "knative.dev/eventing/pkg/apis/duck/v1alpha1",
+    "knative.dev/eventing/pkg/apis/eventing",
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
+    "knative.dev/eventing/pkg/apis/eventing/v1beta1",
     "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
     "knative.dev/eventing/pkg/logging",
+    "knative.dev/eventing/pkg/reconciler/names",
     "knative.dev/eventing/pkg/tracing",
+    "knative.dev/eventing/pkg/utils",
     "knative.dev/eventing/test",
     "knative.dev/eventing/test/conformance/helpers",
     "knative.dev/eventing/test/e2e/helpers",
@@ -1861,11 +1873,17 @@
     "knative.dev/pkg/apis/duck/v1beta1",
     "knative.dev/pkg/client/injection/ducks/duck/v1/addressable",
     "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake",
+    "knative.dev/pkg/client/injection/ducks/duck/v1/conditions",
+    "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake",
     "knative.dev/pkg/client/injection/kube/client",
     "knative.dev/pkg/client/injection/kube/client/fake",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment",
     "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake",
     "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints",
+    "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/secret",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake",
     "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount",
