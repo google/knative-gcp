@@ -24,11 +24,25 @@ knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 ## Running E2E Tests on an existing cluster
 
-To run [the e2e tests](../e2e) with `go test` command, you need to have a
-running environment that meets
-[the e2e test environment requirements](#environment-requirements), and you need
-to specify the build tag `e2e`.
+### Prerequisites
 
+1. A running Kubernetes cluster with [knative-gcp](../../docs/install/install-knative-gcp.md) installed and configured.
+2. [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md) installed.
+3. [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md) installed.
+4. A docker repo containing [the test images](#test-images). Remember to specify the build tag `e2e`.
+5. (Optional) Note that if you plan on running metrics-related E2E tests using the StackDriver
+backend, you need to give your
+[Service Account](../../docs/install/pubsub-service-account.md) the
+`Monitoring Editor` role on your Google Cloud project:
+
+```shell
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
+  --role roles/monitoring.editor
+```
+
+
+### Running E2E tests
 ```shell
 go test --tags=e2e ./test/e2e/...
 ```
@@ -42,35 +56,16 @@ go test --tags=e2e ./test/e2e/... --count=3
 If you want to run a specific test:
 
 ```shell
-go test --tags=e2e ./test/e2e/... -run NameOfTest
+E2E_PROJECT_ID=<project name> \
+  go test --tags=e2e ./test/e2e/... -run NameOfTest
 ```
 
 For example, to run TestPullSubscription:
 
-```shell
-GOOGLE_APPLICATION_CREDENTIALS=<path to json creds file> \
+```shell \
 E2E_PROJECT_ID=<project name> \
   go test --tags=e2e ./test/e2e/... -run TestPullSubscription
 ```
-
-Note that if you plan on running metrics-related E2E tests using the StackDriver
-backend, you need to give your
-[Service Account](../../docs/install/pubsub-service-account.md) the
-`Monitoring Editor` role on your Google Cloud project:
-
-```shell
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
-  --role roles/monitoring.editor
-```
-
-## Environment requirements
-
-There's couple of things you need to install before running e2e tests locally.
-
-1. A running Kubernetes cluster with [knative-gcp](../../docs/install) installed
-   and configured
-1. A docker repo containing [the test images](#test-images)
 
 ## Test images
 
@@ -89,19 +84,19 @@ build and push the test images used by the e2e tests. It requires:
   [authenticated with your `KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup)
 - [`docker`](https://docs.docker.com/install/) to be installed
 
-To run the script for all end to end test images:
-
-```bash
-./test/upload-test-images.sh ./test/test_images
-./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/
-```
-
 For images deployed in GCR, a docker tag is mandatory to avoid issues with using
 `latest` tag:
 
 ```bash
 ./test/upload-test-images.sh ./test/test_images e2e
 ./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/ e2e
+```
+
+To run the script for all end to end test images:
+
+```bash
+./test/upload-test-images.sh ./test/test_images
+./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/
 ```
 
 ### Adding new test images
