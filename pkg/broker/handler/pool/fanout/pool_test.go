@@ -28,13 +28,14 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
 
 func TestWatchAndSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
-	ps, psclose := pool.CreateTestPubsubClient(ctx, t, testProject)
+	ps, psclose := pooltesting.CreateTestPubsubClient(ctx, t, testProject)
 	defer psclose()
 	signal := make(chan struct{})
 	targets := memory.NewEmptyTargets()
@@ -55,7 +56,7 @@ func TestWatchAndSync(t *testing.T) {
 	t.Run("adding new brokers creates new handlers", func(t *testing.T) {
 		// First add some brokers.
 		for i := 0; i < 4; i++ {
-			b := pool.GenTestBroker(ctx, t, ps)
+			b := pooltesting.GenTestBroker(ctx, t, ps)
 			bs = append(bs, b)
 			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
 				bm.SetDecoupleQueue(b.DecoupleQueue)
@@ -73,7 +74,7 @@ func TestWatchAndSync(t *testing.T) {
 			targets.MutateBroker(bs[i].Namespace, bs[i].Name, func(bm config.BrokerMutation) {
 				bm.Delete()
 			})
-			b := pool.GenTestBroker(ctx, t, ps)
+			b := pooltesting.GenTestBroker(ctx, t, ps)
 			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
 				bm.SetDecoupleQueue(b.DecoupleQueue)
 			})
@@ -104,7 +105,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	defer cancel()
 	testProject := "test-project"
 
-	ps, psclose := pool.CreateTestPubsubClient(ctx, t, testProject)
+	ps, psclose := pooltesting.CreateTestPubsubClient(ctx, t, testProject)
 	defer psclose()
 	ceps, err := cepubsub.New(ctx, cepubsub.WithClient(ps))
 	if err != nil {
@@ -112,8 +113,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	}
 
 	// Create two brokers.
-	b1 := pool.GenTestBroker(ctx, t, ps)
-	b2 := pool.GenTestBroker(ctx, t, ps)
+	b1 := pooltesting.GenTestBroker(ctx, t, ps)
+	b2 := pooltesting.GenTestBroker(ctx, t, ps)
 	targets := memory.NewTargets(&config.TargetsConfig{
 		Brokers: map[string]*config.Broker{
 			b1.Key(): b1,
@@ -121,15 +122,15 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		},
 	})
 
-	t1 := pool.GenTestTarget(ctx, t, ps, nil)
-	t2 := pool.GenTestTarget(ctx, t, ps, map[string]string{"subject": "foo"})
-	t3 := pool.GenTestTarget(ctx, t, ps, nil)
+	t1 := pooltesting.GenTestTarget(ctx, t, ps, nil)
+	t2 := pooltesting.GenTestTarget(ctx, t, ps, map[string]string{"subject": "foo"})
+	t3 := pooltesting.GenTestTarget(ctx, t, ps, nil)
 
-	b1t1, b1t1Client, b1t1close := pool.AddTestTargetToBroker(t, targets, t1, b1.Name)
+	b1t1, b1t1Client, b1t1close := pooltesting.AddTestTargetToBroker(t, targets, t1, b1.Name)
 	defer b1t1close()
-	b1t2, b1t2Client, b1t2close := pool.AddTestTargetToBroker(t, targets, t2, b1.Name)
+	b1t2, b1t2Client, b1t2close := pooltesting.AddTestTargetToBroker(t, targets, t2, b1.Name)
 	defer b1t2close()
-	b2t3, b2t3Client, b2t3close := pool.AddTestTargetToBroker(t, targets, t3, b2.Name)
+	b2t3, b2t3Client, b2t3close := pooltesting.AddTestTargetToBroker(t, targets, t3, b2.Name)
 	defer b2t3close()
 
 	signal := make(chan struct{})
@@ -158,10 +159,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// Targets for broker1 should both receive the event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 1)
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 1)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 1)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 1)
 		// Target for broker2 shouldn't receive any event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 0)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 0)
 
 		// Only send an event to broker1.
 		sendEventToBrokerTopic(ctx, t, ceps, b1, &e)
@@ -169,8 +170,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	})
 
 	t.Run("target with unmatching filter didn't receive event", func(t *testing.T) {
-		t4 := pool.GenTestTarget(ctx, t, ps, map[string]string{"subject": "bar"})
-		b1t4, b1t4Client, b1t4close := pool.AddTestTargetToBroker(t, targets, t4, b1.Name)
+		t4 := pooltesting.GenTestTarget(ctx, t, ps, map[string]string{"subject": "bar"})
+		b1t4, b1t4Client, b1t4close := pooltesting.AddTestTargetToBroker(t, targets, t4, b1.Name)
 		defer b1t4close()
 		signal <- struct{}{}
 
@@ -180,13 +181,13 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// The old targets for broker1 should still receive the event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 1)
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 1)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 1)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 1)
 		// The new target for broker1 shouldn't receive the event
 		// because the event doesn't match its filter.
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t4, b1t4Client, &e, 0)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t4, b1t4Client, &e, 0)
 		// Target for broker2 still shouldn't receive any event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 0)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 0)
 
 		// Only send an event to broker1.
 		sendEventToBrokerTopic(ctx, t, ceps, b1, &e)
@@ -200,10 +201,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// This time targets for broker1 shouldn't receive any event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 0)
-		go pool.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 0)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e, 0)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e, 0)
 		// Target for broker2 should receive the event.
-		go pool.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 1)
+		go pooltesting.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e, 1)
 
 		// Only send an event to broker2.
 		sendEventToBrokerTopic(ctx, t, ceps, b2, &e)
@@ -213,7 +214,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 func sendEventToBrokerTopic(ctx context.Context, t *testing.T, ceps *cepubsub.Protocol, b *config.Broker, e *event.Event) {
 	t.Helper()
-	pool.SentEventToTopic(ctx, t, ceps, b.DecoupleQueue.Topic, e)
+	pooltesting.SentEventToTopic(ctx, t, ceps, b.DecoupleQueue.Topic, e)
 }
 
 func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
