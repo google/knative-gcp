@@ -54,7 +54,9 @@ var (
 	trueVal  = true
 	falseVal = false
 
-	identifiable = NewCloudPubSubSource(identifiableName, testNS,
+	reconcileIdentifiable = NewCloudPubSubSource(identifiableName, testNS,
+		WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
+	deleteIdentifiable = NewCloudPubSubSource(identifiableName, testNS,
 		WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
 		WithCloudPubSubSourceServiceAccountName("test"))
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
@@ -136,7 +138,7 @@ func TestCreates(t *testing.T) {
 		}
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, identifiable)
+		kserviceAccount, err := identity.ReconcileWorkloadIdentity(context.Background(), projectID, reconcileIdentifiable)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
@@ -218,7 +220,7 @@ func TestDeletes(t *testing.T) {
 		}
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		err := identity.DeleteWorkloadIdentity(context.Background(), projectID, identifiable)
+		err := identity.DeleteWorkloadIdentity(context.Background(), projectID, deleteIdentifiable)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
