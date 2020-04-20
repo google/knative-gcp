@@ -137,7 +137,11 @@ func main() {
 	logger.Info("Starting the broker retry")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	if _, err := retry.StartSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...); err != nil {
+	syncPool, err := retry.NewSyncPool(targetsConifg, buildPoolOptions(env, syncSignal)...)
+	if err != nil {
+		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
+	}
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 
