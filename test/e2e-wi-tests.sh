@@ -35,7 +35,7 @@ fi
 # Create resources required for the Control Plane setup.
 function knative_setup() {
   control_plane_setup || return 1
-  start_knative_gcp "workloadIdentityEnabled" || return 1
+  start_knative_gcp || return 1
   kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
     --namespace ${CONTROL_PLANE_NAMESPACE}
 }

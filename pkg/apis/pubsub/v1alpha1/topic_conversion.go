@@ -20,10 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	convert "github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // ConvertTo implements apis.Convertible.
@@ -32,7 +31,7 @@ func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.Topic:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.IdentitySpec = convertToV1beta1IdentitySpec(source.Spec.IdentitySpec)
+		sink.Spec.IdentitySpec = convert.ToV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
 		sink.Spec.Topic = source.Spec.Topic
@@ -41,8 +40,8 @@ func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 		} else {
 			sink.Spec.PropagationPolicy = pp
 		}
-		sink.Status.IdentityStatus = convertToV1beta1IdentityStatus(source.Status.IdentityStatus)
-		if as, err := convertToV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
+		sink.Status.IdentityStatus = convert.ToV1beta1IdentityStatus(source.Status.IdentityStatus)
+		if as, err := convert.ToV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
 			return err
 		} else {
 			sink.Status.AddressStatus = as
@@ -62,7 +61,7 @@ func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error
 	switch source := from.(type) {
 	case *v1beta1.Topic:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.IdentitySpec = convertFromV1beta1IdentitySpec(source.Spec.IdentitySpec)
+		sink.Spec.IdentitySpec = convert.FromV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
 		sink.Spec.Topic = source.Spec.Topic
@@ -71,8 +70,8 @@ func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error
 		} else {
 			sink.Spec.PropagationPolicy = pp
 		}
-		sink.Status.IdentityStatus = convertFromV1beta1IdentityStatus(source.Status.IdentityStatus)
-		if as, err := convertFromV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
+		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
+		if as, err := convert.FromV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
 			return err
 		} else {
 			sink.Status.AddressStatus = as
@@ -113,28 +112,4 @@ func convertFromV1beta1PropagationPolicy(pp v1beta1.PropagationPolicyType) (Prop
 	default:
 		return "unknown", fmt.Errorf("unknown PropagationPolicyType %v", pp)
 	}
-}
-
-func convertToV1beta1AddressStatus(ctx context.Context, from v1alpha1.AddressStatus) (duckv1beta1.AddressStatus, error) {
-	to := duckv1beta1.AddressStatus{}
-	if from.Address != nil {
-		to.Address = &duckv1beta1.Addressable{}
-		err := from.Address.ConvertTo(ctx, to.Address)
-		if err != nil {
-			return duckv1beta1.AddressStatus{}, err
-		}
-	}
-	return to, nil
-}
-
-func convertFromV1beta1AddressStatus(ctx context.Context, from duckv1beta1.AddressStatus) (v1alpha1.AddressStatus, error) {
-	to := v1alpha1.AddressStatus{}
-	if from.Address != nil {
-		to.Address = &v1alpha1.Addressable{}
-		err := to.Address.ConvertFrom(ctx, from.Address)
-		if err != nil {
-			return v1alpha1.AddressStatus{}, err
-		}
-	}
-	return to, nil
 }

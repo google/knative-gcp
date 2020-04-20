@@ -56,7 +56,7 @@ var (
 type envConfig struct {
 	PodName            string        `envconfig:"POD_NAME" required:"true"`
 	ProjectID          string        `envconfig:"PROJECT_ID"`
-	TargetsConfigPath  string        `envconfig:"TARGETS_CONFIG_PATH"`
+	TargetsConfigPath  string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int           `envconfig:"HANDLER_CONCURRENCY"`
 	TimeoutPerEvent    time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -77,6 +77,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
+	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
@@ -94,8 +95,6 @@ func main() {
 	}); perr != nil {
 		log.Fatalf("Timed out attempting to get k8s version: %v", err)
 	}
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
 	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
 	if err != nil {
@@ -138,7 +137,11 @@ func main() {
 	logger.Info("Starting the broker retry")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	if _, err := retry.StartSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...); err != nil {
+	syncPool, err := retry.NewSyncPool(targetsConifg, buildPoolOptions(env, syncSignal)...)
+	if err != nil {
+		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
+	}
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

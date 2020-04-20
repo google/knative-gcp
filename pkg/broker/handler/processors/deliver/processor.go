@@ -20,11 +20,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudevents/sdk-go/v2/binding"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
+	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"go.uber.org/zap"
+	"knative.dev/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -35,33 +40,74 @@ type Processor struct {
 
 	// Requester is the cloudevents client to send events.
 	Requester ceclient.Client
+
+	// Targets is the targets from config.
+	Targets config.ReadonlyTargets
+
+	// RetryOnFailure if set to true, the processor will send the event
+	// to the retry topic if the delivery fails.
+	RetryOnFailure bool
+
+	// RetryEvents is the Pubsub protocol to send events
+	// to the retry topic.
+	RetryEvents *pubsub.Protocol
 }
 
 var _ processors.Interface = (*Processor)(nil)
 
 // Process delivers the event based on the broker/target in the context.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	broker, err := handlerctx.GetBroker(ctx)
+	bk, err := handlerctx.GetBrokerKey(ctx)
 	if err != nil {
 		return err
 	}
-	target, err := handlerctx.GetTarget(ctx)
+	tk, err := handlerctx.GetTargetKey(ctx)
 	if err != nil {
 		return err
+	}
+	broker, ok := p.Targets.GetBrokerByKey(bk)
+	if !ok {
+		// If the broker no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		return nil
+	}
+	target, ok := p.Targets.GetTargetByKey(tk)
+	if !ok {
+		// If the target no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
+		return nil
 	}
 
 	resp, res := p.Requester.Request(cecontext.WithTarget(ctx, target.Address), *event)
 	if !protocol.IsACK(res) {
-		// TODO(yolocs): Have option to send to retry.
-		return fmt.Errorf("deliver event failed with error: %v", res.Error())
+		if !p.RetryOnFailure {
+			return fmt.Errorf("target delivery failed: %v", res.Error())
+		}
+
+		logging.FromContext(ctx).Warn("target delivery failed", zap.String("target", tk), zap.String("error", res.Error()))
+		return p.sendToRetryTopic(ctx, target, event)
 	}
 	if resp == nil {
 		return nil
 	}
 
 	if res := p.Requester.Send(cecontext.WithTarget(ctx, broker.Address), *resp); !protocol.IsACK(res) {
-		return fmt.Errorf("deliver replied event failed with error: %v", res.Error())
+		if !p.RetryOnFailure {
+			return fmt.Errorf("delivery of replied event failed: %v", res.Error())
+		}
+
+		logging.FromContext(ctx).Warn("delivery of replied event failed", zap.String("target", tk), zap.String("error", res.Error()))
+		return p.sendToRetryTopic(ctx, target, event)
 	}
 
+	// For post-delivery processing.
+	return p.Next().Process(ctx, event)
+}
+
+func (p *Processor) sendToRetryTopic(ctx context.Context, target *config.Target, event *event.Event) error {
+	pctx := cecontext.WithTopic(ctx, target.RetryQueue.Topic)
+	if err := p.RetryEvents.Send(pctx, binding.ToMessage(event)); err != nil {
+		return fmt.Errorf("failed to send event to retry topic: %w", err)
+	}
 	return nil
 }
