@@ -18,40 +18,21 @@ package context
 
 import (
 	"context"
-
-	"github.com/google/knative-gcp/pkg/broker/config"
 )
-
-// The key used to store/retrieve broker key in the context.
-type brokerKeyKey struct{}
 
 // The key used to store/retrieve broker in the context.
 type brokerKey struct{}
 
 // WithBrokerKey sets a broker key in the context.
 func WithBrokerKey(ctx context.Context, key string) context.Context {
-	return context.WithValue(ctx, brokerKeyKey{}, key)
+	return context.WithValue(ctx, brokerKey{}, key)
 }
 
 // GetBrokerKey gets the broker key from the context.
 func GetBrokerKey(ctx context.Context) (string, error) {
-	untyped := ctx.Value(brokerKeyKey{})
+	untyped := ctx.Value(brokerKey{})
 	if untyped == nil {
 		return "", ErrBrokerKeyNotPresent
 	}
 	return untyped.(string), nil
-}
-
-// WithBroker sets a broker in the context.
-func WithBroker(ctx context.Context, b *config.Broker) context.Context {
-	return context.WithValue(ctx, brokerKey{}, b)
-}
-
-// GetBroker gets a broker from the context.
-func GetBroker(ctx context.Context) (*config.Broker, error) {
-	untyped := ctx.Value(brokerKey{})
-	if untyped == nil {
-		return nil, ErrBrokerNotPresent
-	}
-	return untyped.(*config.Broker), nil
 }

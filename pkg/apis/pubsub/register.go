@@ -17,6 +17,21 @@ limitations under the License.
 // Package pubsub contains Cloud Run Events API versions for pubsub components
 package pubsub
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
 const (
 	GroupName = "pubsub.cloud.google.com"
+)
+
+var (
+	// PullSubscriptionsResource represents a PubSub PullSubscription.
+	PullSubscriptionsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "pullsubscriptions",
+	}
+	// TopicsResource represents a PubSub Topic.
+	TopicsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "topics",
+	}
 )

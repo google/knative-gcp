@@ -32,6 +32,12 @@ spec:
   subresources:
     status: {}
   preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        name: webhook
+        namespace: cloud-run-events
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -46,6 +52,9 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
+    - name: v1beta1
+      served: true
+      storage: false
   # All versions happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
@@ -162,11 +171,24 @@ spec:
                   - status
                 type: object
               type: array
+            serviceAccountName:
+              type: string
             sinkUri:
               type: string
-            transformerUri:
-              type: string
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
             projectId:
               type: string
+            topicId:
+              type: string
             subscriptionId:
+              type: string
+            transformerUri:
               type: string

@@ -36,7 +36,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
-	"github.com/google/knative-gcp/pkg/duck"
+	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
@@ -75,6 +75,8 @@ type Identity struct {
 // and add iam policy binding between this k8s service account and its corresponding GCP service account.
 func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID string, identifiable duck.Identifiable) (*corev1.ServiceAccount, error) {
 	status := identifiable.IdentityStatus()
+	// Remove status.ServiceAccountName from last reconcile circle.
+	status.ServiceAccountName = ""
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount)

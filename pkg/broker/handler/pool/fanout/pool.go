@@ -43,13 +43,26 @@ type SyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
+
+	// For sending retry events, we only need a shared pubsub protocol.
+	// And we can set retry topic dynamically.
+	retryps *pubsub.Protocol
 }
 
 // StartSyncPool starts the sync pool.
 func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+	options, err := pool.NewOptions(opts...)
+	if err != nil {
+		return nil, err
+	}
+	rps, err := defaultRetryPubsubProtocol(ctx, options)
+	if err != nil {
+		return nil, err
+	}
 	p := &SyncPool{
 		targets: targets,
-		options: pool.NewOptions(opts...),
+		options: options,
+		retryps: rps,
 	}
 	if err := p.syncOnce(ctx); err != nil {
 		return nil, err
@@ -73,6 +86,16 @@ func (p *SyncPool) watch(ctx context.Context) {
 	}
 }
 
+func defaultRetryPubsubProtocol(ctx context.Context, options *pool.Options) (*pubsub.Protocol, error) {
+	opts := []pubsub.Option{
+		pubsub.WithProjectID(options.ProjectID),
+	}
+	if options.PubsubClient != nil {
+		opts = append(opts, pubsub.WithClient(options.PubsubClient))
+	}
+	return pubsub.New(ctx, opts...)
+}
+
 func (p *SyncPool) syncOnce(ctx context.Context) error {
 	var errs int
 
@@ -85,24 +108,24 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 	})
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		bk := config.BrokerKey(b.Namespace, b.Name)
-
 		// There is already a handler for the broker, skip.
-		if _, ok := p.pool.Load(bk); ok {
+		if _, ok := p.pool.Load(b.Key()); ok {
 			return true
 		}
 
-		projectIDOpt := pubsub.WithProjectIDFromDefaultEnv()
-		if p.options.ProjectID != "" {
-			projectIDOpt = pubsub.WithProjectID(p.options.ProjectID)
-		}
-		ps, err := pubsub.New(ctx,
-			projectIDOpt,
+		opts := []pubsub.Option{
+			pubsub.WithProjectID(p.options.ProjectID),
 			pubsub.WithTopicID(b.DecoupleQueue.Topic),
 			pubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
-		)
+			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		}
+
+		if p.options.PubsubClient != nil {
+			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
+		}
+		ps, err := pubsub.New(ctx, opts...)
 		if err != nil {
-			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", bk), zap.Error(err))
+			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", b.Key()), zap.Error(err))
 			errs++
 			return true
 		}
@@ -112,22 +135,27 @@ func (p *SyncPool) syncOnce(ctx context.Context) error {
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
 				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
-				&filter.Processor{},
-				&deliver.Processor{Requester: p.options.EventRequester},
+				&filter.Processor{Targets: p.targets},
+				&deliver.Processor{
+					Requester:      p.options.EventRequester,
+					Targets:        p.targets,
+					RetryOnFailure: true,
+					RetryEvents:    p.retryps,
+				},
 			),
 		}
 		// Start the handler with broker key in context.
-		h.Start(handlerctx.WithBrokerKey(ctx, bk), func(err error) {
+		h.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
 			if err != nil {
-				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", bk), zap.Error(err))
+				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
 			} else {
-				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", bk))
+				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
 			}
 			// Make sure the handler is deleted from the pool.
 			p.pool.Delete(h)
 		})
 
-		p.pool.Store(bk, h)
+		p.pool.Store(b.Key(), h)
 		return true
 	})
 

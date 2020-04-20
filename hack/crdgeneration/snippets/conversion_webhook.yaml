@@ -1,0 +1,6 @@
+conversion:
+  strategy: Webhook
+  webhookClientConfig:
+    service:
+      name: webhook
+      namespace: cloud-run-events

@@ -35,7 +35,7 @@ fi
 # Create resources required for the Control Plane setup.
 function knative_setup() {
   control_plane_setup || return 1
-  start_knative_gcp "workloadIdentityEnabled" || return 1
+  start_knative_gcp || return 1
   kubectl annotate serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${AUTHENTICATED_SERVICE_ACCOUNT} \
     --namespace ${CONTROL_PLANE_NAMESPACE}
 }
@@ -183,6 +183,6 @@ function control_plane_teardown() {
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
+go_test_e2e -timeout=30m -parallel=3 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${DATA_PLANE_SERVICE_ACCOUNT} || fail_test
 
 success

@@ -43,12 +43,16 @@ spec:
   subresources:
     status: {}
   preserveUnknownFields: false
+  {{- replace_with 2 "conversion_webhook" }}
   additionalPrinterColumns:
     {{- replace_with 4 "ready_reason_age" }}
   versions:
     - name: v1alpha1
       served: true
       storage: true
+    - name: v1beta1
+      served: true
+      storage: false
   validation:
     openAPIV3Schema:
       type: object
