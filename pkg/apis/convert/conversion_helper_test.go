@@ -208,7 +208,8 @@ func TestV1beta1AddressStatus(t *testing.T) {
 }
 
 func TestV1beta1SubscribableSpec(t *testing.T) {
-	want := completeSubscribable
+	// DeepCopy because we will edit it below.
+	want := completeSubscribable.DeepCopy()
 	v1b1 := convert.ToV1beta1SubscribableSpec(want)
 	got := convert.FromV1beta1SubscribableSpec(v1b1)
 
