@@ -19,6 +19,7 @@ package pool
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -31,7 +32,6 @@ func TestSyncPool(t *testing.T) {
 
 	t.Run("StartSyncPool returns error", func(t *testing.T) {
 		syncPool := &fakeSyncPool{
-			syncCount: 0,
 			returnErr: true,
 		}
 		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}))
@@ -45,18 +45,17 @@ func TestSyncPool(t *testing.T) {
 
 	t.Run("Work done with StartSyncPool", func(t *testing.T) {
 		syncPool := &fakeSyncPool{
-			syncCount: 0,
 			returnErr: false,
 		}
 		ch := make(chan struct{})
 		if _, err := StartSyncPool(ctx, syncPool, ch); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
-		if syncPool.syncCount != 1 {
+		if syncPool.syncCount.Load() != 1 {
 			t.Errorf("SyncOnce was called more than once")
 		}
 		ch <- struct{}{}
-		if syncPool.syncCount != 2 {
+		if syncPool.syncCount.Load() != 2 {
 			t.Errorf("SyncOnce was not called twice")
 		}
 	})
@@ -64,11 +63,16 @@ func TestSyncPool(t *testing.T) {
 
 type fakeSyncPool struct {
 	returnErr bool
-	syncCount int
+	syncCount atomic.Value
 }
 
 func (p *fakeSyncPool) SyncOnce(ctx context.Context) error {
-	p.syncCount++
+	if p.syncCount.Load() == nil {
+		p.syncCount.Store(0)
+	}
+	count := p.syncCount.Load().(int)
+	count++
+	p.syncCount.Store(count)
 	if p.returnErr {
 		return fmt.Errorf("error returned from fakeSyncPool")
 	}
