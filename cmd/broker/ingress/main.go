@@ -51,7 +51,7 @@ func main() {
 	}
 	projectID, err := utils.ProjectID(env.ProjectID)
 	if err != nil {
-		logger.Desugar().Fatal("Failed to get project id", zap.Error(err))
+		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 

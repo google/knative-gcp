@@ -42,6 +42,12 @@ spec:
   subresources:
     status: {}
   preserveUnknownFields: false
+  conversion:
+    strategy: Webhook
+    webhookClientConfig:
+      service:
+        name: webhook
+        namespace: cloud-run-events
   additionalPrinterColumns:
     - name: Ready
       type: string
@@ -56,6 +62,9 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
+    - name: v1beta1
+      served: true
+      storage: false
   validation:
     openAPIV3Schema:
       type: object

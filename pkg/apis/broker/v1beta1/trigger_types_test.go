@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
 func TestTrigger_GetGroupVersionKind(t *testing.T) {
@@ -33,5 +34,15 @@ func TestTrigger_GetGroupVersionKind(t *testing.T) {
 	got := trig.GetGroupVersionKind()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("(GetGroupVersionKind (-want +got): %v", diff)
+	}
+}
+
+func TestTrigger_GetUntypedSpec(t *testing.T) {
+	b := Trigger{
+		Spec: eventingv1beta1.TriggerSpec{},
+	}
+	s := b.GetUntypedSpec()
+	if _, ok := s.(eventingv1beta1.TriggerSpec); !ok {
+		t.Errorf("untyped spec was not a TriggerSpec")
 	}
 }

@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 type testHelper struct{}
@@ -36,8 +37,14 @@ func (t testHelper) ReadyBrokerStatus() *BrokerStatus {
 	return bs
 }
 
+func (t testHelper) UnconfiguredBrokerStatus() *BrokerStatus {
+	bs := &BrokerStatus{}
+	return bs
+}
+
 func (t testHelper) UnknownBrokerStatus() *BrokerStatus {
 	bs := &BrokerStatus{}
+	bs.InitializeConditions()
 	return bs
 }
 
@@ -58,4 +65,36 @@ func (t testHelper) AvailableEndpoints() *corev1.Endpoints {
 			}},
 		}},
 	}
+}
+
+func (t testHelper) ReadyDependencyStatus() *duckv1.KResource {
+	kr := &duckv1.KResource{}
+	kr.Status.SetConditions(apis.Conditions{{
+		Type:   "Ready",
+		Status: corev1.ConditionTrue,
+	}})
+	return kr
+}
+
+func (t testHelper) UnconfiguredDependencyStatus() *duckv1.KResource {
+	kr := &duckv1.KResource{}
+	return kr
+}
+
+func (t testHelper) UnknownDependencyStatus() *duckv1.KResource {
+	kr := &duckv1.KResource{}
+	kr.Status.SetConditions(apis.Conditions{{
+		Type:   "Ready",
+		Status: corev1.ConditionUnknown,
+	}})
+	return kr
+}
+
+func (t testHelper) FalseDependencyStatus() *duckv1.KResource {
+	kr := &duckv1.KResource{}
+	kr.Status.SetConditions(apis.Conditions{{
+		Type:   "Ready",
+		Status: corev1.ConditionFalse,
+	}})
+	return kr
 }
