@@ -20,7 +20,9 @@ import (
 	"context"
 
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
+	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
@@ -128,6 +130,8 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 
 func NewConversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	var (
+		eventsv1alpha1_ = eventsv1alpha1.SchemeGroupVersion.Version
+		eventsv1beta1_  = eventsv1beta1.SchemeGroupVersion.Version
 		pubsubv1alpha1_ = pubsubv1alpha1.SchemeGroupVersion.Version
 		pubsubv1beta1_  = pubsubv1beta1.SchemeGroupVersion.Version
 	)
@@ -138,6 +142,39 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 
 		// Specify the types of custom resource definitions that should be converted
 		map[schema.GroupKind]conversion.GroupKindConversion{
+			// events
+			eventsv1alpha1.Kind("CloudAuditLogsSource"): {
+				DefinitionName: events.CloudAuditLogsSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudAuditLogsSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudAuditLogsSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudPubSubSource"): {
+				DefinitionName: events.CloudPubSubSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudPubSubSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudPubSubSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudSchedulerSource"): {
+				DefinitionName: events.CloudSchedulerSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudSchedulerSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudSchedulerSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudStorageSource"): {
+				DefinitionName: events.CloudStorageSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudStorageSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
+				},
+			},
 			// pubsub
 			pubsubv1beta1.Kind("PullSubscription"): {
 				DefinitionName: pubsub.PullSubscriptionsResource.String(),

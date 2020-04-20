@@ -128,7 +128,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t.Run("range brokers", func(t *testing.T) {
 		gotBrokers := make(map[string]*Broker)
 		targets.RangeBrokers(func(b *Broker) bool {
-			gotBrokers[BrokerKey(b.Namespace, b.Name)] = b
+			gotBrokers[b.Key()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.Brokers, gotBrokers); diff != "" {
@@ -370,4 +370,110 @@ func TestCachedTargetsString(t *testing.T) {
 	if targets.EqualsString("random") {
 		t.Error("CachedTargets.EqualsString() with random string got=true, want=false")
 	}
+}
+
+func TestGetBrokerOrTarget(t *testing.T) {
+	t1 := &Target{
+		Id:               "uid-1",
+		Name:             "name1",
+		Namespace:        "ns1",
+		Broker:           "broker1",
+		FilterAttributes: map[string]string{"app": "foo"},
+		RetryQueue: &Queue{
+			Topic:        "abc",
+			Subscription: "abc-sub",
+		},
+		State: State_READY,
+	}
+	t2 := &Target{
+		Id:               "uid-2",
+		Name:             "name2",
+		Namespace:        "ns1",
+		Broker:           "broker1",
+		FilterAttributes: map[string]string{"app": "bar"},
+		RetryQueue: &Queue{
+			Topic:        "def",
+			Subscription: "def-sub",
+		},
+		State: State_READY,
+	}
+	t3 := &Target{
+		Id:               "uid-3",
+		Name:             "name3",
+		Namespace:        "ns2",
+		Broker:           "broker2",
+		FilterAttributes: map[string]string{"app": "foo"},
+		RetryQueue: &Queue{
+			Topic:        "ghi",
+			Subscription: "ghi-sub",
+		},
+		State: State_UNKNOWN,
+	}
+	t4 := &Target{
+		Id:               "uid-4",
+		Name:             "name4",
+		Namespace:        "ns2",
+		Broker:           "broker2",
+		FilterAttributes: map[string]string{"app": "bar"},
+		RetryQueue: &Queue{
+			Topic:        "jkl",
+			Subscription: "jkl-sub",
+		},
+		State: State_UNKNOWN,
+	}
+	b1 := &Broker{
+		Id:        "b-uid-1",
+		Address:   "broker1.ns1.example.com",
+		Name:      "broker1",
+		Namespace: "ns1",
+		DecoupleQueue: &Queue{
+			Topic:        "topic1",
+			Subscription: "sub1",
+		},
+		State: State_READY,
+		Targets: map[string]*Target{
+			"name1": t1,
+			"name2": t2,
+		},
+	}
+	b2 := &Broker{
+		Id:        "b-uid-2",
+		Address:   "broker2.ns2.example.com",
+		Name:      "broker2",
+		Namespace: "ns2",
+		DecoupleQueue: &Queue{
+			Topic:        "topic2",
+			Subscription: "sub2",
+		},
+		State: State_READY,
+		Targets: map[string]*Target{
+			"name3": t3,
+			"name4": t4,
+		},
+	}
+	val := &TargetsConfig{
+		Brokers: map[string]*Broker{
+			"ns1/broker1": b1,
+			"ns2/broker2": b2,
+		},
+	}
+
+	targets := &CachedTargets{}
+	targets.Store(val)
+
+	t.Run("get broker", func(t *testing.T) {
+		wantBroker := b1
+		gotBroker, _ := targets.GetBroker(b1.Namespace, b1.Name)
+		if diff := cmp.Diff(wantBroker, gotBroker); diff != "" {
+			t.Errorf("GetBroker (-want,+got): %v", diff)
+		}
+	})
+
+	t.Run("get target by key", func(t *testing.T) {
+		wantTargets := t1
+		gotTargets, _ := targets.GetTargetByKey(t1.Key())
+		if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+			t.Errorf("GetTargetByKey (-want,+got): %v", diff)
+		}
+	})
 }

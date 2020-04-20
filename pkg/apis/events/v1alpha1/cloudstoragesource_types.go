@@ -19,14 +19,14 @@ package v1alpha1
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"knative.dev/pkg/apis"
-	"knative.dev/pkg/apis/duck"
-	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/webhook/resourcesemantics"
 )
@@ -44,12 +44,16 @@ type CloudStorageSource struct {
 	Status CloudStorageSourceStatus `json:"status"`
 }
 
+// Verify that CloudStorageSource matches various duck types.
 var (
+	_ apis.Convertible             = (*CloudStorageSource)(nil)
+	_ apis.Defaultable             = (*CloudStorageSource)(nil)
+	_ apis.Validatable             = (*CloudStorageSource)(nil)
+	_ runtime.Object               = (*CloudStorageSource)(nil)
 	_ kmeta.OwnerRefable           = (*CloudStorageSource)(nil)
 	_ resourcesemantics.GenericCRD = (*CloudStorageSource)(nil)
-	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
 	_ kngcpduck.Identifiable       = (*CloudStorageSource)(nil)
-	_                              = duck.VerifyType(&CloudStorageSource{}, &duckv1.Conditions{})
+	_ kngcpduck.PubSubable         = (*CloudStorageSource)(nil)
 )
 
 // CloudStorageSourceSpec is the spec for a CloudStorageSource resource

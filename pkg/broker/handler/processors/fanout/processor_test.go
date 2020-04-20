@@ -19,6 +19,7 @@ package fanout
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"testing"
 
@@ -45,22 +46,25 @@ func TestFanoutSuccess(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	wantTargets := newTestTargets(ns, broker, wantNum)
-	gotTargets := memory.NewEmptyTargets()
+	testTargets := newTestTargets(ns, broker, wantNum)
+	wantTargets := make([]string, 0, wantNum)
+	testTargets.RangeAllTargets(func(t *config.Target) bool {
+		wantTargets = append(wantTargets, t.Key())
+		return true
+	})
+	sort.Strings(wantTargets)
+	var gotTargets []string
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		InterceptFunc: func(ctx context.Context, e *event.Event) *event.Event {
-			b, _ := handlerctx.GetBroker(ctx)
-			t, _ := handlerctx.GetTarget(ctx)
-			gotTargets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
-				bm.UpsertTargets(t)
-			})
+			t, _ := handlerctx.GetTargetKey(ctx)
+			gotTargets = append(gotTargets, t)
 			return e
 		},
 	}
 
-	p := &Processor{MaxConcurrency: 2, Targets: wantTargets}
+	p := &Processor{MaxConcurrency: 2, Targets: testTargets}
 	p.WithNext(next)
 
 	e := event.New()
@@ -90,8 +94,9 @@ func TestFanoutSuccess(t *testing.T) {
 	close(ch)
 
 	// Make sure the processor sets the broker and targets in the context.
-	if !gotTargets.EqualsString(wantTargets.String()) {
-		t.Errorf("targets received in the context got=%s, want=%s", gotTargets.String(), wantTargets.String())
+	sort.Strings(gotTargets)
+	if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+		t.Errorf("got target keys (-want,+got): %v", diff)
 	}
 }
 
@@ -100,14 +105,14 @@ func TestFanoutPartialFailure(t *testing.T) {
 	ns, broker := "ns", "broker"
 	bk := config.BrokerKey(ns, broker)
 	wantNum := 4
-	wantTargets := newTestTargets(ns, broker, wantNum)
+	testTargets := newTestTargets(ns, broker, wantNum)
 
 	next := &processors.FakeProcessor{
 		PrevEventsCh: ch,
 		OneTimeErr:   true,
 	}
 
-	p := &Processor{MaxConcurrency: 2, Targets: wantTargets}
+	p := &Processor{MaxConcurrency: 2, Targets: testTargets}
 	p.WithNext(next)
 
 	e := event.New()

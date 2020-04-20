@@ -19,30 +19,18 @@ package context
 import (
 	"context"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
-
-	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
-func TestTarget(t *testing.T) {
-	_, err := GetTarget(context.Background())
-	if err != ErrTargetNotPresent {
-		t.Errorf("error from GetTarget got=%v, want=%v", err, ErrTargetNotPresent)
+func TestTargetKey(t *testing.T) {
+	_, err := GetTargetKey(context.Background())
+	if err != ErrTargetKeyNotPresent {
+		t.Errorf("error from GetTargetKey got=%v, want=%v", err, ErrTargetKeyNotPresent)
 	}
 
-	wantTarget := &config.Target{
-		Name:      "target",
-		Namespace: "ns",
-		Address:   "address",
-		Broker:    "broker",
-	}
-	ctx := WithTarget(context.Background(), wantTarget)
-	gotTarget, err := GetTarget(ctx)
-	if err != nil {
-		t.Errorf("unexpected error from GetTarget: %v", err)
-	}
-	if diff := cmp.Diff(wantTarget, gotTarget); diff != "" {
-		t.Errorf("target from context (-want,+got): %v", diff)
+	wantTarget := "my-target"
+	ctx := WithTargetKey(context.Background(), wantTarget)
+	gotTarget, err := GetTargetKey(ctx)
+	if gotTarget != wantTarget {
+		t.Errorf("GetTargetKey got=%v, want=%v", gotTarget, wantTarget)
 	}
 }
