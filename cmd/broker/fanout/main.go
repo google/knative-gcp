@@ -57,7 +57,7 @@ var (
 type envConfig struct {
 	PodName                string        `envconfig:"POD_NAME" required:"true"`
 	ProjectID              string        `envconfig:"PROJECT_ID"`
-	TargetsConfigPath      string        `envconfig:"TARGETS_CONFIG_PATH"`
+	TargetsConfigPath      string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency     int           `envconfig:"HANDLER_CONCURRENCY"`
 	MaxConcurrencyPerEvent int           `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
 	TimeoutPerEvent        time.Duration `envconfig:"TIMEOUT_PER_EVENT"`

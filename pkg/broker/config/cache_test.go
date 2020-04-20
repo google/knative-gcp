@@ -128,7 +128,7 @@ func TestCachedTargetsRange(t *testing.T) {
 	t.Run("range brokers", func(t *testing.T) {
 		gotBrokers := make(map[string]*Broker)
 		targets.RangeBrokers(func(b *Broker) bool {
-			gotBrokers[BrokerKey(b.Namespace, b.Name)] = b
+			gotBrokers[b.Key()] = b
 			return true
 		})
 		if diff := cmp.Diff(val.Brokers, gotBrokers); diff != "" {
@@ -471,7 +471,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 
 	t.Run("get target by key", func(t *testing.T) {
 		wantTargets := t1
-		gotTargets, _ := targets.GetTargetByKey(TriggerKey(t1.Namespace, t1.Broker, t1.Name))
+		gotTargets, _ := targets.GetTargetByKey(t1.Key())
 		if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
 			t.Errorf("GetTargetByKey (-want,+got): %v", diff)
 		}

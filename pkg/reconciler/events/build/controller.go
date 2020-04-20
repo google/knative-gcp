@@ -16,18 +16,20 @@ package build
 import (
 	"context"
 
+	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudbuildsource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
 	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"k8s.io/client-go/tools/cache"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
 )
 
 const (
@@ -63,7 +65,8 @@ func NewController(
 	impl := cloudbuildsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
-	cloudbuildsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	cloudbuildsourceInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource")),

@@ -22,19 +22,28 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 )
 
 // TODO could reuse some fanout UT test function here. Needing a semi e2e test, perhaps could be combined with fanout semi e2e test, or reuse some function.
 // TODO making some fanout UT test/e2e test function shared.
 func TestWatchAndSync(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	testProject := "test-project"
+	ps, psCleanup := createTestPubsubClient(ctx, t, testProject)
+	defer psCleanup()
 	signal := make(chan struct{})
 	targets := memory.NewEmptyTargets()
-	p, err := StartSyncPool(context.Background(), targets,
+	p, err := StartSyncPool(ctx, targets,
+		pool.WithPubsubClient(ps),
 		pool.WithProjectID(testProject),
 		pool.WithSyncSignal(signal),
 	)
@@ -111,7 +120,7 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 	})
 
 	targets.RangeAllTargets(func(t *config.Target) bool {
-		wantHandlers[config.TriggerKey(t.Namespace, t.Broker, t.Name)] = true
+		wantHandlers[t.Key()] = true
 		return true
 	})
 
@@ -135,4 +144,23 @@ func makeTarget(name, brokerName, namespace string) *config.Target {
 			Subscription: "sub",
 		},
 	}
+}
+
+// TODO merge with testPubsubClient() in pkg/broker/handler/pool/fanout/pool_test.go.
+func createTestPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
+	t.Helper()
+	srv := pstest.NewServer()
+	conn, err := grpc.Dial(srv.Addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("failed to dial test pubsub connection: %v", err)
+	}
+	cleanup := func() {
+		srv.Close()
+		conn.Close()
+	}
+	c, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+	if err != nil {
+		t.Fatalf("failed to create test pubsub client: %v", err)
+	}
+	return c, cleanup
 }

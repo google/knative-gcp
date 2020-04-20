@@ -124,8 +124,7 @@ func TestCreates(t *testing.T) {
 				policyManager: m,
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
-				WithCloudPubSubSourceServiceAccountName("test"))
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
