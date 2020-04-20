@@ -48,11 +48,16 @@ func TestSyncPool(t *testing.T) {
 			syncCount: 0,
 			returnErr: false,
 		}
-		if _, err := StartSyncPool(ctx, syncPool, make(chan struct{})); err != nil {
+		ch := make(chan struct{})
+		if _, err := StartSyncPool(ctx, syncPool, ch); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		if syncPool.syncCount != 1 {
-			t.Errorf("SyncOnce was called more than once with a signal")
+			t.Errorf("SyncOnce was called more than once")
+		}
+		ch <- struct{}{}
+		if syncPool.syncCount != 2 {
+			t.Errorf("SyncOnce was not called twice")
 		}
 	})
 }
