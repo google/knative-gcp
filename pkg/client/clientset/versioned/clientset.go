@@ -21,6 +21,7 @@ package versioned
 import (
 	"fmt"
 
+	eventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
@@ -34,6 +35,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	EventingV1beta1() eventingv1beta1.EventingV1beta1Interface
 	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
 	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
@@ -46,12 +48,18 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	eventingV1beta1   *eventingv1beta1.EventingV1beta1Client
 	eventsV1alpha1    *eventsv1alpha1.EventsV1alpha1Client
 	eventsV1beta1     *eventsv1beta1.EventsV1beta1Client
 	messagingV1alpha1 *messagingv1alpha1.MessagingV1alpha1Client
 	policyV1alpha1    *policyv1alpha1.PolicyV1alpha1Client
 	pubsubV1alpha1    *pubsubv1alpha1.PubsubV1alpha1Client
 	pubsubV1beta1     *pubsubv1beta1.PubsubV1beta1Client
+}
+
+// EventingV1beta1 retrieves the EventingV1beta1Client
+func (c *Clientset) EventingV1beta1() eventingv1beta1.EventingV1beta1Interface {
+	return c.eventingV1beta1
 }
 
 // EventsV1alpha1 retrieves the EventsV1alpha1Client
@@ -105,6 +113,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
+	cs.eventingV1beta1, err = eventingv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.eventsV1alpha1, err = eventsv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -141,6 +153,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
+	cs.eventingV1beta1 = eventingv1beta1.NewForConfigOrDie(c)
 	cs.eventsV1alpha1 = eventsv1alpha1.NewForConfigOrDie(c)
 	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.NewForConfigOrDie(c)
@@ -155,6 +168,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.eventingV1beta1 = eventingv1beta1.New(c)
 	cs.eventsV1alpha1 = eventsv1alpha1.New(c)
 	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.New(c)

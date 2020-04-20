@@ -20,8 +20,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	convert "github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"knative.dev/pkg/apis"
 )
@@ -32,7 +31,7 @@ func (source *PullSubscription) ConvertTo(_ context.Context, to apis.Convertible
 	switch sink := to.(type) {
 	case *v1beta1.PullSubscription:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.PubSubSpec = convertToV1beta1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.PubSubSpec = convert.ToV1beta1PubSubSpec(source.Spec.PubSubSpec)
 		sink.Spec.Topic = source.Spec.Topic
 		sink.Spec.AckDeadline = source.Spec.AckDeadline
 		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
@@ -44,7 +43,7 @@ func (source *PullSubscription) ConvertTo(_ context.Context, to apis.Convertible
 			sink.Spec.Mode = mode
 		}
 		sink.Spec.AdapterType = source.Spec.AdapterType
-		sink.Status.PubSubStatus = convertToV1beta1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.PubSubStatus = convert.ToV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.TransformerURI = source.Status.TransformerURI
 		sink.Status.SubscriptionID = source.Status.SubscriptionID
 		return nil
@@ -60,7 +59,7 @@ func (sink *PullSubscription) ConvertFrom(_ context.Context, from apis.Convertib
 	switch source := from.(type) {
 	case *v1beta1.PullSubscription:
 		sink.ObjectMeta = source.ObjectMeta
-		sink.Spec.PubSubSpec = convertFromV1beta1PubSubSpec(source.Spec.PubSubSpec)
+		sink.Spec.PubSubSpec = convert.FromV1beta1PubSubSpec(source.Spec.PubSubSpec)
 		sink.Spec.Topic = source.Spec.Topic
 		sink.Spec.AckDeadline = source.Spec.AckDeadline
 		sink.Spec.RetainAckedMessages = source.Spec.RetainAckedMessages
@@ -72,7 +71,7 @@ func (sink *PullSubscription) ConvertFrom(_ context.Context, from apis.Convertib
 			sink.Spec.Mode = mode
 		}
 		sink.Spec.AdapterType = source.Spec.AdapterType
-		sink.Status.PubSubStatus = convertFromV1beta1PubSubStatus(source.Status.PubSubStatus)
+		sink.Status.PubSubStatus = convert.FromV1beta1PubSubStatus(source.Status.PubSubStatus)
 		sink.Status.TransformerURI = source.Status.TransformerURI
 		sink.Status.SubscriptionID = source.Status.SubscriptionID
 		return nil
@@ -109,66 +108,4 @@ func convertFromV1beta1ModeType(from v1beta1.ModeType) (ModeType, error) {
 	default:
 		return "unknown", fmt.Errorf("unknown ModeType %v", from)
 	}
-}
-
-func convertToV1beta1PubSubSpec(from v1alpha1.PubSubSpec) duckv1beta1.PubSubSpec {
-	to := duckv1beta1.PubSubSpec{}
-	to.SourceSpec = from.SourceSpec
-	to.IdentitySpec = convertToV1beta1IdentitySpec(from.IdentitySpec)
-	to.Secret = from.Secret
-	to.Project = from.Project
-	return to
-}
-func convertFromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) v1alpha1.PubSubSpec {
-	to := v1alpha1.PubSubSpec{}
-	to.SourceSpec = from.SourceSpec
-	to.IdentitySpec = convertFromV1beta1IdentitySpec(from.IdentitySpec)
-	to.Secret = from.Secret
-	to.Project = from.Project
-	return to
-}
-
-func convertToV1beta1IdentitySpec(from v1alpha1.IdentitySpec) duckv1beta1.IdentitySpec {
-	to := duckv1beta1.IdentitySpec{}
-	to.GoogleServiceAccount = from.GoogleServiceAccount
-	return to
-}
-func convertFromV1beta1IdentitySpec(from duckv1beta1.IdentitySpec) v1alpha1.IdentitySpec {
-	to := v1alpha1.IdentitySpec{}
-	to.GoogleServiceAccount = from.GoogleServiceAccount
-	return to
-}
-
-func convertToV1beta1PubSubStatus(from v1alpha1.PubSubStatus) duckv1beta1.PubSubStatus {
-	to := duckv1beta1.PubSubStatus{}
-	to.IdentityStatus = convertToV1beta1IdentityStatus(from.IdentityStatus)
-	to.SinkURI = from.SinkURI
-	to.CloudEventAttributes = from.CloudEventAttributes
-	to.ProjectID = from.ProjectID
-	to.TopicID = from.TopicID
-	to.SubscriptionID = from.SubscriptionID
-	return to
-}
-func convertFromV1beta1PubSubStatus(from duckv1beta1.PubSubStatus) v1alpha1.PubSubStatus {
-	to := v1alpha1.PubSubStatus{}
-	to.IdentityStatus = convertFromV1beta1IdentityStatus(from.IdentityStatus)
-	to.SinkURI = from.SinkURI
-	to.CloudEventAttributes = from.CloudEventAttributes
-	to.ProjectID = from.ProjectID
-	to.TopicID = from.TopicID
-	to.SubscriptionID = from.SubscriptionID
-	return to
-}
-
-func convertToV1beta1IdentityStatus(from v1alpha1.IdentityStatus) duckv1beta1.IdentityStatus {
-	to := duckv1beta1.IdentityStatus{}
-	to.Status = from.Status
-	to.ServiceAccountName = from.ServiceAccountName
-	return to
-}
-func convertFromV1beta1IdentityStatus(from duckv1beta1.IdentityStatus) v1alpha1.IdentityStatus {
-	to := v1alpha1.IdentityStatus{}
-	to.Status = from.Status
-	to.ServiceAccountName = from.ServiceAccountName
-	return to
 }

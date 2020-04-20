@@ -138,7 +138,7 @@ func main() {
 	logger.Info("Starting the broker fanout")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := fanout.NewSyncPool(targetsConifg, buildPoolOptions(env, syncSignal)...)
+	syncPool, err := fanout.NewSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}

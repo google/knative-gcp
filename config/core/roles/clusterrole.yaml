@@ -114,6 +114,7 @@ rules:
     - configmaps
     - pods # For reading termination messages
     - secrets
+    - endpoints
   verbs: &readOnly
     - get
     - list
@@ -125,6 +126,15 @@ rules:
   verbs:
     - create
     - patch
+
+- apiGroups:
+    - eventing.knative.dev
+  resources:
+    - brokers
+    - brokers/status
+    - triggers
+    - triggers/status
+  verbs: *everything
 
 - apiGroups:
     - keda.k8s.io

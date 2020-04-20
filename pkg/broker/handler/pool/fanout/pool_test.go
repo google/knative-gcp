@@ -39,7 +39,7 @@ func TestWatchAndSync(t *testing.T) {
 	defer psclose()
 	signal := make(chan struct{})
 	targets := memory.NewEmptyTargets()
-	syncPool, err := NewSyncPool(targets,
+	syncPool, err := NewSyncPool(ctx, targets,
 		pool.WithPubsubClient(ps),
 		pool.WithProjectID(testProject),
 		pool.WithSyncSignal(signal))
@@ -134,7 +134,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	defer b2t3close()
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(targets,
+	syncPool, err := NewSyncPool(ctx, targets,
 		pool.WithPubsubClient(ps),
 		pool.WithProjectID(testProject),
 		pool.WithSyncSignal(signal))
@@ -236,3 +236,5 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 		t.Errorf("handlers map (-want,+got): %v", diff)
 	}
 }
+
+// TODO(yolocs): refactor helper functions.
