@@ -26,25 +26,28 @@ ko apply -f ./config
 
 ### Option 2: Install a [release](https://github.com/google/knative-gcp/releases).
 
-Remember to update `{{< version >}}` in the commands below with the
-appropriate release version.
+1. Pick a knative-gcp release version:
 
-1. First install the CRDs by running the `kubectl apply` command with the
+   ```shell
+   export KGCP_VERSION=v0.14.0
+   ```
+
+2. First install the CRDs by running the `kubectl apply` command with the
    `--selector` flag. This prevents race conditions during the install,
    which cause intermittent errors:
 
    ```shell
    kubectl apply --selector messaging.cloud.google.com/crd-install=true \
-   --filename https://github.com/google/knative-gcp/releases/download/{{< version >}}/cloud-run-events.yaml
+   --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    kubectl apply --selector events.cloud.google.com/crd-install=true \
-   --filename https://github.com/google/knative-gcp/releases/download/{{< version >}}/cloud-run-events.yaml
+   --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
-2. To complete the install run the `kubectl apply` command again, this time
+3. To complete the install run the `kubectl apply` command again, this time
    without the `--selector` flags:
 
    ```shell
-   kubectl apply --filename https://github.com/google/knative-gcp/releases/download/{{< version >}}/cloud-run-events.yaml
+   kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
 ## Configure the Authentication Mechanism for GCP
@@ -62,6 +65,7 @@ the same as your current cluster. You may use
 **_Note_**: Both scripts will have a step to create a Google Cloud Service
 Account `cloud-run-events`. Ignore the error message if you already had
 this service account (error for 'service account already exists').
+TODO([#896](https://github.com/google/knative-gcp/issues/896)) Get rid of the error message.
 
 **_Note_**: The configuration steps have been automated by the scripts below. If
 wish to configure the auth manually, refer to
