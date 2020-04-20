@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -77,7 +78,11 @@ func (h *Handler) handle(ctx context.Context) {
 		// TODO(yolocs): we need to update dep for fix:
 		// https://github.com/cloudevents/sdk-go/pull/430
 		msg, err := h.PubsubEvents.Receive(ctx)
-		if err != nil {
+		// It doesn't seem like that these errors will even happen.
+		if err == io.EOF {
+			logging.FromContext(ctx).Warn("handler goroutine no longer receiving messages from Pubsub")
+			break
+		} else if err != nil {
 			logging.FromContext(ctx).Error("failed to receive the next message from Pubsub", zap.Error(err))
 			continue
 		}
