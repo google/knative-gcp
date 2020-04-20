@@ -19,6 +19,7 @@ package main
 import (
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
@@ -36,6 +37,8 @@ type envConfig struct {
 //    GCE metadata.
 // 3. It expects broker configmap mounted at "/var/run/cloud-run-events/broker/targets"
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
+
 	// Since we pass nil, a default config with no error will be returned.
 	cfg, _ := logging.NewConfigFromMap(nil)
 	logger, _ := logging.NewLoggerFromConfig(cfg, "broker-ingress")

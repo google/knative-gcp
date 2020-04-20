@@ -42,6 +42,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -64,6 +65,7 @@ type envConfig struct {
 }
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
 	flag.Parse()
 
 	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
