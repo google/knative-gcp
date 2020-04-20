@@ -30,13 +30,13 @@ receive messages (`roles/pubsub.subscriber`). However, in the case of the
 (`roles/pubsub.publisher`).
 
 1. Create a new Service Account named `cre-pubsub` with the following
-    =command:
+    command:
 
     ```shell
     gcloud iam service-accounts create cre-pubsub
     ```
 
-2. Give that Service Account the necessary permissions on your project.
+1. Give that Service Account the necessary permissions on your project.
 
     In this example, and for the sake of simplicity, we will just grant
     `roles/pubsub.editor` privileges to the Service Account, which
@@ -91,7 +91,7 @@ information about Workload Identity see
 
     1. Create a Kubernetes Service Account with an `OwnerReference` of the source.
 
-    2. Bind the Kubernetes Service Account with Google Cloud Service
+    1. Bind the Kubernetes Service Account with Google Cloud Service
      Account, this will add `role/iam.workloadIdentityUser` to the
      Google Cloud Service Account. The scope of this role is only for
      this specific Google Cloud Service Account. It is equivalent to this
@@ -104,7 +104,7 @@ information about Workload Identity see
         GCP-service-account@$PROJECT_ID.iam.gserviceaccount.com
         ```
 
-    3. Annotate the Kubernetes Service Account with
+    1. Annotate the Kubernetes Service Account with
      `iam.gke.io/gcp-service-account=GCP-service-account@PROJECT_ID.iam.gserviceaccount.com`
 
     For every namespace, the Kubernetes Service Account and the Google
@@ -126,7 +126,7 @@ information about Workload Identity see
     --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
-2. Create a secret on the Kubernetes cluster with the downloaded key.
+1. Create a secret on the Kubernetes cluster with the downloaded key.
     Remember to create the secret in the namespace your resources will
     reside. The example below does so in the `default` namespace.
 

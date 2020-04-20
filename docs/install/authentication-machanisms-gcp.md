@@ -55,7 +55,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --identity-namespace=$PROJECT_ID.svc.id.goog
     ```
 
-2. Bind the Kubernetes Service Account `controller` with Google Cloud
+1. Bind the Kubernetes Service Account `controller` with Google Cloud
     Service Account.
 
     ```shell
@@ -66,7 +66,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member $MEMBER cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
-3. Add annotation to Kubernetes Service Account `controller`.
+1. Add annotation to Kubernetes Service Account `controller`.
 
     ```shell
     kubectl annotate serviceaccount controller iam.gke.io/gcp-service-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
@@ -83,7 +83,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --iam-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
     ```
 
-2. Create a Secret on the Kubernetes cluster in the `cloud-run-events`
+1. Create a Secret on the Kubernetes cluster in the `cloud-run-events`
     namespace with the downloaded key:
 
     ```shell
@@ -93,7 +93,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     Note that `google-cloud-key` and `key.json` are default values
     expected by our control plane.
 
-3. Restart controller with:
+1. Restart controller with:
 
     ```shell
     kubectl delete pod -n cloud-run-events --selector role=controller

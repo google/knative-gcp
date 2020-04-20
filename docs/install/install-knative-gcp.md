@@ -32,7 +32,7 @@ ko apply -f ./config
    export KGCP_VERSION=v0.14.0
    ```
 
-2. First install the CRDs by running the `kubectl apply` command with the
+1. First install the CRDs by running the `kubectl apply` command with the
    `--selector` flag. This prevents race conditions during the install,
    which cause intermittent errors:
 
@@ -43,7 +43,7 @@ ko apply -f ./config
    --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
-3. To complete the install run the `kubectl apply` command again, this time
+1. To complete the install run the `kubectl apply` command again, this time
    without the `--selector` flags:
 
    ```shell
