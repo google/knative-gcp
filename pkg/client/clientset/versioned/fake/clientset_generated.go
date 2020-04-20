@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	eventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1"
+	fakeeventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1/fake"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	fakeeventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
@@ -87,6 +89,11 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 }
 
 var _ clientset.Interface = &Clientset{}
+
+// EventingV1beta1 retrieves the EventingV1beta1Client
+func (c *Clientset) EventingV1beta1() eventingv1beta1.EventingV1beta1Interface {
+	return &fakeeventingv1beta1.FakeEventingV1beta1{Fake: &c.Fake}
+}
 
 // EventsV1alpha1 retrieves the EventsV1alpha1Client
 func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {

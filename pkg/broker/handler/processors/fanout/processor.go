@@ -32,7 +32,8 @@ import (
 )
 
 type fanoutResult struct {
-	err error
+	targetKey string
+	err       error
 }
 
 // Processor fanouts an event based on the broker key in the context.
@@ -57,9 +58,10 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 	broker, ok := p.Targets.GetBrokerByKey(bk)
 	if !ok {
-		return fmt.Errorf("event broker %q doesn't exist in config", bk)
+		// If the broker no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("broker no longer exist in the config", zap.String("broker", bk))
+		return nil
 	}
-	ctx = handlerctx.WithBroker(ctx, broker)
 
 	tc := make(chan *config.Target)
 	go func() {
@@ -88,8 +90,11 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 		defer close(out)
 		for target := range tc {
 			// Timeout is controller by the context.
-			ctx = handlerctx.WithTarget(ctx, target)
-			out <- &fanoutResult{err: p.Next().Process(ctx, event)}
+			ctx = handlerctx.WithTargetKey(ctx, target.Key())
+			out <- &fanoutResult{
+				targetKey: target.Key(),
+				err:       p.Next().Process(ctx, event),
+			}
 		}
 	}()
 	return out
@@ -106,6 +111,7 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 	count := func(c <-chan *fanoutResult) {
 		for fr := range c {
 			if fr.err != nil {
+				logging.FromContext(ctx).Error("error processing event for fanout target", zap.String("target", fr.targetKey))
 				atomic.AddInt32(&errs, 1)
 			} else {
 				atomic.AddInt32(&passes, 1)

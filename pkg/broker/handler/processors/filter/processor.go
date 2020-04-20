@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -30,6 +31,9 @@ import (
 // Processor is the processor to filter events based on trigger filters.
 type Processor struct {
 	processors.BaseProcessor
+
+	// Targets is the targets from config.
+	Targets config.ReadonlyTargets
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -37,10 +41,17 @@ var _ processors.Interface = (*Processor)(nil)
 // Process passes the event to the next processor if the event passes the filter.
 // Otherwise it simply returns.
 func (p *Processor) Process(ctx context.Context, event *event.Event) error {
-	target, err := handlerctx.GetTarget(ctx)
+	tk, err := handlerctx.GetTargetKey(ctx)
 	if err != nil {
 		return err
 	}
+	target, ok := p.Targets.GetTargetByKey(tk)
+	if !ok {
+		// If the target no longer exists, then there is nothing to process.
+		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
+		return nil
+	}
+
 	if target.FilterAttributes == nil {
 		return p.Next().Process(ctx, event)
 	}
