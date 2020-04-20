@@ -140,7 +140,7 @@ func main() {
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
 	syncPool, err := fanout.NewSyncPool(targetsConifg, buildPoolOptions(env, syncSignal)...)
 	if err != nil {
-		logger.Fatal("Failed to get fanout sync pool", zap.Error(err))
+		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
 	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
 		logger.Fatalw("Failed to start fanout sync pool", zap.Error(err))

@@ -28,12 +28,13 @@ func TestSyncPool(t *testing.T) {
 	wantErr := fmt.Errorf("error returned from fakeSyncPool")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	syncPool := &FakeSyncPool{}
 
 	t.Run("StartSyncPool returns error", func(t *testing.T) {
-		// Add some brokers with their targets.
-		tctx := context.WithValue(ctx, "error", "true")
-		_, gotErr := StartSyncPool(tctx, syncPool, make(chan struct{}))
+		syncPool := &fakeSyncPool{
+			syncCount: 0,
+			returnErr: true,
+		}
+		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}))
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -43,18 +44,27 @@ func TestSyncPool(t *testing.T) {
 	})
 
 	t.Run("Work done with StartSyncPool", func(t *testing.T) {
-		// Add some brokers with their targets.
-		tctx := context.WithValue(ctx, "error", "false")
-		if _, err := StartSyncPool(tctx, syncPool, make(chan struct{})); err != nil {
+		syncPool := &fakeSyncPool{
+			syncCount: 0,
+			returnErr: false,
+		}
+		if _, err := StartSyncPool(ctx, syncPool, make(chan struct{})); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
+		}
+		if syncPool.syncCount != 1 {
+			t.Errorf("SyncOnce was called more than once with a signal")
 		}
 	})
 }
 
-type FakeSyncPool struct{}
+type fakeSyncPool struct {
+	returnErr bool
+	syncCount int
+}
 
-func (p *FakeSyncPool) SyncOnce(ctx context.Context) error {
-	if ctx.Value("error") == "true" {
+func (p *fakeSyncPool) SyncOnce(ctx context.Context) error {
+	p.syncCount++
+	if p.returnErr {
 		return fmt.Errorf("error returned from fakeSyncPool")
 	}
 	return nil
