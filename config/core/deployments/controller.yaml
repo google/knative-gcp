@@ -78,5 +78,4 @@ spec:
         secret:
           secretName: google-cloud-key
           optional: true
-      serviceAccount: controller
       terminationGracePeriodSeconds: 10

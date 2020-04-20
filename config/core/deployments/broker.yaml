@@ -30,15 +30,21 @@ spec:
     metadata:
       labels: *labels
     spec:
+      # Only needed if running with workload identity.
+      serviceAccountName: broker
       containers:
       - name: broker-ingress
-        image: github.com/google/knative-gcp/cmd/broker/ingress
+        image: ko://github.com/google/knative-gcp/cmd/broker/ingress
         env:
-          - name: PORT
-            value: "8080"
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json        
+        - name: PORT
+          value: "8080"
         volumeMounts:
-        - mountPath: /var/run/cloud-run-events/broker
-          name: broker-config
+        - name: broker-config
+          mountPath: /var/run/cloud-run-events/broker
+        - name: google-cloud-key
+          mountPath: /var/secrets/google          
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
             cpu: 1000m
@@ -50,9 +56,13 @@ spec:
         - name: http
           containerPort: 8080
       volumes:
-      - configMap:
+      - name: broker-config
+        configMap:
           name: broker-targets
-        name: broker-config
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
+          optional: true
       
 ---
 
@@ -73,28 +83,33 @@ spec:
     metadata:
       labels: *labels
     spec:
+      # Needed to access K8s resources and pubsub when using workload identity.
       serviceAccountName: broker
       containers:
       - name: broker-fanout
-        image: github.com/google/knative-gcp/cmd/broker/fanout
+        image: ko://github.com/google/knative-gcp/cmd/broker/fanout
         env:
-          - name: SYSTEM_NAMESPACE
-            valueFrom:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json        
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
               fieldRef:
-                fieldPath: metadata.namespace
-          - name: POD_NAME
-            valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          - name: CONFIG_LOGGING_NAME
-            value: config-logging
-          - name: CONFIG_OBSERVABILITY_NAME
-            value: config-observability
-          - name: METRICS_DOMAIN
-            value: cloud.google.com/events
+                fieldPath: metadata.name
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: cloud.google.com/events
         volumeMounts:
-        - mountPath: /var/run/cloud-run-events/broker
-          name: broker-config
+        - name: broker-config
+          mountPath: /var/run/cloud-run-events/broker
+        - name: google-cloud-key
+          mountPath: /var/secrets/google            
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
             cpu: 1000m
@@ -103,9 +118,14 @@ spec:
             cpu: 100m
             memory: 100Mi
       volumes:
-      - configMap:
+      - name: broker-config
+        configMap:
           name: broker-targets
-        name: broker-config
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
+          optional: true
+        
 
 ---
 
@@ -126,28 +146,33 @@ spec:
     metadata:
       labels: *labels
     spec:
+      # Needed to access K8s resources and pubsub when using workload identity.
       serviceAccountName: broker
       containers:
       - name: broker-retry
-        image: github.com/google/knative-gcp/cmd/broker/retry
+        image: ko://github.com/google/knative-gcp/cmd/broker/retry
         env:
-          - name: SYSTEM_NAMESPACE
-            valueFrom:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/secrets/google/key.json
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
               fieldRef:
-                fieldPath: metadata.namespace
-          - name: POD_NAME
-            valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          - name: CONFIG_LOGGING_NAME
-            value: config-logging
-          - name: CONFIG_OBSERVABILITY_NAME
-            value: config-observability
-          - name: METRICS_DOMAIN
-            value: cloud.google.com/events
+                fieldPath: metadata.name
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: cloud.google.com/events
         volumeMounts:
-        - mountPath: /var/run/cloud-run-events/broker
-          name: broker-config
+        - name: broker-config
+          mountPath: /var/run/cloud-run-events/broker
+        - name: google-cloud-key
+          mountPath: /var/secrets/google 
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
             cpu: 1000m
@@ -156,6 +181,10 @@ spec:
             cpu: 100m
             memory: 100Mi
       volumes:
-      - configMap:
+      - name: broker-config
+        configMap:
           name: broker-targets
-        name: broker-config
+      - name: google-cloud-key
+        secret:
+          secretName: google-cloud-key
+          optional: true
