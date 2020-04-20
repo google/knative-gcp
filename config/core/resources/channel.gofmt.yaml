@@ -57,29 +57,58 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
-  validation:
-    openAPIV3Schema:
-      type: object
-      properties:
-        spec:
+      schema:
+        openAPIV3Schema:
           type: object
           properties:
-            {{- replace_with 12 "identity_spec" }}
-            {{- replace_with 12 "secret_key_selector" }}
-            project:
-              type: string
-              description: >
-                ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
-                'my-project-1234' rather than its display name, 'My Project' or its number
-                '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
-            {{- replace_with 12 "subscribable" }}
-        status:
+            spec:
+              type: object
+              properties:
+                {{- replace_with 16 "identity_spec" }}
+                {{- replace_with 16 "secret_key_selector" }}
+                project:
+                  type: string
+                  description: >
+                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
+                    'my-project-1234' rather than its display name, 'My Project' or its number
+                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
+                {{- replace_with 16 "subscribable_v1alpha1" }}
+            status:
+              type: object
+              properties:
+                {{- replace_with 16 "identity_status"}}
+                {{- replace_with 16 "address_status" }}
+                {{- replace_with 16 "subscribable_type_status" }}
+                projectId:
+                  type: string
+                subscriptionId:
+                  type: string
+    - name: v1beta1
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
           type: object
           properties:
-            {{- replace_with 12 "identity_status"}}
-            {{- replace_with 12 "address_status" }}
-            {{- replace_with 12 "subscribable_type_status" }}
-            projectId:
-              type: string
-            subscriptionId:
-              type: string
+            spec:
+              type: object
+              properties:
+                {{- replace_with 16 "identity_spec" }}
+                {{- replace_with 16 "secret_key_selector" }}
+                project:
+                  type: string
+                  description: >
+                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
+                    'my-project-1234' rather than its display name, 'My Project' or its number
+                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
+                {{- replace_with 16 "subscribable_v1beta1" }}
+            status:
+              type: object
+              properties:
+                {{- replace_with 16 "identity_status"}}
+                {{- replace_with 16 "address_status" }}
+                {{- replace_with 16 "subscribable_status" }}
+                projectId:
+                  type: string
+                subscriptionId:
+                  type: string

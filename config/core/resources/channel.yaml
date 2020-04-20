@@ -58,122 +58,254 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
-  validation:
-    openAPIV3Schema:
-      type: object
-      properties:
-        spec:
+      schema:
+        openAPIV3Schema:
           type: object
           properties:
-            googleServiceAccount:
-              type: string
-              description: >
-                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
-                account must be a valid Google service account (see
-                https://cloud.google.com/iam/docs/service-accounts).
-            secret:
-              type: object
-              description: >
-                Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
-                account key in the JSON format (see
-                https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
-                secret.name of 'google-cloud-key' and secret.key of 'key.json'.
-              properties:
-                name:
-                  type: string
-                key:
-                  type: string
-                optional:
-                  type: boolean
-            project:
-              type: string
-              description: >
-                ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
-                'my-project-1234' rather than its display name, 'My Project' or its number
-                '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
-            subscribable:
+            spec:
               type: object
               properties:
-                subscribers:
+                googleServiceAccount:
+                  type: string
+                  description: >
+                    GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                    account must be a valid Google service account (see
+                    https://cloud.google.com/iam/docs/service-accounts).
+                secret:
+                  type: object
+                  description: >
+                    Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
+                    account key in the JSON format (see
+                    https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
+                    secret.name of 'google-cloud-key' and secret.key of 'key.json'.
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                    optional:
+                      type: boolean
+                project:
+                  type: string
+                  description: >
+                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
+                    'my-project-1234' rather than its display name, 'My Project' or its number
+                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
+                subscribable:
+                  type: object
+                  properties:
+                    subscribers:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - uid
+                        properties:
+                          uid:
+                            type: string
+                            minLength: 1
+                          generation:
+                            type: integer
+                          subscriberURI:
+                            type: string
+                          replyURI:
+                            type: string
+                          deadLetterSink:
+                            type: string
+                          delivery:
+                            type: object
+                            properties:
+                              deadLetterSink:
+                                type: object
+                                properties:
+                                  ref:
+                                    type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                      name:
+                                        type: string
+                                      apiVersion:
+                                        type: string
+                                  uri:
+                                    type: string
+                              retry:
+                                type: integer
+                              backoffPolicy:
+                                type: string
+                              backoffDelay:
+                                type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                  format: int64
+                conditions:
                   type: array
                   items:
                     type: object
-                    required:
-                      - uid
                     properties:
-                      uid:
+                      lastTransitionTime:
+                        # We use a string in the stored object but a wrapper object at runtime.
                         type: string
-                        minLength: 1
-                      generation:
-                        type: integer
-                      subscriberURI:
+                      message:
                         type: string
-                      replyURI:
+                      reason:
                         type: string
-                      deadLetterSink:
+                      severity:
                         type: string
-                      delivery:
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    required:
+                      - type
+                      - status
+                serviceAccountName:
+                  type: string
+                address:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                subscribableStatus:
+                  type: object
+                  properties:
+                    subscribers:
+                      type: array
+                      items:
                         type: object
                         properties:
-                          deadLetterSink:
-                            type: object
-                            properties:
-                              ref:
-                                type: object
-                                properties:
-                                  kind:
-                                    type: string
-                                  namespace:
-                                    type: string
-                                  name:
-                                    type: string
-                                  apiVersion:
-                                    type: string
-                              uri:
-                                type: string
-                          retry:
+                          uid:
+                            type: string
+                          observedGeneration:
                             type: integer
-                          backoffPolicy:
+                            format: int64
+                          ready:
                             type: string
-                          backoffDelay:
+                          message:
                             type: string
-        status:
+                projectId:
+                  type: string
+                subscriptionId:
+                  type: string
+    - name: v1beta1
+      served: true
+      storage: false
+      schema:
+        openAPIV3Schema:
           type: object
           properties:
-            observedGeneration:
-              type: integer
-              format: int64
-            conditions:
-              type: array
-              items:
-                type: object
-                properties:
-                  lastTransitionTime:
-                    # We use a string in the stored object but a wrapper object at runtime.
-                    type: string
-                  message:
-                    type: string
-                  reason:
-                    type: string
-                  severity:
-                    type: string
-                  status:
-                    type: string
-                  type:
-                    type: string
-                required:
-                  - type
-                  - status
-            serviceAccountName:
-              type: string
-            address:
+            spec:
               type: object
               properties:
-                url:
+                googleServiceAccount:
                   type: string
-            subscribableStatus:
+                  description: >
+                    GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                    account must be a valid Google service account (see
+                    https://cloud.google.com/iam/docs/service-accounts).
+                secret:
+                  type: object
+                  description: >
+                    Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
+                    account key in the JSON format (see
+                    https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
+                    secret.name of 'google-cloud-key' and secret.key of 'key.json'.
+                  properties:
+                    name:
+                      type: string
+                    key:
+                      type: string
+                    optional:
+                      type: boolean
+                project:
+                  type: string
+                  description: >
+                    ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
+                    'my-project-1234' rather than its display name, 'My Project' or its number
+                    '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
+                subscribable:
+                  type: object
+                  properties:
+                    subscribers:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                          - uid
+                        properties:
+                          uid:
+                            type: string
+                            minLength: 1
+                          generation:
+                            type: integer
+                          subscriberURI:
+                            type: string
+                          replyURI:
+                            type: string
+                          delivery:
+                            type: object
+                            properties:
+                              deadLetterSink:
+                                type: object
+                                properties:
+                                  ref:
+                                    type: object
+                                    properties:
+                                      kind:
+                                        type: string
+                                      namespace:
+                                        type: string
+                                      name:
+                                        type: string
+                                      apiVersion:
+                                        type: string
+                                  uri:
+                                    type: string
+                              retry:
+                                type: integer
+                              backoffPolicy:
+                                type: string
+                              backoffDelay:
+                                type: string
+            status:
               type: object
               properties:
+                observedGeneration:
+                  type: integer
+                  format: int64
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      lastTransitionTime:
+                        # We use a string in the stored object but a wrapper object at runtime.
+                        type: string
+                      message:
+                        type: string
+                      reason:
+                        type: string
+                      severity:
+                        type: string
+                      status:
+                        type: string
+                      type:
+                        type: string
+                    required:
+                      - type
+                      - status
+                serviceAccountName:
+                  type: string
+                address:
+                  type: object
+                  properties:
+                    url:
+                      type: string
                 subscribers:
                   type: array
                   items:
@@ -188,7 +320,7 @@ spec:
                         type: string
                       message:
                         type: string
-            projectId:
-              type: string
-            subscriptionId:
-              type: string
+                projectId:
+                  type: string
+                subscriptionId:
+                  type: string

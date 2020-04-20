@@ -1,0 +1,14 @@
+subscribers:
+  type: array
+  items:
+    type: object
+    properties:
+      uid:
+        type: string
+      observedGeneration:
+        type: integer
+        format: int64
+      ready:
+        type: string
+      message:
+        type: string
