@@ -17,6 +17,31 @@ limitations under the License.
 // Package events contains Cloud Run Events API versions for eventing components
 package events
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
 const (
 	GroupName = "events.cloud.google.com"
+)
+
+var (
+	// CloudAuditLogsSourcesResource represents a CloudAuditLogsSource.
+	CloudAuditLogsSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudauditlogssources",
+	}
+	// CloudPubSubSourcesResource represents a CloudPubSubSource.
+	CloudPubSubSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudpubsubsources",
+	}
+	// CloudSchedulerSourcesResource represents a CloudSchedulerSource.
+	CloudSchedulerSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudschedulersources",
+	}
+	// CloudStorageSourcesResource represents a CloudStorageSource.
+	CloudStorageSourcesResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "cloudstoragesources",
+	}
 )
