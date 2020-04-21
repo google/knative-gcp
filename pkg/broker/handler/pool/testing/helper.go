@@ -380,13 +380,6 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 
 	var gotEvent *event.Event
 	defer func() {
-		// if gotEvent != nil && wantEvent != nil {
-		// 	// Force the time to be the same so that we can compare easier.
-		// 	gotEvent.SetTime(wantEvent.Time())
-		// }
-		// if diff := cmp.Diff(wantEvent, gotEvent); diff != "" {
-		// 	t.Errorf("target (key=%q) received event (-want,+got): %v", targetKey, diff)
-		// }
 		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
 	}()
 
