@@ -166,7 +166,6 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, b *brokerv1beta1.Broker) 
 func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broker) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling Broker", zap.Any("broker", b))
-
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
@@ -211,7 +210,6 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	// Update config map
 	// TODO should this happen in a defer so there's an update regardless of
 	// error status, or only when reconcile is successful?
-
 	r.flagTargetsForUpdate()
 	return nil
 }
