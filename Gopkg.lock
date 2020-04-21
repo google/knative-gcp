@@ -1812,6 +1812,7 @@
     "github.com/cloudevents/sdk-go/v2/client/test",
     "github.com/cloudevents/sdk-go/v2/context",
     "github.com/cloudevents/sdk-go/v2/event",
+    "github.com/cloudevents/sdk-go/v2/extensions",
     "github.com/cloudevents/sdk-go/v2/protocol",
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
