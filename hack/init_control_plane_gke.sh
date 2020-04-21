@@ -34,8 +34,13 @@ gcloud services enable stackdriver.googleapis.com
 gcloud services enable iamcredentials.googleapis.com
 
 # Enable workload identity.
-gcloud beta container clusters update ${CLUSTER_NAME} \
-  --identity-namespace=${PROJECT_ID}.svc.id.goog
+gcloud container clusters update ${CLUSTER_NAME} \
+  --workload-pool=${PROJECT_ID}.svc.id.goog
+
+# Modify default node pool to enable GKE_METADATA
+gcloud container node-pools update default-pool \
+  --cluster=${CLUSTER_NAME} \
+  --workload-metadata=GKE_METADATA
 
 # Create the service account for the control plane.
 gcloud iam service-accounts create ${GSA_NAME}

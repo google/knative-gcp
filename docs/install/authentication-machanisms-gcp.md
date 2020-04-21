@@ -49,12 +49,24 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 
 1. Enable Workload Identity.
 
-    ```shell
-    gcloud services enable iamcredentials.googleapis.com
-    gcloud beta container clusters update $CLUSTER_NAME \
-    --identity-namespace=$PROJECT_ID.svc.id.goog
-    ```
-
+    1. Ensure that you have enabled the Cloud IAM Service Account Credentials API.
+        ```shell
+        gcloud services enable iamcredentials.googleapis.com
+        ```
+    1. If you didn't enable Workload Identity when you
+    created your cluster, run the following commands: 
+    
+        ```shell 
+         gcloud container clusters update $CLUSTER_NAME \
+            --workload-pool=$PROJECT_ID.svc.id.goog
+         gcloud container node-pools update default-pool \
+            --cluster=$CLUSTER_NAME \
+            --workload-metadata=GKE_METADATA
+        ````
+        ***NOTE***: These commands may take long time to finish. Check 
+        [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
+        for more information about Workload Identity setup on an existing cluster .
+        
 1. Bind the Kubernetes Service Account `controller` with Google Cloud
     Service Account.
 
