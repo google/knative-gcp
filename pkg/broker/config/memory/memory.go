@@ -19,8 +19,8 @@ package memory
 import (
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"google.golang.org/protobuf/proto"
 )
 
 type brokerMutation struct {

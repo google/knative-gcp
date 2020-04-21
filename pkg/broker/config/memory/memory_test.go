@@ -21,8 +21,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestNewEmptyTargets(t *testing.T) {
@@ -226,6 +226,6 @@ func ExampleMutateBroker() {
 	}
 
 	// Output:
-	// brokers:<key:"ns/broker" value:<id:"b-uid" name:"broker" namespace:"ns" address:"broker.example.com" decouple_queue:<topic:"topic" subscription:"sub" > targets:<key:"t1" value:<id:"uid-1" name:"t1" namespace:"ns" broker:"broker" address:"consumer1.example.com" filter_attributes:<key:"app" value:"foo" > retry_queue:<topic:"topic1" subscription:"sub1" > > > state:READY > >
+	// brokers:{key:"ns/broker" value:{id:"b-uid" name:"broker" namespace:"ns" address:"broker.example.com" decouple_queue:{topic:"topic" subscription:"sub"} targets:{key:"t1" value:{id:"uid-1" name:"t1" namespace:"ns" broker:"broker" address:"consumer1.example.com" filter_attributes:{key:"app" value:"foo"} retry_queue:{topic:"topic1" subscription:"sub1"}}} state:READY}}
 	// Broker deleted.
 }
