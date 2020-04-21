@@ -43,7 +43,7 @@ spec:
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
-        - name: google-cloud-key
+        - name: google-broker-key
           mountPath: /var/secrets/google          
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
@@ -59,9 +59,9 @@ spec:
       - name: broker-config
         configMap:
           name: broker-targets
-      - name: google-cloud-key
+      - name: google-broker-key
         secret:
-          secretName: google-cloud-key
+          secretName: google-broker-key
           optional: true
       
 ---
@@ -108,7 +108,7 @@ spec:
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
-        - name: google-cloud-key
+        - name: google-broker-key
           mountPath: /var/secrets/google            
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
@@ -121,9 +121,9 @@ spec:
       - name: broker-config
         configMap:
           name: broker-targets
-      - name: google-cloud-key
+      - name: google-broker-key
         secret:
-          secretName: google-cloud-key
+          secretName: google-broker-key
           optional: true
         
 
@@ -171,7 +171,7 @@ spec:
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
-        - name: google-cloud-key
+        - name: google-broker-key
           mountPath: /var/secrets/google 
         resources: # TODO(issue #876): determine good values for resource requests/limits
           limits:
@@ -184,7 +184,7 @@ spec:
       - name: broker-config
         configMap:
           name: broker-targets
-      - name: google-cloud-key
+      - name: google-broker-key
         secret:
-          secretName: google-cloud-key
+          secretName: google-broker-key
           optional: true
