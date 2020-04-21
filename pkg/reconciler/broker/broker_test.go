@@ -22,12 +22,14 @@ import (
 	"testing"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -56,6 +58,9 @@ const (
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerName)
 
+	decoupleTopic        = fmt.Sprintf("cre-bkr_%s_%s_%s", testNS, brokerName, testUID)
+	decoupleSubscription = fmt.Sprintf("cre-bkr_%s_%s_%s", testNS, brokerName, testUID)
+
 	brokerFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`)
 	brokerReconciledEvent       = Eventf(corev1.EventTypeNormal, "BrokerReconciled", `Broker reconciled: "testnamespace/test-broker"`)
 	brokerFinalizedEvent        = Eventf(corev1.EventTypeNormal, "BrokerFinalized", `Broker finalized: "testnamespace/test-broker"`)
@@ -64,6 +69,22 @@ var (
 		Scheme: "http",
 		Host:   fmt.Sprintf("%s.%s.svc.%s", ingressServiceName, systemNS, utils.GetClusterDomainName()),
 		Path:   fmt.Sprintf("/%s/%s", testNS, brokerName),
+	}
+
+	targetsConfig = &config.TargetsConfig{
+		Brokers: map[string]*config.Broker{
+			testKey: &config.Broker{
+				Id:        testUID,
+				Name:      brokerName,
+				Namespace: testNS,
+				Address:   brokerAddress.String(),
+				DecoupleQueue: &config.Queue{
+					Topic:        decoupleTopic,
+					Subscription: decoupleSubscription,
+				},
+				State: config.State_READY,
+			},
+		},
 	}
 )
 
@@ -136,6 +157,16 @@ func TestAllCases(t *testing.T) {
 			NewEndpoints(ingressServiceName, systemNS,
 				WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 		},
+		SkipNamespaceValidation: true,
+		WantCreates: []runtime.Object{
+			NewTargetsConfigMap(targetsConfig),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{
+			clientgotesting.NewUpdateAction(
+				corev1.SchemeGroupVersion.WithResource(string(corev1.ResourceConfigMaps)),
+				systemNS,
+				NewTargetsConfigMap(targetsConfig)),
+		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
@@ -159,17 +190,31 @@ func TestAllCases(t *testing.T) {
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			triggerLister:      listers.GetTriggerLister(),
-			configMapLister:    listers.GetConfigMapLister(),
-			endpointsLister:    listers.GetEndpointsLister(),
-			CreateClientFn:     gpubsub.TestClientCreator(testData["ps"]),
-			targetsConfig:      memory.NewEmptyTargets(),
-			targetsNeedsUpdate: make(chan struct{}),
-			projectID:          testProject,
+			Base:            reconciler.NewBase(ctx, controllerAgentName, cmw),
+			triggerLister:   listers.GetTriggerLister(),
+			configMapLister: listers.GetConfigMapLister(),
+			endpointsLister: listers.GetEndpointsLister(),
+			CreateClientFn:  gpubsub.TestClientCreator(testData["ps"]),
+			projectID:       testProject,
 		}
+		r.brokerConfigUpdater = NewTargetsReconciler(ctx, r.KubeClientSet, systemNS, targetsCMName)
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))
+}
+
+func NewTargetsConfigMap(c *config.TargetsConfig) *corev1.ConfigMap {
+	b, err := proto.Marshal(c)
+	if err != nil {
+		return nil
+	}
+	return NewConfigMap(targetsCMName, systemNS,
+		WithData(map[string]string{
+			"targets.txt": prototext.Format(c),
+		}),
+		WithBinaryData(map[string][]uint8{
+			"targets": b,
+		}),
+	)
 }
 
 func patchFinalizers(namespace, name, finalizer string) clientgotesting.PatchActionImpl {

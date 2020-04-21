@@ -22,7 +22,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -110,34 +109,6 @@ func (r *TriggerReconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.
 		return err
 	}
 
-	targetsConfig := targetsFromContext(ctx)
-	if targetsConfig == nil {
-		return fmt.Errorf("Couldn't fetch Targets from context")
-	}
-
-	targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
-		target := &config.Target{
-			Id:        string(t.UID),
-			Name:      t.Name,
-			Namespace: t.Namespace,
-			Broker:    b.Name,
-			Address:   t.Status.SubscriberURI.String(),
-			RetryQueue: &config.Queue{
-				Topic:        resources.GenerateRetryTopicName(t),
-				Subscription: resources.GenerateRetrySubscriptionName(t),
-			},
-		}
-		if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
-			target.FilterAttributes = t.Spec.Filter.Attributes
-		}
-		if t.Status.IsReady() {
-			target.State = config.State_READY
-		} else {
-			target.State = config.State_UNKNOWN
-		}
-		m.UpsertTargets(target)
-	})
-
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", t.Namespace, t.Name)
 }
 
@@ -145,19 +116,6 @@ func (r *TriggerReconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.T
 	if err := r.deleteRetryTopicAndSubscription(ctx, t); err != nil {
 		return err
 	}
-
-	targetsConfig := targetsFromContext(ctx)
-	if targetsConfig == nil {
-		return fmt.Errorf("Couldn't fetch Targets from context")
-	}
-
-	// Use the trigger's namespace and broker name here so the broker isn't needed
-	// from context
-	targetsConfig.MutateBroker(t.Namespace, t.Spec.Broker, func(m config.BrokerMutation) {
-		m.DeleteTargets(&config.Target{
-			Name: t.Name,
-		})
-	})
 
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerFinalized, "Trigger finalized: \"%s/%s\"", t.Namespace, t.Name)
 
@@ -410,18 +368,4 @@ func brokerFromContext(ctx context.Context) *brokerv1beta1.Broker {
 
 func contextWithBroker(ctx context.Context, b *brokerv1beta1.Broker) context.Context {
 	return context.WithValue(ctx, brokerKey{}, b)
-}
-
-type targetsKey struct{}
-
-func targetsFromContext(ctx context.Context) config.Targets {
-	untyped := ctx.Value(targetsKey{})
-	if untyped == nil {
-		return nil
-	}
-	return untyped.(config.Targets)
-}
-
-func contextWithTargets(ctx context.Context, t config.Targets) context.Context {
-	return context.WithValue(ctx, targetsKey{}, t)
 }

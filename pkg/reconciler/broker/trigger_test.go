@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/broker/config"
 	injectionclient "github.com/google/knative-gcp/pkg/client/injection/client"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
@@ -70,6 +70,37 @@ var (
 		Version: subscriberVersion,
 		Kind:    subscriberKind,
 	}
+
+	retryTopic        = fmt.Sprintf("cre-tgr_%s_%s_%s", testNS, triggerName, testUID)
+	retrySubscription = fmt.Sprintf("cre-tgr_%s_%s_%s", testNS, triggerName, testUID)
+
+	targetsConfigWithTrigger = &config.TargetsConfig{
+		Brokers: map[string]*config.Broker{
+			testKey: &config.Broker{
+				Id:        testUID,
+				Name:      brokerName,
+				Namespace: testNS,
+				Address:   brokerAddress.String(),
+				DecoupleQueue: &config.Queue{
+					Topic:        decoupleTopic,
+					Subscription: decoupleSubscription,
+				},
+				State: config.State_READY,
+				Targets: map[string]*config.Target{
+					triggerName: &config.Target{
+						Id:        testUID,
+						Name:      triggerName,
+						Namespace: testNS,
+						Broker:    brokerName,
+						RetryQueue: &config.Queue{
+							Topic:        retryTopic,
+							Subscription: retrySubscription,
+						},
+					},
+				},
+			},
+		},
+	}
 )
 
 func init() {
@@ -100,6 +131,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				WithTriggerUID(testUID),
 				WithTriggerDeletionTimestamp,
 				WithTriggerFinalizers(triggerFinalizerName)),
+			NewTargetsConfigMap(targetsConfig),
 		},
 		WantEvents: []string{
 			triggerFinalizerUpdatedEvent,
@@ -143,6 +175,7 @@ func TestAllCasesTrigger(t *testing.T) {
 				WithTriggerUID(testUID),
 				WithTriggerDeletionTimestamp,
 				WithTriggerFinalizers(triggerFinalizerName)),
+			NewTargetsConfigMap(targetsConfig),
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "TopicDeleted", `Deleted PubSub topic "cre-tgr_testnamespace_test-trigger_abc123"`),
@@ -188,6 +221,13 @@ func TestAllCasesTrigger(t *testing.T) {
 			NewTrigger(triggerName, testNS, brokerName,
 				WithTriggerUID(testUID),
 				WithTriggerSubscriberRef(subscriberGVK, subscriberName, testNS)),
+			NewTargetsConfigMap(targetsConfig),
+		},
+		WantUpdates: []clientgotesting.UpdateActionImpl{
+			clientgotesting.NewUpdateAction(
+				corev1.SchemeGroupVersion.WithResource(string(corev1.ResourceConfigMaps)),
+				systemNS,
+				NewTargetsConfigMap(targetsConfigWithTrigger)),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTrigger(triggerName, testNS, brokerName,
@@ -237,15 +277,14 @@ func TestAllCasesTrigger(t *testing.T) {
 		ctx = resource.WithDuck(ctx)
 		ctx = conditions.WithDuck(ctx)
 		r := &Reconciler{
-			Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-			triggerLister:      listers.GetTriggerLister(),
-			configMapLister:    listers.GetConfigMapLister(),
-			endpointsLister:    listers.GetEndpointsLister(),
-			CreateClientFn:     gpubsub.TestClientCreator(testData["b"]),
-			targetsConfig:      memory.NewEmptyTargets(),
-			targetsNeedsUpdate: make(chan struct{}),
-			projectID:          testProject,
+			Base:            reconciler.NewBase(ctx, controllerAgentName, cmw),
+			triggerLister:   listers.GetTriggerLister(),
+			configMapLister: listers.GetConfigMapLister(),
+			endpointsLister: listers.GetEndpointsLister(),
+			CreateClientFn:  gpubsub.TestClientCreator(testData["b"]),
+			projectID:       testProject,
 		}
+		r.brokerConfigUpdater = NewTargetsReconciler(ctx, r.KubeClientSet, systemNS, targetsCMName)
 
 		tr := &TriggerReconciler{
 			Base:           reconciler.NewBase(ctx, controllerAgentName, cmw),

@@ -1816,7 +1816,6 @@
     "github.com/cloudevents/sdk-go/v2/protocol/http",
     "github.com/cloudevents/sdk-go/v2/protocol/pubsub",
     "github.com/fsnotify/fsnotify",
-    "github.com/gogo/protobuf/proto",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
