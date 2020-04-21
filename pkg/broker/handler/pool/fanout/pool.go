@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sync"
 
+	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
@@ -44,24 +46,44 @@ type SyncPool struct {
 	targets config.ReadonlyTargets
 	pool    sync.Map
 
-	// For sending retry events, we only need a shared pubsub protocol.
+	// For sending retry events. We only need a shared client.
 	// And we can set retry topic dynamically.
-	retryps *pubsub.Protocol
+	deliverRetryClient ceclient.Client
+	// For initial events delivery. We only need a shared client.
+	// And we can set target address dynamically.
+	deliverClient ceclient.Client
 }
 
+// NewSyncPool creates a new fanout handler pool.
 func NewSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
+
 	rps, err := defaultRetryPubsubProtocol(ctx, options)
 	if err != nil {
 		return nil, err
 	}
+	retryClient, err := ceclient.NewObserved(rps, options.CeClientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	hp, err := cehttp.New()
+	if err != nil {
+		return nil, err
+	}
+	deliverClient, err := ceclient.NewObserved(hp, options.CeClientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
 	p := &SyncPool{
-		targets: targets,
-		options: options,
-		retryps: rps,
+		targets:            targets,
+		options:            options,
+		deliverClient:      deliverClient,
+		deliverRetryClient: retryClient,
 	}
 	return p, nil
 }
@@ -76,6 +98,7 @@ func defaultRetryPubsubProtocol(ctx context.Context, options *pool.Options) (*pu
 	return pubsub.New(ctx, opts...)
 }
 
+// SyncOnce syncs once the handler pool based on the targets config.
 func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
@@ -117,10 +140,10 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
 				&filter.Processor{Targets: p.targets},
 				&deliver.Processor{
-					Requester:      p.options.EventRequester,
-					Targets:        p.targets,
-					RetryOnFailure: true,
-					RetryEvents:    p.retryps,
+					DeliverClient:      p.deliverClient,
+					Targets:            p.targets,
+					RetryOnFailure:     true,
+					DeliverRetryClient: p.deliverRetryClient,
 				},
 			),
 		}

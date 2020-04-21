@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"sync"
 
+	ceclient "github.com/cloudevents/sdk-go/v2/client"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
-
 	"knative.dev/eventing/pkg/logging"
 
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
@@ -42,20 +43,36 @@ type SyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
+	// For initial events delivery. We only need a shared client.
+	// And we can set target address dynamically.
+	deliverClient ceclient.Client
 }
 
+// NewSyncPool creates a new retry handler pool.
 func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	hp, err := cehttp.New()
+	if err != nil {
+		return nil, err
+	}
+	deliverClient, err := ceclient.NewObserved(hp, options.CeClientOptions...)
+	if err != nil {
+		return nil, err
+	}
+
 	p := &SyncPool{
-		targets: targets,
-		options: options,
+		targets:       targets,
+		options:       options,
+		deliverClient: deliverClient,
 	}
 	return p, nil
 }
 
+// SyncOnce syncs once the handler pool based on the targets config.
 func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
@@ -96,7 +113,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			PubsubEvents: ps,
 			Processor: processors.ChainProcessors(
 				// TODO filter processor may be added in the future, but need more discussion for that.
-				&deliver.Processor{Requester: p.options.EventRequester, Targets: p.targets},
+				&deliver.Processor{DeliverClient: p.deliverClient, Targets: p.targets},
 			),
 		}
 
