@@ -23,8 +23,8 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

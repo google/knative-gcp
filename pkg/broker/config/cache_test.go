@@ -19,8 +19,9 @@ package config
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestCachedTargetsRange(t *testing.T) {
@@ -120,7 +121,7 @@ func TestCachedTargetsRange(t *testing.T) {
 			gotTargets[t.Name] = t
 			return true
 		})
-		if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+		if diff := cmp.Diff(wantTargets, gotTargets, protocmp.Transform()); diff != "" {
 			t.Errorf("RangeAllTargets (-want,+got): %v", diff)
 		}
 	})
@@ -131,7 +132,7 @@ func TestCachedTargetsRange(t *testing.T) {
 			gotBrokers[b.Key()] = b
 			return true
 		})
-		if diff := cmp.Diff(val.Brokers, gotBrokers); diff != "" {
+		if diff := cmp.Diff(val.Brokers, gotBrokers, protocmp.Transform()); diff != "" {
 			t.Errorf("RangeBrokers (-want,+got): %v", diff)
 		}
 	})
@@ -464,7 +465,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 	t.Run("get broker", func(t *testing.T) {
 		wantBroker := b1
 		gotBroker, _ := targets.GetBroker(b1.Namespace, b1.Name)
-		if diff := cmp.Diff(wantBroker, gotBroker); diff != "" {
+		if diff := cmp.Diff(wantBroker, gotBroker, protocmp.Transform()); diff != "" {
 			t.Errorf("GetBroker (-want,+got): %v", diff)
 		}
 	})
@@ -472,7 +473,7 @@ func TestGetBrokerOrTarget(t *testing.T) {
 	t.Run("get target by key", func(t *testing.T) {
 		wantTargets := t1
 		gotTargets, _ := targets.GetTargetByKey(t1.Key())
-		if diff := cmp.Diff(wantTargets, gotTargets); diff != "" {
+		if diff := cmp.Diff(wantTargets, gotTargets, protocmp.Transform()); diff != "" {
 			t.Errorf("GetTargetByKey (-want,+got): %v", diff)
 		}
 	})

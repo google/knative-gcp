@@ -33,8 +33,8 @@ ko apply -f ./config
    ```
 
 1. First install the CRDs by running the `kubectl apply` command with the
-   `--selector` flag. This prevents race conditions during the install,
-   which cause intermittent errors:
+   `--selector` flag. This prevents race conditions during the install, which
+   cause intermittent errors:
 
    ```shell
    kubectl apply --selector messaging.cloud.google.com/crd-install=true \
@@ -55,32 +55,34 @@ ko apply -f ./config
 Currently, we support two methods: Workload Identity and Kubernetes Secret.
 Workload Identity is the recommended way to access Google Cloud services from
 within GKE due to its improved security properties and manageability. For more
-information about Workload Identity, please see [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+information about Workload Identity, please see
+[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-**_Note_**: Before applying initialization scripts, make sure your default zone is set to be
-the same as your current cluster. You may use
+**_Note_**: Before applying initialization scripts, make sure your default zone
+is set to be the same as your current cluster. You may use
 `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
 `gcloud config set compute/zone $ZONE` to set it.
 
 **_Note_**: Both scripts will have a step to create a Google Cloud Service
-Account `cloud-run-events`. Ignore the error message if you already had
-this service account (error for 'service account already exists').
-TODO([#896](https://github.com/google/knative-gcp/issues/896)) Get rid of the error message.
+Account `cloud-run-events`. Ignore the error message if you already had this
+service account (error for 'service account already exists').
+TODO([#896](https://github.com/google/knative-gcp/issues/896)) Get rid of the
+error message.
 
 **_Note_**: The configuration steps have been automated by the scripts below. If
 wish to configure the auth manually, refer to
 [manually configure authentication for GCP](./authentication-mechanisms-gcp.md),
 
-* Option 1 (Recommended): Use Workload Identity.
-  Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
+- Option 1 (Recommended): Use Workload Identity. Apply
+  [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
-   ```shell
-   ./hack/init_control_plane_gke.sh
-   ```
+  ```shell
+  ./hack/init_control_plane_gke.sh
+  ```
 
-* Option 2: Export service account keys and store them as Kubernetes Secrets.
+- Option 2: Export service account keys and store them as Kubernetes Secrets.
   Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
 
-   ```shell
-   ./hack/init_control_plane.sh
-   ```
+  ```shell
+  ./hack/init_control_plane.sh
+  ```

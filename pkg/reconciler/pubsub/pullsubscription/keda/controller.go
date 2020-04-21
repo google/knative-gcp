@@ -31,6 +31,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription"
 	"github.com/kelseyhightower/envconfig"
@@ -88,7 +89,7 @@ func NewController(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
-			Identity:               identity.NewIdentity(ctx),
+			Identity:               identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,
