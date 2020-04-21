@@ -188,10 +188,6 @@ func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
 	return appsv1listers.NewDeploymentLister(l.indexerFor(&appsv1.Deployment{}))
 }
 
-func (l *Listers) GetPodLister() corev1listers.PodLister {
-	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
-}
-
 func (l *Listers) GetK8sServiceLister() corev1listers.ServiceLister {
 	return corev1listers.NewServiceLister(l.indexerFor(&corev1.Service{}))
 }

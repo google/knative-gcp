@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
-	eventingtesting "knative.dev/eventing/pkg/reconciler/testing"
 )
 
 const (
@@ -107,7 +107,7 @@ func TestUpdateAnnotation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			objs := append(test.deployments, test.pods...)
 			client := fake.NewSimpleClientset(objs...)
-			listers := eventingtesting.NewListers(objs)
+			listers := reconcilertesting.NewListers(objs)
 			dl := listers.GetDeploymentLister()
 			pl := listers.GetPodLister()
 
