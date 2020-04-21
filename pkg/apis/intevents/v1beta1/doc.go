@@ -14,17 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Api versions allow the api contract for a resource to be changed while keeping
+// backward compatibility by supporting multiple concurrent versions
+// of the same resource.
+
+// Package v1beta1 defines internal types in
+// internal.events.cloud.google.com/v1beta1 for use by other resources.
+// +k8s:deepcopy-gen=package
+// +groupName=internal.events.cloud.google.com
 package v1beta1
-
-import (
-	"context"
-
-	"knative.dev/pkg/apis"
-)
-
-// Validate verifies that the Broker is valid.
-func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
-	// The Google Cloud Broker doesn't have any custom validations. The
-	// eventing webhook will run the usual validations.
-	return nil
-}

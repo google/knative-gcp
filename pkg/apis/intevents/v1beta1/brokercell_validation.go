@@ -22,9 +22,8 @@ import (
 	"knative.dev/pkg/apis"
 )
 
-// Validate verifies that the Broker is valid.
-func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
-	// The Google Cloud Broker doesn't have any custom validations. The
-	// eventing webhook will run the usual validations.
+// Validate verifies that the BrokerCell is valid.
+func (bc *BrokerCell) Validate(ctx context.Context) *apis.FieldError {
+	// The BrokerCell doesn't have any validations.
 	return nil
 }

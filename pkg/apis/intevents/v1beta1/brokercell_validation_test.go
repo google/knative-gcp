@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +18,10 @@ package v1beta1
 
 import (
 	"context"
-
-	"knative.dev/pkg/apis"
+	"testing"
 )
 
-// Validate verifies that the Broker is valid.
-func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
-	// The Google Cloud Broker doesn't have any custom validations. The
-	// eventing webhook will run the usual validations.
-	return nil
+func TestBroker_Validate(t *testing.T) {
+	bc := BrokerCell{}
+	bc.Validate(context.TODO())
 }
