@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"cloud.google.com/go/iam"
-	"cloud.google.com/go/iam/admin/apiv1"
+	admin "cloud.google.com/go/iam/admin/apiv1"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
