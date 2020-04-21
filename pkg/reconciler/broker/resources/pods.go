@@ -37,6 +37,9 @@ func UpdateVolumeGeneration(kubeClientSet kubernetes.Interface, p *corev1.Pod) e
 	if annotations == nil {
 		annotations = make(map[string]string, 1)
 	}
+
+	// TODO(https://github.com/google/knative-gcp/issues/913) Controller updates
+	// generation on the configmap, and use configmap generation as annotation.
 	gen, _ := strconv.Atoi(annotations[volumeGenerationKey])
 	annotations[volumeGenerationKey] = strconv.Itoa(gen + 1)
 	pod.SetAnnotations(annotations)

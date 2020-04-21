@@ -28,7 +28,11 @@ import (
 )
 
 // UpdateVolumeGenerationForDeployment updates the volume generation annotation
-// for all pods in this deployment.
+// for all pods in this deployment. This technique is used to trigger immediate
+// configmap volume refresh without restarting the pod, see
+// https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically
+// NOTE: update spec.template.metadata.annotations on the deployment resource
+// causes pods to bre recreated.
 func UpdateVolumeGenerationForDeployment(kubeClient kubernetes.Interface, dl appsv1listers.DeploymentLister, pl corev1listers.PodLister, ns, name string) error {
 	d, err := dl.Deployments(ns).Get(name)
 	if err != nil {
