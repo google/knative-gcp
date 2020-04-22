@@ -20,12 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cloudevents/sdk-go/v2/binding"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
@@ -38,8 +36,8 @@ import (
 type Processor struct {
 	processors.BaseProcessor
 
-	// Requester is the cloudevents client to send events.
-	Requester ceclient.Client
+	// DeliverClient is the cloudevents client to send events.
+	DeliverClient ceclient.Client
 
 	// Targets is the targets from config.
 	Targets config.ReadonlyTargets
@@ -48,9 +46,9 @@ type Processor struct {
 	// to the retry topic if the delivery fails.
 	RetryOnFailure bool
 
-	// RetryEvents is the Pubsub protocol to send events
+	// DeliverRetryClient is the cloudevents client to send events
 	// to the retry topic.
-	RetryEvents *pubsub.Protocol
+	DeliverRetryClient ceclient.Client
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -78,7 +76,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	resp, res := p.Requester.Request(cecontext.WithTarget(ctx, target.Address), *event)
+	resp, res := p.DeliverClient.Request(cecontext.WithTarget(ctx, target.Address), *event)
 	if !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("target delivery failed: %v", res.Error())
@@ -91,7 +89,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	if res := p.Requester.Send(cecontext.WithTarget(ctx, broker.Address), *resp); !protocol.IsACK(res) {
+	if res := p.DeliverClient.Send(cecontext.WithTarget(ctx, broker.Address), *resp); !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("delivery of replied event failed: %v", res.Error())
 		}
@@ -106,7 +104,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 
 func (p *Processor) sendToRetryTopic(ctx context.Context, target *config.Target, event *event.Event) error {
 	pctx := cecontext.WithTopic(ctx, target.RetryQueue.Topic)
-	if err := p.RetryEvents.Send(pctx, binding.ToMessage(event)); err != nil {
+	if err := p.DeliverRetryClient.Send(pctx, *event); err != nil {
 		return fmt.Errorf("failed to send event to retry topic: %w", err)
 	}
 	return nil
