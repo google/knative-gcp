@@ -125,3 +125,7 @@ required = [
 [[constraint]]
   name = "github.com/fsnotify/fsnotify"
   version = "1.4.9"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  version = "1.4"

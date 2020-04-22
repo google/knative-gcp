@@ -25,6 +25,7 @@ import (
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1"
 	policyv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	pubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1"
@@ -39,6 +40,7 @@ type Interface interface {
 	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
 	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
+	MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface
 	PolicyV1alpha1() policyv1alpha1.PolicyV1alpha1Interface
 	PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface
 	PubsubV1beta1() pubsubv1beta1.PubsubV1beta1Interface
@@ -52,6 +54,7 @@ type Clientset struct {
 	eventsV1alpha1    *eventsv1alpha1.EventsV1alpha1Client
 	eventsV1beta1     *eventsv1beta1.EventsV1beta1Client
 	messagingV1alpha1 *messagingv1alpha1.MessagingV1alpha1Client
+	messagingV1beta1  *messagingv1beta1.MessagingV1beta1Client
 	policyV1alpha1    *policyv1alpha1.PolicyV1alpha1Client
 	pubsubV1alpha1    *pubsubv1alpha1.PubsubV1alpha1Client
 	pubsubV1beta1     *pubsubv1beta1.PubsubV1beta1Client
@@ -75,6 +78,11 @@ func (c *Clientset) EventsV1beta1() eventsv1beta1.EventsV1beta1Interface {
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
 func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface {
 	return c.messagingV1alpha1
+}
+
+// MessagingV1beta1 retrieves the MessagingV1beta1Client
+func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
+	return c.messagingV1beta1
 }
 
 // PolicyV1alpha1 retrieves the PolicyV1alpha1Client
@@ -129,6 +137,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.messagingV1beta1, err = messagingv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.policyV1alpha1, err = policyv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -157,6 +169,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.eventsV1alpha1 = eventsv1alpha1.NewForConfigOrDie(c)
 	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.NewForConfigOrDie(c)
+	cs.messagingV1beta1 = messagingv1beta1.NewForConfigOrDie(c)
 	cs.policyV1alpha1 = policyv1alpha1.NewForConfigOrDie(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.NewForConfigOrDie(c)
 	cs.pubsubV1beta1 = pubsubv1beta1.NewForConfigOrDie(c)
@@ -172,6 +185,7 @@ func New(c rest.Interface) *Clientset {
 	cs.eventsV1alpha1 = eventsv1alpha1.New(c)
 	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.New(c)
+	cs.messagingV1beta1 = messagingv1beta1.New(c)
 	cs.policyV1alpha1 = policyv1alpha1.New(c)
 	cs.pubsubV1alpha1 = pubsubv1alpha1.New(c)
 	cs.pubsubV1beta1 = pubsubv1beta1.New(c)

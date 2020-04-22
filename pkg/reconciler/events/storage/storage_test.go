@@ -931,7 +931,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:             identity.NewIdentity(ctx),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			storageLister:        listers.GetCloudStorageSourceLister(),
 			createClientFn:       gstorage.TestClientCreator(testData["storage"]),
 			serviceAccountLister: listers.GetServiceAccountLister(),

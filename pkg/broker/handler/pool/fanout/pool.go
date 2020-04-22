@@ -49,8 +49,7 @@ type SyncPool struct {
 	retryps *pubsub.Protocol
 }
 
-// StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+func NewSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -64,26 +63,7 @@ func StartSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...
 		options: options,
 		retryps: rps,
 	}
-	if err := p.syncOnce(ctx); err != nil {
-		return nil, err
-	}
-	if p.options.SyncSignal != nil {
-		go p.watch(ctx)
-	}
 	return p, nil
-}
-
-func (p *SyncPool) watch(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-p.options.SyncSignal:
-			if err := p.syncOnce(ctx); err != nil {
-				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
-			}
-		}
-	}
 }
 
 func defaultRetryPubsubProtocol(ctx context.Context, options *pool.Options) (*pubsub.Protocol, error) {
@@ -96,7 +76,7 @@ func defaultRetryPubsubProtocol(ctx context.Context, options *pool.Options) (*pu
 	return pubsub.New(ctx, opts...)
 }
 
-func (p *SyncPool) syncOnce(ctx context.Context) error {
+func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {

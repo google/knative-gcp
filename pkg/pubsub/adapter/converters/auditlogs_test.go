@@ -31,6 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	auditpb "google.golang.org/genproto/googleapis/cloud/audit"
 	logpb "google.golang.org/genproto/googleapis/logging/v2"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 const (
@@ -103,7 +104,7 @@ func TestConvertAuditLog(t *testing.T) {
 		if err = jsonpb.Unmarshal(bytes.NewReader(data), &actualLogEntry); err != nil {
 			t.Errorf("Unable to unmarshal event data to LogEntry: %q", err)
 		} else {
-			if diff := cmp.Diff(logEntry, actualLogEntry); diff != "" {
+			if diff := cmp.Diff(logEntry, actualLogEntry, protocmp.Transform()); diff != "" {
 				t.Errorf("unexpected LogEntry (-want, +got) = %v", diff)
 			}
 		}
