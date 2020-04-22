@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	cev2 "github.com/cloudevents/sdk-go/v2"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/google/knative-gcp/pkg/utils"
 )
@@ -31,6 +30,11 @@ var (
 	defaultHandlerConcurrency     = runtime.NumCPU()
 	defaultMaxConcurrencyPerEvent = 1
 	defaultTimeout                = 10 * time.Minute
+	defaultCeClientOpts           = []ceclient.Option{
+		ceclient.WithUUIDs(),
+		ceclient.WithTimeNow(),
+		ceclient.WithTracePropagation(),
+	}
 )
 
 // Options holds all the options for create handler pool.
@@ -49,10 +53,8 @@ type Options struct {
 	PubsubClient *pubsub.Client
 	// PubsubReceiveSettings is the pubsub receive settings.
 	PubsubReceiveSettings pubsub.ReceiveSettings
-	// EventRequester is the cloudevents client to deliver events.
-	EventRequester ceclient.Client
-	// SyncSignal is the signal to sync handler pool.
-	SyncSignal <-chan struct{}
+	// CeClientOptions is the options used to create cloudevents client.
+	CeClientOptions []ceclient.Option
 }
 
 // NewOptions creates a Options.
@@ -73,26 +75,10 @@ func NewOptions(opts ...Option) (*Options, error) {
 		}
 		opt.ProjectID = pid
 	}
-	if opt.EventRequester == nil {
-		c, err := defaultCeClient()
-		if err != nil {
-			return nil, fmt.Errorf("failed to create default CloudEvents client: %w", err)
-		}
-		opt.EventRequester = c
+	if opt.CeClientOptions == nil {
+		opt.CeClientOptions = defaultCeClientOpts
 	}
 	return opt, nil
-}
-
-func defaultCeClient() (ceclient.Client, error) {
-	p, err := cev2.NewHTTP()
-	if err != nil {
-		panic(err)
-	}
-	return cev2.NewClientObserved(p,
-		ceclient.WithUUIDs(),
-		ceclient.WithTimeNow(),
-		ceclient.WithTracePropagation(),
-	)
 }
 
 // Option is for providing individual option.
@@ -137,12 +123,5 @@ func WithPubsubClient(c *pubsub.Client) Option {
 func WithPubsubReceiveSettings(s pubsub.ReceiveSettings) Option {
 	return func(o *Options) {
 		o.PubsubReceiveSettings = s
-	}
-}
-
-// WithSyncSignal sets SyncSignal.
-func WithSyncSignal(s <-chan struct{}) Option {
-	return func(o *Options) {
-		o.SyncSignal = s
 	}
 }

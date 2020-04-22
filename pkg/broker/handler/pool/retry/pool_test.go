@@ -22,11 +22,9 @@ import (
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
@@ -35,69 +33,65 @@ func TestWatchAndSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
-	ps, psclose := pooltesting.CreateTestPubsubClient(ctx, t, testProject)
-	defer psclose()
+	helper, err := pooltesting.NewHelper(ctx, testProject)
+	if err != nil {
+		t.Fatalf("failed to create pool testing helper: %v", err)
+	}
+	defer helper.Close()
+
 	signal := make(chan struct{})
-	targets := memory.NewEmptyTargets()
-	syncPool, err := NewSyncPool(targets,
-		pool.WithPubsubClient(ps),
-		pool.WithProjectID(testProject),
-		pool.WithSyncSignal(signal))
+	syncPool, err := NewSyncPool(helper.Targets,
+		pool.WithPubsubClient(helper.PubsubClient),
+		pool.WithProjectID(testProject))
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
-	_, err = pool.StartSyncPool(ctx, syncPool, signal)
-	if err != nil {
-		t.Errorf("unexpected error from starting sync pool: %v", err)
-	}
-	assertHandlers(t, syncPool, targets)
+
+	t.Run("start sync pool creates no handler", func(t *testing.T) {
+		_, err = pool.StartSyncPool(ctx, syncPool, signal)
+		if err != nil {
+			t.Errorf("unexpected error from starting sync pool: %v", err)
+		}
+		assertHandlers(t, syncPool, helper.Targets)
+	})
+
 	bs := make([]*config.Broker, 0, 4)
-	ts := map[string]*config.Target{}
 
 	t.Run("adding some brokers with their targets", func(t *testing.T) {
 		// Add some brokers with their targets.
 		for i := 0; i < 4; i++ {
-			b := pooltesting.GenTestBroker(ctx, t, ps)
-			t := pooltesting.GenTestTarget(ctx, t, ps, map[string]string{})
+			b := helper.GenerateBroker(ctx, t, "ns")
+			helper.GenerateTarget(ctx, t, b.Key(), nil)
 			bs = append(bs, b)
-			targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
-				bm.SetDecoupleQueue(b.DecoupleQueue)
-				bm.UpsertTargets(t)
-			})
-			ts[b.Name] = t
 		}
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, targets)
+		assertHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("delete and adding targets in brokers", func(t *testing.T) {
 		for i := 0; i < 2; i++ {
-			t := pooltesting.GenTestTarget(ctx, t, ps, map[string]string{})
-			targets.MutateBroker(bs[i].Namespace, bs[i].Name, func(bm config.BrokerMutation) {
-				bm.DeleteTargets(ts[bs[i].Name])
-				bm.UpsertTargets(t)
-			})
-			ts[bs[i].Name] = t
+			for _, bt := range bs[i].Targets {
+				helper.DeleteTarget(ctx, t, bt.Key())
+				helper.GenerateTarget(ctx, t, bs[i].Key(), nil)
+			}
 		}
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, targets)
+		assertHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("deleting all brokers with their targets", func(t *testing.T) {
-		for i := 0; i < 4; i++ {
-			targets.MutateBroker(bs[i].Namespace, bs[i].Name, func(bm config.BrokerMutation) {
-				bm.DeleteTargets(ts[bs[i].Name])
-				bm.Delete()
-			})
+		// clean up all brokers
+		for _, b := range bs {
+			helper.DeleteBroker(ctx, t, b.Key())
 		}
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, targets)
+		assertHandlers(t, syncPool, helper.Targets)
 	})
 }
 
@@ -106,39 +100,24 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	defer cancel()
 	testProject := "test-project"
 
-	ps, psclose := pooltesting.CreateTestPubsubClient(ctx, t, testProject)
-	defer psclose()
-	ceps, err := cepubsub.New(ctx, cepubsub.WithClient(ps))
+	helper, err := pooltesting.NewHelper(ctx, testProject)
 	if err != nil {
-		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
+		t.Fatalf("failed to create pool testing helper: %v", err)
 	}
+	defer helper.Close()
 
 	// Create two brokers.
-	b1 := pooltesting.GenTestBroker(ctx, t, ps)
-	b2 := pooltesting.GenTestBroker(ctx, t, ps)
-	targets := memory.NewTargets(&config.TargetsConfig{
-		Brokers: map[string]*config.Broker{
-			b1.Key(): b1,
-			b2.Key(): b2,
-		},
-	})
+	b1 := helper.GenerateBroker(ctx, t, "ns")
+	b2 := helper.GenerateBroker(ctx, t, "ns")
 
-	t1 := pooltesting.GenTestTarget(ctx, t, ps, nil)
-	t2 := pooltesting.GenTestTarget(ctx, t, ps, map[string]string{"subject": "foo"})
-	t3 := pooltesting.GenTestTarget(ctx, t, ps, nil)
-
-	b1t1, b1t1Client, b1t1close := pooltesting.AddTestTargetToBroker(t, targets, t1, b1.Name)
-	defer b1t1close()
-	b1t2, b1t2Client, b1t2close := pooltesting.AddTestTargetToBroker(t, targets, t2, b1.Name)
-	defer b1t2close()
-	b2t3, b2t3Client, b2t3close := pooltesting.AddTestTargetToBroker(t, targets, t3, b2.Name)
-	defer b2t3close()
+	t1 := helper.GenerateTarget(ctx, t, b1.Key(), nil)
+	t2 := helper.GenerateTarget(ctx, t, b1.Key(), map[string]string{"subject": "foo"})
+	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(targets,
-		pool.WithPubsubClient(ps),
-		pool.WithProjectID(testProject),
-		pool.WithSyncSignal(signal))
+	syncPool, err := NewSyncPool(helper.Targets,
+		pool.WithPubsubClient(helper.PubsubClient),
+		pool.WithProjectID(testProject))
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -158,12 +137,12 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// Target1 for broker1 should receive the event e1.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e1, 1)
+		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), &e1)
 		// Target2 for broker1 should't receive the event e2.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e1, 0)
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), nil)
 
 		// Only send an event to trigger topic 1.
-		sendEventToTriggerTopic(ctx, t, ceps, t1, &e1)
+		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
 		<-vctx.Done()
 	})
 
@@ -174,14 +153,14 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// Target1 for broker1 should't  receive the event e3.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e3, 0)
+		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), nil)
 		// Target2 for broker1 should't receive the event e2.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e3, 0)
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), nil)
 		// Target3 for broker2 should receive the event e3.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e3, 1)
+		go helper.VerifyNextTargetEvent(vctx, t, t3.Key(), &e3)
 
 		// Only send an event to trigger topic 3.
-		sendEventToTriggerTopic(ctx, t, ceps, t3, &e3)
+		helper.SendEventToRetryQueue(ctx, t, t3.Key(), &e3)
 		<-vctx.Done()
 	})
 
@@ -192,23 +171,18 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		defer cancel()
 
 		// Target1 for broker1 should receive the event e1.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t1, b1t1Client, &e1, 1)
+		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), &e1)
 		// Target2 for broker1 should receive the event e2.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b1t2, b1t2Client, &e2, 1)
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e2)
 		// Target3 for broker2 should receive the event e3.
-		go pooltesting.VerifyNextReceivedEvent(vctx, t, b2t3, b2t3Client, &e3, 1)
+		go helper.VerifyNextTargetEvent(vctx, t, t3.Key(), &e3)
 
 		// Send different event to different trigger topic.
-		sendEventToTriggerTopic(ctx, t, ceps, t1, &e1)
-		sendEventToTriggerTopic(ctx, t, ceps, t2, &e2)
-		sendEventToTriggerTopic(ctx, t, ceps, t3, &e3)
+		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
+		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e2)
+		helper.SendEventToRetryQueue(ctx, t, t3.Key(), &e3)
 		<-vctx.Done()
 	})
-}
-
-func sendEventToTriggerTopic(ctx context.Context, t *testing.T, ceps *cepubsub.Protocol, ta *config.Target, e *event.Event) {
-	t.Helper()
-	pooltesting.SentEventToTopic(ctx, t, ceps, ta.RetryQueue.Topic, e)
 }
 
 func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {

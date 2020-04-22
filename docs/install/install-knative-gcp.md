@@ -77,7 +77,7 @@ error message.
 
 **_Note_**: The configuration steps have been automated by the scripts below. If
 wish to configure the auth manually, refer to
-[manually configure authentication for GCP](./authentication-machanisms-gcp.md),
+[manually configure authentication for GCP](./authentication-mechanisms-gcp.md),
 
 - Option 1 (Recommended): Use Workload Identity. Apply
   [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
