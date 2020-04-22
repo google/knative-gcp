@@ -43,6 +43,11 @@ var (
 		Status: corev1.ConditionTrue,
 	}
 
+	brokerConditionIngressFalse = apis.Condition{
+		Type:   BrokerConditionIngress,
+		Status: corev1.ConditionFalse,
+	}
+
 	brokerConditionTopic = apis.Condition{
 		Type:   BrokerConditionTopic,
 		Status: corev1.ConditionTrue,
@@ -95,14 +100,14 @@ func TestBrokerGetCondition(t *testing.T) {
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						brokerConditionAddressable,
-						brokerConditionIngress,
+						brokerConditionIngressFalse,
 						brokerConditionTopic,
 					},
 				},
 			},
 		},
 		condQuery: BrokerConditionIngress,
-		want:      &brokerConditionIngress,
+		want:      &brokerConditionIngressFalse,
 	}, {
 		name: "unknown condition",
 		ts: &BrokerStatus{
