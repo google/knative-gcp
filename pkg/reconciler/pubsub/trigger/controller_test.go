@@ -24,10 +24,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/pullsubscription/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/topic/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/trigger/fake"
 	_ "github.com/google/knative-gcp/pkg/reconciler/testing"
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"

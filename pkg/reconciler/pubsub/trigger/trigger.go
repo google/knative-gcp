@@ -34,7 +34,6 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/trigger/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -83,17 +82,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, trigger *v1beta1.Trigger
 	trigger.Status.ObservedGeneration = trigger.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
-	if trigger.Spec.GoogleServiceAccount != "" {
+	// TODO(nlopezgi): figure out if I need to get a v1alpha1 trigger to get this working
+	/*if trigger.Spec.GoogleServiceAccount != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, trigger.Spec.Project, trigger); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Trigger workload identity: %s", err.Error())
 		}
-	}
-
-	topic := resources.GenerateTopicName(trigger)
-	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, trigger, topic, resourceGroup)
-	if err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile Trigger PubSub: %s", err.Error())
-	}
+	}*/
 
 	eventflow_trigger, err := r.reconcileTrigger(ctx, trigger)
 	if err != nil {
@@ -134,15 +128,14 @@ func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1beta1.Trig
 func (r *Reconciler) FinalizeKind(ctx context.Context, trigger *v1beta1.Trigger) reconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if trigger.Spec.GoogleServiceAccount != "" {
+	// TODO(nlopezgi): figure out if I need to get a v1alpha1 trigger to get this working
+	/*if trigger.Spec.GoogleServiceAccount != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, trigger.Spec.Project, trigger); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Trigger workload identity: %s", err.Error())
 		}
-	}
+	}*/
 
-	if err := r.PubSubBase.DeletePubSub(ctx, trigger); err != nil {
-		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailed, "Failed to delete Trigger PubSub: %s", err.Error())
-	}
+	// Delete the EventFlow trigger
 
 	// ok to remove finalizer.
 	return nil

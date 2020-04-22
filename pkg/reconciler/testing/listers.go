@@ -133,7 +133,7 @@ func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
 	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
-func (l *Listers) GetTriggerLister() pubsublistersv1beta1.TriggerLister {
+func (l *Listers) GetPubSubTriggerLister() pubsublistersv1beta1.TriggerLister {
 	return pubsublistersv1beta1.NewTriggerLister(l.indexerFor(&pubsubv1beta1.Trigger{}))
 }
 

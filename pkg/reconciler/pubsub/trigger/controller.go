@@ -25,12 +25,11 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/pullsubscription"
-	topicinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/topic"
 	triggerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/trigger"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
@@ -52,15 +51,12 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-
-	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
-	topicInformer := topicinformers.Get(ctx)
 	triggerInformer := triggerinformers.Get(ctx)
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx),
+		Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 		triggerLister:        triggerInformer.Lister(),
 		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
@@ -69,16 +65,6 @@ func NewController(
 	r.Logger.Info("Setting up event handlers")
 	triggerInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	topicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("Trigger")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.Filter(v1beta1.SchemeGroupVersion.WithKind("Trigger")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
@@ -86,15 +72,3 @@ func NewController(
 
 	return impl
 }
-
-/*func NewReconciler(ctx context.Context, controllerAgentName, receiveAdapterName string, cmw configmap.Watcher) *Reconciler {
-	triggerInformer := triggerinformers.Get(ctx)
-	serviceAccountInformer := serviceaccountinformers.Get(ctx)
-	r := &Reconciler{
-		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx),
-		triggerLister:        triggerInformer.Lister(),
-		serviceAccountLister: serviceAccountInformer.Lister(),
-	}
-	return r
-}*/
