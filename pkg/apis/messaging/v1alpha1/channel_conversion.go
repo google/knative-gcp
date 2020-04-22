@@ -43,7 +43,6 @@ func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error
 		return nil
 	default:
 		return fmt.Errorf("unknown conversion, got: %T", sink)
-
 	}
 }
 
