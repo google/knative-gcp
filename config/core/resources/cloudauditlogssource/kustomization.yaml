@@ -1,9 +1,0 @@
-resources:
-  - crd.yaml
-patchesJson6902:
-  - target:
-      group:  apiextensions.k8s.io
-      version: v1beta1
-      kind: CustomResourceDefinition
-      name: cloudauditlogssources.events.cloud.google.com
-    path: pubsubspec2.yaml
