@@ -56,36 +56,10 @@ its improved security properties and manageability. For more information about
 Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-1. Enable Workload Identity. Skip this step if you have already enabled it
-   during the control plane setup:
-   [Install Knative-GCP](install-knative-gcp.md).
-
-    1. Ensure that you have enabled the Cloud IAM Service Account Credentials API.
-       ```shell
-       gcloud services enable iamcredentials.googleapis.com
-       ```
-    1. If you didn't enable Workload Identity when you
-    created your cluster, run the following commands: 
-    
-       Modify the cluster to enable Workload Identity first:
-    
-       ```shell 
-       gcloud container clusters update $CLUSTER_NAME \
-         --workload-pool=$PROJECT_ID.svc.id.goog
-       ```
-       Then, create a new node pool or modify an existing node pool to enable GKE_METADATA.
-       Here, we assume that you are using an existing node pool. 
-       You can get `POOL_NAME` by `gcloud container node-pools list --cluster=${CLUSTER_NAME}`, 
-       and choose to update a specific node pool or all node pools by:
-       
-       ```shell 
-       gcloud container node-pools update $POOL_NAME \
-          --cluster=$CLUSTER_NAME \
-          --workload-metadata=GKE_METADATA
-       ```
-       ***NOTE***: These commands may take a long time to finish. Check 
-       [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
-       for more information.
+1. Enable Workload Identity. Checking [Configure Authentication Mechanism](authentication-mechanisms-gcp.md) ->
+   Option 1 (Recommended): Workload Identity -> Enable Workload Identity, for setup details. 
+   Skip this step if you have already enabled it during the control plane setup:
+   [Install Knative-GCP](install-knative-gcp.md). 
     
 1. Give `iam.serviceAccountAdmin` role to your control plane's Google
   Cloud Service Account. You can skip this step if you granted

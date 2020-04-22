@@ -59,20 +59,22 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
        gcloud container clusters update $CLUSTER_NAME \
          --workload-pool=$PROJECT_ID.svc.id.goog
        ```
-       Then, create a new node pool or modify an existing node pool to enable GKE_METADATA.
-       Here, we assume that you are using an existing node pool. 
-       You can get `POOL_NAME` by `gcloud container node-pools list --cluster=${CLUSTER_NAME}`, 
-       and choose to update a specific node pool or all node pools by:
+       Enable `GKE_METADATA` for your node pool(s). 
        
        ```shell 
-       gcloud container node-pools update $POOL_NAME \
-          --cluster=$CLUSTER_NAME \
-          --workload-metadata=GKE_METADATA
+        pools=$(gcloud container node-pools list --cluster=${CLUSTER_NAME} --format="value(name)")
+        while read -r pool_name
+        do
+          gcloud container node-pools update "${pool_name}" \
+            --cluster=${CLUSTER_NAME} \
+            --workload-metadata=GKE_METADATA
+        done <<<"${pools}"
        ```
+       
        ***NOTE***: These commands may take a long time to finish. Check 
        [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
-       for more information. (In init script, we will update all existing node pools)
-        
+       for more information.
+       
 1. Bind the Kubernetes Service Account `controller` with Google Cloud
     Service Account.
 

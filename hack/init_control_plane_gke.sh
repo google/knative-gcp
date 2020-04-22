@@ -44,11 +44,7 @@ do
   gcloud container node-pools update "${pool_name}" \
     --cluster=${CLUSTER_NAME} \
     --workload-metadata=GKE_METADATA
-done <<<"$pools"
-
-gcloud container node-pools update default-pool \
-  --cluster=${CLUSTER_NAME} \
-  --workload-metadata=GKE_METADATA
+done <<<"${pools}"
 
 # Create the service account for the control plane.
 gcloud iam service-accounts create ${GSA_NAME}
