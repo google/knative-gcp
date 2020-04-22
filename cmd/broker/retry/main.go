@@ -42,6 +42,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -62,6 +63,7 @@ type envConfig struct {
 }
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
 	flag.Parse()
 
 	ctx := signals.NewContext()
