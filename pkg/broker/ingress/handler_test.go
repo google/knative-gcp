@@ -23,16 +23,28 @@ import (
 	nethttp "net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"cloud.google.com/go/pubsub"
+	"cloud.google.com/go/pubsub/pstest"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
+	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	"knative.dev/eventing/pkg/logging"
+	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"knative.dev/pkg/logging"
+	logtest "knative.dev/pkg/logging/testing"
 )
 
-var topic = "topic1"
+const (
+	projectID      = "testproject"
+	topicID        = "topic1"
+	subscriptionID = "subscription1"
+)
 
 var brokerConfig = &config.TargetsConfig{
 	Brokers: map[string]*config.Broker{
@@ -40,7 +52,7 @@ var brokerConfig = &config.TargetsConfig{
 			Id:            "b-uid-1",
 			Name:          "broker1",
 			Namespace:     "ns1",
-			DecoupleQueue: &config.Queue{Topic: topic},
+			DecoupleQueue: &config.Queue{Topic: topicID},
 		},
 		"ns2/broker2": {
 			Id:            "b-uid-2",
@@ -124,11 +136,20 @@ func TestHandler(t *testing.T) {
 	}
 
 	client := nethttp.Client{}
-	defer client.CloseIdleConnections()
+	t.Cleanup(client.CloseIdleConnections)
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h, url, cleanup := createAndStartIngress(t)
-			defer cleanup()
+			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
+			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+			t.Cleanup(cancel)
+
+			psSrv := pstest.NewServer()
+			t.Cleanup(func() {
+				psSrv.Close()
+			})
+
+			url := createAndStartIngress(ctx, t, psSrv)
+			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
 			if err != nil {
@@ -140,9 +161,15 @@ func TestHandler(t *testing.T) {
 
 			// If event is accepted, check that it's stored in the decouple sink.
 			if res.StatusCode == nethttp.StatusOK {
+				m, err := rec.Receive(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				savedToSink, err := binding.ToEvent(ctx, m)
+				if err != nil {
+					t.Fatal(err)
+				}
 				// Retrieve the event from the decouple sink.
-				fakeClient := h.decouple.(*multiTopicDecoupleSink).client.(*fakePubsubClient)
-				savedToSink := <-fakeClient.topics[topic]
 				if tc.event.ID() != savedToSink.ID() {
 					t.Errorf("Event ID mismatch. got: %v, want: %v", savedToSink.ID(), tc.event.ID())
 				}
@@ -150,29 +177,65 @@ func TestHandler(t *testing.T) {
 					t.Errorf("Saved event should be decorated with timestamp, got zero.")
 				}
 			}
+
+			select {
+			case <-ctx.Done():
+				t.Fatalf("test cancelled or timed out: %v", ctx.Err())
+			default:
+			}
 		})
 	}
 }
 
+func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) *pubsub.Client {
+	conn, err := grpc.Dial(psSrv.Addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		conn.Close()
+	})
+
+	psClient, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return psClient
+}
+
+func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) *cepubsub.Protocol {
+	ps := createPubsubClient(ctx, t, psSrv)
+	topic, err := ps.CreateTopic(ctx, topicID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = ps.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{Topic: topic})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	go p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
+	return p
+}
+
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()) {
-	decouple, err1 := NewMultiTopicDecoupleSink(context.Background(),
+func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) string {
+	decouple, err1 := NewMultiTopicDecoupleSink(ctx,
 		WithBrokerConfig(memory.NewTargets(brokerConfig)),
-		WithClient(newFakePubsubClient(t)))
+		WithPubsubClient(createPubsubClient(ctx, t, psSrv)))
 	if err1 != nil {
 		t.Fatalf("Failed to create decouple sink: %v", err1)
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	h = &handler{
-		logger:       logging.FromContext(ctx),
+	h := &handler{
+		logger:       logging.FromContext(ctx).Desugar(),
 		httpReceiver: receiver,
 		decouple:     decouple,
-	}
-
-	cleanup = func() {
-		// Any cleanup steps should go here.
-		cancel()
 	}
 
 	errCh := make(chan error)
@@ -182,10 +245,10 @@ func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()
 	select {
 	case err := <-errCh:
 		t.Fatalf("Failed to start ingress: %v", err)
-	case url = <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
-		return h, url, cleanup
+	case url := <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
+		return url
 	}
-	return h, "", cleanup
+	return ""
 }
 
 func createTestEvent(id string) *cloudevents.Event {

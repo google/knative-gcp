@@ -31,6 +31,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"knative.dev/pkg/logging"
+	logtest "knative.dev/pkg/logging/testing"
 )
 
 func TestMultiTopicDecoupleSink(t *testing.T) {
@@ -149,10 +151,11 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 			fakeClient := newFakePubsubClient(t)
 			brokerConfig := memory.NewTargets(tt.brokerConfig)
 			for _, testCase := range tt.cases {
+				ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 				if testCase.clientErrFn != nil {
 					testCase.clientErrFn(fakeClient)
 				}
-				sink, err := NewMultiTopicDecoupleSink(context.Background(), WithBrokerConfig(brokerConfig), WithClient(fakeClient))
+				sink, err := NewMultiTopicDecoupleSink(ctx, WithBrokerConfig(brokerConfig), WithClient(fakeClient))
 				if err != nil {
 					t.Fatalf("Failed to create decouple sink: %v", err)
 				}
