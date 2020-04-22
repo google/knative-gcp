@@ -434,7 +434,10 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}
 		if err := r.reconcileDataPlaneDeployments(); err != nil {
-			r.Logger.Warnf("Error reconciling data plane deployments: %w", err)
+			// Failing to update the annotation on the data plane pods means there
+			// may be a longer propagation delay for the configmap volume to be
+			// refreshed. But this is not treated as an error.
+			r.Logger.Warnf("Error reconciling data plane deployments: %v", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("error getting targets ConfigMap: %w", err)
@@ -448,7 +451,10 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 			return fmt.Errorf("error updating targets ConfigMap: %w", err)
 		}
 		if err := r.reconcileDataPlaneDeployments(); err != nil {
-			r.Logger.Warnf("Error reconciling data plane deployments: %w", err)
+			// Failing to update the annotation on the data plane pods means there
+			// may be a longer propagation delay for the configmap volume to be
+			// refreshed. But this is not treated as an error.
+			r.Logger.Warnf("Error reconciling data plane deployments: %v", err)
 		}
 	}
 	return nil

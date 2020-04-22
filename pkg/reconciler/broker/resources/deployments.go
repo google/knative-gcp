@@ -32,7 +32,7 @@ import (
 // configmap volume refresh without restarting the pod, see
 // https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/#mounted-configmaps-are-updated-automatically
 // NOTE: update spec.template.metadata.annotations on the deployment resource
-// causes pods to bre recreated.
+// causes pods to be recreated.
 func UpdateVolumeGenerationForDeployment(kubeClient kubernetes.Interface, dl appsv1listers.DeploymentLister, pl corev1listers.PodLister, ns, name string) error {
 	d, err := dl.Deployments(ns).Get(name)
 	if err != nil {
@@ -42,6 +42,8 @@ func UpdateVolumeGenerationForDeployment(kubeClient kubernetes.Interface, dl app
 		return fmt.Errorf("error getting deployment %v/%v: %w", ns, name, err)
 	}
 
+	// TODO(liu-cong) Once the deployment is managed by the BrokerCell, we can
+	// get the selector from BrokerCell instead of from the deployment.
 	selector, err := metav1.LabelSelectorAsSelector(d.Spec.Selector)
 	if err != nil {
 		return fmt.Errorf("error converting deployment selector to label selector for %v/%v: %w", ns, name, err)
