@@ -34,4 +34,9 @@ var (
 		Group:    GroupName,
 		Resource: "topics",
 	}
+	// TriggerResource represents a EventFlow Trigger associated with the PubSub Topic/Subscription.
+	TriggersResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "triggers",
+	}
 )

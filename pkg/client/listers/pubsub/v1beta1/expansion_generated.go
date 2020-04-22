@@ -33,3 +33,11 @@ type TopicListerExpansion interface{}
 // TopicNamespaceListerExpansion allows custom methods to be added to
 // TopicNamespaceLister.
 type TopicNamespaceListerExpansion interface{}
+
+// TriggerListerExpansion allows custom methods to be added to
+// TriggerLister.
+type TriggerListerExpansion interface{}
+
+// TriggerNamespaceListerExpansion allows custom methods to be added to
+// TriggerNamespaceLister.
+type TriggerNamespaceListerExpansion interface{}

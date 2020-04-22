@@ -90,6 +90,10 @@ type PubSubStatus struct {
 	// SubscriptionID is the created subscription ID.
 	// +optional
 	SubscriptionID string `json:"subscriptionId,omitempty"`
+
+	// TriggerID is the created EventFlow trigger ID.
+	// +optional
+	TriggerID string `json:"triggerId,omitempty"`
 }
 
 const (
@@ -98,6 +102,9 @@ const (
 
 	// PullSubscriptionReay has status True when the PullSubscription is ready.
 	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
+
+	// PullSubscriptionReay has status True when the Trigger is ready.
+	TriggerReady apis.ConditionType = "TriggerReady"
 )
 
 // IsReady returns true if the resource is ready overall.
@@ -155,6 +162,7 @@ func (s *PubSub) Populate() {
 	s.Status.ProjectID = "projectid"
 	s.Status.TopicID = "topicid"
 	s.Status.SubscriptionID = "subscriptionid"
+	s.Status.TriggerID = "subscriptionid"
 }
 
 // GetListType implements apis.Listable

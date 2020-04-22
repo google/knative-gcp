@@ -1,0 +1,99 @@
+# Copyright 2019 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        {"type": "com.google.cloud.google.generic.topic.publish", "description": "This event is sent when a GoogleCloudSource (generic event type for several Google Cloud Platform API operations) publishes a message to a Cloud PubSub topic." }
+      ]
+  name: triggers.pubsub.cloud.google.com
+spec:
+  group: pubsub.cloud.google.com
+  version: v1beta1
+  names:
+    categories:
+    - all
+    - knative
+    - trigger
+    - sources
+    kind: Trigger
+    plural: triggers
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          required: 
+            - sourcetype
+            - filter
+          properties:
+            googleServiceAccount:
+              type: string
+              description: "GCP service account used to call the triggers service. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
+            project:
+              type: string
+              description: "Google Cloud Project ID of the project into which the topic should be created. If omitted uses the Project ID from the GKE cluster metadata service."
+            sourceType:      
+              type: string
+              description: "Type of Trigger, only AUDIT is supported"
+            filters:      
+              type: object 
+              description: "String to string Attributes (key, value) to filter events by exact match on event context attributes. For each `Filters` key-value pair the key in the map is compared with the equivalent key in the event context. An event passes the filter if all values are equal to the specified values."
+        status:
+          properties:
+            observedGeneration:
+              type: integer
+              format: int64
+            conditions:
+              items:
+                properties:
+                  lastTransitionTime:
+                    # we use a string in the stored object but a wrapper object
+                    # at runtime.
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                - type
+                - status
+                type: object
+              type: array
+          type: object

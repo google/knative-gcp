@@ -36,6 +36,10 @@ func (c *FakePubsubV1beta1) Topics(namespace string) v1beta1.TopicInterface {
 	return &FakeTopics{c, namespace}
 }
 
+func (c *FakePubsubV1beta1) Triggers(namespace string) v1beta1.TriggerInterface {
+	return &FakeTriggers{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakePubsubV1beta1) RESTClient() rest.Interface {

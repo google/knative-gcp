@@ -62,3 +62,25 @@ func (s *PubSubStatus) MarkPullSubscriptionReady(cs *apis.ConditionSet) {
 func (s *PubSubStatus) MarkPullSubscriptionNotConfigured(cs *apis.ConditionSet) {
 	cs.Manage(s).MarkUnknown(PullSubscriptionReady, "PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled")
 }
+
+// MarkTriggerFailed sets the condition that the PubSub Trigger is
+// False and why.
+func (s *PubSubStatus) MarkTriggerFailed(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+	cs.Manage(s).MarkFalse(TriggerReady, reason, messageFormat, messageA...)
+}
+
+// MarkTriggerUnknown sets the condition that the PubSub Trigger is Unknown.
+func (s *PubSubStatus) MarkTriggerUnknown(cs *apis.ConditionSet, reason, messageFormat string, messageA ...interface{}) {
+	cs.Manage(s).MarkUnknown(TriggerReady, reason, messageFormat, messageA...)
+}
+
+// MarkTriggerReady sets the condition that the PubSub Trigger is ready.
+func (s *PubSubStatus) MarkTriggerReady(cs *apis.ConditionSet) {
+	cs.Manage(s).MarkTrue(TriggerReady)
+}
+
+// MarkTriggerNotConfigured changes the TriggerReady condition to be unknown to reflect
+// that the Trigger does not yet have a Status.
+func (s *PubSubStatus) MarkTriggerNotConfigured(cs *apis.ConditionSet) {
+	cs.Manage(s).MarkUnknown(TriggerReady, "TriggerNotConfigured", "Trigger has not yet been reconciled")
+}
