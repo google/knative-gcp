@@ -152,7 +152,7 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 				if testCase.clientErrFn != nil {
 					testCase.clientErrFn(fakeClient)
 				}
-				sink, err := NewMultiTopicDecoupleSink(context.Background(), WithBrokerConfig(brokerConfig), WithPubsubClient(fakeClient))
+				sink, err := NewMultiTopicDecoupleSink(context.Background(), WithBrokerConfig(brokerConfig), WithClient(fakeClient))
 				if err != nil {
 					t.Fatalf("Failed to create decouple sink: %v", err)
 				}

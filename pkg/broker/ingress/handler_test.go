@@ -158,7 +158,7 @@ func TestHandler(t *testing.T) {
 func createAndStartIngress(t *testing.T) (h *handler, url string, cleanup func()) {
 	decouple, err1 := NewMultiTopicDecoupleSink(context.Background(),
 		WithBrokerConfig(memory.NewTargets(brokerConfig)),
-		WithPubsubClient(newFakePubsubClient(t)))
+		WithClient(newFakePubsubClient(t)))
 	if err1 != nil {
 		t.Fatalf("Failed to create decouple sink: %v", err1)
 	}
