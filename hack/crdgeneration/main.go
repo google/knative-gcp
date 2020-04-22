@@ -124,7 +124,8 @@ func preprocessSnippet(snippets map[string]string) (map[string]string, error) {
 			if err := t.Execute(&w, snippets); err != nil {
 				return nil, fmt.Errorf("unable to execute template: %v", err)
 			}
-			if strings.Contains(w.String(), "{{ replace_with ") {
+			if strings.Contains(w.String(), "{{ replace_with ") ||
+				strings.Contains(w.String(), "{{- replace_with ") {
 				// The generated snippet still has a replace_with directive, which means that the
 				// snippet that was just pushed into this snippet must still have it. In order to
 				// correctly handle left whitespace, skip this for now. The snippet that was pushed
