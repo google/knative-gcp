@@ -74,6 +74,9 @@ type TriggerSpec struct {
 	// context. An event passes the filter if all values are equal to the
 	// specified values.
 	Filters map[string]string `json:"filters"`
+
+	// Trigger is the ID of the Trigger to create/use in Event Flow.
+	Trigger string `json:"trigger,omitempty"`
 }
 
 const (
@@ -109,7 +112,7 @@ type TriggerStatus struct {
 	// +optional
 	ProjectID string `json:"projectId,omitempty"`
 
-	// TriggerID is the ID that <EventFlow> identifies this trigger.
+	// TriggerID is the ID that Event Flow identifies this trigger.
 	// +optional
 	TriggerID string `json:"triggerId,omitempty"`
 }

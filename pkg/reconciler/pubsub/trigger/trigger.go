@@ -32,6 +32,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
 	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1beta1"
+	gtrigger "github.com/google/knative-gcp/pkg/gclient/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -69,7 +70,7 @@ type Reconciler struct {
 
 	// createClientFn is the function used to create the Trigger client that interacts with EventFlow.
 	// This is needed so that we can inject a mock client for UTs purposes.
-	//createClientFn gpubsub.CreateFn
+	createClientFn gtrigger.CreateFn
 }
 
 // Check that our Reconciler implements Interface.
@@ -111,21 +112,30 @@ func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1beta1.Trig
 	}
 
 	// create the triggers client
-	//client, err := r.createClientFn(ctx)
-	//if err != nil {
-	//	logging.FromContext(ctx).Desugar().Error("Failed to create Trigger client", zap.Error(err))
-	//	return "", err
-	//}
-	//defer client.Close()
+	client, err := r.createClientFn(ctx, trigger.Status.ProjectID)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Event Flow client", zap.Error(err))
+		return "", err
+	}
+	defer client.Close()
 
-	// If the trigger does exist, then return its ID.
+	t := client.Trigger(trigger.Spec.Trigger)
+	exists, err := t.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Event Flow trigger exists", zap.Error(err))
+		return "", err
+	}
 
-	// If the trigger does not exist, then create it.
-
+	if !exists {
+		t, err = client.CreateTrigger(ctx, trigger.Spec.Trigger, trigger.Spec.SourceType, trigger.Spec.Filters)
+	}
 	return "", nil
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, trigger *v1beta1.Trigger) reconciler.Event {
+	if trigger.Status.TriggerID == "" {
+		return nil
+	}
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	// TODO(nlopezgi): figure out if I need to get a v1alpha1 trigger to get this working
@@ -135,7 +145,27 @@ func (r *Reconciler) FinalizeKind(ctx context.Context, trigger *v1beta1.Trigger)
 		}
 	}*/
 
-	// Delete the EventFlow trigger
+	// At this point the project ID should have been populated in the status.
+	// Querying EventFlow as the trigger could have been deleted outside the cluster (e.g, through gcloud).
+	client, err := r.createClientFn(ctx, trigger.Status.ProjectID)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to create Event Flow client", zap.Error(err))
+		return err
+	}
+	defer client.Close()
+	t := client.Trigger(trigger.Status.TriggerID)
+	exists, err := t.Exists(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to verify Event Flow trigger exists", zap.Error(err))
+		return err
+	}
+	if exists {
+		// Delete the trigger.
+		if err := t.Delete(ctx); err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to delete Event Flow trigger", zap.Error(err))
+			return err
+		}
+	}
 
 	// ok to remove finalizer.
 	return nil

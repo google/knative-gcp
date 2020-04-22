@@ -27,6 +27,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	triggerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/trigger"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
+	gtrigger "github.com/google/knative-gcp/pkg/gclient/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -59,6 +60,7 @@ func NewController(
 		Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 		triggerLister:        triggerInformer.Lister(),
 		serviceAccountLister: serviceAccountInformer.Lister(),
+		createClientFn:       gtrigger.NewClient,
 	}
 	impl := triggerreconciler.NewImpl(ctx, r)
 

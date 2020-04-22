@@ -33,6 +33,8 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
 
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -47,14 +49,12 @@ const (
 	triggerUID  = "test-trigger-uid"
 	sourceType  = "AUDIT"
 
-	sinkName  = "sink"
-	triggerId = "135"
-	testNS    = "testnamespace"
-	//testImage      = "notification-ops-image"
-	testProject  = "test-project-id"
-	testTopicID  = "trigger-" + triggerUID
-	testTopicURI = "http://" + triggerName + "-topic." + testNS + ".svc.cluster.local"
-	generation   = 1
+	sinkName      = "sink"
+	triggerID     = "135"
+	testNS        = "testnamespace"
+	testProject   = "test-project-id"
+	testTriggerID = "trigger-" + triggerUID
+	generation    = 1
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
 	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
@@ -146,14 +146,21 @@ func TestAllCases(t *testing.T) {
 		Name: "delete fails with getting k8s service account error",
 		Objects: []runtime.Object{
 			NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerProject(testProject),
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSourceType(sourceType),
-				WithPubSubTriggerFilter("ServiceName", "foo"),
-				WithPubSubTriggerFilter("MethodName", "bar"),
-				WithPubSubTriggerFilter("ResourceName", "baz"),
+				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
 				WithPubSubTriggerServiceAccountName("test123"),
-				WithPubSubTriggerGCPServiceAccount(gServiceAccount),
 				WithPubSubTriggerDeletionTimestamp(),
 			),
 			newSink(),
@@ -164,13 +171,20 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerProject(testProject),
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSourceType(sourceType),
-				WithPubSubTriggerFilter("ServiceName", "foo"),
-				WithPubSubTriggerFilter("MethodName", "bar"),
-				WithPubSubTriggerFilter("ResourceName", "baz"),
-				WithPubSubTriggerGCPServiceAccount(gServiceAccount),
+				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
 				WithPubSubTriggerServiceAccountName("test123"),
 				WithPubSubTriggerWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
 				WithPubSubTriggerDeletionTimestamp(),
@@ -180,32 +194,32 @@ func TestAllCases(t *testing.T) {
 		Name: "successfully deleted trigger",
 		Objects: []runtime.Object{
 			NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerProject(testProject),
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSourceType(sourceType),
-				WithPubSubTriggerFilter("ServiceName", "foo"),
-				WithPubSubTriggerFilter("MethodName", "bar"),
-				WithPubSubTriggerFilter("ResourceName", "baz"),
+				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
 				WithPubSubTriggerDeletionTimestamp(),
-			),
-			NewTopic(triggerName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
-			),
-			NewPullSubscriptionWithNoDefaults(triggerName, testNS,
-				WithPullSubscriptionReady(sinkURI),
 			),
 			newSink(),
 		},
 		Key:           testNS + "/" + triggerName,
 		OtherTestData: map[string]interface{}{
 			// TODO(nlopezgi): add TestClientData for reconciler client once added
-			/*"google": ggoogle.TestClientData{
-				BucketData: ggoogle.TestBucketData{
-					Notifications: map[string]*google.Notification{
-						triggerId: {
-							ID: triggerId,
+			/*"triggers": gtriggers.TestClientData{
+				TriggerData: gtriggers.TestTriggerData{
+					Triggers: map[string]*google.Trigger{
+						triggerID: {
+							ID: triggerID,
 						},
 					},
 				},
@@ -223,12 +237,19 @@ func TestAllCases(t *testing.T) {
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerProject(testProject),
-				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSourceType(sourceType),
-				WithPubSubTriggerFilter("ServiceName", "foo"),
-				WithPubSubTriggerFilter("MethodName", "bar"),
-				WithPubSubTriggerFilter("ResourceName", "baz"),
+				WithPubSubTriggerObjectMetaGeneration(generation), WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					IdentitySpec: duckv1beta1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
 				WithPubSubTriggerObjectMetaGeneration(generation),
 				WithPubSubTriggerDeletionTimestamp(),
 			),

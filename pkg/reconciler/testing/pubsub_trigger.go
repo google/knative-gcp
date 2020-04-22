@@ -45,11 +45,11 @@ func NewPubSubTrigger(name, namespace string, so ...PubSubTriggerOption) *v1beta
 	return s
 }
 
-func WithPubSubTriggerProject(project string) PubSubTriggerOption {
+/*func WithPubSubTriggerProject(project string) PubSubTriggerOption {
 	return func(s *v1beta1.Trigger) {
 		s.Spec.Project = project
 	}
-}
+}*/
 
 // WithInitTriggerConditions initializes the Triggers's conditions.
 func WithInitPubSubTriggerConditions(s *v1beta1.Trigger) {
@@ -71,7 +71,7 @@ func WithPubSubTriggerWorkloadIdentityFailed(reason, message string) PubSubTrigg
 
 func WithPubSubTriggerGCPServiceAccount(gServiceAccount string) PubSubTriggerOption {
 	return func(ps *v1beta1.Trigger) {
-		ps.Spec.GoogleServiceAccount = gServiceAccount
+		ps.Spec.IdentitySpec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -117,17 +117,30 @@ func WithPubSubTriggerObjectMetaGeneration(generation int64) PubSubTriggerOption
 	}
 }
 
+/*
 func WithPubSubTriggerSourceType(sourceType string) PubSubTriggerOption {
 	return func(s *v1beta1.Trigger) {
 		s.Spec.SourceType = sourceType
 	}
 }
 
-func WithPubSubTriggerFilter(key string, value string) PubSubTriggerOption {
+func WithPubSubTriggerTrigger(trigger string) PubSubTriggerOption {
+	return func(s *v1beta1.Trigger) {
+		s.Spec.Trigger = trigger
+	}
+}*/
+
+func WithPubSubTriggerSpec(spec v1beta1.TriggerSpec) PubSubTriggerOption {
+	return func(s *v1beta1.Trigger) {
+		s.Spec = spec
+	}
+}
+
+/*func WithPubSubTriggerFilter(key string, value string) PubSubTriggerOption {
 	return func(s *v1beta1.Trigger) {
 		s.Spec.Filters[key] = value
 	}
-}
+}*/
 
 func WithPubSubTriggerDeletionTimestamp() PubSubTriggerOption {
 	return func(s *v1beta1.Trigger) {
