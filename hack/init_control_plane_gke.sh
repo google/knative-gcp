@@ -37,7 +37,15 @@ gcloud services enable iamcredentials.googleapis.com
 gcloud container clusters update ${CLUSTER_NAME} \
   --workload-pool=${PROJECT_ID}.svc.id.goog
 
-# Modify default node pool to enable GKE_METADATA
+# Modify all node pools to enable GKE_METADATA.
+pools=$(gcloud container node-pools list --cluster=${CLUSTER_NAME} --format="value(name)")
+while read -r pool_name
+do
+  gcloud container node-pools update "${pool_name}" \
+    --cluster=${CLUSTER_NAME} \
+    --workload-metadata=GKE_METADATA
+done <<<"$pools"
+
 gcloud container node-pools update default-pool \
   --cluster=${CLUSTER_NAME} \
   --workload-metadata=GKE_METADATA

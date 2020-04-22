@@ -1,22 +1,21 @@
-
 # Manually Configure Authentication Mechanism for GCP
 
-For both methods (Workload Identity and Kubernetes Secret), the first
-manual step is creating a
+For both methods (Workload Identity and Kubernetes Secret), the first manual
+step is creating a
 [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-with the appropriate permissions needed for the control plane to manage
-native GCP resources.
+with the appropriate permissions needed for the control plane to manage native
+GCP resources.
 
-You need to create a new Google Cloud Service Account named
-`cloud-run-events` with the following command:
+You need to create a new Google Cloud Service Account named `cloud-run-events`
+with the following command:
 
 ```shell
 gcloud iam service-accounts create cloud-run-events
 ```
 
-Then, give that Google Cloud Service Account permissions on your project.
-The actual permissions needed will depend on the resources you are
-planning to use. The Table below enumerates such permissions:
+Then, give that Google Cloud Service Account permissions on your project. The
+actual permissions needed will depend on the resources you are planning to use.
+The Table below enumerates such permissions:
 
 |    Resource / Functionality     |                                     Roles                                      |
 | :-----------------------------: | :----------------------------------------------------------------------------: |
@@ -30,14 +29,12 @@ planning to use. The Table below enumerates such permissions:
 |              Topic              |                              roles/pubsub.editor                               |
 | Workload Identity in Data Plane |                         roles/iam.serviceAccountAdmin                          |
 
-In this guide, and for the sake of simplicity, we will just grant
-`roles/owner` privileges to the Google Cloud Service Account, which
-encompasses all of the above plus some other permissions. Note that if you
-prefer finer-grained privileges, you can just grant the ones described in
-the Table. Also, you can refer to
-[managing multiple projects](../install/managing-multiple-projects.md) in
-case you want your Google Cloud Service Account to manage multiple
-projects.
+In this guide, and for the sake of simplicity, we will just grant `roles/owner`
+privileges to the Google Cloud Service Account, which encompasses all of the
+above plus some other permissions. Note that if you prefer finer-grained
+privileges, you can just grant the ones described in the Table. Also, you can
+refer to [managing multiple projects](../install/managing-multiple-projects.md)
+in case you want your Google Cloud Service Account to manage multiple projects.
 
 ```shell
 gcloud projects add-iam-policy-binding $PROJECT_ID \
@@ -50,63 +47,72 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 1. Enable Workload Identity.
 
     1. Ensure that you have enabled the Cloud IAM Service Account Credentials API.
-        ```shell
-        gcloud services enable iamcredentials.googleapis.com
-        ```
+       ```shell
+       gcloud services enable iamcredentials.googleapis.com
+       ```
     1. If you didn't enable Workload Identity when you
     created your cluster, run the following commands: 
     
-        ```shell 
-         gcloud container clusters update $CLUSTER_NAME \
-            --workload-pool=$PROJECT_ID.svc.id.goog
-         gcloud container node-pools update default-pool \
-            --cluster=$CLUSTER_NAME \
-            --workload-metadata=GKE_METADATA
-        ````
-        ***NOTE***: These commands may take long time to finish. Check 
-        [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
-        for more information about Workload Identity setup on an existing cluster .
+       Modify the cluster to enable Workload Identity first:
+    
+       ```shell 
+       gcloud container clusters update $CLUSTER_NAME \
+         --workload-pool=$PROJECT_ID.svc.id.goog
+       ```
+       Then, create a new node pool or modify an existing node pool to enable GKE_METADATA.
+       Here, we assume that you are using an existing node pool. 
+       You can get `POOL_NAME` by `gcloud container node-pools list --cluster=${CLUSTER_NAME}`, 
+       and choose to update a specific node pool or all node pools by:
+       
+       ```shell 
+       gcloud container node-pools update $POOL_NAME \
+          --cluster=$CLUSTER_NAME \
+          --workload-metadata=GKE_METADATA
+       ```
+       ***NOTE***: These commands may take a long time to finish. Check 
+       [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
+       for more information. (In init script, we will update all existing node pools)
         
 1. Bind the Kubernetes Service Account `controller` with Google Cloud
     Service Account.
 
-    ```shell
-    MEMBER=serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/controller]
+   ```shell
+   MEMBER=serviceAccount:$PROJECT_ID.svc.id.goog[cloud-run-events/controller]
 
-    gcloud iam service-accounts add-iam-policy-binding \
-    --role roles/iam.workloadIdentityUser \
-    --member $MEMBER cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
-    ```
+   gcloud iam service-accounts add-iam-policy-binding \
+   --role roles/iam.workloadIdentityUser \
+   --member $MEMBER cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
+   ```
 
 1. Add annotation to Kubernetes Service Account `controller`.
 
-    ```shell
-    kubectl annotate serviceaccount controller iam.gke.io/gcp-service-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
-    --namespace cloud-run-events
-    ```
+   ```shell
+   kubectl annotate serviceaccount controller iam.gke.io/gcp-service-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
+   --namespace cloud-run-events
+   ```
 
 ## Option 2: Kubernetes Secrets
 
-1. Download a new JSON private key for that Service Account. **Be sure
-    not to check this key into source control!**
+1. Download a new JSON private key for that Service Account. **Be sure not to
+   check this key into source control!**
 
-    ```shell
-    gcloud iam service-accounts keys create cloud-run-events.json \
-    --iam-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
-    ```
+   ```shell
+   gcloud iam service-accounts keys create cloud-run-events.json \
+   --iam-account=cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com
+   ```
 
-1. Create a Secret on the Kubernetes cluster in the `cloud-run-events`
-    namespace with the downloaded key:
+1. Create a Secret on the Kubernetes cluster in the `cloud-run-events` namespace
+   with the downloaded key:
 
-    ```shell
-    kubectl --namespace cloud-run-events create secret generic google-cloud-key --from-file=key.json=cloud-run-events.json
-    ```
+   ```shell
+   kubectl --namespace cloud-run-events create secret generic google-cloud-key --from-file=key.json=cloud-run-events.json
+   ```
 
-    Note that `google-cloud-key` and `key.json` are default values
-    expected by our control plane.
+   Note that `google-cloud-key` and `key.json` are default values expected by
+   our control plane.
 
 1. Restart controller with:
 
-    ```shell
-    kubectl delete pod -n cloud-run-events --selector role=controller
-    ```
+   ```shell
+   kubectl delete pod -n cloud-run-events --selector role=controller
+   ```

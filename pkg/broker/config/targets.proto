@@ -16,6 +16,7 @@ limitations under the License.
 
 syntax = "proto3";
 package config;
+option go_package="github.com/google/knative-gcp/pkg/broker/config";
 
 // The state of the object.
 // We may add additional intermediate states if needed.

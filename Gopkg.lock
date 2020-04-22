@@ -2,13 +2,14 @@
 
 
 [[projects]]
-  digest = "1:67381a5551ce8b88d587e87099c28a21db6a6192729dcc617f5131fc466af100"
+  digest = "1:4b3ac5d7fcc481283fbfb04ac4794672213e7a06b4826867a280b321dc277a69"
   name = "cloud.google.com/go"
   packages = [
     ".",
     "compute/metadata",
     "container/apiv1",
     "iam",
+    "iam/admin/apiv1",
     "internal",
     "internal/optional",
     "internal/testutil",
@@ -263,18 +264,15 @@
   revision = "869f871628b6baa9cfbc11732cdf6546b17c1298"
 
 [[projects]]
-  digest = "1:6b3d0f402c88b60e78bca3ee8332a79f02e6964d2b4a44092620f1448e16cbb6"
+  digest = "1:9f5ff64bd86f15ef21696764101bc55baa30047e3363c42d9f3fbac1516393c3"
   name = "github.com/golang/protobuf"
   packages = [
     "descriptor",
+    "internal/gengogrpc",
     "jsonpb",
     "proto",
     "protoc-gen-go",
     "protoc-gen-go/descriptor",
-    "protoc-gen-go/generator",
-    "protoc-gen-go/generator/internal/remap",
-    "protoc-gen-go/grpc",
-    "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
@@ -284,8 +282,8 @@
     "ptypes/wrappers",
   ]
   pruneopts = "NUT"
-  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
-  version = "v1.3.2"
+  revision = "1b794fe86dd6a0c7c52ae69b5c9cb0aeedc52afa"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:f0ae868d945753df81e797524bb7f3c577bcf751ce515c18162d259ca3ff8de7"
@@ -837,14 +835,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:45993e9e6182bb04c580a6043510d8c11e6660e53da1b84a05eade412a8ddd33"
+  digest = "1:28edd202f6ded3959dd52460724680a1aa5217bb14b15e23dbc768b60a081ae9"
   name = "google.golang.org/api"
   packages = [
     "container/v1beta1",
     "googleapi",
     "googleapi/internal/uritemplates",
     "googleapi/transport",
-    "iam/v1",
     "internal",
     "internal/gensupport",
     "iterator",
@@ -882,7 +879,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0bc16e64dba11f01b4d0fde4411813f3569e49fde3ca248960ebb6b265a3324d"
+  digest = "1:56245807311fc47ceb78871e4f0f8709ad025be67eee55a5c66b1c79bbfb9115"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -897,6 +894,7 @@
     "googleapis/cloud/scheduler/v1",
     "googleapis/container/v1",
     "googleapis/devtools/cloudtrace/v2",
+    "googleapis/iam/admin/v1",
     "googleapis/iam/v1",
     "googleapis/logging/type",
     "googleapis/logging/v2",
@@ -962,6 +960,58 @@
   pruneopts = "NUT"
   revision = "f6d0f9ee430895e87ef1ceb5ac8f39725bafceef"
   version = "v1.24.0"
+
+[[projects]]
+  digest = "1:2f72cb36ac9f2025f67b0343f0eaa30e3ea9aee2e126898a08c732600b2f63b6"
+  name = "google.golang.org/protobuf"
+  packages = [
+    "cmd/protoc-gen-go/internal_gengo",
+    "compiler/protogen",
+    "encoding/protojson",
+    "encoding/prototext",
+    "encoding/protowire",
+    "internal/descfmt",
+    "internal/descopts",
+    "internal/detectknown",
+    "internal/detrand",
+    "internal/encoding/defval",
+    "internal/encoding/json",
+    "internal/encoding/messageset",
+    "internal/encoding/tag",
+    "internal/encoding/text",
+    "internal/errors",
+    "internal/fieldnum",
+    "internal/fieldsort",
+    "internal/filedesc",
+    "internal/filetype",
+    "internal/flags",
+    "internal/genname",
+    "internal/impl",
+    "internal/mapsort",
+    "internal/msgfmt",
+    "internal/pragma",
+    "internal/set",
+    "internal/strs",
+    "internal/version",
+    "proto",
+    "reflect/protodesc",
+    "reflect/protoreflect",
+    "reflect/protoregistry",
+    "runtime/protoiface",
+    "runtime/protoimpl",
+    "testing/protocmp",
+    "types/descriptorpb",
+    "types/known/anypb",
+    "types/known/durationpb",
+    "types/known/emptypb",
+    "types/known/structpb",
+    "types/known/timestamppb",
+    "types/known/wrapperspb",
+    "types/pluginpb",
+  ]
+  pruneopts = "NUT"
+  revision = "3b9eee12916ce611400f93d6c2fed2fc2911b0ad"
+  version = "v1.21.0"
 
 [[projects]]
   digest = "1:2d1fbdc6777e5408cabeb02bf336305e724b925ff4546ded0fa8715a7267922a"
@@ -1742,6 +1792,7 @@
   input-imports = [
     "cloud.google.com/go/compute/metadata",
     "cloud.google.com/go/iam",
+    "cloud.google.com/go/iam/admin/apiv1",
     "cloud.google.com/go/logging/logadmin",
     "cloud.google.com/go/monitoring/apiv3",
     "cloud.google.com/go/pubsub",
@@ -1786,16 +1837,21 @@
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
     "golang.org/x/net/http2/h2c",
-    "google.golang.org/api/iam/v1",
     "google.golang.org/api/iterator",
     "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/cloud/audit",
     "google.golang.org/genproto/googleapis/cloud/scheduler/v1",
+    "google.golang.org/genproto/googleapis/iam/v1",
     "google.golang.org/genproto/googleapis/logging/v2",
     "google.golang.org/genproto/googleapis/monitoring/v3",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/status",
+    "google.golang.org/protobuf/encoding/prototext",
+    "google.golang.org/protobuf/proto",
+    "google.golang.org/protobuf/reflect/protoreflect",
+    "google.golang.org/protobuf/runtime/protoimpl",
+    "google.golang.org/protobuf/testing/protocmp",
     "istio.io/api/security/v1beta1",
     "istio.io/api/type/v1beta1",
     "istio.io/client-go/pkg/apis/security/v1beta1",
@@ -1838,7 +1894,6 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/record",
     "k8s.io/client-go/util/flowcontrol",
-    "k8s.io/client-go/util/retry",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
     "k8s.io/code-generator/cmd/defaulter-gen",

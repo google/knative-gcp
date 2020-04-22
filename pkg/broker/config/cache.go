@@ -19,7 +19,8 @@ package config
 import (
 	"sync/atomic"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 )
 
 // CachedTargets provides a in-memory cached copy of targets.
@@ -114,7 +115,7 @@ func (ct *CachedTargets) Bytes() ([]byte, error) {
 // String returns the text format of all the targets.
 func (ct *CachedTargets) String() string {
 	val := ct.Load()
-	return val.String()
+	return prototext.MarshalOptions{}.Format(val)
 }
 
 // EqualsBytes checks if the current targets config equals the given
@@ -133,7 +134,7 @@ func (ct *CachedTargets) EqualsBytes(b []byte) bool {
 func (ct *CachedTargets) EqualsString(s string) bool {
 	self := ct.Load()
 	var other TargetsConfig
-	if err := proto.UnmarshalText(s, &other); err != nil {
+	if err := prototext.Unmarshal([]byte(s), &other); err != nil {
 		return false
 	}
 	return proto.Equal(self, &other)

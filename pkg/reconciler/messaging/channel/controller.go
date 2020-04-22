@@ -30,6 +30,7 @@ import (
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 )
 
@@ -57,7 +58,7 @@ func NewController(
 
 	r := &Reconciler{
 		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:               identity.NewIdentity(ctx),
+		Identity:               identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 		channelLister:          channelInformer.Lister(),
 		topicLister:            topicInformer.Lister(),
 		pullSubscriptionLister: pullSubscriptionInformer.Lister(),

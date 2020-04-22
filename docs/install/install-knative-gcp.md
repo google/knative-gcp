@@ -8,7 +8,7 @@
    a mix of `gcloud` and `kubectl` commands. The rest of the guide assumes that
    you've set the `PROJECT_ID` environment variable to your Google Cloud project
    id, and also set your project ID as default using
-   `gcloud config set project $PROJECT_ID`. 
+   `gcloud config set project $PROJECT_ID`.
 
 1. Create a cluster under your Google Cloud project. If you would like to use [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
    to configure credential in the section ***Configure the Authentication Mechanism for GCP***,
@@ -38,8 +38,8 @@ ko apply -f ./config
    ```
 
 1. First install the CRDs by running the `kubectl apply` command with the
-   `--selector` flag. This prevents race conditions during the install,
-   which cause intermittent errors:
+   `--selector` flag. This prevents race conditions during the install, which
+   cause intermittent errors:
 
    ```shell
    kubectl apply --selector messaging.cloud.google.com/crd-install=true \
@@ -60,7 +60,8 @@ ko apply -f ./config
 Currently, we support two methods: Workload Identity and Kubernetes Secret.
 Workload Identity is the recommended way to access Google Cloud services from
 within GKE due to its improved security properties and manageability. For more
-information about Workload Identity, please see [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+information about Workload Identity, please see
+[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
 **_Note_**: Before applying initialization scripts, make sure: 
 1. Your default zone is set to be the same as your current cluster. You may use
@@ -69,27 +70,28 @@ information about Workload Identity, please see [here](https://cloud.google.com/
 1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to update it.
 
 **_Note_**: Both scripts will have a step to create a Google Cloud Service
-Account `cloud-run-events`. Ignore the error message if you already had
-this service account (error for 'service account already exists').
-TODO([#896](https://github.com/google/knative-gcp/issues/896)) Get rid of the error message.
+Account `cloud-run-events`. Ignore the error message if you already had this
+service account (error for 'service account already exists').
+TODO([#896](https://github.com/google/knative-gcp/issues/896)) Get rid of the
+error message.
 
 **_Note_**: The configuration steps have been automated by the scripts below. If
 wish to configure the auth manually, refer to
 [manually configure authentication for GCP](./authentication-machanisms-gcp.md),
 
-* Option 1 (Recommended): Use Workload Identity.
-  Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
+- Option 1 (Recommended): Use Workload Identity. Apply
+  [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
-   ```shell
-   ./hack/init_control_plane_gke.sh
-   ```
+  ```shell
+  ./hack/init_control_plane_gke.sh
+  ```
 
     ***Note***: If you didn't enable Workload Identity when you
-    created your cluster, this step may take long time to finish.
+    created your cluster, this step may take a long time to finish.
     
 * Option 2: Export service account keys and store them as Kubernetes Secrets.
   Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
 
-   ```shell
-   ./hack/init_control_plane.sh
-   ```
+  ```shell
+  ./hack/init_control_plane.sh
+  ```
