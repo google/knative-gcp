@@ -40,6 +40,7 @@ spec:
   subresources:
     status: {}
   preserveUnknownFields: false
+  {{- replace_with 2 "conversion_webhook" }}
   additionalPrinterColumns:
     - name: Ready
       type: string
