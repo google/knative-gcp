@@ -10,6 +10,11 @@
    id, and also set your project ID as default using
    `gcloud config set project $PROJECT_ID`.
 
+1. Create a cluster under your Google Cloud project. If you would like to use [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
+   to configure credential in the section ***Configure the Authentication Mechanism for GCP***,
+   we recommend you to enable Workload Identity when you create cluster, this could help to
+   reduce subsequent configuration time. 
+
 1. Install [Knative](https://knative.dev/docs/install/). Preferably, set up both
    [Serving](https://knative.dev/docs/serving/) and
    [Eventing](https://knative.dev/docs/eventing/). The latter is only required
@@ -58,10 +63,11 @@ within GKE due to its improved security properties and manageability. For more
 information about Workload Identity, please see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-**_Note_**: Before applying initialization scripts, make sure your default zone
-is set to be the same as your current cluster. You may use
+**_Note_**: Before applying initialization scripts, make sure: 
+1. Your default zone is set to be the same as your current cluster. You may use
 `gcloud container clusters describe $CLUSTER_NAME` to get zone and apply
 `gcloud config set compute/zone $ZONE` to set it.
+1. Your gcloud `CLI` are up to date. You may use `gcloud components update` to update it.
 
 **_Note_**: Both scripts will have a step to create a Google Cloud Service
 Account `cloud-run-events`. Ignore the error message if you already had this
@@ -80,7 +86,10 @@ wish to configure the auth manually, refer to
   ./hack/init_control_plane_gke.sh
   ```
 
-- Option 2: Export service account keys and store them as Kubernetes Secrets.
+    ***Note***: If you didn't enable Workload Identity when you
+    created your cluster, this step may take a long time to finish.
+    
+* Option 2: Export service account keys and store them as Kubernetes Secrets.
   Apply [init_control_plane.sh](../../hack/init_control_plane.sh):
 
   ```shell
