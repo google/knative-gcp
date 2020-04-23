@@ -66,9 +66,9 @@ func WithClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
 }
 
 // WithPubsubClient specifies the pubsub client to use.
-func WithPubsubClient(client *pubsub.Client) MultiTopicDecoupleSinkOption {
+func WithPubsubClient(ps *pubsub.Client) MultiTopicDecoupleSinkOption {
 	return func(opts *multiTopicDecoupleSinkOptions) {
-		opts.pubsub = client
+		opts.pubsub = ps
 	}
 }
 
