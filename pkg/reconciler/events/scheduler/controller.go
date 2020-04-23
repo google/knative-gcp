@@ -54,7 +54,17 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	return newControllerWithIAMPolicyManager(
+		ctx,
+		cmw,
+		iam.DefaultIAMPolicyManager())
+}
 
+func newControllerWithIAMPolicyManager(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	ipm iam.IAMPolicyManager,
+) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	cloudschedulersourceInformer := cloudschedulersourceinformers.Get(ctx)
@@ -62,7 +72,7 @@ func NewController(
 
 	c := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
+		Identity:             identity.NewIdentity(ctx, ipm),
 		schedulerLister:      cloudschedulersourceInformer.Lister(),
 		createClientFn:       gscheduler.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),
