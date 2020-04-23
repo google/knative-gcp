@@ -56,17 +56,19 @@ its improved security properties and manageability. For more information about
 Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-1. Enable Workload Identity. Check [Manually Configure Authentication Mechanism for GCP](authentication-mechanisms-gcp.md) ->
-   [Option 1 (Recommended): Workload Identity](authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity) -> 
-   Enable Workload Identity, for setup details. 
-   
+1. Enable Workload Identity. Check
+   [Manually Configure Authentication Mechanism for GCP](authentication-mechanisms-gcp.md)
+   ->
+   [Option 1 (Recommended): Workload Identity](authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
+   -> Enable Workload Identity, for setup details.
+
    Skip this step if you have already enabled it during the control plane setup:
-   [Install Knative-GCP](install-knative-gcp.md). 
-    
-1. Give `iam.serviceAccountAdmin` role to your control plane's Google
-  Cloud Service Account. You can skip this step if you granted
-  `roles/owner` privileges during the control plane setup:
-  [Install Knative-GCP](install-knative-gcp.md).
+   [Install Knative-GCP](install-knative-gcp.md).
+
+1. Give `iam.serviceAccountAdmin` role to your control plane's Google Cloud
+   Service Account. You can skip this step if you granted `roles/owner`
+   privileges during the control plane setup:
+   [Install Knative-GCP](install-knative-gcp.md).
 
    ```shell
    gcloud projects add-iam-policy-binding $PROJECT_ID \
