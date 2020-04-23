@@ -75,8 +75,6 @@ func (h *Handler) Stop() {
 
 func (h *Handler) handle(ctx context.Context) {
 	for {
-		// TODO(yolocs): we need to update dep for fix:
-		// https://github.com/cloudevents/sdk-go/pull/430
 		msg, err := h.PubsubEvents.Receive(ctx)
 		// It doesn't seem like that these errors will even happen.
 		if err == io.EOF {

@@ -48,6 +48,22 @@ type SyncPool struct {
 	deliverClient ceclient.Client
 }
 
+type handlerCache struct {
+	handler.Handler
+	t *config.Target
+}
+
+func (hc *handlerCache) requiresRestart(t *config.Target) bool {
+	if t == nil || t.RetryQueue == nil {
+		return true
+	}
+	if t.RetryQueue.Topic != hc.t.RetryQueue.Topic ||
+		t.RetryQueue.Subscription != hc.t.RetryQueue.Subscription {
+		return true
+	}
+	return false
+}
+
 // NewSyncPool creates a new retry handler pool.
 func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
@@ -79,7 +95,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
 		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
-			value.(*handler.Handler).Stop()
+			value.(*handlerCache).Stop()
 			p.pool.Delete(key)
 		}
 		return true
@@ -87,8 +103,14 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		// There is already a handler for the trigger, skip.
-		if _, ok := p.pool.Load(t.Key()); ok {
-			return true
+		if value, ok := p.pool.Load(t.Key()); ok {
+			// Skip if we don't need to restart the handler.
+			if !value.(*handlerCache).requiresRestart(t) {
+				return true
+			}
+			// Stop and clean up the old handler before we start a new one.
+			value.(*handlerCache).Stop()
+			p.pool.Delete(t.Key())
 		}
 
 		opts := []pubsub.Option{
@@ -108,30 +130,33 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			return true
 		}
 
-		h := &handler.Handler{
-			Timeout:      p.options.TimeoutPerEvent,
-			PubsubEvents: ps,
-			Processor: processors.ChainProcessors(
-				// TODO filter processor may be added in the future, but need more discussion for that.
-				&deliver.Processor{DeliverClient: p.deliverClient, Targets: p.targets},
-			),
+		hc := &handlerCache{
+			Handler: handler.Handler{
+				Timeout:      p.options.TimeoutPerEvent,
+				PubsubEvents: ps,
+				Processor: processors.ChainProcessors(
+					// TODO filter processor may be added in the future, but need more discussion for that.
+					&deliver.Processor{DeliverClient: p.deliverClient, Targets: p.targets},
+				),
+			},
+			t: t,
 		}
 
 		// Deliver processor needs the broker in the context for reply.
 		tctx := handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.Broker))
 		tctx = handlerctx.WithTargetKey(tctx, t.Key())
 		// Start the handler with target in context.
-		h.Start(tctx, func(err error) {
+		hc.Start(tctx, func(err error) {
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
 			} else {
 				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", t.Key()))
 			}
 			// Make sure the handler is deleted from the pool.
-			p.pool.Delete(h)
+			p.pool.Delete(t.Key())
 		})
 
-		p.pool.Store(t.Key(), h)
+		p.pool.Store(t.Key(), hc)
 		return true
 	})
 
