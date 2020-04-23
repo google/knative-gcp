@@ -35,12 +35,14 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/utils"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
@@ -69,6 +71,10 @@ const (
 	ingressServiceName = "broker-ingress"
 )
 
+// Hard-coded for now. TODO(https://github.com/google/knative-gcp/issues/867)
+// BrokerCell will handle this.
+var dataPlaneDeployments = []string{"broker-ingress", "broker-fanout", "broker-retry"}
+
 // TODO
 // idea: assign broker resources to cell (configmap) in webhook based on a
 // global configmap (in controller's namespace) of cell assignment rules, and
@@ -84,9 +90,11 @@ type Reconciler struct {
 	*reconciler.Base
 
 	// listers index properties about resources
-	triggerLister   brokerlisters.TriggerLister
-	configMapLister corev1listers.ConfigMapLister
-	endpointsLister corev1listers.EndpointsLister
+	triggerLister    brokerlisters.TriggerLister
+	configMapLister  corev1listers.ConfigMapLister
+	endpointsLister  corev1listers.EndpointsLister
+	deploymentLister appsv1listers.DeploymentLister
+	podLister        corev1listers.PodLister
 
 	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
 	// This is needed so that we can inject a mock client for UTs purposes.
@@ -425,6 +433,12 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}
+		if err := r.reconcileDataPlaneDeployments(); err != nil {
+			// Failing to update the annotation on the data plane pods means there
+			// may be a longer propagation delay for the configmap volume to be
+			// refreshed. But this is not treated as an error.
+			r.Logger.Warnf("Error reconciling data plane deployments: %v", err)
+		}
 	} else if err != nil {
 		return fmt.Errorf("error getting targets ConfigMap: %w", err)
 	}
@@ -436,8 +450,24 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error updating targets ConfigMap: %w", err)
 		}
+		if err := r.reconcileDataPlaneDeployments(); err != nil {
+			// Failing to update the annotation on the data plane pods means there
+			// may be a longer propagation delay for the configmap volume to be
+			// refreshed. But this is not treated as an error.
+			r.Logger.Warnf("Error reconciling data plane deployments: %v", err)
+		}
 	}
 	return nil
+}
+
+// TODO(https://github.com/google/knative-gcp/issues/867) With BrokerCell, we
+// will reconcile data plane deployments dynamically.
+func (r *Reconciler) reconcileDataPlaneDeployments() error {
+	var err error
+	for _, name := range dataPlaneDeployments {
+		err = multierr.Append(err, resources.UpdateVolumeGenerationForDeployment(r.KubeClientSet, r.deploymentLister, r.podLister, system.Namespace(), name))
+	}
+	return err
 }
 
 // LoadTargetsConfig retrieves the targets ConfigMap and

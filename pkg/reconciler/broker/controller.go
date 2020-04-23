@@ -35,8 +35,10 @@ import (
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	podinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/pod"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
@@ -54,12 +56,16 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	triggerInformer := triggerinformer.Get(ctx)
 	configMapInformer := configmapinformer.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
+	deploymentInformer := deploymentinformer.Get(ctx)
+	podInformer := podinformer.Get(ctx)
 
 	r := &Reconciler{
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 		triggerLister:      triggerInformer.Lister(),
 		configMapLister:    configMapInformer.Lister(),
 		endpointsLister:    endpointsInformer.Lister(),
+		deploymentLister:   deploymentInformer.Lister(),
+		podLister:          podInformer.Lister(),
 		CreateClientFn:     gpubsub.NewClient,
 		targetsNeedsUpdate: make(chan struct{}),
 	}
