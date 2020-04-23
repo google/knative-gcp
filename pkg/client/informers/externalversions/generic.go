@@ -115,13 +115,15 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().PullSubscriptions().Informer()}, nil
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("topics"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().Topics().Informer()}, nil
+	case pubsubv1alpha1.SchemeGroupVersion.WithResource("triggers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().Triggers().Informer()}, nil
 
 		// Group=pubsub.cloud.google.com, Version=v1beta1
 	case pubsubv1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().PullSubscriptions().Informer()}, nil
 	case pubsubv1beta1.SchemeGroupVersion.WithResource("topics"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().Topics().Informer()}, nil
-	case v1beta1.SchemeGroupVersion.WithResource("triggers"):
+	case pubsubv1beta1.SchemeGroupVersion.WithResource("triggers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().Triggers().Informer()}, nil
 
 	}

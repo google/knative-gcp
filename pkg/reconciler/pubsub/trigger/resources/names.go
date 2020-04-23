@@ -19,11 +19,11 @@ package resources
 import (
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // GenerateTopicName generates a topic name for the google. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
-func GenerateTopicName(google *v1beta1.Trigger) string {
+func GenerateTopicName(google *v1alpha1.Trigger) string {
 	return fmt.Sprintf("trigger-%s", string(google.UID))
 }

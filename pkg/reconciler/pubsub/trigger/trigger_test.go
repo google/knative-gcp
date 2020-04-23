@@ -23,19 +23,16 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgotesting "k8s.io/client-go/testing"
 
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
-	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/trigger"
+	gtrigger "github.com/google/knative-gcp/pkg/gclient/trigger/testing"
 
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -49,8 +46,6 @@ const (
 	triggerUID  = "test-trigger-uid"
 	sourceType  = "AUDIT"
 
-	sinkName      = "sink"
-	triggerID     = "135"
 	testNS        = "testnamespace"
 	testProject   = "test-project-id"
 	testTriggerID = "trigger-" + triggerUID
@@ -66,32 +61,15 @@ const (
 )
 
 var (
-	trueVal  = true
-	falseVal = false
-
-	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
-	sinkURI = apis.HTTP(sinkDNS)
-
-	sinkGVK = metav1.GroupVersionKind{
-		Group:   "testing.cloud.google.com",
-		Version: "v1alpha1",
-		Kind:    "Sink",
-	}
-
-	secret = corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: "google-cloud-key",
-		},
-		Key: "key.json",
-	}
-
+	trueVal         = true
+	falseVal        = false
 	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 // Returns an ownerref for the test Trigger object
 func ownerRef() metav1.OwnerReference {
 	return metav1.OwnerReference{
-		APIVersion:         "pubsub.cloud.google.com/v1beta1",
+		APIVersion:         "pubsub.cloud.google.com/v1alpha1",
 		Kind:               "Trigger",
 		Name:               "my-test-trigger",
 		UID:                triggerUID,
@@ -114,24 +92,6 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
-func newSink() *unstructured.Unstructured {
-	return &unstructured.Unstructured{
-		Object: map[string]interface{}{
-			"apiVersion": "testing.cloud.google.com/v1beta1",
-			"kind":       "Sink",
-			"metadata": map[string]interface{}{
-				"namespace": testNS,
-				"name":      sinkName,
-			},
-			"status": map[string]interface{}{
-				"address": map[string]interface{}{
-					"hostname": sinkDNS,
-				},
-			},
-		},
-	}
-}
-
 func TestAllCases(t *testing.T) {
 
 	table := TableTest{{
@@ -143,16 +103,17 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "delete fails with getting k8s service account error",
+		Name: "successfully created trigger",
 		Objects: []runtime.Object{
 			NewPubSubTrigger(triggerName, testNS,
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
 					Project: testProject,
 					Trigger: testTriggerID,
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
 						GoogleServiceAccount: gServiceAccount,
-					},
+					},*/
 					SourceType: sourceType,
 					Filters: map[string]string{
 						"ServiceName":  "foo",
@@ -160,24 +121,38 @@ func TestAllCases(t *testing.T) {
 						"ResourceName": "baz",
 					},
 				}),
-				WithPubSubTriggerServiceAccountName("test123"),
-				WithPubSubTriggerDeletionTimestamp(),
 			),
-			newSink(),
 		},
 		Key: testNS + "/" + triggerName,
+		OtherTestData: map[string]interface{}{
+			"trigger": gtrigger.TestClientData{
+				TriggerData: gtrigger.TestTriggerData{
+					Exists: true,
+				},
+			},
+		},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Trigger workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", triggerName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Trigger reconciled: "%s/%s"`, testNS, triggerName),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, triggerName, true),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSubTrigger(triggerName, testNS,
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+				WithPubSubTriggerStatusObservedGeneration(generation),
+				WithInitPubSubTriggerConditions,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerProjectID(testProject),
+				WithPubSubTriggerTriggerReady(testTriggerID),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
 					Project: testProject,
 					Trigger: testTriggerID,
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
 						GoogleServiceAccount: gServiceAccount,
-					},
+					},*/
 					SourceType: sourceType,
 					Filters: map[string]string{
 						"ServiceName":  "foo",
@@ -185,9 +160,6 @@ func TestAllCases(t *testing.T) {
 						"ResourceName": "baz",
 					},
 				}),
-				WithPubSubTriggerServiceAccountName("test123"),
-				WithPubSubTriggerWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
-				WithPubSubTriggerDeletionTimestamp(),
 			),
 		}},
 	}, {
@@ -195,12 +167,12 @@ func TestAllCases(t *testing.T) {
 		Objects: []runtime.Object{
 			NewPubSubTrigger(triggerName, testNS,
 				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
 					Project: testProject,
 					Trigger: testTriggerID,
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
 						GoogleServiceAccount: gServiceAccount,
-					},
+					},*/
 					SourceType: sourceType,
 					Filters: map[string]string{
 						"ServiceName":  "foo",
@@ -210,39 +182,23 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPubSubTriggerDeletionTimestamp(),
 			),
-			newSink(),
 		},
-		Key:           testNS + "/" + triggerName,
+		Key: testNS + "/" + triggerName,
 		OtherTestData: map[string]interface{}{
-			// TODO(nlopezgi): add TestClientData for reconciler client once added
-			/*"triggers": gtriggers.TestClientData{
-				TriggerData: gtriggers.TestTriggerData{
-					Triggers: map[string]*google.Trigger{
-						triggerID: {
-							ID: triggerID,
-						},
-					},
+			"trigger": gtrigger.TestClientData{
+				TriggerData: gtrigger.TestTriggerData{
+					Exists: true,
 				},
-			},*/
-		},
-		WantDeletes: []clientgotesting.DeleteActionImpl{
-			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
-				Name: triggerName,
-			},
-			{ActionImpl: clientgotesting.ActionImpl{
-				Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
-				Name: triggerName,
 			},
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerObjectMetaGeneration(generation), WithPubSubTriggerSpec(v1beta1.TriggerSpec{
+				WithPubSubTriggerObjectMetaGeneration(generation), WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
 					Project: testProject,
 					Trigger: testTriggerID,
-					IdentitySpec: duckv1beta1.IdentitySpec{
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
 						GoogleServiceAccount: gServiceAccount,
-					},
+					},*/
 					SourceType: sourceType,
 					Filters: map[string]string{
 						"ServiceName":  "foo",
@@ -263,6 +219,7 @@ func TestAllCases(t *testing.T) {
 			Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
 			triggerLister:        listers.GetPubSubTriggerLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),
+			createClientFn:       gtrigger.TestClientCreator(testData["trigger"]),
 		}
 		return trigger.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPubSubTriggerLister(), r.Recorder, r)
 	}))

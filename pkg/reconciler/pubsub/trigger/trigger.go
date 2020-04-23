@@ -29,9 +29,9 @@ import (
 
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
-	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/trigger"
+	listers "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	gtrigger "github.com/google/knative-gcp/pkg/gclient/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -76,19 +76,18 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface.
 var _ triggerreconciler.Interface = (*Reconciler)(nil)
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, trigger *v1beta1.Trigger) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, trigger *v1alpha1.Trigger) reconciler.Event {
 	ctx = logging.WithLogger(ctx, r.Logger.With(zap.Any("trigger", trigger)))
 
 	trigger.Status.InitializeConditions()
 	trigger.Status.ObservedGeneration = trigger.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
-	// TODO(nlopezgi): figure out if I need to get a v1alpha1 trigger to get this working
-	/*if trigger.Spec.GoogleServiceAccount != "" {
+	if trigger.Spec.GoogleServiceAccount != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, trigger.Spec.Project, trigger); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Trigger workload identity: %s", err.Error())
 		}
-	}*/
+	}
 
 	eventflow_trigger, err := r.reconcileTrigger(ctx, trigger)
 	if err != nil {
@@ -100,7 +99,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, trigger *v1beta1.Trigger
 	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Trigger reconciled: "%s/%s"`, trigger.Namespace, trigger.Name)
 }
 
-func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1beta1.Trigger) (string, error) {
+func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1alpha1.Trigger) (string, error) {
 	if trigger.Status.ProjectID == "" {
 		projectID, err := utils.ProjectID(trigger.Spec.Project)
 		if err != nil {
@@ -129,21 +128,20 @@ func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1beta1.Trig
 	if !exists {
 		t, err = client.CreateTrigger(ctx, trigger.Spec.Trigger, trigger.Spec.SourceType, trigger.Spec.Filters)
 	}
-	return "", nil
+	return t.ID(), nil
 }
 
-func (r *Reconciler) FinalizeKind(ctx context.Context, trigger *v1beta1.Trigger) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, trigger *v1alpha1.Trigger) reconciler.Event {
 	if trigger.Status.TriggerID == "" {
 		return nil
 	}
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	// TODO(nlopezgi): figure out if I need to get a v1alpha1 trigger to get this working
-	/*if trigger.Spec.GoogleServiceAccount != "" {
+	if trigger.Spec.GoogleServiceAccount != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, trigger.Spec.Project, trigger); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Trigger workload identity: %s", err.Error())
 		}
-	}*/
+	}
 
 	// At this point the project ID should have been populated in the status.
 	// Querying EventFlow as the trigger could have been deleted outside the cluster (e.g, through gcloud).

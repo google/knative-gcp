@@ -100,10 +100,10 @@ const (
 	// TopicReady has status True when the PubSub Topic is ready.
 	TopicReady apis.ConditionType = "TopicReady"
 
-	// PullSubscriptionReay has status True when the PullSubscription is ready.
+	// PullSubscriptionReady has status True when the PullSubscription is ready.
 	PullSubscriptionReady apis.ConditionType = "PullSubscriptionReady"
 
-	// PullSubscriptionReay has status True when the Trigger is ready.
+	// TriggerReady has status True when the Trigger is ready.
 	TriggerReady apis.ConditionType = "TriggerReady"
 )
 

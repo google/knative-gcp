@@ -28,6 +28,8 @@ type Interface interface {
 	PullSubscriptions() PullSubscriptionInformer
 	// Topics returns a TopicInformer.
 	Topics() TopicInformer
+	// Triggers returns a TriggerInformer.
+	Triggers() TriggerInformer
 }
 
 type version struct {
@@ -49,4 +51,9 @@ func (v *version) PullSubscriptions() PullSubscriptionInformer {
 // Topics returns a TopicInformer.
 func (v *version) Topics() TopicInformer {
 	return &topicInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Triggers returns a TriggerInformer.
+func (v *version) Triggers() TriggerInformer {
+	return &triggerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

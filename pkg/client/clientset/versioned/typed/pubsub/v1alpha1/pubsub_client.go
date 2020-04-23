@@ -28,6 +28,7 @@ type PubsubV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	PullSubscriptionsGetter
 	TopicsGetter
+	TriggersGetter
 }
 
 // PubsubV1alpha1Client is used to interact with features provided by the pubsub.cloud.google.com group.
@@ -41,6 +42,10 @@ func (c *PubsubV1alpha1Client) PullSubscriptions(namespace string) PullSubscript
 
 func (c *PubsubV1alpha1Client) Topics(namespace string) TopicInterface {
 	return newTopics(c, namespace)
+}
+
+func (c *PubsubV1alpha1Client) Triggers(namespace string) TriggerInterface {
+	return newTriggers(c, namespace)
 }
 
 // NewForConfig creates a new PubsubV1alpha1Client for the given config.

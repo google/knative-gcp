@@ -24,9 +24,9 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
-	triggerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1beta1/trigger"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1beta1/trigger"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	triggerinformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/trigger"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/trigger"
 	gtrigger "github.com/google/knative-gcp/pkg/gclient/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -68,7 +68,7 @@ func NewController(
 	triggerInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterGroupVersionKind(v1beta1.SchemeGroupVersion.WithKind("Trigger")),
+		FilterFunc: controller.FilterGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("Trigger")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 

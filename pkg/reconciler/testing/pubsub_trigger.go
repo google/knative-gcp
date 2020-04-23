@@ -22,22 +22,21 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 // PubSubTriggerOption enables further configuration of a Trigger.
-type PubSubTriggerOption func(*v1beta1.Trigger)
+type PubSubTriggerOption func(*v1alpha1.Trigger)
 
 // NewPubSubTrigger creates a Trigger with TriggerOptions
-func NewPubSubTrigger(name, namespace string, so ...PubSubTriggerOption) *v1beta1.Trigger {
-	s := &v1beta1.Trigger{
+func NewPubSubTrigger(name, namespace string, so ...PubSubTriggerOption) *v1alpha1.Trigger {
+	s := &v1alpha1.Trigger{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			UID:       "test-trigger-uid",
 		},
 	}
-	s.Spec.Filters = map[string]string{}
 	for _, opt := range so {
 		opt(s)
 	}
@@ -45,40 +44,28 @@ func NewPubSubTrigger(name, namespace string, so ...PubSubTriggerOption) *v1beta
 	return s
 }
 
-/*func WithPubSubTriggerProject(project string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
-		s.Spec.Project = project
-	}
-}*/
-
 // WithInitTriggerConditions initializes the Triggers's conditions.
-func WithInitPubSubTriggerConditions(s *v1beta1.Trigger) {
+func WithInitPubSubTriggerConditions(s *v1alpha1.Trigger) {
 	s.Status.InitializeConditions()
 }
 
 // WithPubSubTriggerServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
 func WithPubSubTriggerServiceAccountName(name string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.ServiceAccountName = name
 	}
 }
 
 func WithPubSubTriggerWorkloadIdentityFailed(reason, message string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
-	}
-}
-
-func WithPubSubTriggerGCPServiceAccount(gServiceAccount string) PubSubTriggerOption {
-	return func(ps *v1beta1.Trigger) {
-		ps.Spec.IdentitySpec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
 // WithPubSubTriggerTriggerNotReady marks the condition that the
 // GCS Trigger is not ready.
 func WithPubSubTriggerTriggerNotReady(reason, message string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.MarkTriggerNotReady(reason, message)
 	}
 }
@@ -86,64 +73,45 @@ func WithPubSubTriggerTriggerNotReady(reason, message string) PubSubTriggerOptio
 // WithPubSubTriggerTriggerReady marks the condition that the GCS
 // Trigger is ready.
 func WithPubSubTriggerTriggerReady(triggerID string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.MarkTriggerReady(triggerID)
 	}
 }
 
 // WithPubSubTriggerTriggerId sets the status for Trigger ID
 func WithPubSubTriggerTriggerID(triggerID string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.TriggerID = triggerID
 	}
 }
 
 // WithPubSubTriggerProjectId sets the status for Project ID
 func WithPubSubTriggerProjectID(projectID string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.ProjectID = projectID
 	}
 }
 
 func WithPubSubTriggerStatusObservedGeneration(generation int64) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.Status.Status.ObservedGeneration = generation
 	}
 }
 
 func WithPubSubTriggerObjectMetaGeneration(generation int64) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		s.ObjectMeta.Generation = generation
 	}
 }
 
-/*
-func WithPubSubTriggerSourceType(sourceType string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
-		s.Spec.SourceType = sourceType
-	}
-}
-
-func WithPubSubTriggerTrigger(trigger string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
-		s.Spec.Trigger = trigger
-	}
-}*/
-
-func WithPubSubTriggerSpec(spec v1beta1.TriggerSpec) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+func WithPubSubTriggerSpec(spec v1alpha1.TriggerSpec) PubSubTriggerOption {
+	return func(s *v1alpha1.Trigger) {
 		s.Spec = spec
 	}
 }
 
-/*func WithPubSubTriggerFilter(key string, value string) PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
-		s.Spec.Filters[key] = value
-	}
-}*/
-
 func WithPubSubTriggerDeletionTimestamp() PubSubTriggerOption {
-	return func(s *v1beta1.Trigger) {
+	return func(s *v1alpha1.Trigger) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
 	}
