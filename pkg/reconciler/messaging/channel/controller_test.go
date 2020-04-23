@@ -39,6 +39,6 @@ func TestNew(t *testing.T) {
 	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(), iamtesting.NoopIAMPolicyManager)
 
 	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
+		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")
 	}
 }
