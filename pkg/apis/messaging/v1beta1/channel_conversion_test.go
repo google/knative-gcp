@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package messaging contains Cloud Run Events API versions for messaging components
-package messaging
+package v1beta1
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
-
-const (
-	GroupName = "messaging.cloud.google.com"
+import (
+	"context"
+	"testing"
 )
 
-var (
-	// ChannelsResource represents a Channel.
-	ChannelsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "channels",
+func TestChannelConversionBadType(t *testing.T) {
+	good, bad := &Channel{}, &Channel{}
+
+	if err := good.ConvertTo(context.Background(), bad); err == nil {
+		t.Errorf("ConvertTo() = %#v, wanted error", bad)
 	}
-)
+
+	if err := good.ConvertFrom(context.Background(), bad); err == nil {
+		t.Errorf("ConvertFrom() = %#v, wanted error", good)
+	}
+}

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,19 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package messaging contains Cloud Run Events API versions for messaging components
-package messaging
+package v1beta1
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"context"
+	"fmt"
 
-const (
-	GroupName = "messaging.cloud.google.com"
+	"knative.dev/pkg/apis"
 )
 
-var (
-	// ChannelsResource represents a Channel.
-	ChannelsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "channels",
-	}
-)
+// ConvertTo implements apis.Convertible.
+func (*Channel) ConvertTo(_ context.Context, to apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", to)
+}
+
+// ConvertFrom implements apis.Convertible.
+func (*Channel) ConvertFrom(_ context.Context, from apis.Convertible) error {
+	return fmt.Errorf("v1beta1 is the highest known version, got: %T", from)
+}
