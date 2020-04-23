@@ -25,8 +25,8 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
-	cev2 "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
+	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -64,7 +64,7 @@ func TestDeliverSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create ingress cloudevents client: %v", err)
 	}
-	requester, err := cev2.NewDefaultClient()
+	deliverClient, err := ceclient.NewDefault()
 	if err != nil {
 		t.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestDeliverSuccess(t *testing.T) {
 	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
-	p := &Processor{Requester: requester, Targets: testTargets}
+	p := &Processor{DeliverClient: deliverClient, Targets: testTargets}
 
 	origin := event.New()
 	origin.SetID("id")
@@ -166,7 +166,7 @@ func TestDeliverFailure(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
 			}
-			requester, err := cev2.NewDefaultClient()
+			deliverClient, err := ceclient.NewDefault()
 			if err != nil {
 				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
@@ -187,6 +187,10 @@ func TestDeliverFailure(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create pubsub protocol: %v", err)
 			}
+			deliverRetryClient, err := ceclient.New(ps)
+			if err != nil {
+				t.Fatalf("failed to create cloudevents client: %v", err)
+			}
 
 			broker := &config.Broker{Namespace: "ns", Name: "broker"}
 			target := &config.Target{
@@ -206,10 +210,10 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 			p := &Processor{
-				Requester:      requester,
-				Targets:        testTargets,
-				RetryOnFailure: tc.withRetry,
-				RetryEvents:    ps,
+				DeliverClient:      deliverClient,
+				Targets:            testTargets,
+				RetryOnFailure:     tc.withRetry,
+				DeliverRetryClient: deliverRetryClient,
 			}
 
 			origin := event.New()

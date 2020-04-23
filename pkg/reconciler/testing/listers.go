@@ -187,6 +187,10 @@ func (l *Listers) GetServiceAccountLister() corev1listers.ServiceAccountLister {
 	return corev1listers.NewServiceAccountLister(l.indexerFor(&corev1.ServiceAccount{}))
 }
 
+func (l *Listers) GetPodLister() corev1listers.PodLister {
+	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
+}
+
 func (l *Listers) GetRoleBindingLister() rbacv1listers.RoleBindingLister {
 	return rbacv1listers.NewRoleBindingLister(l.indexerFor(&rbacv1.RoleBinding{}))
 }

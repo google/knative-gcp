@@ -42,6 +42,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -64,6 +65,7 @@ type envConfig struct {
 }
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
 	flag.Parse()
 
 	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
@@ -138,7 +140,7 @@ func main() {
 	logger.Info("Starting the broker fanout")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := fanout.NewSyncPool(ctx, targetsConifg, buildPoolOptions(env, syncSignal)...)
+	syncPool, err := fanout.NewSyncPool(ctx, targetsConifg, buildPoolOptions(env)...)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
@@ -173,7 +175,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
+func buildPoolOptions(env envConfig) []pool.Option {
 	rs := pubsub.DefaultReceiveSettings
 	var opts []pool.Option
 	if env.HandlerConcurrency > 0 {
@@ -191,7 +193,6 @@ func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
 	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
-	opts = append(opts, pool.WithSyncSignal(syncSignal))
 	// The default CeClient is good?
 	return opts
 }
