@@ -104,7 +104,7 @@ type BrokerList struct {
 }
 
 // GetGroupVersionKind returns GroupVersionKind for Brokers
-func (t *Broker) GetGroupVersionKind() schema.GroupVersionKind {
+func (b *Broker) GetGroupVersionKind() schema.GroupVersionKind {
 	return SchemeGroupVersion.WithKind("Broker")
 }
 
