@@ -19,6 +19,7 @@ package channel
 import (
 	"testing"
 
+	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"knative.dev/pkg/configmap"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
@@ -35,7 +36,7 @@ func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	c := NewController(ctx, configmap.NewStaticWatcher())
+	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(), iamtesting.NoopIAMPolicyManager)
 
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
