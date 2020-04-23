@@ -70,8 +70,10 @@ type BrokerCellStatus struct {
 	// * Conditions - the latest available observations of a resource's current state.
 	duckv1.Status `json:",inline"`
 
-	// IngressTemplate contains a URI template used to generate Broker
-	// ingress addresses. It may contain variables `name` and `namespace`.
+	// IngressTemplate contains a URI template as specified by RFC6570 to
+	// generate Broker ingress URIs. It may contain variables `name` and
+	// `namespace`.
+	// Example: "http://broker-ingress.cloud-run-events.svc.cluster.local/{namespace}/{name}"
 	IngressTemplate string
 }
 

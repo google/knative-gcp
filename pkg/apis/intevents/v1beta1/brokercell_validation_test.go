@@ -21,7 +21,9 @@ import (
 	"testing"
 )
 
-func TestBroker_Validate(t *testing.T) {
+func TestBrokerCell_Validate(t *testing.T) {
 	bc := BrokerCell{}
-	bc.Validate(context.TODO())
+	if err := bc.Validate(context.TODO()); err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
 }
