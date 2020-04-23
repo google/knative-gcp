@@ -136,17 +136,15 @@ func TestHandler(t *testing.T) {
 	}
 
 	client := nethttp.Client{}
-	t.Cleanup(client.CloseIdleConnections)
+	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-			t.Cleanup(cancel)
+			defer cancel()
 
 			psSrv := pstest.NewServer()
-			t.Cleanup(func() {
-				psSrv.Close()
-			})
+			defer psSrv.Close()
 
 			url := createAndStartIngress(ctx, t, psSrv)
 			rec := setupTestReceiver(ctx, t, psSrv)
