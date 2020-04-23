@@ -227,12 +227,12 @@ func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
 func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) (string, func()) {
 	p, cancel := createPubsubClient(ctx, t, psSrv)
-	decouple, err1 := NewMultiTopicDecoupleSink(ctx,
+	decouple, err := NewMultiTopicDecoupleSink(ctx,
 		WithBrokerConfig(memory.NewTargets(brokerConfig)),
 		WithPubsubClient(p))
-	if err1 != nil {
+	if err != nil {
 		cancel()
-		t.Fatalf("Failed to create decouple sink: %v", err1)
+		t.Fatalf("Failed to create decouple sink: %v", err)
 	}
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
