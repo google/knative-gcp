@@ -23,5 +23,7 @@ import (
 
 func TestBroker_Validate(t *testing.T) {
 	b := Broker{}
-	b.Validate(context.TODO())
+	if err := b.Validate(context.TODO()); err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
 }
