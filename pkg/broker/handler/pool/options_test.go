@@ -104,14 +104,3 @@ func TestWithPubsubClient(t *testing.T) {
 		t.Error("options PubsubClient got=nil, want=non-nil client")
 	}
 }
-
-func TestWithSignal(t *testing.T) {
-	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithSyncSignal(make(chan struct{})), WithProjectID("pid"))
-	if err != nil {
-		t.Errorf("NewOptions got unexpected error: %v", err)
-	}
-	if opt.SyncSignal == nil {
-		t.Error("options SyncSignal is nil")
-	}
-}

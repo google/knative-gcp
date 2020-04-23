@@ -106,13 +106,13 @@ rules:
   resources:
     - services
     - serviceaccounts
+    - pods # For updating pod annotation to trigger configmap mount refresh.
   verbs: *everything
 
 - apiGroups:
     - ""
   resources:
     - configmaps
-    - pods # For reading termination messages
     - secrets
     - endpoints
   verbs: &readOnly
