@@ -204,6 +204,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 
 		// Send the same event to different trigger topic.
 		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
+		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
 		<-vctx.Done()
 	})
 
