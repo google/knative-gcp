@@ -150,6 +150,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 		tctx = handlerctx.WithTargetKey(tctx, t.Key())
 		// Start the handler with target in context.
 		hc.Start(tctx, func(err error) {
+			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))
 			} else {

@@ -177,6 +177,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 		}
 		// Start the handler with broker key in context.
 		hc.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
+			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
 			} else {
