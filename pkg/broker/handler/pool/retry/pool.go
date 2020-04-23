@@ -27,12 +27,14 @@ import (
 	"knative.dev/eventing/pkg/logging"
 
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
+	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
 // SyncPool is the sync pool for retry handlers.
@@ -138,6 +140,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 				Timeout:      p.options.TimeoutPerEvent,
 				PubsubEvents: ps,
 				Processor: processors.ChainProcessors(
+					&filter.Processor{Targets: p.targets},
 					// TODO filter processor may be added in the future, but need more discussion for that.
 					&deliver.Processor{DeliverClient: p.deliverClient, Targets: p.targets},
 				),

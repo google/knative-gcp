@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/protocol"
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -37,34 +38,39 @@ const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
 func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (*multiTopicDecoupleSink, error) {
-	sink := &multiTopicDecoupleSink{
-		logger: logging.FromContext(ctx),
-	}
-
+	var err error
+	opts := new(multiTopicDecoupleSinkOptions)
 	for _, opt := range options {
-		opt(sink)
+		opt(opts)
 	}
 
 	// Apply defaults
-	if sink.client == nil {
-		projectID, err := utils.ProjectID(os.Getenv(projectEnvKey))
-		if err != nil {
+	if opts.client == nil {
+		if opts.pubsub == nil {
+			var projectID string
+			if projectID, err = utils.ProjectID(os.Getenv(projectEnvKey)); err != nil {
+				return nil, err
+			}
+			if opts.pubsub, err = pubsub.NewClient(ctx, projectID); err != nil {
+				return nil, err
+			}
+		}
+		if opts.client, err = newPubSubClient(ctx, opts.pubsub); err != nil {
 			return nil, err
 		}
-		client, err := newPubSubClient(ctx, projectID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create pubsub client: %v", err)
-		}
-		sink.client = client
-	}
-	if sink.brokerConfig == nil {
-		brokerConfig, err := volume.NewTargetsFromFile()
-		if err != nil {
-			return nil, fmt.Errorf("creating broker config for default multi topic decouple sink")
-		}
-		sink.brokerConfig = brokerConfig
 	}
 
+	if opts.brokerConfig == nil {
+		if opts.brokerConfig, err = volume.NewTargetsFromFile(); err != nil {
+			return nil, fmt.Errorf("creating broker config for default multi topic decouple sink")
+		}
+	}
+
+	sink := &multiTopicDecoupleSink{
+		logger:       logging.FromContext(ctx),
+		client:       opts.client,
+		brokerConfig: opts.brokerConfig,
+	}
 	return sink, nil
 }
 
@@ -107,9 +113,9 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 }
 
 // newPubSubClient creates a pubsub client using the given project ID.
-func newPubSubClient(ctx context.Context, projectID string) (cev2.Client, error) {
+func newPubSubClient(ctx context.Context, client *pubsub.Client) (cev2.Client, error) {
 	// Make a pubsub protocol for the CloudEvents client.
-	p, err := pubsub.New(ctx, pubsub.WithProjectID(projectID))
+	p, err := cepubsub.New(ctx, cepubsub.WithClient(client))
 	if err != nil {
 		return nil, err
 	}

@@ -111,7 +111,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	b2 := helper.GenerateBroker(ctx, t, "ns")
 
 	t1 := helper.GenerateTarget(ctx, t, b1.Key(), nil)
-	t2 := helper.GenerateTarget(ctx, t, b1.Key(), map[string]string{"subject": "foo"})
+	t2 := helper.GenerateTarget(ctx, t, b1.Key(), nil)
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
@@ -184,8 +184,31 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		<-vctx.Done()
 	})
 
+	t.Run("broker's target receive correct retry events with the latest filter", func(t *testing.T) {
+		// Set timeout context so that verification can be done before
+		// exiting test func.
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		// Target t1 and t2 original don't have filter attributes,
+		// update t1 filter attributes, and keep t2 filter attributes nil.
+		t1.FilterAttributes = map[string]string{"subject": "foo"}
+		helper.Targets.MutateBroker(t1.Namespace, t1.Broker, func(bm config.BrokerMutation) {
+			bm.UpsertTargets(t1)
+		})
+
+		// Target1 for broker1 shouldn't receive the event e1, as filter attributes is updated.
+		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), nil)
+		//  Target1 for broker1 should receive the event e1.
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
+
+		// Send the same event to different trigger topic.
+		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
+		<-vctx.Done()
+	})
+
 	t.Run("event delivered after target retry queue update", func(t *testing.T) {
-		helper.RenewTarget(ctx, t, t1.Key())
+		helper.RenewTarget(ctx, t, t2.Key())
 		signal <- struct{}{}
 
 		// Set timeout context so that verification can be done before
@@ -193,10 +216,10 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		// t1 should continue to receive the event.
-		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), &e1)
+		// t2 should continue to receive the event.
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
 
-		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
+		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
 		<-vctx.Done()
 	})
 }
