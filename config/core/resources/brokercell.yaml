@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ spec:
     - name: v1alpha1
       served: true
       storage: true
-  # All versions happen to have the same schema today. They will likely diverge in the future.
   validation:
     openAPIV3Schema:
       type: object
