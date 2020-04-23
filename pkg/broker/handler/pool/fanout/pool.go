@@ -60,6 +60,9 @@ type handlerCache struct {
 }
 
 func (hc *handlerCache) requiresRestart(b *config.Broker) bool {
+	if !hc.IsAlive() {
+		return true
+	}
 	if b == nil || b.DecoupleQueue == nil {
 		return true
 	}
@@ -179,8 +182,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			} else {
 				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
 			}
-			// Make sure the handler is deleted from the pool.
-			p.pool.Delete(b.Key())
 		})
 
 		p.pool.Store(b.Key(), hc)

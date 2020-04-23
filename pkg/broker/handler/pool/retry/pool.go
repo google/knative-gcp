@@ -54,6 +54,9 @@ type handlerCache struct {
 }
 
 func (hc *handlerCache) requiresRestart(t *config.Target) bool {
+	if !hc.IsAlive() {
+		return true
+	}
 	if t == nil || t.RetryQueue == nil {
 		return true
 	}
@@ -152,8 +155,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			} else {
 				logging.FromContext(ctx).Info("handler for trigger has stopped", zap.String("trigger", t.Key()))
 			}
-			// Make sure the handler is deleted from the pool.
-			p.pool.Delete(t.Key())
 		})
 
 		p.pool.Store(t.Key(), hc)

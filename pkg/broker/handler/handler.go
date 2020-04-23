@@ -48,6 +48,7 @@ type Handler struct {
 
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
+	alive  bool
 }
 
 // Start starts the handler.
@@ -55,7 +56,7 @@ type Handler struct {
 func (h *Handler) Start(ctx context.Context, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
 	go func() {
-		defer h.cancel()
+		defer h.Stop()
 		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
 
@@ -66,11 +67,18 @@ func (h *Handler) Start(ctx context.Context, done func(error)) {
 	for i := 0; i < curr; i++ {
 		go h.handle(ctx)
 	}
+	h.alive = true
 }
 
 // Stop stops the handlers.
 func (h *Handler) Stop() {
 	h.cancel()
+	h.alive = false
+}
+
+// IsAlive indicates whether the handler is alive.
+func (h *Handler) IsAlive() bool {
+	return h.alive
 }
 
 func (h *Handler) handle(ctx context.Context) {
