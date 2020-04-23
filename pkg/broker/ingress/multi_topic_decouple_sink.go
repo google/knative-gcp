@@ -37,7 +37,8 @@ import (
 const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
-func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (sink *multiTopicDecoupleSink, err error) {
+func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (*multiTopicDecoupleSink, error) {
+	var err error
 	opts := new(multiTopicDecoupleSinkOptions)
 	for _, opt := range options {
 		opt(opts)
@@ -48,14 +49,14 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 		if opts.pubsub == nil {
 			var projectID string
 			if projectID, err = utils.ProjectID(os.Getenv(projectEnvKey)); err != nil {
-				return
+				return nil, err
 			}
 			if opts.pubsub, err = pubsub.NewClient(ctx, projectID); err != nil {
-				return
+				return nil, err
 			}
 		}
 		if opts.client, err = newPubSubClient(ctx, opts.pubsub); err != nil {
-			return
+			return nil, err
 		}
 	}
 
@@ -65,12 +66,12 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 		}
 	}
 
-	sink = &multiTopicDecoupleSink{
+	sink := &multiTopicDecoupleSink{
 		logger:       logging.FromContext(ctx),
 		client:       opts.client,
 		brokerConfig: opts.brokerConfig,
 	}
-	return
+	return sink, nil
 }
 
 // multiTopicDecoupleSink implements DecoupleSink and routes events to pubsub topics corresponding
