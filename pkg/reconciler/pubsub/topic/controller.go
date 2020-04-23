@@ -60,6 +60,17 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	return newControllerWithIAMPolicyManager(
+		ctx,
+		cmw,
+		iam.DefaultIAMPolicyManager())
+}
+
+func newControllerWithIAMPolicyManager(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	ipm iam.IAMPolicyManager,
+) *controller.Impl {
 	topicInformer := topicinformer.Get(ctx)
 	serviceInformer := serviceinformer.Get(ctx)
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
@@ -77,7 +88,7 @@ func NewController(
 
 	r := &Reconciler{
 		PubSubBase:     pubsubBase,
-		Identity:       identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
+		Identity:       identity.NewIdentity(ctx, ipm),
 		topicLister:    topicInformer.Lister(),
 		serviceLister:  serviceInformer.Lister(),
 		publisherImage: env.Publisher,

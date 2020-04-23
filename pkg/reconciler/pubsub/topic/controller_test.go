@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/system"
@@ -44,17 +45,19 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
-		&corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      tracingconfig.ConfigName,
-				Namespace: system.Namespace(),
-			},
-			Data: map[string]string{},
-		},
-	))
+	c := newControllerWithIAMPolicyManager(
+		ctx,
+		configmap.NewStaticWatcher(
+			&corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      tracingconfig.ConfigName,
+					Namespace: system.Namespace(),
+				},
+				Data: map[string]string{},
+			}),
+		iamtesting.NoopIAMPolicyManager)
 
 	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
+		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")
 	}
 }
