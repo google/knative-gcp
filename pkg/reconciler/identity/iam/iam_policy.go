@@ -14,16 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package iam provides a manager for IAM Policy updates.
 package iam
 
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"cloud.google.com/go/iam"
 	admin "cloud.google.com/go/iam/admin/apiv1"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
+	"github.com/google/wire"
 	iampb "google.golang.org/genproto/googleapis/iam/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -71,26 +72,10 @@ type IAMPolicyManager interface {
 	RemoveIAMPolicyBinding(ctx context.Context, account GServiceAccount, member string, role RoleName) error
 }
 
-var (
-	globalManager       IAMPolicyManager
-	createGlobalManager sync.Once
-)
-
-// DefaultIAMPolicyManager returns a shared global policy manager.
-func DefaultIAMPolicyManager() IAMPolicyManager {
-	createGlobalManager.Do(func() {
-		c, err := admin.NewIamClient(context.Background())
-		if err != nil {
-			panic(err)
-		}
-		m, err := NewIAMPolicyManager(context.Background(), c)
-		if err != nil {
-			panic(err)
-		}
-		globalManager = m
-	})
-	return globalManager
-}
+var IAMPolicyManagerSet = wire.NewSet(
+	admin.NewIamClient,
+	wire.Bind(new(gclient.IamClient), new(*admin.IamClient)),
+	NewIAMPolicyManager)
 
 // manager is an IAMPolicyManager which serializes and batches IAM policy changes to a Google
 // Service Account to avoid conflicting changes.

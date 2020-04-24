@@ -53,7 +53,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
 
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(
+	c := newController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),

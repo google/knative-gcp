@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/injection"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
@@ -43,19 +44,18 @@ const (
 	controllerAgentName = "cloud-run-events-channel-controller"
 )
 
-// NewController initializes the controller and is called by the generated code
-// Registers event handlers to enqueue events
-func NewController(
-	ctx context.Context,
-	cmw configmap.Watcher,
-) *controller.Impl {
-	return newControllerWithIAMPolicyManager(
-		ctx,
-		cmw,
-		iam.DefaultIAMPolicyManager())
+type Constructor injection.ControllerConstructor
+
+// NewConstructor creates a channel controller Constructor.
+func NewConstructor(ipm iam.IAMPolicyManager) Constructor {
+	return func(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+		return newController(ctx, cmw, ipm)
+	}
 }
 
-func newControllerWithIAMPolicyManager(
+// newController initializes the controller and is called by the generated code Registers event
+// handlers to enqueue events.
+func newController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,

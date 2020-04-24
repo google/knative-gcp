@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("PUBSUB_PUBLISHER_IMAGE", "PUBSUB_PUBLISHER_IMAGE")
 
-	c := newControllerWithIAMPolicyManager(
+	c := newController(
 		ctx,
 		configmap.NewStaticWatcher(
 			&corev1.ConfigMap{
