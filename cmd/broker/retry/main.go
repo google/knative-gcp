@@ -29,19 +29,18 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
+	"github.com/google/knative-gcp/pkg/observability"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
@@ -79,7 +78,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error building kubeconfig: %v", err)
 	}
+
+	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
+	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
+	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
+
 	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
+
+	ctx, flush, err := observability.SetupDynamicConfig(ctx, component)
+	if err != nil {
+		log.Fatal("Error setting up dynamic observability configuration", err)
+	}
+	defer flush()
+	logger := logging.FromContext(ctx)
 
 	var env envConfig
 	if err := envconfig.Process("", &env); err != nil {
@@ -96,28 +107,6 @@ func main() {
 		return err == nil, nil
 	}); perr != nil {
 		log.Fatalf("Timed out attempting to get k8s version: %v", err)
-	}
-
-	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
-	if err != nil {
-		log.Fatalf("Error loading/parsing logging configuration: %v", err)
-	}
-
-	sugaredLogger, atomicLevel := logging.NewLoggerFromConfig(loggingConfig, component)
-	defer flush(sugaredLogger)
-	ctx = logging.WithLogger(ctx, sugaredLogger)
-
-	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
-	// Watch the observability config map.
-	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.ConfigMapWatcher(component, nil, sugaredLogger))
-	// Watch the logging config map and dynamically update logging levels.
-	configMapWatcher.Watch(logging.ConfigMapName(), logging.UpdateLevelFromConfigMap(sugaredLogger, atomicLevel, component))
-
-	logger := sugaredLogger.Desugar()
-
-	// configMapWatcher does not block, so start it first.
-	if err = configMapWatcher.Start(ctx.Done()); err != nil {
-		logger.Warn("Failed to start ConfigMap watcher", zap.Error(err))
 	}
 
 	// Start all of the informers and wait for them to sync.
