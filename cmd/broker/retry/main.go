@@ -42,6 +42,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 const (
@@ -62,6 +63,7 @@ type envConfig struct {
 }
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
 	flag.Parse()
 
 	ctx := signals.NewContext()
@@ -137,7 +139,7 @@ func main() {
 	logger.Info("Starting the broker retry")
 
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := retry.NewSyncPool(targetsConifg, buildPoolOptions(env, syncSignal)...)
+	syncPool, err := retry.NewSyncPool(targetsConifg, buildPoolOptions(env)...)
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
@@ -170,7 +172,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
+func buildPoolOptions(env envConfig) []pool.Option {
 	rs := pubsub.DefaultReceiveSettings
 	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
 	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
@@ -189,7 +191,6 @@ func buildPoolOptions(env envConfig, syncSignal chan struct{}) []pool.Option {
 		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
 	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
-	opts = append(opts, pool.WithSyncSignal(syncSignal))
 	// The default CeClient is good?
 	return opts
 }

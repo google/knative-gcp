@@ -50,14 +50,24 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	return newControllerWithIAMPolicyManager(
+		ctx,
+		cmw,
+		iam.DefaultIAMPolicyManager())
+}
 
+func newControllerWithIAMPolicyManager(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	ipm iam.IAMPolicyManager,
+) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	cloudbuildsourceInformer := cloudbuildsourceinformers.Get(ctx)
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
 		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
-		Identity:               identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
+		Identity:               identity.NewIdentity(ctx, ipm),
 		buildLister:            cloudbuildsourceInformer.Lister(),
 		serviceAccountLister:   serviceAccountInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),

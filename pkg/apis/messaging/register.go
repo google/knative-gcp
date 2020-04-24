@@ -17,6 +17,16 @@ limitations under the License.
 // Package messaging contains Cloud Run Events API versions for messaging components
 package messaging
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
 const (
 	GroupName = "messaging.cloud.google.com"
+)
+
+var (
+	// ChannelsResource represents a Channel.
+	ChannelsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "channels",
+	}
 )
