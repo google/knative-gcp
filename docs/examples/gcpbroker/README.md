@@ -8,7 +8,7 @@ These examples are adapted from https://knative.dev/docs/eventing/getting-starte
 
 ## Apply the Example YAMLs
 
-Apply example yamls in this directory:
+Apply example yamls in [this directory](./):
 
 ```shell
 kubectl apply -f namespace.yaml
