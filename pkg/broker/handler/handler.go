@@ -19,6 +19,7 @@ package handler
 import (
 	"context"
 	"io"
+	"sync/atomic"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/binding"
@@ -48,14 +49,18 @@ type Handler struct {
 
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
+	alive  atomic.Value
 }
 
 // Start starts the handler.
 // done func will be called if the pubsub inbound is closed.
 func (h *Handler) Start(ctx context.Context, done func(error)) {
 	ctx, h.cancel = context.WithCancel(ctx)
+	h.alive.Store(true)
+
 	go func() {
-		defer h.cancel()
+		// For any reason if inbound is closed, mark alive as false.
+		defer h.alive.Store(false)
 		done(h.PubsubEvents.OpenInbound(ctx))
 	}()
 
@@ -73,10 +78,13 @@ func (h *Handler) Stop() {
 	h.cancel()
 }
 
+// IsAlive indicates whether the handler is alive.
+func (h *Handler) IsAlive() bool {
+	return h.alive.Load().(bool)
+}
+
 func (h *Handler) handle(ctx context.Context) {
 	for {
-		// TODO(yolocs): we need to update dep for fix:
-		// https://github.com/cloudevents/sdk-go/pull/430
 		msg, err := h.PubsubEvents.Receive(ctx)
 		// It doesn't seem like that these errors will even happen.
 		if err == io.EOF {

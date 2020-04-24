@@ -207,6 +207,22 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
 		<-vctx.Done()
 	})
+
+	t.Run("event delivered after target retry queue update", func(t *testing.T) {
+		helper.RenewTarget(ctx, t, t2.Key())
+		signal <- struct{}{}
+
+		// Set timeout context so that verification can be done before
+		// exiting test func.
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		// t2 should continue to receive the event.
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
+
+		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
+		<-vctx.Done()
+	})
 }
 
 func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {

@@ -113,9 +113,25 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 // 2. The broker ingress server.
 func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace string) *config.Broker {
 	t.Helper()
+
+	// Create an empty broker config.
 	bn := "br-" + uuid.New().String()
-	topic := "decouple-topic-" + bn
-	sub := "decouple-sub-" + bn
+	h.Targets.MutateBroker(namespace, bn, func(bm config.BrokerMutation) {})
+	return h.RenewBroker(ctx, t, config.BrokerKey(namespace, bn))
+}
+
+// RenewBroker generates new test resources for an existing broker.
+func (h *Helper) RenewBroker(ctx context.Context, t *testing.T, brokerKey string) *config.Broker {
+	t.Helper()
+
+	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	if !ok {
+		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+	}
+
+	rid := uuid.New().String()
+	topic := "decouple-topic-" + rid
+	sub := "decouple-sub-" + rid
 
 	// Create decouple topic/subscription.
 	tt, err := h.PubsubClient.CreateTopic(ctx, topic)
@@ -133,7 +149,7 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 	}
 	brokerIngSvr := httptest.NewServer(ceClient)
 
-	h.Targets.MutateBroker(namespace, bn, func(bm config.BrokerMutation) {
+	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
 		bm.SetDecoupleQueue(&config.Queue{
 			Topic:        topic,
 			Subscription: sub,
@@ -142,9 +158,14 @@ func (h *Helper) GenerateBroker(ctx context.Context, t *testing.T, namespace str
 		bm.SetState(config.State_READY)
 	})
 
-	b, ok := h.Targets.GetBroker(namespace, bn)
+	b, ok = h.Targets.GetBrokerByKey(brokerKey)
 	if !ok {
-		t.Fatalf("failed to save test broker: %s", bn)
+		t.Fatalf("failed to save test broker: %s", brokerKey)
+	}
+
+	// Clean up existing ingress server if any.
+	if cfg, ok := h.ingresses[b.Key()]; ok {
+		cfg.server.Close()
 	}
 
 	h.ingresses[b.Key()] = &serverCfg{
@@ -190,8 +211,36 @@ func (h *Helper) DeleteBroker(ctx context.Context, t *testing.T, brokerKey strin
 func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey string, filters map[string]string) *config.Target {
 	t.Helper()
 	tn := "tr-" + uuid.New().String()
-	topic := "retry-topic-" + tn
-	sub := "retry-sub-" + tn
+	b, ok := h.Targets.GetBrokerByKey(brokerKey)
+	if !ok {
+		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+	}
+
+	testTarget := &config.Target{
+		Name:             tn,
+		Namespace:        b.Namespace,
+		Broker:           b.Name,
+		FilterAttributes: filters,
+		State:            config.State_READY,
+	}
+
+	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+		bm.UpsertTargets(testTarget)
+	})
+
+	return h.RenewTarget(ctx, t, testTarget.Key())
+}
+
+// RenewTarget generates new test resources for a target.
+func (h *Helper) RenewTarget(ctx context.Context, t *testing.T, targetKey string) *config.Target {
+	target, ok := h.Targets.GetTargetByKey(targetKey)
+	if !ok {
+		t.Fatalf("target with key %q doesn't exist", targetKey)
+	}
+
+	rid := uuid.New().String()
+	topic := "retry-topic-" + rid
+	sub := "retry-sub-" + rid
 
 	// Create target retry topic/subscription.
 	tt, err := h.PubsubClient.CreateTopic(ctx, topic)
@@ -209,34 +258,27 @@ func (h *Helper) GenerateTarget(ctx context.Context, t *testing.T, brokerKey str
 	}
 	targetSvr := httptest.NewServer(ceClient)
 
-	b, ok := h.Targets.GetBrokerByKey(brokerKey)
-	if !ok {
-		t.Fatalf("broker with key %q doesn't exist", brokerKey)
+	target.RetryQueue = &config.Queue{
+		Topic:        topic,
+		Subscription: sub,
 	}
+	target.Address = targetSvr.URL
 
-	testTarget := &config.Target{
-		Name:             tn,
-		Namespace:        b.Namespace,
-		Broker:           b.Name,
-		FilterAttributes: filters,
-		RetryQueue: &config.Queue{
-			Topic:        topic,
-			Subscription: sub,
-		},
-		Address: targetSvr.URL,
-		State:   config.State_READY,
-	}
-
-	h.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
-		bm.UpsertTargets(testTarget)
+	h.Targets.MutateBroker(target.Namespace, target.Broker, func(bm config.BrokerMutation) {
+		bm.UpsertTargets(target)
 	})
 
-	h.consumers[testTarget.Key()] = &serverCfg{
+	// Clean up existing ingress server if any.
+	if cfg, ok := h.consumers[target.Key()]; ok {
+		cfg.server.Close()
+	}
+
+	h.consumers[target.Key()] = &serverCfg{
 		server: targetSvr,
 		client: ceClient,
 	}
 
-	return testTarget
+	return target
 }
 
 // DeleteTarget deletes a target and test resources used by it.
