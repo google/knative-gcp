@@ -85,6 +85,9 @@ func TestHandler(t *testing.T) {
 	}
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
+	if !h.IsAlive() {
+		t.Error("start handler didn't bring it alive")
+	}
 
 	testEvent := event.New()
 	testEvent.SetID("id")

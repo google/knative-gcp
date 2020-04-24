@@ -216,6 +216,23 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)
 		<-vctx.Done()
 	})
+
+	t.Run("event delivered after broker decouple queue update", func(t *testing.T) {
+		helper.RenewBroker(ctx, t, b2.Key())
+		signal <- struct{}{}
+
+		// Set timeout context so that verification can be done before
+		// exiting test func.
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		// Target for broker2 should continue to receive the event.
+		go helper.VerifyNextTargetEvent(vctx, t, t3.Key(), &e)
+
+		// Only send an event to broker2.
+		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)
+		<-vctx.Done()
+	})
 }
 
 func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
