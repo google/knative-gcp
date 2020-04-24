@@ -83,7 +83,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 	}
 
 	topic := resources.GenerateTopicName(scheduler)
-	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, scheduler, topic, resourceGroup)
+	sourceType := resources.GenerateSourceType()
+	filters := resources.GenerateFilters(scheduler)
+	_, _, _, err := r.PubSubBase.ReconcilePubSub(ctx, scheduler, topic, sourceType, resourceGroup, filters)
 	if err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s", err.Error())
 	}

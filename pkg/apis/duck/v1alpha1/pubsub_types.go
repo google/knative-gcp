@@ -90,6 +90,10 @@ type PubSubStatus struct {
 	// SubscriptionID is the created subscription ID.
 	// +optional
 	SubscriptionID string `json:"subscriptionId,omitempty"`
+
+	// TriggerID is the created trigger ID.
+	// +optional
+	TriggerID string `json:"triggerId,omitempty"`
 }
 
 const (
@@ -158,6 +162,7 @@ func (s *PubSub) Populate() {
 	s.Status.ProjectID = "projectid"
 	s.Status.TopicID = "topicid"
 	s.Status.SubscriptionID = "subscriptionid"
+	s.Status.TriggerID = "triggerid"
 }
 
 // GetListType implements apis.Listable

@@ -27,3 +27,17 @@ import (
 func GenerateTopicName(storage *v1alpha1.CloudStorageSource) string {
 	return fmt.Sprintf("storage-%s", string(storage.UID))
 }
+
+func GenerateSourceType() string {
+	return "STORAGE"
+}
+
+func GenerateFilters(s *v1alpha1.CloudStorageSource) map[string]string {
+	// TODO(nlopezgi):Need to figure out how to convert EventTypes properly
+	return map[string]string{
+		"Bucket":           s.Spec.Bucket,
+		"EventTypes":       fmt.Sprintf("%v", s.Spec.EventTypes),
+		"ObjectNamePrefix": s.Spec.ObjectNamePrefix,
+		"PayloadFormat":    s.Spec.PayloadFormat,
+	}
+}

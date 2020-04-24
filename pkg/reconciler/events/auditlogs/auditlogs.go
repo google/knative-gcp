@@ -79,12 +79,19 @@ func (c *Reconciler) ReconcileKind(ctx context.Context, s *v1alpha1.CloudAuditLo
 		}
 	}
 
+	// TODO(nlopezgi): Remove this note:
+	// NOTE: it seems to me that we should be able to design Sources in such a way that all that is needed here
+	// is a generic reconciler (that takes in a CloudAuditLogsSource or a CloudStorageSource, etc)
+	// And calls a GenerateSourceType and GenerateFilters (whose specification differs slighly between sources)
+	// And the reconciliation process should just be a matter of reconciling the PubSub.
 	topic := resources.GenerateTopicName(s)
-	t, ps, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic, resourceGroup)
+	sourceType := resources.GenerateSourceType()
+	filters := resources.GenerateFilters(s)
+	t, ps, tr, err := c.PubSubBase.ReconcilePubSub(ctx, s, topic, sourceType, resourceGroup, filters)
 	if err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s", err.Error())
 	}
-	c.Logger.Debugf("Reconciled: PubSub: %+v PullSubscription: %+v", t, ps)
+	c.Logger.Debugf("Reconciled: PubSub: %+v PullSubscription: %+v Trigger: %+v", t, ps, tr)
 
 	sink, err := c.reconcileSink(ctx, s)
 	if err != nil {

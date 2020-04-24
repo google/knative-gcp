@@ -97,6 +97,24 @@ func WithCloudAuditLogsSourcePullSubscriptionReady() CloudAuditLogsSourceOption 
 	}
 }
 
+func WithCloudAuditLogsSourceTriggerFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.MarkTriggerFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+func WithCloudAuditLogsSourceTriggerUnknown(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.MarkTriggerUnknown(s.ConditionSet(), reason, message)
+	}
+}
+
+func WithCloudAuditLogsSourceTriggerReady() CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.MarkTriggerReady(s.ConditionSet())
+	}
+}
+
 func WithCloudAuditLogsSourceSinkNotReady(reason, messageFmt string, messageA ...interface{}) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.MarkSinkNotReady(reason, messageFmt, messageA...)

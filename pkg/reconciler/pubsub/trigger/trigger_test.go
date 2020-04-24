@@ -217,11 +217,11 @@ func TestAllCases(t *testing.T) {
 		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			Identity:             identity.NewIdentity(ctx, iam.DefaultIAMPolicyManager()),
-			triggerLister:        listers.GetPubSubTriggerLister(),
+			triggerLister:        listers.Getv1alpha1PubSubTriggerLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 			createClientFn:       gtrigger.TestClientCreator(testData["trigger"]),
 		}
-		return trigger.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPubSubTriggerLister(), r.Recorder, r)
+		return trigger.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.Getv1alpha1PubSubTriggerLister(), r.Recorder, r)
 	}))
 
 }

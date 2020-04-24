@@ -43,6 +43,7 @@ const (
 	testNS                                     = "test-namespace"
 	name                                       = "obj-name"
 	testTopicID                                = "topic"
+	testSourceType                             = "AUDIT"
 	testProjectID                              = "project"
 	receiveAdapterName                         = "test-receive-adapter"
 	resourceGroup                              = "test-resource-group"
@@ -54,6 +55,12 @@ var (
 	trueVal = true
 
 	testTopicURI = "http://" + name + "-topic." + testNS + ".svc.cluster.local"
+
+	testFilters = map[string]string{
+		"ServiceName":  "foo",
+		"MethodName":   "bar",
+		"ResourceName": "baz",
+	}
 
 	secret = corev1.SecretKeySelector{
 		LocalObjectReference: corev1.LocalObjectReference{
@@ -86,6 +93,7 @@ func TestCreates(t *testing.T) {
 		objects       []runtime.Object
 		expectedTopic *pubsubsourcev1alpha1.Topic
 		expectedPS    *pubsubsourcev1alpha1.PullSubscription
+		expectedTR    *pubsubsourcev1alpha1.Trigger
 		expectedErr   string
 		wantCreates   []runtime.Object
 	}{{
@@ -103,6 +111,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
 		wantCreates: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
@@ -145,6 +154,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("Topic %q has not yet been reconciled", name),
 	}, {
 		name: "topic exists and is ready but no projectid",
@@ -213,6 +223,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("the status of Topic %q is False", name),
 	}, {
 		name: "topic exists and the status of topic is unknown",
@@ -247,6 +258,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("the status of Topic %q is Unknown", name),
 	}, {
 		name: "topic exists and is ready but no topicid",
@@ -283,6 +295,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose topicid", name),
 	}, {
 		name: "topic exists and is ready, pullsubscription created, not yet been reconciled",
@@ -334,6 +347,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 		wantCreates: []runtime.Object{
 			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
@@ -419,6 +433,7 @@ func TestCreates(t *testing.T) {
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
 	}, {
 		name: "topic exists and is ready, pullsubscription exists and the status is false",
@@ -488,6 +503,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionFailed(),
 		),
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, name),
 	}, {
 		name: "topic exists and is ready, pullsubscription exists and the status is unknown",
@@ -557,6 +573,7 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithPullSubscriptionUnknown(),
 		),
+		expectedTR:  nil,
 		expectedErr: fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, name),
 	}}
 
@@ -573,7 +590,7 @@ func TestCreates(t *testing.T) {
 		psBase.Logger = logtesting.TestLogger(t)
 
 		arl := pkgtesting.ActionRecorderList{cs}
-		topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
+		topic, ps, tr, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, testSourceType, resourceGroup, testFilters)
 
 		if (tc.expectedErr != "" && err == nil) ||
 			(tc.expectedErr == "" && err != nil) ||
@@ -585,6 +602,9 @@ func TestCreates(t *testing.T) {
 		}
 		if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
 			t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
+		}
+		if diff := cmp.Diff(tc.expectedTR, tr, ignoreLastTransitionTime); diff != "" {
+			t.Errorf("Test case %q, unexpected trigger (-want, +got) = %v", tc.name, diff)
 		}
 
 		// Validate creates.

@@ -97,7 +97,9 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, storage *v1alpha1.CloudS
 	}
 
 	topic := resources.GenerateTopicName(storage)
-	_, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, resourceGroup)
+	sourceType := resources.GenerateSourceType()
+	filters := resources.GenerateFilters(storage)
+	_, _, _, err := r.PubSubBase.ReconcilePubSub(ctx, storage, topic, sourceType, resourceGroup, filters)
 	if err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, reconciledPubSubFailed, "Failed to reconcile CloudStorageSource PubSub: %s", err.Error())
 	}

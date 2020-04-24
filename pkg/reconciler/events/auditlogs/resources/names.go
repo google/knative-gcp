@@ -40,3 +40,15 @@ func GenerateTopicResourceName(s *v1alpha1.CloudAuditLogsSource) string {
 func GenerateSinkName(s *v1alpha1.CloudAuditLogsSource) string {
 	return fmt.Sprintf("sink-%s", string(s.UID))
 }
+
+func GenerateSourceType() string {
+	return "AUDIT"
+}
+
+func GenerateFilters(s *v1alpha1.CloudAuditLogsSource) map[string]string {
+	return map[string]string{
+		"ServiceName":  s.Spec.ServiceName,
+		"MethodName":   s.Spec.MethodName,
+		"ResourceName": s.Spec.ResourceName,
+	}
+}

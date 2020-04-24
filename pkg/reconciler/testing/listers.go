@@ -46,12 +46,14 @@ import (
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	policylisters "github.com/google/knative-gcp/pkg/client/listers/policy/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
+	pubsublistersv1beta1 "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1beta1"
 
 	fakeistioclientset "github.com/google/knative-gcp/pkg/client/istio/clientset/versioned/fake"
 	istiov1beta1listers "github.com/google/knative-gcp/pkg/client/istio/listers/security/v1beta1"
@@ -131,7 +133,11 @@ func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
 	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
-func (l *Listers) GetPubSubTriggerLister() pubsublisters.TriggerLister {
+func (l *Listers) Getv1beta1PubSubTriggerLister() pubsublistersv1beta1.TriggerLister {
+	return pubsublistersv1beta1.NewTriggerLister(l.indexerFor(&pubsubv1beta1.Trigger{}))
+}
+
+func (l *Listers) Getv1alpha1PubSubTriggerLister() pubsublisters.TriggerLister {
 	return pubsublisters.NewTriggerLister(l.indexerFor(&pubsubv1alpha1.Trigger{}))
 }
 

@@ -40,6 +40,10 @@ const (
 	pullSubscriptionGetFailedReason             = "PullSubscriptionGetFailed"
 	pullSubscriptionCreateFailedReason          = "PullSubscriptionCreateFailed"
 	PullSubscriptionStatusPropagateFailedReason = "PullSubscriptionStatusPropagateFailed"
+
+	triggerGetFailedReason             = "TriggerGetFailed"
+	triggerCreateFailedReason          = "TriggerCreateFailed"
+	TriggerStatusPropagateFailedReason = "TriggerStatusPropagateFailed"
 )
 
 type PubSubBase struct {
@@ -60,9 +64,9 @@ type PubSubBase struct {
 // "TopicReady", and "PullSubscriptionReady"
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubv1alpha1.Topic, *pubsubv1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, sourceType, resourceGroup string, filters map[string]string) (*pubsubv1alpha1.Topic, *pubsubv1alpha1.PullSubscription, *pubsubv1alpha1.Trigger, error) {
 	if pubsubable == nil {
-		return nil, nil, fmt.Errorf("nil pubsubable passed in")
+		return nil, nil, nil, fmt.Errorf("nil pubsubable passed in")
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
@@ -75,7 +79,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
+			return nil, nil, nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
 		args := &resources.TopicArgs{
 			Namespace: namespace,
@@ -89,21 +93,26 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
+			return nil, nil, nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 	}
 
 	cs := pubsubable.ConditionSet()
 
 	if err := propagateTopicStatus(t, status, cs, topic); err != nil {
-		return t, nil, err
+		return t, nil, nil, err
 	}
 
 	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
 	if err != nil {
-		return t, ps, err
+		return t, ps, nil, err
 	}
-	return t, ps, nil
+
+	tr, err := psb.ReconcileTrigger(ctx, pubsubable, topic, sourceType, resourceGroup, filters)
+	if err != nil {
+		return t, ps, tr, err
+	}
+	return t, ps, tr, nil
 }
 
 func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*pubsubv1alpha1.PullSubscription, pkgreconciler.Event) {
@@ -156,6 +165,55 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	status.SinkURI = ps.Status.SinkURI
 	return ps, nil
+}
+
+func (psb *PubSubBase) ReconcileTrigger(ctx context.Context, pubsubable duck.PubSubable, topic, sourceType, resourceGroup string, filters map[string]string) (*pubsubv1alpha1.Trigger, pkgreconciler.Event) {
+	if pubsubable == nil {
+		logging.FromContext(ctx).Desugar().Error("Nil pubsubable passed in")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, nilPubsubableReason, "nil pubsubable passed in")
+	}
+	namespace := pubsubable.GetObjectMeta().GetNamespace()
+	name := pubsubable.GetObjectMeta().GetName()
+	spec := pubsubable.PubSubSpec()
+	status := pubsubable.PubSubStatus()
+
+	cs := pubsubable.ConditionSet()
+
+	triggers := psb.pubsubClient.PubsubV1alpha1().Triggers(namespace)
+	tr, err := triggers.Get(name, v1.GetOptions{})
+	if err != nil {
+		if !apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Desugar().Error("Failed to get Trigger", zap.Error(err))
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, triggerGetFailedReason, "Getting Trigger failed with: %s", err.Error())
+		}
+		args := &resources.TriggerArgs{
+			Namespace:  namespace,
+			Name:       name,
+			Spec:       spec,
+			Owner:      pubsubable,
+			Trigger:    topic,
+			Labels:     resources.GetLabels(psb.receiveAdapterName, name),
+			SourceType: sourceType,
+			Filters:    filters,
+		}
+
+		newTR := resources.MakeTrigger(args)
+		logging.FromContext(ctx).Desugar().Debug("Creating Trigger", zap.Any("ps", newTR))
+		tr, err = triggers.Create(newTR)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create Trigger", zap.Any("ps", newTR), zap.Error(err))
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, triggerCreateFailedReason, "Creating Trigger failed with: %s", err.Error())
+		}
+	}
+
+	if err := propagateTriggerStatus(tr, status, cs); err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to propagate Trigger status: %s", zap.Error(err))
+		return tr, pkgreconciler.NewEvent(corev1.EventTypeWarning, TriggerStatusPropagateFailedReason, "Failed to propagate Trigger status: %s", err.Error())
+	}
+
+	// TODO MIGHT NEEED TO ADD SINK TO Trigger
+	//status.SinkURI = tr.Status.SinkURI
+	return tr, nil
 }
 
 func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
@@ -219,6 +277,28 @@ func propagateTopicStatus(t *pubsubv1alpha1.Topic, status *duckv1alpha1.PubSubSt
 	return nil
 }
 
+func propagateTriggerStatus(ps *pubsubv1alpha1.Trigger, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
+	pc := ps.Status.GetTopLevelCondition()
+	if pc == nil {
+		status.MarkTriggerNotConfigured(cs)
+		return fmt.Errorf("Trigger %q has not yet been reconciled", ps.Name)
+	}
+	switch {
+	case pc.Status == corev1.ConditionUnknown:
+		status.MarkTriggerUnknown(cs, pc.Reason, pc.Message)
+		return fmt.Errorf("the status of Trigger %q is Unknown", ps.Name)
+	case pc.Status == corev1.ConditionTrue:
+		status.MarkTriggerReady(cs)
+	case pc.Status == corev1.ConditionFalse:
+		status.MarkTriggerFailed(cs, pc.Reason, pc.Message)
+		return fmt.Errorf("the status of Trigger %q is False", ps.Name)
+	default:
+		status.MarkTriggerUnknown(cs, "TriggerUnknown", "The status of Trigger is invalid: %v", pc.Status)
+		return fmt.Errorf("the status of Trigger %q is invalid: %v", ps.Name, pc.Status)
+	}
+	return nil
+}
+
 func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSubable) error {
 	if pubsubable == nil {
 		return fmt.Errorf("nil pubsubable passed in")
@@ -248,5 +328,14 @@ func (psb *PubSubBase) DeletePubSub(ctx context.Context, pubsubable duck.PubSuba
 	}
 	status.MarkPullSubscriptionFailed(cs, "PullSubscriptionDeleted", "Successfully deleted PullSubscription: %s", name)
 	status.SinkURI = nil
+
+	// Delete the trigger
+	err = psb.pubsubClient.PubsubV1alpha1().Triggers(namespace).Delete(name, nil)
+	if err != nil && !apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Desugar().Error("Failed to delete Trigger", zap.String("name", name), zap.Error(err))
+		status.MarkTriggerFailed(cs, "TriggerDeleteFailed", "Failed to delete Trigger: %s", err.Error())
+		return fmt.Errorf("failed to delete Trigger: %w", err)
+	}
+	status.MarkTriggerFailed(cs, "TriggerDeleted", "Successfully deleted Trigger: %s", name)
 	return nil
 }

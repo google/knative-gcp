@@ -54,3 +54,15 @@ func GenerateTopicName(scheduler *v1alpha1.CloudSchedulerSource) string {
 func GeneratePubSubTargetTopic(scheduler *v1alpha1.CloudSchedulerSource, topic string) string {
 	return fmt.Sprintf("projects/%s/topics/%s", scheduler.Status.ProjectID, topic)
 }
+
+func GenerateSourceType() string {
+	return "SCHEDULER"
+}
+
+func GenerateFilters(s *v1alpha1.CloudSchedulerSource) map[string]string {
+	return map[string]string{
+		"Location": s.Spec.Location,
+		"Schedule": s.Spec.Schedule,
+		"Data":     s.Spec.Data,
+	}
+}
