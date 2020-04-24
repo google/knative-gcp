@@ -104,7 +104,7 @@ func (h *handler) Start(ctx context.Context) error {
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
 func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
-	h.logger.Debug("Serving http", zap.Any("request", request))
+	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
