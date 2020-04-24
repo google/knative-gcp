@@ -107,7 +107,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	})
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
-		// There is already a handler for the trigger, skip.
 		if value, ok := p.pool.Load(t.Key()); ok {
 			// Skip if we don't need to restart the handler.
 			if !value.(*handlerCache).requiresRestart(t) {

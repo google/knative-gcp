@@ -130,7 +130,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	})
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		// There is already a handler for the broker, skip.
 		if value, ok := p.pool.Load(b.Key()); ok {
 			// Skip if we don't need to restart the handler.
 			if !value.(*handlerCache).requiresRestart(b) {
