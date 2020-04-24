@@ -55,10 +55,14 @@ type handlerCache struct {
 	t *config.Target
 }
 
-func (hc *handlerCache) requiresRestart(t *config.Target) bool {
+// If somehow the existing handler's setting has deviated from the current target config,
+// we need to renew the handler.
+func (hc *handlerCache) shouldRenew(t *config.Target) bool {
 	if !hc.IsAlive() {
 		return true
 	}
+	// If this really happens, it means a data corruption.
+	// The handler creation will fail (which is expected).
 	if t == nil || t.RetryQueue == nil {
 		return true
 	}
@@ -108,8 +112,8 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		if value, ok := p.pool.Load(t.Key()); ok {
-			// Skip if we don't need to restart the handler.
-			if !value.(*handlerCache).requiresRestart(t) {
+			// Skip if we don't need to renew the handler.
+			if !value.(*handlerCache).shouldRenew(t) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.

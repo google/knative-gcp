@@ -59,10 +59,14 @@ type handlerCache struct {
 	b *config.Broker
 }
 
-func (hc *handlerCache) requiresRestart(b *config.Broker) bool {
+// If somehow the existing handler's setting has deviated from the current broker config,
+// we need to renew the handler.
+func (hc *handlerCache) shouldRenew(b *config.Broker) bool {
 	if !hc.IsAlive() {
 		return true
 	}
+	// If this really happens, it means a data corruption.
+	// The handler creation will fail (which is expected).
 	if b == nil || b.DecoupleQueue == nil {
 		return true
 	}
@@ -131,8 +135,8 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
 		if value, ok := p.pool.Load(b.Key()); ok {
-			// Skip if we don't need to restart the handler.
-			if !value.(*handlerCache).requiresRestart(b) {
+			// Skip if we don't need to renew the handler.
+			if !value.(*handlerCache).shouldRenew(b) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
