@@ -26,12 +26,6 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
-// newReconciledNormal makes a new reconciler event with event type Normal, and
-// reason BrokerCellReconciled.
-func newReconciledNormal(namespace, name string) pkgreconciler.Event {
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", namespace, name)
-}
-
 // Reconciler implements controller.Reconciler for BrokerCell resources.
 type Reconciler struct {
 	*reconciler.Base
@@ -45,8 +39,8 @@ var _ bcreconciler.Interface = (*Reconciler)(nil)
 var _ bcreconciler.Finalizer = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
-func (r *Reconciler) ReconcileKind(ctx context.Context, o *intv1alpha1.BrokerCell) pkgreconciler.Event {
-	o.Status.InitializeConditions()
+func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
+	bc.Status.InitializeConditions()
 
 	// TODO Reconcile:
 	// - Ingress service
@@ -55,15 +49,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *intv1alpha1.BrokerCel
 	// - Retry deployment
 	// - Configmap
 
-	o.Status.ObservedGeneration = o.Generation
-	return newReconciledNormal(o.Namespace, o.Name)
+	bc.Status.ObservedGeneration = bc.Generation
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
 // FinalizeKind will be called when the resource is deleted.
-func (r *Reconciler) FinalizeKind(ctx context.Context, o *intv1alpha1.BrokerCell) pkgreconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
 	// TODO Finalize by:
 	// - Deleting the deployments. Wait until they're gone
 	// - Delete the configmap
 	// - When to delete the svc? Look at revision deletion to see if it specifies a deletion order
-	return nil
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellFinalized", "BrokerCell finalized: \"%s/%s\"", bc.Namespace, bc.Name)
 }
