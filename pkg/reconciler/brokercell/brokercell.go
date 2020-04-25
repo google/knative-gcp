@@ -19,31 +19,33 @@ package brokercell
 import (
 	context "context"
 
-	v1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	v1 "k8s.io/api/core/v1"
-	reconciler "knative.dev/pkg/reconciler"
+	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	corev1 "k8s.io/api/core/v1"
+	pkgreconciler "knative.dev/pkg/reconciler"
 )
 
 // newReconciledNormal makes a new reconciler event with event type Normal, and
 // reason BrokerCellReconciled.
-func newReconciledNormal(namespace, name string) reconciler.Event {
-	return reconciler.NewEvent(v1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", namespace, name)
+func newReconciledNormal(namespace, name string) pkgreconciler.Event {
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", namespace, name)
 }
 
 // Reconciler implements controller.Reconciler for BrokerCell resources.
 type Reconciler struct {
+	*reconciler.Base
 	// TODO: add additional requirements here.
 }
 
 // Check that our Reconciler implements Interface
-var _ brokercell.Interface = (*Reconciler)(nil)
+var _ bcreconciler.Interface = (*Reconciler)(nil)
 
 // Optionally check that our Reconciler implements Finalizer
-var _ brokercell.Finalizer = (*Reconciler)(nil)
+var _ bcreconciler.Finalizer = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
-func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1alpha1.BrokerCell) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, o *intv1alpha1.BrokerCell) pkgreconciler.Event {
 	o.Status.InitializeConditions()
 
 	// TODO Reconcile:
@@ -58,7 +60,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1alpha1.BrokerCell) 
 }
 
 // FinalizeKind will be called when the resource is deleted.
-func (r *Reconciler) FinalizeKind(ctx context.Context, o *v1alpha1.BrokerCell) reconciler.Event {
+func (r *Reconciler) FinalizeKind(ctx context.Context, o *intv1alpha1.BrokerCell) pkgreconciler.Event {
 	// TODO Finalize by:
 	// - Deleting the deployments. Wait until they're gone
 	// - Delete the configmap

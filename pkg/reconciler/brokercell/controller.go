@@ -28,6 +28,12 @@ import (
 	logging "knative.dev/pkg/logging"
 )
 
+const (
+	// controllerAgentName is the string used by this controller to identify
+	// itself when creating events.
+	controllerAgentName = "brokercell-controller"
+)
+
 // NewController creates a Reconciler for BrokerCell and returns the result of NewImpl.
 func NewController(
 	ctx context.Context,
