@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,16 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-//TODO verify topic and sub name can't be longer than 255 chars
-
 const testUID = "11186600-4003-4ad6-90e7-22780053debf"
 
-var maxName = genString("n", k8sNameMax)
+var maxName = strings.Repeat("n", k8sNameMax)
 
 // fmt.Sprintf("%x", md5.Sum([]byte(maxName)))
 var maxNameHash = "1c6d61b118caf1b3e5c8c4404f34b4a2"
 
-var maxNamespace = genString("ns", k8sNamespaceMax)
+var maxNamespace = strings.Repeat("s", k8sNamespaceMax)
 
 func TestGenerateDecouplingTopicName(t *testing.T) {
 	testCases := []struct {
@@ -57,12 +56,12 @@ func TestGenerateDecouplingTopicName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_%s_%s%s_%s", maxNamespace, genString("n", 146-md5Len), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-bkr_%s_%s%s_%s", maxNamespace, strings.Repeat("n", 146-md5Len), maxNameHash, testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s%s_%s", genString("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s%s_%s", strings.Repeat("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -96,12 +95,12 @@ func TestGenerateDecouplingSubscriptionName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_%s_%s%s_%s", maxNamespace, genString("n", 146-md5Len), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-bkr_%s_%s%s_%s", maxNamespace, strings.Repeat("n", 146-md5Len), maxNameHash, testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s%s_%s", genString("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s%s_%s", strings.Repeat("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -135,12 +134,12 @@ func TestGenerateRetryTopicName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_%s_%s%s_%s", maxNamespace, genString("n", 146-md5Len), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-tgr_%s_%s%s_%s", maxNamespace, strings.Repeat("n", 146-md5Len), maxNameHash, testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s%s_%s", genString("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s%s_%s", strings.Repeat("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -174,12 +173,12 @@ func TestGenerateRetrySubscriptionName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_%s_%s%s_%s", maxNamespace, genString("n", 146-md5Len), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-tgr_%s_%s%s_%s", maxNamespace, strings.Repeat("n", 146-md5Len), maxNameHash, testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s%s_%s", genString("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s%s_%s", strings.Repeat("n", 146-md5Len+(k8sNamespaceMax-7)), maxNameHash, testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -238,20 +237,4 @@ func Test_hashedTruncatePanic(t *testing.T) {
 
 	// no panic when max == 32
 	hashedTruncate("", 32)
-}
-
-func genString(p string, l int) string {
-	for len(p) < l {
-		p += p
-	}
-	return p[:l]
-}
-
-func Test_genString(t *testing.T) {
-	if l := len(genString("a", 10)); l != 10 {
-		t.Errorf("wrong length: expected 10, got %d", l)
-	}
-	if l := len(genString("abc", 1000)); l != 1000 {
-		t.Errorf("wrong length: expected 1000, got %d", l)
-	}
 }
