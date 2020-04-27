@@ -852,6 +852,13 @@ func TestDeletes(t *testing.T) {
 					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"},
 				},
 				Name: name,
+			}, {
+				ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS,
+					Verb:      "delete",
+					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "triggers"},
+				},
+				Name: name,
 			},
 		},
 	}}
