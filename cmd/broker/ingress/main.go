@@ -17,27 +17,14 @@ limitations under the License.
 package main
 
 import (
-	"flag"
-	"log"
-
 	"github.com/google/knative-gcp/pkg/broker/ingress"
-	"github.com/google/knative-gcp/pkg/observability"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 	"go.uber.org/zap"
-	"knative.dev/pkg/injection"
-	"knative.dev/pkg/injection/sharedmain"
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/signals"
 )
 
 const containerName = "ingress"
-
-var (
-	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
-)
 
 type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
@@ -46,7 +33,7 @@ type envConfig struct {
 }
 
 const (
-	componentName = "broker"
+	component = "broker"
 )
 
 // main creates and starts an ingress handler using default options.
@@ -57,30 +44,12 @@ const (
 func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
-	ctx := signals.NewContext()
-
-	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
-	if err != nil {
-		log.Fatal("Error building kubeconfig", err)
-	}
-
-	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
-	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
-
-	ctx, _ = injection.Default.SetupInformers(ctx, cfg)
-
-	ctx, flush, err := observability.SetupDynamicConfig(ctx, componentName)
-	if err != nil {
-		log.Fatal("Error setting up dynamic observability configuration", err)
-	}
-	defer flush()
-	logger := logging.FromContext(ctx)
-
 	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		logger.Desugar().Fatal("Failed to process env var", zap.Error(err))
-	}
+	res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
+	defer res.Cleanup()
+	logger := res.Logger
+	ctx := res.Ctx
+
 	projectID, err := utils.ProjectID(env.ProjectID)
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
