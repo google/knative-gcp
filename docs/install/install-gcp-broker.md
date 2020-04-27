@@ -86,36 +86,39 @@ export BROKER=test-broker
 
 1. Create a New GCP Broker
 
-    ```shell
-    kubectl apply -f - << END
-    apiVersion: eventing.knative.dev/v1beta1
-    kind: Broker
-    metadata:
-    name: ${BROKER}
-    namespace: ${NAMESPACE}
-    annotations:
-        "eventing.knative.dev/broker.class": "googlecloud"
-    END
-    ```
+   ```shell
+   kubectl apply -f - << END
+   apiVersion: eventing.knative.dev/v1beta1
+   kind: Broker
+   metadata:
+   name: ${BROKER}
+   namespace: ${NAMESPACE}
+   annotations:
+       "eventing.knative.dev/broker.class": "googlecloud"
+   END
+   ```
 
-    Make sure you apply the annotation `"eventing.knative.dev/broker.class": "googlecloud"`.
-    That triggers the knative-gcp to create a new GCP broker.
+   Make sure you apply the annotation
+   `"eventing.knative.dev/broker.class": "googlecloud"`. That triggers the
+   knative-gcp to create a new GCP broker.
 
 1. Verify that the new broker is running,
 
-    ```shell
-    kubectl -n ${NAMESPACE} get broker ${BROKER}
-    ```
+   ```shell
+   kubectl -n ${NAMESPACE} get broker ${BROKER}
+   ```
 
-    This shows the broker you just created like so:
+   This shows the broker you just created like so:
 
-    ```shell
-    NAME          READY   REASON   URL                                                                                             AGE
-    test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
-    ```
+   ```shell
+   NAME          READY   REASON   URL                                                                                             AGE
+   test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+   ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
 create [Triggers](https://knative.dev/docs/eventing/broker-trigger/#trigger) to
-receive events from it, just like any Knative Eventing [Brokers](https://knative.dev/docs/eventing/broker-trigger/#broker).
+receive events from it, just like any Knative Eventing
+[Brokers](https://knative.dev/docs/eventing/broker-trigger/#broker).
 
-You can find demos of the GCP broker in the [examples](../examples/gcpbroker/README.md).
+You can find demos of the GCP broker in the
+[examples](../examples/gcpbroker/README.md).
