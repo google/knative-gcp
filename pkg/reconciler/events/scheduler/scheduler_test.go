@@ -969,8 +969,11 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123"),
+					WithCloudSchedulerSourceServiceAccountName("test123-cluster"),
 				),
 				newSink(),
 			},
@@ -984,14 +987,17 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
 					WithCloudSchedulerSourceDeletionTimestamp,
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123"),
-					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithCloudSchedulerSourceServiceAccountName("test123-cluster"),
+					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
 				),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
 			},
 		}}
 

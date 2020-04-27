@@ -48,7 +48,7 @@ import (
 const (
 	testNS              = "test-NS"
 	gServiceAccountName = "test@test"
-	kServiceAccountName = "test"
+	kServiceAccountName = "test-cluster"
 	identifiableName    = "identifiable"
 	projectID           = "id"
 )
@@ -77,7 +77,7 @@ func TestCreates(t *testing.T) {
 		wantCreates: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
 		},
-		expectedServiceAccount: NewServiceAccount("test", testNS, gServiceAccountName,
+		expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 			WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
 				Kind:               "CloudPubSubSource",
@@ -93,7 +93,7 @@ func TestCreates(t *testing.T) {
 		objects: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
 		},
-		expectedServiceAccount: NewServiceAccount("test", testNS, gServiceAccountName,
+		expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 			WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 				APIVersion:         "events.cloud.google.com/v1alpha1",
 				Kind:               "CloudPubSubSource",
@@ -125,6 +125,9 @@ func TestCreates(t *testing.T) {
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
@@ -228,6 +231,10 @@ func TestDeletes(t *testing.T) {
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
 				WithCloudPubSubSourceServiceAccountName("test"))
+
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			err = identity.DeleteWorkloadIdentity(ctx, projectID, identifiable)

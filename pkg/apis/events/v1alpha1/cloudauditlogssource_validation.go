@@ -28,7 +28,8 @@ import (
 )
 
 func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldError {
-	return current.Spec.Validate(ctx).ViaField("spec")
+	errs := current.Spec.Validate(ctx).ViaField("spec")
+	return duckv1alpha1.ValidateClusterNameAnnotation(ctx, current.Annotations, errs)
 }
 
 func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.FieldError {

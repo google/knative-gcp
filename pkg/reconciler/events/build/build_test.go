@@ -315,7 +315,10 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceDeletionTimestamp,
 					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123"),
+					WithCloudBuildSourceServiceAccountName("test123-cluster"),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
 				),
 				newSink(),
 			},
@@ -326,13 +329,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
 					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123"),
+					WithCloudBuildSourceServiceAccountName("test123-cluster"),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
 				),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
 			},
 		}}
 

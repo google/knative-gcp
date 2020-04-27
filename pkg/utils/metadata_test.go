@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha1
+package utils
 
 import (
-	"context"
+	"testing"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/go-cmp/cmp"
 )
 
-func (s *CloudSchedulerSource) SetDefaults(ctx context.Context) {
-	s.Spec.SetPubSubDefaults()
-	duckv1alpha1.SetClusterNameAnnotation(ctx, &s.ObjectMeta)
-	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
+func TestProjectID(t *testing.T) {
+	want := "testing-project"
+	got, _ := ProjectID(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+		t.Log(got)
+	}
+}
+
+func TestClusterName(t *testing.T) {
+	want := "testing-cluster"
+	got, _ := ClusterName(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+		t.Log(got)
+	}
 }

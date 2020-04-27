@@ -33,3 +33,16 @@ func ProjectID(project string) (string, error) {
 	}
 	return projectID, nil
 }
+
+// ClusterName returns the cluster name for a particular resource.
+func ClusterName(clusterName string) (string, error) {
+	// If clusterName is set, then return that one.
+	if clusterName != "" {
+		return clusterName, nil
+	}
+	clusterName, err := metadata.InstanceAttributeValue("cluster-name")
+	if err != nil {
+		return "", err
+	}
+	return clusterName, nil
+}

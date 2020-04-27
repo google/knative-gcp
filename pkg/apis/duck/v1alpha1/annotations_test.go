@@ -208,3 +208,44 @@ func TestValidateAutoscalingAnnotations(t *testing.T) {
 		})
 	}
 }
+
+func TestSetClusterNameAnnotation(t *testing.T) {
+	testCases := map[string]struct {
+		orig     *v1.ObjectMeta
+		expected *v1.ObjectMeta
+	}{
+		"no annotation, not on GKE": {
+			orig:     &v1.ObjectMeta{},
+			expected: &v1.ObjectMeta{},
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			SetClusterNameAnnotation(context.TODO(), tc.orig)
+			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
+	}
+}
+
+func TestValidateClusterNameAnnotation(t *testing.T) {
+	testCases := map[string]struct {
+		objMeta *v1.ObjectMeta
+		error   bool
+	}{
+		"no annotation, not on GKE": {
+			objMeta: &v1.ObjectMeta{},
+			error:   false,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var errs *apis.FieldError
+			err := ValidateClusterNameAnnotation(context.TODO(), tc.objMeta.Annotations, errs)
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
+			}
+		})
+	}
+}

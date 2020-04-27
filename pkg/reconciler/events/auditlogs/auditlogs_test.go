@@ -1055,7 +1055,10 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123"),
+				WithCloudAuditLogsSourceServiceAccountName("test123-cluster"),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: "cluster",
+				}),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -1066,13 +1069,16 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
 				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123"),
+				WithCloudAuditLogsSourceServiceAccountName("test123-cluster"),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: "cluster",
+				}),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
 		},
 	}}
 

@@ -314,7 +314,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123"),
+				WithCloudPubSubSourceServiceAccountName("test123-cluster"),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: "cluster",
+				}),
 			),
 			newSink(),
 		},
@@ -325,13 +328,16 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
-				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123"),
+				WithCloudPubSubSourceServiceAccountName("test123-cluster"),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: "cluster",
+				}),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
 		},
 	}}
 

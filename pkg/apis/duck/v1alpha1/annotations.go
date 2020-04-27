@@ -22,8 +22,11 @@ import (
 	"math"
 	"strconv"
 
+	"cloud.google.com/go/compute/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
@@ -33,6 +36,8 @@ const (
 	// AutoscalingClassAnnotation is the annotation for the explicit class of
 	// scaler that a particular resource has opted into.
 	AutoscalingClassAnnotation = Autoscaling + "/class"
+	// ClusterNameAnnotation is the annotation for the cluster Name.
+	ClusterNameAnnotation = "cluster-name"
 
 	// AutoscalingMinScaleAnnotation is the annotation to specify the minimum number of pods to scale to.
 	AutoscalingMinScaleAnnotation = Autoscaling + "/minScale"
@@ -160,4 +165,24 @@ func validateAnnotationNotExists(annotations map[string]string, annotation strin
 		errs = errs.Also(apis.ErrDisallowedFields(fmt.Sprintf("metadata.annotations[%s]", annotation)))
 	}
 	return errs
+}
+
+// ValidateClusterNameAnnotation validates the cluster-name annotation.
+func ValidateClusterNameAnnotation(ctx context.Context, annotations map[string]string, errs *apis.FieldError) *apis.FieldError {
+	if metadata.OnGCE() {
+		if _, err := utils.ClusterName(annotations[ClusterNameAnnotation]); err != nil {
+			// If metadata access is disabled for some reason, validation will fail and ask user to provide clusterName by adding this annotation.
+			return errs.Also(apis.ErrGeneric(fmt.Sprintf(`not able to get cluster name with error: %w, please provide it by adding annotation "cluster-name=$CLUSTER_NAME "`, err), fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)))
+		}
+	}
+	return errs
+}
+
+func SetClusterNameAnnotation(ctx context.Context, obj *metav1.ObjectMeta) {
+	// Validation has already checked if utils.ClusterName() returns error or not.
+	// Thus, error here is ignored.
+	if metadata.OnGCE() {
+		clusterName, _ := utils.ClusterName(obj.GetAnnotations()[ClusterNameAnnotation])
+		setDefaultAnnotationIfNotPresent(obj, ClusterNameAnnotation, clusterName)
+	}
 }

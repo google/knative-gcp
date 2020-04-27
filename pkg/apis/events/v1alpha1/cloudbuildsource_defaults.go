@@ -29,6 +29,7 @@ const (
 
 func (bs *CloudBuildSource) SetDefaults(ctx context.Context) {
 	bs.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetClusterNameAnnotation(ctx, &bs.ObjectMeta)
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &bs.ObjectMeta)
 }
 

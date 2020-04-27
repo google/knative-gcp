@@ -24,5 +24,6 @@ import (
 
 func (s *CloudAuditLogsSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetPubSubDefaults()
+	duckv1alpha1.SetClusterNameAnnotation(ctx, &s.ObjectMeta)
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }

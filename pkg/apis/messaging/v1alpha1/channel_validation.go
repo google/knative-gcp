@@ -26,7 +26,8 @@ import (
 )
 
 func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
-	return c.Spec.Validate(ctx).ViaField("spec")
+	errs := c.Spec.Validate(ctx).ViaField("spec")
+	return duckv1alpha1.ValidateClusterNameAnnotation(ctx, c.Annotations, errs)
 }
 
 func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {

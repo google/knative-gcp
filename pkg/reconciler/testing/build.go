@@ -150,3 +150,9 @@ func WithCloudBuildSourceObjectMetaGeneration(generation int64) CloudBuildSource
 		bs.ObjectMeta.Generation = generation
 	}
 }
+
+func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSourceOption {
+	return func(s *v1alpha1.CloudBuildSource) {
+		s.ObjectMeta.Annotations = Annotations
+	}
+}

@@ -30,6 +30,7 @@ import (
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
+	errs = duckv1alpha1.ValidateClusterNameAnnotation(ctx, current.Annotations, errs)
 	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 

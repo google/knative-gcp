@@ -845,7 +845,10 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceBucket(bucket),
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceServiceAccountName("test123"),
+					WithCloudStorageSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
+					WithCloudStorageSourceServiceAccountName("test123-cluster"),
 					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 					WithDeletionTimestamp(),
 				),
@@ -853,7 +856,7 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + storageName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
@@ -863,8 +866,11 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-					WithCloudStorageSourceServiceAccountName("test123"),
-					WithCloudStorageSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithCloudStorageSourceServiceAccountName("test123-cluster"),
+					WithCloudStorageSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: "cluster",
+					}),
+					WithCloudStorageSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
 					WithDeletionTimestamp(),
 				),
 			}},

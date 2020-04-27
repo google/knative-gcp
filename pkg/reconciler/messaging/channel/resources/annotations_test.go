@@ -27,7 +27,16 @@ func TestGetPullSubscriptionAnnotations(t *testing.T) {
 		"metrics-resource-name":  "my-channel",
 		"metrics-resource-group": "channels.messaging.cloud.google.com",
 	}
-	got := GetPullSubscriptionAnnotations("my-channel")
+	got := GetPullSubscriptionAnnotations("my-channel", "")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestGetTopicAnnotations(t *testing.T) {
+	want := map[string]string{}
+	got := GetTopicAnnotations("")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

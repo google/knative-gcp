@@ -211,3 +211,9 @@ func WithDeletionTimestamp() CloudStorageSourceOption {
 		s.DeletionTimestamp = &ts
 	}
 }
+
+func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.ObjectMeta.Annotations = Annotations
+	}
+}

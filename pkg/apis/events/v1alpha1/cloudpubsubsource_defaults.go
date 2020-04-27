@@ -31,6 +31,7 @@ const (
 
 func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
 	ps.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetClusterNameAnnotation(ctx, &ps.ObjectMeta)
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &ps.ObjectMeta)
 }
 

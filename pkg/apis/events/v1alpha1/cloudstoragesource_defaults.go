@@ -26,6 +26,7 @@ var allEventTypes = []string{CloudStorageSourceFinalize, CloudStorageSourceDelet
 
 func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetClusterNameAnnotation(ctx, &s.ObjectMeta)
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
