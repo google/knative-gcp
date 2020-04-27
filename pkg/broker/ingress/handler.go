@@ -41,6 +41,12 @@ const (
 
 	// defaultPort is the defaultPort number for the ingress HTTP receiver.
 	defaultPort = 8080
+
+	// EventArrivalTime is used to access the metadata stored on a
+	// CloudEvent to measure the time difference between when an event is
+	// received on a broker and before it is dispatched to the trigger function.
+	// The format is an RFC3339 time in string format. For example: 2019-08-26T23:38:17.834384404Z.
+	EventArrivalTime = "knativearrivaltime"
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -63,13 +69,15 @@ type handler struct {
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
+	reporter StatsReporter
 	logger   *zap.Logger
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+func NewHandler(ctx context.Context, reporter StatsReporter, options ...HandlerOption) (*handler, error) {
 	h := &handler{
-		logger: logging.FromContext(ctx),
+		reporter: reporter,
+		logger:   logging.FromContext(ctx),
 	}
 
 	for _, option := range options {
@@ -120,20 +128,22 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
-
 	event, msg, statusCode := h.toEvent(request)
+	defer func() { h.reportMetrics(ns, broker, event, time.Now(), statusCode) }()
 	if event == nil {
 		response.WriteHeader(statusCode)
 		response.Write([]byte(msg))
 		return
 	}
 
+	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
+
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
 		h.logger.Error(msg)
-		statusCode := nethttp.StatusInternalServerError
+		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
 		}
@@ -166,4 +176,18 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 		return nil, msg, nethttp.StatusBadRequest
 	}
 	return event, "", nethttp.StatusOK
+}
+
+func (h *handler) reportMetrics(ns, broker string, event *cev2.Event, start time.Time, statusCode int) {
+	eventType := "Unknown"
+	if event != nil {
+		eventType = event.Type()
+	}
+	reporterArgs := &ReportArgs{
+		Namespace: ns,
+		Broker:    broker,
+		EventType: eventType,
+	}
+	h.reporter.ReportEventDispatchTime(reporterArgs, statusCode, time.Since(start))
+	h.reporter.ReportEventCount(reporterArgs, statusCode)
 }

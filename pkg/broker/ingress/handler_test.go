@@ -41,6 +41,8 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricstest"
 )
 
 const (
@@ -49,6 +51,8 @@ const (
 	subscriptionID = "subscription1"
 
 	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
+
+	eventType = "test-event-type"
 )
 
 var brokerConfig = &config.TargetsConfig{
@@ -84,20 +88,31 @@ type testCase struct {
 	// If method is empty, POST will be used as default.
 	method string
 	// body and header can be specified if the client is making raw HTTP request instead of via cloudevents.
-	body     map[string]string
-	header   nethttp.Header
-	wantCode int
+	body           map[string]string
+	header         nethttp.Header
+	wantCode       int
+	wantMetricTags map[string]string
+	wantEventCount int64
 	// additional assertions on the output event.
-	eventAssertion func(*testing.T, *cloudevents.Event)
+	eventAssertions []eventAssertion
 }
 
 func TestHandler(t *testing.T) {
 	tests := []testCase{
 		{
-			name:     "happy case",
-			path:     "/ns1/broker1",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			name:           "happy case",
+			path:           "/ns1/broker1",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusOK,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCodeClass: "2xx",
+			},
+			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime)},
 		},
 		{
 			name:     "trace context",
@@ -107,7 +122,15 @@ func TestHandler(t *testing.T) {
 			header: nethttp.Header{
 				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
 			},
-			eventAssertion: assertTraceID(traceID),
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCodeClass: "2xx",
+			},
+			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
 		{
 			name:     "valid event but unsupported http  method",
@@ -123,34 +146,74 @@ func TestHandler(t *testing.T) {
 			wantCode: nethttp.StatusNotFound,
 		},
 		{
-			name:     "request is not an event",
-			path:     "/ns1/broker1",
-			wantCode: nethttp.StatusBadRequest,
-			header:   nethttp.Header{},
+			name:           "request is not an event",
+			path:           "/ns1/broker1",
+			wantCode:       nethttp.StatusBadRequest,
+			header:         nethttp.Header{},
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         "Unknown",
+				metricskey.LabelResponseCode:      "400",
+				metricskey.LabelResponseCodeClass: "4xx",
+			},
 		},
 		{
-			name:     "wrong path - broker doesn't exist in given namespace",
-			path:     "/ns1/broker-not-exist",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusNotFound,
+			name:           "wrong path - broker doesn't exist in given namespace",
+			path:           "/ns1/broker-not-exist",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusNotFound,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker-not-exist",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "404",
+				metricskey.LabelResponseCodeClass: "4xx",
+			},
 		},
 		{
-			name:     "wrong path - namespace doesn't exist",
-			path:     "/ns-not-exist/broker1",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusNotFound,
+			name:           "wrong path - namespace doesn't exist",
+			path:           "/ns-not-exist/broker1",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusNotFound,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns-not-exist",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "404",
+				metricskey.LabelResponseCodeClass: "4xx",
+			},
 		},
 		{
-			name:     "broker queue is nil",
-			path:     "/ns2/broker2",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusInternalServerError,
+			name:           "broker queue is nil",
+			path:           "/ns2/broker2",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusInternalServerError,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns2",
+				metricskey.LabelBrokerName:        "broker2",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "500",
+				metricskey.LabelResponseCodeClass: "5xx",
+			},
 		},
 		{
-			name:     "broker queue topic is empty",
-			path:     "/ns3/broker3",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusInternalServerError,
+			name:           "broker queue topic is empty",
+			path:           "/ns3/broker3",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusInternalServerError,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns3",
+				metricskey.LabelBrokerName:        "broker3",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "500",
+				metricskey.LabelResponseCodeClass: "5xx",
+			},
 		},
 	}
 
@@ -158,6 +221,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			resetMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -177,6 +241,7 @@ func TestHandler(t *testing.T) {
 			if res.StatusCode != tc.wantCode {
 				t.Errorf("StatusCode mismatch. got: %v, want: %v", res.StatusCode, tc.wantCode)
 			}
+			verifyMetrics(t, tc)
 
 			// If event is accepted, check that it's stored in the decouple sink.
 			if res.StatusCode == nethttp.StatusOK {
@@ -195,8 +260,8 @@ func TestHandler(t *testing.T) {
 				if savedToSink.Time().IsZero() {
 					t.Errorf("Saved event should be decorated with timestamp, got zero.")
 				}
-				if tc.eventAssertion != nil {
-					tc.eventAssertion(t, savedToSink)
+				for _, assertion := range tc.eventAssertions {
+					assertion(t, savedToSink)
 				}
 			}
 
@@ -261,6 +326,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	h := &handler{
 		logger:       logging.FromContext(ctx).Desugar(),
 		httpReceiver: receiver,
+		reporter:     NewStatsReporter(),
 		decouple:     decouple,
 	}
 
@@ -282,7 +348,7 @@ func createTestEvent(id string) *cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetID(id)
 	event.SetSource("test-source")
-	event.SetType("test-type")
+	event.SetType(eventType)
 	return &event
 }
 
@@ -305,6 +371,17 @@ func createRequest(tc testCase, url string) *nethttp.Request {
 	return request
 }
 
+// verifyMetrics verifies broker metrics are properly recorded (or not recorded)
+func verifyMetrics(t *testing.T, tc testCase) {
+	if tc.wantEventCount == 0 {
+		metricstest.CheckStatsNotReported(t, "event_count", "event_dispatch_latencies")
+	} else {
+		metricstest.CheckStatsReported(t, "event_count", "event_dispatch_latencies")
+		metricstest.CheckCountData(t, "event_count", tc.wantMetricTags, tc.wantEventCount)
+		metricstest.CheckDistributionCount(t, "event_dispatch_latencies", tc.wantMetricTags, tc.wantEventCount)
+	}
+}
+
 func assertTraceID(id string) eventAssertion {
 	return func(t *testing.T, e *cloudevents.Event) {
 		dt, ok := extensions.GetDistributedTracingExtension(*e)
@@ -319,6 +396,16 @@ func assertTraceID(id string) eventAssertion {
 		}
 		if sc.TraceID.String() != id {
 			t.Errorf("unexpected trace ID: got %q, want %q", sc.TraceID, id)
+		}
+	}
+}
+
+func assertExtensionsExist(extensions ...string) eventAssertion {
+	return func(t *testing.T, e *cloudevents.Event) {
+		for _, extension := range extensions {
+			if _, ok := e.Extensions()[extension]; !ok {
+				t.Errorf("Extension %v doesn't exist.", extension)
+			}
 		}
 	}
 }
