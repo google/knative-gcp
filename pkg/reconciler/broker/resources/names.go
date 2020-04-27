@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // For reference, the minimum number of characters available for a name
@@ -47,32 +48,32 @@ const (
 // Broker. If the topic name would be longer than allowed by PubSub, the
 // Broker name is truncated to fit.
 func GenerateDecouplingTopicName(b *brokerv1beta1.Broker) string {
-	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, string(b.UID))
+	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateDecouplingSubscriptionName generates a deterministic subscription
 // name for a Broker. If the subscription name would be longer than allowed by
 // PubSub, the Broker name is truncated to fit.
 func GenerateDecouplingSubscriptionName(b *brokerv1beta1.Broker) string {
-	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, string(b.UID))
+	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateRetryTopicName generates a deterministic topic name for a Trigger.
 // If the topic name would be longer than allowed by PubSub, the Trigger name is
 // truncated to fit.
 func GenerateRetryTopicName(t *brokerv1beta1.Trigger) string {
-	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, string(t.UID))
+	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
 
 // GenerateRetrySubscriptionName generates a deterministic subscription name
 // for a Trigger. If the subscription name would be longer than allowed by
 // PubSub, the Trigger name is truncated to fit.
 func GenerateRetrySubscriptionName(t *brokerv1beta1.Trigger) string {
-	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, string(t.UID))
+	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
 
-func truncatedPubsubResourceName(prefix, ns, n, uid string) string {
-	s := fmt.Sprintf("%s_%s_%s_%s", prefix, ns, n, uid)
+func truncatedPubsubResourceName(prefix, ns, n string, uid types.UID) string {
+	s := fmt.Sprintf("%s_%s_%s_%s", prefix, ns, n, string(uid))
 	if len(s) <= pubsubMax {
 		return s
 	}
@@ -81,7 +82,7 @@ func truncatedPubsubResourceName(prefix, ns, n, uid string) string {
 	nameOver := len(s) - pubsubMax
 	nameMax := len(n) - nameOver
 
-	return fmt.Sprintf("%s_%s_%s_%s", prefix, ns, hashedTruncate(n, nameMax), uid)
+	return fmt.Sprintf("%s_%s_%s_%s", prefix, ns, hashedTruncate(n, nameMax), string(uid))
 }
 
 // hashedTruncate truncates a string longer than l by replacing the end of the
