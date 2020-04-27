@@ -17,15 +17,14 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/pubsub"
-
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: pubsub.GroupName, Version: "v1beta1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: intevents.GroupName, Version: "v1beta1"}
 
 // Kind takes an unqualified kind and returns back a Group qualified GroupKind
 func Kind(kind string) schema.GroupKind {

@@ -31,7 +31,7 @@ import (
 
 func TestPullSubscriptionGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "pubsub.cloud.google.com",
+		Group:   "internal.events.cloud.google.com",
 		Version: "v1beta1",
 		Kind:    "PullSubscription",
 	}

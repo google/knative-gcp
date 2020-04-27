@@ -29,7 +29,7 @@ import (
 
 func TestTopicGetGroupVersionKind(t *testing.T) {
 	want := schema.GroupVersionKind{
-		Group:   "pubsub.cloud.google.com",
+		Group:   "internal.events.cloud.google.com",
 		Version: "v1alpha1",
 		Kind:    "Topic",
 	}

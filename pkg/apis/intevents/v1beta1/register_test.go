@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,59 +13,82 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package v1beta1
 
 import (
 	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
-func TestResource(t *testing.T) {
-	want := schema.GroupResource{
-		Group:    "pubsub.cloud.google.com",
-		Resource: "foo",
-	}
-
-	got := Resource("foo")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected resource (-want, +got) = %v", diff)
-	}
-}
-
 func TestKind(t *testing.T) {
-	want := schema.GroupKind{
-		Group: "pubsub.cloud.google.com",
-		Kind:  "foo",
-	}
-
-	got := Kind("foo")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected resource (-want, +got) = %v", diff)
+	for n, tc := range map[string]struct {
+		kind string
+	}{
+		"PullSubscription": {
+			kind: "PullSubscription",
+		},
+		"Topic": {
+			kind: "Topic",
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			want := schema.GroupKind{
+				Group: "internal.events.cloud.google.com",
+				Kind:  tc.kind,
+			}
+			got := Kind(tc.kind)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("(Kind (-want +got): %v", diff)
+			}
+		})
 	}
 }
 
-// TestKnownTypes makes sure that expected types get added.
-func TestKnownTypes(t *testing.T) {
-	scheme := runtime.NewScheme()
-	addKnownTypes(scheme)
-	types := scheme.KnownTypes(SchemeGroupVersion)
+func TestResource(t *testing.T) {
+	for n, tc := range map[string]struct {
+		resource string
+	}{
+		"PullSubscription": {
+			resource: "PullSubscription",
+		},
+		"Topic": {
+			resource: "Topic",
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			want := schema.GroupResource{
+				Group:    "internal.events.cloud.google.com",
+				Resource: tc.resource,
+			}
+			got := Resource(tc.resource)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("(Kind (-want +got): %v", diff)
+			}
+		})
+	}
+}
 
-	for _, name := range []string{
+func TestAddKnownTypes(t *testing.T) {
+	scheme := runtime.NewScheme()
+	if err := addKnownTypes(scheme); err != nil {
+		t.Errorf("error in addKnownTypes: %w", err)
+	}
+
+	want := []string{
 		"PullSubscription",
 		"PullSubscriptionList",
 		"Topic",
 		"TopicList",
-	} {
-		if _, ok := types[name]; !ok {
-			t.Errorf("Did not find %q as registered type", name)
+	}
+	got := scheme.KnownTypes(schema.GroupVersion{Group: "internal.events.cloud.google.com", Version: "v1beta1"})
+
+	for _, tn := range want {
+		if _, exist := got[tn]; !exist {
+			t.Errorf("type %s doesn't exist in scheme", tn)
 		}
 	}
-
 }
