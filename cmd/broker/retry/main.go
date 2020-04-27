@@ -24,7 +24,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -54,7 +53,6 @@ var (
 )
 
 type envConfig struct {
-	PodName            string        `envconfig:"POD_NAME" required:"true"`
 	ProjectID          string        `envconfig:"PROJECT_ID"`
 	TargetsConfigPath  string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int           `envconfig:"HANDLER_CONCURRENCY"`
@@ -66,13 +64,6 @@ func main() {
 	flag.Parse()
 
 	ctx := signals.NewContext()
-
-	// Report stats on Go memory usage every 30 seconds.
-	msp := metrics.NewMemStatsAll()
-	msp.Start(ctx, 30*time.Second)
-	if err := view.Register(msp.DefaultViews()...); err != nil {
-		log.Fatalf("Error exporting go memstats view: %v", err)
-	}
 
 	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
