@@ -46,11 +46,11 @@ func TestClientCreator(value interface{}) trigger.CreateFn {
 
 // TestClientData is the data used to configure the test Trigger client.
 type TestClientData struct {
-	CreateClientErr error
-	CloseErr        error
-	TriggerError    error
-	TriggerData     TestTriggerData
-	HandleData      testiam.TestHandleData
+	CreateClientErr  error
+	CloseErr         error
+	CreateTriggerErr error
+	TriggerData      TestTriggerData
+	HandleData       testiam.TestHandleData
 }
 
 // testClient is a test Trigger client.
@@ -73,5 +73,5 @@ func (c *testClient) Trigger(id string) trigger.Trigger {
 
 // CreateTrigger implements triggers.Client.CreateTrigger
 func (c *testClient) CreateTrigger(ctx context.Context, id string, sourceType string, filters map[string]string) (trigger.Trigger, error) {
-	return &testTrigger{data: c.data.TriggerData, handleData: c.data.HandleData, id: id}, c.data.TriggerError
+	return &testTrigger{data: c.data.TriggerData, handleData: c.data.HandleData, id: id}, c.data.CreateTriggerErr
 }

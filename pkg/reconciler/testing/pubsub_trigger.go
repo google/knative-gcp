@@ -34,7 +34,7 @@ func NewPubSubTrigger(name, namespace string, so ...PubSubTriggerOption) *v1alph
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-trigger-uid",
+			//UID:       "test-trigger-uid",
 		},
 	}
 	for _, opt := range so {
@@ -114,5 +114,17 @@ func WithPubSubTriggerDeletionTimestamp() PubSubTriggerOption {
 	return func(s *v1alpha1.Trigger) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
+	}
+}
+
+func WithPubSubTriggerOwnerReferences(ownerReferences []metav1.OwnerReference) PubSubTriggerOption {
+	return func(c *v1alpha1.Trigger) {
+		c.ObjectMeta.OwnerReferences = ownerReferences
+	}
+}
+
+func WithPubSubTriggerLabels(labels map[string]string) PubSubTriggerOption {
+	return func(c *v1alpha1.Trigger) {
+		c.ObjectMeta.Labels = labels
 	}
 }

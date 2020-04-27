@@ -162,6 +162,30 @@ func WithCloudSchedulerSourcePullSubscriptionReady() CloudSchedulerSourceOption 
 	}
 }
 
+// WithCloudSchedulerSourceTriggerFailed marks the condition that the
+// topic is False.
+func WithCloudSchedulerSourceTriggerFailed(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.MarkTriggerFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+// WithCloudSchedulerSourceTriggerUnknown marks the condition that the
+// topic is Unknown.
+func WithCloudSchedulerSourceTriggerUnknown(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.MarkTriggerUnknown(s.ConditionSet(), reason, message)
+	}
+}
+
+// WithCloudSchedulerSourceTriggerReady marks the condition that the
+// topic is ready.
+func WithCloudSchedulerSourceTriggerReady() CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.MarkTriggerReady(s.ConditionSet())
+	}
+}
+
 // WithCloudSchedulerSourceJobNotReady marks the condition that the
 // CloudSchedulerSource Job is not ready.
 func WithCloudSchedulerSourceJobNotReady(reason, message string) CloudSchedulerSourceOption {

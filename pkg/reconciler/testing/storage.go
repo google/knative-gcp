@@ -156,6 +156,30 @@ func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
 	}
 }
 
+// WithCloudStorageSourceTriggerFailed marks the condition that the
+// status of topic is False
+func WithCloudStorageSourceTriggerFailed(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.MarkTriggerFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+// WithCloudStorageSourceTriggerUnknown marks the condition that the
+// status of topic is Unknown.
+func WithCloudStorageSourceTriggerUnknown(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.MarkTriggerUnknown(s.ConditionSet(), reason, message)
+	}
+}
+
+// WithCloudStorageSourceTriggerReady marks the condition that the
+// topic is ready.
+func WithCloudStorageSourceTriggerReady() CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.MarkTriggerReady(s.ConditionSet())
+	}
+}
+
 // WithCloudStorageSourceNotificationNotReady marks the condition that the
 // GCS Notification is not ready.
 func WithCloudStorageSourceNotificationNotReady(reason, message string) CloudStorageSourceOption {

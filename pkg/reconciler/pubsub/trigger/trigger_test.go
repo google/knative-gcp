@@ -18,6 +18,7 @@ package trigger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -103,6 +104,176 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
+		Name: "create client fails",
+		Objects: []runtime.Object{
+			NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
+			),
+		},
+		Key: testNS + "/" + triggerName,
+		OtherTestData: map[string]interface{}{
+			"trigger": gtrigger.TestClientData{
+				CreateClientErr: errors.New("create-client-induced-error"),
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", triggerName),
+			Eventf(corev1.EventTypeWarning, reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: create-client-induced-error"),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, triggerName, true),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerProjectID(testProject),
+				WithPubSubTriggerStatusObservedGeneration(generation),
+				WithInitPubSubTriggerConditions,
+				WithPubSubTriggerTriggerNotReady(reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: create-client-induced-error"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				})),
+		}},
+	}, {
+		Name: "verify trigger exists fails",
+		Objects: []runtime.Object{
+			NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
+			),
+		},
+		Key: testNS + "/" + triggerName,
+		OtherTestData: map[string]interface{}{
+			"trigger": gtrigger.TestClientData{
+				TriggerData: gtrigger.TestTriggerData{
+					ExistsErr: errors.New("trigger-exists-induced-error"),
+				},
+			},
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", triggerName),
+			Eventf(corev1.EventTypeWarning, reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: trigger-exists-induced-error"),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, triggerName, true),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerProjectID(testProject),
+				WithPubSubTriggerStatusObservedGeneration(generation),
+				WithInitPubSubTriggerConditions,
+				WithPubSubTriggerTriggerNotReady(reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: trigger-exists-induced-error"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				})),
+		}},
+	}, {
+		Name: "create trigger fails",
+		Objects: []runtime.Object{
+			NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				}),
+			),
+		},
+		Key: testNS + "/" + triggerName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", triggerName),
+			Eventf(corev1.EventTypeWarning, reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: create-trigger-induced-error"),
+		},
+		OtherTestData: map[string]interface{}{
+			"trigger": gtrigger.TestClientData{
+				CreateTriggerErr: errors.New("create-trigger-induced-error"),
+			},
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, triggerName, true),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPubSubTrigger(triggerName, testNS,
+				WithPubSubTriggerObjectMetaGeneration(generation),
+				WithPubSubTriggerServiceAccountName("test123"),
+				WithPubSubTriggerProjectID(testProject),
+				WithPubSubTriggerStatusObservedGeneration(generation),
+				WithInitPubSubTriggerConditions,
+				WithPubSubTriggerTriggerNotReady(reconciledTriggerFailed, "Failed to reconcile Trigger EventFlow trigger: create-trigger-induced-error"),
+				WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
+					Project: testProject,
+					Trigger: testTriggerID,
+					/*IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: gServiceAccount,
+					},*/
+					SourceType: sourceType,
+					Filters: map[string]string{
+						"ServiceName":  "foo",
+						"MethodName":   "bar",
+						"ResourceName": "baz",
+					},
+				})),
+		}},
+	}, {
 		Name: "successfully created trigger",
 		Objects: []runtime.Object{
 			NewPubSubTrigger(triggerName, testNS,
@@ -133,7 +304,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", triggerName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Trigger reconciled: "%s/%s"`, testNS, triggerName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccess, `Trigger reconciled: "%s/%s"`, testNS, triggerName),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, triggerName, true),
@@ -191,25 +362,8 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 		},
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPubSubTrigger(triggerName, testNS,
-				WithPubSubTriggerObjectMetaGeneration(generation), WithPubSubTriggerSpec(v1alpha1.TriggerSpec{
-					Project: testProject,
-					Trigger: testTriggerID,
-					/*IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: gServiceAccount,
-					},*/
-					SourceType: sourceType,
-					Filters: map[string]string{
-						"ServiceName":  "foo",
-						"MethodName":   "bar",
-						"ResourceName": "baz",
-					},
-				}),
-				WithPubSubTriggerObjectMetaGeneration(generation),
-				WithPubSubTriggerDeletionTimestamp(),
-			),
-		}},
+		WantEvents:        nil,
+		WantStatusUpdates: nil,
 	}}
 
 	defer logtesting.ClearAll()

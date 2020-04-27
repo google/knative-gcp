@@ -42,11 +42,10 @@ const (
 	resourceGroup = "triggers.pubsub.cloud.google.com"
 
 	deleteTriggerFailed              = "TriggerDeleteFailed"
-	deletePubSubFailed               = "PubSubDeleteFailed"
 	deleteWorkloadIdentityFailed     = "WorkloadIdentityDeleteFailed"
 	reconciledEventFlowTriggerFailed = "TriggerReconcileFailed"
-	reconciledPubSubFailed           = "PubSubReconcileFailed"
-	reconciledSuccessReason          = "TriggerReconciled"
+	reconciledTriggerFailed          = "TriggerReconcileFailed"
+	reconciledSuccess                = "TriggerReconciled"
 	workloadIdentityFailed           = "WorkloadIdentityReconcileFailed"
 )
 
@@ -96,7 +95,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, trigger *v1alpha1.Trigge
 	}
 	trigger.Status.MarkTriggerReady(eventflow_trigger)
 
-	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Trigger reconciled: "%s/%s"`, trigger.Namespace, trigger.Name)
+	return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccess, `Trigger reconciled: "%s/%s"`, trigger.Namespace, trigger.Name)
 }
 
 func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1alpha1.Trigger) (string, error) {
@@ -127,6 +126,10 @@ func (r *Reconciler) reconcileTrigger(ctx context.Context, trigger *v1alpha1.Tri
 
 	if !exists {
 		t, err = client.CreateTrigger(ctx, trigger.Spec.Trigger, trigger.Spec.SourceType, trigger.Spec.Filters)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to create trigger", zap.Error(err))
+			return "", err
+		}
 	}
 	return t.ID(), nil
 }
