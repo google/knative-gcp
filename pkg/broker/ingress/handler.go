@@ -69,16 +69,12 @@ type handler struct {
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
-	reporter StatsReporter
 	logger   *zap.Logger
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, reporter StatsReporter, options ...HandlerOption) (*handler, error) {
-	h := &handler{
-		reporter: reporter,
-		logger:   logging.FromContext(ctx),
-	}
+func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+	h := &handler{logger: logging.FromContext(ctx)}
 
 	for _, option := range options {
 		if err := option(h); err != nil {
@@ -183,11 +179,10 @@ func (h *handler) reportMetrics(ns, broker string, event *cev2.Event, start time
 	if event != nil {
 		eventType = event.Type()
 	}
-	reporterArgs := &ReportArgs{
-		Namespace: ns,
-		Broker:    broker,
-		EventType: eventType,
+	ctxWithTag, err := generateTag(ns, broker, eventType, statusCode)
+	if err != nil {
+		h.logger.Warn("Failed to record metrics", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
 	}
-	h.reporter.ReportEventDispatchTime(reporterArgs, statusCode, time.Since(start))
-	h.reporter.ReportEventCount(reporterArgs, statusCode)
+	reportEventCount(ctxWithTag)
+	reportEventDispatchTime(ctxWithTag, time.Since(start))
 }

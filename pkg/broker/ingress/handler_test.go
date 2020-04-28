@@ -326,7 +326,6 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	h := &handler{
 		logger:       logging.FromContext(ctx).Desugar(),
 		httpReceiver: receiver,
-		reporter:     NewStatsReporter(),
 		decouple:     decouple,
 	}
 

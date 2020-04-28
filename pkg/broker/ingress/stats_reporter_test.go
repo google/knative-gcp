@@ -26,52 +26,35 @@ import (
 )
 
 func TestStatsReporter(t *testing.T) {
-	setup()
-
-	args := &ReportArgs{
-		Namespace: "testns",
-		Broker:    "testbroker",
-		EventType: "testeventtype",
-	}
-
-	r := NewStatsReporter()
+	resetMetrics()
+	var (
+		ns        = "testns"
+		broker    = "testbroker"
+		eventType = "testtype"
+	)
 
 	wantTags := map[string]string{
-		metricskey.LabelNamespaceName:     "testns",
-		metricskey.LabelBrokerName:        "testbroker",
-		metricskey.LabelEventType:         "testeventtype",
+		metricskey.LabelNamespaceName:     ns,
+		metricskey.LabelBrokerName:        broker,
+		metricskey.LabelEventType:         eventType,
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
 	}
 
+	tag, err := generateTag(ns, broker, eventType, http.StatusAccepted)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// test ReportEventCount
-	expectSuccess(t, func() error {
-		return r.ReportEventCount(args, http.StatusAccepted)
-	})
-	expectSuccess(t, func() error {
-		return r.ReportEventCount(args, http.StatusAccepted)
-	})
+	reportEventCount(tag)
+	reportEventCount(tag)
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 
 	// test ReportDispatchTime
-	expectSuccess(t, func() error {
-		return r.ReportEventDispatchTime(args, http.StatusAccepted, 1100*time.Millisecond)
-	})
-	expectSuccess(t, func() error {
-		return r.ReportEventDispatchTime(args, http.StatusAccepted, 9100*time.Millisecond)
-	})
+	reportEventDispatchTime(tag, 1100*time.Millisecond)
+	reportEventDispatchTime(tag, 9100*time.Millisecond)
 	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
-}
-
-func expectSuccess(t *testing.T, f func() error) {
-	t.Helper()
-	if err := f(); err != nil {
-		t.Errorf("Reporter expected success but got error: %v", err)
-	}
-}
-
-func setup() {
-	resetMetrics()
 }
 
 func resetMetrics() {

@@ -63,33 +63,19 @@ var (
 	eventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
 	responseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
 	responseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)
+
+	emptyContext = context.Background()
 )
 
-type ReportArgs struct {
-	Namespace string
-	Broker    string
-	EventType string
+type reportArgs struct {
+	namespace    string
+	broker       string
+	eventType    string
+	responseCode int
 }
 
 func init() {
 	register()
-}
-
-// StatsReporter defines the interface for sending ingress metrics.
-type StatsReporter interface {
-	ReportEventCount(args *ReportArgs, responseCode int) error
-	ReportEventDispatchTime(args *ReportArgs, responseCode int, d time.Duration) error
-}
-
-var _ StatsReporter = (*reporter)(nil)
-var emptyContext = context.Background()
-
-// Reporter holds cached metric objects to report ingress metrics.
-type reporter struct{}
-
-// NewStatsReporter creates a reporter that collects and reports ingress metrics.
-func NewStatsReporter() StatsReporter {
-	return &reporter{}
 }
 
 func register() {
@@ -121,33 +107,24 @@ func register() {
 	}
 }
 
-// ReportEventCount captures the event count.
-func (r *reporter) ReportEventCount(args *ReportArgs, responseCode int) error {
-	ctx, err := r.generateTag(args, responseCode)
-	if err != nil {
-		return err
-	}
-	metrics.Record(ctx, eventCountM.M(1))
-	return nil
+func reportEventCount(ctxWithTag context.Context) {
+	metrics.Record(ctxWithTag, eventCountM.M(1))
 }
 
-// ReportEventDispatchTime captures dispatch times.
-func (r *reporter) ReportEventDispatchTime(args *ReportArgs, responseCode int, d time.Duration) error {
-	ctx, err := r.generateTag(args, responseCode)
-	if err != nil {
-		return err
-	}
+func reportEventDispatchTime(ctxWithTag context.Context, d time.Duration) {
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctx, dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
-	return nil
+	metrics.Record(ctxWithTag, dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+
 }
 
-func (r *reporter) generateTag(args *ReportArgs, responseCode int) (context.Context, error) {
+// generateTag returns a context with metrics tag injected.
+func generateTag(ns, broker, eventType string, responseCode int) (context.Context, error) {
 	return tag.New(
 		emptyContext,
-		tag.Insert(namespaceKey, args.Namespace),
-		tag.Insert(brokerKey, args.Broker),
-		tag.Insert(eventTypeKey, args.EventType),
+		tag.Insert(namespaceKey, ns),
+		tag.Insert(brokerKey, broker),
+		tag.Insert(eventTypeKey, eventType),
 		tag.Insert(responseCodeKey, strconv.Itoa(responseCode)),
-		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(responseCode)))
+		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+	)
 }
