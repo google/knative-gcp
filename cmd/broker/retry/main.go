@@ -54,11 +54,13 @@ var (
 )
 
 type envConfig struct {
-	PodName            string        `envconfig:"POD_NAME" required:"true"`
-	ProjectID          string        `envconfig:"PROJECT_ID"`
-	TargetsConfigPath  string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
-	HandlerConcurrency int           `envconfig:"HANDLER_CONCURRENCY"`
-	TimeoutPerEvent    time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
+	PodName            string `envconfig:"POD_NAME" required:"true"`
+	ProjectID          string `envconfig:"PROJECT_ID"`
+	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
+	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
+
+	// Max to 10m.
+	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
 
 func main() {

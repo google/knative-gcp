@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
@@ -371,6 +372,35 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 func (h *Helper) VerifyNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event) {
 	t.Helper()
 	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK)
+}
+
+// VerifyNextTargetEventWithInfiniteDelay verifies the next event the subscriber receives
+// but not respond a success infinitely.
+func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event, delay time.Duration) {
+	t.Helper()
+
+	consumer, ok := h.consumers[targetKey]
+	if !ok {
+		t.Errorf("target with key %q doesn't exist", targetKey)
+	}
+
+	// On timeout or receiving an event, the defer function verifies the event in the end.
+	var gotEvent *event.Event
+	defer func() {
+		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+	}()
+
+	msg, err := consumer.client.Receive(ctx)
+	if err != nil {
+		// In case Receive is stopped.
+		return
+	}
+	gotEvent, err = binding.ToEvent(ctx, msg)
+	if err != nil {
+		t.Errorf("target (key=%q) received invalid cloudevent: %v", targetKey, err)
+	}
+	time.Sleep(delay)
+	msg.Finish(nil)
 }
 
 // VerifyAndRespondNextTargetEvent verifies the next event the subscriber receives and replies with the given parameters.

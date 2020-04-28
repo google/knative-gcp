@@ -115,7 +115,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	signal := make(chan struct{})
 	syncPool, err := NewSyncPool(ctx, helper.Targets,
 		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject))
+		pool.WithProjectID(testProject),
+		pool.WithDeliveryTimeout(500*time.Millisecond),
+	)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -195,6 +197,27 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		go helper.VerifyNextTargetRetryEvent(ctx, t, t3.Key(), &e)
 
 		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)
+		<-vctx.Done()
+	})
+
+	t.Run("event initial delivery failed with timeout was sent to retry queue", func(t *testing.T) {
+		// Set timeout context so that verification can be done before
+		// exiting test func.
+		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+
+		// Verify the event to t1 was received.
+		go helper.VerifyNextTargetEventAndDelayResp(ctx, t, t1.Key(), &e, time.Second)
+		// Because of the delay, t1 delivery should timeout.
+		// Thus the event should have been sent to the retry queue.
+		go helper.VerifyNextTargetRetryEvent(ctx, t, t1.Key(), &e)
+		// The same event should be received by t2.
+		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e)
+		// But t2 should receive any retry event because the initial delay
+		// was successful.
+		go helper.VerifyNextTargetRetryEvent(vctx, t, t2.Key(), nil)
+
+		helper.SendEventToDecoupleQueue(ctx, t, b1.Key(), &e)
 		<-vctx.Done()
 	})
 

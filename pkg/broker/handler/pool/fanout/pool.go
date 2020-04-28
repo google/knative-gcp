@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
@@ -52,6 +53,12 @@ type SyncPool struct {
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient ceclient.Client
+	// For fanout delivery, we need a slightly shorter timeout
+	// than the handler timeout per event.
+	// It allows the delivery processor to timeout the delivery
+	// before the handler nacks the pubsub message, which will
+	// cause event re-delivery for all targets.
+	deliverTimeout time.Duration
 }
 
 type handlerCache struct {
@@ -107,6 +114,8 @@ func NewSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...po
 		options:            options,
 		deliverClient:      deliverClient,
 		deliverRetryClient: retryClient,
+		// Set the deliver timeout slightly less than the total timeout for each event.
+		deliverTimeout: options.TimeoutPerEvent - (5 * time.Second),
 	}
 	return p, nil
 }
@@ -173,6 +182,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 						Targets:            p.targets,
 						RetryOnFailure:     true,
 						DeliverRetryClient: p.deliverRetryClient,
+						DeliverTimeout:     p.deliverTimeout,
 					},
 				),
 			},

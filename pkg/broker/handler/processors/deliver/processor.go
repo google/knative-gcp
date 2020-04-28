@@ -19,6 +19,7 @@ package deliver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
@@ -49,6 +50,10 @@ type Processor struct {
 	// DeliverRetryClient is the cloudevents client to send events
 	// to the retry topic.
 	DeliverRetryClient ceclient.Client
+
+	// Timeout is the delivery timeout.
+	// If set, the delivery will be time-boxed.
+	DeliverTimeout time.Duration
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -76,7 +81,14 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	resp, res := p.DeliverClient.Request(cecontext.WithTarget(ctx, target.Address), *event)
+	dctx := ctx
+	if p.DeliverTimeout > 0 {
+		var cancel context.CancelFunc
+		dctx, cancel = context.WithTimeout(dctx, p.DeliverTimeout)
+		defer cancel()
+	}
+
+	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), *event)
 	if !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("target delivery failed: %v", res.Error())
@@ -89,7 +101,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	if res := p.DeliverClient.Send(cecontext.WithTarget(ctx, broker.Address), *resp); !protocol.IsACK(res) {
+	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("delivery of replied event failed: %v", res.Error())
 		}
