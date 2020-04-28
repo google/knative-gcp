@@ -53,14 +53,10 @@ func TestStatsReporter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// test ReportEventCount
-	reportEventCount(tag)
-	reportEventCount(tag)
-	metricstest.CheckCountData(t, "event_count", wantTags, 2)
-
 	// test ReportDispatchTime
 	reportEventDispatchTime(tag, 1100*time.Millisecond)
 	reportEventDispatchTime(tag, 9100*time.Millisecond)
+	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
 }
 
