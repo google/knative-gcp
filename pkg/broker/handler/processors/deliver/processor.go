@@ -51,8 +51,8 @@ type Processor struct {
 	// to the retry topic.
 	DeliverRetryClient ceclient.Client
 
-	// Timeout is the delivery timeout.
-	// If set, the delivery will be time-boxed.
+	// DeliverTimeout is the timeout applied to cancel delivery.
+	// If zero, not additional timeout is applied.
 	DeliverTimeout time.Duration
 }
 

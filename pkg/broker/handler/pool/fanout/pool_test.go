@@ -193,14 +193,14 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		go helper.VerifyAndRespondNextTargetEvent(ctx, t, t3.Key(), &e, nil, http.StatusInternalServerError)
+		go helper.VerifyAndRespondNextTargetEvent(ctx, t, t3.Key(), &e, nil, http.StatusInternalServerError, 0)
 		go helper.VerifyNextTargetRetryEvent(ctx, t, t3.Key(), &e)
 
 		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)
 		<-vctx.Done()
 	})
 
-	t.Run("event initial delivery failed with timeout was sent to retry queue", func(t *testing.T) {
+	t.Run("event with delivery timeout was sent to retry queue", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
 		// exiting test func.
 		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -233,7 +233,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		go helper.VerifyAndRespondNextTargetEvent(ctx, t, t3.Key(), &e, &reply, http.StatusOK)
+		go helper.VerifyAndRespondNextTargetEvent(ctx, t, t3.Key(), &e, &reply, http.StatusOK, 0)
 		go helper.VerifyNextBrokerIngressEvent(ctx, t, b2.Key(), &reply)
 
 		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)

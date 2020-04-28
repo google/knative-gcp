@@ -109,6 +109,10 @@ func NewSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...po
 		return nil, err
 	}
 
+	if options.TimeoutPerEvent < 5*time.Second {
+		return nil, fmt.Errorf("timeout per event cannot be lower than %v", 5*time.Second)
+	}
+
 	p := &SyncPool{
 		targets:            targets,
 		options:            options,
