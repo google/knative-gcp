@@ -37,16 +37,8 @@ import (
 // - Removed StatsReporter interface and directly use helper methods instead.
 
 var (
-	// eventCountM is a counter which records the number of events received
-	// by the Broker.
-	eventCountM = stats.Int64(
-		"event_count",
-		"Number of events received by a Broker",
-		stats.UnitDimensionless,
-	)
-
 	// dispatchTimeInMsecM records the time spent dispatching an event to
-	// a Channel, in milliseconds.
+	// a decouple queue, in milliseconds.
 	dispatchTimeInMsecM = stats.Float64(
 		"event_dispatch_latencies",
 		"The time spent dispatching an event to the decouple topic",
@@ -92,12 +84,14 @@ func register() {
 	// Create view to see our measurements.
 	err := view.Register(
 		&view.View{
-			Description: eventCountM.Description(),
-			Measure:     eventCountM,
+			Name:        "event_count",
+			Description: "Number of events received by a Broker",
+			Measure:     dispatchTimeInMsecM,
 			Aggregation: view.Count(),
 			TagKeys:     tagKeys,
 		},
 		&view.View{
+			Name:        dispatchTimeInMsecM.Name(),
 			Description: dispatchTimeInMsecM.Description(),
 			Measure:     dispatchTimeInMsecM,
 			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000
@@ -107,10 +101,6 @@ func register() {
 	if err != nil {
 		log.Printf("failed to register opencensus views, %s", err)
 	}
-}
-
-func reportEventCount(ctxWithTag context.Context) {
-	metrics.Record(ctxWithTag, eventCountM.M(1))
 }
 
 func reportEventDispatchTime(ctxWithTag context.Context, d time.Duration) {

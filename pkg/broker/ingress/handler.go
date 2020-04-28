@@ -186,6 +186,5 @@ func (h *handler) reportMetrics(ns, broker string, event *cev2.Event, start time
 		h.logger.Warn("Failed to record metrics, this should not happen.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
 		return
 	}
-	reportEventCount(ctxWithTag)
 	reportEventDispatchTime(ctxWithTag, time.Since(start))
 }
