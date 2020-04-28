@@ -1910,6 +1910,7 @@
     "knative.dev/eventing/pkg/apis/eventing",
     "knative.dev/eventing/pkg/apis/eventing/v1alpha1",
     "knative.dev/eventing/pkg/apis/eventing/v1beta1",
+    "knative.dev/eventing/pkg/apis/messaging",
     "knative.dev/eventing/pkg/duck",
     "knative.dev/eventing/pkg/kncloudevents",
     "knative.dev/eventing/pkg/logconfig",
