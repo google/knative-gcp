@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -55,6 +56,7 @@ func TestSyncPool(t *testing.T) {
 			t.Errorf("SyncOnce was called more than once")
 		}
 		ch <- struct{}{}
+		time.Sleep(500 * time.Millisecond)
 		if syncPool.syncCount.Load() != 2 {
 			t.Errorf("SyncOnce was not called twice")
 		}
