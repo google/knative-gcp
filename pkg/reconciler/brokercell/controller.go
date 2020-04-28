@@ -23,6 +23,12 @@ import (
 
 	brokercell "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	configmap "knative.dev/pkg/configmap"
 	controller "knative.dev/pkg/controller"
 	logging "knative.dev/pkg/logging"
@@ -41,11 +47,23 @@ func NewController(
 ) *controller.Impl {
 	logger := logging.FromContext(ctx)
 
+	var env envConfig
+	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
+		logger.Fatal("Failed to process env var", zap.Error(err))
+	}
+
 	brokercellInformer := brokercell.Get(ctx)
+	deploymentInformer := deploymentinformer.Get(ctx)
+	serviceInformer := serviceinformer.Get(ctx)
+	endpointsInformer := endpointsinformer.Get(ctx)
 
-	// TODO: setup additional informers here.
-
-	r := &Reconciler{}
+	r := &Reconciler{
+		kubeClientSet:    kubeclient.Get(ctx),
+		serviceLister:    serviceInformer.Lister(),
+		endpointsLister:  endpointsInformer.Lister(),
+		deploymentLister: deploymentInformer.Lister(),
+		env:              env,
+	}
 	impl := v1alpha1brokercell.NewImpl(ctx, r)
 
 	logger.Info("Setting up event handlers.")

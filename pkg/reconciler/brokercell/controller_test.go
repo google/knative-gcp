@@ -17,6 +17,7 @@ limitations under the License.
 package brokercell
 
 import (
+	"os"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,17 +30,20 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell/fake"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake"
 )
 
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
+
+	_ = os.Setenv("BROKER_CELL_INGRESS_IMAGE", "INGRESS_IMAGE")
+	_ = os.Setenv("BROKER_CELL_FANOUT_IMAGE", "FANOUT_IMAGE")
+	_ = os.Setenv("BROKER_CELL_RETRY_IMAGE", "RETRY_IMAGE")
 
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
