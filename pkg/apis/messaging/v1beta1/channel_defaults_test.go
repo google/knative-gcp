@@ -21,12 +21,19 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestChannelDefaults(t *testing.T) {
-	want := &Channel{Spec: ChannelSpec{
-		Secret: defaultSecretSelector(),
-	}}
+	want := &Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Annotations: map[string]string{
+				"messaging.knative.dev/subscribable": "v1alpha1",
+			},
+		},
+		Spec: ChannelSpec{
+			Secret: defaultSecretSelector(),
+		}}
 
 	got := &Channel{Spec: ChannelSpec{}}
 	got.SetDefaults(context.Background())

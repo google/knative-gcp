@@ -19,8 +19,10 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/eventing/pkg/apis/messaging"
 )
 
 const (
@@ -40,6 +42,13 @@ func defaultSecretSelector() *corev1.SecretKeySelector {
 }
 
 func (c *Channel) SetDefaults(ctx context.Context) {
+	// We need to set this to the _stored_ version of the Channel. If we set to anything other than
+	// the stored version, then when reading the stored version, conversion won't be called so
+	// nothing will set it to the stored version.
+	if c.Annotations == nil {
+		c.Annotations = make(map[string]string, 1)
+	}
+	c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
 	c.Spec.SetDefaults(ctx)
 }
 

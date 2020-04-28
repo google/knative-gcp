@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/convert"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+	"knative.dev/eventing/pkg/apis/messaging"
 	"knative.dev/pkg/apis"
 )
 
@@ -31,6 +32,10 @@ func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error
 	switch sink := to.(type) {
 	case *v1beta1.Channel:
 		sink.ObjectMeta = source.ObjectMeta
+		if sink.Annotations == nil {
+			sink.Annotations = make(map[string]string, 1)
+		}
+		sink.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1beta1"
 		sink.Spec.IdentitySpec = convert.ToV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
@@ -52,6 +57,10 @@ func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) err
 	switch source := from.(type) {
 	case *v1beta1.Channel:
 		sink.ObjectMeta = source.ObjectMeta
+		if sink.Annotations == nil {
+			sink.Annotations = make(map[string]string, 1)
+		}
+		sink.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1alpha1"
 		sink.Spec.IdentitySpec = convert.FromV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
