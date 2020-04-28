@@ -21,6 +21,8 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	pkgduckv1alpha1 "knative.dev/pkg/apis/duck/v1alpha1"
 	pkgduckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
@@ -109,4 +111,42 @@ func FromV1beta1AddressStatus(ctx context.Context, from pkgduckv1beta1.AddressSt
 		}
 	}
 	return to, nil
+}
+
+func ToV1beta1SubscribableSpec(from *eventingduckv1alpha1.Subscribable) *eventingduckv1beta1.SubscribableSpec {
+	if from == nil {
+		return nil
+	}
+	to := eventingduckv1beta1.SubscribableSpec{}
+	to.Subscribers = make([]eventingduckv1beta1.SubscriberSpec, len(from.Subscribers))
+	for i, sub := range from.Subscribers {
+		to.Subscribers[i] = eventingduckv1beta1.SubscriberSpec{
+			UID:           sub.UID,
+			Generation:    sub.Generation,
+			SubscriberURI: sub.SubscriberURI,
+			ReplyURI:      sub.ReplyURI,
+			// DeadLetterSinkURI doesn't exist in v1beta1, so don't translate it.
+			Delivery: sub.Delivery,
+		}
+	}
+	return &to
+}
+
+func FromV1beta1SubscribableSpec(from *eventingduckv1beta1.SubscribableSpec) *eventingduckv1alpha1.Subscribable {
+	if from == nil {
+		return nil
+	}
+	to := eventingduckv1alpha1.Subscribable{}
+	to.Subscribers = make([]eventingduckv1alpha1.SubscriberSpec, len(from.Subscribers))
+	for i, sub := range from.Subscribers {
+		to.Subscribers[i] = eventingduckv1alpha1.SubscriberSpec{
+			UID:           sub.UID,
+			Generation:    sub.Generation,
+			SubscriberURI: sub.SubscriberURI,
+			ReplyURI:      sub.ReplyURI,
+			// DeadLetterSinkURI doesn't exist in v1beta1, so don't translate it.
+			Delivery: sub.Delivery,
+		}
+	}
+	return &to
 }

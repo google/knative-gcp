@@ -54,6 +54,29 @@ type SyncPool struct {
 	deliverClient ceclient.Client
 }
 
+type handlerCache struct {
+	handler.Handler
+	b *config.Broker
+}
+
+// If somehow the existing handler's setting has deviated from the current broker config,
+// we need to renew the handler.
+func (hc *handlerCache) shouldRenew(b *config.Broker) bool {
+	if !hc.IsAlive() {
+		return true
+	}
+	// If this really happens, it means a data corruption.
+	// The handler creation will fail (which is expected).
+	if b == nil || b.DecoupleQueue == nil {
+		return true
+	}
+	if b.DecoupleQueue.Topic != hc.b.DecoupleQueue.Topic ||
+		b.DecoupleQueue.Subscription != hc.b.DecoupleQueue.Subscription {
+		return true
+	}
+	return false
+}
+
 // NewSyncPool creates a new fanout handler pool.
 func NewSyncPool(ctx context.Context, targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
@@ -104,16 +127,21 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 
 	p.pool.Range(func(key, value interface{}) bool {
 		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
-			value.(*handler.Handler).Stop()
+			value.(*handlerCache).Stop()
 			p.pool.Delete(key)
 		}
 		return true
 	})
 
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
-		// There is already a handler for the broker, skip.
-		if _, ok := p.pool.Load(b.Key()); ok {
-			return true
+		if value, ok := p.pool.Load(b.Key()); ok {
+			// Skip if we don't need to renew the handler.
+			if !value.(*handlerCache).shouldRenew(b) {
+				return true
+			}
+			// Stop and clean up the old handler before we start a new one.
+			value.(*handlerCache).Stop()
+			p.pool.Delete(b.Key())
 		}
 
 		opts := []pubsub.Option{
@@ -133,32 +161,34 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			return true
 		}
 
-		h := &handler.Handler{
-			Timeout:      p.options.TimeoutPerEvent,
-			PubsubEvents: ps,
-			Processor: processors.ChainProcessors(
-				&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
-				&filter.Processor{Targets: p.targets},
-				&deliver.Processor{
-					DeliverClient:      p.deliverClient,
-					Targets:            p.targets,
-					RetryOnFailure:     true,
-					DeliverRetryClient: p.deliverRetryClient,
-				},
-			),
+		hc := &handlerCache{
+			Handler: handler.Handler{
+				Timeout:      p.options.TimeoutPerEvent,
+				PubsubEvents: ps,
+				Processor: processors.ChainProcessors(
+					&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
+					&filter.Processor{Targets: p.targets},
+					&deliver.Processor{
+						DeliverClient:      p.deliverClient,
+						Targets:            p.targets,
+						RetryOnFailure:     true,
+						DeliverRetryClient: p.deliverRetryClient,
+					},
+				),
+			},
+			b: b,
 		}
 		// Start the handler with broker key in context.
-		h.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
+		hc.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
+			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for broker has stopped with error", zap.String("broker", b.Key()), zap.Error(err))
 			} else {
 				logging.FromContext(ctx).Info("handler for broker has stopped", zap.String("broker", b.Key()))
 			}
-			// Make sure the handler is deleted from the pool.
-			p.pool.Delete(h)
 		})
 
-		p.pool.Store(b.Key(), h)
+		p.pool.Store(b.Key(), hc)
 		return true
 	})
 

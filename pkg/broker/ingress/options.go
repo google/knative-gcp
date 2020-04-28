@@ -18,8 +18,8 @@ package ingress
 
 import (
 	"context"
-	"fmt"
 
+	"cloud.google.com/go/pubsub"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -40,28 +40,41 @@ func WithPort(port int) HandlerOption {
 func WithProjectID(id string) HandlerOption {
 	return func(h *handler) error {
 		ctx := context.Background()
-		client, err := newPubSubClient(ctx, id)
+		p, err := pubsub.NewClient(ctx, id)
 		if err != nil {
-			return fmt.Errorf("failed to create pubsub client: %v", err)
+			return err
 		}
-		h.decouple, err = NewMultiTopicDecoupleSink(context.Background(), WithPubsubClient(client))
+		h.decouple, err = NewMultiTopicDecoupleSink(context.Background(), WithPubsubClient(p))
 		return err
 	}
 }
 
 // MultiTopicDecoupleSinkOption is the option to configure multiTopicDecoupleSink.
-type MultiTopicDecoupleSinkOption func(sink *multiTopicDecoupleSink)
+type MultiTopicDecoupleSinkOption func(sink *multiTopicDecoupleSinkOptions)
+
+type multiTopicDecoupleSinkOptions struct {
+	client       cloudevents.Client
+	pubsub       *pubsub.Client
+	brokerConfig config.ReadonlyTargets
+}
+
+// WithClient specifies an eventing client to use.
+func WithClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
+	return func(opts *multiTopicDecoupleSinkOptions) {
+		opts.client = client
+	}
+}
 
 // WithPubsubClient specifies the pubsub client to use.
-func WithPubsubClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
-	return func(sink *multiTopicDecoupleSink) {
-		sink.client = client
+func WithPubsubClient(ps *pubsub.Client) MultiTopicDecoupleSinkOption {
+	return func(opts *multiTopicDecoupleSinkOptions) {
+		opts.pubsub = ps
 	}
 }
 
 // WithBrokerConfig specifies the broker config. It can be created by reading a configmap mount.
 func WithBrokerConfig(brokerConfig config.ReadonlyTargets) MultiTopicDecoupleSinkOption {
-	return func(sink *multiTopicDecoupleSink) {
-		sink.brokerConfig = brokerConfig
+	return func(opts *multiTopicDecoupleSinkOptions) {
+		opts.brokerConfig = brokerConfig
 	}
 }
