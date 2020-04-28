@@ -40,6 +40,16 @@ spec:
           value: /var/secrets/google/key.json        
         - name: PORT
           value: "8080"
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: cloud.google.com/events
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker

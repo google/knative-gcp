@@ -23,5 +23,7 @@ import (
 
 func TestTrigger_Validate(t *testing.T) {
 	trig := Trigger{}
-	trig.Validate(context.TODO())
+	if err := trig.Validate(context.TODO()); err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
 }

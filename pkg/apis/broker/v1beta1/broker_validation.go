@@ -22,6 +22,7 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+// Validate verifies that the Broker is valid.
 func (b *Broker) Validate(ctx context.Context) *apis.FieldError {
 	// The Google Cloud Broker doesn't have any custom validations. The
 	// eventing webhook will run the usual validations.

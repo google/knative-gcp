@@ -17,8 +17,6 @@ limitations under the License.
 package memory
 
 import (
-	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -186,46 +184,4 @@ func assertBroker(t *testing.T, want *config.Broker, namespace, name string, tar
 	if !proto.Equal(want, got) {
 		t.Errorf("GetBroker got broker=%+v, want=%+v", got, want)
 	}
-}
-
-func ExampleMutateBroker() {
-	val := &config.TargetsConfig{}
-	targets := NewTargets(val)
-
-	// Create a new broker with targets.
-	targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
-		m.SetID("b-uid").SetAddress("broker.example.com").SetState(config.State_READY)
-		m.SetDecoupleQueue(&config.Queue{
-			Topic:        "topic",
-			Subscription: "sub",
-		})
-		m.UpsertTargets(&config.Target{
-			Id:      "uid-1",
-			Address: "consumer1.example.com",
-			Broker:  "broker",
-			FilterAttributes: map[string]string{
-				"app": "foo",
-			},
-			Name:      "t1",
-			Namespace: "ns",
-			RetryQueue: &config.Queue{
-				Topic:        "topic1",
-				Subscription: "sub1",
-			},
-		})
-	})
-
-	fmt.Println(strings.Trim(targets.String(), " "))
-
-	// Delete the broker.
-	targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
-		m.Delete()
-	})
-	if _, ok := targets.GetBroker("ns", "broker"); !ok {
-		fmt.Println("Broker deleted.")
-	}
-
-	// Output:
-	// brokers:{key:"ns/broker" value:{id:"b-uid" name:"broker" namespace:"ns" address:"broker.example.com" decouple_queue:{topic:"topic" subscription:"sub"} targets:{key:"t1" value:{id:"uid-1" name:"t1" namespace:"ns" broker:"broker" address:"consumer1.example.com" filter_attributes:{key:"app" value:"foo"} retry_queue:{topic:"topic1" subscription:"sub1"}}} state:READY}}
-	// Broker deleted.
 }

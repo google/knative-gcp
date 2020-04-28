@@ -51,8 +51,9 @@ type Channel struct {
 
 // Check that Channel can be validated, can be defaulted, and has immutable fields.
 var (
-	_ apis.Validatable             = (*Channel)(nil)
+	_ apis.Convertible             = (*Channel)(nil)
 	_ apis.Defaultable             = (*Channel)(nil)
+	_ apis.Validatable             = (*Channel)(nil)
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
 	_ kngcpduck.Identifiable       = (*Channel)(nil)

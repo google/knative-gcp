@@ -43,12 +43,14 @@ import (
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	policylisters "github.com/google/knative-gcp/pkg/client/listers/policy/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
@@ -233,4 +235,8 @@ func (l *Listers) GetBrokerLister() brokerlisters.BrokerLister {
 
 func (l *Listers) GetTriggerLister() brokerlisters.TriggerLister {
 	return brokerlisters.NewTriggerLister(l.indexerFor(&brokerv1beta1.Trigger{}))
+}
+
+func (l *Listers) GetBrokerCellLister() intlisters.BrokerCellLister {
+	return intlisters.NewBrokerCellLister(l.indexerFor(&intv1alpha1.BrokerCell{}))
 }

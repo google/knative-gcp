@@ -23,7 +23,9 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
@@ -130,10 +132,12 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 
 func NewConversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	var (
-		eventsv1alpha1_ = eventsv1alpha1.SchemeGroupVersion.Version
-		eventsv1beta1_  = eventsv1beta1.SchemeGroupVersion.Version
-		pubsubv1alpha1_ = pubsubv1alpha1.SchemeGroupVersion.Version
-		pubsubv1beta1_  = pubsubv1beta1.SchemeGroupVersion.Version
+		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
+		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
+		messagingv1alpha1_ = messagingv1alpha1.SchemeGroupVersion.Version
+		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
+		pubsubv1alpha1_    = pubsubv1alpha1.SchemeGroupVersion.Version
+		pubsubv1beta1_     = pubsubv1beta1.SchemeGroupVersion.Version
 	)
 
 	return conversion.NewConversionController(ctx,
@@ -173,6 +177,15 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				Zygotes: map[string]conversion.ConvertibleObject{
 					eventsv1alpha1_: &eventsv1alpha1.CloudStorageSource{},
 					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
+				},
+			},
+			// messaging
+			messagingv1alpha1.Kind("Channel"): {
+				DefinitionName: messaging.ChannelsResource.String(),
+				HubVersion:     messagingv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					messagingv1alpha1_: &messagingv1alpha1.Channel{},
+					messagingv1beta1_:  &messagingv1beta1.Channel{},
 				},
 			},
 			// pubsub
