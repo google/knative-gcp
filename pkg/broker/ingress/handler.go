@@ -61,8 +61,6 @@ type HttpMessageReceiver interface {
 }
 
 // handler receives events and persists them to storage (pubsub).
-// TODO(liu-cong) add metrics
-// TODO(liu-cong) add tracing
 // TODO(liu-cong) support event TTL
 type handler struct {
 	// httpReceiver is an HTTP server to receive events.
@@ -70,11 +68,15 @@ type handler struct {
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
+	ctx      context.Context
 }
 
 // NewHandler creates a new ingress handler.
 func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
-	h := &handler{logger: logging.FromContext(ctx)}
+	h := &handler{
+		logger: logging.FromContext(ctx),
+		ctx:    ctx,
+	}
 
 	for _, option := range options {
 		if err := option(h); err != nil {
@@ -179,7 +181,7 @@ func (h *handler) reportMetrics(ns, broker string, event *cev2.Event, start time
 	if event != nil {
 		eventType = event.Type()
 	}
-	ctxWithTag, err := generateTag(ns, broker, eventType, statusCode)
+	ctxWithTag, err := generateTag(h.ctx, ns, broker, eventType, statusCode)
 	if err != nil {
 		h.logger.Warn("Failed to record metrics", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
 	}

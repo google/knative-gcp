@@ -17,6 +17,7 @@ limitations under the License.
 package ingress
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -31,7 +32,11 @@ func TestStatsReporter(t *testing.T) {
 		ns        = "testns"
 		broker    = "testbroker"
 		eventType = "testtype"
+		pod       = "testpod"
+		container = "testcontainer"
 	)
+
+	initTag := InitMetricTagOrDie(context.Background(), pod, container)
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     ns,
@@ -39,9 +44,11 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.LabelEventType:         eventType,
 		metricskey.LabelResponseCode:      "202",
 		metricskey.LabelResponseCodeClass: "2xx",
+		metricskey.ContainerName:          container,
+		metricskey.PodName:                pod,
 	}
 
-	tag, err := generateTag(ns, broker, eventType, http.StatusAccepted)
+	tag, err := generateTag(initTag, ns, broker, eventType, http.StatusAccepted)
 	if err != nil {
 		t.Fatal(err)
 	}

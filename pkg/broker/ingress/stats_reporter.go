@@ -25,6 +25,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -63,8 +65,8 @@ var (
 	eventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
 	responseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
 	responseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)
-
-	emptyContext = context.Background()
+	podKey               = tag.MustNewKey(metricskey.PodName)
+	containerKey         = tag.MustNewKey(metricskey.ContainerName)
 )
 
 type reportArgs struct {
@@ -85,6 +87,8 @@ func register() {
 		eventTypeKey,
 		responseCodeKey,
 		responseCodeClassKey,
+		podKey,
+		containerKey,
 	}
 
 	// Create view to see our measurements.
@@ -118,13 +122,25 @@ func reportEventDispatchTime(ctxWithTag context.Context, d time.Duration) {
 }
 
 // generateTag returns a context with metrics tag injected.
-func generateTag(ns, broker, eventType string, responseCode int) (context.Context, error) {
+func generateTag(ctx context.Context, ns, broker, eventType string, responseCode int) (context.Context, error) {
 	return tag.New(
-		emptyContext,
+		ctx,
 		tag.Insert(namespaceKey, ns),
 		tag.Insert(brokerKey, broker),
 		tag.Insert(eventTypeKey, eventType),
 		tag.Insert(responseCodeKey, strconv.Itoa(responseCode)),
 		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
 	)
+}
+
+// InitMetricTagOrDie injects common metric tags into the context.
+func InitMetricTagOrDie(ctx context.Context, podName, containerName string) context.Context {
+	ctx, err := tag.New(ctx,
+		tag.Insert(podKey, podName),
+		tag.Insert(containerKey, containerName),
+	)
+	if err != nil {
+		logging.FromContext(ctx).Fatal("Failed to create metric tag", zap.Error(err))
+	}
+	return ctx
 }

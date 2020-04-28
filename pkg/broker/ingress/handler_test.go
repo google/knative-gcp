@@ -53,6 +53,8 @@ const (
 	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
 
 	eventType = "test-event-type"
+	pod       = "testpod"
+	container = "testcontainer"
 )
 
 var brokerConfig = &config.TargetsConfig{
@@ -111,6 +113,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "200",
 				metricskey.LabelResponseCodeClass: "2xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime)},
 		},
@@ -129,6 +133,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "200",
 				metricskey.LabelResponseCodeClass: "2xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
@@ -157,6 +163,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         "Unknown",
 				metricskey.LabelResponseCode:      "400",
 				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 		},
 		{
@@ -171,6 +179,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 		},
 		{
@@ -185,6 +195,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "404",
 				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 		},
 		{
@@ -199,6 +211,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 		},
 		{
@@ -213,6 +227,8 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelEventType:         eventType,
 				metricskey.LabelResponseCode:      "500",
 				metricskey.LabelResponseCodeClass: "5xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
 			},
 		},
 	}
@@ -225,6 +241,7 @@ func TestHandler(t *testing.T) {
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
+			ctx = InitMetricTagOrDie(ctx, pod, container)
 
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
@@ -324,6 +341,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	h := &handler{
+		ctx:          ctx,
 		logger:       logging.FromContext(ctx).Desugar(),
 		httpReceiver: receiver,
 		decouple:     decouple,
