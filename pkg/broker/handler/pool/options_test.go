@@ -76,8 +76,8 @@ func TestWithTimeout(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
-	if opt.TimeoutPerEvent != maxTime {
-		t.Errorf("options timeout per event got=%v, want=%v", opt.TimeoutPerEvent, want)
+	if opt.TimeoutPerEvent != maxTimeout {
+		t.Errorf("options timeout per event got=%v, want=%v", opt.TimeoutPerEvent, maxTimeout)
 	}
 }
 
