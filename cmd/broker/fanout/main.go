@@ -24,7 +24,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
@@ -32,7 +31,6 @@ import (
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/signals"
 	"knative.dev/pkg/version"
 
@@ -68,13 +66,6 @@ func main() {
 
 	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
 	ctx := signals.NewContext()
-
-	// Report stats on Go memory usage every 30 seconds.
-	msp := metrics.NewMemStatsAll()
-	msp.Start(ctx, 30*time.Second)
-	if err := view.Register(msp.DefaultViews()...); err != nil {
-		log.Fatalf("Error exporting go memstats view: %v", err)
-	}
 
 	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
