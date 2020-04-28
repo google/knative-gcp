@@ -213,7 +213,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		go helper.VerifyNextTargetRetryEvent(ctx, t, t1.Key(), &e)
 		// The same event should be received by t2.
 		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e)
-		// But t2 should receive any retry event because the initial delay
+		// But t2 shouldn't receive any retry event because the initial delay
 		// was successful.
 		go helper.VerifyNextTargetRetryEvent(vctx, t, t2.Key(), nil)
 
