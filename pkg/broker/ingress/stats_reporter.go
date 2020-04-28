@@ -34,9 +34,7 @@ import (
 // stats_exporter is adapted from knative.dev/eventing/pkg/broker/ingress/stats_reporter.go
 // with the following changes:
 // - Metric descriptions are updated to match GCP broker specifics.
-// - Pod name and container name tags are removed. These can cause high
-// cardinality with little value. Namespace and broker name tags are good enough
-// for identifying the metrics source.
+// - Removed StatsReporter interface and directly use helper methods instead.
 
 var (
 	// eventCountM is a counter which records the number of events received
