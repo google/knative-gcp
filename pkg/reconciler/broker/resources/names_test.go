@@ -27,7 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-const testUID = "11186600-4003-4ad6-90e7-22780053debf"
+const (
+	testUID          = "11186600-4003-4ad6-90e7-22780053debf"
+	truncatedNameMax = 146
+)
 
 var maxName = strings.Repeat("n", k8sNameMax)
 
@@ -53,12 +56,12 @@ func TestGenerateDecouplingTopicName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", 146), testUID),
+		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", 146+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -92,12 +95,12 @@ func TestGenerateDecouplingSubscriptionName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", 146), testUID),
+		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", 146+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -131,12 +134,12 @@ func TestGenerateRetryTopicName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", 146), testUID),
+		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", 146+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
@@ -170,12 +173,12 @@ func TestGenerateRetrySubscriptionName(t *testing.T) {
 		ns:   maxNamespace,
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", 146), testUID),
+		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
 	}, {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", 146+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
