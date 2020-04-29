@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,9 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-//TODO verify topic and sub name can't be longer than 255 chars
+const (
+	testUID          = "11186600-4003-4ad6-90e7-22780053debf"
+	truncatedNameMax = 146
+)
 
-const testUID = "11186600-4003-4ad6-90e7-22780053debf"
+var maxName = strings.Repeat("n", k8sNameMax)
+
+var maxNamespace = strings.Repeat("s", k8sNamespaceMax)
 
 func TestGenerateDecouplingTopicName(t *testing.T) {
 	testCases := []struct {
@@ -46,12 +52,25 @@ func TestGenerateDecouplingTopicName(t *testing.T) {
 		n:    "more-dashes",
 		uid:  testUID,
 		want: fmt.Sprintf("cre-bkr_with-dashes_more-dashes_%s", testUID),
+	}, {
+		ns:   maxNamespace,
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
+	}, {
+		ns:   "default",
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateDecouplingTopicName(broker(tc.ns, tc.n, tc.uid))
+		if len(got) > pubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
-			t.Errorf("unexpected (want, +got) = %v", diff)
+			t.Errorf("unexpected (-want, +got) = %v", diff)
 		}
 	}
 }
@@ -72,10 +91,23 @@ func TestGenerateDecouplingSubscriptionName(t *testing.T) {
 		n:    "more-dashes",
 		uid:  testUID,
 		want: fmt.Sprintf("cre-bkr_with-dashes_more-dashes_%s", testUID),
+	}, {
+		ns:   maxNamespace,
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-bkr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
+	}, {
+		ns:   "default",
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateDecouplingSubscriptionName(broker(tc.ns, tc.n, tc.uid))
+		if len(got) > pubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)
 		}
@@ -98,10 +130,23 @@ func TestGenerateRetryTopicName(t *testing.T) {
 		n:    "more-dashes",
 		uid:  testUID,
 		want: fmt.Sprintf("cre-tgr_with-dashes_more-dashes_%s", testUID),
+	}, {
+		ns:   maxNamespace,
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
+	}, {
+		ns:   "default",
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateRetryTopicName(trigger(tc.ns, tc.n, tc.uid))
+		if len(got) > pubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)
 		}
@@ -124,10 +169,23 @@ func TestGenerateRetrySubscriptionName(t *testing.T) {
 		n:    "more-dashes",
 		uid:  testUID,
 		want: fmt.Sprintf("cre-tgr_with-dashes_more-dashes_%s", testUID),
+	}, {
+		ns:   maxNamespace,
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-tgr_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
+	}, {
+		ns:   "default",
+		n:    maxName,
+		uid:  testUID,
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
-		got := GenerateRetryTopicName(trigger(tc.ns, tc.n, tc.uid))
+		got := GenerateRetrySubscriptionName(trigger(tc.ns, tc.n, tc.uid))
+		if len(got) > pubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)
 		}
