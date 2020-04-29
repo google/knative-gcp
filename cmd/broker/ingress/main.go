@@ -87,8 +87,8 @@ func main() {
 	}
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 
-	ctx = ingress.InitMetricTagOrDie(ctx, env.PodName, containerName)
-	ingress, err := ingress.NewHandler(ctx, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
+	statsReporter := ingress.NewStatsReporter(env.PodName, containerName)
+	ingress, err := ingress.NewHandler(ctx, statsReporter, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
 	}

@@ -241,7 +241,6 @@ func TestHandler(t *testing.T) {
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
-			ctx = InitMetricTagOrDie(ctx, pod, container)
 
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
@@ -341,10 +340,10 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	h := &handler{
-		ctx:          ctx,
 		logger:       logging.FromContext(ctx).Desugar(),
 		httpReceiver: receiver,
 		decouple:     decouple,
+		reporter:     NewStatsReporter(pod, container),
 	}
 
 	errCh := make(chan error, 1)

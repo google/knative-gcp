@@ -68,14 +68,14 @@ type handler struct {
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
-	ctx      context.Context
+	reporter *StatsReporter
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+func NewHandler(ctx context.Context, reporter *StatsReporter, options ...HandlerOption) (*handler, error) {
 	h := &handler{
-		logger: logging.FromContext(ctx),
-		ctx:    ctx,
+		logger:   logging.FromContext(ctx),
+		reporter: reporter,
 	}
 
 	for _, option := range options {
@@ -127,7 +127,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 	ns, broker := pieces[1], pieces[2]
 	event, msg, statusCode := h.toEvent(request)
-	defer func() { h.reportMetrics(ns, broker, event, time.Now(), statusCode) }()
+	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, time.Now()) }()
 	if event == nil {
 		response.WriteHeader(statusCode)
 		response.Write([]byte(msg))
@@ -176,15 +176,18 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 	return event, "", nethttp.StatusOK
 }
 
-func (h *handler) reportMetrics(ns, broker string, event *cev2.Event, start time.Time, statusCode int) {
+func (h *handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
 	eventType := "Unknown"
 	if event != nil {
 		eventType = event.Type()
 	}
-	ctxWithTag, err := generateTag(h.ctx, ns, broker, eventType, statusCode)
-	if err != nil {
-		h.logger.Warn("Failed to record metrics, this should not happen.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
-		return
+	args := reportArgs{
+		namespace:    ns,
+		broker:       broker,
+		eventType:    eventType,
+		responseCode: statusCode,
 	}
-	reportEventDispatchTime(ctxWithTag, time.Since(start))
+	if err := h.reporter.reportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
+		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
+	}
 }

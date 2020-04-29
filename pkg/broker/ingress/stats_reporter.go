@@ -18,6 +18,7 @@ package ingress
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -25,8 +26,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
-	"go.uber.org/zap"
-	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/metrics"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -103,32 +102,35 @@ func register() {
 	}
 }
 
-func reportEventDispatchTime(ctxWithTag context.Context, d time.Duration) {
-	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(ctxWithTag, dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
-
+// NewStatsReporter creates a new StatsReporter.
+func NewStatsReporter(podName, containerName string) *StatsReporter {
+	return &StatsReporter{
+		podName:       podName,
+		containerName: containerName,
+	}
 }
 
-// generateTag returns a context with metrics tag injected.
-func generateTag(ctx context.Context, ns, broker, eventType string, responseCode int) (context.Context, error) {
-	return tag.New(
+// StatsReporter reports ingress metrics.
+type StatsReporter struct {
+	podName       string
+	containerName string
+}
+
+func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args reportArgs, d time.Duration) error {
+	tag, err := tag.New(
 		ctx,
-		tag.Insert(namespaceKey, ns),
-		tag.Insert(brokerKey, broker),
-		tag.Insert(eventTypeKey, eventType),
-		tag.Insert(responseCodeKey, strconv.Itoa(responseCode)),
-		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-	)
-}
-
-// InitMetricTagOrDie injects common metric tags into the context.
-func InitMetricTagOrDie(ctx context.Context, podName, containerName string) context.Context {
-	ctx, err := tag.New(ctx,
-		tag.Insert(podKey, podName),
-		tag.Insert(containerKey, containerName),
+		tag.Insert(podKey, r.podName),
+		tag.Insert(containerKey, r.containerName),
+		tag.Insert(namespaceKey, args.namespace),
+		tag.Insert(brokerKey, args.broker),
+		tag.Insert(eventTypeKey, args.eventType),
+		tag.Insert(responseCodeKey, strconv.Itoa(args.responseCode)),
+		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(args.responseCode)),
 	)
 	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to create metric tag", zap.Error(err))
+		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
-	return ctx
+	// convert time.Duration in nanoseconds to milliseconds.
+	metrics.Record(tag, dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	return nil
 }
