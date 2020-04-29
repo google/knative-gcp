@@ -48,7 +48,7 @@ func TestSingleBinaryEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Binary, "v1alpha1", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Binary, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestSingleStructuredEventForChannel(t *testing.T) {
@@ -58,7 +58,7 @@ func TestSingleStructuredEventForChannel(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/486 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Structured, "v1alpha1", channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.SingleEventForChannelTestHelper(t, cloudevents.Structured, "v1alpha1", "", channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelClusterDefaulter(t *testing.T) {
