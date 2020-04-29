@@ -54,3 +54,6 @@ go mod tidy
 go mod vendor
 
 find vendor/ \( -name OWNERS -o -name OWNERS_ALIASES -o -name BUILD -o -name BUILD.bazel \) -delete
+
+update_licenses third_party/VENDOR-LICENSE \
+  $(grep -rl --include '*.go' --exclude-dir vendor "package main" . | xargs -n1 dirname | uniq)
