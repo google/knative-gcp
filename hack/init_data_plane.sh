@@ -20,32 +20,30 @@
 # The current project set in gcloud MUST be the same as where the cluster is running.
 # The script always uses the same service account called cre-pubsub.
 
-SERVICE_ACCOUNT=cre-pubsub
-KEY_TEMP=cre-pubsub.json
-PROJECT_ID=$(gcloud config get-value project)
-NAMESPACE=default
+source $(dirname $0)/init_data_plane_common.sh
+
+readonly PUBSUB_SERVICE_ACCOUNT="cre-pubsub"
+readonly PUBSUB_SECRET_NAME="google-cloud-key"
+readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="cre-pubsub.json"
+readonly PROJECT_ID=$(gcloud config get-value project)
+readonly NAMESPACE="default"
+
 if [[ -z "$1" ]]; then
-  echo "NAMESPACE not provided, using default"
-else
-  NAMESPACE="$1"
-  echo "NAMESPACE provided, using ${NAMESPACE}"
-  kubectl create namespace $NAMESPACE
+    echo "NAMESPACE not provided, using default"
+  else
+    NAMESPACE="$1"
+    echo "NAMESPACE provided, using ${NAMESPACE}"
+    kubectl create namespace $NAMESPACE
 fi
-
-# Create the service account for the data plane
-gcloud iam service-accounts create ${SERVICE_ACCOUNT}
-
-# Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.editor
+init_pubsub_service_account ${PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT}
 
 # Download a JSON key for the service account.
-gcloud iam service-accounts keys create ${KEY_TEMP} --iam-account=${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} \
+  --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
 
-# Create the secret with the download JSON key.
-kubectl --namespace $NAMESPACE create secret generic google-cloud-key --from-file=key.json=${KEY_TEMP}
-
-# Label the namespace to inject a Broker.
-kubectl label namespace $NAMESPACE knative-eventing-injection=enabled
+# Create/Patch the secret with the download JSON key in the data plane namespace
+kubectl --namespace ${NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} \
+  --from-file=key.json=${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} --dry-run -o yaml | kubectl apply --filename -
 
 # Remove the tmp file.
-rm ${KEY_TEMP}
+rm ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}

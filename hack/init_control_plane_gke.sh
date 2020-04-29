@@ -16,50 +16,26 @@
 
 # Usage: ./init_control_plane_gke.sh
 # The current project set in gcloud MUST be the same as where the cluster is running.
+source $(dirname $0)/init_control_plane_common.sh
+source $(dirname $0)/init_control_plane_gke_lib.sh
 
-NAMESPACE=cloud-run-events
-GSA_NAME=cloud-run-events
-PROJECT_ID=$(gcloud config get-value project)
-CLUSTER_NAME="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
-KSA_NAME=controller
+readonly PROJECT_ID=$(gcloud config get-value project)
+readonly CONTROL_PLANE_SERVICE_ACCOUNT=cloud-run-events-test
+readonly K8S_CONTROLLER_SERVICE_ACCOUNT=controller
 
-# Enable APIs.
-gcloud services enable pubsub.googleapis.com
-gcloud services enable storage-component.googleapis.com
-gcloud services enable storage-api.googleapis.com
-gcloud services enable cloudscheduler.googleapis.com
-gcloud services enable logging.googleapis.com
-gcloud services enable cloudbuild.googleapis.com
-gcloud services enable stackdriver.googleapis.com
-gcloud services enable iamcredentials.googleapis.com
+init_control_plane_service_account ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT}
+enable_workload_identity ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT}
 
-# Enable workload identity.
-gcloud container clusters update ${CLUSTER_NAME} \
-  --workload-pool=${PROJECT_ID}.svc.id.goog
-
-# Modify all node pools to enable GKE_METADATA.
-pools=$(gcloud container node-pools list --cluster=${CLUSTER_NAME} --format="value(name)")
-while read -r pool_name
-do
-  gcloud container node-pools update "${pool_name}" \
-    --cluster=${CLUSTER_NAME} \
-    --workload-metadata=GKE_METADATA
-done <<<"${pools}"
-
-# Create the service account for the control plane.
-gcloud iam service-accounts create ${GSA_NAME}
-
-# Grant permissions to the service account for the control plane to manage native GCP resources.
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/storage.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/cloudscheduler.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.configWriter
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.privateLogViewer
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/iam.serviceAccountAdmin
 
 # Allow the Kubernetes service account to use Google service account.
-MEMBER="serviceAccount:"${PROJECT_ID}".svc.id.goog["${NAMESPACE}"/"${KSA_NAME}"]"
-gcloud iam service-accounts add-iam-policy-binding --role roles/iam.workloadIdentityUser --member $MEMBER ${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+MEMBER="serviceAccount:"${PROJECT_ID}".svc.id.goog["${CONTROL_PLANE_NAMESPACE}"/"${K8S_CONTROLLER_SERVICE_ACCOUNT}"]"
+gcloud iam service-accounts add-iam-policy-binding \
+  --role roles/iam.workloadIdentityUser \
+  --member $MEMBER ${CONTROL_PLANE_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
 
 # Add annotation to Kubernetes service account.
-kubectl annotate serviceaccount --namespace ${NAMESPACE} ${KSA_NAME} iam.gke.io/gcp-service-account=${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+kubectl annotate --overwrite serviceaccount ${K8S_CONTROLLER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${CONTROL_PLANE_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com \
+  --namespace ${CONTROL_PLANE_NAMESPACE}
+
+# Delete the controller pod in the control plane namespace to refresh
+kubectl delete pod -n ${CONTROL_PLANE_NAMESPACE} --selector role=controller
