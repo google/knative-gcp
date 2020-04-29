@@ -155,14 +155,11 @@ func TestMultiTopicDecoupleSink(t *testing.T) {
 				if testCase.clientErrFn != nil {
 					testCase.clientErrFn(fakeClient)
 				}
-				sink, err := NewMultiTopicDecoupleSink(ctx, WithBrokerConfig(brokerConfig), WithClient(fakeClient))
-				if err != nil {
-					t.Fatalf("Failed to create decouple sink: %v", err)
-				}
+				sink := NewMultiTopicDecoupleSink(ctx, brokerConfig, fakeClient)
 
 				// Send events
 				event := createTestEvent(uuid.New().String())
-				err = sink.Send(context.Background(), testCase.ns, testCase.broker, *event)
+				err := sink.Send(context.Background(), testCase.ns, testCase.broker, *event)
 
 				// Verify results.
 				if testCase.wantErr && err == nil {

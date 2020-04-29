@@ -84,7 +84,9 @@ func main() {
 	}
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 
-	ingress, err := ingress.NewHandler(ctx, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
+	ingress, err := InitializeHandler(ctx,
+		ingress.HTTPMessageReceiverOptions{Port: env.Port},
+		ingress.PubsubClientOpts{ProjectID: projectID})
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
 	}

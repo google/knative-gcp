@@ -31,7 +31,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
-	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 )
 
@@ -58,7 +57,7 @@ type HttpMessageReceiver interface {
 // TODO(liu-cong) add metrics
 // TODO(liu-cong) add tracing
 // TODO(liu-cong) support event TTL
-type handler struct {
+type Handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
@@ -67,34 +66,16 @@ type handler struct {
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
-	h := &handler{
-		logger: logging.FromContext(ctx),
+func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink) *Handler {
+	return &Handler{
+		httpReceiver: httpReceiver,
+		decouple:     decouple,
+		logger:       logging.FromContext(ctx),
 	}
-
-	for _, option := range options {
-		if err := option(h); err != nil {
-			return nil, err
-		}
-	}
-
-	if h.httpReceiver == nil {
-		h.httpReceiver = kncloudevents.NewHttpMessageReceiver(defaultPort)
-	}
-
-	if h.decouple == nil {
-		sink, err := NewMultiTopicDecoupleSink(ctx)
-		if err != nil {
-			return nil, err
-		}
-		h.decouple = sink
-	}
-
-	return h, nil
 }
 
 // Start blocks to receive events over HTTP.
-func (h *handler) Start(ctx context.Context) error {
+func (h *Handler) Start(ctx context.Context) error {
 	return h.httpReceiver.StartListen(ctx, h)
 }
 
@@ -103,7 +84,7 @@ func (h *handler) Start(ctx context.Context) error {
 // 2. Parse request URL to get namespace and broker.
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
-func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
+func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
@@ -146,7 +127,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 }
 
 // toEvent converts an http request to an event.
-func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg string, statusCode int) {
+func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg string, statusCode int) {
 	message := http.NewMessageFromHttpRequest(request)
 	defer func() {
 		if err := message.Finish(nil); err != nil {

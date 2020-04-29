@@ -20,61 +20,53 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
-	cloudevents "github.com/cloudevents/sdk-go/v2"
-	"github.com/google/knative-gcp/pkg/broker/config"
+	cev2 "github.com/cloudevents/sdk-go/v2"
+	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"github.com/google/wire"
 	"knative.dev/eventing/pkg/kncloudevents"
 )
 
-// HandlerOption is the option to configure ingress handler.
-type HandlerOption func(*handler) error
+// HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
+var HandlerSet wire.ProviderSet = wire.NewSet(
+	NewHandler,
+	NewHTTPMessageReceiver,
+	wire.Bind(new(HttpMessageReceiver), new(*kncloudevents.HttpMessageReceiver)),
+	NewMultiTopicDecoupleSink,
+	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
+	NewPubsubClient,
+	NewPubsubDecoupleClient,
+)
 
-// WithPort specifies the port number that ingress listens on. It will create an HttpMessageReceiver for that port.
-func WithPort(port int) HandlerOption {
-	return func(h *handler) error {
-		h.httpReceiver = kncloudevents.NewHttpMessageReceiver(port)
-		return nil
-	}
+type HTTPMessageReceiverOptions struct {
+	Port int
 }
 
-// WithProjectID creates a pubsub client for the given project ID to communicate with pubsusb decouple topics.
-func WithProjectID(id string) HandlerOption {
-	return func(h *handler) error {
-		ctx := context.Background()
-		p, err := pubsub.NewClient(ctx, id)
-		if err != nil {
-			return err
-		}
-		h.decouple, err = NewMultiTopicDecoupleSink(context.Background(), WithPubsubClient(p))
-		return err
-	}
+// NewHTTPMessageReceiver wraps kncloudevents.NewHttpMessageReceiver with type-safe options.
+func NewHTTPMessageReceiver(opts HTTPMessageReceiverOptions) *kncloudevents.HttpMessageReceiver {
+	return kncloudevents.NewHttpMessageReceiver(opts.Port)
 }
 
-// MultiTopicDecoupleSinkOption is the option to configure multiTopicDecoupleSink.
-type MultiTopicDecoupleSinkOption func(sink *multiTopicDecoupleSinkOptions)
-
-type multiTopicDecoupleSinkOptions struct {
-	client       cloudevents.Client
-	pubsub       *pubsub.Client
-	brokerConfig config.ReadonlyTargets
+type PubsubClientOpts struct {
+	ProjectID string
 }
 
-// WithClient specifies an eventing client to use.
-func WithClient(client cloudevents.Client) MultiTopicDecoupleSinkOption {
-	return func(opts *multiTopicDecoupleSinkOptions) {
-		opts.client = client
-	}
+// NewPubsubClient provides a pubsub client from PubsubClientOpts.
+func NewPubsubClient(ctx context.Context, opts PubsubClientOpts) (*pubsub.Client, error) {
+	return pubsub.NewClient(ctx, opts.ProjectID)
 }
 
-// WithPubsubClient specifies the pubsub client to use.
-func WithPubsubClient(ps *pubsub.Client) MultiTopicDecoupleSinkOption {
-	return func(opts *multiTopicDecoupleSinkOptions) {
-		opts.pubsub = ps
+// NewPubsubDecoupleClient creates a pubsub Cloudevents client to use to publish events to decouple queues.
+func NewPubsubDecoupleClient(ctx context.Context, client *pubsub.Client) (cev2.Client, error) {
+	// Make a pubsub protocol for the CloudEvents client.
+	p, err := cepubsub.New(ctx, cepubsub.WithClient(client))
+	if err != nil {
+		return nil, err
 	}
-}
 
-// WithBrokerConfig specifies the broker config. It can be created by reading a configmap mount.
-func WithBrokerConfig(brokerConfig config.ReadonlyTargets) MultiTopicDecoupleSinkOption {
-	return func(opts *multiTopicDecoupleSinkOptions) {
-		opts.brokerConfig = brokerConfig
-	}
+	// Use the pubsub prototol to make a new CloudEvents client.
+	return cev2.NewClientObserved(p,
+		cev2.WithUUIDs(),
+		cev2.WithTimeNow(),
+		cev2.WithTracePropagation,
+	)
 }

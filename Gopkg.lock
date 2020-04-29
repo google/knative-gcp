@@ -339,6 +339,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:c457ba5895cc42f42f96b98a117d02a380563006749876b12b6e7f24f20cd096"
+  name = "github.com/google/wire"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "578b29ef42c1970b9853962dd1c4308fd7eb5387"
+  version = "v0.4.0"
+
+[[projects]]
   digest = "1:4b76f3e067eed897a45242383a2aa4d0a2fdbf73a8d00c03167dba80c43630b1"
   name = "github.com/googleapis/gax-go"
   packages = ["v2"]
@@ -1830,6 +1838,7 @@
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/google/uuid",
+    "github.com/google/wire",
     "github.com/googleapis/gax-go/v2",
     "github.com/kelseyhightower/envconfig",
     "github.com/pkg/errors",
