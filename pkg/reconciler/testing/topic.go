@@ -179,3 +179,9 @@ func WithTopicFinalizers(finalizers ...string) TopicOption {
 		s.Finalizers = finalizers
 	}
 }
+
+func WithTopicDeprecated() TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkDeprecated()
+	}
+}

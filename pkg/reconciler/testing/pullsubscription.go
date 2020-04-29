@@ -279,3 +279,9 @@ func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 		s.Spec.Mode = mode
 	}
 }
+
+func WithPullSubscriptionDeprecated() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkDeprecated()
+	}
+}
