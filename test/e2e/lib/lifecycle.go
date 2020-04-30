@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -87,14 +88,23 @@ type Client struct {
 
 var setStackDriverConfigOnce = sync.Once{}
 
-func (c *Client) SetupStackDriverMetrics(t *testing.T) {
+func (c *Client) SetupStackDriverMetrics(t *testing.T, enableCustomMetrics bool) {
 	setStackDriverConfigOnce.Do(func() {
-		_ = c.Core.CreateConfigMapOrFail("eventing-config-observability", c.Namespace, map[string]string{
+		err := c.Core.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "true",
 			"metrics.backend-destination":                  "stackdriver",
 			"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
 			"metrics.reporting-period-seconds":             "60",
 		})
+		if err != nil {
+			t.Fatalf("Unable to set the ConfigMap: %v", err)
+		}
+	})
+	_ = c.Core.CreateConfigMapOrFail("eventing-config-observability", c.Namespace, map[string]string{
+		"metrics.allow-stackdriver-custom-metrics":     strconv.FormatBool(enableCustomMetrics),
+		"metrics.backend-destination":                  "stackdriver",
+		"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
+		"metrics.reporting-period-seconds":             "60",
 	})
 }
 
