@@ -46,18 +46,18 @@ var deprecatedCondition = apis.Condition{
 // MarkDeprecated adds the DeprecatedCondition to the supplied conditions and returns the new
 // conditions.
 func MarkDeprecated(conditions duckv1.Conditions) duckv1.Conditions {
-	dc := deprecatedCondition
+	dc := deprecatedCondition.DeepCopy()
 	for i, c := range conditions {
 		if c.Type == dc.Type {
 			// If we'd only update the LastTransitionTime, then return.
 			dc.LastTransitionTime = c.LastTransitionTime
-			if !reflect.DeepEqual(&dc, &c) {
-				dc.LastTransitionTime = apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
-				conditions[i] = dc
+			if !reflect.DeepEqual(dc, &c) {
+				dc.LastTransitionTime = deprecatedCondition.LastTransitionTime
+				conditions[i] = *dc
 			}
 			return conditions
 		}
 	}
-	conditions = append(conditions, dc)
+	conditions = append(conditions, *dc)
 	return conditions
 }
