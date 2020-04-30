@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1beta1 contains API Schema definitions for the eventing v1beta1 API group
-// +k8s:openapi-gen=true
-// +k8s:deepcopy-gen=package,register
-// +k8s:conversion-gen=github.com/google/knative-gcp/pkg/apis/pubsub
-// +k8s:defaulter-gen=TypeMeta
-// +groupName=pubsub.cloud.google.com
+// Api versions allow the api contract for a resource to be changed while keeping
+// backward compatibility by supporting multiple concurrent versions
+// of the same resource.
+
+// Package v1beta1 defines internal types in
+// internal.events.cloud.google.com/v1beta1 for use by other resources.
+// +k8s:deepcopy-gen=package
+// +groupName=internal.events.cloud.google.com
 package v1beta1
