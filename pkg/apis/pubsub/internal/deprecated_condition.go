@@ -35,12 +35,11 @@ const deprecationMessage = "This object is deprecated and should be deleted. The
 // deprecatedCondition is the condition to add to types that will be removed in 0.16.
 // See https://github.com/google/knative-gcp/issues/905 for more context.
 var deprecatedCondition = apis.Condition{
-	Type:               "Deprecated",
-	Reason:             "willBeRemoved",
-	Status:             corev1.ConditionTrue,
-	Severity:           apis.ConditionSeverityWarning,
-	Message:            deprecationMessage,
-	LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Now())},
+	Type:     "Deprecated",
+	Reason:   "willBeRemoved",
+	Status:   corev1.ConditionTrue,
+	Severity: apis.ConditionSeverityWarning,
+	Message:  deprecationMessage,
 }
 
 // MarkDeprecated adds the DeprecatedCondition to the supplied conditions and returns the new
@@ -57,6 +56,9 @@ func MarkDeprecated(conditions duckv1.Conditions) duckv1.Conditions {
 			}
 			return conditions
 		}
+	}
+	dc.LastTransitionTime = apis.VolatileTime{
+		Inner: metav1.NewTime(time.Now()),
 	}
 	conditions = append(conditions, *dc)
 	return conditions

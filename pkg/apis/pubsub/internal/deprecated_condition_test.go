@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -44,7 +45,15 @@ var (
 func TestMarkDeprecated_NotPresent(t *testing.T) {
 	want := conditionsWithDeprecated.DeepCopy()
 	got := MarkDeprecated(conditions.DeepCopy())
-	if diff := cmp.Diff(want, got); diff != "" {
+
+	// The lastTransitionTime is set to the current time when this is called, so assert that it is
+	// within some reasonable bound of now.
+	dc := getDeprecatedCondition(t, got)
+	if now, ct := time.Now(), dc.LastTransitionTime.Inner; !ct.Add(time.Minute).After(now) {
+		t.Errorf("DeprecatedCondition's lastTransitionTime is too far in the past: %v (now: %v)", ct, now)
+	}
+
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreTypes(apis.VolatileTime{})); diff != "" {
 		t.Errorf("Unexpected status (-want +got): %v", diff)
 	}
 }
@@ -91,4 +100,15 @@ func addDeprecatedCondition(init duckv1.Conditions, f func(*apis.Condition)) (al
 	altered = append(init, *dc)
 	unaltered = append(init, *deprecatedCondition.DeepCopy())
 	return altered, unaltered
+}
+
+func getDeprecatedCondition(t *testing.T, conds duckv1.Conditions) apis.Condition {
+	t.Helper()
+	for i := range conds {
+		if conds[i].Type == deprecatedCondition.Type {
+			return conds[i]
+		}
+	}
+	t.Fatalf("Unable to find the deprecated conditions %v", conds)
+	return apis.Condition{}
 }
