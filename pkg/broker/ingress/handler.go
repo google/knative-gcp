@@ -127,7 +127,6 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	}
 	ns, broker := pieces[1], pieces[2]
 	event, msg, statusCode := h.toEvent(request)
-	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, time.Now()) }()
 	if event == nil {
 		response.WriteHeader(statusCode)
 		response.Write([]byte(msg))
@@ -138,6 +137,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
+	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, time.Now()) }()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
 		h.logger.Error(msg)
@@ -149,8 +149,6 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.Write([]byte(msg))
 		return
 	}
-
-	response.WriteHeader(nethttp.StatusOK)
 }
 
 // toEvent converts an http request to an event.
@@ -177,14 +175,10 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 }
 
 func (h *handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
-	eventType := "Unknown"
-	if event != nil {
-		eventType = event.Type()
-	}
 	args := reportArgs{
 		namespace:    ns,
 		broker:       broker,
-		eventType:    eventType,
+		eventType:    event.Type(),
 		responseCode: statusCode,
 	}
 	if err := h.reporter.reportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
