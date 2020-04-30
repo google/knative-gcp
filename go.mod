@@ -38,7 +38,7 @@ require (
 	knative.dev/eventing v0.14.1-0.20200428210242-f355830c4d70
 	knative.dev/pkg v0.0.0-20200428194351-90fc61bae7f7
 	knative.dev/serving v0.14.1-0.20200424135249-b16b68297056
-	knative.dev/test-infra v0.0.0-20200428221142-e594f444fabd // indirect
+	knative.dev/test-infra v0.0.0-20200429211942-f4c4853375cf // indirect
 )
 
 replace k8s.io/client-go => k8s.io/client-go v0.17.4
