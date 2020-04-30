@@ -23,25 +23,11 @@ import (
 // MarkDeprecated adds a warning condition that this object is deprecated and will be dropped in a
 // future release. Note that this does not affect the Ready condition.
 func (s *PullSubscriptionStatus) MarkDeprecated() {
-	dc := internal.DeprecatedCondition
-	for i, c := range s.Conditions {
-		if c.Type == dc.Type {
-			s.Conditions[i] = dc
-			return
-		}
-	}
-	s.Conditions = append(s.Conditions, dc)
+	s.Conditions = internal.MarkDeprecated(s.Conditions)
 }
 
 // MarkDeprecated adds a warning condition that this object is deprecated and will be dropped in a
 // future release. Note that this does not affect the Ready condition.
 func (ts *TopicStatus) MarkDeprecated() {
-	dc := internal.DeprecatedCondition
-	for i, c := range ts.Conditions {
-		if c.Type == dc.Type {
-			ts.Conditions[i] = dc
-			return
-		}
-	}
-	ts.Conditions = append(ts.Conditions, dc)
+	ts.Conditions = internal.MarkDeprecated(ts.Conditions)
 }

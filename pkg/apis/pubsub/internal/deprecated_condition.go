@@ -17,11 +17,13 @@
 package internal
 
 import (
+	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
 const deprecationMessage = "This object is deprecated and should be deleted. There is no public " +
@@ -30,13 +32,32 @@ const deprecationMessage = "This object is deprecated and should be deleted. The
 	"upgrading to 0.16. If it is not deleted before the 0.16 upgrade, then it will leak the " +
 	"Topic/PullSubscription created in Google Cloud Platform."
 
-// DeprecatedCondition is the condition to add to types that will be removed in 0.16.
+// deprecatedCondition is the condition to add to types that will be removed in 0.16.
 // See https://github.com/google/knative-gcp/issues/905 for more context.
-var DeprecatedCondition = apis.Condition{
+var deprecatedCondition = apis.Condition{
 	Type:               "Deprecated",
 	Reason:             "willBeRemoved",
 	Status:             corev1.ConditionTrue,
 	Severity:           apis.ConditionSeverityWarning,
 	Message:            deprecationMessage,
 	LastTransitionTime: apis.VolatileTime{Inner: metav1.NewTime(time.Now())},
+}
+
+// MarkDeprecated adds the DeprecatedCondition to the supplied conditions and returns the new
+// conditions.
+func MarkDeprecated(conditions duckv1.Conditions) duckv1.Conditions {
+	dc := deprecatedCondition
+	for i, c := range conditions {
+		if c.Type == dc.Type {
+			// If we'd only update the LastTransitionTime, then return.
+			dc.LastTransitionTime = c.LastTransitionTime
+			if !reflect.DeepEqual(&dc, &c) {
+				dc.LastTransitionTime = apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
+				conditions[i] = dc
+			}
+			return conditions
+		}
+	}
+	conditions = append(conditions, dc)
+	return conditions
 }
