@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
@@ -370,13 +371,20 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
 func (h *Helper) VerifyNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event) {
 	t.Helper()
-	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK)
+	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK, 0)
+}
+
+// VerifyNextTargetEventAndDelayResp verifies the next event the subscriber receives
+// but not respond a success infinitely.
+func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testing.T, targetKey string, wantEvent *event.Event, delay time.Duration) {
+	t.Helper()
+	h.VerifyAndRespondNextTargetEvent(ctx, t, targetKey, wantEvent, nil, http.StatusOK, delay)
 }
 
 // VerifyAndRespondNextTargetEvent verifies the next event the subscriber receives and replies with the given parameters.
 // If wantEvent is nil, then it means such an event is not expected.
 // This function is blocking and should be invoked in a separate goroutine with context timeout.
-func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent, replyEvent *event.Event, statusCode int) {
+func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent, replyEvent *event.Event, statusCode int, delay time.Duration) {
 	t.Helper()
 
 	consumer, ok := h.consumers[targetKey]
@@ -395,11 +403,12 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 		// In case Receive is stopped.
 		return
 	}
-	msg.Finish(nil)
 	gotEvent, err = binding.ToEvent(ctx, msg)
 	if err != nil {
 		t.Errorf("target (key=%q) received invalid cloudevent: %v", targetKey, err)
 	}
+
+	time.Sleep(delay)
 
 	var replyMsg binding.Message
 	if replyEvent != nil {
@@ -408,6 +417,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	if err := respFn(ctx, replyMsg, &cehttp.Result{StatusCode: statusCode}); err != nil {
 		t.Errorf("unexpected error from responding target (key=%q) event: %v", targetKey, err)
 	}
+	msg.Finish(nil)
 }
 
 // VerifyNextTargetRetryEvent verifies the next event the target retry queue receives.

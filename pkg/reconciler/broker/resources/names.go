@@ -20,44 +20,63 @@ import (
 	"fmt"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"k8s.io/apimachinery/pkg/types"
 )
+
+// For reference, the minimum number of characters available for a name
+// is 146. However, any name longer than 146 will be truncated and suffixed
+// with a 32-char hash, making its max length 114 chars.
+//
+// pubsub resource name max length: 255 chars
+// Namespace max length: 63 chars
+// broker name max length: 253 chars
+// trigger name max length: 253 chars
+// uid length: 36 chars
+// prefix + separators: 10 chars
+// 255 - 10 - 63 - 36 = 146
 
 const (
 	pubsubMax       = 255
 	k8sNamespaceMax = 63
 	k8sNameMax      = 253
 	uidLength       = 36
-	md5Len          = 32
 )
 
-//TODO check length < 256 chars and truncate
-// pubsub resource max length: 255 chars
-// Namespace max length: 63 chars
-// broker name max length: 253 chars
-// trigger name max length: 253 chars
-// uid length: 36 chars
-// prefix + separators: 10 chars
-// 255 - 10 - 36 - 63 = 146 chars for name
-
 // GenerateDecouplingTopicName generates a deterministic topic name for a
-// Broker.
+// Broker. If the topic name would be longer than allowed by PubSub, the
+// Broker name is truncated to fit.
 func GenerateDecouplingTopicName(b *brokerv1beta1.Broker) string {
-	return fmt.Sprintf("cre-bkr_%s_%s_%s", b.Namespace, b.Name, string(b.UID))
+	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateDecouplingSubscriptionName generates a deterministic subscription
-// name for a Broker.
+// name for a Broker. If the subscription name would be longer than allowed by
+// PubSub, the Broker name is truncated to fit.
 func GenerateDecouplingSubscriptionName(b *brokerv1beta1.Broker) string {
-	return fmt.Sprintf("cre-bkr_%s_%s_%s", b.Namespace, b.Name, string(b.UID))
+	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateRetryTopicName generates a deterministic topic name for a Trigger.
+// If the topic name would be longer than allowed by PubSub, the Trigger name is
+// truncated to fit.
 func GenerateRetryTopicName(t *brokerv1beta1.Trigger) string {
-	return fmt.Sprintf("cre-tgr_%s_%s_%s", t.Namespace, t.Name, string(t.UID))
+	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
 
 // GenerateRetrySubscriptionName generates a deterministic subscription name
-// for a Trigger.
+// for a Trigger. If the subscription name would be longer than allowed by
+// PubSub, the Trigger name is truncated to fit.
 func GenerateRetrySubscriptionName(t *brokerv1beta1.Trigger) string {
-	return fmt.Sprintf("cre-tgr_%s_%s_%s", t.Namespace, t.Name, string(t.UID))
+	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
+}
+
+func truncatedPubsubResourceName(prefix, ns, n string, uid types.UID) string {
+	s := fmt.Sprintf("%s_%s_%s_%s", prefix, ns, n, string(uid))
+	if len(s) <= pubsubMax {
+		return s
+	}
+	names := fmt.Sprintf("%s_%s_%s", prefix, ns, n)
+	namesMax := pubsubMax - ((len(string(uid))) + 1) // 1 for the uid separator
+
+	return fmt.Sprintf("%s_%s", names[:namesMax], string(uid))
 }
