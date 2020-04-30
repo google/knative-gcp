@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2019 Google LLC
+# Copyright 2020 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,43 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script includes common functions for testing setup and teardown.
-
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
 source $(dirname $0)/lib.sh
 
+source $(dirname $0)/../hack/lib.sh
+
 source $(dirname $0)/e2e-common.sh
-
-source $(dirname $0)/../hack/init_control_plane_common.sh
-
-source $(dirname $0)/../hack/init_data_plane_common.sh
 
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
 
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
-readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
-readonly PUBSUB_SECRET_NAME="google-cloud-key"
 
 # Constants used for authentication setup for GCP Broker if it's not running on Prow.
 readonly GCP_BROKER_SECRET_NAME="google-broker-key"
 
-# Constants used for authentication setup for GCP Broker if it's not running on Prow.
-readonly APP_ENGINE_REGION="us-central"
-
-if (( ! IS_PROW )); then
-  readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
-  readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
-
-else
-  readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-  readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
-fi
+function export_variable() {
+  if (( ! IS_PROW )); then
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
+  else
+    readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+    readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
+  fi
+}
 
 # Setup resources common to all eventing tests.
 function test_setup() {
@@ -65,17 +57,12 @@ function test_setup() {
   publish_test_images
 }
 
-
 # Tear down tmp files which store the private key.
 function knative_teardown() {
   if (( ! IS_PROW )); then
-    echo "Debuggggg knative_teardown '${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP'}"
     rm ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}
   fi
 }
-
-
-
 
 # Create resources required for the Control Plane setup.
 function control_plane_setup() {
@@ -117,11 +104,3 @@ function gcp_broker_setup() {
   kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${GCP_BROKER_SECRET_NAME} --from-file=key.json=${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
 }
 
-
-# Script entry point.
-
-initialize $@
-
-go_test_e2e -timeout=20m -parallel=12 ./test/e2e -channels=messaging.cloud.google.com/v1alpha1:Channel || fail_test
-
-success

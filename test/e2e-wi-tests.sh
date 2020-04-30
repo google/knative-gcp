@@ -17,19 +17,16 @@ source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
 source $(dirname $0)/lib.sh
 
+source $(dirname $0)/../hack/lib.sh
+
 source $(dirname $0)/e2e-common.sh
 
-source $(dirname $0)/../hack/init_control_plane_common.sh
-
-source $(dirname $0)/../hack/init_control_plane_gke_lib.sh
-
-
-readonly K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
 readonly BROKER_SERVICE_ACCOUNT="broker"
 readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 
+function export_variable() {
 if (( ! IS_PROW )); then
   readonly CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com"
   readonly MEMBER="serviceAccount:${E2E_PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
@@ -45,6 +42,7 @@ else
   readonly PUBSUB_SERVICE_ACCOUNT_EMAIL=${PROW_SERVICE_ACCOUNT_EMAIL}
   readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="${GOOGLE_APPLICATION_CREDENTIALS}"
 fi
+}
 
 # Setup resources common to all eventing tests.
 function test_setup() {
@@ -66,10 +64,10 @@ function control_plane_setup() {
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     init_control_plane_service_account ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}
-    enable_workload_identity ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUN_NON_PROW}
+    enable_workload_identity ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW} ${REGIONAL_CLUSTER_LOCATION_TYPE}
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
-      --MEMBER ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}
+      --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}
   else
     # If the tests are run on Prow, clean up the member for roles/iam.workloadIdentityUser before running it.
     members=$(gcloud iam service-accounts get-iam-policy \
@@ -132,7 +130,6 @@ function gcp_broker_setup() {
   fi
   kubectl annotate --overwrite serviceaccount ${BROKER_SERVICE_ACCOUNT} iam.gke.io/gcp-service-account=${PUBSUB_SERVICE_ACCOUNT_EMAIL} \
     --namespace ${CONTROL_PLANE_NAMESPACE}
-
 }
 
 function create_private_key_for_pubsub_service_account {

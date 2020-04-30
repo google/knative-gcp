@@ -16,11 +16,8 @@
 
 # Usage: ./init_control_plane.sh
 # The current project set in gcloud MUST be the same as where the cluster is running.
-source $(dirname $0)/init_control_plane_common.sh
+source $(dirname $0)/lib.sh
 
-readonly PROJECT_ID=$(gcloud config get-value project)
-readonly CONTROL_PLANE_SERVICE_ACCOUNT="cloud-run-events"
-readonly CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="google-cloud-key.json"
 
 init_control_plane_service_account ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT}

@@ -16,16 +16,17 @@
 
 # Usage: ./init_control_plane_gke.sh
 # The current project set in gcloud MUST be the same as where the cluster is running.
-source $(dirname $0)/init_control_plane_common.sh
-source $(dirname $0)/init_control_plane_gke_lib.sh
+source $(dirname $0)/lib.sh
+readonly CLUSTER_LOCATION_TYPE="zonal"
 
-readonly PROJECT_ID=$(gcloud config get-value project)
-readonly CONTROL_PLANE_SERVICE_ACCOUNT=cloud-run-events-test
-readonly K8S_CONTROLLER_SERVICE_ACCOUNT=controller
-
+if [[ -z "$1" ]]; then
+    echo "CLUSTER_LOCATION_TYPE not provided, using DEFAULT_CLUSTER_LOCATION_TYPE '${CLUSTER_LOCATION_TYPE}' when enabiling workload identity"
+  else
+    CLUSTER_LOCATION_TYPE="$1"
+    echo "CLUSTER_LOCATION_TYPE, using ${CLUSTER_LOCATION_TYPE} when enabling workload identity"
+fi
 init_control_plane_service_account ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT}
-enable_workload_identity ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT}
-
+enable_workload_identity ${PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT} ${CLUSTER_LOCATION_TYPE}
 
 # Allow the Kubernetes service account to use Google service account.
 MEMBER="serviceAccount:"${PROJECT_ID}".svc.id.goog["${CONTROL_PLANE_NAMESPACE}"/"${K8S_CONTROLLER_SERVICE_ACCOUNT}"]"

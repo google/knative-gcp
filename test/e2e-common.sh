@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2019 Google LLC
 #
@@ -19,9 +19,6 @@
 # If gcloud is not available make it a no-op, not an error.
 which gcloud &> /dev/null || gcloud() { echo "[ignore-gcloud $*]" 1>&2; }
 
-# Eventing main config.
-readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
-
 # Constants used for creating ServiceAccount for the Control Plane if it's not running on Prow.
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW="cloud-run-events"
 
@@ -31,16 +28,19 @@ readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW="cre-pubsub"
 # Vendored eventing test iamges.
 readonly VENDOR_EVENTING_TEST_IMAGES="vendor/knative.dev/eventing/test/test_images/"
 
+# Constants used for authentication setup for GCP Broker if it's not running on Prow.
+readonly APP_ENGINE_REGION="us-central"
+
 # Setup Knative GCP.
 function knative_setup() {
   start_knative_gcp || return 1
+  export_variable || return 1
   control_plane_setup || return 1
 }
 
 # Tear down tmp files which store the private key.
 function test_teardown() {
   if (( ! IS_PROW )); then
-    echo "Debuggggg test_teardown '${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP'}"
     rm ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
   fi
 }
@@ -53,28 +53,23 @@ function publish_test_images() {
   $(dirname $0)/upload-test-images.sh "test/test_images" e2e || fail_test "Error uploading test images from knative-gcp"
 }
 
-# Create resources required for Storage Admin setup.
+# Create resources required for CloudSchedulerSource.
+function create_app_engine() {
+  echo "Create App Engine with region US-central needed for CloudSchedulerSource"
+    # Please rememeber the region of App Engine and the location of CloudSchedulerSource defined in e2e tests(./test_scheduler.go) should be consistent.
+  gcloud app create --region=${APP_ENGINE_REGION} || echo "AppEngine app with region ${APP_ENGINE_REGION} probably already exists, ignoring..."
+}
+
 function scheduler_setup() {
   if (( ! IS_PROW )); then
-    echo "Create App Engine with region US-central needed for CloudSchedulerSource"
-    # Please rememeber the region of App Engine and the location of CloudSchedulerSource defined in e2e tests(./test_scheduler.go) should be consistent.
-    gcloud app create --region=${APP_ENGINE_REGION} || echo "AppEngine app with region ${APP_ENGINE_REGION} probably already exists, ignoring..."
+    create_app_engine
   fi
 }
 
 # Create resources required for Storage Admin setup.
 function storage_setup() {
   if (( ! IS_PROW )); then
-    echo "Update ServiceAccount for Storage Admin"
-    gcloud services enable storage-component.googleapis.com
-    gcloud services enable storage-api.googleapis.com
-    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-      --member=serviceAccount:${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com \
-      --role roles/storage.admin
-    export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${E2E_PROJECT_ID}/serviceAccount" | grep email_address | cut -d '"' -f 4`
-    gcloud projects add-iam-policy-binding ${E2E_PROJECT_ID} \
-      --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
-      --role roles/pubsub.publisher
+    storage_admin_set_up ${E2E_PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT_NON_PROW} ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
   fi
 }
 
