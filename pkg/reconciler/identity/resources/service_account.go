@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	workloadIdentityKey = "iam.gke.io/gcp-service-account"
+	WorkloadIdentityKey = "iam.gke.io/gcp-service-account"
 )
 
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
@@ -40,7 +40,7 @@ func MakeServiceAccount(namespace string, gServiceAccount, clusterName string) *
 			Namespace: namespace,
 			Name:      GenerateServiceAccountName(gServiceAccount, clusterName),
 			Annotations: map[string]string{
-				workloadIdentityKey: gServiceAccount,
+				WorkloadIdentityKey: gServiceAccount,
 			},
 		},
 	}

@@ -66,6 +66,11 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
+	if clusterName == "" {
+		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		return nil, fmt.Errorf("failed to get cluster name: %w", err.Error())
+	}
 	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
@@ -106,6 +111,11 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	}
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
+	if clusterName == "" {
+		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
+		return fmt.Errorf("failed to get cluster name: %w", err.Error())
+	}
 	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
@@ -139,6 +149,16 @@ func (i *Identity) createServiceAccount(ctx context.Context, namespace, gService
 		}
 		logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
 		return nil, fmt.Errorf("getting k8s service account failed with: %w", err)
+	}
+	// Update kServiceAccount if it has a wrong annotation.
+	if kServiceAccount.Annotations[resources.WorkloadIdentityKey] != gServiceAccount {
+		kServiceAccount.Annotations[resources.WorkloadIdentityKey] = gServiceAccount
+		kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Create(kServiceAccount)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to update k8s service account", zap.Error(err))
+			return nil, fmt.Errorf("failed to update k8s service account: %w", err)
+		}
+		return kServiceAccount, nil
 	}
 	return kServiceAccount, nil
 }
