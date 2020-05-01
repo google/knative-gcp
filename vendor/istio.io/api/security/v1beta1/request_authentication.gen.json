@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Request authentication configuration for workloads.",
+    "title": "",
     "version": "v1beta1"
   },
   "components": {

@@ -576,14 +576,14 @@ honnef.co/go/tools/staticcheck
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# istio.io/api v0.0.0-20200430220031-f818d6294944
+# istio.io/api v0.0.0-20200227213531-891bf31f3c32 => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 istio.io/api/security/v1beta1
 istio.io/api/type/v1beta1
-# istio.io/client-go v0.0.0-20200430221616-6b954c6c31e4
+# istio.io/client-go v0.0.0-20200227214646-23b87b42e49b => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 istio.io/client-go/pkg/apis/security/v1beta1
 # istio.io/gogo-genproto v0.0.0-20200130224810-a0338448499a
 istio.io/gogo-genproto/googleapis/google/api
-# k8s.io/api v0.18.1 => k8s.io/api v0.16.4
+# k8s.io/api v0.17.0 => k8s.io/api v0.16.4
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
