@@ -234,29 +234,26 @@ spec:
                     ID of the Google Cloud Project to own the Pub/Sub credentials. E.g.
                     'my-project-1234' rather than its display name, 'My Project' or its number
                     '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service.
-                subscribable:
-                  type: object
-                  properties:
-                    subscribers:
-                      type: array
-                      items:
+                subscribers:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - uid
+                    properties:
+                      uid:
+                        type: string
+                        minLength: 1
+                      generation:
+                        type: integer
+                      subscriberURI:
+                        type: string
+                      replyURI:
+                        type: string
+                      delivery:
                         type: object
-                        required:
-                          - uid
                         properties:
-                          uid:
-                            type: string
-                            minLength: 1
-                          generation:
-                            type: integer
-                          subscriberURI:
-                            type: string
-                          replyURI:
-                            type: string
-                          delivery:
-                            type: object
-                            properties:
-                              deadLetterSink:
+                          deadLetterSink:
                                 type: object
                                 properties:
                                   ref:
@@ -272,12 +269,12 @@ spec:
                                         type: string
                                   uri:
                                     type: string
-                              retry:
-                                type: integer
-                              backoffPolicy:
-                                type: string
-                              backoffDelay:
-                                type: string
+                          retry:
+                            type: integer
+                          backoffPolicy:
+                            type: string
+                          backoffDelay:
+                            type: string
             status:
               type: object
               properties:
