@@ -91,6 +91,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=internal.events.cloud.google.com, Version=v1alpha1
 	case inteventsv1alpha1.SchemeGroupVersion.WithResource("brokercells"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().BrokerCells().Informer()}, nil
+	case inteventsv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().PullSubscriptions().Informer()}, nil
+	case inteventsv1alpha1.SchemeGroupVersion.WithResource("topics"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().Topics().Informer()}, nil
 
 		// Group=messaging.cloud.google.com, Version=v1alpha1
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):

@@ -3,10 +3,10 @@ module github.com/google/knative-gcp
 go 1.13
 
 require (
-	cloud.google.com/go v0.55.0
-	cloud.google.com/go/logging v1.0.0
-	cloud.google.com/go/pubsub v1.3.1
-	cloud.google.com/go/storage v1.6.0
+	cloud.google.com/go v0.56.0
+	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
+	cloud.google.com/go/pubsub v1.3.2-0.20200331222814-69e77e66e597
+	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/v2 v2.0.0-RC2
 	github.com/fsnotify/fsnotify v1.4.9
@@ -24,9 +24,9 @@ require (
 	go.uber.org/multierr v1.2.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
-	google.golang.org/api v0.20.0
-	google.golang.org/genproto v0.0.0-20200326112834-f447254575fd
-	google.golang.org/grpc v1.28.0
+	google.golang.org/api v0.22.1-0.20200430202532-ac9be1f8f530
+	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
+	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
 	istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
