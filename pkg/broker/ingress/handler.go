@@ -111,6 +111,7 @@ func (h *handler) Start(ctx context.Context) error {
 // 4. Send event to decouple sink.
 func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
+	startTime := time.Now()
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
@@ -137,7 +138,7 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, time.Now()) }()
+	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, startTime) }()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
 		h.logger.Error(msg)
