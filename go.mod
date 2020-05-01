@@ -67,3 +67,5 @@ replace github.com/jmespath/go-jmespath => github.com/jmespath/go-jmespath v0.0.
 replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
 
 replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+
+replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
