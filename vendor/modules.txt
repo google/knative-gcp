@@ -201,7 +201,7 @@ github.com/imdario/mergo
 github.com/jmespath/go-jmespath
 # github.com/joho/godotenv v1.3.0
 github.com/joho/godotenv
-# github.com/json-iterator/go v1.1.9
+# github.com/json-iterator/go v1.1.9 => github.com/json-iterator/go v1.1.7
 github.com/json-iterator/go
 # github.com/jstemmer/go-junit-report v0.9.1
 github.com/jstemmer/go-junit-report
