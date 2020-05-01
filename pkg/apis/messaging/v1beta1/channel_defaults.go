@@ -46,11 +46,11 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 	// the stored version, then when reading the stored version, conversion won't be called so
 	// nothing will set it to the stored version.
 	// Note that if a user sends a bad version of this annotation (e.g. sets it to v1beta1), then we
-	// won't overwrite their bad input. This is because the webhook works by:
-	// 1. Reading the stored version.
-	// 2. Converting to the desired version.
-	// 3. Defaulting the desired version.
-	// So because we don't know if the user or the converter put the value here, we are forced to
+	// won't overwrite their bad input. This is because the webhook:
+	// 1. Reads the stored version.
+	// 2. Converts to the desired version.
+	// 3. Defaults the desired version.
+	// So we don't know if the user or the converter put the value here, therefore we are forced to
 	// assume it was the converter and shouldn't change it.
 	if c.Annotations == nil {
 		c.Annotations = make(map[string]string, 1)
