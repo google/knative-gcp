@@ -249,7 +249,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/robfig/cron/v3 v3.0.1
+# github.com/robfig/cron/v3 v3.0.1 => github.com/robfig/cron/v3 v3.0.0
 github.com/robfig/cron/v3
 # github.com/rogpeppe/go-internal v1.5.0
 github.com/rogpeppe/go-internal/modfile
