@@ -179,7 +179,7 @@ type AuthorizationPolicyList struct {
 // +cue-gen:PeerAuthentication:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
 // +cue-gen:PeerAuthentication:subresource:status
 // +cue-gen:PeerAuthentication:scope:Namespaced
-// +cue-gen:PeerAuthentication:resource:categories=istio-io,security-istio-io
+// +cue-gen:PeerAuthentication:resource:categories=istio-io,security-istio-io,shortNames=pa
 // -->
 //
 // <!-- go code generation tags
@@ -224,8 +224,8 @@ type PeerAuthenticationList struct {
 // apiVersion: security.istio.io/v1beta1
 // kind: RequestAuthentication
 // metadata:
-//  name: httpbin
-//  namespace: foo
+//   name: httpbin
+//   namespace: foo
 // spec:
 //   selector:
 //     matchLabels:
@@ -237,27 +237,28 @@ type PeerAuthenticationList struct {
 // apiVersion: security.istio.io/v1beta1
 // kind: AuthorizationPolicy
 // metadata:
-//  name: httpbin
-//  namespace: foo
+//   name: httpbin
+//   namespace: foo
 // spec:
-//  selector:
-//    matchLabels:
-//      app: httpbin
-//  rules:
-//  - from:
-//    - source:
-//        requestPrincipals: ["*"]
+//   selector:
+//     matchLabels:
+//       app: httpbin
+//   rules:
+//   - from:
+//     - source:
+//         requestPrincipals: ["*"]
 // ```
 //
 // - The next example shows how to set a different JWT requirement for a different `host`. The `RequestAuthentication`
 // declares it can accpet JWTs issuer by either `issuer-foo` or `issuer-bar` (the public key set is implicitly
 // set from the OpenID Connect spec).
+//
 // ```yaml
 // apiVersion: security.istio.io/v1beta1
 // kind: RequestAuthentication
 // metadata:
-//  name: httpbin
-//  namespace: foo
+//   name: httpbin
+//   namespace: foo
 // spec:
 //   selector:
 //     matchLabels:
@@ -269,12 +270,12 @@ type PeerAuthenticationList struct {
 // apiVersion: security.istio.io/v1beta1
 // kind: AuthorizationPolicy
 // metadata:
-//  name: httpbin
-//  namespace: foo
+//   name: httpbin
+//   namespace: foo
 // spec:
-//  selector:
-//    matchLabels:
-//      app: httpbin
+//   selector:
+//     matchLabels:
+//       app: httpbin
 //  rules:
 //  - from:
 //    - source:
@@ -296,12 +297,12 @@ type PeerAuthenticationList struct {
 // apiVersion: security.istio.io/v1beta1
 // kind: AuthorizationPolicy
 // metadata:
-//  name: httpbin
-//  namespace: foo
+//   name: httpbin
+//   namespace: foo
 // spec:
-//  selector:
-//    matchLabels:
-//      app: httpbin
+//   selector:
+//     matchLabels:
+//       app: httpbin
 //  rules:
 //  - from:
 //    - source:
@@ -319,7 +320,7 @@ type PeerAuthenticationList struct {
 // +cue-gen:RequestAuthentication:labels:app=istio-pilot,chart=istio,istio=security,heritage=Tiller,release=istio
 // +cue-gen:RequestAuthentication:subresource:status
 // +cue-gen:RequestAuthentication:scope:Namespaced
-// +cue-gen:RequestAuthentication:resource:categories=istio-io,security-istio-io
+// +cue-gen:RequestAuthentication:resource:categories=istio-io,security-istio-io,shortNames=ra
 // -->
 //
 // <!-- go code generation tags
