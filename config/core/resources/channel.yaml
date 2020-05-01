@@ -61,6 +61,9 @@ spec:
   versions:
     - name: v1alpha1
       served: true
+      # If we store a different version than v1alpha1, make sure to update the StoredChannelVersion
+      # constant in pkg/apis/messaging/internal/constants.go. Its value MUST match the storage
+      # version of this CRD.
       storage: true
       schema:
         openAPIV3Schema:
