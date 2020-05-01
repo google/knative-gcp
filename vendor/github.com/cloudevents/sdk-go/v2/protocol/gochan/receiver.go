@@ -19,7 +19,7 @@ func (r Receiver) Receive(ctx context.Context) (binding.Message, error) {
 
 	select {
 	case <-ctx.Done():
-		return nil, io.EOF
+		return nil, ctx.Err()
 	case m, ok := <-r:
 		if !ok {
 			return nil, io.EOF

@@ -26,6 +26,8 @@ type subscriptionWithTopic struct {
 
 // Protocol acts as both a pubsub topic and a pubsub subscription .
 type Protocol struct {
+	transformers binding.Transformers
+
 	// PubSub
 
 	// ReceiveSettings is used to configure Pubsub pull subscription.
@@ -91,7 +93,7 @@ func (t *Protocol) applyOptions(opts ...Option) error {
 }
 
 // Send implements Sender.Send
-func (t *Protocol) Send(ctx context.Context, in binding.Message, transformers ...binding.Transformer) error {
+func (t *Protocol) Send(ctx context.Context, in binding.Message) error {
 	var err error
 	defer func() { _ = in.Finish(err) }()
 
@@ -103,7 +105,7 @@ func (t *Protocol) Send(ctx context.Context, in binding.Message, transformers ..
 	conn := t.getOrCreateConnection(ctx, topic, "")
 
 	msg := &pubsub.Message{}
-	if err := WritePubSubMessage(ctx, in, msg, transformers...); err != nil {
+	if err := WritePubSubMessage(ctx, in, msg, t.transformers...); err != nil {
 		return err
 	}
 
@@ -159,17 +161,13 @@ func (t *Protocol) getOrCreateConnection(ctx context.Context, topic, subscriptio
 
 // Receive implements Receiver.Receive
 func (t *Protocol) Receive(ctx context.Context) (binding.Message, error) {
-	select {
-	case m, ok := <-t.incoming:
-		if !ok {
-			return nil, io.EOF
-		}
-
-		msg := NewMessage(&m)
-		return msg, nil
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	m, ok := <-t.incoming
+	if !ok {
+		return nil, io.EOF
 	}
+
+	msg := NewMessage(&m)
+	return msg, nil
 }
 
 func (t *Protocol) startSubscriber(ctx context.Context, sub subscriptionWithTopic, done func(error)) {
@@ -232,10 +230,6 @@ func (t *Protocol) OpenInbound(ctx context.Context) error {
 
 	close(quit)
 	close(errc)
-
-	if errs == nil {
-		return nil
-	}
 
 	return errors.New(strings.Join(errs, "\n"))
 }
