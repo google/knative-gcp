@@ -22,10 +22,10 @@ import (
 	"math"
 	"strconv"
 
-	"cloud.google.com/go/compute/metadata"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -171,19 +171,21 @@ func validateAnnotationNotExists(annotations map[string]string, annotation strin
 }
 
 // ValidateClusterNameAnnotation validates the cluster-name annotation.
-func ValidateClusterNameAnnotation(ctx context.Context, annotations map[string]string, errs *apis.FieldError) *apis.FieldError {
-	if metadata.OnGCE() {
-		if _, err := utils.ClusterName(annotations[ClusterNameAnnotation]); err != nil {
+func ValidateClusterNameAnnotation(annotations map[string]string, errs *apis.FieldError, client metadataClient.Client) *apis.FieldError {
+	if client.OnGCE() {
+		if _, err := utils.ClusterName(annotations[ClusterNameAnnotation], client); err != nil {
 			// If metadata access is disabled for some reason, validation will fail and ask user to provide clusterName by adding this annotation.
-			return errs.Also(apis.ErrGeneric(fmt.Sprintf(`not able to get cluster name with error: %w, please provide it by adding annotation "cluster-name=$CLUSTER_NAME"`, err), fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)))
+			return errs.Also(apis.ErrGeneric(
+				fmt.Sprintf(`not able to get cluster name with error: %w, please provide it by adding annotation "cluster-name=$CLUSTER_NAME"`, err),
+				fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)))
 		}
 	}
 	return errs
 }
 
-func SetClusterNameAnnotation(ctx context.Context, obj *metav1.ObjectMeta) {
-	if metadata.OnGCE() {
-		clusterName, err := utils.ClusterName(obj.GetAnnotations()[ClusterNameAnnotation])
+func SetClusterNameAnnotation(obj *metav1.ObjectMeta, client metadataClient.Client) {
+	if client.OnGCE() {
+		clusterName, err := utils.ClusterName(obj.GetAnnotations()[ClusterNameAnnotation], client)
 		if err == nil {
 			setDefaultAnnotationIfNotPresent(obj, ClusterNameAnnotation, clusterName)
 		}

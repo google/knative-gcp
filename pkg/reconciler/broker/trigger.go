@@ -21,13 +21,6 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +31,15 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
@@ -189,7 +191,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
@@ -293,7 +295,7 @@ func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context,
 
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err

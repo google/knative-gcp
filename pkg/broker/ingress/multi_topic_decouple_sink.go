@@ -28,10 +28,12 @@ import (
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"knative.dev/eventing/pkg/logging"
+
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
-	"knative.dev/eventing/pkg/logging"
 )
 
 const projectEnvKey = "PROJECT_ID"
@@ -48,7 +50,7 @@ func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupl
 	if opts.client == nil {
 		if opts.pubsub == nil {
 			var projectID string
-			if projectID, err = utils.ProjectID(os.Getenv(projectEnvKey)); err != nil {
+			if projectID, err = utils.ProjectID(os.Getenv(projectEnvKey), metadataClient.NewDefaultMetadataClient()); err != nil {
 				return nil, err
 			}
 			if opts.pubsub, err = pubsub.NewClient(ctx, projectID); err != nil {

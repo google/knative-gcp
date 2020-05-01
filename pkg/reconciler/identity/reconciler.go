@@ -34,6 +34,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -150,23 +151,13 @@ func (i *Identity) createServiceAccount(ctx context.Context, namespace, gService
 		logging.FromContext(ctx).Desugar().Error("Failed to get k8s service account", zap.Error(err))
 		return nil, fmt.Errorf("getting k8s service account failed with: %w", err)
 	}
-	// Update kServiceAccount if it has a wrong annotation.
-	if kServiceAccount.Annotations[resources.WorkloadIdentityKey] != gServiceAccount {
-		kServiceAccount.Annotations[resources.WorkloadIdentityKey] = gServiceAccount
-		kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(kServiceAccount.Namespace).Create(kServiceAccount)
-		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to update k8s service account", zap.Error(err))
-			return nil, fmt.Errorf("failed to update k8s service account: %w", err)
-		}
-		return kServiceAccount, nil
-	}
 	return kServiceAccount, nil
 }
 
 // TODO he iam policy binding should be mocked so that we can unit test it. issue https://github.com/google/knative-gcp/issues/657
 // addIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
 func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectID, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
@@ -179,7 +170,7 @@ func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceA
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
 func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectID, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}

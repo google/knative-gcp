@@ -25,6 +25,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,6 +43,11 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 	}{{
 		name: "non-nil",
 		start: &CloudPubSubSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
@@ -55,6 +62,11 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 			},
 		},
 		want: &CloudPubSubSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
@@ -71,10 +83,19 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 	}, {
 		name: "nil",
 		start: &CloudPubSubSource{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       CloudPubSubSourceSpec{},
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			Spec: CloudPubSubSourceSpec{},
 		},
 		want: &CloudPubSubSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudPubSubSourceSpec{
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
@@ -101,6 +122,11 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	days2 := 2 * 24 * time.Hour
 	secs60 := 60 * time.Second
 	want := &CloudPubSubSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
 		Spec: CloudPubSubSourceSpec{
 			AckDeadline:       ptr.String(secs60.String()),
 			RetentionDuration: ptr.String(days2.String()),

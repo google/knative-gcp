@@ -39,8 +39,10 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -305,6 +307,9 @@ func TestAllCases(t *testing.T) {
 					Secret:  &secret,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
+				WithTopicAnnotation(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 			newSecret(),
@@ -328,6 +333,9 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 					Topic:   testTopicID,
 					Secret:  &secret,
+				}),
+				WithTopicAnnotation(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
@@ -434,6 +442,9 @@ func TestAllCases(t *testing.T) {
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
+					WithTopicAnnotation(map[string]string{
+						v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
 				),
 				newSink(),
@@ -462,6 +473,9 @@ func TestAllCases(t *testing.T) {
 						Topic:   testTopicID,
 						Secret:  &secret,
 					}),
+					WithTopicAnnotation(map[string]string{
+						v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
@@ -478,6 +492,9 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
+					}),
+					WithTopicAnnotation(map[string]string{
+						v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
 				),
@@ -506,6 +523,9 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 						Topic:   testTopicID,
 						Secret:  &secret,
+					}),
+					WithTopicAnnotation(map[string]string{
+						v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
@@ -695,6 +715,9 @@ func newPublisher() *servingv1.Service {
 			Project: testProject,
 			Topic:   testTopicID,
 			Secret:  &secret,
+		}),
+		WithTopicAnnotation(map[string]string{
+			v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 		}))
 	args := &resources.PublisherArgs{
 		Image:  testImage,

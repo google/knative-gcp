@@ -24,6 +24,8 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	v1 "k8s.io/api/apps/v1"
 	"knative.dev/pkg/apis"
 
@@ -46,6 +48,8 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/resolver"
 
+	"knative.dev/eventing/pkg/duck"
+
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
@@ -56,7 +60,6 @@ import (
 	. "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/resources"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"knative.dev/eventing/pkg/duck"
 )
 
 const (
@@ -170,6 +173,7 @@ func newAnnotations() map[string]string {
 		v1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
 		v1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
 		v1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+		v1alpha1.ClusterNameAnnotation:                     testingMetadataClient.FakeClusterName,
 	}
 }
 
@@ -826,6 +830,7 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 			v1alpha1.KedaAutoscalingSubscriptionSizeAnnotation: "5",
 			v1alpha1.KedaAutoscalingCooldownPeriodAnnotation:   "60",
 			v1alpha1.KedaAutoscalingPollingIntervalAnnotation:  "30",
+			v1alpha1.ClusterNameAnnotation:                     testingMetadataClient.FakeClusterName,
 		}),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{

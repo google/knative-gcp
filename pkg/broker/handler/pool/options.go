@@ -23,6 +23,8 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
+
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -69,7 +71,7 @@ func NewOptions(opts ...Option) (*Options, error) {
 		o(opt)
 	}
 	if opt.ProjectID == "" {
-		pid, err := utils.ProjectID(opt.ProjectID)
+		pid, err := utils.ProjectID(opt.ProjectID, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get default ProjectID: %w", err)
 		}

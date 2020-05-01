@@ -24,6 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,6 +39,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 	}{{
 		name: "defaults present",
 		start: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
@@ -50,6 +57,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 		},
 		want: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
@@ -65,10 +77,19 @@ func TestBuildSourceDefaults(t *testing.T) {
 	}, {
 		name: "missing defaults",
 		start: &CloudBuildSource{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       CloudBuildSourceSpec{},
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			Spec: CloudBuildSourceSpec{},
 		},
 		want: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),

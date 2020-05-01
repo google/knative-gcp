@@ -21,13 +21,16 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	"knative.dev/pkg/apis"
 )
 
 func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
 	errs := c.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateClusterNameAnnotation(ctx, c.Annotations, errs)
+	return duckv1alpha1.ValidateClusterNameAnnotation(c.Annotations, errs, metadataClient.NewDefaultMetadataClient())
 }
 
 func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {

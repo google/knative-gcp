@@ -23,6 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 var (
@@ -214,14 +216,30 @@ func TestSetClusterNameAnnotation(t *testing.T) {
 		orig     *v1.ObjectMeta
 		expected *v1.ObjectMeta
 	}{
-		"no annotation, not on GKE": {
-			orig:     &v1.ObjectMeta{},
-			expected: &v1.ObjectMeta{},
+		"no annotation": {
+			orig: &v1.ObjectMeta{},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+		},
+		"has annotation": {
+			orig: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			SetClusterNameAnnotation(context.TODO(), tc.orig)
+			SetClusterNameAnnotation(tc.orig, testingMetadataClient.NewTestClient())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
@@ -234,15 +252,23 @@ func TestValidateClusterNameAnnotation(t *testing.T) {
 		objMeta *v1.ObjectMeta
 		error   bool
 	}{
-		"no annotation, not on GKE": {
+		"no annotation, can successfully get the clusterName": {
 			objMeta: &v1.ObjectMeta{},
 			error:   false,
+		},
+		"has annotation": {
+			objMeta: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			error: false,
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
 			var errs *apis.FieldError
-			err := ValidateClusterNameAnnotation(context.TODO(), tc.objMeta.Annotations, errs)
+			err := ValidateClusterNameAnnotation(tc.objMeta.Annotations, errs, testingMetadataClient.NewTestClient())
 			if tc.error != (err != nil) {
 				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}

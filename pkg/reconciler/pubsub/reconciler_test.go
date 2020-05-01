@@ -32,9 +32,11 @@ import (
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubsourcev1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -61,7 +63,9 @@ var (
 		},
 		Key: "key.json",
 	}
-	pubsubable = rectesting.NewCloudStorageSource(name, testNS)
+	pubsubable = rectesting.NewCloudStorageSource(name, testNS, rectesting.WithCloudStorageSourceAnnotations(map[string]string{
+		v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+	}))
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
@@ -100,6 +104,9 @@ func TestCreates(t *testing.T) {
 				"receive-adapter":                     receiveAdapterName,
 				"events.cloud.google.com/source-name": name,
 			}),
+			rectesting.WithTopicAnnotation(map[string]string{
+				v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
@@ -113,6 +120,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithTopicAnnotation(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -330,7 +340,8 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
-				"metrics-resource-group": resourceGroup,
+				"metrics-resource-group":       resourceGroup,
+				v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -348,7 +359,8 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":       resourceGroup,
+					v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -382,7 +394,8 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":       resourceGroup,
+					v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -415,7 +428,8 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
-				"metrics-resource-group": resourceGroup,
+				"metrics-resource-group":       resourceGroup,
+				v1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),

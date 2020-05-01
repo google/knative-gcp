@@ -21,10 +21,14 @@ import (
 	"fmt"
 
 	"knative.dev/pkg/apis"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
-	return t.Spec.Validate(ctx).ViaField("spec")
+	errs := t.Spec.Validate(ctx).ViaField("spec")
+	return duckv1alpha1.ValidateClusterNameAnnotation(t.Annotations, errs, metadataClient.NewDefaultMetadataClient())
 }
 
 func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {

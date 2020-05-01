@@ -21,7 +21,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -40,7 +43,8 @@ const (
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	errs = duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
+	return duckv1alpha1.ValidateClusterNameAnnotation(current.Annotations, errs, metadataClient.NewDefaultMetadataClient())
 }
 
 func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {

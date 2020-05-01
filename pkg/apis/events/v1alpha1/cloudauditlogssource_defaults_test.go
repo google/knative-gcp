@@ -22,7 +22,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
@@ -31,8 +34,19 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 		expected *CloudAuditLogsSource
 	}{
 		"missing defaults": {
-			orig: &CloudAuditLogsSource{},
+			orig: &CloudAuditLogsSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+			},
 			expected: &CloudAuditLogsSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
@@ -47,6 +61,11 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudAuditLogsSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
@@ -59,6 +78,11 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudAuditLogsSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudAuditLogsSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{

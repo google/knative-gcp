@@ -38,15 +38,17 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	. "knative.dev/pkg/reconciler/testing"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gstorage "github.com/google/knative-gcp/pkg/gclient/storage/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -161,6 +163,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -172,6 +177,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudStorageSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
@@ -184,6 +192,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": storageName,
+				}),
+				WithTopicAnnotation(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -394,6 +405,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceObjectMetaGeneration(generation),
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicReady(testTopicID),
@@ -412,6 +426,9 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudStorageSourceConditions,
 				WithCloudStorageSourceTopicReady(testTopicID),
 				WithCloudStorageSourceProjectID(testProject),
+				WithCloudStorageSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
 			),
 		}},
@@ -429,7 +446,8 @@ func TestAllCases(t *testing.T) {
 					"events.cloud.google.com/source-name": storageName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":           resourceGroup,
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -846,9 +864,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: "cluster",
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudStorageSourceServiceAccountName("test123-cluster"),
+					WithCloudStorageSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
 					WithDeletionTimestamp(),
 				),
@@ -856,7 +874,8 @@ func TestAllCases(t *testing.T) {
 			},
 			Key: testNS + "/" + storageName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123-cluster" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed",
+					`Failed to delete CloudStorageSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewCloudStorageSource(storageName, testNS,
@@ -866,11 +885,12 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSink(sinkGVK, sinkName),
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceGCPServiceAccount(gServiceAccount),
-					WithCloudStorageSourceServiceAccountName("test123-cluster"),
+					WithCloudStorageSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 					WithCloudStorageSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: "cluster",
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudStorageSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-cluster" not found`),
+					WithCloudStorageSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed",
+						`serviceaccounts "test123-fake-cluster-name" not found`),
 					WithDeletionTimestamp(),
 				),
 			}},

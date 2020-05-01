@@ -20,22 +20,56 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestProjectID(t *testing.T) {
-	want := "testing-project"
-	got, _ := ProjectID(want)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-		t.Log(got)
+	testCases := map[string]struct {
+		want  string
+		input string
+	}{
+		"cluster name exists": {
+			want:  "testing-project",
+			input: "testing-project",
+		},
+		"cluster name doesn't exist": {
+			want:  testingMetadataClient.FakeProjectID,
+			input: "",
+		},
+	}
+	client := testingMetadataClient.NewTestClient()
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			got, _ := ProjectID(tc.input, client)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
 	}
 }
 
 func TestClusterName(t *testing.T) {
-	want := "testing-cluster"
-	got, _ := ClusterName(want)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
-		t.Log(got)
+	testCases := map[string]struct {
+		want  string
+		input string
+	}{
+		"cluster name exists": {
+			want:  "testing-cluster-name",
+			input: "testing-cluster-name",
+		},
+		"cluster name doesn't exist": {
+			want:  testingMetadataClient.FakeClusterName,
+			input: "",
+		},
+	}
+	client := testingMetadataClient.NewTestClient()
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			got, _ := ClusterName(tc.input, client)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
 	}
 }

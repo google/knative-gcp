@@ -21,8 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/google/knative-gcp/pkg/tracing"
-	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	corev1 "k8s.io/api/core/v1"
@@ -31,12 +29,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/tracing"
+	"github.com/google/knative-gcp/pkg/utils"
+
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 	servinglisters "knative.dev/serving/pkg/client/listers/serving/v1"
+
+	gstatus "google.golang.org/grpc/status"
 
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/topic"
@@ -45,7 +49,6 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic/resources"
-	gstatus "google.golang.org/grpc/status"
 )
 
 const (
@@ -121,7 +124,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 
 func (r *Reconciler) reconcileTopic(ctx context.Context, topic *v1alpha1.Topic) error {
 	if topic.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(topic.Spec.Project)
+		projectID, err := utils.ProjectID(topic.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

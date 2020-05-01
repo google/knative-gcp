@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
 const (
@@ -43,7 +44,7 @@ func defaultSecretSelector() *corev1.SecretKeySelector {
 
 func (c *Channel) SetDefaults(ctx context.Context) {
 	c.Spec.SetDefaults(ctx)
-	duckv1alpha1.SetClusterNameAnnotation(ctx, &c.ObjectMeta)
+	duckv1alpha1.SetClusterNameAnnotation(&c.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (cs *ChannelSpec) SetDefaults(ctx context.Context) {

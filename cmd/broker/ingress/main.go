@@ -20,16 +20,18 @@ import (
 	"flag"
 	"log"
 
-	"github.com/google/knative-gcp/pkg/broker/ingress"
-	"github.com/google/knative-gcp/pkg/observability"
-	"github.com/google/knative-gcp/pkg/utils"
-	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
+
+	"github.com/google/knative-gcp/pkg/broker/ingress"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/observability"
+	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
 var (
@@ -78,7 +80,7 @@ func main() {
 	if err := envconfig.Process("", &env); err != nil {
 		logger.Desugar().Fatal("Failed to process env var", zap.Error(err))
 	}
-	projectID, err := utils.ProjectID(env.ProjectID)
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}

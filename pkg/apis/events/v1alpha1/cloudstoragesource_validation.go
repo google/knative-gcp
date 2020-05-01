@@ -20,6 +20,8 @@ import (
 	"context"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -30,7 +32,7 @@ import (
 
 func (current *CloudStorageSource) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	errs = duckv1alpha1.ValidateClusterNameAnnotation(ctx, current.Annotations, errs)
+	errs = duckv1alpha1.ValidateClusterNameAnnotation(current.Annotations, errs, metadataClient.NewDefaultMetadataClient())
 	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 

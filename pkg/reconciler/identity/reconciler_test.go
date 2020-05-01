@@ -23,6 +23,8 @@ import (
 	"testing"
 
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -48,7 +50,7 @@ import (
 const (
 	testNS              = "test-NS"
 	gServiceAccountName = "test@test"
-	kServiceAccountName = "test-cluster"
+	kServiceAccountName = "test-fake-cluster-name"
 	identifiableName    = "identifiable"
 	projectID           = "id"
 )
@@ -126,7 +128,7 @@ func TestCreates(t *testing.T) {
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
 			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: "cluster",
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
@@ -233,7 +235,7 @@ func TestDeletes(t *testing.T) {
 				WithCloudPubSubSourceServiceAccountName("test"))
 
 			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: "cluster",
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
