@@ -39,7 +39,7 @@ func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error
 		sink.Spec.IdentitySpec = convert.ToV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
-		sink.Spec.Subscribable = convert.ToV1beta1SubscribableSpec(source.Spec.Subscribable)
+		sink.Spec.SubscribableSpec = convert.ToV1beta1SubscribableSpec(source.Spec.Subscribable)
 		sink.Status.IdentityStatus = convert.ToV1beta1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
 		source.Status.SubscribableTypeStatus.ConvertTo(ctx, &sink.Status.SubscribableStatus)
@@ -64,7 +64,7 @@ func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) err
 		sink.Spec.IdentitySpec = convert.FromV1beta1IdentitySpec(source.Spec.IdentitySpec)
 		sink.Spec.Secret = source.Spec.Secret
 		sink.Spec.Project = source.Spec.Project
-		sink.Spec.Subscribable = convert.FromV1beta1SubscribableSpec(source.Spec.Subscribable)
+		sink.Spec.Subscribable = convert.FromV1beta1SubscribableSpec(source.Spec.SubscribableSpec)
 		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
 		sink.Status.AddressStatus = source.Status.AddressStatus
 		if err := sink.Status.SubscribableTypeStatus.ConvertFrom(ctx, source.Status.SubscribableStatus); err != nil {
