@@ -97,3 +97,5 @@ replace golang.org/x/time => golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd
 replace golang.org/x/tools => golang.org/x/tools v0.0.0-20190930152728-90aeebe84374
 
 replace golang.org/x/xerrors => golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
+
+replace gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
