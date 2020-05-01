@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	nethttp "net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,12 +31,14 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
+	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
 )
@@ -44,6 +47,8 @@ const (
 	projectID      = "testproject"
 	topicID        = "topic1"
 	subscriptionID = "subscription1"
+
+	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
 )
 
 var brokerConfig = &config.TargetsConfig{
@@ -69,6 +74,8 @@ var brokerConfig = &config.TargetsConfig{
 	},
 }
 
+type eventAssertion func(*testing.T, *cloudevents.Event)
+
 type testCase struct {
 	name string
 	// in happy case, path should match the /<ns>/<broker> in the brokerConfig.
@@ -80,6 +87,8 @@ type testCase struct {
 	body     map[string]string
 	header   nethttp.Header
 	wantCode int
+	// additional assertions on the output event.
+	eventAssertion func(*testing.T, *cloudevents.Event)
 }
 
 func TestHandler(t *testing.T) {
@@ -89,6 +98,16 @@ func TestHandler(t *testing.T) {
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
 			wantCode: nethttp.StatusOK,
+		},
+		{
+			name:     "trace context",
+			path:     "/ns1/broker1",
+			event:    createTestEvent("test-event"),
+			wantCode: nethttp.StatusOK,
+			header: nethttp.Header{
+				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
+			},
+			eventAssertion: assertTraceID(traceID),
 		},
 		{
 			name:     "valid event but unsupported http  method",
@@ -175,6 +194,9 @@ func TestHandler(t *testing.T) {
 				}
 				if savedToSink.Time().IsZero() {
 					t.Errorf("Saved event should be decorated with timestamp, got zero.")
+				}
+				if tc.eventAssertion != nil {
+					tc.eventAssertion(t, savedToSink)
 				}
 			}
 
@@ -283,6 +305,24 @@ func createRequest(tc testCase, url string) *nethttp.Request {
 	return request
 }
 
+func assertTraceID(id string) eventAssertion {
+	return func(t *testing.T, e *cloudevents.Event) {
+		dt, ok := extensions.GetDistributedTracingExtension(*e)
+		if !ok {
+			t.Errorf("event missing distributed tracing extensions: %v", e)
+			return
+		}
+		sc, err := dt.ToSpanContext()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		if sc.TraceID.String() != id {
+			t.Errorf("unexpected trace ID: got %q, want %q", sc.TraceID, id)
+		}
+	}
+}
+
 // testHttpMessageReceiver implements HttpMessageReceiver. When created, it creates an httptest.Server,
 // which starts a server with any available port.
 type testHttpMessageReceiver struct {
@@ -292,7 +332,7 @@ type testHttpMessageReceiver struct {
 
 func (recv *testHttpMessageReceiver) StartListen(ctx context.Context, handler nethttp.Handler) error {
 	// NewServer creates a new server and starts it. It is non-blocking.
-	server := httptest.NewServer(handler)
+	server := httptest.NewServer(kncloudevents.CreateHandler(handler))
 	defer server.Close()
 	recv.urlCh <- server.URL
 	select {

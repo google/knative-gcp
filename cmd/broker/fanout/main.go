@@ -20,28 +20,24 @@ import (
 	"context"
 	"flag"
 	"log"
-	"os"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/kelseyhightower/envconfig"
-	"go.opencensus.io/stats/view"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
-	pkglogging "knative.dev/pkg/logging"
-	"knative.dev/pkg/metrics"
+	"knative.dev/pkg/logging"
 	"knative.dev/pkg/signals"
-	"knative.dev/pkg/system"
 	"knative.dev/pkg/version"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
+	"github.com/google/knative-gcp/pkg/observability"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
@@ -56,12 +52,14 @@ var (
 )
 
 type envConfig struct {
-	PodName                string        `envconfig:"POD_NAME" required:"true"`
-	ProjectID              string        `envconfig:"PROJECT_ID"`
-	TargetsConfigPath      string        `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
-	HandlerConcurrency     int           `envconfig:"HANDLER_CONCURRENCY"`
-	MaxConcurrencyPerEvent int           `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
-	TimeoutPerEvent        time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
+	PodName                string `envconfig:"POD_NAME" required:"true"`
+	ProjectID              string `envconfig:"PROJECT_ID"`
+	TargetsConfigPath      string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
+	HandlerConcurrency     int    `envconfig:"HANDLER_CONCURRENCY"`
+	MaxConcurrencyPerEvent int    `envconfig:"MAX_CONCURRENCY_PER_EVENT"`
+
+	// Max to 10m.
+	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
 
 func main() {
@@ -70,13 +68,6 @@ func main() {
 
 	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
 	ctx := signals.NewContext()
-
-	// Report stats on Go memory usage every 30 seconds.
-	msp := metrics.NewMemStatsAll()
-	msp.Start(ctx, 30*time.Second)
-	if err := view.Register(msp.DefaultViews()...); err != nil {
-		log.Fatalf("Error exporting go memstats view: %v", err)
-	}
 
 	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
 	if err != nil {
@@ -106,26 +97,17 @@ func main() {
 		log.Fatal("Timed out attempting to get k8s version: ", err)
 	}
 
-	// Set up our logger.
-	loggingConfig, err := sharedmain.GetLoggingConfig(ctx)
+	ctx, flush, err := observability.SetupDynamicConfig(ctx, component)
 	if err != nil {
-		log.Fatal("Error loading/parsing logging configuration: ", err)
+		log.Fatal("Error setting up dynamic observability configuration", err)
 	}
-
-	logger, atomicLevel := pkglogging.NewLoggerFromConfig(loggingConfig, component)
-	defer flush(logger)
-	ctx = pkglogging.WithLogger(ctx, logger)
+	defer flush()
+	logger := logging.FromContext(ctx)
 
 	// Run informers instead of starting them from the factory to prevent the sync hanging because of empty handler.
 	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
 		logger.Fatalw("Failed to start informers", zap.Error(err))
 	}
-
-	configMapWatcher := configmap.NewInformedWatcher(kubeClient, system.Namespace())
-	// Watch the logging config map and dynamically update logging levels.
-	configMapWatcher.Watch(pkglogging.ConfigMapName(), pkglogging.UpdateLevelFromConfigMap(logger, atomicLevel, component))
-	// Watch the observability config map
-	configMapWatcher.Watch(metrics.ConfigMapName(), metrics.UpdateExporterFromConfigMap(component, logger))
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
@@ -195,11 +177,4 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts
-}
-
-func flush(logger *zap.SugaredLogger) {
-	logger.Sync()
-	os.Stdout.Sync()
-	os.Stderr.Sync()
-	metrics.FlushExporter()
 }

@@ -40,6 +40,16 @@ spec:
           value: /var/secrets/google/key.json        
         - name: PORT
           value: "8080"
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: cloud.google.com/events
         volumeMounts:
         - name: broker-config
           mountPath: /var/run/cloud-run-events/broker
@@ -99,6 +109,10 @@ spec:
           valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+        - name: MAX_CONCURRENCY_PER_EVENT
+          value: "1000"
+        - name: HANDLER_CONCURRENCY
+          value: "10"
         - name: CONFIG_LOGGING_NAME
           value: config-logging
         - name: CONFIG_OBSERVABILITY_NAME
