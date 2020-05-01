@@ -114,10 +114,6 @@ required = [
   name = "github.com/census-instrumentation/opencensus-proto"
   version = "0.2.0"
 
-[[override]]
-  name = "cloud.google.com/go"
-  version = "0.44.3"
-
 [[constraint]]
   branch = "master"
   name = "google.golang.org/api"

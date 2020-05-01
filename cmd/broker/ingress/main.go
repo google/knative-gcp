@@ -32,18 +32,21 @@ import (
 	"knative.dev/pkg/signals"
 )
 
+const containerName = "ingress"
+
 var (
 	masterURL  = flag.String("master", "", "The address of the Kubernetes API server. Overrides any value in kubeconfig. Only required if out-of-cluster.")
 	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 type envConfig struct {
+	PodName   string `envconfig:"POD_NAME" required:"true"`
 	Port      int    `envconfig:"PORT" default:"8080"`
 	ProjectID string `envconfig:"PROJECT_ID"`
 }
 
 const (
-	componentName = "broker-ingress"
+	componentName = "broker"
 )
 
 // main creates and starts an ingress handler using default options.
@@ -84,12 +87,13 @@ func main() {
 	}
 	logger.Desugar().Info("Starting ingress handler", zap.Any("envConfig", env), zap.Any("Project ID", projectID))
 
-	ingress, err := ingress.NewHandler(ctx, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
+	statsReporter := ingress.NewStatsReporter(env.PodName, containerName)
+	ingress, err := ingress.NewHandler(ctx, statsReporter, ingress.WithPort(env.Port), ingress.WithProjectID(projectID))
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
 	}
 
-	logger.Info("Starting ingress.", zap.Any("ingress", ingress))
+	logger.Desugar().Info("Starting ingress.", zap.Any("ingress", ingress))
 	if err := ingress.Start(ctx); err != nil {
 		logger.Desugar().Fatal("failed to start ingress: ", zap.Error(err))
 	}
