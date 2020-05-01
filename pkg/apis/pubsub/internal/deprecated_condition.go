@@ -26,11 +26,12 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
-const deprecationMessage = "This object is deprecated and should be deleted. There is no public " +
-	"replacement. If you want a public replacement, please comment on " +
-	"https://github.com/google/knative-gcp/issues/905. This object should be deleted before " +
-	"upgrading to 0.16. If it is not deleted before the 0.16 upgrade, then it will leak the " +
-	"Topic/PullSubscription created in Google Cloud Platform."
+const deprecationMessage = "This Kind is deprecated and the CRD has been made 'internal'. This " +
+	"means, end-users should not create objects of this CRD directly. If you need a non-internal " +
+	"variant, then please let us know by commenting on " +
+	"https://github.com/google/knative-gcp/issues/905. Moreover, the object must be deleted " +
+	"before upgrading to 0.16 to avoid orphaning the Google Cloud Platform resources that were " +
+	"created on-behalf of this object, such as Pub/Sub Topics and Subscriptions."
 
 // deprecatedCondition is the condition to add to types that will be removed in 0.16.
 // See https://github.com/google/knative-gcp/issues/905 for more context.
