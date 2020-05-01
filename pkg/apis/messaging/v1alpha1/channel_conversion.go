@@ -27,7 +27,7 @@ import (
 )
 
 // ConvertTo implements apis.Convertible.
-// Converts source (from v1beta1.PullSubscription) into v1alpha1.PullSubscription.
+// Converts source (from v1beta1.Channel) into v1alpha1.Channel.
 func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	switch sink := to.(type) {
 	case *v1beta1.Channel:
@@ -52,7 +52,7 @@ func (source *Channel) ConvertTo(ctx context.Context, to apis.Convertible) error
 }
 
 // ConvertFrom implements apis.Convertible.
-// Converts obj from v1alpha1.PullSubscription into v1beta1.PullSubscription.
+// Converts obj from v1alpha1.Channel into v1beta1.Channel.
 func (sink *Channel) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1beta1.Channel:

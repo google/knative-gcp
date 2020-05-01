@@ -45,10 +45,19 @@ func (c *Channel) SetDefaults(ctx context.Context) {
 	// We need to set this to the _stored_ version of the Channel. If we set to anything other than
 	// the stored version, then when reading the stored version, conversion won't be called so
 	// nothing will set it to the stored version.
+	// Note that if a user sends a bad version of this annotation (e.g. sets it to v1beta1), then we
+	// won't overwrite their bad input. This is because the webhook works by:
+	// 1. Reading the stored version.
+	// 2. Converting to the desired version.
+	// 3. Defaulting the desired version.
+	// So because we don't know if the user or the converter put the value here, we are forced to
+	// assume it was the converter and shouldn't change it.
 	if c.Annotations == nil {
 		c.Annotations = make(map[string]string, 1)
 	}
-	c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
+	if _, present := c.Annotations[messaging.SubscribableDuckVersionAnnotation]; !present {
+		c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
+	}
 	c.Spec.SetDefaults(ctx)
 }
 
