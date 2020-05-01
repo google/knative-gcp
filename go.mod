@@ -57,3 +57,5 @@ replace (
 replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 
 replace github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
+
+replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0
