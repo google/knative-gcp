@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:4b3ac5d7fcc481283fbfb04ac4794672213e7a06b4826867a280b321dc277a69"
+  digest = "1:c4d48f902a5490579a78c2c0e91496f72d0bdda94aee8ce0b52579fbc1643be0"
   name = "cloud.google.com/go"
   packages = [
     ".",
@@ -23,14 +23,15 @@
     "pubsub",
     "pubsub/apiv1",
     "pubsub/internal/distribution",
+    "pubsub/internal/scheduler",
     "pubsub/pstest",
     "scheduler/apiv1",
     "storage",
     "trace/apiv2",
   ]
   pruneopts = "NUT"
-  revision = "ceeb313ad77b789a7fa5287b36a1d127b69b7093"
-  version = "v0.44.3"
+  revision = "69e77e66e59741e053c986d469791a983ee1d6a5"
+  version = "v0.56.0"
 
 [[projects]]
   digest = "1:0a936e17f4fc0c65615913199ce0a387a67a4c72e017747b6f38c898168b1b75"
@@ -680,17 +681,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7b726e4be970ebfbdfd32a7b079cf4d53049e95b1b33ccd222af0d2dbef38617"
-  name = "golang.org/x/exp"
-  packages = [
-    "apidiff",
-    "cmd/apidiff",
-  ]
-  pruneopts = "NUT"
-  revision = "2f50522955873285d9bf17ec91e55aec8ae82edc"
-
-[[projects]]
-  branch = "master"
   digest = "1:5b8b10c6c3a2c1b4131a1e05de506f8a544ff4ede7cd26cdfcdef4fc2a5b1510"
   name = "golang.org/x/lint"
   packages = [
@@ -835,26 +825,28 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:28edd202f6ded3959dd52460724680a1aa5217bb14b15e23dbc768b60a081ae9"
+  digest = "1:ffea53213e4f208032bdc9f9b2ec212f7e21ae6f6e4f69eaabbe45410a2a3aa5"
   name = "google.golang.org/api"
   packages = [
     "container/v1beta1",
     "googleapi",
-    "googleapi/internal/uritemplates",
     "googleapi/transport",
     "internal",
     "internal/gensupport",
+    "internal/third_party/uritemplates",
     "iterator",
     "option",
+    "option/internaloption",
     "storage/v1",
     "support/bundler",
     "transport",
+    "transport/cert",
     "transport/grpc",
     "transport/http",
     "transport/http/internal/propagation",
   ]
   pruneopts = "NUT"
-  revision = "6a149848833881cf9a0f77f7595c64550f285d87"
+  revision = "ac9be1f8f530b062691cca7d1e7c474accbc3b90"
 
 [[projects]]
   digest = "1:be5054b1c190011dca4e1c3c051025294e97f14fdfd354093fc233b4d05dcd98"
@@ -879,7 +871,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:56245807311fc47ceb78871e4f0f8709ad025be67eee55a5c66b1c79bbfb9115"
+  digest = "1:737a6000c209e1cc4913bb7411c54a3b7c05b16b0873a5282924d3261d33d524"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/api",
@@ -902,17 +894,20 @@
     "googleapis/pubsub/v1",
     "googleapis/rpc/code",
     "googleapis/rpc/status",
+    "googleapis/type/calendarperiod",
     "googleapis/type/expr",
     "protobuf/field_mask",
   ]
   pruneopts = "NUT"
-  revision = "20e1ac93f88cf06d2b1defb90b9e9e126c7dfff6"
+  revision = "b979b6f78d84775ef7a93ffc8034924947960f29"
 
 [[projects]]
-  digest = "1:951cc64f12fe4d5a5af33c8ddc3393988d1b66ed9e0e9e92042d748501547221"
+  digest = "1:a661b686690424ecbc5ee35678a741bf8acf669e682bdbc706ab1cc1b8fdf8b7"
   name = "google.golang.org/grpc"
   packages = [
     ".",
+    "attributes",
+    "backoff",
     "balancer",
     "balancer/base",
     "balancer/grpclb",
@@ -939,10 +934,16 @@
     "internal/backoff",
     "internal/balancerload",
     "internal/binarylog",
+    "internal/buffer",
     "internal/channelz",
     "internal/envconfig",
+    "internal/grpclog",
     "internal/grpcrand",
     "internal/grpcsync",
+    "internal/grpcutil",
+    "internal/resolver/dns",
+    "internal/resolver/passthrough",
+    "internal/status",
     "internal/syscall",
     "internal/transport",
     "keepalive",
@@ -950,16 +951,14 @@
     "naming",
     "peer",
     "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
     "serviceconfig",
     "stats",
     "status",
     "tap",
   ]
   pruneopts = "NUT"
-  revision = "f6d0f9ee430895e87ef1ceb5ac8f39725bafceef"
-  version = "v1.24.0"
+  revision = "754ee590a4f386d0910d887f3b8776354042260b"
+  version = "v1.29.1"
 
 [[projects]]
   digest = "1:2f72cb36ac9f2025f67b0343f0eaa30e3ea9aee2e126898a08c732600b2f63b6"
