@@ -41,6 +41,12 @@ const (
 
 	// defaultPort is the defaultPort number for the ingress HTTP receiver.
 	defaultPort = 8080
+
+	// EventArrivalTime is used to access the metadata stored on a
+	// CloudEvent to measure the time difference between when an event is
+	// received on a broker and before it is dispatched to the trigger function.
+	// The format is an RFC3339 time in string format. For example: 2019-08-26T23:38:17.834384404Z.
+	EventArrivalTime = "knativearrivaltime"
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -55,8 +61,6 @@ type HttpMessageReceiver interface {
 }
 
 // handler receives events and persists them to storage (pubsub).
-// TODO(liu-cong) add metrics
-// TODO(liu-cong) add tracing
 // TODO(liu-cong) support event TTL
 type handler struct {
 	// httpReceiver is an HTTP server to receive events.
@@ -64,12 +68,14 @@ type handler struct {
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
+	reporter *StatsReporter
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, options ...HandlerOption) (*handler, error) {
+func NewHandler(ctx context.Context, reporter *StatsReporter, options ...HandlerOption) (*handler, error) {
 	h := &handler{
-		logger: logging.FromContext(ctx),
+		logger:   logging.FromContext(ctx),
+		reporter: reporter,
 	}
 
 	for _, option := range options {
@@ -105,6 +111,7 @@ func (h *handler) Start(ctx context.Context) error {
 // 4. Send event to decouple sink.
 func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
+	startTime := time.Now()
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
@@ -120,7 +127,6 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
-
 	event, msg, statusCode := h.toEvent(request)
 	if event == nil {
 		response.WriteHeader(statusCode)
@@ -128,12 +134,15 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
+	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
+
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
+	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, startTime) }()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
 		h.logger.Error(msg)
-		statusCode := nethttp.StatusInternalServerError
+		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
 		}
@@ -141,8 +150,6 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		response.Write([]byte(msg))
 		return
 	}
-
-	response.WriteHeader(nethttp.StatusOK)
 }
 
 // toEvent converts an http request to an event.
@@ -166,4 +173,16 @@ func (h *handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 		return nil, msg, nethttp.StatusBadRequest
 	}
 	return event, "", nethttp.StatusOK
+}
+
+func (h *handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
+	args := reportArgs{
+		namespace:    ns,
+		broker:       broker,
+		eventType:    event.Type(),
+		responseCode: statusCode,
+	}
+	if err := h.reporter.reportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
+		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
+	}
 }
