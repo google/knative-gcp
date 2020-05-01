@@ -159,7 +159,7 @@ func TestHandler(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
-			ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
 
 			psSrv := pstest.NewServer()
