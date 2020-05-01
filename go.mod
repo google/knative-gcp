@@ -77,3 +77,5 @@ replace github.com/prometheus/common => github.com/prometheus/common v0.7.0
 replace github.com/prometheus/procfs => github.com/prometheus/procfs v0.0.5
 
 replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
+
+replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15

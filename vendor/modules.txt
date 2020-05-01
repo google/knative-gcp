@@ -289,7 +289,7 @@ go.opentelemetry.io/otel/api/trace
 go.uber.org/atomic
 # go.uber.org/multierr v1.2.0
 go.uber.org/multierr
-# go.uber.org/zap v1.10.0
+# go.uber.org/zap v1.10.0 => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 go.uber.org/zap
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/bufferpool
