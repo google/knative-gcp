@@ -57,6 +57,9 @@ spec:
   versions:
     - name: v1alpha1
       served: true
+      # Note that the storage version here _must_ match StoredChannelVersion in
+      # pkg/apis/messaging/internal/constants.go. If the storage version is changing here, update
+      # the constant in code too.
       storage: true
       schema:
         openAPIV3Schema:
