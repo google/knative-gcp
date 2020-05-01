@@ -64,7 +64,7 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig, as
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 	if assertMetrics {
-		client.SetupStackDriverMetrics(t, false)
+		client.SetupStackDriverMetrics(t)
 	}
 	// Create a target Job to receive the events.
 	makeTargetJobOrDie(client, targetName)

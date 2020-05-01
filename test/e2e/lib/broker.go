@@ -34,8 +34,8 @@ func AssertBrokerMetrics(t *testing.T, client *Client) {
 	// If we reach this point, the projectID should have been set.
 	projectID := os.Getenv(ProwProjectKey)
 	f := map[string]interface{}{
-		"metric.type":                 "knative.dev/eventing/broker/event_count",
-		"resource.type":               "knative_broker",
+		"metric.type":                 BrokerEventCountMetricType,
+		"resource.type":               BrokerMetricResourceType,
 		"metric.label.event_type":     "e2e-testing-dummy",
 		"resource.label.namespace_name": client.Namespace,
 		"metric.label.response_code":       http.StatusAccepted,
