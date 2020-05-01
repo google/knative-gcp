@@ -37,6 +37,13 @@ var (
 		ceclient.WithTimeNow(),
 		ceclient.WithTracePropagation(),
 	}
+
+	// This is the pubsub default MaxExtension.
+	// It would not make sense for handler timeout per event be greater
+	// than this value because the message would be nacked before the handler
+	// timeouts.
+	// TODO: consider allow changing this value?
+	maxTimeout = 10 * time.Minute
 )
 
 // Options holds all the options for create handler pool.
@@ -51,6 +58,8 @@ type Options struct {
 	MaxConcurrencyPerEvent int
 	// TimeoutPerEvent is the timeout for handling an event.
 	TimeoutPerEvent time.Duration
+	// DeliveryTimeout is the timeout for delivering an event to a consumer.
+	DeliveryTimeout time.Duration
 	// PubsubClient is the pubsub client used to receive pubsub messages.
 	PubsubClient *pubsub.Client
 	// PubsubReceiveSettings is the pubsub receive settings.
@@ -110,7 +119,11 @@ func WithMaxConcurrentPerEvent(c int) Option {
 // WithTimeoutPerEvent sets TimeoutPerEvent.
 func WithTimeoutPerEvent(t time.Duration) Option {
 	return func(o *Options) {
-		o.TimeoutPerEvent = t
+		if t > maxTimeout {
+			o.TimeoutPerEvent = maxTimeout
+		} else {
+			o.TimeoutPerEvent = t
+		}
 	}
 }
 
@@ -125,5 +138,12 @@ func WithPubsubClient(c *pubsub.Client) Option {
 func WithPubsubReceiveSettings(s pubsub.ReceiveSettings) Option {
 	return func(o *Options) {
 		o.PubsubReceiveSettings = s
+	}
+}
+
+// WithDeliveryTimeout sets the DeliveryTimeout.
+func WithDeliveryTimeout(t time.Duration) Option {
+	return func(o *Options) {
+		o.DeliveryTimeout = t
 	}
 }
