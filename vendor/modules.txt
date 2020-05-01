@@ -75,7 +75,7 @@ github.com/aws/aws-sdk-go/service/sts
 github.com/aws/aws-sdk-go/service/sts/stsiface
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
-# github.com/blang/semver v3.5.1+incompatible
+# github.com/blang/semver v3.5.1+incompatible => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
 github.com/blang/semver
 # github.com/census-instrumentation/opencensus-proto v0.2.1
 github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1
