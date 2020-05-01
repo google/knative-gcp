@@ -29,11 +29,9 @@ cloud.google.com/go/storage
 contrib.go.opencensus.io/exporter/ocagent
 # contrib.go.opencensus.io/exporter/prometheus v0.1.0
 contrib.go.opencensus.io/exporter/prometheus
-# contrib.go.opencensus.io/exporter/stackdriver v0.13.1
+# contrib.go.opencensus.io/exporter/stackdriver v0.13.1 => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
 contrib.go.opencensus.io/exporter/stackdriver
 contrib.go.opencensus.io/exporter/stackdriver/monitoredresource
-contrib.go.opencensus.io/exporter/stackdriver/monitoredresource/aws
-contrib.go.opencensus.io/exporter/stackdriver/monitoredresource/gcp
 # contrib.go.opencensus.io/exporter/zipkin v0.1.1
 contrib.go.opencensus.io/exporter/zipkin
 # github.com/BurntSushi/toml v0.3.1
@@ -265,7 +263,7 @@ github.com/spf13/pflag
 # github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# go.opencensus.io v0.22.3
+# go.opencensus.io v0.22.3 => go.opencensus.io v0.22.1
 go.opencensus.io
 go.opencensus.io/internal
 go.opencensus.io/internal/tagencoding
