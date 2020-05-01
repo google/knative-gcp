@@ -19,8 +19,8 @@ package pool
 import (
 	"context"
 	"fmt"
-	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -32,7 +32,8 @@ func TestSyncPool(t *testing.T) {
 
 	t.Run("StartSyncPool returns error", func(t *testing.T) {
 		syncPool := &fakeSyncPool{
-			returnErr: true,
+			returnErr:  true,
+			syncCalled: make(chan struct{}, 1),
 		}
 		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}))
 		if gotErr == nil {
@@ -45,34 +46,36 @@ func TestSyncPool(t *testing.T) {
 
 	t.Run("Work done with StartSyncPool", func(t *testing.T) {
 		syncPool := &fakeSyncPool{
-			returnErr: false,
+			returnErr:  false,
+			syncCalled: make(chan struct{}, 1),
 		}
 		ch := make(chan struct{})
 		if _, err := StartSyncPool(ctx, syncPool, ch); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
-		if syncPool.syncCount.Load() != 1 {
-			t.Errorf("SyncOnce was called more than once")
-		}
+		syncPool.verifySyncOnceCalled(t)
+
 		ch <- struct{}{}
-		if syncPool.syncCount.Load() != 2 {
-			t.Errorf("SyncOnce was not called twice")
-		}
+		syncPool.verifySyncOnceCalled(t)
 	})
 }
 
 type fakeSyncPool struct {
-	returnErr bool
-	syncCount atomic.Value
+	returnErr  bool
+	syncCalled chan struct{}
+}
+
+func (p *fakeSyncPool) verifySyncOnceCalled(t *testing.T) {
+	select {
+	case <-time.After(500 * time.Millisecond):
+		t.Errorf("SyncOnce was not called before timeout")
+	case <-p.syncCalled:
+		// Good.
+	}
 }
 
 func (p *fakeSyncPool) SyncOnce(ctx context.Context) error {
-	if p.syncCount.Load() == nil {
-		p.syncCount.Store(0)
-	}
-	count := p.syncCount.Load().(int)
-	count++
-	p.syncCount.Store(count)
+	p.syncCalled <- struct{}{}
 	if p.returnErr {
 		return fmt.Errorf("error returned from fakeSyncPool")
 	}
