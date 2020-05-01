@@ -113,6 +113,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 
 func TestCloudBuildSourceDefaults_NoChange(t *testing.T) {
 	want := &CloudBuildSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
 		Spec: CloudBuildSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{

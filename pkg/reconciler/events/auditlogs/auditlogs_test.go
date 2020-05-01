@@ -375,6 +375,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicReady(testTopicID),
@@ -391,6 +394,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
@@ -409,7 +415,8 @@ func TestAllCases(t *testing.T) {
 					"events.cloud.google.com/source-name": sourceName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":           resourceGroup,
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),

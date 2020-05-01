@@ -176,7 +176,7 @@ func ValidateClusterNameAnnotation(annotations map[string]string, errs *apis.Fie
 		if _, err := utils.ClusterName(annotations[ClusterNameAnnotation], client); err != nil {
 			// If metadata access is disabled for some reason, validation will fail and ask user to provide clusterName by adding this annotation.
 			return errs.Also(apis.ErrGeneric(
-				fmt.Sprintf(`not able to get cluster name with error: %w, please provide it by adding annotation "cluster-name=$CLUSTER_NAME"`, err),
+				fmt.Sprintf(`not able to get cluster name with error: %s, please provide it by adding annotation "cluster-name=$CLUSTER_NAME"`, err.Error()),
 				fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)))
 		}
 	}

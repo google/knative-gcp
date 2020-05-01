@@ -23,22 +23,56 @@ import (
 )
 
 func TestGetPullSubscriptionAnnotations(t *testing.T) {
-	want := map[string]string{
-		"metrics-resource-name":  "my-channel",
-		"metrics-resource-group": "channels.messaging.cloud.google.com",
+	testCases := map[string]struct {
+		want map[string]string
+		got  map[string]string
+	}{
+		"no cluster name": {
+			want: map[string]string{
+				"metrics-resource-name":  "my-channel",
+				"metrics-resource-group": "channels.messaging.cloud.google.com",
+			},
+			got: GetPullSubscriptionAnnotations("my-channel", ""),
+		},
+		"has cluster name": {
+			want: map[string]string{
+				"metrics-resource-name":  "my-channel",
+				"metrics-resource-group": "channels.messaging.cloud.google.com",
+				"cluster-name":           "fake-cluster-name",
+			},
+			got: GetPullSubscriptionAnnotations("my-channel", "fake-cluster-name"),
+		},
 	}
-	got := GetPullSubscriptionAnnotations("my-channel", "")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+				t.Errorf("unexpected (-want, +got) = %v", diff)
+			}
+		})
 	}
 }
 
 func TestGetTopicAnnotations(t *testing.T) {
-	want := map[string]string{}
-	got := GetTopicAnnotations("")
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("unexpected (-want, +got) = %v", diff)
+	testCases := map[string]struct {
+		want map[string]string
+		got  map[string]string
+	}{
+		"no cluster name": {
+			want: map[string]string{},
+			got:  GetTopicAnnotations(""),
+		},
+		"has cluster name": {
+			want: map[string]string{
+				"cluster-name": "fake-cluster-name",
+			},
+			got: GetTopicAnnotations("fake-cluster-name"),
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+				t.Errorf("unexpected (-want, +got) = %v", diff)
+			}
+		})
 	}
 }

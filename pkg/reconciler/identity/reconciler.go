@@ -70,7 +70,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	if clusterName == "" {
 		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
-		return nil, fmt.Errorf("failed to get cluster name: %w", err.Error())
+		return nil, fmt.Errorf("failed to get cluster name: %w", err)
 	}
 	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	if err != nil {
@@ -115,7 +115,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	if clusterName == "" {
 		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
-		return fmt.Errorf("failed to get cluster name: %w", err.Error())
+		return fmt.Errorf("failed to get cluster name: %w", err)
 	}
 	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
