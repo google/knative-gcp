@@ -34,10 +34,10 @@ func AssertBrokerMetrics(t *testing.T, client *Client) {
 	// If we reach this point, the projectID should have been set.
 	projectID := os.Getenv(ProwProjectKey)
 	f := map[string]interface{}{
-		"metric.type":                 BrokerEventCountMetricType,
-		"resource.type":               BrokerMetricResourceType,
-		"metric.label.event_type":     "e2e-testing-dummy",
-		"resource.label.namespace_name": client.Namespace,
+		"metric.type":                      BrokerEventCountMetricType,
+		"resource.type":                    BrokerMetricResourceType,
+		"metric.label.event_type":          "e2e-testing-dummy",
+		"resource.label.namespace_name":    client.Namespace,
 		"metric.label.response_code":       http.StatusAccepted,
 		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusAccepted),
 	}

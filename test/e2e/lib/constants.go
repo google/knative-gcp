@@ -25,5 +25,5 @@ const (
 	PubsubResourceGroup      = "pubsubs.events.cloud.google.com"
 
 	BrokerEventCountMetricType = "knative.dev/eventing/broker/event_count"
-	BrokerMetricResourceType = "knative_broker"
+	BrokerMetricResourceType   = "knative_broker"
 )
