@@ -46,6 +46,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&BrokerCell{},
 		&BrokerCellList{},
+		&PullSubscription{},
+		&PullSubscriptionList{},
+		&Topic{},
+		&TopicList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
