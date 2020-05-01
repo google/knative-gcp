@@ -246,9 +246,9 @@ spec:
                         minLength: 1
                       generation:
                         type: integer
-                      subscriberURI:
+                      subscriberUri:
                         type: string
-                      replyURI:
+                      replyUri:
                         type: string
                       delivery:
                         type: object
