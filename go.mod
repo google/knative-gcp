@@ -69,3 +69,9 @@ replace github.com/json-iterator/go => github.com/json-iterator/go v1.1.7
 replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
 
 replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
+
+replace github.com/prometheus/client_model => github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
+
+replace github.com/prometheus/common => github.com/prometheus/common v0.7.0
+
+replace github.com/prometheus/procfs => github.com/prometheus/procfs v0.0.5
