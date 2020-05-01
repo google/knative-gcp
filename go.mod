@@ -53,3 +53,5 @@ replace (
 	k8s.io/gengo => k8s.io/gengo v0.0.0-20190907103519-ebc107f98eab
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
+
+replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
