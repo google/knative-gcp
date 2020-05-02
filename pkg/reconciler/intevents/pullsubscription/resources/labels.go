@@ -26,7 +26,7 @@ func GetLabelSelector(controller, source string) labels.Selector {
 
 func GetLabels(controller, source string) map[string]string {
 	return map[string]string{
-		"events.cloud.google.com/controller":                controller,
+		"internal.events.cloud.google.com/controller":       controller,
 		"internal.events.cloud.google.com/pullsubscription": source,
 	}
 }
