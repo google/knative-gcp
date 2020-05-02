@@ -592,12 +592,12 @@ func TestAllCases(t *testing.T) {
 		}
 		r := &Reconciler{
 			PubSubBase:     pubsubBase,
-			topicLister:    listers.GetTopicLister(),
+			topicLister:    listers.GetPubSubTopicLister(),
 			serviceLister:  listers.GetV1ServiceLister(),
 			publisherImage: testImage,
 			createClientFn: gpubsub.TestClientCreator(testData["topic"]),
 		}
-		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetTopicLister(), r.Recorder, r)
+		return topic.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPubSubTopicLister(), r.Recorder, r)
 	}))
 
 }

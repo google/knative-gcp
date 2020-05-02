@@ -767,7 +767,7 @@ func TestAllCases(t *testing.T) {
 			Base: &psreconciler.Base{
 				PubSubBase:             pubsubBase,
 				DeploymentLister:       listers.GetDeploymentLister(),
-				PullSubscriptionLister: listers.GetPullSubscriptionLister(),
+				PullSubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 				UriResolver:            resolver.NewURIResolver(ctx, func(types.NamespacedName) {}),
 				ReceiveAdapterImage:    testImage,
 				CreateClientFn:         gpubsub.TestClientCreator(testData["ps"]),
@@ -776,7 +776,7 @@ func TestAllCases(t *testing.T) {
 			},
 		}
 		r.ReconcileDataPlaneFn = r.ReconcileDeployment
-		return pullsubscription.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPullSubscriptionLister(), r.Recorder, r)
+		return pullsubscription.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetPubSubPullSubscriptionLister(), r.Recorder, r)
 	}))
 }
 

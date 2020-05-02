@@ -125,11 +125,11 @@ func (l *Listers) GetIstioObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeistioclientset.AddToScheme)
 }
 
-func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
+func (l *Listers) GetPubSubPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
 	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
 }
 
-func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
+func (l *Listers) GetPubSubTopicLister() pubsublisters.TopicLister {
 	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
