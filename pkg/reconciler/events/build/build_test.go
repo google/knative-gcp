@@ -342,7 +342,7 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			buildLister:            listers.GetCloudBuildSourceLister(),
-			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
+			pullsubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudbuildsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudBuildSourceLister(), r.Recorder, r)

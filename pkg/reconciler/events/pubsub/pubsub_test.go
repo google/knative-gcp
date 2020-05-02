@@ -341,7 +341,7 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
-			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
+			pullsubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)

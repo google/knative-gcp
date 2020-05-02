@@ -534,8 +534,8 @@ func TestAllCases(t *testing.T) {
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetTopicLister(),
-			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			topicLister:            listers.GetPubSubTopicLister(),
+			pullSubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
