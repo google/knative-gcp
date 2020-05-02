@@ -28,11 +28,11 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-// TopicOption enables further configuration of a Topic.
-type TopicOption func(*v1alpha1.Topic)
+// PubSubTopicOption enables further configuration of a Topic.
+type PubSubTopicOption func(*v1alpha1.Topic)
 
-// NewTopic creates a Topic with TopicOptions
-func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
+// NewPubSubTopic creates a Topic with TopicOptions
+func NewPubSubTopic(name, namespace string, so ...PubSubTopicOption) *v1alpha1.Topic {
 	s := &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -46,45 +46,31 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
 	return s
 }
 
-func WithTopicUID(uid types.UID) TopicOption {
+func WithPubSubTopicUID(uid types.UID) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.UID = uid
 	}
 }
 
-// WithInitTopicConditions initializes the Topics's conditions.
-func WithInitTopicConditions(s *v1alpha1.Topic) {
+// WithPubSubInitTopicConditions initializes the Topics's conditions.
+func WithPubSubInitTopicConditions(s *v1alpha1.Topic) {
 	s.Status.InitializeConditions()
 }
 
-func WithTopicTopicID(topicID string) TopicOption {
+func WithPubSubTopicTopicID(topicID string) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
 	}
 }
 
-func WithTopicPropagationPolicy(policy string) TopicOption {
+func WithPubSubTopicPropagationPolicy(policy string) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Spec.PropagationPolicy = v1alpha1.PropagationPolicyType(policy)
 	}
 }
 
-func WithTopicTopicDeleted(topicID string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Status.MarkNoTopic("Deleted", "Successfully deleted topic %q.", topicID)
-		s.Status.TopicID = ""
-	}
-}
-
-func WithTopicJobFailure(topicID, reason, message string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Status.TopicID = topicID
-		s.Status.MarkNoTopic(reason, message)
-	}
-}
-
-func WithTopicAddress(uri string) TopicOption {
+func WithPubSubTopicAddress(uri string) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		if uri != "" {
 			u, _ := apis.ParseURL(uri)
@@ -95,41 +81,41 @@ func WithTopicAddress(uri string) TopicOption {
 	}
 }
 
-func WithTopicSpec(spec v1alpha1.TopicSpec) TopicOption {
+func WithPubSubTopicSpec(spec v1alpha1.TopicSpec) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Spec = spec
 	}
 }
 
-func WithTopicPublisherDeployed(s *v1alpha1.Topic) {
+func WithPubSubTopicPublisherDeployed(s *v1alpha1.Topic) {
 	s.Status.MarkPublisherDeployed()
 }
 
-func WithTopicPublisherNotDeployed(reason, message string) TopicOption {
+func WithPubSubTopicPublisherNotDeployed(reason, message string) PubSubTopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Status.MarkPublisherNotDeployed(reason, message)
 	}
 }
 
-func WithTopicPublisherUnknown(reason, message string) TopicOption {
+func WithPubSubTopicPublisherUnknown(reason, message string) PubSubTopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Status.MarkPublisherUnknown(reason, message)
 	}
 }
 
-func WithTopicPublisherNotConfigured() TopicOption {
+func WithPubSubTopicPublisherNotConfigured() PubSubTopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Status.MarkPublisherNotConfigured()
 	}
 }
 
-func WithTopicProjectID(projectID string) TopicOption {
+func WithPubSubTopicProjectID(projectID string) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.ProjectID = projectID
 	}
 }
 
-func WithTopicReady(topicID string) TopicOption {
+func WithPubSubTopicReady(topicID string) PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkPublisherDeployed()
@@ -138,44 +124,38 @@ func WithTopicReady(topicID string) TopicOption {
 	}
 }
 
-func WithTopicFailed() TopicOption {
+func WithPubSubTopicFailed() PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
 		s.Status.MarkPublisherNotDeployed("PublisherStatus", "Publisher has no Ready type status")
 	}
 }
 
-func WithTopicUnknown() TopicOption {
+func WithPubSubTopicUnknown() PubSubTopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
 	}
 }
 
-func WithTopicDeleted(t *v1alpha1.Topic) {
+func WithPubSubTopicDeleted(t *v1alpha1.Topic) {
 	tt := metav1.NewTime(time.Unix(1e9, 0))
 	t.ObjectMeta.SetDeletionTimestamp(&tt)
 }
 
-func WithTopicOwnerReferences(ownerReferences []metav1.OwnerReference) TopicOption {
+func WithPubSubTopicOwnerReferences(ownerReferences []metav1.OwnerReference) PubSubTopicOption {
 	return func(c *v1alpha1.Topic) {
 		c.ObjectMeta.OwnerReferences = ownerReferences
 	}
 }
 
-func WithTopicLabels(labels map[string]string) TopicOption {
+func WithPubSubTopicLabels(labels map[string]string) PubSubTopicOption {
 	return func(c *v1alpha1.Topic) {
 		c.ObjectMeta.Labels = labels
 	}
 }
 
-func WithTopicNoTopic(reason, message string) TopicOption {
+func WithPubSubTopicNoTopic(reason, message string) PubSubTopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Status.MarkNoTopic(reason, message)
-	}
-}
-
-func WithTopicFinalizers(finalizers ...string) TopicOption {
-	return func(s *v1alpha1.Topic) {
-		s.Finalizers = finalizers
 	}
 }
