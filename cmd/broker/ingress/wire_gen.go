@@ -13,14 +13,14 @@ import (
 
 // Injectors from wire.go:
 
-func InitializeHandler(ctx context.Context, httpOpts ingress.HTTPMessageReceiverOptions, pubsubOpts ingress.PubsubClientOpts) (*ingress.Handler, error) {
-	httpMessageReceiver := ingress.NewHTTPMessageReceiver(httpOpts)
+func InitializeHandler(ctx context.Context, args ingress.Args) (*ingress.Handler, error) {
+	httpMessageReceiver := ingress.NewHTTPMessageReceiver(args)
 	v := _wireValue
 	readonlyTargets, err := volume.NewTargetsFromFile(v...)
 	if err != nil {
 		return nil, err
 	}
-	client, err := ingress.NewPubsubClient(ctx, pubsubOpts)
+	client, err := ingress.NewPubsubClient(ctx, args)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +29,8 @@ func InitializeHandler(ctx context.Context, httpOpts ingress.HTTPMessageReceiver
 		return nil, err
 	}
 	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, clientClient)
-	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink)
+	statsReporter := ingress.NewStatsReporter(args)
+	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, statsReporter)
 	return handler, nil
 }
 

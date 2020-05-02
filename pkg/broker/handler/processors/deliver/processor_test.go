@@ -142,21 +142,36 @@ func TestDeliverSuccess(t *testing.T) {
 
 func TestDeliverFailure(t *testing.T) {
 	cases := []struct {
-		name      string
-		withRetry bool
-		failRetry bool
-		wantErr   bool
+		name          string
+		withRetry     bool
+		withRespDelay time.Duration
+		failRetry     bool
+		wantErr       bool
 	}{{
-		name:    "no retry",
+		name:    "delivery error no retry",
 		wantErr: true,
 	}, {
-		name:      "retry success",
+		name:      "delivery error retry success",
 		withRetry: true,
 	}, {
-		name:      "retry failure",
+		name:      "delivery error retry failure",
 		withRetry: true,
 		failRetry: true,
 		wantErr:   true,
+	}, {
+		name:          "delivery timeout no retry",
+		withRespDelay: time.Second,
+		wantErr:       true,
+	}, {
+		name:          "delivery timeout retry success",
+		withRespDelay: time.Second,
+		withRetry:     true,
+	}, {
+		name:          "delivery timeout retry failure",
+		withRetry:     true,
+		withRespDelay: time.Second,
+		failRetry:     true,
+		wantErr:       true,
 	}}
 
 	for _, tc := range cases {
@@ -214,6 +229,7 @@ func TestDeliverFailure(t *testing.T) {
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
+				DeliverTimeout:     500 * time.Millisecond,
 			}
 
 			origin := event.New()
@@ -230,12 +246,22 @@ func TestDeliverFailure(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error from target receiving event: %v", err)
 				}
+				defer msg.Finish(nil)
+
+				// If with delay, we reply OK so that we know the error is for sure caused by timeout.
+				if tc.withRespDelay > 0 {
+					time.Sleep(tc.withRespDelay)
+					if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusOK}); err != nil {
+						t.Errorf("unexpected error from target responding event: %v", err)
+					}
+					return
+				}
+
 				// Due to https://github.com/cloudevents/sdk-go/issues/433
 				// it's not possible to use Receive to easily return error.
 				if err := resp(ctx, nil, &cehttp.Result{StatusCode: http.StatusInternalServerError}); err != nil {
 					t.Errorf("unexpected error from target responding event: %v", err)
 				}
-				defer msg.Finish(nil)
 			}()
 
 			err = p.Process(ctx, &origin)

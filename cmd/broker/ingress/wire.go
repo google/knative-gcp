@@ -26,7 +26,7 @@ import (
 	"github.com/google/wire"
 )
 
-func InitializeHandler(ctx context.Context, httpOpts ingress.HTTPMessageReceiverOptions, pubsubOpts ingress.PubsubClientOpts) (*ingress.Handler, error) {
+func InitializeHandler(ctx context.Context, args ingress.Args) (*ingress.Handler, error) {
 	panic(wire.Build(
 		ingress.HandlerSet,
 		wire.Value([]volume.Option(nil)),

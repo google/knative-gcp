@@ -21,9 +21,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
-	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
-	pubsubcontext "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub/context"
+	cloudevents "github.com/cloudevents/sdk-go"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
+	pubsubcontext "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
