@@ -48,7 +48,7 @@ fi
 function test_setup() {
   pubsub_setup || return 1
   gcp_broker_setup || return 1
-  # Create privacy key that will be used in storage_setup
+  # Create private key that will be used in storage_setup
   create_private_key_for_pubsub_service_account || return 1
   storage_setup || return 1
   scheduler_setup || return 1
@@ -64,7 +64,9 @@ function control_plane_setup() {
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
     init_control_plane_service_account ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}
-    enable_workload_identity ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW} ${REGIONAL_CLUSTER_LOCATION_TYPE}
+    local cluster_name="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
+    local cluster_location="$(cut -d'_' -f3 <<<"$(kubectl config current-context)")"
+    enable_workload_identity ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW} ${cluster_name} ${cluster_location} ${REGIONAL_CLUSTER_LOCATION_TYPE}
     gcloud iam service-accounts add-iam-policy-binding \
       --role roles/iam.workloadIdentityUser \
       --member ${MEMBER} ${CONTROL_PLANE_SERVICE_ACCOUNT_EMAIL}

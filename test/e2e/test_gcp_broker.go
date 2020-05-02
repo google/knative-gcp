@@ -60,11 +60,10 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	// Create a target Job to receive the events.
 	makeTargetJobOrDie(client, targetName)
 
-	u := createGCPBroke(t, client, targetName)
+	u := createGCPBroker(t, client, targetName)
 
 	// Just to make sure all resources are ready.
-	// Sleep for 60 seconds because of the delay of mounted ConfigMaps of GCP Broker. We will decrease the sleep time later after we update the annotation of GCP Broker which triggers an immediate refresh of mounted ConfigMaps
-	time.Sleep(60 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Create a sender Job to sender the event.
 	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
@@ -85,7 +84,7 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 }
 
-func createGCPBroke(t *testing.T, client *lib.Client, targetName string) url.URL {
+func createGCPBroker(t *testing.T, client *lib.Client, targetName string) url.URL {
 	brokerName := helpers.AppendRandomString("gcp")
 	dummyTriggerName := "dummy-broker-" + brokerName
 	respTriggerName := "resp-broker-" + brokerName

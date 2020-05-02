@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 readonly CONTROL_PLANE_SERVICE_ACCOUNT="cloud-run-events"
 readonly CONTROL_PLANE_NAMESPACE="cloud-run-events"
 
@@ -24,7 +25,7 @@ readonly ZONAL_CLUSTER_LOCATION_TYPE="zonal"
 readonly REGIONAL_CLUSTER_LOCATION_TYPE="regional"
 
 # Constants used for both init_XXX.sh and e2e-xxx.sh
-export K8S_CONTROLLER_SERVICE_ACCOUNT=controller
+export K8S_CONTROLLER_SERVICE_ACCOUNT="controller"
 export CONTROL_PLANE_SECRET_NAME="google-cloud-key"
 export PUBSUB_SECRET_NAME="google-cloud-key"
 
@@ -76,7 +77,7 @@ function init_control_plane_service_account() {
 function init_pubsub_service_account() {
   local project_id=${1}
   local pubsub_service_account=${2}
-  echo "parameter project_id used when initiating data plane service account is'${project_id}'"
+  echo "parameter project_id used when initiating pubsub service account is'${project_id}'"
   echo "parameter control_plane_service_account used when initiating pubsub service account is'${pubsub_service_account}'"
   # Enable APIs.
   gcloud services enable pubsub.googleapis.com
@@ -88,7 +89,7 @@ function init_pubsub_service_account() {
     echo "Create PubSub Service Account '${pubsub_service_account}' neeeded for the Data Plane"
     gcloud iam service-accounts create ${pubsub_service_account}
   else
-    echo "PubSub Service Account needed for the Data Plane '${pubsub_service_account}' already existed"
+    echo "PubSub Service Account '${pubsub_service_account}' needed for the Data Plane already existed"
   fi
 
   # Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
@@ -101,28 +102,32 @@ function init_pubsub_service_account() {
 function enable_workload_identity(){
   local project_id=${1}
   local control_plane_service_account=${2}
-  local cluster_location_type=${3}
+  local cluster_name=${3}
+  local cluster_location=${4}
+  local cluster_location_type=${5}
 
-
+  # Print and Verify parameters
   echo "parameter project_id used when enabling workload identity is'${project_id}'"
-  echo "parameter control_plane_service_account used when when enabling workload identity is'${control_plane_service_account}'"
+  echo "parameter control_plane_service_account used when enabling workload identity is'${control_plane_service_account}'"
+  echo "parameter cluster_name used when enabling workload identity is'${cluster_name}'"
+  echo "parameter cluster_location used when enabling workload identity is'${cluster_location}'"
+  echo "parameter cluster_location_type used when enabling workload identity is'${cluster_location_type}'"
+
   local cluster_location_option
-  if [ ${cluster_location_type} == ${ZONAL_CLUSTER_LOCATION_TYPE} ]; then
+  if [[ ${cluster_location_type} == "${ZONAL_CLUSTER_LOCATION_TYPE}" ]]; then
     cluster_location_option=zone
-  elif [ ${cluster_location_type} == ${REGIONAL_CLUSTER_LOCATION_TYPE} ];then
+  elif [[ ${cluster_location_type} == "${REGIONAL_CLUSTER_LOCATION_TYPE}" ]]; then
     cluster_location_option=region
   else
-    echo >&2 "Fatal error: cluster_location_type used when when enabling workload identity has to '${ZONAL_CLUSTER_LOCATION_TYPE}' or '${REGIONAL_CLUSTER_LOCATION_TYPE}'"
+    echo >&2 "Fatal error: cluster_location_type used when enabling workload identity must be '${ZONAL_CLUSTER_LOCATION_TYPE}' or '${REGIONAL_CLUSTER_LOCATION_TYPE}'"
     exit 1
   fi
-  echo "parameter cluster_location_type used when when enabling workload identity is'${cluster_location_type}'"
-  echo "cluster_location_option used when when enabling workload identity is'${cluster_location_option}'"
+  echo "cluster_location_option used when enabling workload identity is'${cluster_location_option}'"
+
   # Enable API
   gcloud services enable iamcredentials.googleapis.com
   # Enable workload identity.
   echo "Enable Workload Identity"
-  local cluster_name="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
-  local cluster_location="$(cut -d'_' -f3 <<<"$(kubectl config current-context)")"
   gcloud container clusters update ${cluster_name} \
     --${cluster_location_option}=${cluster_location} \
     --workload-pool=${project_id}.svc.id.goog
@@ -138,7 +143,9 @@ function enable_workload_identity(){
     --workload-metadata=GKE_METADATA
   done <<<"${pools}"
 
-  gcloud projects add-iam-policy-binding ${project_id} --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com --role roles/iam.serviceAccountAdmin
+  gcloud projects add-iam-policy-binding ${project_id} \
+    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+    --role roles/iam.serviceAccountAdmin
   }
 
 function storage_admin_set_up() {
@@ -149,7 +156,7 @@ function storage_admin_set_up() {
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
   echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
-  echo "parameter pubsub_service_account_key_temp used when setting up storage admin is'${pubsub_service_account_key_temp=}'"
+  echo "parameter pubsub_service_account_key_temp used when setting up storage admin is'${pubsub_service_account_key_temp}'"
   echo "Update ServiceAccount for Storage Admin"
   gcloud services enable storage-component.googleapis.com
   gcloud services enable storage-api.googleapis.com
@@ -158,6 +165,6 @@ function storage_admin_set_up() {
     --role roles/storage.admin
   export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${pubsub_service_account_key_temp} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount" | grep email_address | cut -d '"' -f 4`
   gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${GCS_SERVICE_ACCOUNT} \
+    --member=serviceAccount:"${GCS_SERVICE_ACCOUNT}" \
     --role roles/pubsub.publisher
 }

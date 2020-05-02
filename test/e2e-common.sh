@@ -91,7 +91,7 @@ function enable_monitoring(){
   local pubsub_service_account=${2}
 
   echo "parameter project_id used when enabling monitoring is'${project_id}'"
-  echo "parameter control_plane_service_account used when when enabling monitoring is'${pubsub_service_account}'"
+  echo "parameter control_plane_service_account used when enabling monitoring is'${pubsub_service_account}'"
   # Enable monitoring
   echo "Enable Monitoring"
   gcloud services enable monitoring

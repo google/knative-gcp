@@ -14,17 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./init_cloud_storage_source.sh
-# The current project set in gcloud MUST be the same as where the cluster is running.
+# Usage: ./init_cloud_storage_source.sh [PROJECT_ID]
+#  where [PROJECT_ID] is an optional parameter to specify the project to use.
+#  If PROJECT_ID not specified, we use the project set in gcloud(gcloud config get-value project).
+# The script always uses the same service account called cre-pubsub.
+set -o errexit
+set -o nounset
+set -euo pipefail
+
 source $(dirname $0)/lib.sh
 
-PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="cre-pubsub.json"
+readonly PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
+
+PROJECT_ID=${1:-$(gcloud config get-value project)}
+echo "PROJECT_ID used when init_cloud_storage_source is'${PROJECT_ID}'"
 
 # Download a JSON key for the service account.
-gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} \
-  --iam-account=${PUBSUB_SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
+  --iam-account="${PUBSUB_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
-storage_admin_set_up ${PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT} ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+storage_admin_set_up "${PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT}" "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
 
 # Remove the tmp file.
-rm ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+rm "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
