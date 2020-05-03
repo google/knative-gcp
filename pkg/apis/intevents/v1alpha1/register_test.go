@@ -25,24 +25,56 @@ import (
 )
 
 func TestKind(t *testing.T) {
-	want := schema.GroupKind{
-		Group: "internal.events.cloud.google.com",
-		Kind:  "BrokerCell",
-	}
-	got := Kind("BrokerCell")
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("(Kind (-want +got): %v", diff)
+	for n, tc := range map[string]struct {
+		kind string
+	}{
+		"BrokerCell": {
+			kind: "BrokerCell",
+		},
+		"PullSubscription": {
+			kind: "PullSubscription",
+		},
+		"Topic": {
+			kind: "Topic",
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			want := schema.GroupKind{
+				Group: "internal.events.cloud.google.com",
+				Kind:  tc.kind,
+			}
+			got := Kind(tc.kind)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("(Kind (-want +got): %v", diff)
+			}
+		})
 	}
 }
 
 func TestResource(t *testing.T) {
-	want := schema.GroupResource{
-		Group:    "internal.events.cloud.google.com",
-		Resource: "brokercells",
-	}
-	got := Resource("brokercells")
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("(Kind (-want +got): %v", diff)
+	for n, tc := range map[string]struct {
+		resource string
+	}{
+		"BrokerCell": {
+			resource: "BrokerCell",
+		},
+		"PullSubscription": {
+			resource: "PullSubscription",
+		},
+		"Topic": {
+			resource: "Topic",
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			want := schema.GroupResource{
+				Group:    "internal.events.cloud.google.com",
+				Resource: tc.resource,
+			}
+			got := Resource(tc.resource)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("(Kind (-want +got): %v", diff)
+			}
+		})
 	}
 }
 
@@ -55,6 +87,10 @@ func TestAddKnownTypes(t *testing.T) {
 	want := []string{
 		"BrokerCell",
 		"BrokerCellList",
+		"PullSubscription",
+		"PullSubscriptionList",
+		"Topic",
+		"TopicList",
 	}
 	got := scheme.KnownTypes(schema.GroupVersion{Group: "internal.events.cloud.google.com", Version: "v1alpha1"})
 

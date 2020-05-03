@@ -60,7 +60,7 @@ func TestWithMaxConcurrency(t *testing.T) {
 }
 
 func TestWithTimeout(t *testing.T) {
-	want := 10 * time.Minute
+	want := 2 * time.Minute
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
 	opt, err := NewOptions(WithTimeoutPerEvent(want), WithProjectID("pid"))
 	if err != nil {
@@ -68,6 +68,16 @@ func TestWithTimeout(t *testing.T) {
 	}
 	if opt.TimeoutPerEvent != want {
 		t.Errorf("options timeout per event got=%v, want=%v", opt.TimeoutPerEvent, want)
+	}
+
+	// Set timeout greater than the max value and verify it fallbacks to the max value.
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
+	opt, err = NewOptions(WithTimeoutPerEvent(20*time.Minute), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
+	if opt.TimeoutPerEvent != maxTimeout {
+		t.Errorf("options timeout per event got=%v, want=%v", opt.TimeoutPerEvent, maxTimeout)
 	}
 }
 
@@ -102,5 +112,17 @@ func TestWithPubsubClient(t *testing.T) {
 	}
 	if opt.PubsubClient == nil {
 		t.Error("options PubsubClient got=nil, want=non-nil client")
+	}
+}
+
+func TestWithDeliveryTimeout(t *testing.T) {
+	want := 10 * time.Minute
+	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
+	opt, err := NewOptions(WithDeliveryTimeout(want), WithProjectID("pid"))
+	if err != nil {
+		t.Errorf("NewOptions got unexpected error: %v", err)
+	}
+	if opt.TimeoutPerEvent != want {
+		t.Errorf("options timeout per event got=%v, want=%v", opt.DeliveryTimeout, want)
 	}
 }

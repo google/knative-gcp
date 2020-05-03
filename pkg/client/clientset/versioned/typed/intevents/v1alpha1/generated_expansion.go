@@ -19,3 +19,7 @@ limitations under the License.
 package v1alpha1
 
 type BrokerCellExpansion interface{}
+
+type PullSubscriptionExpansion interface{}
+
+type TopicExpansion interface{}
