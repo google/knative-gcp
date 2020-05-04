@@ -17,9 +17,8 @@ package deployment
 
 import (
 	"context"
+	"os"
 
-	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/cache"
@@ -27,6 +26,9 @@ import (
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (
@@ -40,6 +42,7 @@ const (
 	namespace      = "cloud-run-events"
 	secretName     = v1alpha1.DefaultSecretName
 	deploymentName = "controller"
+	envKey         = "GOOGLE_APPLICATION_CREDENTIALS"
 )
 
 // NewController initializes the controller and is called by the generated code
@@ -63,21 +66,27 @@ func NewController(
 
 	r.Logger.Info("Setting up event handlers")
 
-	sentinel := impl.EnqueueSentinel(types.NamespacedName{Name: deploymentName, Namespace: namespace})
+	sentinel := impl.EnqueueSentinel(types.NamespacedName{Namespace: namespace, Name: deploymentName})
 	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterWithNameAndNamespace(namespace, secretName),
-		Handler:    handleUpdateOnly(sentinel),
+		Handler:    handler(sentinel),
 	})
 	return impl
 }
 
-func handleUpdateOnly(h func(interface{})) cache.ResourceEventHandler {
+func handler(h func(interface{})) cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
-		AddFunc:    doNothing,
+		// For AddFunc, only enqueue deployment key when envKey is not set.
+		// In such case, the controller pod haven't restarted before.
+		// This helps to avoid infinite loop for restarting controller pod.
+		AddFunc: func(obj interface{}) {
+			if _, ok := os.LookupEnv(envKey); !ok {
+				h(obj)
+			}
+		},
 		UpdateFunc: controller.PassNew(h),
-		DeleteFunc: doNothing,
+		// If secret is deleted, the controller pod will restart, in order to unset the envKey.
+		// This is needed when changing authentication configuration from k8s Secret to Workload Identity.
+		DeleteFunc: h,
 	}
-}
-
-func doNothing(obj interface{}) {
 }
