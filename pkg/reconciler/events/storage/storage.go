@@ -18,6 +18,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -117,7 +118,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		projectID, err := utils.ProjectID(storage.Spec.Project)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
-			return "", err
+			return "", fmt.Errorf("Failed to find project id" + err.Error())
 		}
 		// Set the projectID in the status.
 		storage.Status.ProjectID = projectID
@@ -126,7 +127,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	client, err := r.createClientFn(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource client", zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("Failed to create CloudStorageSource client" + err.Error())
 	}
 	defer client.Close()
 
@@ -136,7 +137,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("Failed to fetch existing notifications" + err.Error())
 	}
 
 	// If the notification does exist, then return its ID.
@@ -163,7 +164,7 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 	notification, err := bucket.AddNotification(ctx, nc)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create CloudStorageSource notification", zap.Error(err))
-		return "", err
+		return "", fmt.Errorf("Failed to create CloudStorageSource notification" + err.Error())
 	}
 	return notification.ID, nil
 }

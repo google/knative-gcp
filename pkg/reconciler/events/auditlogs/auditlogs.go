@@ -18,6 +18,7 @@ package auditlogs
 
 import (
 	"context"
+	"fmt"
 
 	"cloud.google.com/go/logging/logadmin"
 	"go.uber.org/zap"
@@ -119,7 +120,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.CloudAud
 	logadminClient, err := c.logadminClientProvider(ctx, s.Status.ProjectID)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to create LogAdmin client", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("Failed to create LogAdmin client" + err.Error())
 	}
 	sink, err := logadminClient.Sink(ctx, sinkID)
 	if status.Code(err) == codes.NotFound {
@@ -139,7 +140,7 @@ func (c *Reconciler) ensureSinkCreated(ctx context.Context, s *v1alpha1.CloudAud
 			sink, err = logadminClient.Sink(ctx, sinkID)
 		}
 	}
-	return sink, err
+	return sink, fmt.Errorf("Failed others" + err.Error())
 }
 
 // Ensures that the sink has been granted the pubsub.publisher role on the source topic.
