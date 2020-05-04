@@ -15,10 +15,8 @@
 # limitations under the License.
 
 # Usage: ./init_data_plane.sh [NAMESPACE] [PROJECT_ID]
-#  where [NAMESPACE] is an optional parameter to specify the namespace to use. If it's not specified, we use the default one.
-#  if the namespace does not exist, the script will create it.
-#  where [PROJECT_ID] is an optional parameter to specify the project to use.
-#  If PROJECT_ID not specified, we use the project set in gcloud(gcloud config get-value project).
+#  [NAMESPACE] is an optional parameter to specify the namespace to use, default to `default`. If the namespace does not exist, the script will create it.
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
 #  If user wants to sepcify PROJECT_ID, user also need to specify NAMESPACE
 # The script always uses the same service account called cre-pubsub.
 set -o errexit

@@ -15,15 +15,11 @@
 # limitations under the License.
 
 # Usage: ./init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
-#  where [CLUSTER_NAME] is an optional parameter to specify the cluster to use.
-#  If CLUSTER_NAME not specified, we use the cluster set in gcloud(gcloud config get-value run/cluster_location).
-#  where [CLUSTER_LOCATION] is an optional parameter to specify the cluster location to use.
-#  If CLUSTER_LOCATION not specified, we use the cluster location set in gcloud(gcloud config get-value run/cluster_location).
-#  where [CLUSTER_LOCATION_TYPE] is an optional parameter to specify the cluster location type to use.
-#  CLUSTER_LOCATION_TYPE must be `zonal` or `regional`. If CLUSTER_LOCATION_TYPE not specified, we use the `zonal`
-#  where [PROJECT_ID] is an optional parameter to specify the project to use.
-#  If PROJECT_ID not specified, we use the project set in gcloud(gcloud config get-value project).
-#  If user want to specify a parameter, user will also need `specify all parameters before that specific paramater
+#  [CLUSTER_NAME] is an optional parameter to specify the cluster to use, default to `gcloud config get-value run/cluster`.
+#  [CLUSTER_LOCATION] is an optional parameter to specify the cluster location to use, default to `gcloud config get-value run/cluster_location`.
+#  [CLUSTER_LOCATION_TYPE] is an optional parameter to specify the cluster location type to use, default to `zonal`. CLUSTER_LOCATION_TYPE must be `zonal` or `regional`.
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
+#  If user want to specify a parameter, user will also need to specify all parameters before that specific paramater
 # The script always uses the same service account called cloud-run-events.
 set -o errexit
 set -o nounset

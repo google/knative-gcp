@@ -15,8 +15,7 @@
 # limitations under the License.
 
 # Usage: ./init_control_plane.sh
-#  where [PROJECT_ID] is an optional parameter to specify the project to use.
-#  If PROJECT_ID not specified, we use the project set in gcloud(gcloud config get-value project).
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
 # The script always uses the same service account called cloud-run-events.
 set -o errexit
 set -o nounset
