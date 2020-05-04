@@ -56,7 +56,7 @@ ko apply -f ./config
    kubectl apply --filename https://github.com/google/knative-gcp/releases/download/${KGCP_VERSION}/cloud-run-events.yaml
    ```
 
-## Configure the Authentication Mechanism for GCP
+## Configure the Authentication Mechanism for GCP (the Control Plane)
 
 Currently, we support two methods: Workload Identity and Kubernetes Secret.
 Workload Identity is the recommended way to access Google Cloud services from
@@ -82,7 +82,11 @@ error message.
 wish to configure the auth manually, refer to
 [manually configure authentication for GCP](./authentication-mechanisms-gcp.md),
 
-- Option 1 (Recommended): Use Workload Identity. Apply
+- Option 1 (Recommended): Use Workload Identity. ***Note:*** Now, Workload Identity 
+for the Control Plane only works if you install the Knative-GCP Constructs from the master. 
+If you install the Knative-GCP Constructs with our latest release (v0.14.0) or older releases, please use option 2.
+
+    Apply
   [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
   ```shell
