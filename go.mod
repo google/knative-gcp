@@ -19,7 +19,6 @@ require (
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/robfig/cron v1.2.0 // indirect
 	go.opencensus.io v0.22.3
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.2.0
