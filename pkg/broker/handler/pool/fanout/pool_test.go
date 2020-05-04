@@ -128,14 +128,14 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 
-	var ttl int32 = 123
-	et := &eventutil.TTL{Logger: zap.NewNop()}
+	var hops int32 = 123
+	eh := &eventutil.Hops{Logger: zap.NewNop()}
 	e := event.New()
 	e.SetSubject("foo")
 	e.SetType("type")
 	e.SetID("id")
 	e.SetSource("source")
-	et.UpdateTTL(&e, ttl)
+	eh.UpdateRemainingHops(&e, hops)
 
 	t.Run("broker's targets receive fanout events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
@@ -233,9 +233,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		reply.SetID("id")
 		reply.SetSource("source")
 
-		// The reply to broker ingress should include the original TTL.
+		// The reply to broker ingress should include the original hops.
 		wantReply := reply.Clone()
-		et.UpdateTTL(&wantReply, ttl)
+		eh.UpdateRemainingHops(&wantReply, hops)
 
 		// Set timeout context so that verification can be done before
 		// exiting test func.

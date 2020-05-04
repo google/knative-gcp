@@ -248,12 +248,12 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 }
 
 func genTestEvent(subject, t, id, source string) event.Event {
-	et := &eventutil.TTL{Logger: zap.NewNop()}
+	eh := &eventutil.Hops{Logger: zap.NewNop()}
 	e := event.New()
 	e.SetSubject(subject)
 	e.SetType(t)
 	e.SetID(id)
 	e.SetSource(source)
-	et.UpdateTTL(&e, 123)
+	eh.UpdateRemainingHops(&e, 123)
 	return e
 }

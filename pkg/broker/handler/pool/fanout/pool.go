@@ -188,7 +188,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 						RetryOnFailure:     true,
 						DeliverRetryClient: p.deliverRetryClient,
 						DeliverTimeout:     p.deliverTimeout,
-						EventTTL:           &eventutil.TTL{Logger: logging.FromContext(ctx)},
+						EventHops:          &eventutil.Hops{Logger: logging.FromContext(ctx)},
 					},
 				),
 			},

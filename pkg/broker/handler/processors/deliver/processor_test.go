@@ -88,7 +88,7 @@ func TestDeliverSuccess(t *testing.T) {
 	p := &Processor{
 		DeliverClient: deliverClient,
 		Targets:       testTargets,
-		EventTTL:      &eventutil.TTL{Logger: zap.NewNop()},
+		EventHops:     &eventutil.Hops{Logger: zap.NewNop()},
 	}
 
 	origin := event.New()

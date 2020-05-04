@@ -43,8 +43,8 @@ const (
 	// defaultPort is the defaultPort number for the ingress HTTP receiver.
 	defaultPort = 8080
 
-	// defaultTTL is the default event TTL.
-	defaultTTL int32 = 255
+	// defaultEventHopsLimit is the default event hops limit.
+	defaultEventHopsLimit int32 = 255
 
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
@@ -65,24 +65,23 @@ type HttpMessageReceiver interface {
 }
 
 // handler receives events and persists them to storage (pubsub).
-// TODO(liu-cong) support event TTL
 type handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
-	// eventTTL manages events TTL.
-	eventTTL *eventutil.TTL
-	logger   *zap.Logger
-	reporter *StatsReporter
+	// eventHops manages events hops.
+	eventHops *eventutil.Hops
+	logger    *zap.Logger
+	reporter  *StatsReporter
 }
 
 // NewHandler creates a new ingress handler.
 func NewHandler(ctx context.Context, reporter *StatsReporter, options ...HandlerOption) (*handler, error) {
 	h := &handler{
-		logger:   logging.FromContext(ctx),
-		eventTTL: &eventutil.TTL{Logger: logging.FromContext(ctx)},
-		reporter: reporter,
+		logger:    logging.FromContext(ctx),
+		eventHops: &eventutil.Hops{Logger: logging.FromContext(ctx)},
+		reporter:  reporter,
 	}
 
 	for _, option := range options {
@@ -141,13 +140,13 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	h.eventTTL.UpdateTTL(event, defaultTTL)
-	if ttl, ok := h.eventTTL.GetTTL(event); !ok || ttl <= 0 {
-		h.logger.Debug("Dropping event based on TTL status.",
-			zap.Int32("TTL", ttl),
+	h.eventHops.UpdateRemainingHops(event, defaultEventHopsLimit)
+	if hops, ok := h.eventHops.GetRemainingHops(event); !ok || hops <= 0 {
+		h.logger.Debug("Dropping event based on remaining hops status.",
+			zap.Int32("hops", hops),
 			zap.String("event.id", event.ID()))
 		h.reportMetrics(request.Context(), ns, broker, event, nethttp.StatusBadRequest, startTime)
-		nethttp.Error(response, "The event has exceeded max TTL", nethttp.StatusBadRequest)
+		nethttp.Error(response, "The event has exceeded hops limit", nethttp.StatusBadRequest)
 		return
 	}
 

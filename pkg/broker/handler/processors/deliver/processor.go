@@ -56,8 +56,8 @@ type Processor struct {
 	// If zero, not additional timeout is applied.
 	DeliverTimeout time.Duration
 
-	// EventTTL manages events TTL.
-	EventTTL *eventutil.TTL
+	// EventHops manages events hops.
+	EventHops *eventutil.Hops
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -85,12 +85,12 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	// TTL is a broker local counter so remove any TTL before forwarding.
+	// Hops is a broker local counter so remove any hops value before forwarding.
 	// Do not modify the original event as we need to send the original
 	// event to retry queue on failure.
 	copy := event.Clone()
-	ttl, ttlFound := p.EventTTL.GetTTL(&copy)
-	p.EventTTL.DeleteTTL(&copy)
+	hops, hopsFound := p.EventHops.GetRemainingHops(&copy)
+	p.EventHops.DeleteRemainingHops(&copy)
 
 	dctx := ctx
 	if p.DeliverTimeout > 0 {
@@ -99,7 +99,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		defer cancel()
 	}
 
-	// Forward the event copy that has TTL removed.
+	// Forward the event copy that has hops removed.
 	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), copy)
 	if !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
@@ -113,12 +113,12 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	// Attach the previous TTL for the reply.
-	if ttlFound {
-		// Clean up potential TTL from the reply.
+	// Attach the previous hops for the reply.
+	if hopsFound {
+		// Clean up potential hops from the reply.
 		// It really shouldn't happen though.
-		p.EventTTL.DeleteTTL(resp)
-		p.EventTTL.UpdateTTL(resp, ttl)
+		p.EventHops.DeleteRemainingHops(resp)
+		p.EventHops.UpdateRemainingHops(resp, hops)
 	}
 
 	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {

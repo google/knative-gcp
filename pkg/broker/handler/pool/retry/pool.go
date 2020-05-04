@@ -148,7 +148,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 					&deliver.Processor{
 						DeliverClient: p.deliverClient,
 						Targets:       p.targets,
-						EventTTL:      &eventutil.TTL{Logger: logging.FromContext(ctx)},
+						EventHops:     &eventutil.Hops{Logger: logging.FromContext(ctx)},
 					},
 				),
 			},

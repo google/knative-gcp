@@ -224,9 +224,9 @@ func TestHandler(t *testing.T) {
 			},
 		},
 		{
-			name:           "ttl exceeded",
+			name:           "hops exceeds limit",
 			path:           "/ns1/broker1",
-			event:          createTTLExceededEvent("test-event"),
+			event:          createHopLimitExceededEvent("test-event"),
 			wantCode:       nethttp.StatusBadRequest,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
@@ -353,7 +353,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 		httpReceiver: receiver,
 		decouple:     decouple,
 		reporter:     NewStatsReporter(pod, container),
-		eventTTL:     &eventutil.TTL{Logger: logging.FromContext(ctx).Desugar()},
+		eventHops:    &eventutil.Hops{Logger: logging.FromContext(ctx).Desugar()},
 	}
 
 	errCh := make(chan error, 1)
@@ -378,10 +378,10 @@ func createTestEvent(id string) *cloudevents.Event {
 	return &event
 }
 
-func createTTLExceededEvent(id string) *cloudevents.Event {
+func createHopLimitExceededEvent(id string) *cloudevents.Event {
 	e := createTestEvent(id)
-	et := &eventutil.TTL{Logger: zap.NewNop()}
-	et.UpdateTTL(e, 0)
+	et := &eventutil.Hops{Logger: zap.NewNop()}
+	et.UpdateRemainingHops(e, 0)
 	return e
 }
 

@@ -69,7 +69,7 @@ type Helper struct {
 	// The internal map that maps each broker to its fake broker ingress server.
 	ingresses map[string]*serverCfg
 
-	eventTTL *eventutil.TTL
+	eventHops *eventutil.Hops
 }
 
 // Close cleans up all resources.
@@ -109,7 +109,7 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 		Targets:      memory.NewEmptyTargets(),
 		consumers:    make(map[string]*serverCfg),
 		ingresses:    make(map[string]*serverCfg),
-		eventTTL:     &eventutil.TTL{Logger: zap.NewNop()},
+		eventHops:    &eventutil.Hops{Logger: zap.NewNop()},
 	}, nil
 }
 
@@ -392,12 +392,12 @@ func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testi
 func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent, replyEvent *event.Event, statusCode int, delay time.Duration) {
 	t.Helper()
 
-	// Subscribers should not receive any event with TTL.
+	// Subscribers should not receive any event with hops.
 	var wantEventCopy *event.Event
 	if wantEvent != nil {
 		copy := wantEvent.Clone()
 		wantEventCopy = &copy
-		h.eventTTL.DeleteTTL(wantEventCopy)
+		h.eventHops.DeleteRemainingHops(wantEventCopy)
 	}
 
 	consumer, ok := h.consumers[targetKey]
@@ -483,15 +483,15 @@ func (h *Helper) assertEvent(t *testing.T, want, got *event.Event, msg string) {
 		// Ignore traceparent.
 		got.SetExtension(extensions.TraceParentExtension, nil)
 
-		// Compare TTL explicitly because
-		// cloudevents client sometimes treat TTL as string internally.
-		gotTTL, _ := h.eventTTL.GetTTL(got)
-		wantTTL, _ := h.eventTTL.GetTTL(want)
-		if gotTTL != wantTTL {
-			t.Errorf("%s event TTL got=%d, want=%d", msg, gotTTL, wantTTL)
+		// Compare hops explicitly because
+		// cloudevents client sometimes treat hops value as string internally.
+		gotHops, _ := h.eventHops.GetRemainingHops(got)
+		wantHops, _ := h.eventHops.GetRemainingHops(want)
+		if gotHops != wantHops {
+			t.Errorf("%s event hops got=%d, want=%d", msg, gotHops, wantHops)
 		}
-		h.eventTTL.DeleteTTL(want)
-		h.eventTTL.DeleteTTL(got)
+		h.eventHops.DeleteRemainingHops(want)
+		h.eventHops.DeleteRemainingHops(got)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("%s received event (-want,+got): %v", msg, diff)
