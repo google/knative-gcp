@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"os"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 )
 

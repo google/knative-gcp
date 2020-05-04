@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/kelseyhightower/envconfig"
 )
