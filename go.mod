@@ -19,6 +19,7 @@ require (
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
+	github.com/robfig/cron v1.2.0 // indirect
 	go.opencensus.io v0.22.3
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.2.0
@@ -39,6 +40,7 @@ require (
 	knative.dev/eventing v0.14.1-0.20200501170243-0bb51bb8d62b
 	knative.dev/pkg v0.0.0-20200501164043-2e4e82aa49f1
 	knative.dev/serving v0.14.1-0.20200424135249-b16b68297056
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
