@@ -32,11 +32,13 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 )
 
@@ -83,7 +85,11 @@ func TestDeliverSuccess(t *testing.T) {
 	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
-	p := &Processor{DeliverClient: deliverClient, Targets: testTargets}
+	p := &Processor{
+		DeliverClient: deliverClient,
+		Targets:       testTargets,
+		EventTTL:      &eventutil.TTL{Logger: zap.NewNop()},
+	}
 
 	origin := event.New()
 	origin.SetID("id")

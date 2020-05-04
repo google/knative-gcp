@@ -31,6 +31,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 )
@@ -41,6 +42,9 @@ const (
 
 	// defaultPort is the defaultPort number for the ingress HTTP receiver.
 	defaultPort = 8080
+
+	// defaultTTL is the default event TTL.
+	defaultTTL int32 = 255
 
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
@@ -67,6 +71,8 @@ type handler struct {
 	httpReceiver HttpMessageReceiver
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
+	// eventTTL manages events TTL.
+	eventTTL *eventutil.TTL
 	logger   *zap.Logger
 	reporter *StatsReporter
 }
@@ -75,6 +81,7 @@ type handler struct {
 func NewHandler(ctx context.Context, reporter *StatsReporter, options ...HandlerOption) (*handler, error) {
 	h := &handler{
 		logger:   logging.FromContext(ctx),
+		eventTTL: &eventutil.TTL{Logger: logging.FromContext(ctx)},
 		reporter: reporter,
 	}
 
@@ -131,6 +138,16 @@ func (h *handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	if event == nil {
 		response.WriteHeader(statusCode)
 		response.Write([]byte(msg))
+		return
+	}
+
+	h.eventTTL.UpdateTTL(event, defaultTTL)
+	if ttl, ok := h.eventTTL.GetTTL(event); !ok || ttl <= 0 {
+		h.logger.Debug("Dropping event based on TTL status.",
+			zap.Int32("TTL", ttl),
+			zap.String("event.id", event.ID()))
+		h.reportMetrics(request.Context(), ns, broker, event, nethttp.StatusBadRequest, startTime)
+		nethttp.Error(response, "The event has exceeded max TTL", nethttp.StatusBadRequest)
 		return
 	}
 

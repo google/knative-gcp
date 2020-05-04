@@ -36,6 +36,8 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -139,7 +141,7 @@ func TestHandler(t *testing.T) {
 			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
 		{
-			name:     "valid event but unsupported http  method",
+			name:     "valid event but unsupported http method",
 			method:   "PUT",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
@@ -220,6 +222,23 @@ func TestHandler(t *testing.T) {
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
 			},
+		},
+		{
+			name:           "ttl exceeded",
+			path:           "/ns1/broker1",
+			event:          createTTLExceededEvent("test-event"),
+			wantCode:       nethttp.StatusBadRequest,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "400",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
+			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime)},
 		},
 	}
 
@@ -334,6 +353,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 		httpReceiver: receiver,
 		decouple:     decouple,
 		reporter:     NewStatsReporter(pod, container),
+		eventTTL:     &eventutil.TTL{Logger: logging.FromContext(ctx).Desugar()},
 	}
 
 	errCh := make(chan error, 1)
@@ -356,6 +376,13 @@ func createTestEvent(id string) *cloudevents.Event {
 	event.SetSource("test-source")
 	event.SetType(eventType)
 	return &event
+}
+
+func createTTLExceededEvent(id string) *cloudevents.Event {
+	e := createTestEvent(id)
+	et := &eventutil.TTL{Logger: zap.NewNop()}
+	et.UpdateTTL(e, 0)
+	return e
 }
 
 // createRequest creates an http request from the test case. If event is specified, it converts the event to a request.

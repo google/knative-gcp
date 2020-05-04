@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -54,6 +55,9 @@ type Processor struct {
 	// DeliverTimeout is the timeout applied to cancel delivery.
 	// If zero, not additional timeout is applied.
 	DeliverTimeout time.Duration
+
+	// EventTTL manages events TTL.
+	EventTTL *eventutil.TTL
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -81,6 +85,13 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
+	// TTL is a broker local counter so remove any TTL before forwarding.
+	// Do not modify the original event as we need to send the original
+	// event to retry queue on failure.
+	copy := event.Clone()
+	ttl, ttlFound := p.EventTTL.GetTTL(&copy)
+	p.EventTTL.DeleteTTL(&copy)
+
 	dctx := ctx
 	if p.DeliverTimeout > 0 {
 		var cancel context.CancelFunc
@@ -88,7 +99,8 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		defer cancel()
 	}
 
-	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), *event)
+	// Forward the event copy that has TTL removed.
+	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), copy)
 	if !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("target delivery failed: %v", res.Error())
@@ -99,6 +111,14 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 	if resp == nil {
 		return nil
+	}
+
+	// Attach the previous TTL for the reply.
+	if ttlFound {
+		// Clean up potential TTL from the reply.
+		// It really shouldn't happen though.
+		p.EventTTL.DeleteTTL(resp)
+		p.EventTTL.UpdateTTL(resp, ttl)
 	}
 
 	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
