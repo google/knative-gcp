@@ -25,21 +25,17 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 )
 
-type Args struct {
-	IngressPort   int
-	ProjectID     string
-	PodName       string
-	ContainerName string
-}
+type Port int
+type ProjectID string
 
 // NewHTTPMessageReceiver wraps kncloudevents.NewHttpMessageReceiver with type-safe options.
-func NewHTTPMessageReceiver(args Args) *kncloudevents.HttpMessageReceiver {
-	return kncloudevents.NewHttpMessageReceiver(args.IngressPort)
+func NewHTTPMessageReceiver(port Port) *kncloudevents.HttpMessageReceiver {
+	return kncloudevents.NewHttpMessageReceiver(int(port))
 }
 
 // NewPubsubClient provides a pubsub client from PubsubClientOpts.
-func NewPubsubClient(ctx context.Context, args Args) (*pubsub.Client, error) {
-	return pubsub.NewClient(ctx, args.ProjectID)
+func NewPubsubClient(ctx context.Context, projectID ProjectID) (*pubsub.Client, error) {
+	return pubsub.NewClient(ctx, string(projectID))
 }
 
 // NewPubsubDecoupleClient creates a pubsub Cloudevents client to use to publish events to decouple queues.

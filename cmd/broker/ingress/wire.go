@@ -26,7 +26,13 @@ import (
 	"github.com/google/wire"
 )
 
-func InitializeHandler(ctx context.Context, args ingress.Args) (*ingress.Handler, error) {
+func InitializeHandler(
+	ctx context.Context,
+	port ingress.Port,
+	projectID ingress.ProjectID,
+	podName ingress.PodName,
+	containerName ingress.ContainerName,
+) (*ingress.Handler, error) {
 	panic(wire.Build(
 		ingress.HandlerSet,
 		wire.Value([]volume.Option(nil)),

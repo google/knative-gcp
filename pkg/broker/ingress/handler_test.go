@@ -327,7 +327,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	h := NewHandler(ctx, receiver, decouple, NewStatsReporter(Args{PodName: pod, ContainerName: container}))
+	h := NewHandler(ctx, receiver, decouple, NewStatsReporter(PodName(pod), ContainerName(container)))
 
 	errCh := make(chan error, 1)
 	go func() {
