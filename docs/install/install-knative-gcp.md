@@ -84,7 +84,7 @@ wish to configure the auth manually, refer to
 
 - Option 1 (Recommended): Use Workload Identity. ***Note:*** Now, Workload Identity 
 for the Control Plane only works if you install the Knative-GCP Constructs from the master. 
-If you install the Knative-GCP Constructs with our latest release (v0.14.0), please use option 2.
+If you install the Knative-GCP Constructs with our latest release (v0.14.0) or older releases, please use option 2.
 
     Apply
   [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
