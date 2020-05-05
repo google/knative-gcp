@@ -1,10 +1,7 @@
 package reconciler
 
 import (
-	"context"
-	"fmt"
-
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +11,7 @@ import (
 )
 
 // ReconcileDeployment reconciles the K8s Deployment 'd'.
-func ReconcileDeployment(ctx context.Context, kubeClient kubernetes.Interface, lister appsv1listers.DeploymentLister, d *v1.Deployment) (*v1.Deployment, error) {
+func ReconcileDeployment(kubeClient kubernetes.Interface, lister appsv1listers.DeploymentLister, d *v1.Deployment) (*v1.Deployment, error) {
 	current, err := lister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
 		current, err = kubeClient.AppsV1().Deployments(d.Namespace).Create(d)
@@ -33,17 +30,8 @@ func ReconcileDeployment(ctx context.Context, kubeClient kubernetes.Interface, l
 	return current, err
 }
 
-// DeleteDeployment deletes the K8s Deployment.
-func DeleteDeployment(ctx context.Context, kubeClient kubernetes.Interface, ns, name string) error {
-	err := kubeClient.AppsV1().Deployments(ns).Delete(name, nil)
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return fmt.Errorf("failed to delete deployment %s/%s: %v", ns, name, err)
-}
-
 // ReconcileService reconciles the K8s Service 'svc'.
-func ReconcileService(ctx context.Context, kubeClient kubernetes.Interface, svcLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, svc *corev1.Service) (*corev1.Endpoints, error) {
+func ReconcileService(kubeClient kubernetes.Interface, svcLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, svc *corev1.Service) (*corev1.Endpoints, error) {
 	current, err := svcLister.Services(svc.Namespace).Get(svc.Name)
 
 	if apierrs.IsNotFound(err) {
@@ -70,13 +58,4 @@ func ReconcileService(ctx context.Context, kubeClient kubernetes.Interface, svcL
 	}
 
 	return endpointsLister.Endpoints(svc.Namespace).Get(svc.Name)
-}
-
-// DeleteService deletes the K8s Service.
-func DeleteService(ctx context.Context, kubeClient kubernetes.Interface, ns, name string) error {
-	err := kubeClient.CoreV1().Services(ns).Delete(name, nil)
-	if apierrs.IsNotFound(err) {
-		return nil
-	}
-	return fmt.Errorf("failed to delete service %s/%s: %v", ns, name, err)
 }

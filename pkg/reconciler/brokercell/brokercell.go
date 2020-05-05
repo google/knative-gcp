@@ -68,12 +68,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 
 	// Reconcile ingress deployment and service
 	ingressArgs := r.makeIngressArgs(bc)
-	if _, err := reconciler.ReconcileDeployment(ctx, r.kubeClientSet, r.deploymentLister, resources.MakeIngressDeployment(ingressArgs)); err != nil {
+	if _, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeIngressDeployment(ingressArgs)); err != nil {
 		r.Logger.Errorf("Failed to reconcile ingress deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
 		return err
 	}
-	endpoints, err := reconciler.ReconcileService(ctx, r.kubeClientSet, r.serviceLister, r.endpointsLister, resources.MakeIngressService(ingressArgs))
+	endpoints, err := reconciler.ReconcileService(r.kubeClientSet, r.serviceLister, r.endpointsLister, resources.MakeIngressService(ingressArgs))
 	if err != nil {
 		r.Logger.Errorf("Failed to reconcile ingress service for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
 		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
@@ -82,7 +82,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	bc.Status.PropagateIngressAvailability(endpoints)
 	bc.Status.IngressTemplate = "http://" + names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
 	// Reconcile fanout deployment
-	fd, err := reconciler.ReconcileDeployment(ctx, r.kubeClientSet, r.deploymentLister, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
+	fd, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
 		r.Logger.Errorf("Failed to reconcile fanout deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
 		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
@@ -90,7 +90,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	}
 	bc.Status.PropagateFanoutAvailability(fd)
 	// Reconcile retry deployment
-	rd, err := reconciler.ReconcileDeployment(ctx, r.kubeClientSet, r.deploymentLister, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
+	rd, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
 	if err != nil {
 		r.Logger.Errorf("Failed to reconcile retry deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
 		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
