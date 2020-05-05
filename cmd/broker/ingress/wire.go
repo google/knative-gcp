@@ -1,4 +1,4 @@
-// +build tools
+// +build wireinject
 
 /*
 Copyright 2020 Google LLC.
@@ -16,18 +16,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tools imports tool dependencies
-package tools
+package main
 
 import (
-	_ "knative.dev/pkg/hack"
+	"context"
 
-	_ "knative.dev/eventing/test/test_images/logevents"
-	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/sendevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
-
-	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
-
-	_ "github.com/google/wire/cmd/wire"
+	"github.com/google/knative-gcp/pkg/broker/config/volume"
+	"github.com/google/knative-gcp/pkg/broker/ingress"
+	"github.com/google/wire"
 )
+
+func InitializeHandler(
+	ctx context.Context,
+	port ingress.Port,
+	projectID ingress.ProjectID,
+	podName ingress.PodName,
+	containerName ingress.ContainerName,
+) (*ingress.Handler, error) {
+	panic(wire.Build(
+		ingress.HandlerSet,
+		wire.Value([]volume.Option(nil)),
+		volume.NewTargetsFromFile,
+	))
+}
