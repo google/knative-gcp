@@ -26,11 +26,10 @@ knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 ### Prerequisites
 There are two ways to set up authentication mechanism. 
-   1. If you want to run E2E tests with authentication mechanism using **Workload Identity**, please configure the authentication mechanism with **Workload Identity**.
-   1. If you want to run E2E tests with authentication mechanism using **Kubernetes Secrets**, please 
-      configure the authentication mechanism with **Kubernetes Secrets**.
+- If you want to run E2E tests with authentication mechanism using **Workload Identity**, please configure the authentication mechanism with **Workload Identity**.
+- If you want to run E2E tests with authentication mechanism using **Kubernetes Secrets**, please configure the authentication mechanism with **Kubernetes Secrets**.
 1. A running Kubernetes cluster with [knative-gcp](../../docs/install/install-knative-gcp.md) installed and configured.
-1. [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md) installed.  
+1. [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md) installed.
 1. [GCP Broker Deployment](../../docs/install/install-gcp-broker.md#deployment) and [GCP Broker Authentication Setup](../../docs/install/install-gcp-broker.md#authentication-setup-for-gcp-broker).
 1. [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md) installed.
 1. [CloudStorageSource Prerequisites](../../docs/examples/cloudstoragesource/README.md#prerequisites).
@@ -54,6 +53,7 @@ backend, you need to give your
 
 
 ### Running E2E tests
+### Running E2E tests with authentication mechanism using Kubernetes Secrets
 ```shell
 go test --tags=e2e ./test/e2e/...
 ```
@@ -76,6 +76,41 @@ For example, to run TestPullSubscription:
 ```shell \
 E2E_PROJECT_ID=<project name> \
   go test --tags=e2e ./test/e2e/... -run TestPullSubscription
+```
+
+### Running E2E tests with authentication mechanism using Workload Identity
+```shell
+go test --tags=e2e 
+  -workloadIndentity=true \
+  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+  ./test/e2e/...
+```
+
+And count is supported too:
+
+```shell
+go test --tags=e2e \
+  -workloadIndentity=true \
+  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+  ./test/e2e/... --count=3
+```
+
+If you want to run a specific test:
+
+```shell
+E2E_PROJECT_ID=<project name> go test --tags=e2e \
+  -workloadIndentity=true \
+  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+  ./test/e2e/... -run NameOfTest
+```
+
+For example, to run TestPullSubscription:
+
+```shell \
+E2E_PROJECT_ID=<project name> go test --tags=e2e \
+  -workloadIndentity=true \
+  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
+  ./test/e2e/... -run TestPullSubscription
 ```
 ## Running E2E Tests on an new cluster
 
