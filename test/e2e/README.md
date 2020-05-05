@@ -52,10 +52,10 @@ There are two ways to set up authentication mechanism.
     [GCP Broker Authentication Setup](../../docs/install/install-gcp-broker.md#authentication-setup-for-gcp-broker).
 1.  [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md)
     installed.
-1.  [CloudStorageSource Prerequisites](../../docs/examples/cloudstoragesource/README.md#prerequisites).
+1.  [CloudSchedulerSource Prerequisites](../../docs/examples/cloudschedulersource/README.md#prerequisites).
     Note that you only need to:
     1. Create with an App Engine application in your project.
-1.  [CloudSchedulerSource Prerequisites](../../docs/examples/cloudschedulersource/README.md#prerequisites).
+1.  [CloudStorageSource Prerequisites](../../docs/examples/cloudstoragesource/README.md#prerequisites).
     Note that you only need to:
     1. Enable the Cloud Storage API on your project.
     1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
@@ -88,13 +88,15 @@ There are two ways to set up authentication mechanism.
 ### Running E2E tests with authentication mechanism using Kubernetes Secrets
 
 ```shell
-go test --tags=e2e ./test/e2e/...
+E2E_PROJECT_ID=<project name> \
+  go test --tags=e2e ./test/e2e/...
 ```
 
 And count is supported too:
 
 ```shell
-go test --tags=e2e ./test/e2e/... --count=3
+E2E_PROJECT_ID=<project name> \
+  go test --tags=e2e ./test/e2e/... --count=3
 ```
 
 If you want to run a specific test:
@@ -118,7 +120,7 @@ where `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the
 Pub/Sub enabled Google Cloud Service Account.
 
 ```shell
-go test --tags=e2e
+E2E_PROJECT_ID=<project name> go test --tags=e2e \
   -workloadIndentity=true \
   -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
   ./test/e2e/...
@@ -127,7 +129,7 @@ go test --tags=e2e
 And count is supported too:
 
 ```shell
-go test --tags=e2e \
+E2E_PROJECT_ID=<project name> go test --tags=e2e \
   -workloadIndentity=true \
   -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
   ./test/e2e/... --count=3
@@ -167,7 +169,7 @@ gcloud services enable container.googleapis.com
    (Note this is just a workaround because of
    [kubernetes issue](https://github.com/kubernetes/test-infra/issues/15700)
 
-1. Set the projcet you want to run E2E tests to be the default one with:
+1. Set the project you want to run E2E tests to be the default one with:
 
 ```shell
 export PROJECT=<REPLACE_ME>
