@@ -296,6 +296,7 @@ function create_test_cluster_with_retries() {
       [[ -n "${E2E_CLUSTER_ZONE}" ]] && cluster_creation_zone="${E2E_CLUSTER_REGION}-${E2E_CLUSTER_ZONE}"
       resolve_k8s_version ${e2e_cluster_target_version} ${cluster_creation_zone} || return 1
 
+      E2E_CLUSTER_VERSION="1.15.11-gke.9"
       header "Creating test cluster ${E2E_CLUSTER_VERSION} in ${cluster_creation_zone}"
       # Don't fail test for kubetest, as it might incorrectly report test failure
       # if teardown fails (for details, see success() below)
