@@ -26,8 +26,11 @@ knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 ### Prerequisites
 There are two ways to set up authentication mechanism. 
-- If you want to run E2E tests with authentication mechanism using **Workload Identity**, please configure the authentication mechanism with **Workload Identity**.
-- If you want to run E2E tests with authentication mechanism using **Kubernetes Secrets**, please configure the authentication mechanism with **Kubernetes Secrets**.
+- If you want to run E2E tests with authentication mechanism using **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**,
+  please follow below instructions to configure the authentication mechanism with **[Workload Identity]**(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+  **[Workload Identity]**(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) is GKE specific.
+- If you want to run E2E tests with authentication mechanism using **Kubernetes Secrets**,
+  please follow below instructions to configure the authentication mechanism with **Kubernetes Secrets**.
 1. A running Kubernetes cluster with [knative-gcp](../../docs/install/install-knative-gcp.md) installed and configured.
 1. [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md) installed.
 1. [GCP Broker Deployment](../../docs/install/install-gcp-broker.md#deployment) and [GCP Broker Authentication Setup](../../docs/install/install-gcp-broker.md#authentication-setup-for-gcp-broker).
@@ -50,8 +53,15 @@ backend, you need to give your
      --member=serviceAccount:cloudrunevents-pullsub@$PROJECT_ID.iam.gserviceaccount.com \
      --role roles/monitoring.editor
    ```
+   
+1. (Optional) Note that if plan on running tracing-related E2E tests using the Zipkin backend, you need to install
+[zipkin-in-mem](https://github.com/knative/serving/tree/master/config/monitoring/tracing/zipkin-in-mem) and
+patch the configmap `config-tracing` in the `knative-eventing` namespace  to use the Zipkin backend as the with
+[patch-config-tracing-configmap-with-zipkin.yaml](../../docs/install/patch-config-tracing-configmap-with-zipkin.yaml).
 
-
+    ```shell
+   kubectl patch configmap config-tracing -n knative-eventing --patch "$(cat patch-config-tracing-configmap-with-zipkin.yaml)"
+    ```
 ### Running E2E tests
 ### Running E2E tests with authentication mechanism using Kubernetes Secrets
 ```shell
@@ -73,12 +83,13 @@ E2E_PROJECT_ID=<project name> \
 
 For example, to run TestPullSubscription:
 
-```shell \
+```shell
 E2E_PROJECT_ID=<project name> \
   go test --tags=e2e ./test/e2e/... -run TestPullSubscription
 ```
 
-### Running E2E tests with authentication mechanism using Workload Identity
+### Running E2E tests with authentication mechanism using Workload Identity.
+`-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` where `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub enabled  Google Cloud Service Account.
 ```shell
 go test --tags=e2e 
   -workloadIndentity=true \
@@ -106,7 +117,7 @@ E2E_PROJECT_ID=<project name> go test --tags=e2e \
 
 For example, to run TestPullSubscription:
 
-```shell \
+```shell
 E2E_PROJECT_ID=<project name> go test --tags=e2e \
   -workloadIndentity=true \
   -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
@@ -137,7 +148,7 @@ If you want to run E2E tests with authentication mechanism using **Kubernetes Se
 ```
 If you want to run E2E tests with authentication mechanism using **Workload Identity**:
 ```shell
-./e2e-wi-tests.sh
+./test/e2e-wi-tests.sh
 ```
 
 ## Test images
@@ -162,6 +173,7 @@ For images deployed in GCR, a docker tag is mandatory to avoid issues with using
 
 ```bash
 ./test/upload-test-images.sh ./test/test_images e2e
+sed -i 's@ko://knative.dev/eventing/test/test_images@ko://github.com/google/knative-gcp/vendor/knative.dev/eventing/test/test_images@g' vendor/knative.dev/eventing/test/test_images/*/*.yaml
 ./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/ e2e
 ```
 
@@ -169,6 +181,7 @@ To run the script for all end to end test images:
 
 ```bash
 ./test/upload-test-images.sh ./test/test_images
+sed -i 's@ko://knative.dev/eventing/test/test_images@ko://github.com/google/knative-gcp/vendor/knative.dev/eventing/test/test_images@g' vendor/knative.dev/eventing/test/test_images/*/*.yaml
 ./test/upload-test-images.sh ./vendor/knative.dev/eventing/test/test_images/
 ```
 
