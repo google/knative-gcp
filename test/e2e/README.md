@@ -157,12 +157,12 @@ E2E_PROJECT_ID=<project name> go test --tags=e2e \
 
 ### Prerequisites
 
-1. Enable necessary APIs.
+1. Enable necessary APIs:
 
-```shell
-gcloud services enable compute.googleapis.com
-gcloud services enable container.googleapis.com
-```
+   ```shell
+   gcloud services enable compute.googleapis.com
+   gcloud services enable container.googleapis.com
+   ```
 
 1. Install
    [kubetest](https://github.com/kubernetes/test-infra/issues/15700#issuecomment-571114504).
@@ -171,10 +171,10 @@ gcloud services enable container.googleapis.com
 
 1. Set the project you want to run E2E tests to be the default one with:
 
-```shell
-export PROJECT=<REPLACE_ME>
-gcloud config set core/project $PROJECT
-```
+   ```shell
+   export PROJECT=<REPLACE_ME>
+   gcloud config set core/project $PROJECT
+   ```
 
 ### Running E2E tests
 
