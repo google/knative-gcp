@@ -54,9 +54,10 @@ also need the ability to publish messages (`roles/pubsub.publisher`).
 It is the recommended way to access Google Cloud services from within GKE due to
 its improved security properties and manageability. For more information about
 Workload Identity see
-[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity). 
-***Note:*** Installing Knative-GCP Constructs from the master and installing it with our latest release (v0.14.0) both 
-support Workload Identity for the Data Plane. Older releases don't support this.
+[here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
+**_Note:_** Installing Knative-GCP Constructs from the master and installing it
+with our latest release (v0.14.0) both support Workload Identity for the Data
+Plane. Older releases don't support this.
 
 1. Enable Workload Identity. Check
    [Manually Configure Authentication Mechanism for GCP](authentication-mechanisms-gcp.md)
