@@ -36,8 +36,8 @@ type Hops struct {
 // it puts the preemptive hops in the event.
 // 2. If the event has an existing valid hops value,
 // it decrements it by 1.
-func (t *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
-	hops, ok := t.GetRemainingHops(event)
+func (h *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
+	hops, ok := h.GetRemainingHops(event)
 	if ok {
 		// Decrement hops.
 		hops = hops - 1
@@ -45,7 +45,7 @@ func (t *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
 			hops = 0
 		}
 	} else {
-		t.Logger.Debug("Remaining hops not found in event, defaulting to the preemptive value.",
+		h.Logger.Debug("Remaining hops not found in event, defaulting to the preemptive value.",
 			zap.String("event.id", event.ID()),
 			zap.Int32(hopsAttribute, preemptiveHops),
 		)
@@ -57,14 +57,14 @@ func (t *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
 
 // GetRemainingHops returns the remaining hops of the event if it presents.
 // If there is no existing hops value or an invalid one, (0, false) will be returned.
-func (t *Hops) GetRemainingHops(event *event.Event) (int32, bool) {
+func (h *Hops) GetRemainingHops(event *event.Event) (int32, bool) {
 	hopsRaw, ok := event.Extensions()[hopsAttribute]
 	if !ok {
 		return 0, false
 	}
 	hops, err := cetypes.ToInteger(hopsRaw)
 	if err != nil {
-		t.Logger.Warn("Failed to convert existing hops value into integer, regarding it as there is no hops value.",
+		h.Logger.Warn("Failed to convert existing hops value into integer, regarding it as there is no hops value.",
 			zap.String("event.id", event.ID()),
 			zap.Any(hopsAttribute, hopsRaw),
 			zap.Error(err),
@@ -75,6 +75,6 @@ func (t *Hops) GetRemainingHops(event *event.Event) (int32, bool) {
 }
 
 // DeleteRemainingHops deletes hops from the event extensions.
-func (t *Hops) DeleteRemainingHops(event *event.Event) {
+func (h *Hops) DeleteRemainingHops(event *event.Event) {
 	event.SetExtension(hopsAttribute, nil)
 }
