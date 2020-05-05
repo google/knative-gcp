@@ -222,7 +222,7 @@ func TestBrokerWithPubSubChannel(t *testing.T) {
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannelStackdriverMetrics(t *testing.T) {
-	t.Skip("Stackdriver currently not working without patch. See https://github.com/google/knative-gcp/issues/317") 
+	t.Skip("Stackdriver currently not working without patch. See https://github.com/google/knative-gcp/issues/317")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
@@ -230,6 +230,7 @@ func TestBrokerWithPubSubChannelStackdriverMetrics(t *testing.T) {
 	defer cancel()
 	BrokerWithPubSubChannelTestImpl(t, authConfig, true /* assertMetrics */)
 }
+
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 	if authConfig.WorkloadIdentity {
@@ -272,6 +273,9 @@ func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudStorageSource tests we can knock down a target from a CloudStorageSource.
 func TestCloudStorageSource(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip this test temporally for issue: https://github.com/google/knative-gcp/issues/1000")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudStorageSourceWithTestImpl(t, false /*assertMetrics */, authConfig)
@@ -287,6 +291,9 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSource(t *testing.T) {
+	if authConfig.WorkloadIdentity {
+		t.Skip("Skip this test temporally for issue: https://github.com/google/knative-gcp/issues/1000")
+	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudAuditLogsSourceWithTestImpl(t, authConfig)
