@@ -35,9 +35,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
      gcloud services enable storage-component.googleapis.com
      gcloud services enable storage-api.googleapis.com
    ```
-
-  1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
-
+   1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
      1. First find the Service Account that GCS uses to publish to Pub/Sub
         (Either using UI or using curl as shown below)
 
