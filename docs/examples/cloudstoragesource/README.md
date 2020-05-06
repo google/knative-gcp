@@ -14,37 +14,32 @@ Object Notifications for when a new object is added to Google Cloud Storage
 
 1. Enable the `Cloud Storage API` on your project and give Google Cloud Storage
    permissions to publish to GCP Pub/Sub. Currently, we support two methods:
-   automated scirpt or manual
-
-   - Option 1(via automated script) Apply
-
-[init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
-
-```shell
-./hack/init_cloud_storage_source.sh
-```
-
-**_Note_**: This script will need one parameter
-
-1. `PROJECT_ID`: an optional parameter to specify the project to use, default to
+   automated script or manual
+   
+   - Option 1(via automated script): 
+   Apply
+   [init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
+   ```shell 
+   ./hack/init_cloud_storage_source.sh
+   ```
+   **_Note_**: This script will need one parameter
+   1. `PROJECT_ID`: an optional parameter to specify the project to use, default to
    ```shell
    gcloud config get-value project
    ```
    If you want to specify the parameter `PROJECT_ID` instead of using the
    default one,
+   ```shell
+   ./hack/init_cloud_storage_source.sh [PROJECT_ID]
+   ```
 
-```shell
-  ./hack/init_cloud_storage_source.sh [PROJECT_ID]
-```
+   - Option 2(manual):
 
-- Option 2(manual)
-
-  1. Enable the `Cloud Storage API` on your project:
-
-  ```shell
-    gcloud services enable storage-component.googleapis.com
-    gcloud services enable storage-api.googleapis.com
-  ```
+   1. Enable the `Cloud Storage API` on your project:
+   ```shell
+     gcloud services enable storage-component.googleapis.com
+     gcloud services enable storage-api.googleapis.com
+   ```
 
   1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
 
@@ -63,8 +58,6 @@ Object Notifications for when a new object is added to Google Cloud Storage
         gcloud auth application-default print-access-token\`"
         "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount"
         | grep email_address | cut -d '"' -f 4`
-        ```
-
         ````
 
      1. Then grant rights to that Service Account to publish to GCP Pub/Sub.
