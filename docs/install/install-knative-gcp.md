@@ -79,10 +79,7 @@ wish to configure the auth manually, refer to
 - Option 1 (Recommended): Use Workload Identity. **_Note:_** Now, Workload
   Identity for the Control Plane only works if you install the Knative-GCP
   Constructs from the master. If you install the Knative-GCP Constructs with our
-  latest release (v0.14.0) or older releases, please use option 2.
-
-      Apply
-
+  latest release (v0.14.0) or older releases, please use option 2. Apply
   [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
   ```shell
@@ -94,18 +91,25 @@ wish to configure the auth manually, refer to
   will need four parameters
 
   1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use,
-     default to `gcloud config get-value run/cluster`.
+     default to
+     ```shell
+     gcloud config get-value run/cluster
+     ```
   1. `CLUSTER_LOCATION`: an optional parameter to specify the cluster location
-     to use, default to `gcloud config get-value run/cluster_location`.
+     to use, default to
+     ```shell
+     gcloud config get-value run/cluster_location
+     ```
   1. `CLUSTER_LOCATION_TYPE`: an optional parameter to specify the cluster
      location type to use, default to `zonal`. CLUSTER_LOCATION_TYPE must be
      `zonal` or `regional`.
   1. `PROJECT_ID`: an optional parameter to specify the project to use, default
-     to `gcloud config get-value project`. If you want to specify the parameters
-     instead of using the default ones,
+     to `gcloud config get-value project`.
+
+  If you want to specify the parameters instead of using the default ones,
 
   ```shell
-    ./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
+  ./hack/init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
   ```
 
 * Option 2: Export service account keys and store them as Kubernetes Secrets.
@@ -122,5 +126,5 @@ wish to configure the auth manually, refer to
       `PROJECT_ID` instead of using the default one,
 
   ```shell
-    ./hack/init_control_plane.sh [PROJECT_ID]
+  ./hack/init_control_plane.sh [PROJECT_ID]
   ```
