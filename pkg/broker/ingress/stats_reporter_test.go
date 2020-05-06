@@ -44,7 +44,7 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.PodName:                "testpod",
 	}
 
-	r := NewStatsReporter("testpod", "testcontainer")
+	r := NewStatsReporter(PodName("testpod"), ContainerName("testcontainer"))
 
 	// test ReportDispatchTime
 	expectSuccess(t, func() error {
