@@ -15,40 +15,31 @@
 # limitations under the License.
 
 # Usage: ./init_control_plane.sh
-# The current project set in gcloud MUST be the same as where the cluster is running.
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
+# The script always uses the same service account called cloud-run-events.
+set -o errexit
+set -o nounset
+set -euo pipefail
 
-NAMESPACE=cloud-run-events
-SERVICE_ACCOUNT=cloud-run-events
-PROJECT_ID=$(gcloud config get-value project)
-KEY_TEMP=google-cloud-key.json
+source $(dirname $0)/lib.sh
 
-# Enable APIs.
-gcloud services enable pubsub.googleapis.com
-gcloud services enable storage-component.googleapis.com
-gcloud services enable storage-api.googleapis.com
-gcloud services enable cloudscheduler.googleapis.com
-gcloud services enable cloudbuild.googleapis.com
-gcloud services enable logging.googleapis.com
-gcloud services enable stackdriver.googleapis.com
+readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
 
-# Create the service account for the control plane
-gcloud iam service-accounts create ${SERVICE_ACCOUNT}
+PROJECT_ID=${1:-$(gcloud config get-value project)}
+echo "PROJECT_ID used when init_control_plane is'${PROJECT_ID}'"
 
-# Grant permissions to the service account for the control plane to manage native GCP resources.
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/storage.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/cloudscheduler.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.configWriter
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.privateLogViewer
+init_control_plane_service_account "${PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT}"
 
 # Download a JSON key for the service account.
-gcloud iam service-accounts keys create ${KEY_TEMP} --iam-account=${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create "${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}" \
+  --iam-account="${CONTROL_PLANE_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
 # Create/Patch the secret with the download JSON key in the control plane namespace
-kubectl -n ${NAMESPACE} create secret generic google-cloud-key --from-file=key.json=${KEY_TEMP} --dry-run -o yaml | kubectl apply --filename -
+kubectl --namespace "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROL_PLANE_SECRET_NAME}" \
+  --from-file=key.json="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}" --dry-run -o yaml | kubectl apply --filename -
 
 # Delete the controller pod in the control plane namespace to refresh the created/patched secret
-kubectl delete pod -n ${NAMESPACE} --selector role=controller
+kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
 
 # Remove the tmp file.
-rm ${KEY_TEMP}
+rm "${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}"

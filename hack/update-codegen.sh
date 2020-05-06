@@ -24,6 +24,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-
 
 KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
+chmod +x ${CODEGEN_PKG}/generate-groups.sh
 # Only deepcopy the Duck types, as they are not real resources.
 ${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
@@ -41,6 +42,7 @@ ${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
 
 
 # Knative Injection
+chmod +x ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh
 ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 pubsub:v1beta1 messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 duck:v1alpha1 duck:v1beta1 policy:v1alpha1 broker:v1beta1 intevents:v1alpha1" \
@@ -57,6 +59,9 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client/istio istio.io/client-go/pkg/apis \
   "security:v1beta1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+
+go install github.com/google/wire/cmd/wire
+go generate ${REPO_ROOT_DIR}/...
 
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh

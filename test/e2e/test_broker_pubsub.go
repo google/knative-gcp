@@ -57,13 +57,15 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bool) {
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-
+	if assertMetrics {
+		client.SetupStackDriverMetrics(t)
+	}
 	// Create a target Job to receive the events.
 	makeTargetJobOrDie(client, targetName)
 
@@ -88,6 +90,9 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
+	}
+	if assertMetrics {
+		lib.AssertBrokerMetrics(t, client)
 	}
 }
 
