@@ -12,12 +12,61 @@ Object Notifications for when a new object is added to Google Cloud Storage
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
-1. Enable the `Cloud Storage API` on your project:
+1) Enable the `Cloud Storage API` on your project and give Google Cloud Storage
+   permissions to publish to GCP Pub/Sub.
 
-   ```shell
-   gcloud services enable storage-component.googleapis.com
-   gcloud services enable storage-api.googleapis.com
-   ```
+- Option 1(via automated script) Apply
+
+  [init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
+
+  ```shell
+  ./hack/init_cloud_storage_source.sh
+  ```
+
+  **_Note_**: This script will need one parameter 1. `PROJECT_ID`: an optional
+  parameter to specify the project to use, default to
+  `gcloud config get-value project`. If you want to specify the parameter
+  `PROJECT_ID` instead of using the default one,
+
+  ```shell
+    ./hack/init_cloud_storage_source.sh [PROJECT_ID]
+  ```
+
+- Option 2(manually)
+
+  1. Enable the `Cloud Storage API` on your project:
+
+  ```shell
+    gcloud services enable storage-component.googleapis.com
+     gcloud services enable storage-api.googleapis.com
+  ```
+
+  1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
+
+     1. First find the Service Account that GCS uses to publish to Pub/Sub
+        (Either using UI or using curl as shown below)
+     1. Use the steps outlined in
+        [Cloud Console or the JSON API](https://cloud.google.com/storage/docs/getting-service-account)
+        Assume the service account you found from above was
+        `service-XYZ@gs-project-accounts.iam.gserviceaccount.com`, you'd do:
+        `shell export GCS_SERVICE_ACCOUNT=service-XYZ@gs-project-accounts.iam.gserviceaccount.com`
+     1. Use `curl` to fetch the email: ``shell export
+        GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json
+        gcloud auth application-default print-access-token\`"
+        "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount"
+        | grep email_address | cut -d '"' -f 4`
+
+        ```
+
+        ```
+
+     1. Then grant rights to that Service Account to publish to GCP Pub/Sub.
+
+        ```shell
+        gcloud projects add-iam-policy-binding $PROJECT_ID \
+          --member=serviceAccount:$GCS_SERVICE_ACCOUNT \
+          --role roles/pubsub.publisher
+        ```
 
 1. Use an existing GCS Bucket, or create a new one. You can create a bucket
    either from the [Cloud Console](https://cloud.google.com/console) or by using
@@ -26,31 +75,6 @@ Object Notifications for when a new object is added to Google Cloud Storage
    ```shell
    export BUCKET=<your bucket name>
    ```
-
-1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
-
-   1. First find the Service Account that GCS uses to publish to Pub/Sub (Either
-      using UI or using curl as shown below)
-
-      1. Use the steps outlined in
-         [Cloud Console or the JSON API](https://cloud.google.com/storage/docs/getting-service-account)
-         Assume the service account you found from above was
-         `service-XYZ@gs-project-accounts.iam.gserviceaccount.com`, you'd do:
-         `shell export GCS_SERVICE_ACCOUNT=service-XYZ@gs-project-accounts.iam.gserviceaccount.com`
-
-      1. Use `curl` to fetch the email:
-
-      ```shell
-      export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/$PROJECT_ID/serviceAccount" | grep email_address | cut -d '"' -f 4`
-      ```
-
-      1. Then grant rights to that Service Account to publish to GCP Pub/Sub.
-
-         ```shell
-         gcloud projects add-iam-policy-binding $PROJECT_ID \
-           --member=serviceAccount:$GCS_SERVICE_ACCOUNT \
-           --role roles/pubsub.publisher
-         ```
 
 ## Deployment
 
