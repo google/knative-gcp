@@ -22,11 +22,12 @@ import (
 	"strconv"
 	"time"
 
+	m "github.com/google/knative-gcp/pkg/broker/metrics"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
-	"knative.dev/pkg/metrics/metricskey"
 )
 
 // stats_exporter is adapted from knative.dev/eventing/pkg/broker/ingress/stats_reporter.go
@@ -35,18 +36,13 @@ import (
 // - Removed StatsReporter interface and directly use helper methods instead.
 
 var (
-	// Create the tag keys that will be used to add tags to our measurements.
-	// Tag keys must conform to the restrictions described in
-	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
-	// - length between 1 and 255 inclusive
-	// - characters are printable US-ASCII
-	namespaceKey         = tag.MustNewKey(metricskey.LabelNamespaceName)
-	brokerKey            = tag.MustNewKey(metricskey.LabelBrokerName)
-	eventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
-	responseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
-	responseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)
-	podKey               = tag.MustNewKey(metricskey.PodName)
-	containerKey         = tag.MustNewKey(metricskey.ContainerName)
+	// dispatchTimeInMsecM records the time spent dispatching an event to
+	// a decouple queue, in milliseconds.
+	dispatchTimeInMsecM = stats.Float64(
+		"event_dispatch_latencies",
+		"The time spent dispatching an event to the decouple topic",
+		stats.UnitMilliseconds,
+	)
 )
 
 type PodName string
@@ -61,13 +57,13 @@ type reportArgs struct {
 
 func (r *StatsReporter) register() error {
 	tagKeys := []tag.Key{
-		namespaceKey,
-		brokerKey,
-		eventTypeKey,
-		responseCodeKey,
-		responseCodeClassKey,
-		podKey,
-		containerKey,
+		m.ContainerNameKey,
+		m.BrokerNameKey,
+		m.EventTypeKey,
+		m.ResponseCodeKey,
+		m.ResponseCodeClassKey,
+		m.PodNameKey,
+		m.ContainerNameKey,
 	}
 
 	// Create view to see our measurements.
@@ -118,13 +114,13 @@ type StatsReporter struct {
 func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args reportArgs, d time.Duration) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(podKey, string(r.podName)),
-		tag.Insert(containerKey, string(r.containerName)),
-		tag.Insert(namespaceKey, args.namespace),
-		tag.Insert(brokerKey, args.broker),
-		tag.Insert(eventTypeKey, args.eventType),
-		tag.Insert(responseCodeKey, strconv.Itoa(args.responseCode)),
-		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(args.responseCode)),
+		tag.Insert(m.PodNameKey, string(r.podName)),
+		tag.Insert(m.ContainerNameKey, string(r.containerName)),
+		tag.Insert(m.NamespaceNameKey, args.namespace),
+		tag.Insert(m.BrokerNameKey, args.broker),
+		tag.Insert(m.EventTypeKey, args.eventType),
+		tag.Insert(m.ResponseCodeKey, strconv.Itoa(args.responseCode)),
+		tag.Insert(m.ResponseCodeClassKey, metrics.ResponseCodeClass(args.responseCode)),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
