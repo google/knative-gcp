@@ -17,24 +17,19 @@ Object Notifications for when a new object is added to Google Cloud Storage
    automated script or manual
    
    - Option 1(via automated script): 
-   Apply
-   [init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
-   ```shell 
-   ./hack/init_cloud_storage_source.sh
-   ```
-   **_Note_**: This script will need one parameter
-   1. `PROJECT_ID`: an optional parameter to specify the project to use, default to
-   ```shell
-   gcloud config get-value project
-   ```
-   If you want to specify the parameter `PROJECT_ID` instead of using the
-   default one,
-   ```shell
-   ./hack/init_cloud_storage_source.sh [PROJECT_ID]
-   ```
+     Apply 
+     [init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
+     ```shell 
+     ./hack/init_cloud_storage_source.sh
+     ```
+     **_Note_**: This script will need one parameter
+     1. `PROJECT_ID`: an optional parameter to specify the project to use, default to `gcloud config get-value project`
+     If you want to specify the parameter `PROJECT_ID` instead of using the default one,
+     ```shell
+     ./hack/init_cloud_storage_source.sh [PROJECT_ID]
+     ```
 
    - Option 2(manual):
-
    1. Enable the `Cloud Storage API` on your project:
    ```shell
      gcloud services enable storage-component.googleapis.com
