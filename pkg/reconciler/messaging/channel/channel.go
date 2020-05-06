@@ -30,6 +30,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -110,15 +111,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: make([]eventingduck.SubscriberStatus, 0),
+			Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
 		}
 	} else if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
 
 	subCreates := []eventingduck.SubscriberSpec(nil)
 	subUpdates := []eventingduck.SubscriberSpec(nil)
-	subDeletes := []eventingduck.SubscriberStatus(nil)
+	subDeletes := []eventingduckv1beta1.SubscriberStatus(nil)
 
 	// Make a map of name to PullSubscription for lookup.
 	pullsubs := make(map[string]pubsubv1alpha1.PullSubscription)
@@ -130,7 +131,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 	}
 
-	exists := make(map[types.UID]eventingduck.SubscriberStatus)
+	exists := make(map[types.UID]eventingduckv1beta1.SubscriberStatus)
 	for _, s := range channel.Status.SubscribableStatus.Subscribers {
 		exists[s.UID] = s
 	}
@@ -186,7 +187,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", genName)
 
-		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
+		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduckv1beta1.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
 		})
@@ -266,10 +267,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: make([]eventingduck.SubscriberStatus, 0),
+			Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
 		}
 	} else if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
 
 	// Make a map of subscriber name to PullSubscription for lookup.
