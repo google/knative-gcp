@@ -22,11 +22,11 @@ import (
 	"sync"
 
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"cloud.google.com/go/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
@@ -45,6 +45,8 @@ type SyncPool struct {
 	options *pool.Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
+	// Pubsub client used to pull events from decoupling topics.
+	pubsubClient *pubsub.Client
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient ceclient.Client
@@ -74,17 +76,8 @@ func (hc *handlerCache) shouldRenew(t *config.Target) bool {
 }
 
 // NewSyncPool creates a new retry handler pool.
-func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
+func NewSyncPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient pool.DeliverClient, opts ...pool.Option) (*SyncPool, error) {
 	options, err := pool.NewOptions(opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	hp, err := cehttp.New()
-	if err != nil {
-		return nil, err
-	}
-	deliverClient, err := ceclient.NewObserved(hp, options.CeClientOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +85,7 @@ func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool
 	p := &SyncPool{
 		targets:       targets,
 		options:       options,
+		pubsubClient:  pubsubClient,
 		deliverClient: deliverClient,
 	}
 	return p, nil
@@ -121,17 +115,12 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			p.pool.Delete(t.Key())
 		}
 
-		opts := []pubsub.Option{
-			pubsub.WithProjectID(p.options.ProjectID),
-			pubsub.WithTopicID(t.RetryQueue.Topic),
-			pubsub.WithSubscriptionID(t.RetryQueue.Subscription),
-			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
-		}
-
-		if p.options.PubsubClient != nil {
-			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
-		}
-		ps, err := pubsub.New(ctx, opts...)
+		ps, err := cepubsub.New(ctx,
+			cepubsub.WithClient(p.pubsubClient),
+			cepubsub.WithTopicID(t.RetryQueue.Topic),
+			cepubsub.WithSubscriptionID(t.RetryQueue.Subscription),
+			cepubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("trigger", t.Key()), zap.Error(err))
 			errs++

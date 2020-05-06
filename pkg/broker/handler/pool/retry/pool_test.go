@@ -40,9 +40,7 @@ func TestWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject))
+	syncPool, err := InitializeTestSyncPool(helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -115,9 +113,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject))
+	syncPool, err := InitializeTestSyncPool(helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}

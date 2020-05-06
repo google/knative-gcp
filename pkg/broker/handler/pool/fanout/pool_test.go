@@ -41,9 +41,7 @@ func TestWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(ctx, helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject))
+	syncPool, err := InitializeTestSyncPool(ctx, helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -113,9 +111,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(ctx, helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject),
+	syncPool, err := InitializeTestSyncPool(
+		ctx, helper.Targets, helper.PubsubClient,
 		pool.WithDeliveryTimeout(500*time.Millisecond),
 	)
 	if err != nil {
