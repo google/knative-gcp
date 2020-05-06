@@ -46,8 +46,8 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
@@ -55,7 +55,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 				},
 			},
 		}),
-		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
+		kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
@@ -80,15 +80,15 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					authConfig.PubsubServiceAccount,
 				},
 			},
-		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
+		}), kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)

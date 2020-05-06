@@ -58,6 +58,9 @@ var (
 	containerKey         = tag.MustNewKey(metricskey.ContainerName)
 )
 
+type PodName string
+type ContainerName string
+
 type reportArgs struct {
 	namespace    string
 	broker       string
@@ -103,7 +106,7 @@ func register() {
 }
 
 // NewStatsReporter creates a new StatsReporter.
-func NewStatsReporter(podName, containerName string) *StatsReporter {
+func NewStatsReporter(podName PodName, containerName ContainerName) *StatsReporter {
 	return &StatsReporter{
 		podName:       podName,
 		containerName: containerName,
@@ -112,15 +115,15 @@ func NewStatsReporter(podName, containerName string) *StatsReporter {
 
 // StatsReporter reports ingress metrics.
 type StatsReporter struct {
-	podName       string
-	containerName string
+	podName       PodName
+	containerName ContainerName
 }
 
 func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args reportArgs, d time.Duration) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(podKey, r.podName),
-		tag.Insert(containerKey, r.containerName),
+		tag.Insert(podKey, string(r.podName)),
+		tag.Insert(containerKey, string(r.containerName)),
 		tag.Insert(namespaceKey, args.namespace),
 		tag.Insert(brokerKey, args.broker),
 		tag.Insert(eventTypeKey, args.eventType),

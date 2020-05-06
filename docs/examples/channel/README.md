@@ -96,8 +96,8 @@ Data,
   }
 ```
 
-These events are generated from the `hello-world` `PingSource`, sent through
-the `demo` `Channel` and delivered to the `event-display` via the `demo`
+These events are generated from the `hello-world` `PingSource`, sent through the
+`demo` `Channel` and delivered to the `event-display` via the `demo`
 `Subscription`.
 
 ## What's Next

@@ -60,5 +60,8 @@ ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
   "security:v1beta1" \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
 
+go install github.com/google/wire/cmd/wire
+go generate ${REPO_ROOT_DIR}/...
+
 # Make sure our dependencies are up-to-date
 ${REPO_ROOT_DIR}/hack/update-deps.sh
