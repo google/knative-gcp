@@ -18,7 +18,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
    
    - Option 1(via automated script): 
      Apply 
-     [init_cloud_storage_source.sh](../../hack/init_cloud_storage_source.sh):
+     [init_cloud_storage_source.sh](../../../hack/init_cloud_storage_source.sh):
      ```shell 
      ./hack/init_cloud_storage_source.sh
      ```
