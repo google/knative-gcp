@@ -84,6 +84,8 @@ github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1
 github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
 # github.com/cloudevents/sdk-go v1.2.0
 github.com/cloudevents/sdk-go
 github.com/cloudevents/sdk-go/pkg/cloudevents
@@ -141,9 +143,9 @@ github.com/go-logr/logr
 github.com/go-openapi/jsonpointer
 # github.com/go-openapi/jsonreference v0.19.3
 github.com/go-openapi/jsonreference
-# github.com/go-openapi/spec v0.19.4
+# github.com/go-openapi/spec v0.19.6
 github.com/go-openapi/spec
-# github.com/go-openapi/swag v0.19.5
+# github.com/go-openapi/swag v0.19.7
 github.com/go-openapi/swag
 # github.com/gobuffalo/envy v1.7.1
 github.com/gobuffalo/envy
@@ -176,7 +178,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.0.0-20191010200024-a3d713f9b7f8
+# github.com/google/go-containerregistry v0.0.0-20200123184029-53ce695e4179
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/gofuzz v1.1.0
 github.com/google/gofuzz
@@ -198,7 +200,7 @@ github.com/googleapis/gnostic/extensions
 github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
 github.com/grpc-ecosystem/grpc-gateway/utilities
-# github.com/hashicorp/golang-lru v0.5.3
+# github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
 # github.com/imdario/mergo v0.3.8 => github.com/imdario/mergo v0.3.7
@@ -241,7 +243,7 @@ github.com/openzipkin/zipkin-go/reporter/http
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v1.1.0
+# github.com/prometheus/client_golang v1.5.0
 github.com/prometheus/client_golang/prometheus
 github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/promhttp
@@ -291,11 +293,11 @@ go.opencensus.io/trace/tracestate
 go.opentelemetry.io/otel/api/core
 go.opentelemetry.io/otel/api/propagation
 go.opentelemetry.io/otel/api/trace
-# go.uber.org/atomic v1.4.0
+# go.uber.org/atomic v1.6.0
 go.uber.org/atomic
-# go.uber.org/multierr v1.2.0
+# go.uber.org/multierr v1.5.0
 go.uber.org/multierr
-# go.uber.org/zap v1.10.0 => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
+# go.uber.org/zap v1.14.1 => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 go.uber.org/zap
 go.uber.org/zap/buffer
 go.uber.org/zap/internal/bufferpool
@@ -574,7 +576,7 @@ istio.io/api/type/v1beta1
 istio.io/client-go/pkg/apis/security/v1beta1
 # istio.io/gogo-genproto v0.0.0-20200130224810-a0338448499a
 istio.io/gogo-genproto/googleapis/google/api
-# k8s.io/api v0.17.0 => k8s.io/api v0.16.4
+# k8s.io/api v0.17.3 => k8s.io/api v0.16.4
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
 k8s.io/api/admissionregistration/v1beta1
@@ -614,7 +616,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.16.4
+# k8s.io/apiextensions-apiserver v0.17.2
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
@@ -681,7 +683,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.16.4
+# k8s.io/apiserver v0.17.2
 k8s.io/apiserver/pkg/storage/names
 # k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible => k8s.io/client-go v0.16.4
 k8s.io/client-go/discovery
@@ -935,7 +937,7 @@ k8s.io/gengo/parser
 k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+# k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
@@ -943,7 +945,7 @@ k8s.io/kube-openapi/pkg/generators
 k8s.io/kube-openapi/pkg/generators/rules
 k8s.io/kube-openapi/pkg/util/proto
 k8s.io/kube-openapi/pkg/util/sets
-# k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
+# k8s.io/utils v0.0.0-20200124190032-861946025e34
 k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
@@ -1041,7 +1043,7 @@ knative.dev/eventing/test/test_images/logevents
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200501164043-2e4e82aa49f1
+# knative.dev/pkg v0.0.0-20200506001744-478962f05e2b
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
 knative.dev/pkg/apis/duck/v1
@@ -1177,7 +1179,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200430225942-f7c1fafc1cde
+# knative.dev/test-infra v0.0.0-20200505192244-75864c82db21
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
