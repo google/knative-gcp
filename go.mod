@@ -48,7 +48,6 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.1
 	k8s.io/client-go => k8s.io/client-go v0.16.4
 	k8s.io/code-generator => k8s.io/code-generator v0.16.5-beta.1
-	k8s.io/gengo => k8s.io/gengo v0.0.0-20190907103519-ebc107f98eab
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
