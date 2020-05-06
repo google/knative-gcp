@@ -36,7 +36,7 @@ require (
 	knative.dev/eventing v0.14.1-0.20200506063944-e9eb527e1295
 	knative.dev/pkg v0.0.0-20200506142844-5b98a558168e
 	knative.dev/serving v0.14.1-0.20200506171253-f2c76cb8a6dd
-	knative.dev/test-infra v0.0.0-20200506181845-a5dff5817ab3 // indirect
+	knative.dev/test-infra v0.0.0-20200506193944-431dda291f8c // indirect
 )
 
 replace (
