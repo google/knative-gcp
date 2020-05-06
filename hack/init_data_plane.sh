@@ -14,38 +14,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./init_data_plane.sh [NAMESPACE]
-#  where [NAMESPACE] is an optional parameter to specify the namespace to use. If it's not specified, we use the default one.
-#                    if the namespace does not exist, the script will create it.
-# The current project set in gcloud MUST be the same as where the cluster is running.
+# Usage: ./init_data_plane.sh [NAMESPACE] [PROJECT_ID]
+#  [NAMESPACE] is an optional parameter to specify the namespace to use, default to `default`. If the namespace does not exist, the script will create it.
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
+#  If user wants to sepcify PROJECT_ID, user also need to specify NAMESPACE
 # The script always uses the same service account called cre-pubsub.
+set -o errexit
+set -o nounset
+set -euo pipefail
 
-SERVICE_ACCOUNT=cre-pubsub
-KEY_TEMP=cre-pubsub.json
-PROJECT_ID=$(gcloud config get-value project)
-NAMESPACE=default
-if [[ -z "$1" ]]; then
-  echo "NAMESPACE not provided, using default"
-else
-  NAMESPACE="$1"
-  echo "NAMESPACE provided, using ${NAMESPACE}"
-  kubectl create namespace $NAMESPACE
-fi
+source $(dirname $0)/lib.sh
 
-# Create the service account for the data plane
-gcloud iam service-accounts create ${SERVICE_ACCOUNT}
+PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
+DEFAULT_NAMESPACE="default"
 
-# Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.editor
+NAMESPACE=${1:-$DEFAULT_NAMESPACE}
+ # Create the namespace for the data plane if it doesn't exist
+existing_namespace=$(kubectl get namespace "${NAMESPACE}")
+  if [ -z "${existing_namespace}" ]; then
+    echo "Create NAMESPACE'${NAMESPACE}' neeeded for the Data Plane"
+    kubectl create namespace "${NAMESPACE}"
+  else
+    echo "NAMESPACE needed for the Data Plane '${NAMESPACE}' already existed"
+  fi
+echo "NAMESPACE used when init_data_plane is'${NAMESPACE}'"
+PROJECT_ID=${2:-$(gcloud config get-value project)}
+echo "PROJECT_ID used when init_data_plane is'${PROJECT_ID}'"
+
+init_pubsub_service_account "${PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT}"
 
 # Download a JSON key for the service account.
-gcloud iam service-accounts keys create ${KEY_TEMP} --iam-account=${SERVICE_ACCOUNT}@${PROJECT_ID}.iam.gserviceaccount.com
+gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
+  --iam-account="${PUBSUB_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
-# Create the secret with the download JSON key.
-kubectl --namespace $NAMESPACE create secret generic google-cloud-key --from-file=key.json=${KEY_TEMP}
-
-# Label the namespace to inject a Broker.
-kubectl label namespace $NAMESPACE knative-eventing-injection=enabled
+# Create/Patch the secret with the download JSON key in the data plane namespace
+kubectl --namespace "${NAMESPACE}" create secret generic ${PUBSUB_SECRET_NAME} \
+  --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" --dry-run -o yaml | kubectl apply --filename -
 
 # Remove the tmp file.
-rm ${KEY_TEMP}
+rm "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"

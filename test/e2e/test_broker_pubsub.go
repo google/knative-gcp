@@ -390,4 +390,3 @@ func jobDone(client *lib.Client, podName string, t *testing.T) bool {
 	}
 	return true
 }
-
