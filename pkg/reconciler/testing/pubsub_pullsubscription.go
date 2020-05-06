@@ -30,11 +30,11 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
-// PullSubscriptionOption enables further configuration of a PullSubscription.
-type PullSubscriptionOption func(*v1alpha1.PullSubscription)
+// PubSubPullSubscriptionOption enables further configuration of a PullSubscription.
+type PubSubPullSubscriptionOption func(*v1alpha1.PullSubscription)
 
-// NewPullSubscription creates a PullSubscription with PullSubscriptionOptions
-func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
+// NewPubSubPullSubscription creates a PullSubscription with PullSubscriptionOptions
+func NewPubSubPullSubscription(name, namespace string, so ...PubSubPullSubscriptionOption) *v1alpha1.PullSubscription {
 	s := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -48,9 +48,9 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 	return s
 }
 
-// NewPullSubscriptionWithNoDefaults creates a PullSubscription with
+// NewPubSubPullSubscriptionWithNoDefaults creates a PullSubscription with
 // PullSubscriptionOptions but does not set defaults.
-func NewPullSubscriptionWithNoDefaults(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
+func NewPubSubPullSubscriptionWithNoDefaults(name, namespace string, so ...PubSubPullSubscriptionOption) *v1alpha1.PullSubscription {
 	s := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -63,38 +63,18 @@ func NewPullSubscriptionWithNoDefaults(name, namespace string, so ...PullSubscri
 	return s
 }
 
-// NewPullSubscriptionWithoutNamespace creates a PullSubscription with PullSubscriptionOptions but without a specific namespace
-func NewPullSubscriptionWithoutNamespace(name string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
-	s := &v1alpha1.PullSubscription{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-	}
-	for _, opt := range so {
-		opt(s)
-	}
-	s.SetDefaults(context.Background())
-	return s
-}
-
-func WithPullSubscriptionUID(uid types.UID) PullSubscriptionOption {
+func WithPubSubPullSubscriptionUID(uid types.UID) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.UID = uid
 	}
 }
 
-func WithPullSubscriptionGenerateName(generateName string) PullSubscriptionOption {
-	return func(c *v1alpha1.PullSubscription) {
-		c.ObjectMeta.GenerateName = generateName
-	}
-}
-
-// WithInitPullSubscriptionConditions initializes the PullSubscriptions's conditions.
-func WithInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
+// WithPubSubInitPullSubscriptionConditions initializes the PullSubscriptions's conditions.
+func WithPubSubInitPullSubscriptionConditions(s *v1alpha1.PullSubscription) {
 	s.Status.InitializeConditions()
 }
 
-func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Sink = duckv1.Destination{
 			Ref: &duckv1.KReference{
@@ -106,7 +86,7 @@ func WithPullSubscriptionSink(gvk metav1.GroupVersionKind, name string) PullSubs
 	}
 }
 
-func WithPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Transformer = &duckv1.Destination{
 			Ref: &duckv1.KReference{
@@ -118,59 +98,59 @@ func WithPullSubscriptionTransformer(gvk metav1.GroupVersionKind, name string) P
 	}
 }
 
-func WithPullSubscriptionMarkSink(uri *apis.URL) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMarkSink(uri *apis.URL) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSink(uri)
 	}
 }
 
-func WithPullSubscriptionMarkTransformer(uri *apis.URL) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMarkTransformer(uri *apis.URL) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkTransformer(uri)
 	}
 }
 
-func WithPullSubscriptionMarkNoTransformer(reason, message string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMarkNoTransformer(reason, message string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkNoTransformer(reason, message)
 	}
 }
 
-func WithPullSubscriptionMarkSubscribed(subscriptionID string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMarkSubscribed(subscriptionID string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkSubscribed(subscriptionID)
 	}
 }
 
-func WithPullSubscriptionSubscriptionID(subscriptionID string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionSubscriptionID(subscriptionID string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.SubscriptionID = subscriptionID
 	}
 }
 
-func WithPullSubscriptionProjectID(projectID string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionProjectID(projectID string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.ProjectID = projectID
 	}
 }
 
-func WithPullSubscriptionTransformerURI(uri *apis.URL) PullSubscriptionOption {
+func WithPubSubPullSubscriptionTransformerURI(uri *apis.URL) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.TransformerURI = uri
 	}
 }
 
-func WithPullSubscriptionMarkNoSubscription(reason, message string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMarkNoSubscription(reason, message string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkNoSubscription(reason, message)
 	}
 }
 
-func WithPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
+func WithPubSubPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
 	ps.Status.MarkDeployed()
 }
 
-func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
+func WithPubSubPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
 		s.Spec.SetDefaults(context.Background())
@@ -178,13 +158,13 @@ func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscripti
 }
 
 // Same as withPullSubscriptionSpec but does not set defaults
-func WithPullSubscriptionSpecWithNoDefaults(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
+func WithPubSubPullSubscriptionSpecWithNoDefaults(spec v1alpha1.PullSubscriptionSpec) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
 	}
 }
 
-func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
+func WithPubSubPullSubscriptionReady(sink *apis.URL) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
@@ -193,7 +173,7 @@ func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionFailed() PullSubscriptionOption {
+func WithPubSubPullSubscriptionFailed() PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.InitializeConditions()
 		s.Status.MarkNoSink("InvalidSink",
@@ -202,68 +182,55 @@ func WithPullSubscriptionFailed() PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionUnknown() PullSubscriptionOption {
+func WithPubSubPullSubscriptionUnknown() PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.InitializeConditions()
 	}
 }
 
-func WithPullSubscriptionJobFailure(subscriptionID, reason, message string) PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Status.SubscriptionID = subscriptionID
-		s.Status.MarkNoSubscription(reason, message)
-	}
-}
-
-func WithPullSubscriptionSinkNotFound() PullSubscriptionOption {
+func WithPubSubPullSubscriptionSinkNotFound() PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.MarkNoSink("InvalidSink",
 			`failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`)
 	}
 }
 
-func WithPullSubscriptionDeleted(s *v1alpha1.PullSubscription) {
+func WithPubSubPullSubscriptionDeleted(s *v1alpha1.PullSubscription) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
 }
 
-func WithPullSubscriptionOwnerReferences(ownerReferences []metav1.OwnerReference) PullSubscriptionOption {
+func WithPubSubPullSubscriptionOwnerReferences(ownerReferences []metav1.OwnerReference) PubSubPullSubscriptionOption {
 	return func(c *v1alpha1.PullSubscription) {
 		c.ObjectMeta.OwnerReferences = ownerReferences
 	}
 }
 
-func WithPullSubscriptionLabels(labels map[string]string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionLabels(labels map[string]string) PubSubPullSubscriptionOption {
 	return func(c *v1alpha1.PullSubscription) {
 		c.ObjectMeta.Labels = labels
 	}
 }
 
-func WithPullSubscriptionAnnotations(annotations map[string]string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionAnnotations(annotations map[string]string) PubSubPullSubscriptionOption {
 	return func(c *v1alpha1.PullSubscription) {
 		c.ObjectMeta.Annotations = annotations
 	}
 }
 
-func WithPullSubscriptionFinalizers(finalizers ...string) PullSubscriptionOption {
-	return func(s *v1alpha1.PullSubscription) {
-		s.Finalizers = finalizers
-	}
-}
-
-func WithPullSubscriptionStatusObservedGeneration(generation int64) PullSubscriptionOption {
+func WithPubSubPullSubscriptionStatusObservedGeneration(generation int64) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.Status.ObservedGeneration = generation
 	}
 }
 
-func WithPullSubscriptionObjectMetaGeneration(generation int64) PullSubscriptionOption {
+func WithPubSubPullSubscriptionObjectMetaGeneration(generation int64) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.ObjectMeta.Generation = generation
 	}
 }
 
-func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, message string) PullSubscriptionOption {
+func WithPubSubPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, message string) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Status.Conditions = []apis.Condition{{
 			Type:    apis.ConditionReady,
@@ -274,7 +241,7 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 	}
 }
 
-func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
+func WithPubSubPullSubscriptionMode(mode v1alpha1.ModeType) PubSubPullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Mode = mode
 	}
