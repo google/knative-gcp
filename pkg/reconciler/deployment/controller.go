@@ -77,7 +77,7 @@ func NewController(
 func handler(h func(interface{})) cache.ResourceEventHandler {
 	return cache.ResourceEventHandlerFuncs{
 		// For AddFunc, only enqueue deployment key when envKey is not set.
-		// In such case, the controller pod haven't restarted before.
+		// In such case, the controller pod hasn't restarted before.
 		// This helps to avoid infinite loop for restarting controller pod.
 		AddFunc: func(obj interface{}) {
 			if _, ok := os.LookupEnv(envKey); !ok {
