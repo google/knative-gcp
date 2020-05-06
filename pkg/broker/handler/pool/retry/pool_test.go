@@ -23,7 +23,6 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
-	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
@@ -248,12 +247,11 @@ func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
 }
 
 func genTestEvent(subject, t, id, source string) event.Event {
-	eh := &eventutil.Hops{Logger: zap.NewNop()}
 	e := event.New()
 	e.SetSubject(subject)
 	e.SetType(t)
 	e.SetID(id)
 	e.SetSource(source)
-	eh.UpdateRemainingHops(&e, 123)
+	eventutil.UpdateRemainingHops(context.Background(), &e, 123)
 	return e
 }

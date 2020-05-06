@@ -24,7 +24,6 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
-	"go.uber.org/zap"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
@@ -129,13 +128,12 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	}
 
 	var hops int32 = 123
-	eh := &eventutil.Hops{Logger: zap.NewNop()}
 	e := event.New()
 	e.SetSubject("foo")
 	e.SetType("type")
 	e.SetID("id")
 	e.SetSource("source")
-	eh.UpdateRemainingHops(&e, hops)
+	eventutil.UpdateRemainingHops(ctx, &e, hops)
 
 	t.Run("broker's targets receive fanout events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
@@ -235,7 +233,8 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 
 		// The reply to broker ingress should include the original hops.
 		wantReply := reply.Clone()
-		eh.UpdateRemainingHops(&wantReply, hops)
+		// -1 because the delivery processor should decrement remaining hops.
+		eventutil.UpdateRemainingHops(ctx, &wantReply, hops-1)
 
 		// Set timeout context so that verification can be done before
 		// exiting test func.

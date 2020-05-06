@@ -34,6 +34,8 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
+const defaultEventHopsLimit int32 = 255
+
 // Processor delivers events based on the broker/target in the context.
 type Processor struct {
 	processors.BaseProcessor
@@ -55,9 +57,6 @@ type Processor struct {
 	// DeliverTimeout is the timeout applied to cancel delivery.
 	// If zero, not additional timeout is applied.
 	DeliverTimeout time.Duration
-
-	// EventHops manages events hops.
-	EventHops *eventutil.Hops
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -89,8 +88,10 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	// Do not modify the original event as we need to send the original
 	// event to retry queue on failure.
 	copy := event.Clone()
-	hops, hopsFound := p.EventHops.GetRemainingHops(&copy)
-	p.EventHops.DeleteRemainingHops(&copy)
+	// This will decrement the remaining hops if there is an existing value.
+	eventutil.UpdateRemainingHops(ctx, &copy, defaultEventHopsLimit)
+	hops, _ := eventutil.GetRemainingHops(ctx, &copy)
+	eventutil.DeleteRemainingHops(ctx, &copy)
 
 	dctx := ctx
 	if p.DeliverTimeout > 0 {
@@ -113,13 +114,20 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	// Attach the previous hops for the reply.
-	if hopsFound {
-		// Clean up potential hops from the reply.
-		// It really shouldn't happen though.
-		p.EventHops.DeleteRemainingHops(resp)
-		p.EventHops.UpdateRemainingHops(resp, hops)
+	if hops <= 0 {
+		logging.FromContext(ctx).Debug("dropping event based on remaining hops status",
+			zap.String("target", tk),
+			zap.Int32("hops", hops),
+			zap.String("event.id", resp.ID()))
+		return nil
 	}
+
+	// Clean up potential hops from the reply. It really shouldn't happen though.
+	eventutil.DeleteRemainingHops(ctx, resp)
+	// Attach the previous hops for the reply.
+	// This should only set the remaining hops without decrementing because
+	// there is no existing value.
+	eventutil.UpdateRemainingHops(ctx, resp, hops)
 
 	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
 		if !p.RetryOnFailure {

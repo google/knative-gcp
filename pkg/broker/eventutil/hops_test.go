@@ -17,10 +17,10 @@ limitations under the License.
 package eventutil
 
 import (
+	"context"
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	"go.uber.org/zap"
 )
 
 func TestGetRemainingHops(t *testing.T) {
@@ -44,10 +44,9 @@ func TestGetRemainingHops(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			et := &Hops{Logger: zap.NewNop()}
 			e := event.New()
 			e.SetExtension(hopsAttribute, tc.val)
-			gotHops, gotOK := et.GetRemainingHops(&e)
+			gotHops, gotOK := GetRemainingHops(context.Background(), &e)
 			if gotOK != tc.wantOK {
 				t.Errorf("Found Hops OK got=%v, want=%v", gotOK, tc.wantOK)
 			}
@@ -59,10 +58,9 @@ func TestGetRemainingHops(t *testing.T) {
 }
 
 func TestDeleteRemainingHops(t *testing.T) {
-	et := &Hops{Logger: zap.NewNop()}
 	e := event.New()
 	e.SetExtension(hopsAttribute, 100)
-	et.DeleteRemainingHops(&e)
+	DeleteRemainingHops(context.Background(), &e)
 	_, ok := e.Extensions()[hopsAttribute]
 	if ok {
 		t.Error("After DeleteHops Hops found got=true, want=false")
@@ -94,11 +92,10 @@ func TestUpdateHops(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			et := &Hops{Logger: zap.NewNop()}
 			e := event.New()
 			e.SetExtension(hopsAttribute, tc.existingHops)
-			et.UpdateRemainingHops(&e, tc.preemptive)
-			gotHops, ok := et.GetRemainingHops(&e)
+			UpdateRemainingHops(context.Background(), &e, tc.preemptive)
+			gotHops, ok := GetRemainingHops(context.Background(), &e)
 			if !ok {
 				t.Error("Found Hops after UpdateHops got=false, want=true")
 			}

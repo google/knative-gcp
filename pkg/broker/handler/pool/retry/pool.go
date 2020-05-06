@@ -29,7 +29,6 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
@@ -148,7 +147,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 					&deliver.Processor{
 						DeliverClient: p.deliverClient,
 						Targets:       p.targets,
-						EventHops:     &eventutil.Hops{Logger: logging.FromContext(ctx)},
 					},
 				),
 			},

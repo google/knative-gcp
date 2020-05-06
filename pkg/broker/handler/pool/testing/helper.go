@@ -37,7 +37,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -68,8 +67,6 @@ type Helper struct {
 	consumers map[string]*serverCfg
 	// The internal map that maps each broker to its fake broker ingress server.
 	ingresses map[string]*serverCfg
-
-	eventHops *eventutil.Hops
 }
 
 // Close cleans up all resources.
@@ -109,7 +106,6 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 		Targets:      memory.NewEmptyTargets(),
 		consumers:    make(map[string]*serverCfg),
 		ingresses:    make(map[string]*serverCfg),
-		eventHops:    &eventutil.Hops{Logger: zap.NewNop()},
 	}, nil
 }
 
@@ -356,7 +352,7 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 	// On timeout or receiving an event, the defer function verifies the event in the end.
 	var gotEvent *event.Event
 	defer func() {
-		h.assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("broker (key=%q)", brokerKey))
+		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("broker (key=%q)", brokerKey))
 	}()
 
 	msg, err := bIng.client.Receive(ctx)
@@ -397,7 +393,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	if wantEvent != nil {
 		copy := wantEvent.Clone()
 		wantEventCopy = &copy
-		h.eventHops.DeleteRemainingHops(wantEventCopy)
+		eventutil.DeleteRemainingHops(ctx, wantEventCopy)
 	}
 
 	consumer, ok := h.consumers[targetKey]
@@ -408,7 +404,7 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	// On timeout or receiving an event, the defer function verifies the event in the end.
 	var gotEvent *event.Event
 	defer func() {
-		h.assertEvent(t, wantEventCopy, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+		assertEvent(t, wantEventCopy, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
 	}()
 
 	msg, respFn, err := consumer.client.Respond(ctx)
@@ -445,7 +441,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 
 	var gotEvent *event.Event
 	defer func() {
-		h.assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
 	}()
 
 	// Creates a temp pubsub client to pull the retry subscription.
@@ -472,7 +468,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 	}
 }
 
-func (h *Helper) assertEvent(t *testing.T, want, got *event.Event, msg string) {
+func assertEvent(t *testing.T, want, got *event.Event, msg string) {
 	if got != nil && want != nil {
 		// Clone events so that we don't modify the original copy.
 		gotCopy, wantCopy := got.Clone(), want.Clone()
@@ -485,13 +481,13 @@ func (h *Helper) assertEvent(t *testing.T, want, got *event.Event, msg string) {
 
 		// Compare hops explicitly because
 		// cloudevents client sometimes treat hops value as string internally.
-		gotHops, _ := h.eventHops.GetRemainingHops(got)
-		wantHops, _ := h.eventHops.GetRemainingHops(want)
+		gotHops, _ := eventutil.GetRemainingHops(context.Background(), got)
+		wantHops, _ := eventutil.GetRemainingHops(context.Background(), want)
 		if gotHops != wantHops {
 			t.Errorf("%s event hops got=%d, want=%d", msg, gotHops, wantHops)
 		}
-		h.eventHops.DeleteRemainingHops(want)
-		h.eventHops.DeleteRemainingHops(got)
+		eventutil.DeleteRemainingHops(context.Background(), want)
+		eventutil.DeleteRemainingHops(context.Background(), got)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("%s received event (-want,+got): %v", msg, diff)

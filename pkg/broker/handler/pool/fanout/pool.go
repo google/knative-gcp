@@ -29,7 +29,6 @@ import (
 	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
@@ -188,7 +187,6 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 						RetryOnFailure:     true,
 						DeliverRetryClient: p.deliverRetryClient,
 						DeliverTimeout:     p.deliverTimeout,
-						EventHops:          &eventutil.Hops{Logger: logging.FromContext(ctx)},
 					},
 				),
 			},

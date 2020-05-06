@@ -17,27 +17,25 @@ limitations under the License.
 package eventutil
 
 import (
+	"context"
+
 	cetypes "github.com/cloudevents/sdk-go/pkg/cloudevents/types"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"go.uber.org/zap"
+	"knative.dev/eventing/pkg/logging"
 )
 
 const (
-	hopsAttribute = "kngcpbrokerhops"
+	hopsAttribute = "kngcpbrokerhopsremaining"
 )
-
-// Hops manages event hops.
-type Hops struct {
-	Logger *zap.Logger
-}
 
 // UpdateRemainingHops update an event with proper remaining hops.
 // 1. If the event doesn't have an existing hops value or have an invalid hops value,
 // it puts the preemptive hops in the event.
 // 2. If the event has an existing valid hops value,
 // it decrements it by 1.
-func (h *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
-	hops, ok := h.GetRemainingHops(event)
+func UpdateRemainingHops(ctx context.Context, event *event.Event, preemptiveHops int32) {
+	hops, ok := GetRemainingHops(ctx, event)
 	if ok {
 		// Decrement hops.
 		hops = hops - 1
@@ -45,7 +43,7 @@ func (h *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
 			hops = 0
 		}
 	} else {
-		h.Logger.Debug("Remaining hops not found in event, defaulting to the preemptive value.",
+		logging.FromContext(ctx).Debug("Remaining hops not found in event, defaulting to the preemptive value.",
 			zap.String("event.id", event.ID()),
 			zap.Int32(hopsAttribute, preemptiveHops),
 		)
@@ -57,14 +55,14 @@ func (h *Hops) UpdateRemainingHops(event *event.Event, preemptiveHops int32) {
 
 // GetRemainingHops returns the remaining hops of the event if it presents.
 // If there is no existing hops value or an invalid one, (0, false) will be returned.
-func (h *Hops) GetRemainingHops(event *event.Event) (int32, bool) {
+func GetRemainingHops(ctx context.Context, event *event.Event) (int32, bool) {
 	hopsRaw, ok := event.Extensions()[hopsAttribute]
 	if !ok {
 		return 0, false
 	}
 	hops, err := cetypes.ToInteger(hopsRaw)
 	if err != nil {
-		h.Logger.Warn("Failed to convert existing hops value into integer, regarding it as there is no hops value.",
+		logging.FromContext(ctx).Warn("Failed to convert existing hops value into integer, regarding it as there is no hops value.",
 			zap.String("event.id", event.ID()),
 			zap.Any(hopsAttribute, hopsRaw),
 			zap.Error(err),
@@ -75,6 +73,6 @@ func (h *Hops) GetRemainingHops(event *event.Event) (int32, bool) {
 }
 
 // DeleteRemainingHops deletes hops from the event extensions.
-func (h *Hops) DeleteRemainingHops(event *event.Event) {
+func DeleteRemainingHops(_ context.Context, event *event.Event) {
 	event.SetExtension(hopsAttribute, nil)
 }

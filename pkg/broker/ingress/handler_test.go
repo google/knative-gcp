@@ -36,8 +36,6 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	"github.com/google/knative-gcp/pkg/broker/eventutil"
-	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -223,23 +221,6 @@ func TestHandler(t *testing.T) {
 				metricskey.ContainerName:          container,
 			},
 		},
-		{
-			name:           "hops exceeds limit",
-			path:           "/ns1/broker1",
-			event:          createHopLimitExceededEvent("test-event"),
-			wantCode:       nethttp.StatusBadRequest,
-			wantEventCount: 1,
-			wantMetricTags: map[string]string{
-				metricskey.LabelNamespaceName:     "ns1",
-				metricskey.LabelBrokerName:        "broker1",
-				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "400",
-				metricskey.LabelResponseCodeClass: "4xx",
-				metricskey.PodName:                pod,
-				metricskey.ContainerName:          container,
-			},
-			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime)},
-		},
 	}
 
 	client := nethttp.Client{}
@@ -368,13 +349,6 @@ func createTestEvent(id string) *cloudevents.Event {
 	event.SetSource("test-source")
 	event.SetType(eventType)
 	return &event
-}
-
-func createHopLimitExceededEvent(id string) *cloudevents.Event {
-	e := createTestEvent(id)
-	et := &eventutil.Hops{Logger: zap.NewNop()}
-	et.UpdateRemainingHops(e, 0)
-	return e
 }
 
 // createRequest creates an http request from the test case. If event is specified, it converts the event to a request.
