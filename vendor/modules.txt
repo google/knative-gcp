@@ -1179,7 +1179,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200506181845-a5dff5817ab3
+# knative.dev/test-infra v0.0.0-20200506193944-431dda291f8c
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
