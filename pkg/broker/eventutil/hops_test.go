@@ -63,7 +63,7 @@ func TestDeleteRemainingHops(t *testing.T) {
 	DeleteRemainingHops(context.Background(), &e)
 	_, ok := e.Extensions()[hopsAttribute]
 	if ok {
-		t.Error("After DeleteHops Hops found got=true, want=false")
+		t.Error("After DeleteRemainingHops Hops found got=true, want=false")
 	}
 }
 
@@ -97,10 +97,41 @@ func TestUpdateHops(t *testing.T) {
 			UpdateRemainingHops(context.Background(), &e, tc.preemptive)
 			gotHops, ok := GetRemainingHops(context.Background(), &e)
 			if !ok {
-				t.Error("Found Hops after UpdateHops got=false, want=true")
+				t.Error("Found Hops after UpdateRemainingHops got=false, want=true")
 			}
 			if gotHops != tc.wantHops {
 				t.Errorf("Hops got=%d, want=%d", gotHops, tc.wantHops)
+			}
+		})
+	}
+}
+
+func TestSetRemainingHops(t *testing.T) {
+	cases := []struct {
+		name         string
+		existingHops int32
+		hops         int32
+	}{{
+		name:         "without existing hops",
+		existingHops: 0,
+		hops:         123,
+	}, {
+		name:         "with existing hops",
+		existingHops: 99,
+		hops:         123,
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := event.New()
+			e.SetExtension(hopsAttribute, tc.existingHops)
+			SetRemainingHops(context.Background(), &e, tc.hops)
+			gotHops, ok := GetRemainingHops(context.Background(), &e)
+			if !ok {
+				t.Error("Found Hops after SetRemainingHops got=false, want=true")
+			}
+			if gotHops != tc.hops {
+				t.Errorf("Hops got=%d, want=%d", gotHops, tc.hops)
 			}
 		})
 	}

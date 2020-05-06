@@ -122,12 +122,8 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
-	// Clean up potential hops from the reply. It really shouldn't happen though.
-	eventutil.DeleteRemainingHops(ctx, resp)
 	// Attach the previous hops for the reply.
-	// This should only set the remaining hops without decrementing because
-	// there is no existing value.
-	eventutil.UpdateRemainingHops(ctx, resp, hops)
+	eventutil.SetRemainingHops(ctx, resp, hops)
 
 	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
 		if !p.RetryOnFailure {

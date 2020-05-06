@@ -53,6 +53,12 @@ func UpdateRemainingHops(ctx context.Context, event *event.Event, preemptiveHops
 	event.SetExtension(hopsAttribute, hops)
 }
 
+// SetRemainingHops sets the remaining hops in the event.
+// It ignores any existing hops value.
+func SetRemainingHops(ctx context.Context, event *event.Event, hops int32) {
+	event.SetExtension(hopsAttribute, hops)
+}
+
 // GetRemainingHops returns the remaining hops of the event if it presents.
 // If there is no existing hops value or an invalid one, (0, false) will be returned.
 func GetRemainingHops(ctx context.Context, event *event.Event) (int32, bool) {
