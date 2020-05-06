@@ -148,7 +148,7 @@ var (
 
 	completeSubscribableTypeStatus = eventingduckv1alpha1.SubscribableTypeStatus{
 		SubscribableStatus: &eventingduckv1alpha1.SubscribableStatus{
-			Subscribers: []eventingduckv1alpha1.SubscriberStatus{
+			Subscribers: []eventingduckv1beta1.SubscriberStatus{
 				{
 					UID:                "uid-1",
 					ObservedGeneration: 1,
