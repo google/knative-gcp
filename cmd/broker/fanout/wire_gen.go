@@ -10,12 +10,11 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*fanout.SyncPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.FanoutPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
@@ -38,11 +37,11 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 	if err != nil {
 		return nil, err
 	}
-	syncPool, err := fanout.NewSyncPool(readonlyTargets, client, deliverClient, retryClient, opts...)
+	fanoutPool, err := pool.NewFanoutPool(readonlyTargets, client, deliverClient, retryClient, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return syncPool, nil
+	return fanoutPool, nil
 }
 
 var (

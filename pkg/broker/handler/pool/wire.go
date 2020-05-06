@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fanout
+package pool
 
 import (
 	"context"
@@ -24,22 +24,35 @@ import (
 	"cloud.google.com/go/pubsub"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/wire"
 )
 
-func InitializeTestSyncPool(
+func InitializeTestFanoutPool(
 	ctx context.Context,
 	targets config.ReadonlyTargets,
 	pubsubClient *pubsub.Client,
-	opts ...pool.Option,
-) (*SyncPool, error) {
+	opts ...Option,
+) (*FanoutPool, error) {
 	panic(wire.Build(
-		NewSyncPool,
-		pool.NewDeliverClient,
-		pool.NewRetryClient,
+		NewFanoutPool,
+		NewDeliverClient,
+		NewRetryClient,
 		cehttp.New,
 		wire.Value([]cehttp.Option(nil)),
-		wire.Value(pool.DefaultCEClientOpts),
+		wire.Value(DefaultCEClientOpts),
+	))
+}
+
+func InitializeTestRetryPool(
+	targets config.ReadonlyTargets,
+	pubsubClient *pubsub.Client,
+	opts ...Option,
+) (*RetryPool, error) {
+	panic(wire.Build(
+		NewRetryPool,
+		NewDeliverClient,
+		cehttp.New,
+		wire.Value([]cehttp.Option(nil)),
+		wire.Value(DefaultCEClientOpts),
 	))
 }

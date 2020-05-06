@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package retry
+package pool
 
 import (
 	"context"
@@ -25,11 +25,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
 
-func TestWatchAndSync(t *testing.T) {
+func TestRetryWatchAndSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -40,17 +39,17 @@ func TestWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestSyncPool(helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestRetryPool(helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = pool.StartSyncPool(ctx, syncPool, signal)
+		_, err = StartSyncPool(ctx, syncPool, signal)
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
-		assertHandlers(t, syncPool, helper.Targets)
+		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
 	bs := make([]*config.Broker, 0, 4)
@@ -65,7 +64,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("delete and adding targets in brokers", func(t *testing.T) {
@@ -78,7 +77,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("deleting all brokers with their targets", func(t *testing.T) {
@@ -89,7 +88,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 }
 
@@ -113,12 +112,12 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestSyncPool(helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestRetryPool(helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
 
-	if _, err := pool.StartSyncPool(ctx, syncPool, signal); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 
@@ -221,7 +220,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	})
 }
 
-func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
+func assertRetryHandlers(t *testing.T, p *RetryPool, targets config.Targets) {
 	t.Helper()
 	gotHandlers := make(map[string]bool)
 	wantHandlers := make(map[string]bool)

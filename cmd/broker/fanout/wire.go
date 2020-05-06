@@ -23,13 +23,12 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
 	"github.com/google/wire"
 )
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*fanout.SyncPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.FanoutPool, error) {
 	panic(wire.Build(
-		fanout.NewSyncPool,
+		pool.NewFanoutPool,
 		pool.ProviderSet,
 		volume.NewTargetsFromFile,
 	))

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fanout
+package pool
 
 import (
 	"context"
@@ -31,19 +31,18 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// SyncPool is the sync pool for fanout handlers.
+// FanoutPool is the sync pool for fanout handlers.
 // For each broker in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding broker is deleted
 // in the config.
-type SyncPool struct {
-	options *pool.Options
+type FanoutPool struct {
+	options *Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
 
@@ -63,14 +62,14 @@ type SyncPool struct {
 	deliverTimeout time.Duration
 }
 
-type handlerCache struct {
+type fanoutHandlerCache struct {
 	handler.Handler
 	b *config.Broker
 }
 
 // If somehow the existing handler's setting has deviated from the current broker config,
 // we need to renew the handler.
-func (hc *handlerCache) shouldRenew(b *config.Broker) bool {
+func (hc *fanoutHandlerCache) shouldRenew(b *config.Broker) bool {
 	if !hc.IsAlive() {
 		return true
 	}
@@ -86,15 +85,15 @@ func (hc *handlerCache) shouldRenew(b *config.Broker) bool {
 	return false
 }
 
-// NewSyncPool creates a new fanout handler pool.
-func NewSyncPool(
+// NewFanoutPool creates a new fanout handler pool.
+func NewFanoutPool(
 	targets config.ReadonlyTargets,
 	pubsubClient *pubsub.Client,
-	deliverClient pool.DeliverClient,
-	retryClient pool.RetryClient,
-	opts ...pool.Option,
-) (*SyncPool, error) {
-	options, err := pool.NewOptions(opts...)
+	deliverClient DeliverClient,
+	retryClient RetryClient,
+	opts ...Option,
+) (*FanoutPool, error) {
+	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +102,7 @@ func NewSyncPool(
 		return nil, fmt.Errorf("timeout per event cannot be lower than %v", 5*time.Second)
 	}
 
-	p := &SyncPool{
+	p := &FanoutPool{
 		targets:            targets,
 		options:            options,
 		pubsubClient:       pubsubClient,
@@ -116,12 +115,12 @@ func NewSyncPool(
 }
 
 // SyncOnce syncs once the handler pool based on the targets config.
-func (p *SyncPool) SyncOnce(ctx context.Context) error {
+func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
 		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
-			value.(*handlerCache).Stop()
+			value.(*fanoutHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
 		return true
@@ -130,11 +129,11 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	p.targets.RangeBrokers(func(b *config.Broker) bool {
 		if value, ok := p.pool.Load(b.Key()); ok {
 			// Skip if we don't need to renew the handler.
-			if !value.(*handlerCache).shouldRenew(b) {
+			if !value.(*fanoutHandlerCache).shouldRenew(b) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
-			value.(*handlerCache).Stop()
+			value.(*fanoutHandlerCache).Stop()
 			p.pool.Delete(b.Key())
 		}
 
@@ -150,7 +149,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			return true
 		}
 
-		hc := &handlerCache{
+		hc := &fanoutHandlerCache{
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
 				PubsubEvents: ps,

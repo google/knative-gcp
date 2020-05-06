@@ -10,12 +10,11 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*retry.SyncPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.RetryPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
@@ -34,11 +33,11 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 	if err != nil {
 		return nil, err
 	}
-	syncPool, err := retry.NewSyncPool(readonlyTargets, client, deliverClient, opts...)
+	retryPool, err := pool.NewRetryPool(readonlyTargets, client, deliverClient, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return syncPool, nil
+	return retryPool, nil
 }
 
 var (

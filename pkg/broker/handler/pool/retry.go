@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package retry
+package pool
 
 import (
 	"context"
@@ -31,18 +31,17 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// SyncPool is the sync pool for retry handlers.
+// RetryPool is the sync pool for retry handlers.
 // For each trigger in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding trigger is deleted
 // in the config.
-type SyncPool struct {
-	options *pool.Options
+type RetryPool struct {
+	options *Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
 	// Pubsub client used to pull events from decoupling topics.
@@ -52,14 +51,14 @@ type SyncPool struct {
 	deliverClient ceclient.Client
 }
 
-type handlerCache struct {
+type retryHandlerCache struct {
 	handler.Handler
 	t *config.Target
 }
 
 // If somehow the existing handler's setting has deviated from the current target config,
 // we need to renew the handler.
-func (hc *handlerCache) shouldRenew(t *config.Target) bool {
+func (hc *retryHandlerCache) shouldRenew(t *config.Target) bool {
 	if !hc.IsAlive() {
 		return true
 	}
@@ -75,14 +74,14 @@ func (hc *handlerCache) shouldRenew(t *config.Target) bool {
 	return false
 }
 
-// NewSyncPool creates a new retry handler pool.
-func NewSyncPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient pool.DeliverClient, opts ...pool.Option) (*SyncPool, error) {
-	options, err := pool.NewOptions(opts...)
+// NewRetryPool creates a new retry handler pool.
+func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient DeliverClient, opts ...Option) (*RetryPool, error) {
+	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	p := &SyncPool{
+	p := &RetryPool{
 		targets:       targets,
 		options:       options,
 		pubsubClient:  pubsubClient,
@@ -92,13 +91,13 @@ func NewSyncPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, de
 }
 
 // SyncOnce syncs once the handler pool based on the targets config.
-func (p *SyncPool) SyncOnce(ctx context.Context) error {
+func (p *RetryPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
 		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
-			value.(*handlerCache).Stop()
+			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
 		return true
@@ -107,11 +106,11 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		if value, ok := p.pool.Load(t.Key()); ok {
 			// Skip if we don't need to renew the handler.
-			if !value.(*handlerCache).shouldRenew(t) {
+			if !value.(*retryHandlerCache).shouldRenew(t) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
-			value.(*handlerCache).Stop()
+			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(t.Key())
 		}
 
@@ -127,7 +126,7 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 			return true
 		}
 
-		hc := &handlerCache{
+		hc := &retryHandlerCache{
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
 				PubsubEvents: ps,

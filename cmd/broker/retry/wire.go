@@ -23,13 +23,12 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
 	"github.com/google/wire"
 )
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*retry.SyncPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.RetryPool, error) {
 	panic(wire.Build(
-		retry.NewSyncPool,
+		pool.NewRetryPool,
 		pool.ProviderSet,
 		volume.NewTargetsFromFile,
 	))
