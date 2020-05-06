@@ -38,12 +38,12 @@ Object Notifications for when a new object is added to Google Cloud Storage
    1. Give Google Cloud Storage permissions to publish to GCP Pub/Sub.
       1. First find the Service Account that GCS uses to publish to Pub/Sub
         (Either using UI or using curl as shown below)
-        1. Use the steps outlined in
+        - Option 1: Use the steps outlined in
            [Cloud Console or the JSON API](https://cloud.google.com/storage/docs/getting-service-account)
            Assume the service account you found from above was
            `service-XYZ@gs-project-accounts.iam.gserviceaccount.com`, you'd do:
            `shell export GCS_SERVICE_ACCOUNT=service-XYZ@gs-project-accounts.iam.gserviceaccount.com`
-        1. Use `curl` to fetch the email:
+        - Option 2: Use `curl` to fetch the email:
            ````shell
            export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json
            gcloud auth application-default print-access-token\`"
