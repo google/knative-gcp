@@ -71,12 +71,6 @@ replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20
 
 replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
 
-replace github.com/prometheus/client_model => github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
-
-replace github.com/prometheus/common => github.com/prometheus/common v0.7.0
-
-replace github.com/prometheus/procfs => github.com/prometheus/procfs v0.0.5
-
 replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
 
 replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
