@@ -26,9 +26,10 @@ import (
 	"github.com/google/wire"
 )
 
+// InitializeSyncPool initializes the fanout sync pool. Uses the given projectID to initialize the
+// retry pool's pubsub client and uses targetsVolumeOpts to initialize the targets volume watcher.
 func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.FanoutPool, error) {
 	panic(wire.Build(
-		pool.NewFanoutPool,
 		pool.ProviderSet,
 		volume.NewTargetsFromFile,
 	))

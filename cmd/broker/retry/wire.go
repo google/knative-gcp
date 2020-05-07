@@ -26,9 +26,10 @@ import (
 	"github.com/google/wire"
 )
 
+// InitializeSyncPool initializes the retry sync pool. Uses the given projectID to initialize the
+// retry pool's pubsub client and uses targetsVolumeOpts to initialize the targets volume watcher.
 func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.RetryPool, error) {
 	panic(wire.Build(
-		pool.NewRetryPool,
 		pool.ProviderSet,
 		volume.NewTargetsFromFile,
 	))

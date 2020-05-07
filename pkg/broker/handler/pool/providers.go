@@ -33,8 +33,12 @@ var (
 		ceclient.WithTracePropagation(),
 	}
 
-	// Provider set providing the default fanout and retry clients.
+	// ProviderSet provides the fanout and retry sync pools using the default client options. In
+	// order to inject either pool, ProjectID, []Option, and config.ReadOnlyTargets must be
+	// externally provided.
 	ProviderSet = wire.NewSet(
+		NewFanoutPool,
+		NewRetryPool,
 		cehttp.New,
 		NewDeliverClient,
 		NewPubsubClient,
@@ -50,6 +54,7 @@ type (
 	RetryClient   ceclient.Client
 )
 
+// NewDeliverClient provides a delivery CE client from an HTTP protocol and a list of CE client options.
 func NewDeliverClient(hp *cehttp.Protocol, opts ...ceclient.Option) (DeliverClient, error) {
 	return ceclient.NewObserved(hp, opts...)
 }
@@ -59,6 +64,7 @@ func NewPubsubClient(ctx context.Context, projectID ProjectID) (*pubsub.Client, 
 	return pubsub.NewClient(ctx, string(projectID))
 }
 
+// NewRetryClient provides a retry CE client from a PubSub client and list of CE client options.
 func NewRetryClient(ctx context.Context, client *pubsub.Client, opts ...ceclient.Option) (RetryClient, error) {
 	rps, err := cepubsub.New(ctx, cepubsub.WithClient(client))
 	if err != nil {
