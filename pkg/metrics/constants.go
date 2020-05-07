@@ -21,7 +21,8 @@ import (
 	"knative.dev/pkg/metrics/metricskey"
 )
 
-const ()
+type PodName string
+type ContainerName string
 
 var (
 	// Create the tag keys that will be used to add tags to our measurements.

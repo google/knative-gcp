@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ingress
+package metrics
 
 import (
 	"context"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"testing"
 	"time"
 
@@ -26,13 +27,13 @@ import (
 )
 
 func TestStatsReporter(t *testing.T) {
-	resetMetrics()
+	reportertest.ResetIngressMetrics()
 
-	args := reportArgs{
-		namespace:    "testns",
-		broker:       "testbroker",
-		eventType:    "testeventtype",
-		responseCode: 202,
+	args := IngressReportArgs{
+		Namespace:    "testns",
+		Broker:       "testbroker",
+		EventType:    "testeventtype",
+		ResponseCode: 202,
 	}
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
@@ -44,30 +45,18 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.PodName:                "testpod",
 	}
 
-	r, err := NewStatsReporter(PodName("testpod"), ContainerName("testcontainer"))
+	r, err := NewIngressReporter(PodName("testpod"), ContainerName("testcontainer"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// test ReportDispatchTime
-	expectSuccess(t, func() error {
-		return r.reportEventDispatchTime(context.Background(), args, 1100*time.Millisecond)
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventDispatchTime(context.Background(), args, 1100*time.Millisecond)
 	})
-	expectSuccess(t, func() error {
-		return r.reportEventDispatchTime(context.Background(), args, 9100*time.Millisecond)
+	reportertest.ExpectMetrics(t, func() error {
+		return r.ReportEventDispatchTime(context.Background(), args, 9100*time.Millisecond)
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
-}
-
-func resetMetrics() {
-	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister("event_count", "event_dispatch_latencies")
-}
-
-func expectSuccess(t *testing.T, f func() error) {
-	t.Helper()
-	if err := f(); err != nil {
-		t.Errorf("Reporter expected success but got error: %v", err)
-	}
 }
