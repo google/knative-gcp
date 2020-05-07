@@ -18,10 +18,10 @@ package main
 
 import (
 	"flag"
-	"github.com/google/knative-gcp/pkg/metrics"
 	"log"
 
 	"github.com/google/knative-gcp/pkg/broker/ingress"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/observability"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"

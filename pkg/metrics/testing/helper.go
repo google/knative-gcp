@@ -1,8 +1,9 @@
 package testing
 
 import (
-	"knative.dev/pkg/metrics/metricstest"
 	"testing"
+
+	"knative.dev/pkg/metrics/metricstest"
 )
 
 func ResetIngressMetrics() {

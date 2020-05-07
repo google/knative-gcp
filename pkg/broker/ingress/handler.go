@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/metrics"
 	nethttp "net/http"
 	"strings"
 	"time"
@@ -28,10 +27,12 @@ import (
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
+
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/wire"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"

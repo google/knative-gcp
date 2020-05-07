@@ -18,10 +18,10 @@ package metrics
 
 import (
 	"context"
-	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"testing"
 	"time"
 
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
 )
