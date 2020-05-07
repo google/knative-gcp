@@ -57,7 +57,7 @@ type reportArgs struct {
 
 func (r *StatsReporter) register() error {
 	tagKeys := []tag.Key{
-		m.ContainerNameKey,
+		m.NamespaceNameKey,
 		m.BrokerNameKey,
 		m.EventTypeKey,
 		m.ResponseCodeKey,
