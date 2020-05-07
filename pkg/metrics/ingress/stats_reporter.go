@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"time"
 
-	m "github.com/google/knative-gcp/pkg/broker/metrics"
+	m "github.com/google/knative-gcp/pkg/metrics"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
