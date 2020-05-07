@@ -90,7 +90,7 @@ wish to configure the auth manually, refer to
 
   **_Note_**: If you didn't enable Workload Identity when you created your
   cluster, this step may take a long time to finish.
-  **_Note_**: This script will need four parameters
+  **_Note_**: Optional parameters available.
 
   1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use,
      default to 
@@ -118,7 +118,7 @@ wish to configure the auth manually, refer to
   ./hack/init_control_plane.sh
   ```
 
-  **_Note_**: This script will need one parameter
+  **_Note_**: Optional parameters available.
 
   1.  `PROJECT_ID`: an optional parameter to specify the project to use, default
       to 

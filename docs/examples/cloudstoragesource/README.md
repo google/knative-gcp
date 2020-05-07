@@ -29,7 +29,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
      ./hack/init_cloud_storage_source.sh [PROJECT_ID]
      ```
 
-   - Option 2(manual):
+   - Option 2 (manual):
    1. Enable the `Cloud Storage API` on your project:
       ```shell
       gcloud services enable storage-component.googleapis.com
