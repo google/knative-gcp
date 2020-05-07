@@ -19,8 +19,9 @@ package resources
 import (
 	"fmt"
 
-	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"knative.dev/pkg/kmeta"
+
+	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 const (

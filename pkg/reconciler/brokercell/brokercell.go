@@ -19,13 +19,14 @@ package brokercell
 import (
 	"context"
 	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
-
 	corev1 "k8s.io/api/core/v1"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
+	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -97,23 +98,23 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	// Reconcile ingress deployment and service
 	ingressArgs := r.makeIngressArgs(bc)
 	if _, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs)); err != nil {
-		r.Logger.Desugar().Error("Failed to reconcile ingress deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile ingress deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
 		return err
 	}
 	endpoints, err := r.svcRec.ReconcileService(bc, resources.MakeIngressService(ingressArgs))
 	if err != nil {
-		r.Logger.Desugar().Error("Failed to reconcile ingress service for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile ingress service for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service: %v", err)
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
-	hostName :=  names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	hostName := names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
 	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 	// Reconcile fanout deployment
 	fd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
-		r.Logger.Desugar().Error("Failed to reconcile fanout deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile fanout deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment: %v", err)
 		return err
 	}
@@ -121,7 +122,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	// Reconcile retry deployment
 	rd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
 	if err != nil {
-		r.Logger.Desugar().Error("Failed to reconcile retry deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile retry deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment: %v", err)
 		return err
 	}

@@ -21,46 +21,46 @@ import (
 	"fmt"
 	"testing"
 
-	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
-	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+
+	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/testingdata"
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
 const (
-	testNS                  = "testnamespace"
-	brokerCellName          = "test-brokercell"
-	//brokerCellFinalizerName = "brokercells.internal.events.cloud.google.com"
+	testNS         = "testnamespace"
+	brokerCellName = "test-brokercell"
 )
 
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerCellName)
 
-	brokerCellReconciledEvent       = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)
-	brokerCellUpdateFailedEvent     = Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-brokercell": inducing failure for update brokercells`)
-	brokerCellFinalizedEvent        = Eventf(corev1.EventTypeNormal, "BrokerCellFinalized", `BrokerCell finalized: "testnamespace/test-brokercell"`)
-	ingressDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-ingress")
-	ingressDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-ingress")
-	fanoutDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-fanout")
-	fanoutDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-fanout")
+	brokerCellReconciledEvent     = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)
+	brokerCellUpdateFailedEvent   = Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-brokercell": inducing failure for update brokercells`)
+	ingressDeploymentCreatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-ingress")
+	ingressDeploymentUpdatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-ingress")
+	fanoutDeploymentCreatedEvent  = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-fanout")
+	fanoutDeploymentUpdatedEvent  = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-fanout")
 	retryDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-retry")
 	retryDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-retry")
-	ingressServiceCreatedEvent   = Eventf(corev1.EventTypeNormal, "ServiceCreated", "Created service testnamespace/test-brokercell-brokercell-ingress")
-	ingressServiceUpdatedEvent   = Eventf(corev1.EventTypeNormal, "ServiceUpdated", "Updated service testnamespace/test-brokercell-brokercell-ingress")
-	deploymentCreationFailedEvent   = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments")
-	deploymentUpdateFailedEvent     = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments")
-	serviceCreationFailedEvent      = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create services")
-	serviceUpdateFailedEvent        = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update services")
+	ingressServiceCreatedEvent    = Eventf(corev1.EventTypeNormal, "ServiceCreated", "Created service testnamespace/test-brokercell-brokercell-ingress")
+	ingressServiceUpdatedEvent    = Eventf(corev1.EventTypeNormal, "ServiceUpdated", "Updated service testnamespace/test-brokercell-brokercell-ingress")
+	deploymentCreationFailedEvent = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments")
+	deploymentUpdateFailedEvent   = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments")
+	serviceCreationFailedEvent    = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create services")
+	serviceUpdateFailedEvent      = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update services")
 )
 
 func init() {
@@ -286,7 +286,7 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantEvents: []string{
-				
+
 				deploymentCreationFailedEvent,
 			},
 			WantCreates: []runtime.Object{
@@ -427,4 +427,3 @@ func TestAllCases(t *testing.T) {
 		return bcreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerCellLister(), r.Recorder, r)
 	}))
 }
-

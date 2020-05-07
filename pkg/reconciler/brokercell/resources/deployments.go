@@ -21,9 +21,9 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
 )
@@ -123,7 +123,7 @@ func containerTemplate(args Args) corev1.Container {
 				ContainerPort: int32(args.MetricsPort),
 			},
 		},
-		VolumeMounts: []v1.VolumeMount{
+		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "broker-config",
 				MountPath: "/var/run/cloud-run-events/broker",

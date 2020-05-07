@@ -20,17 +20,19 @@ package brokercell
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/reconciler"
+
 	"go.uber.org/zap"
 
-	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
-	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	"knative.dev/eventing/pkg/logging"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+
+	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (
