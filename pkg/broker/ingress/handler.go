@@ -60,7 +60,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	NewPubsubClient,
 	NewPubsubDecoupleClient,
-	ingress.NewStatsReporter,
+	NewStatsReporter,
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -82,11 +82,11 @@ type Handler struct {
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
-	reporter *ingress.StatsReporter
+	reporter *StatsReporter
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *ingress.StatsReporter) *Handler {
+func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *StatsReporter) *Handler {
 	return &Handler{
 		httpReceiver: httpReceiver,
 		decouple:     decouple,

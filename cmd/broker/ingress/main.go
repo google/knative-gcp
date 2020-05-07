@@ -18,7 +18,6 @@ package main
 
 import (
 	"flag"
-	ingress2 "github.com/google/knative-gcp/pkg/metrics/ingress"
 	"log"
 
 	"github.com/google/knative-gcp/pkg/broker/ingress"
@@ -92,8 +91,8 @@ func main() {
 		ctx,
 		ingress.Port(env.Port),
 		ingress.ProjectID(projectID),
-		ingress2.PodName(env.PodName),
-		ingress2.ContainerName(containerName),
+		ingress.PodName(env.PodName),
+		ingress.ContainerName(containerName),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))

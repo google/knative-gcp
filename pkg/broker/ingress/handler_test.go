@@ -328,7 +328,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	statsReporter, err := ingress.NewStatsReporter(ingress.PodName(pod), ingress.ContainerName(container))
+	statsReporter, err := NewStatsReporter(PodName(pod), ContainerName(container))
 	if err != nil {
 		cancel()
 		t.Fatal(err)
