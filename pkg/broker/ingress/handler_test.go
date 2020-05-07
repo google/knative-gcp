@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/metrics/ingress"
 	nethttp "net/http"
 	"net/http/httptest"
 	"testing"
@@ -227,7 +228,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resetMetrics()
+			ingress.resetMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -327,7 +328,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	statsReporter, err := NewStatsReporter(PodName(pod), ContainerName(container))
+	statsReporter, err := ingress.NewStatsReporter(ingress.PodName(pod), ingress.ContainerName(container))
 	if err != nil {
 		cancel()
 		t.Fatal(err)

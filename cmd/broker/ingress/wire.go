@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	ingress2 "github.com/google/knative-gcp/pkg/metrics/ingress"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
@@ -30,8 +31,8 @@ func InitializeHandler(
 	ctx context.Context,
 	port ingress.Port,
 	projectID ingress.ProjectID,
-	podName ingress.PodName,
-	containerName ingress.ContainerName,
+	podName ingress2.PodName,
+	containerName ingress2.ContainerName,
 ) (*ingress.Handler, error) {
 	panic(wire.Build(
 		ingress.HandlerSet,
