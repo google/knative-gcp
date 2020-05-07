@@ -45,10 +45,9 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
-	ctx := res.Ctx
 
 	projectID, err := utils.ProjectID(env.ProjectID)
 	if err != nil {

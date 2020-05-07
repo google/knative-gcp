@@ -52,10 +52,9 @@ func main() {
 	flag.Parse()
 
 	var env envConfig
-	res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
-	ctx := res.Ctx
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
