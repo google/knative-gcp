@@ -214,7 +214,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for create deployments`),
 				),
 			}},
@@ -250,7 +250,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for update deployments`),
 				),
 			}},
@@ -280,7 +280,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for create deployments`),
 				),
@@ -319,7 +319,7 @@ func TestAllCases(t *testing.T) {
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 					WithBrokerCellFanoutAvailable(),
 					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for update deployments`),
 				),
@@ -355,7 +355,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
 					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
 					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 				)},
 			},
 			WantEvents: []string{
@@ -384,7 +384,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: NewBrokerCell(brokerCellName, testNS,
 					WithBrokerCellReady,
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 				)},
 			},
 			WantEvents: []string{
@@ -407,7 +407,7 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: NewBrokerCell(brokerCellName, testNS,
 					WithBrokerCellReady,
-					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
 				)},
 			},
 			WantEvents: []string{

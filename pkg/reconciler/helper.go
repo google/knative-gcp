@@ -15,21 +15,21 @@ import (
 const (
 	deploymentCreated = "DeploymentCreated"
 	deploymentUpdated = "DeploymentUpdated"
-	serviceCreated = "ServiceCreated"
-	serviceUpdated = "ServiceUpdated"
+	serviceCreated    = "ServiceCreated"
+	serviceUpdated    = "ServiceUpdated"
 )
 
 type ServiceReconciler struct {
-	KubeClient kubernetes.Interface
-	ServiceLister corev1listers.ServiceLister
+	KubeClient      kubernetes.Interface
+	ServiceLister   corev1listers.ServiceLister
 	EndpointsLister corev1listers.EndpointsLister
-	Recorder record.EventRecorder
+	Recorder        record.EventRecorder
 }
 
 type DeploymentReconciler struct {
 	KubeClient kubernetes.Interface
-	Lister appsv1listers.DeploymentLister
-	Recorder record.EventRecorder
+	Lister     appsv1listers.DeploymentLister
+	Recorder   record.EventRecorder
 }
 
 // ReconcileDeployment reconciles the K8s Deployment 'd'.
@@ -44,9 +44,11 @@ func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *v1.Dep
 			r.Recorder.Eventf(obj, corev1.EventTypeNormal, deploymentCreated, "Created deployment %s/%s", d.Namespace, d.Name)
 		}
 		return current, err
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
-	} else if !equality.Semantic.DeepDerivative(d.Spec, current.Spec) {
+	}
+	if !equality.Semantic.DeepDerivative(d.Spec, current.Spec) {
 		// Don't modify the informers copy.
 		desired := current.DeepCopy()
 		desired.Spec = d.Spec
@@ -72,10 +74,10 @@ func (r *ServiceReconciler) ReconcileService(obj runtime.Object, svc *corev1.Ser
 			return r.EndpointsLister.Endpoints(svc.Namespace).Get(svc.Name)
 		}
 		return nil, err
-	} else if err != nil {
+	}
+	if err != nil {
 		return nil, err
 	}
-
 	// spec.clusterIP is immutable and is set on existing services. If we don't set this to the same value, we will
 	// encounter an error while updating.
 	svc.Spec.ClusterIP = current.Spec.ClusterIP

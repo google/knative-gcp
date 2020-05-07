@@ -18,6 +18,7 @@ package brokercell
 
 import (
 	"context"
+	"fmt"
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 
@@ -107,7 +108,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
-	bc.Status.IngressTemplate = "http://" + names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	hostName :=  names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
+	bc.Status.IngressTemplate = fmt.Sprintf("http://%s/{namespace}/{name}", hostName)
 	// Reconcile fanout deployment
 	fd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
