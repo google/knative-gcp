@@ -39,7 +39,6 @@ import (
 // BootRes holds a collection of objects after booting for convenient access by
 // other custom logic in the main function.
 type BootRes struct {
-	Ctx        context.Context
 	Logger     *zap.SugaredLogger
 	KubeClient kubernetes.Interface
 	CMPWatcher configmap.Watcher
@@ -50,7 +49,7 @@ type BootRes struct {
 // it returns a result object that contains useful artifacts for later use.
 // Unlike sharedmain.Main, Boot is meant to be run as a helper function in any main
 // functions, while sharedmain.Main runs controllers with predefined method signatures.
-func Boot(component string, opts ...BootOption) *BootRes {
+func Boot(component string, opts ...BootOption) (context.Context, *BootRes) {
 	args := newBootArgs(component, opts...)
 	ctx := args.ctx
 	ProcessEnvConfigOrDie(args.env)
@@ -74,8 +73,7 @@ func Boot(component string, opts ...BootOption) *BootRes {
 		logger.Desugar().Fatal("Failed to start informers", zap.Error(err))
 	}
 
-	return &BootRes{
-		Ctx:        ctx,
+	return ctx, &BootRes{
 		Logger:     logger,
 		KubeClient: kubeclient.Get(ctx),
 		CMPWatcher: cmw,

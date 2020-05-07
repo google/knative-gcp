@@ -48,19 +48,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestBoot(t *testing.T) {
-	commonVerification := func(res *BootRes) {
-		if res == nil {
-			t.Fatalf("BootRes is nil")
-		}
-		if res.Ctx == nil || res.Logger == nil || res.KubeClient == nil || res.CMPWatcher == nil || res.Cleanup == nil {
-			t.Errorf("At least one of the BootRes fields are nil: %+v", res)
-		}
-	}
 	t.Run("basic", func(t *testing.T) {
-		res := Boot(component, WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Boot(component, WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
-		commonVerification(res)
+		commonVerification(t, ctx, res)
 	})
 
 	t.Run("with envConfig", func(t *testing.T) {
@@ -69,11 +61,11 @@ func TestBoot(t *testing.T) {
 		}
 		var env testEnvConfig
 		os.Setenv("TEST_ENV_KEY", "test-value")
-		res := Boot(component, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Boot(component, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
-		commonVerification(res)
+		commonVerification(t, ctx, res)
 		if env.Value != "test-value" {
 			t.Errorf("EnvConfig not processed, got: %v, want: %v", env.Value, "test-value")
 		}
@@ -81,16 +73,28 @@ func TestBoot(t *testing.T) {
 
 	t.Run("with Context", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "key", "value")
-		res := Boot(component, WithKubeFakes, WithContext(ctx))
+		ctx, res := Boot(component, WithKubeFakes, WithContext(ctx))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
-		commonVerification(res)
+		commonVerification(t, ctx, res)
 		// Verify the initial context keys are preserved.
-		if res.Ctx.Value("key") != "value" {
-			t.Errorf("Context is not preserved, got: %v, want: %v", res.Ctx.Value("key"), "value")
+		if ctx.Value("key") != "value" {
+			t.Errorf("Context is not preserved, got: %v, want: %v", ctx.Value("key"), "value")
 		}
 	})
+}
+
+func commonVerification(t *testing.T, ctx context.Context, res *BootRes) {
+	if ctx == nil {
+		t.Fatalf("Returned nil context")
+	}
+	if res == nil {
+		t.Fatalf("BootRes is nil")
+	}
+	if res.Logger == nil || res.KubeClient == nil || res.CMPWatcher == nil || res.Cleanup == nil {
+		t.Errorf("At least one of the BootRes fields are nil: %+v", res)
+	}
 }
 
 func setup() {
