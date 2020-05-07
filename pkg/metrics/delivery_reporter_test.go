@@ -18,10 +18,10 @@ package metrics
 
 import (
 	"context"
-	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"testing"
 	"time"
 
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
 )
@@ -30,10 +30,10 @@ func TestReportEventDispatchTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	args := DeliveryReportArgs{
-		namespace:  "testns",
-		broker:     "testbroker",
-		trigger:    "testtrigger",
-		filterType: "testeventtype",
+		Namespace:  "testns",
+		Broker:     "testbroker",
+		Trigger:    "testtrigger",
+		FilterType: "testeventtype",
 	}
 
 	wantTags := map[string]string{
@@ -66,10 +66,10 @@ func TestReportEventProcessingTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	args := DeliveryReportArgs{
-		namespace:  "testns",
-		broker:     "testbroker",
-		trigger:    "testtrigger",
-		filterType: "testeventtype",
+		Namespace:  "testns",
+		Broker:     "testbroker",
+		Trigger:    "testtrigger",
+		FilterType: "testeventtype",
 	}
 
 	wantTags := map[string]string{
@@ -100,10 +100,10 @@ func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
 
 	args := DeliveryReportArgs{
-		namespace:  "testns",
-		broker:     "testbroker",
-		trigger:    "testtrigger",
-		filterType: "", // No Filter Type
+		Namespace:  "testns",
+		Broker:     "testbroker",
+		Trigger:    "testtrigger",
+		FilterType: "", // No Filter Type
 	}
 
 	wantTags := map[string]string{

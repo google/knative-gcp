@@ -19,13 +19,13 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
-	"strconv"
-	"time"
 )
 
 type DeliveryReporter struct {
@@ -36,17 +36,17 @@ type DeliveryReporter struct {
 }
 
 type DeliveryReportArgs struct {
-	namespace  string
-	broker     string
-	trigger    string
-	filterType string
+	Namespace  string
+	Broker     string
+	Trigger    string
+	FilterType string
 }
 
 func (r *DeliveryReporter) register() error {
 	return view.Register(
 		&view.View{
 			Name:        "event_count",
-			Description: "Number of events received by a Trigger",
+			Description: "Number of events delivered to a Trigger subscriber",
 			Measure:     r.dispatchTimeInMsecM,
 			Aggregation: view.Count(),
 			TagKeys: []tag.Key{
@@ -113,7 +113,7 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 	}
 
 	if err := r.register(); err != nil {
-		return nil, fmt.Errorf("failed to register ingress stats: %w", err)
+		return nil, fmt.Errorf("failed to register delivery stats: %w", err)
 	}
 	return r, nil
 }
@@ -122,10 +122,10 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, args DeliveryReportArgs, d time.Duration, responseCode int) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(NamespaceNameKey, args.namespace),
-		tag.Insert(BrokerNameKey, args.broker),
-		tag.Insert(TriggerNameKey, args.trigger),
-		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.filterType)),
+		tag.Insert(NamespaceNameKey, args.Namespace),
+		tag.Insert(BrokerNameKey, args.Broker),
+		tag.Insert(TriggerNameKey, args.Trigger),
+		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.FilterType)),
 		tag.Insert(PodNameKey, string(r.podName)),
 		tag.Insert(ContainerNameKey, string(r.containerName)),
 		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
@@ -143,10 +143,10 @@ func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, args Del
 func (r *DeliveryReporter) ReportEventProcessingTime(ctx context.Context, args DeliveryReportArgs, d time.Duration) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(NamespaceNameKey, args.namespace),
-		tag.Insert(BrokerNameKey, args.broker),
-		tag.Insert(TriggerNameKey, args.trigger),
-		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.filterType)),
+		tag.Insert(NamespaceNameKey, args.Namespace),
+		tag.Insert(BrokerNameKey, args.Broker),
+		tag.Insert(TriggerNameKey, args.Trigger),
+		tag.Insert(TriggerFilterTypeKey, filterTypeValue(args.FilterType)),
 		tag.Insert(PodNameKey, string(r.podName)),
 		tag.Insert(ContainerNameKey, string(r.containerName)),
 	)
