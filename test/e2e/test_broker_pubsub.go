@@ -27,6 +27,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
@@ -315,7 +316,11 @@ func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName 
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
-	client.Core.CreateBrokerOrFail(brokerName, eventingtestresources.WithChannelTemplateForBroker(lib.ChannelTypeMeta))
+	client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
+	client.Core.CreateBrokerV1Beta1OrFail(brokerName,
+		eventingtestresources.WithBrokerClassForBrokerV1Beta1(eventing.ChannelBrokerClassValue),
+		eventingtestresources.WithConfigMapForBrokerConfig(),
+	)
 
 	// Create the Knative Service.
 	kservice := resources.ReceiverKService(

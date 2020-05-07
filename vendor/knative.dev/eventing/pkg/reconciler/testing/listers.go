@@ -122,6 +122,10 @@ func (l *Listers) GetAllObjects() []runtime.Object {
 	return all
 }
 
+func (l *Listers) GetV1Beta1SubscriptionLister() messaginglistersv1beta1.SubscriptionLister {
+	return messaginglistersv1beta1.NewSubscriptionLister(l.indexerFor(&messagingv1beta1.Subscription{}))
+}
+
 func (l *Listers) GetSubscriptionLister() messaginglisters.SubscriptionLister {
 	return messaginglisters.NewSubscriptionLister(l.indexerFor(&messagingv1alpha1.Subscription{}))
 }
