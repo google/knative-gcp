@@ -36,7 +36,7 @@ import (
 // - Removed StatsReporter interface and directly use helper methods instead.
 
 var (
-  // dispatchTimeInMsecM records the time spent dispatching an event to
+	// dispatchTimeInMsecM records the time spent dispatching an event to
 	// a decouple queue, in milliseconds.
 	dispatchTimeInMsecM = stats.Float64(
 		"event_dispatch_latencies",
