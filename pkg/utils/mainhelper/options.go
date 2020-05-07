@@ -25,7 +25,7 @@ import (
 	"knative.dev/pkg/signals"
 )
 
-type bootArgs struct {
+type initArgs struct {
 	component string
 
 	injection           injection.Interface
@@ -35,10 +35,10 @@ type bootArgs struct {
 	env                 interface{}
 }
 
-type BootOption func(*bootArgs)
+type InitOption func(*initArgs)
 
-func newBootArgs(component string, opts ...BootOption) bootArgs {
-	args := bootArgs{
+func newInitArgs(component string, opts ...InitOption) initArgs {
+	args := initArgs{
 		component: component,
 	}
 	for _, opt := range opts {
@@ -58,7 +58,7 @@ func newBootArgs(component string, opts ...BootOption) bootArgs {
 }
 
 // WithKubeFakes uses knative injections fakes for any k8s related setup. This is used in tests.
-var WithKubeFakes BootOption = func(args *bootArgs) {
+var WithKubeFakes InitOption = func(args *initArgs) {
 	args.injection = injection.Fake
 
 	// TODO If we can run a k8s APIServer locally, we can use a real config and avoid skipping version check.
@@ -68,15 +68,15 @@ var WithKubeFakes BootOption = func(args *bootArgs) {
 }
 
 // WithContext specifies the context to use.
-func WithContext(ctx context.Context) BootOption {
-	return func(args *bootArgs) {
+func WithContext(ctx context.Context) InitOption {
+	return func(args *initArgs) {
 		args.ctx = ctx
 	}
 }
 
 // WithEnv specifies a pointer to an envConfig struct.
-func WithEnv(env interface{}) BootOption {
-	return func(args *bootArgs) {
+func WithEnv(env interface{}) InitOption {
+	return func(args *initArgs) {
 		args.env = env
 	}
 }

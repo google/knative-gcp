@@ -36,21 +36,21 @@ import (
 	"knative.dev/pkg/profiling"
 )
 
-// BootRes holds a collection of objects after booting for convenient access by
+// InitRes holds a collection of objects after init for convenient access by
 // other custom logic in the main function.
-type BootRes struct {
+type InitRes struct {
 	Logger     *zap.SugaredLogger
 	KubeClient kubernetes.Interface
 	CMPWatcher configmap.Watcher
 	Cleanup    func()
 }
 
-// Similar to sharedmain.Main, Boot runs common logic in starting a main function,
+// Similar to sharedmain.Main, Init runs common logic in starting a main function,
 // it returns a result object that contains useful artifacts for later use.
-// Unlike sharedmain.Main, Boot is meant to be run as a helper function in any main
+// Unlike sharedmain.Main, Init is meant to be run as a helper function in any main
 // functions, while sharedmain.Main runs controllers with predefined method signatures.
-func Boot(component string, opts ...BootOption) (context.Context, *BootRes) {
-	args := newBootArgs(component, opts...)
+func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
+	args := newInitArgs(component, opts...)
 	ctx := args.ctx
 	ProcessEnvConfigOrDie(args.env)
 
@@ -73,7 +73,7 @@ func Boot(component string, opts ...BootOption) (context.Context, *BootRes) {
 		logger.Desugar().Fatal("Failed to start informers", zap.Error(err))
 	}
 
-	return ctx, &BootRes{
+	return ctx, &InitRes{
 		Logger:     logger,
 		KubeClient: kubeclient.Get(ctx),
 		CMPWatcher: cmw,

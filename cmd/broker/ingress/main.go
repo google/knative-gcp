@@ -45,7 +45,7 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Boot(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 

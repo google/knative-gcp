@@ -47,9 +47,9 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestBoot(t *testing.T) {
+func TestInit(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		ctx, res := Boot(component, WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Init(component, WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 		commonVerification(t, ctx, res)
@@ -61,7 +61,7 @@ func TestBoot(t *testing.T) {
 		}
 		var env testEnvConfig
 		os.Setenv("TEST_ENV_KEY", "test-value")
-		ctx, res := Boot(component, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Init(component, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
@@ -73,7 +73,7 @@ func TestBoot(t *testing.T) {
 
 	t.Run("with Context", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "key", "value")
-		ctx, res := Boot(component, WithKubeFakes, WithContext(ctx))
+		ctx, res := Init(component, WithKubeFakes, WithContext(ctx))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
@@ -85,15 +85,15 @@ func TestBoot(t *testing.T) {
 	})
 }
 
-func commonVerification(t *testing.T, ctx context.Context, res *BootRes) {
+func commonVerification(t *testing.T, ctx context.Context, res *InitRes) {
 	if ctx == nil {
 		t.Fatalf("Returned nil context")
 	}
 	if res == nil {
-		t.Fatalf("BootRes is nil")
+		t.Fatalf("InitRes is nil")
 	}
 	if res.Logger == nil || res.KubeClient == nil || res.CMPWatcher == nil || res.Cleanup == nil {
-		t.Errorf("At least one of the BootRes fields are nil: %+v", res)
+		t.Errorf("At least one of the InitRes fields are nil: %+v", res)
 	}
 }
 
