@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/metrics/ingress"
 	nethttp "net/http"
 	"strings"
 	"time"
@@ -172,7 +171,7 @@ func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 }
 
 func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
-	args := ingress.reportArgs{
+	args := reportArgs{
 		namespace:    ns,
 		broker:       broker,
 		eventType:    event.Type(),
