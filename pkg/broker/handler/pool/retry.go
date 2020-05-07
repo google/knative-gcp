@@ -26,7 +26,6 @@ import (
 	"knative.dev/eventing/pkg/logging"
 
 	"cloud.google.com/go/pubsub"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
@@ -114,22 +113,13 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 			p.pool.Delete(t.Key())
 		}
 
-		ps, err := cepubsub.New(ctx,
-			cepubsub.WithClient(p.pubsubClient),
-			cepubsub.WithTopicID(t.RetryQueue.Topic),
-			cepubsub.WithSubscriptionID(t.RetryQueue.Subscription),
-			cepubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
-		)
-		if err != nil {
-			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("trigger", t.Key()), zap.Error(err))
-			errs++
-			return true
-		}
+		sub := p.pubsubClient.Subscription(t.RetryQueue.Subscription)
+		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
 		hc := &retryHandlerCache{
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
-				PubsubEvents: ps,
+				Subscription: sub,
 				Processor: processors.ChainProcessors(
 					&filter.Processor{Targets: p.targets},
 					&deliver.Processor{DeliverClient: p.deliverClient, Targets: p.targets},
