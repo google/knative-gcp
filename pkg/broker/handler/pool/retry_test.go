@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
 
@@ -246,5 +247,6 @@ func genTestEvent(subject, t, id, source string) event.Event {
 	e.SetType(t)
 	e.SetID(id)
 	e.SetSource(source)
+	eventutil.UpdateRemainingHops(context.Background(), &e, 123)
 	return e
 }

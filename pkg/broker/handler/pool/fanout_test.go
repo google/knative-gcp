@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
 
@@ -122,11 +123,13 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 
+	var hops int32 = 123
 	e := event.New()
 	e.SetSubject("foo")
 	e.SetType("type")
 	e.SetID("id")
 	e.SetSource("source")
+	eventutil.UpdateRemainingHops(ctx, &e, hops)
 
 	t.Run("broker's targets receive fanout events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
@@ -224,13 +227,18 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		reply.SetID("id")
 		reply.SetSource("source")
 
+		// The reply to broker ingress should include the original hops.
+		wantReply := reply.Clone()
+		// -1 because the delivery processor should decrement remaining hops.
+		eventutil.UpdateRemainingHops(ctx, &wantReply, hops-1)
+
 		// Set timeout context so that verification can be done before
 		// exiting test func.
 		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
 		go helper.VerifyAndRespondNextTargetEvent(ctx, t, t3.Key(), &e, &reply, http.StatusOK, 0)
-		go helper.VerifyNextBrokerIngressEvent(ctx, t, b2.Key(), &reply)
+		go helper.VerifyNextBrokerIngressEvent(ctx, t, b2.Key(), &wantReply)
 
 		helper.SendEventToDecoupleQueue(ctx, t, b2.Key(), &e)
 		<-vctx.Done()
