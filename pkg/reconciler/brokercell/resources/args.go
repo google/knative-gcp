@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	"knative.dev/pkg/kmeta"
 )
 
 const (
@@ -72,5 +73,5 @@ func Labels(brokerCellName, componentName string) map[string]string {
 
 // Name creates a name for the component (ingress/fanout/retry).
 func Name(brokerCellName, componentName string) string {
-	return fmt.Sprintf("%s-brokercell-%s", brokerCellName, componentName)
+	return kmeta.ChildName(fmt.Sprintf("%s-brokercell-", brokerCellName), componentName)
 }

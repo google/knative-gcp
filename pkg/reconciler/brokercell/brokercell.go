@@ -18,13 +18,13 @@ package brokercell
 
 import (
 	"context"
+	"github.com/kelseyhightower/envconfig"
+	"go.uber.org/zap"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
-	eventinglisters "knative.dev/eventing/pkg/client/listers/eventing/v1alpha1"
 	"knative.dev/eventing/pkg/reconciler/names"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -43,15 +43,45 @@ type envConfig struct {
 	MetricsPort        int    `envconfig:"METRICS_PORT" default:"9090"`
 }
 
+// NewReconciler creates a new BrokerCell reconciler.
+func NewReconciler(base *reconciler.Base, serviceLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, deploymentLister appsv1listers.DeploymentLister) (*Reconciler, error) {
+	var env envConfig
+	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
+		return nil, err
+	}
+	svcRec := &reconciler.ServiceReconciler{
+		KubeClient:      base.KubeClientSet,
+		ServiceLister:   serviceLister,
+		EndpointsLister: endpointsLister,
+		Recorder:        base.Recorder,
+	}
+	deploymentRec := &reconciler.DeploymentReconciler{
+		KubeClient: base.KubeClientSet,
+		Lister:     deploymentLister,
+		Recorder:   base.Recorder,
+	}
+	r := &Reconciler{
+		Base:             base,
+		serviceLister:    serviceLister,
+		endpointsLister:  endpointsLister,
+		deploymentLister: deploymentLister,
+		env:              env,
+		svcRec:           svcRec,
+		deploymentRec:    deploymentRec,
+	}
+	return r, nil
+}
+
 // Reconciler implements controller.Reconciler for BrokerCell resources.
 type Reconciler struct {
 	*reconciler.Base
 
-	kubeClientSet    kubernetes.Interface
-	brokerLister     eventinglisters.BrokerLister
 	serviceLister    corev1listers.ServiceLister
 	endpointsLister  corev1listers.EndpointsLister
 	deploymentLister appsv1listers.DeploymentLister
+
+	svcRec        *reconciler.ServiceReconciler
+	deploymentRec *reconciler.DeploymentReconciler
 
 	env envConfig
 }
@@ -59,41 +89,38 @@ type Reconciler struct {
 // Check that our Reconciler implements Interface
 var _ bcreconciler.Interface = (*Reconciler)(nil)
 
-// Optionally check that our Reconciler implements Finalizer
-var _ bcreconciler.Finalizer = (*Reconciler)(nil)
-
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
 	bc.Status.InitializeConditions()
 
 	// Reconcile ingress deployment and service
 	ingressArgs := r.makeIngressArgs(bc)
-	if _, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeIngressDeployment(ingressArgs)); err != nil {
-		r.Logger.Errorf("Failed to reconcile ingress deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
-		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
+	if _, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs)); err != nil {
+		r.Logger.Desugar().Error("Failed to reconcile ingress deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
 		return err
 	}
-	endpoints, err := reconciler.ReconcileService(r.kubeClientSet, r.serviceLister, r.endpointsLister, resources.MakeIngressService(ingressArgs))
+	endpoints, err := r.svcRec.ReconcileService(bc, resources.MakeIngressService(ingressArgs))
 	if err != nil {
-		r.Logger.Errorf("Failed to reconcile ingress service for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
-		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
+		r.Logger.Desugar().Error("Failed to reconcile ingress service for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service: %v", err)
 		return err
 	}
 	bc.Status.PropagateIngressAvailability(endpoints)
 	bc.Status.IngressTemplate = "http://" + names.ServiceHostName(endpoints.GetName(), endpoints.GetNamespace())
 	// Reconcile fanout deployment
-	fd, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
+	fd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
-		r.Logger.Errorf("Failed to reconcile fanout deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
-		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
+		r.Logger.Desugar().Error("Failed to reconcile fanout deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment: %v", err)
 		return err
 	}
 	bc.Status.PropagateFanoutAvailability(fd)
 	// Reconcile retry deployment
-	rd, err := reconciler.ReconcileDeployment(r.kubeClientSet, r.deploymentLister, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
+	rd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
 	if err != nil {
-		r.Logger.Errorf("Failed to reconcile retry deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
-		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment for \"%s/%s\": %v", bc.Namespace, bc.Name, err)
+		r.Logger.Desugar().Error("Failed to reconcile retry deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment: %v", err)
 		return err
 	}
 	bc.Status.PropagateRetryAvailability(rd)
@@ -104,12 +131,6 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 
 	bc.Status.ObservedGeneration = bc.Generation
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", bc.Namespace, bc.Name)
-}
-
-// FinalizeKind will be called when the resource is deleted.
-func (r *Reconciler) FinalizeKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
-	// Resources owned by this brokercell should automatically be garbage collected.
-	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellFinalized", "BrokerCell finalized: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
 func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.IngressArgs {

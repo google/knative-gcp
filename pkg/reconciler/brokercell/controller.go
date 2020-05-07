@@ -19,19 +19,18 @@ limitations under the License.
 package brokercell
 
 import (
-	context "context"
-
-	brokercell "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
-	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	"github.com/kelseyhightower/envconfig"
+	"context"
+	"github.com/google/knative-gcp/pkg/reconciler"
 	"go.uber.org/zap"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
+
+	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	"knative.dev/eventing/pkg/logging"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
-	configmap "knative.dev/pkg/configmap"
-	controller "knative.dev/pkg/controller"
-	logging "knative.dev/pkg/logging"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
 )
 
 const (
@@ -47,22 +46,15 @@ func NewController(
 ) *controller.Impl {
 	logger := logging.FromContext(ctx)
 
-	var env envConfig
-	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
-		logger.Fatal("Failed to process env var", zap.Error(err))
-	}
-
 	brokercellInformer := brokercell.Get(ctx)
-	deploymentInformer := deploymentinformer.Get(ctx)
-	serviceInformer := serviceinformer.Get(ctx)
-	endpointsInformer := endpointsinformer.Get(ctx)
+	deploymentLister := deploymentinformer.Get(ctx).Lister()
+	svcLister := serviceinformer.Get(ctx).Lister()
+	epLister := endpointsinformer.Get(ctx).Lister()
 
-	r := &Reconciler{
-		kubeClientSet:    kubeclient.Get(ctx),
-		serviceLister:    serviceInformer.Lister(),
-		endpointsLister:  endpointsInformer.Lister(),
-		deploymentLister: deploymentInformer.Lister(),
-		env:              env,
+	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
+	r, err := NewReconciler(base, svcLister, epLister, deploymentLister)
+	if err != nil {
+		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}
 	impl := v1alpha1brokercell.NewImpl(ctx, r)
 

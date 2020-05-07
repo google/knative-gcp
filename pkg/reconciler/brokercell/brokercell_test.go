@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
-	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -41,16 +40,23 @@ import (
 const (
 	testNS                  = "testnamespace"
 	brokerCellName          = "test-brokercell"
-	brokerCellFinalizerName = "brokercells.internal.events.cloud.google.com"
+	//brokerCellFinalizerName = "brokercells.internal.events.cloud.google.com"
 )
 
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerCellName)
 
-	brokerCellFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-brokercell" finalizers`)
 	brokerCellReconciledEvent       = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)
 	brokerCellUpdateFailedEvent     = Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-brokercell": inducing failure for update brokercells`)
 	brokerCellFinalizedEvent        = Eventf(corev1.EventTypeNormal, "BrokerCellFinalized", `BrokerCell finalized: "testnamespace/test-brokercell"`)
+	ingressDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-ingress")
+	ingressDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-ingress")
+	fanoutDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-fanout")
+	fanoutDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-fanout")
+	retryDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-retry")
+	retryDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-retry")
+	ingressServiceCreatedEvent   = Eventf(corev1.EventTypeNormal, "ServiceCreated", "Created service testnamespace/test-brokercell-brokercell-ingress")
+	ingressServiceUpdatedEvent   = Eventf(corev1.EventTypeNormal, "ServiceUpdated", "Updated service testnamespace/test-brokercell-brokercell-ingress")
 	deploymentCreationFailedEvent   = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments")
 	deploymentUpdateFailedEvent     = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments")
 	serviceCreationFailedEvent      = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create services")
@@ -73,19 +79,12 @@ func TestAllCases(t *testing.T) {
 			Key:  testKey,
 		},
 		{
-			Name: "BrokerCell not found",
-			Key:  testKey,
-		},
-		{
 			Name: "BrokerCell is being deleted",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
 					WithBrokerCellDeletionTimestamp),
-			},
-			WantEvents: []string{
-				brokerCellFinalizedEvent,
 			},
 		},
 		{
@@ -100,15 +99,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
-					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment for "testnamespace/test-brokercell": inducing failure for create deployments`),
+					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment: inducing failure for create deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				deploymentCreationFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantCreates: []runtime.Object{
 				testingdata.IngressDeployment(t),
@@ -134,15 +129,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
-					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment for "testnamespace/test-brokercell": inducing failure for update deployments`),
+					WithBrokerCellIngressFailed("IngressDeploymentFailed", `Failed to reconcile ingress deployment: inducing failure for update deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				deploymentUpdateFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: testingdata.IngressDeployment(t)},
@@ -164,15 +155,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
-					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service for "testnamespace/test-brokercell": inducing failure for create services`),
+					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service: inducing failure for create services`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				serviceCreationFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantCreates: []runtime.Object{
 				testingdata.IngressService(t),
@@ -199,15 +186,11 @@ func TestAllCases(t *testing.T) {
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewBrokerCell(brokerCellName, testNS,
 					WithInitBrokerCellConditions,
-					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service for "testnamespace/test-brokercell": inducing failure for update services`),
+					WithBrokerCellIngressFailed("IngressServiceFailed", `Failed to reconcile ingress service: inducing failure for update services`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				serviceUpdateFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: testingdata.IngressService(t)},
@@ -232,15 +215,11 @@ func TestAllCases(t *testing.T) {
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
-					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment for "testnamespace/test-brokercell": inducing failure for create deployments`),
+					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for create deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				deploymentCreationFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantCreates: []runtime.Object{
 				testingdata.FanoutDeployment(t),
@@ -272,15 +251,11 @@ func TestAllCases(t *testing.T) {
 					WithInitBrokerCellConditions,
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
-					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment for "testnamespace/test-brokercell": inducing failure for update deployments`),
+					WithBrokerCellFanoutFailed("FanoutDeploymentFailed", `Failed to reconcile fanout deployment: inducing failure for update deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				deploymentUpdateFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: testingdata.FanoutDeployment(t)},
@@ -307,15 +282,12 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
 					WithBrokerCellFanoutAvailable(),
-					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment for "testnamespace/test-brokercell": inducing failure for create deployments`),
+					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for create deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
+				
 				deploymentCreationFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantCreates: []runtime.Object{
 				testingdata.RetryDeployment(t),
@@ -349,15 +321,11 @@ func TestAllCases(t *testing.T) {
 					WithBrokerCellIngressAvailable(),
 					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local"),
 					WithBrokerCellFanoutAvailable(),
-					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment for "testnamespace/test-brokercell": inducing failure for update deployments`),
+					WithBrokerCellRetryFailed("RetryDeploymentFailed", `Failed to reconcile retry deployment: inducing failure for update deployments`),
 				),
 			}},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				deploymentUpdateFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: testingdata.RetryDeployment(t)},
@@ -391,11 +359,11 @@ func TestAllCases(t *testing.T) {
 				)},
 			},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
+				ingressDeploymentCreatedEvent,
+				ingressServiceCreatedEvent,
+				fanoutDeploymentCreatedEvent,
+				retryDeploymentCreatedEvent,
 				brokerCellReconciledEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 		},
 		{
@@ -420,11 +388,7 @@ func TestAllCases(t *testing.T) {
 				)},
 			},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				brokerCellUpdateFailedEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 			WantErr: true,
 		},
@@ -447,50 +411,20 @@ func TestAllCases(t *testing.T) {
 				)},
 			},
 			WantEvents: []string{
-				brokerCellFinalizerUpdatedEvent,
 				brokerCellReconciledEvent,
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, brokerCellName, brokerCellFinalizerName),
 			},
 		},
 	}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
-		r := &Reconciler{
-			Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
-			kubeClientSet:    fakekubeclient.Get(ctx),
-			serviceLister:    listers.GetK8sServiceLister(),
-			endpointsLister:  listers.GetEndpointsLister(),
-			deploymentLister: listers.GetDeploymentLister(),
-			env: envConfig{
-				IngressImage:       "ingress",
-				FanoutImage:        "fanout",
-				RetryImage:         "retry",
-				ServiceAccountName: "broker",
-				IngressPort:        8080,
-				MetricsPort:        9090,
-			},
+		setReconcilerEnv()
+		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
+		r, err := NewReconciler(base, listers.GetK8sServiceLister(), listers.GetEndpointsLister(), listers.GetDeploymentLister())
+		if err != nil {
+			t.Fatalf("Failed to created BrokerCell reconciler: %v", err)
 		}
 		return bcreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerCellLister(), r.Recorder, r)
 	}))
 }
 
-func patchFinalizers(namespace, name, finalizer string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":["` + finalizer + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}

@@ -41,9 +41,7 @@ import (
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
 
-	_ = os.Setenv("BROKER_CELL_INGRESS_IMAGE", "INGRESS_IMAGE")
-	_ = os.Setenv("BROKER_CELL_FANOUT_IMAGE", "FANOUT_IMAGE")
-	_ = os.Setenv("BROKER_CELL_RETRY_IMAGE", "RETRY_IMAGE")
+	setReconcilerEnv()
 
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
@@ -72,4 +70,10 @@ func TestNew(t *testing.T) {
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
 	}
+}
+
+func setReconcilerEnv() {
+	_ = os.Setenv("BROKER_CELL_INGRESS_IMAGE", "ingress")
+	_ = os.Setenv("BROKER_CELL_FANOUT_IMAGE", "fanout")
+	_ = os.Setenv("BROKER_CELL_RETRY_IMAGE", "retry")
 }
