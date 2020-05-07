@@ -61,6 +61,7 @@ func (r *DeliveryReporter) register() error {
 			},
 		},
 		&view.View{
+			Name:        r.dispatchTimeInMsecM.Name(),
 			Description: r.dispatchTimeInMsecM.Description(),
 			Measure:     r.dispatchTimeInMsecM,
 			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 1000, 5000, 10000
@@ -76,6 +77,7 @@ func (r *DeliveryReporter) register() error {
 			},
 		},
 		&view.View{
+			Name:        r.processingTimeInMsecM.Name(),
 			Description: r.processingTimeInMsecM.Description(),
 			Measure:     r.processingTimeInMsecM,
 			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 1000, 5000, 10000
