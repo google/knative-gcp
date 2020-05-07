@@ -273,9 +273,6 @@ func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudStorageSource tests we can knock down a target from a CloudStorageSource.
 func TestCloudStorageSource(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this test temporally for issue: https://github.com/google/knative-gcp/issues/1000")
-	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudStorageSourceWithTestImpl(t, false /*assertMetrics */, authConfig)
@@ -291,9 +288,6 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSource(t *testing.T) {
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip this test temporally for issue: https://github.com/google/knative-gcp/issues/1000")
-	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudAuditLogsSourceWithTestImpl(t, authConfig)

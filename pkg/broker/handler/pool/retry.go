@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package retry
+package pool
 
 import (
 	"context"
@@ -22,42 +22,43 @@ import (
 	"sync"
 
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
-	"github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	"cloud.google.com/go/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
 )
 
-// SyncPool is the sync pool for retry handlers.
+// RetryPool is the sync pool for retry handlers.
 // For each trigger in the config, it will attempt to create a handler.
 // It will also stop/delete the handler if the corresponding trigger is deleted
 // in the config.
-type SyncPool struct {
-	options *pool.Options
+type RetryPool struct {
+	options *Options
 	targets config.ReadonlyTargets
 	pool    sync.Map
+	// Pubsub client used to pull events from decoupling topics.
+	pubsubClient *pubsub.Client
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient ceclient.Client
 }
 
-type handlerCache struct {
+type retryHandlerCache struct {
 	handler.Handler
 	t *config.Target
 }
 
 // If somehow the existing handler's setting has deviated from the current target config,
 // we need to renew the handler.
-func (hc *handlerCache) shouldRenew(t *config.Target) bool {
+func (hc *retryHandlerCache) shouldRenew(t *config.Target) bool {
 	if !hc.IsAlive() {
 		return true
 	}
@@ -73,38 +74,30 @@ func (hc *handlerCache) shouldRenew(t *config.Target) bool {
 	return false
 }
 
-// NewSyncPool creates a new retry handler pool.
-func NewSyncPool(targets config.ReadonlyTargets, opts ...pool.Option) (*SyncPool, error) {
-	options, err := pool.NewOptions(opts...)
+// NewRetryPool creates a new retry handler pool.
+func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient DeliverClient, opts ...Option) (*RetryPool, error) {
+	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	hp, err := cehttp.New()
-	if err != nil {
-		return nil, err
-	}
-	deliverClient, err := ceclient.NewObserved(hp, options.CeClientOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	p := &SyncPool{
+	p := &RetryPool{
 		targets:       targets,
 		options:       options,
+		pubsubClient:  pubsubClient,
 		deliverClient: deliverClient,
 	}
 	return p, nil
 }
 
 // SyncOnce syncs once the handler pool based on the targets config.
-func (p *SyncPool) SyncOnce(ctx context.Context) error {
+func (p *RetryPool) SyncOnce(ctx context.Context) error {
 	var errs int
 
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
 		if _, ok := p.targets.GetTargetByKey(key.(string)); !ok {
-			value.(*handlerCache).Stop()
+			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(key)
 		}
 		return true
@@ -113,32 +106,27 @@ func (p *SyncPool) SyncOnce(ctx context.Context) error {
 	p.targets.RangeAllTargets(func(t *config.Target) bool {
 		if value, ok := p.pool.Load(t.Key()); ok {
 			// Skip if we don't need to renew the handler.
-			if !value.(*handlerCache).shouldRenew(t) {
+			if !value.(*retryHandlerCache).shouldRenew(t) {
 				return true
 			}
 			// Stop and clean up the old handler before we start a new one.
-			value.(*handlerCache).Stop()
+			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(t.Key())
 		}
 
-		opts := []pubsub.Option{
-			pubsub.WithProjectID(p.options.ProjectID),
-			pubsub.WithTopicID(t.RetryQueue.Topic),
-			pubsub.WithSubscriptionID(t.RetryQueue.Subscription),
-			pubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
-		}
-
-		if p.options.PubsubClient != nil {
-			opts = append(opts, pubsub.WithClient(p.options.PubsubClient))
-		}
-		ps, err := pubsub.New(ctx, opts...)
+		ps, err := cepubsub.New(ctx,
+			cepubsub.WithClient(p.pubsubClient),
+			cepubsub.WithTopicID(t.RetryQueue.Topic),
+			cepubsub.WithSubscriptionID(t.RetryQueue.Subscription),
+			cepubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
+		)
 		if err != nil {
 			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("trigger", t.Key()), zap.Error(err))
 			errs++
 			return true
 		}
 
-		hc := &handlerCache{
+		hc := &retryHandlerCache{
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
 				PubsubEvents: ps,

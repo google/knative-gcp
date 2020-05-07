@@ -28,7 +28,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/retry"
+	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
 )
@@ -59,17 +59,23 @@ func main() {
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
 	targetsUpdateCh := make(chan struct{})
-	targetsConifg, err := volume.NewTargetsFromFile(
-		volume.WithPath(env.TargetsConfigPath),
-		volume.WithNotifyChan(targetsUpdateCh))
-	if err != nil {
-		logger.Fatal("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
-	}
-
 	logger.Info("Starting the broker retry")
 
+	projectID, err := utils.ProjectID(env.ProjectID)
+	if err != nil {
+		logger.Fatalf("failed to get default ProjectID: %v", err)
+	}
+
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := retry.NewSyncPool(targetsConifg, buildPoolOptions(env)...)
+	syncPool, err := InitializeSyncPool(
+		ctx,
+		pool.ProjectID(projectID),
+		[]volume.Option{
+			volume.WithPath(env.TargetsConfigPath),
+			volume.WithNotifyChan(targetsUpdateCh),
+		},
+		buildPoolOptions(env)...,
+	)
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
@@ -113,9 +119,6 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	if env.HandlerConcurrency > 0 {
 		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))
 		rs.NumGoroutines = env.HandlerConcurrency
-	}
-	if env.ProjectID != "" {
-		opts = append(opts, pool.WithProjectID(env.ProjectID))
 	}
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
