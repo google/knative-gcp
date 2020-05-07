@@ -44,7 +44,10 @@ func TestStatsReporter(t *testing.T) {
 		metricskey.PodName:                "testpod",
 	}
 
-	r := NewStatsReporter("testpod", "testcontainer")
+	r, err := NewStatsReporter(PodName("testpod"), ContainerName("testcontainer"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// test ReportDispatchTime
 	expectSuccess(t, func() error {
@@ -59,10 +62,7 @@ func TestStatsReporter(t *testing.T) {
 
 func resetMetrics() {
 	// OpenCensus metrics carry global state that need to be reset between unit tests.
-	metricstest.Unregister(
-		"event_count",
-		"event_dispatch_latencies")
-	register()
+	metricstest.Unregister("event_count", "event_dispatch_latencies")
 }
 
 func expectSuccess(t *testing.T, f func() error) {

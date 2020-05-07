@@ -166,22 +166,22 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1alpha1.PubSubSpec{
 							Secret: &secret,
 						},
 					}),
-					WithPullSubscriptionSink(sinkGVK, sinkName),
-					WithPullSubscriptionLabels(map[string]string{
+					WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
+					WithPubSubPullSubscriptionLabels(map[string]string{
 						"receive-adapter":                     receiveAdapterName,
 						"events.cloud.google.com/source-name": buildName,
 					}),
-					WithPullSubscriptionAnnotations(map[string]string{
+					WithPubSubPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group": resourceGroup,
 					}),
-					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+					WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -199,8 +199,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
+				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -230,8 +230,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
+				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -261,9 +261,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPullSubscriptionReady(sinkURI),
-					WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
+					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 				),
 				newSink(),
 			},
@@ -342,7 +342,7 @@ func TestAllCases(t *testing.T) {
 			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			buildLister:            listers.GetCloudBuildSourceLister(),
-			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
+			pullsubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudbuildsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudBuildSourceLister(), r.Recorder, r)

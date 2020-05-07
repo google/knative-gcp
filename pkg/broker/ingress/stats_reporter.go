@@ -19,7 +19,6 @@ package ingress
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -36,14 +35,6 @@ import (
 // - Removed StatsReporter interface and directly use helper methods instead.
 
 var (
-	// dispatchTimeInMsecM records the time spent dispatching an event to
-	// a decouple queue, in milliseconds.
-	dispatchTimeInMsecM = stats.Float64(
-		"event_dispatch_latencies",
-		"The time spent dispatching an event to the decouple topic",
-		stats.UnitMilliseconds,
-	)
-
 	// Create the tag keys that will be used to add tags to our measurements.
 	// Tag keys must conform to the restrictions described in
 	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
@@ -58,6 +49,9 @@ var (
 	containerKey         = tag.MustNewKey(metricskey.ContainerName)
 )
 
+type PodName string
+type ContainerName string
+
 type reportArgs struct {
 	namespace    string
 	broker       string
@@ -65,11 +59,7 @@ type reportArgs struct {
 	responseCode int
 }
 
-func init() {
-	register()
-}
-
-func register() {
+func (r *StatsReporter) register() error {
 	tagKeys := []tag.Key{
 		namespaceKey,
 		brokerKey,
@@ -81,46 +71,55 @@ func register() {
 	}
 
 	// Create view to see our measurements.
-	err := view.Register(
+	return view.Register(
 		&view.View{
 			Name:        "event_count",
 			Description: "Number of events received by a Broker",
-			Measure:     dispatchTimeInMsecM,
+			Measure:     r.dispatchTimeInMsecM,
 			Aggregation: view.Count(),
 			TagKeys:     tagKeys,
 		},
 		&view.View{
-			Name:        dispatchTimeInMsecM.Name(),
-			Description: dispatchTimeInMsecM.Description(),
-			Measure:     dispatchTimeInMsecM,
+			Name:        r.dispatchTimeInMsecM.Name(),
+			Description: r.dispatchTimeInMsecM.Description(),
+			Measure:     r.dispatchTimeInMsecM,
 			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000
 			TagKeys:     tagKeys,
 		},
 	)
-	if err != nil {
-		log.Fatalf("failed to register opencensus views, %s", err)
-	}
 }
 
 // NewStatsReporter creates a new StatsReporter.
-func NewStatsReporter(podName, containerName string) *StatsReporter {
-	return &StatsReporter{
+func NewStatsReporter(podName PodName, containerName ContainerName) (*StatsReporter, error) {
+	r := &StatsReporter{
 		podName:       podName,
 		containerName: containerName,
+		dispatchTimeInMsecM: stats.Float64(
+			"event_dispatch_latencies",
+			"The time spent dispatching an event to the decouple topic",
+			stats.UnitMilliseconds,
+		),
 	}
+	if err := r.register(); err != nil {
+		return nil, fmt.Errorf("failed to register ingress stats: %w", err)
+	}
+	return r, nil
 }
 
 // StatsReporter reports ingress metrics.
 type StatsReporter struct {
-	podName       string
-	containerName string
+	podName       PodName
+	containerName ContainerName
+	// dispatchTimeInMsecM records the time spent dispatching an event to a decouple queue, in
+	// milliseconds.
+	dispatchTimeInMsecM *stats.Float64Measure
 }
 
 func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args reportArgs, d time.Duration) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(podKey, r.podName),
-		tag.Insert(containerKey, r.containerName),
+		tag.Insert(podKey, string(r.podName)),
+		tag.Insert(containerKey, string(r.containerName)),
 		tag.Insert(namespaceKey, args.namespace),
 		tag.Insert(brokerKey, args.broker),
 		tag.Insert(eventTypeKey, args.eventType),
@@ -131,6 +130,6 @@ func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args report
 		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(tag, dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	metrics.Record(tag, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
 	return nil
 }
