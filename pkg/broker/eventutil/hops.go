@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	hopsAttribute = "kngcpbrokerhopsremaining"
+	// Intentionally make it short because the additional attribute
+	// increases Pubsub message size and could incur additional cost.
+	hopsAttribute = "kgcphops"
 )
 
 // UpdateRemainingHops update an event with proper remaining hops.
