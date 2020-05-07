@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fanout
+package pool
 
 import (
 	"context"
@@ -26,11 +26,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
 )
 
-func TestWatchAndSync(t *testing.T) {
+func TestFanoutWatchAndSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -41,19 +40,17 @@ func TestWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(ctx, helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject))
+	syncPool, err := InitializeTestFanoutPool(ctx, helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = pool.StartSyncPool(ctx, syncPool, signal)
+		_, err = StartSyncPool(ctx, syncPool, signal)
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
-		assertHandlers(t, syncPool, helper.Targets)
+		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
 	bs := make([]*config.Broker, 0, 4)
@@ -66,7 +63,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("adding and deleting brokers changes handlers", func(t *testing.T) {
@@ -78,7 +75,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
 	t.Run("deleting all brokers deletes all handlers", func(t *testing.T) {
@@ -89,7 +86,7 @@ func TestWatchAndSync(t *testing.T) {
 		signal <- struct{}{}
 		// Wait a short period for the handlers to be updated.
 		<-time.After(time.Second)
-		assertHandlers(t, syncPool, helper.Targets)
+		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 }
 
@@ -113,16 +110,15 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
 	signal := make(chan struct{})
-	syncPool, err := NewSyncPool(ctx, helper.Targets,
-		pool.WithPubsubClient(helper.PubsubClient),
-		pool.WithProjectID(testProject),
-		pool.WithDeliveryTimeout(500*time.Millisecond),
+	syncPool, err := InitializeTestFanoutPool(
+		ctx, helper.Targets, helper.PubsubClient,
+		WithDeliveryTimeout(500*time.Millisecond),
 	)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
 
-	if _, err := pool.StartSyncPool(ctx, syncPool, signal); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 
@@ -258,7 +254,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	})
 }
 
-func assertHandlers(t *testing.T, p *SyncPool, targets config.Targets) {
+func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	t.Helper()
 	gotHandlers := make(map[string]bool)
 	wantHandlers := make(map[string]bool)
