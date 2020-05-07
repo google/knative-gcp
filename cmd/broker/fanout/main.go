@@ -36,8 +36,8 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
 	"github.com/google/knative-gcp/pkg/observability"
+	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 )
 
@@ -112,17 +112,24 @@ func main() {
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
 	targetsUpdateCh := make(chan struct{})
-	targetsConifg, err := volume.NewTargetsFromFile(
-		volume.WithPath(env.TargetsConfigPath),
-		volume.WithNotifyChan(targetsUpdateCh))
-	if err != nil {
-		logger.Fatalw("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
-	}
 
 	logger.Info("Starting the broker fanout")
 
+	projectID, err := utils.ProjectID(env.ProjectID)
+	if err != nil {
+		log.Fatalf("failed to get default ProjectID: %v", err)
+	}
+
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := fanout.NewSyncPool(ctx, targetsConifg, buildPoolOptions(env)...)
+	syncPool, err := InitializeSyncPool(
+		ctx,
+		pool.ProjectID(projectID),
+		[]volume.Option{
+			volume.WithPath(env.TargetsConfigPath),
+			volume.WithNotifyChan(targetsUpdateCh),
+		},
+		buildPoolOptions(env)...,
+	)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
@@ -167,9 +174,6 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	}
 	if env.MaxConcurrencyPerEvent > 0 {
 		opts = append(opts, pool.WithMaxConcurrentPerEvent(env.MaxConcurrencyPerEvent))
-	}
-	if env.ProjectID != "" {
-		opts = append(opts, pool.WithProjectID(env.ProjectID))
 	}
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))
