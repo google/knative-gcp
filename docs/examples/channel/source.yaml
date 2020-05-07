@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: sources.eventing.knative.dev/v1alpha1
-kind: CronJobSource
+apiVersion: sources.knative.dev/v1alpha2
+kind: PingSource
 metadata:
   name: hello-world
 spec:
-  data: '{"hello":"world"}'
+  jsonData: '{"hello":"world"}'
   schedule: '*/1 * * * *'
   sink:
-    apiVersion: messaging.cloud.google.com/v1alpha1
-    kind: Channel
-    name: demo
+    ref:
+      apiVersion: messaging.cloud.google.com/v1alpha1
+      kind: Channel
+      name: demo

@@ -8,11 +8,11 @@ type finishMessage struct {
 }
 
 func (m *finishMessage) GetAttribute(k spec.Kind) (spec.Attribute, interface{}) {
-	return m.Message.(MessageMetadataReader).GetAttribute(k)
+	return MessageMetadataReader(m).GetAttribute(k)
 }
 
 func (m *finishMessage) GetExtension(s string) interface{} {
-	return m.Message.(MessageMetadataReader).GetExtension(s)
+	return MessageMetadataReader(m).GetExtension(s)
 }
 
 func (m *finishMessage) GetWrappedMessage() Message {

@@ -8,10 +8,18 @@ scheduled events from
 
 ## Prerequisites
 
-1. [Install Knative-GCP](../../install/install-knative-gcp.md). Note that your
-   project needs to be created with an App Engine application. Refer to this
+1. [Install Knative-GCP](../../install/install-knative-gcp.md).
+
+1. Create with an App Engine application in your project. Refer to this
    [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
-   for more details.
+   for more details. You can change the APP_ENGINE_LOCATION, but please make
+   sure you also update the spec.location in
+   [`CloudSchedulerSource`](cloudschedulersource.yaml)
+
+   ```shell
+   export APP_ENGINE_LOCATION=us-central1
+   gcloud app create --region=$APP_ENGINE_LOCATION
+   ```
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 

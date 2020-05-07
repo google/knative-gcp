@@ -34,6 +34,7 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
 	. "knative.dev/pkg/reconciler/testing"
 
@@ -143,7 +144,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelDefaults,
 				// Updates
 				WithInitChannelConditions,
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicID(testTopicID),
 				WithChannelAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -186,7 +187,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -221,7 +222,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
@@ -267,7 +268,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -293,7 +294,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1},
 					}),
 				),
@@ -320,7 +321,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -373,7 +374,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{}),
 				),
 			}},
 			WantCreates: []runtime.Object{
@@ -397,7 +398,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1},
 					}),
 				),
@@ -434,7 +435,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -465,7 +466,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID},
 					}),
 				),
@@ -490,7 +491,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{}),
 				),
 			}},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
@@ -549,8 +550,8 @@ func TestAllCases(t *testing.T) {
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetTopicLister(),
-			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
+			topicLister:            listers.GetPubSubTopicLister(),
+			pullSubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)

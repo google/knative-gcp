@@ -27,6 +27,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
+	"knative.dev/eventing/pkg/apis/eventing"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
@@ -57,13 +58,15 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bool) {
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-
+	if assertMetrics {
+		client.SetupStackDriverMetrics(t)
+	}
 	// Create a target Job to receive the events.
 	makeTargetJobOrDie(client, targetName)
 
@@ -88,6 +91,9 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	if done := jobDone(client, targetName, t); !done {
 		t.Error("resp event didn't hit the target pod")
 		t.Failed()
+	}
+	if assertMetrics {
+		lib.AssertBrokerMetrics(t, client)
 	}
 }
 
@@ -310,7 +316,11 @@ func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client, targetName 
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
 	client.Core.CreateRBACResourcesForBrokers()
-	client.Core.CreateBrokerOrFail(brokerName, eventingtestresources.WithChannelTemplateForBroker(lib.ChannelTypeMeta))
+	client.Core.CreateBrokerConfigMapOrFail(brokerName, lib.ChannelTypeMeta)
+	client.Core.CreateBrokerV1Beta1OrFail(brokerName,
+		eventingtestresources.WithBrokerClassForBrokerV1Beta1(eventing.ChannelBrokerClassValue),
+		eventingtestresources.WithConfigMapForBrokerConfig(),
+	)
 
 	// Create the Knative Service.
 	kservice := resources.ReceiverKService(

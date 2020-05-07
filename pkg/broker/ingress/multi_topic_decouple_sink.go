@@ -19,61 +19,25 @@ package ingress
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/protocol"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
-	"knative.dev/eventing/pkg/logging"
-
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/volume"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	"github.com/google/knative-gcp/pkg/utils"
+	"knative.dev/eventing/pkg/logging"
 )
 
 const projectEnvKey = "PROJECT_ID"
 
 // NewMultiTopicDecoupleSink creates a new multiTopicDecoupleSink.
-func NewMultiTopicDecoupleSink(ctx context.Context, options ...MultiTopicDecoupleSinkOption) (*multiTopicDecoupleSink, error) {
-	var err error
-	opts := new(multiTopicDecoupleSinkOptions)
-	for _, opt := range options {
-		opt(opts)
-	}
-
-	// Apply defaults
-	if opts.client == nil {
-		if opts.pubsub == nil {
-			var projectID string
-			if projectID, err = utils.ProjectID(os.Getenv(projectEnvKey), metadataClient.NewDefaultMetadataClient()); err != nil {
-				return nil, err
-			}
-			if opts.pubsub, err = pubsub.NewClient(ctx, projectID); err != nil {
-				return nil, err
-			}
-		}
-		if opts.client, err = newPubSubClient(ctx, opts.pubsub); err != nil {
-			return nil, err
-		}
-	}
-
-	if opts.brokerConfig == nil {
-		if opts.brokerConfig, err = volume.NewTargetsFromFile(); err != nil {
-			return nil, fmt.Errorf("creating broker config for default multi topic decouple sink")
-		}
-	}
-
-	sink := &multiTopicDecoupleSink{
+func NewMultiTopicDecoupleSink(ctx context.Context, brokerConfig config.ReadonlyTargets, client cev2.Client) *multiTopicDecoupleSink {
+	return &multiTopicDecoupleSink{
 		logger:       logging.FromContext(ctx),
-		client:       opts.client,
-		brokerConfig: opts.brokerConfig,
+		client:       client,
+		brokerConfig: brokerConfig,
 	}
-	return sink, nil
 }
 
 // multiTopicDecoupleSink implements DecoupleSink and routes events to pubsub topics corresponding
@@ -112,20 +76,4 @@ func (m *multiTopicDecoupleSink) getTopicForBroker(ns, broker string) (string, e
 		return "", fmt.Errorf("decouple queue of %q/%q: %w", ns, broker, ErrIncomplete)
 	}
 	return brokerConfig.DecoupleQueue.Topic, nil
-}
-
-// newPubSubClient creates a pubsub client using the given project ID.
-func newPubSubClient(ctx context.Context, client *pubsub.Client) (cev2.Client, error) {
-	// Make a pubsub protocol for the CloudEvents client.
-	p, err := cepubsub.New(ctx, cepubsub.WithClient(client))
-	if err != nil {
-		return nil, err
-	}
-
-	// Use the pubsub prototol to make a new CloudEvents client.
-	return cev2.NewClientObserved(p,
-		cev2.WithUUIDs(),
-		cev2.WithTimeNow(),
-		cev2.WithTracePropagation,
-	)
 }

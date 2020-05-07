@@ -43,10 +43,10 @@ func newAnnotations() map[string]string {
 }
 
 func newPullSubscription() *v1alpha1.PullSubscription {
-	return NewPullSubscription("psname", "psnamespace",
-		WithPullSubscriptionUID("psuid"),
-		WithPullSubscriptionAnnotations(newAnnotations()),
-		WithPullSubscriptionSubscriptionID("subscriptionId"),
+	return NewPubSubPullSubscription("psname", "psnamespace",
+		WithPubSubPullSubscriptionUID("psuid"),
+		WithPubSubPullSubscriptionAnnotations(newAnnotations()),
+		WithPubSubPullSubscriptionSubscriptionID("subscriptionId"),
 	)
 }
 
