@@ -27,10 +27,12 @@ import (
 	"go.uber.org/zap"
 
 	cev2 "github.com/cloudevents/sdk-go/v2"
+
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/wire"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
@@ -59,7 +61,7 @@ var HandlerSet wire.ProviderSet = wire.NewSet(
 	wire.Bind(new(DecoupleSink), new(*multiTopicDecoupleSink)),
 	NewPubsubClient,
 	NewPubsubDecoupleClient,
-	NewStatsReporter,
+	metrics.NewIngressReporter,
 )
 
 // DecoupleSink is an interface to send events to a decoupling sink (e.g., pubsub).
@@ -80,11 +82,11 @@ type Handler struct {
 	// decouple is the client to send events to a decouple sink.
 	decouple DecoupleSink
 	logger   *zap.Logger
-	reporter *StatsReporter
+	reporter *metrics.IngressReporter
 }
 
 // NewHandler creates a new ingress handler.
-func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *StatsReporter) *Handler {
+func NewHandler(ctx context.Context, httpReceiver HttpMessageReceiver, decouple DecoupleSink, reporter *metrics.IngressReporter) *Handler {
 	return &Handler{
 		httpReceiver: httpReceiver,
 		decouple:     decouple,
@@ -170,13 +172,13 @@ func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 }
 
 func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
-	args := reportArgs{
-		namespace:    ns,
-		broker:       broker,
-		eventType:    event.Type(),
-		responseCode: statusCode,
+	args := metrics.IngressReportArgs{
+		Namespace:    ns,
+		Broker:       broker,
+		EventType:    event.Type(),
+		ResponseCode: statusCode,
 	}
-	if err := h.reporter.reportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
+	if err := h.reporter.ReportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
 		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
 	}
 }

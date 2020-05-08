@@ -19,7 +19,6 @@ package identity
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -76,12 +75,12 @@ func TestCreates(t *testing.T) {
 		expectedServiceAccount *corev1.ServiceAccount
 		wantCreates            []runtime.Object
 		wantErrCode            codes.Code
-		wantErr                error
+		wantErr                bool
 		addClusterName         bool
 	}{{
 		name:           "k8s service account doesn't exist, failed to get cluster name",
 		addClusterName: false,
-		wantErr:        fmt.Errorf(`failed to get cluster name: unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, duckv1alpha1.ClusterNameAnnotation),
+		wantErr:        true,
 	}, {
 		name: "k8s service account doesn't exist, create it",
 		wantCreates: []runtime.Object{
@@ -151,10 +150,8 @@ func TestCreates(t *testing.T) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 				}
-			} else if err != nil {
-				if diff := cmp.Diff(err.Error(), tc.wantErr.Error()); diff != "" {
-					t.Fatalf("error: %v", diff)
-				}
+			} else if tc.wantErr != (err != nil) {
+				t.Fatalf("Unexpected failure. Got %v", err)
 			} else {
 				if tc.wantErrCode != codes.OK {
 					t.Fatal(err)
@@ -191,7 +188,7 @@ func TestDeletes(t *testing.T) {
 		wantDeletes    []clientgotesting.DeleteActionImpl
 		objects        []runtime.Object
 		wantErrCode    codes.Code
-		wantErr        error
+		wantErr        bool
 		addClusterName bool
 	}{{
 		name: "delete k8s service account, failed with get cluster name.",
@@ -207,7 +204,7 @@ func TestDeletes(t *testing.T) {
 				}}),
 			),
 		},
-		wantErr:        fmt.Errorf(`failed to get cluster name: unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, duckv1alpha1.ClusterNameAnnotation),
+		wantErr:        true,
 		addClusterName: false,
 	}, {
 		name: "delete k8s service account, failed with removing iam policy binding.",
@@ -284,10 +281,8 @@ func TestDeletes(t *testing.T) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 				}
-			} else if err != nil {
-				if diff := cmp.Diff(err.Error(), tc.wantErr.Error()); diff != "" {
-					t.Fatalf("error: %v", diff)
-				}
+			} else if tc.wantErr != (err != nil) {
+				t.Fatalf("Unexpected failure. Got %v", err)
 			} else {
 				if tc.wantErrCode != codes.OK {
 					t.Fatal(err)

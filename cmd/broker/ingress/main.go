@@ -29,6 +29,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/ingress"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/observability"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
@@ -93,8 +94,8 @@ func main() {
 		ctx,
 		ingress.Port(env.Port),
 		ingress.ProjectID(projectID),
-		ingress.PodName(env.PodName),
-		ingress.ContainerName(containerName),
+		metrics.PodName(env.PodName),
+		metrics.ContainerName(containerName),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))
