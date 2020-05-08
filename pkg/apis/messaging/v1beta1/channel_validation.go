@@ -32,8 +32,8 @@ func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
 func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 	var errs *apis.FieldError
 
-	if cs.Subscribable != nil {
-		for i, subscriber := range cs.Subscribable.Subscribers {
+	if cs.SubscribableSpec != nil {
+		for i, subscriber := range cs.SubscribableSpec.Subscribers {
 			if subscriber.ReplyURI == nil && subscriber.SubscriberURI == nil {
 				fe := apis.ErrMissingField("replyURI", "subscriberURI")
 				fe.Details = "expected at least one of, got none"
