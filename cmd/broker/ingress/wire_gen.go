@@ -30,11 +30,11 @@ func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress
 		return nil, err
 	}
 	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, clientClient)
-	statsReporter, err := metrics.NewIngressReporter(podName, containerName2)
+	ingressReporter, err := metrics.NewIngressReporter(podName, containerName2)
 	if err != nil {
 		return nil, err
 	}
-	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, statsReporter)
+	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, ingressReporter)
 	return handler, nil
 }
 
