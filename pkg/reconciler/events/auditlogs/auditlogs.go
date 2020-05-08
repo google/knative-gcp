@@ -36,7 +36,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
 
 const (

@@ -32,7 +32,7 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
 
 const (
@@ -48,7 +48,7 @@ const (
 
 // Reconciler is the controller implementation for the CloudBuildSource source.
 type Reconciler struct {
-	*pubsub.PubSubBase
+	*intevents.PubSubBase
 
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity

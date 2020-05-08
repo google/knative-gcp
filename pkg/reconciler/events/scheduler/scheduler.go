@@ -33,7 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/utils"
 	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
 	"google.golang.org/grpc/codes"
@@ -54,7 +54,7 @@ const (
 
 // Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
 type Reconciler struct {
-	*pubsub.PubSubBase
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// schedulerLister for reading schedulers.
