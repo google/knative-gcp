@@ -19,6 +19,7 @@ package broker
 import (
 	"context"
 
+	"cloud.google.com/go/pubsub"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	injectionclient "github.com/google/knative-gcp/pkg/client/injection/client"
@@ -27,11 +28,13 @@ import (
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/duck"
+	"knative.dev/eventing/pkg/logging"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -58,6 +61,21 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	deploymentInformer := deploymentinformer.Get(ctx)
 	podInformer := podinformer.Get(ctx)
 
+	// Attempt to create a pubsub client for all worker threads to use. If this
+	// fails, pass a nil value to the Reconciler. They will attempt to
+	// create a client on reconcile.
+	client, err := newPubsubClient(ctx, "")
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
+	}
+
+	if client != nil {
+		go func() {
+			<-ctx.Done()
+			client.Close()
+		}()
+	}
+
 	r := &Reconciler{
 		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
 		triggerLister:      triggerInformer.Lister(),
@@ -65,6 +83,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		endpointsLister:    endpointsInformer.Lister(),
 		deploymentLister:   deploymentInformer.Lister(),
 		podLister:          podInformer.Lister(),
+		pubsubClient:       client,
 		targetsNeedsUpdate: make(chan struct{}),
 	}
 
@@ -83,7 +102,8 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
 
 	tr := &TriggerReconciler{
-		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Base:         reconciler.NewBase(ctx, controllerAgentName, cmw),
+		pubsubClient: client,
 	}
 
 	triggerReconciler := triggerreconciler.NewReconciler(
@@ -152,4 +172,17 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	))
 
 	return impl
+}
+
+func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
+	projectID, err := utils.ProjectID(projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := pubsub.NewClient(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }

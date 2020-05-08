@@ -62,7 +62,7 @@ type TriggerReconciler struct {
 	// metadata server check. Used by tests.
 	projectID string
 
-	// pubsubClient is used as the Pubsub client when present. Used by tests.
+	// pubsubClient is used as the Pubsub client when present.
 	pubsubClient *pubsub.Client
 }
 
