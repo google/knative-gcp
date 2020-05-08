@@ -48,8 +48,8 @@ function test_teardown() {
 function publish_test_images() {
   # Publish test images.
   echo ">> Publishing test images"
-  $(dirname $0)/upload-test-images.sh ${VENDOR_EVENTING_TEST_IMAGES} e2e || fail_test "Error uploading test images from eventing"
-  $(dirname $0)/upload-test-images.sh "test/test_images" e2e || fail_test "Error uploading test images from knative-gcp"
+  $(dirname "$0")/upload-test-images.sh ${VENDOR_EVENTING_TEST_IMAGES} e2e || fail_test "Error uploading test images from eventing"
+  $(dirname "$0")/upload-test-images.sh "test/test_images" e2e || fail_test "Error uploading test images from knative-gcp"
 }
 
 # Create resources required for CloudSchedulerSource.
@@ -68,7 +68,7 @@ function scheduler_setup() {
 # Create resources required for Storage Admin setup.
 function storage_setup() {
   if (( ! IS_PROW )); then
-    storage_admin_set_up ${E2E_PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT_NON_PROW} ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+    storage_admin_set_up "${E2E_PROJECT_ID}" ${PUBSUB_SERVICE_ACCOUNT_NON_PROW} "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
   fi
 }
 

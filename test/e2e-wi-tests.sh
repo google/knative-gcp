@@ -13,13 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
-source $(dirname $0)/../hack/lib.sh
+source $(dirname "$0")/../hack/lib.sh
 
-source $(dirname $0)/e2e-common.sh
+source $(dirname "$0")/e2e-common.sh
 
 readonly BROKER_SERVICE_ACCOUNT="broker"
 readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
@@ -136,8 +136,8 @@ function gcp_broker_setup() {
 
 function create_private_key_for_pubsub_service_account {
   if (( ! IS_PROW )); then
-    gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} \
-      --iam-account=${PUBSUB_SERVICE_ACCOUNT_EMAIL}
+    gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
+      --iam-account="${PUBSUB_SERVICE_ACCOUNT_EMAIL}"
   fi
 }
 
@@ -146,6 +146,6 @@ function create_private_key_for_pubsub_service_account {
 initialize $@ --cluster-version "1.15.11-gke.9" --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -pubsubServiceAccount=${PUBSUB_SERVICE_ACCOUNT_EMAIL} || fail_test
+go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -pubsubServiceAccount="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" || fail_test
 
 success

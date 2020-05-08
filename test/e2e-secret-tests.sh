@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
-source $(dirname $0)/../hack/lib.sh
+source $(dirname "$0")/../hack/lib.sh
 
-source $(dirname $0)/e2e-common.sh
+source $(dirname "$0")/e2e-common.sh
 
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
