@@ -16,7 +16,7 @@ Object Notifications for when a new object is added to Google Cloud Storage
    permissions to publish to GCP Pub/Sub. Currently, we support two methods:
    automated script or manual
    
-   - Option 1(via automated script): 
+   - Option 1 (Recommended, via automated scripts):
      Apply 
      [init_cloud_storage_source.sh](../../../hack/init_cloud_storage_source.sh):
      ```shell 
