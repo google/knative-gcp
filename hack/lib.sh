@@ -49,27 +49,27 @@ function init_control_plane_service_account() {
     --filter="${SERVICE_ACCOUNT_EMAIL_KEY} ~ ^${control_plane_service_account}@")
   if [ -z "${existing_control_plane_service_account}" ]; then
     echo "Create Service Account '${control_plane_service_account}' neeeded for the Control Plane"
-    gcloud iam service-accounts create ${control_plane_service_account}
+    gcloud iam service-accounts create "${control_plane_service_account}"
   else
     echo "Service Account needed for the Control Plane '${control_plane_service_account}' already existed"
   fi
 
   # Grant permissions to the service account for the control plane to manage native GCP resources.
   echo "Set up Service Account used by the Control Plane"
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/pubsub.admin
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/storage.admin
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/cloudscheduler.admin
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/logging.configWriter
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/logging.privateLogViewer
 
 }
@@ -87,14 +87,14 @@ function init_pubsub_service_account() {
     --filter="${SERVICE_ACCOUNT_EMAIL_KEY} ~ ^${pubsub_service_account}@")
   if [ -z "${existing_pubsub_service_account}" ]; then
     echo "Create PubSub Service Account '${pubsub_service_account}' neeeded for the Data Plane"
-    gcloud iam service-accounts create ${pubsub_service_account}
+    gcloud iam service-accounts create "${pubsub_service_account}"
   else
     echo "PubSub Service Account '${pubsub_service_account}' needed for the Data Plane already existed"
   fi
 
   # Grant pubsub.editor role to the service account for the data plane to read and/or write to Pub/Sub.
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${pubsub_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/pubsub.editor
 
 }
@@ -128,23 +128,23 @@ function enable_workload_identity(){
   gcloud services enable iamcredentials.googleapis.com
   # Enable workload identity.
   echo "Enable Workload Identity"
-  gcloud container clusters update ${cluster_name} \
-    --${cluster_location_option}=${cluster_location} \
-    --workload-pool=${project_id}.svc.id.goog
+  gcloud container clusters update "${cluster_name}" \
+    --${cluster_location_option}="${cluster_location}" \
+    --workload-pool="${project_id}".svc.id.goog
 
   # Modify all node pools to enable GKE_METADATA.
    echo "Modify all node pools to enable GKE_METADATA"
-  pools=$(gcloud container node-pools list --cluster=${cluster_name} --${cluster_location_option}=${cluster_location} --format="value(name)")
+  pools=$(gcloud container node-pools list --cluster="${cluster_name}" --${cluster_location_option}="${cluster_location}" --format="value(name)")
   while read -r pool_name
   do
   gcloud container node-pools update "${pool_name}" \
-    --cluster=${cluster_name} \
-    --${cluster_location_option}=${cluster_location} \
+    --cluster="${cluster_name}" \
+    --${cluster_location_option}="${cluster_location}" \
     --workload-metadata=GKE_METADATA
   done <<<"${pools}"
 
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${control_plane_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${control_plane_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/iam.serviceAccountAdmin
   }
 
@@ -153,6 +153,8 @@ function storage_admin_set_up() {
   local project_id=${1}
   local pubsub_service_account=${2}
   local pubsub_service_account_key_temp=${3}
+  local project_number="$(gcloud projects describe "${project_id}" --format="value(projectNumber)")"
+  local access_token="$(gcloud auth application-default print-access-token)"
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
   echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
@@ -160,11 +162,12 @@ function storage_admin_set_up() {
   echo "Update ServiceAccount for Storage Admin"
   gcloud services enable storage-component.googleapis.com
   gcloud services enable storage-api.googleapis.com
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:${pubsub_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/storage.admin
-  export GCS_SERVICE_ACCOUNT=`curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${pubsub_service_account_key_temp} gcloud auth application-default print-access-token\`" "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount" | grep email_address | cut -d '"' -f 4`
-  gcloud projects add-iam-policy-binding ${project_id} \
-    --member=serviceAccount:"${GCS_SERVICE_ACCOUNT}" \
+
+  curl -s -X GET -H "Authorization: Bearer ${access_token}" "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount"
+  gcloud projects add-iam-policy-binding "${project_id}" \
+    --member="serviceAccount:service-${project_number}@gs-project-accounts.iam.gserviceaccount.com" \
     --role roles/pubsub.publisher
 }
