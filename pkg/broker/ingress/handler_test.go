@@ -107,13 +107,13 @@ func TestHandler(t *testing.T) {
 			name:           "happy case",
 			path:           "/ns1/broker1",
 			event:          createTestEvent("test-event"),
-			wantCode:       nethttp.StatusOK,
+			wantCode:       nethttp.StatusAccepted,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -124,7 +124,7 @@ func TestHandler(t *testing.T) {
 			name:     "trace context",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			wantCode: nethttp.StatusAccepted,
 			header: nethttp.Header{
 				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
 			},
@@ -133,7 +133,7 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -252,7 +252,7 @@ func TestHandler(t *testing.T) {
 			verifyMetrics(t, tc)
 
 			// If event is accepted, check that it's stored in the decouple sink.
-			if res.StatusCode == nethttp.StatusOK {
+			if res.StatusCode == nethttp.StatusAccepted {
 				m, err := rec.Receive(ctx)
 				if err != nil {
 					t.Fatal(err)
