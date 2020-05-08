@@ -56,4 +56,4 @@ go mod vendor
 
 find vendor/ \( -name OWNERS -o -name OWNERS_ALIASES -o -name BUILD -o -name BUILD.bazel \) -delete
 
-GOFLAGS="-mod=vendor" update_licenses third_party/VENDOR-LICENSE "./..."
+update_licenses third_party/VENDOR-LICENSE "./..."

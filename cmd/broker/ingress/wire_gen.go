@@ -9,11 +9,12 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/ingress"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // Injectors from wire.go:
 
-func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress.ProjectID, podName ingress.PodName, containerName2 ingress.ContainerName) (*ingress.Handler, error) {
+func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress.ProjectID, podName metrics.PodName, containerName2 metrics.ContainerName) (*ingress.Handler, error) {
 	httpMessageReceiver := ingress.NewHTTPMessageReceiver(port)
 	v := _wireValue
 	readonlyTargets, err := volume.NewTargetsFromFile(v...)
@@ -29,11 +30,11 @@ func InitializeHandler(ctx context.Context, port ingress.Port, projectID ingress
 		return nil, err
 	}
 	multiTopicDecoupleSink := ingress.NewMultiTopicDecoupleSink(ctx, readonlyTargets, clientClient)
-	statsReporter, err := ingress.NewStatsReporter(podName, containerName2)
+	ingressReporter, err := metrics.NewIngressReporter(podName, containerName2)
 	if err != nil {
 		return nil, err
 	}
-	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, statsReporter)
+	handler := ingress.NewHandler(ctx, httpMessageReceiver, multiTopicDecoupleSink, ingressReporter)
 	return handler, nil
 }
 

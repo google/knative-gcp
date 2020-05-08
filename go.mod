@@ -1,6 +1,6 @@
 module github.com/google/knative-gcp
 
-go 1.13
+go 1.14
 
 require (
 	cloud.google.com/go v0.56.0
@@ -27,14 +27,11 @@ require (
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
-	istio.io/api v0.0.0-20200227213531-891bf31f3c32
-	istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
-	istio.io/gogo-genproto v0.0.0-20200130224810-a0338448499a // indirect
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/eventing v0.14.1-0.20200506063944-e9eb527e1295
-	knative.dev/pkg v0.0.0-20200506142844-5b98a558168e
+	knative.dev/pkg v0.0.0-20200507220045-66f1d63f1019
 	knative.dev/serving v0.14.1-0.20200506171253-f2c76cb8a6dd
 	knative.dev/test-infra v0.0.0-20200506193944-431dda291f8c // indirect
 )
