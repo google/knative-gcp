@@ -27,7 +27,6 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
@@ -106,26 +105,17 @@ func TestAllCasesTrigger(t *testing.T) {
 			triggerFinalizedEvent,
 			brokerReconciledEvent,
 		},
-		OtherTestData: map[string]interface{}{
-			"b": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
-			},
-			"t": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: false,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: false,
-				},
-			},
-		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchRemoveFinalizers(testNS, triggerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
+			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlyTopics("cre-bkr_testnamespace_test-broker_abc123"),
+			OnlySubscriptions("cre-bkr_testnamespace_test-broker_abc123"),
 		},
 	}, {
 		Name: "Trigger is being deleted, topic and sub exists, broker ready",
@@ -151,26 +141,18 @@ func TestAllCasesTrigger(t *testing.T) {
 			triggerFinalizedEvent,
 			brokerReconciledEvent,
 		},
-		OtherTestData: map[string]interface{}{
-			"b": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
-			},
-			"t": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
-			},
-		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchRemoveFinalizers(testNS, triggerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
+				TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
+			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlyTopics("cre-bkr_testnamespace_test-broker_abc123"),
+			OnlySubscriptions("cre-bkr_testnamespace_test-broker_abc123"),
 		},
 	}, {
 		Name: "Trigger created, broker ready, subscriber is addressable",
@@ -208,31 +190,35 @@ func TestAllCasesTrigger(t *testing.T) {
 			triggerReconciledEvent,
 			brokerReconciledEvent,
 		},
-		OtherTestData: map[string]interface{}{
-			"b": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
-			},
-			"t": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: false,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: false,
-				},
-			},
-		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, triggerName, triggerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
+			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			OnlyTopics("cre-bkr_testnamespace_test-broker_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
+			OnlySubscriptions("cre-bkr_testnamespace_test-broker_abc123", "cre-tgr_testnamespace_test-trigger_abc123"),
 		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
+		// Insert pubsub client for PostConditions and create fixtures
+		psclient, close := TestPubsubClient(ctx, testProject)
+		t.Cleanup(close)
+		if testData != nil {
+			InjectPubsubClient(testData, psclient)
+			if testData["pre"] != nil {
+				fixtures := testData["pre"].([]PubsubAction)
+				for _, f := range fixtures {
+					f(ctx, t, psclient)
+				}
+			}
+		}
+
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		ctx = conditions.WithDuck(ctx)
@@ -241,16 +227,16 @@ func TestAllCasesTrigger(t *testing.T) {
 			triggerLister:      listers.GetTriggerLister(),
 			configMapLister:    listers.GetConfigMapLister(),
 			endpointsLister:    listers.GetEndpointsLister(),
-			CreateClientFn:     gpubsub.TestClientCreator(testData["b"]),
 			targetsConfig:      memory.NewEmptyTargets(),
 			targetsNeedsUpdate: make(chan struct{}),
 			projectID:          testProject,
+			pubsubClient:       psclient,
 		}
 
 		tr := &TriggerReconciler{
-			Base:           reconciler.NewBase(ctx, controllerAgentName, cmw),
-			CreateClientFn: gpubsub.TestClientCreator(testData["t"]),
-			projectID:      testProject,
+			Base:         reconciler.NewBase(ctx, controllerAgentName, cmw),
+			projectID:    testProject,
+			pubsubClient: psclient,
 		}
 
 		tr.kresourceTracker = duck.NewListableTracker(ctx, conditions.Get, func(types.NamespacedName) {}, 0)

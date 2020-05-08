@@ -311,7 +311,7 @@ func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	GCPBrokerTestImpl(t, authConfig)
+	GCPBrokerTestImpl(t, authConfig, false /* assertMetrics */)
 }
 
 // TestCloudPubSubSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudPubSubSource.

@@ -34,6 +34,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+var newPublisherClientHook clientHook
+
 // PublisherCallOptions contains the retry settings for each method of PublisherClient.
 type PublisherCallOptions struct {
 	CreateTopic            []gax.CallOption
@@ -185,7 +187,17 @@ type PublisherClient struct {
 // The service that an application uses to manipulate topics, and to send
 // messages to a topic.
 func NewPublisherClient(ctx context.Context, opts ...option.ClientOption) (*PublisherClient, error) {
-	connPool, err := gtransport.DialPool(ctx, append(defaultPublisherClientOptions(), opts...)...)
+	clientOpts := defaultPublisherClientOptions()
+
+	if newPublisherClientHook != nil {
+		hookOpts, err := newPublisherClientHook(ctx, clientHookParams{})
+		if err != nil {
+			return nil, err
+		}
+		clientOpts = append(clientOpts, hookOpts...)
+	}
+
+	connPool, err := gtransport.DialPool(ctx, append(clientOpts, opts...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +207,7 @@ func NewPublisherClient(ctx context.Context, opts ...option.ClientOption) (*Publ
 
 		publisherClient: pubsubpb.NewPublisherClient(connPool),
 	}
-	c.SetGoogleClientInfo()
+	c.setGoogleClientInfo()
 
 	return c, nil
 }
@@ -213,10 +225,10 @@ func (c *PublisherClient) Close() error {
 	return c.connPool.Close()
 }
 
-// SetGoogleClientInfo sets the name and version of the application in
+// setGoogleClientInfo sets the name and version of the application in
 // the `x-goog-api-client` header passed on each request. Intended for
 // use by Google-written clients.
-func (c *PublisherClient) SetGoogleClientInfo(keyval ...string) {
+func (c *PublisherClient) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", versionGo()}, keyval...)
 	kv = append(kv, "gapic", versionClient, "gax", gax.Version, "grpc", grpc.Version)
 	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))

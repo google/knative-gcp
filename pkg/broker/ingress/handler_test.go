@@ -36,6 +36,8 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -105,13 +107,13 @@ func TestHandler(t *testing.T) {
 			name:           "happy case",
 			path:           "/ns1/broker1",
 			event:          createTestEvent("test-event"),
-			wantCode:       nethttp.StatusOK,
+			wantCode:       nethttp.StatusAccepted,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -122,7 +124,7 @@ func TestHandler(t *testing.T) {
 			name:     "trace context",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			wantCode: nethttp.StatusAccepted,
 			header: nethttp.Header{
 				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
 			},
@@ -131,7 +133,7 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -227,7 +229,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resetMetrics()
+			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -235,10 +237,8 @@ func TestHandler(t *testing.T) {
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
 
-			url, cancel1 := createAndStartIngress(ctx, t, psSrv)
-			defer cancel1()
-			rec, cancel2 := setupTestReceiver(ctx, t, psSrv)
-			defer cancel2()
+			url := createAndStartIngress(ctx, t, psSrv)
+			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
 			if err != nil {
@@ -250,7 +250,7 @@ func TestHandler(t *testing.T) {
 			verifyMetrics(t, tc)
 
 			// If event is accepted, check that it's stored in the decouple sink.
-			if res.StatusCode == nethttp.StatusOK {
+			if res.StatusCode == nethttp.StatusAccepted {
 				m, err := rec.Receive(ctx)
 				if err != nil {
 					t.Fatal(err)
@@ -280,56 +280,52 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*pubsub.Client, func()) {
+func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) *pubsub.Client {
 	conn, err := grpc.Dial(psSrv.Addr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
-	cancel := func() { conn.Close() }
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	psClient, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
-	return psClient, cancel
+	return psClient
 }
 
-func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*cepubsub.Protocol, func()) {
-	ps, cancel := createPubsubClient(ctx, t, psSrv)
+func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) *cepubsub.Protocol {
+	ps := createPubsubClient(ctx, t, psSrv)
 	topic, err := ps.CreateTopic(ctx, topicID)
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	_, err = ps.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{Topic: topic})
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 
 	go p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
-	return p, cancel
+	return p
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) (string, func()) {
-	p, cancel := createPubsubClient(ctx, t, psSrv)
-	client, err := NewPubsubDecoupleClient(ctx, p)
+func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) string {
+	client, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, t, psSrv))
 	if err != nil {
 		t.Fatal(err)
 	}
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	statsReporter, err := NewStatsReporter(PodName(pod), ContainerName(container))
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	h := NewHandler(ctx, receiver, decouple, statsReporter)
@@ -340,12 +336,11 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	}()
 	select {
 	case err := <-errCh:
-		cancel()
 		t.Fatalf("Failed to start ingress: %v", err)
 	case url := <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
-		return url, cancel
+		return url
 	}
-	return "", cancel
+	return ""
 }
 
 func createTestEvent(id string) *cloudevents.Event {

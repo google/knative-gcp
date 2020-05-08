@@ -47,12 +47,17 @@ GCPBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bool) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-
+	if assertMetrics {
+		client.SetupStackDriverMetrics(t)
+	}
 	brokerURL, brokerName := createGCPBroker(t, client)
 	kngcphelpers.BrokerEventTransformationTestHelper(t, client, brokerURL, brokerName)
+	if assertMetrics {
+		lib.AssertBrokerMetrics(t, client)
+	}
 }
 
 func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
