@@ -40,9 +40,6 @@ const (
 	// TODO(liu-cong) configurable timeout
 	decoupleSinkTimeout = 30 * time.Second
 
-	// defaultPort is the defaultPort number for the ingress HTTP receiver.
-	defaultPort = 8080
-
 	// EventArrivalTime is used to access the metadata stored on a
 	// CloudEvent to measure the time difference between when an event is
 	// received on a broker and before it is dispatched to the trigger function.
@@ -116,15 +113,13 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	if len(pieces) != 3 {
 		msg := fmt.Sprintf("Malformed request path. want: '/<ns>/<broker>'; got: %v..", request.URL.Path)
 		h.logger.Info(msg)
-		response.WriteHeader(nethttp.StatusNotFound)
-		response.Write([]byte(msg))
+		nethttp.Error(response, msg, nethttp.StatusNotFound)
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
 	event, msg, statusCode := h.toEvent(request)
 	if event == nil {
-		response.WriteHeader(statusCode)
-		response.Write([]byte(msg))
+		nethttp.Error(response, msg, statusCode)
 		return
 	}
 
@@ -140,10 +135,13 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		if errors.Is(res, ErrNotFound) {
 			statusCode = nethttp.StatusNotFound
 		}
-		response.WriteHeader(statusCode)
-		response.Write([]byte(msg))
+		nethttp.Error(response, msg, statusCode)
 		return
 	}
+
+	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
+	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
+	response.WriteHeader(nethttp.StatusAccepted)
 }
 
 // toEvent converts an http request to an event.
@@ -166,7 +164,7 @@ func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 		h.logger.Error(msg)
 		return nil, msg, nethttp.StatusBadRequest
 	}
-	return event, "", nethttp.StatusOK
+	return event, "", nethttp.StatusAccepted
 }
 
 func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
