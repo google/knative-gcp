@@ -924,7 +924,7 @@ k8s.io/code-generator/cmd/set-gen
 k8s.io/code-generator/pkg/namer
 k8s.io/code-generator/pkg/util
 k8s.io/code-generator/third_party/forked/golang/reflect
-# k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12 => k8s.io/gengo v0.0.0-20190907103519-ebc107f98eab
+# k8s.io/gengo v0.0.0-20200205140755-e0e292d8aa12
 k8s.io/gengo/args
 k8s.io/gengo/examples/deepcopy-gen/generators
 k8s.io/gengo/examples/defaulter-gen/generators

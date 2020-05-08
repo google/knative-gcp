@@ -24,21 +24,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestWithProjectID(t *testing.T) {
-	want := "random"
-	opt, err := NewOptions(WithProjectID(want))
-	if err != nil {
-		t.Errorf("NewOptions got unexpected error: %v", err)
-	}
-	if opt.ProjectID != want {
-		t.Errorf("options project id got=%s, want=%s", opt.ProjectID, want)
-	}
-}
-
 func TestWithHandlerConcurrency(t *testing.T) {
 	want := 10
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithHandlerConcurrency(want), WithProjectID("pid"))
+	opt, err := NewOptions(WithHandlerConcurrency(want))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
@@ -50,7 +39,7 @@ func TestWithHandlerConcurrency(t *testing.T) {
 func TestWithMaxConcurrency(t *testing.T) {
 	want := 10
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithMaxConcurrentPerEvent(want), WithProjectID("pid"))
+	opt, err := NewOptions(WithMaxConcurrentPerEvent(want))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
@@ -62,7 +51,7 @@ func TestWithMaxConcurrency(t *testing.T) {
 func TestWithTimeout(t *testing.T) {
 	want := 2 * time.Minute
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithTimeoutPerEvent(want), WithProjectID("pid"))
+	opt, err := NewOptions(WithTimeoutPerEvent(want))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
@@ -72,7 +61,7 @@ func TestWithTimeout(t *testing.T) {
 
 	// Set timeout greater than the max value and verify it fallbacks to the max value.
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err = NewOptions(WithTimeoutPerEvent(20*time.Minute), WithProjectID("pid"))
+	opt, err = NewOptions(WithTimeoutPerEvent(20 * time.Minute))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
@@ -87,7 +76,7 @@ func TestWithReceiveSettings(t *testing.T) {
 		MaxExtension:  time.Minute,
 	}
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithPubsubReceiveSettings(want), WithProjectID("pid"))
+	opt, err := NewOptions(WithPubsubReceiveSettings(want))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}
@@ -96,29 +85,10 @@ func TestWithReceiveSettings(t *testing.T) {
 	}
 }
 
-func TestWithPubsubClient(t *testing.T) {
-	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithProjectID("pid"))
-	if err != nil {
-		t.Errorf("NewOptions got unexpected error: %v", err)
-	}
-	if opt.PubsubClient != nil {
-		t.Errorf("options PubsubClient got=%v, want=nil", opt.PubsubClient)
-	}
-	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err = NewOptions(WithPubsubClient(&pubsub.Client{}), WithProjectID("pid"))
-	if err != nil {
-		t.Errorf("NewOptions got unexpected error: %v", err)
-	}
-	if opt.PubsubClient == nil {
-		t.Error("options PubsubClient got=nil, want=non-nil client")
-	}
-}
-
 func TestWithDeliveryTimeout(t *testing.T) {
 	want := 10 * time.Minute
 	// Always add project id because the default value can only be retrieved on GCE/GKE machines.
-	opt, err := NewOptions(WithDeliveryTimeout(want), WithProjectID("pid"))
+	opt, err := NewOptions(WithDeliveryTimeout(want))
 	if err != nil {
 		t.Errorf("NewOptions got unexpected error: %v", err)
 	}

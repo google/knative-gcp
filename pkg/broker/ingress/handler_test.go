@@ -139,7 +139,7 @@ func TestHandler(t *testing.T) {
 			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
 		{
-			name:     "valid event but unsupported http  method",
+			name:     "valid event but unsupported http method",
 			method:   "PUT",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),

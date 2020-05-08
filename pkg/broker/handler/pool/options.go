@@ -17,26 +17,16 @@ limitations under the License.
 package pool
 
 import (
-	"fmt"
 	"runtime"
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	ceclient "github.com/cloudevents/sdk-go/v2/client"
-
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	"github.com/google/knative-gcp/pkg/utils"
 )
 
 var (
 	defaultHandlerConcurrency     = runtime.NumCPU()
 	defaultMaxConcurrencyPerEvent = 1
 	defaultTimeout                = 10 * time.Minute
-	defaultCeClientOpts           = []ceclient.Option{
-		ceclient.WithUUIDs(),
-		ceclient.WithTimeNow(),
-		ceclient.WithTracePropagation(),
-	}
 
 	// This is the pubsub default MaxExtension.
 	// It would not make sense for handler timeout per event be greater
@@ -48,8 +38,6 @@ var (
 
 // Options holds all the options for create handler pool.
 type Options struct {
-	// ProjectID is the project for pubsub.
-	ProjectID string
 	// HandlerConcurrency is the number of goroutines
 	// will be spawned in each handler.
 	HandlerConcurrency int
@@ -60,12 +48,8 @@ type Options struct {
 	TimeoutPerEvent time.Duration
 	// DeliveryTimeout is the timeout for delivering an event to a consumer.
 	DeliveryTimeout time.Duration
-	// PubsubClient is the pubsub client used to receive pubsub messages.
-	PubsubClient *pubsub.Client
 	// PubsubReceiveSettings is the pubsub receive settings.
 	PubsubReceiveSettings pubsub.ReceiveSettings
-	// CeClientOptions is the options used to create cloudevents client.
-	CeClientOptions []ceclient.Option
 }
 
 // NewOptions creates a Options.
@@ -79,28 +63,11 @@ func NewOptions(opts ...Option) (*Options, error) {
 	for _, o := range opts {
 		o(opt)
 	}
-	if opt.ProjectID == "" {
-		pid, err := utils.ProjectID(opt.ProjectID, metadataClient.NewDefaultMetadataClient())
-		if err != nil {
-			return nil, fmt.Errorf("failed to get default ProjectID: %w", err)
-		}
-		opt.ProjectID = pid
-	}
-	if opt.CeClientOptions == nil {
-		opt.CeClientOptions = defaultCeClientOpts
-	}
 	return opt, nil
 }
 
 // Option is for providing individual option.
 type Option func(*Options)
-
-// WithProjectID sets project ID.
-func WithProjectID(id string) Option {
-	return func(o *Options) {
-		o.ProjectID = id
-	}
-}
 
 // WithHandlerConcurrency sets HandlerConcurrency.
 func WithHandlerConcurrency(c int) Option {
@@ -124,13 +91,6 @@ func WithTimeoutPerEvent(t time.Duration) Option {
 		} else {
 			o.TimeoutPerEvent = t
 		}
-	}
-}
-
-// WithPubsubClient sets the PubsubClient.
-func WithPubsubClient(c *pubsub.Client) Option {
-	return func(o *Options) {
-		o.PubsubClient = c
 	}
 }
 

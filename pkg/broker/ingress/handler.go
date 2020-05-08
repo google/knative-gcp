@@ -74,7 +74,6 @@ type HttpMessageReceiver interface {
 }
 
 // handler receives events and persists them to storage (pubsub).
-// TODO(liu-cong) support event TTL
 type Handler struct {
 	// httpReceiver is an HTTP server to receive events.
 	httpReceiver HttpMessageReceiver
