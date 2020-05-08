@@ -237,10 +237,8 @@ func TestHandler(t *testing.T) {
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
 
-			url, cancel1 := createAndStartIngress(ctx, t, psSrv)
-			defer cancel1()
-			rec, cancel2 := setupTestReceiver(ctx, t, psSrv)
-			defer cancel2()
+			url := createAndStartIngress(ctx, t, psSrv)
+			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
 			if err != nil {
@@ -282,47 +280,44 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*pubsub.Client, func()) {
+func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) *pubsub.Client {
 	conn, err := grpc.Dial(psSrv.Addr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
-	cancel := func() { conn.Close() }
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	psClient, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
-	return psClient, cancel
+	return psClient
 }
 
-func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*cepubsub.Protocol, func()) {
-	ps, cancel := createPubsubClient(ctx, t, psSrv)
+func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) *cepubsub.Protocol {
+	ps := createPubsubClient(ctx, t, psSrv)
 	topic, err := ps.CreateTopic(ctx, topicID)
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	_, err = ps.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{Topic: topic})
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 
 	go p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
-	return p, cancel
+	return p
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) (string, func()) {
-	p, cancel := createPubsubClient(ctx, t, psSrv)
-	client, err := NewPubsubDecoupleClient(ctx, p)
+func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) string {
+	client, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, t, psSrv))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -331,7 +326,6 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
 	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	h := NewHandler(ctx, receiver, decouple, statsReporter)
@@ -342,12 +336,11 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	}()
 	select {
 	case err := <-errCh:
-		cancel()
 		t.Fatalf("Failed to start ingress: %v", err)
 	case url := <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
-		return url, cancel
+		return url
 	}
-	return "", cancel
+	return ""
 }
 
 func createTestEvent(id string) *cloudevents.Event {
