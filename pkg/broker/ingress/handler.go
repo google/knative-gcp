@@ -117,14 +117,18 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
-	event, msg, statusCode := h.toEvent(request)
-	if event == nil {
-		nethttp.Error(response, msg, statusCode)
+	event, err := h.toEvent(request)
+	if err != nil {
+		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
 		return
 	}
 
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
+	// Optimistically set status code to StatusAccepted. It will be updated if there is an error.
+	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
+	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
+	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, startTime) }()
@@ -139,13 +143,11 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 
-	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
-	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
-	response.WriteHeader(nethttp.StatusAccepted)
+	response.WriteHeader(statusCode)
 }
 
 // toEvent converts an http request to an event.
-func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg string, statusCode int) {
+func (h *Handler) toEvent(request *nethttp.Request) (*cev2.Event, error) {
 	message := http.NewMessageFromHttpRequest(request)
 	defer func() {
 		if err := message.Finish(nil); err != nil {
@@ -156,15 +158,15 @@ func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 	if message.ReadEncoding() == binding.EncodingUnknown {
 		msg := fmt.Sprintf("Encoding is unknown. Not a cloud event? request: %+v", request)
 		h.logger.Debug(msg)
-		return nil, msg, nethttp.StatusBadRequest
+		return nil, errors.New(msg)
 	}
 	event, err := binding.ToEvent(request.Context(), message, transformer.AddTimeNow)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to convert request to event: %v", err)
 		h.logger.Error(msg)
-		return nil, msg, nethttp.StatusBadRequest
+		return nil, errors.New(msg)
 	}
-	return event, "", nethttp.StatusAccepted
+	return event, nil
 }
 
 func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
