@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ingress
+package metrics
 
 import (
 	"context"
@@ -26,7 +26,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
-	"knative.dev/pkg/metrics/metricskey"
 )
 
 // stats_exporter is adapted from knative.dev/eventing/pkg/broker/ingress/stats_reporter.go
@@ -34,40 +33,22 @@ import (
 // - Metric descriptions are updated to match GCP broker specifics.
 // - Removed StatsReporter interface and directly use helper methods instead.
 
-var (
-	// Create the tag keys that will be used to add tags to our measurements.
-	// Tag keys must conform to the restrictions described in
-	// go.opencensus.io/tag/validate.go. Currently those restrictions are:
-	// - length between 1 and 255 inclusive
-	// - characters are printable US-ASCII
-	namespaceKey         = tag.MustNewKey(metricskey.LabelNamespaceName)
-	brokerKey            = tag.MustNewKey(metricskey.LabelBrokerName)
-	eventTypeKey         = tag.MustNewKey(metricskey.LabelEventType)
-	responseCodeKey      = tag.MustNewKey(metricskey.LabelResponseCode)
-	responseCodeClassKey = tag.MustNewKey(metricskey.LabelResponseCodeClass)
-	podKey               = tag.MustNewKey(metricskey.PodName)
-	containerKey         = tag.MustNewKey(metricskey.ContainerName)
-)
-
-type PodName string
-type ContainerName string
-
-type reportArgs struct {
-	namespace    string
-	broker       string
-	eventType    string
-	responseCode int
+type IngressReportArgs struct {
+	Namespace    string
+	Broker       string
+	EventType    string
+	ResponseCode int
 }
 
-func (r *StatsReporter) register() error {
+func (r *IngressReporter) register() error {
 	tagKeys := []tag.Key{
-		namespaceKey,
-		brokerKey,
-		eventTypeKey,
-		responseCodeKey,
-		responseCodeClassKey,
-		podKey,
-		containerKey,
+		NamespaceNameKey,
+		BrokerNameKey,
+		EventTypeKey,
+		ResponseCodeKey,
+		ResponseCodeClassKey,
+		PodNameKey,
+		ContainerNameKey,
 	}
 
 	// Create view to see our measurements.
@@ -89,9 +70,9 @@ func (r *StatsReporter) register() error {
 	)
 }
 
-// NewStatsReporter creates a new StatsReporter.
-func NewStatsReporter(podName PodName, containerName ContainerName) (*StatsReporter, error) {
-	r := &StatsReporter{
+// NewIngressReporter creates a new StatsReporter.
+func NewIngressReporter(podName PodName, containerName ContainerName) (*IngressReporter, error) {
+	r := &IngressReporter{
 		podName:       podName,
 		containerName: containerName,
 		dispatchTimeInMsecM: stats.Float64(
@@ -107,7 +88,7 @@ func NewStatsReporter(podName PodName, containerName ContainerName) (*StatsRepor
 }
 
 // StatsReporter reports ingress metrics.
-type StatsReporter struct {
+type IngressReporter struct {
 	podName       PodName
 	containerName ContainerName
 	// dispatchTimeInMsecM records the time spent dispatching an event to a decouple queue, in
@@ -115,16 +96,16 @@ type StatsReporter struct {
 	dispatchTimeInMsecM *stats.Float64Measure
 }
 
-func (r *StatsReporter) reportEventDispatchTime(ctx context.Context, args reportArgs, d time.Duration) error {
+func (r *IngressReporter) ReportEventDispatchTime(ctx context.Context, args IngressReportArgs, d time.Duration) error {
 	tag, err := tag.New(
 		ctx,
-		tag.Insert(podKey, string(r.podName)),
-		tag.Insert(containerKey, string(r.containerName)),
-		tag.Insert(namespaceKey, args.namespace),
-		tag.Insert(brokerKey, args.broker),
-		tag.Insert(eventTypeKey, args.eventType),
-		tag.Insert(responseCodeKey, strconv.Itoa(args.responseCode)),
-		tag.Insert(responseCodeClassKey, metrics.ResponseCodeClass(args.responseCode)),
+		tag.Insert(PodNameKey, string(r.podName)),
+		tag.Insert(ContainerNameKey, string(r.containerName)),
+		tag.Insert(NamespaceNameKey, args.Namespace),
+		tag.Insert(BrokerNameKey, args.Broker),
+		tag.Insert(EventTypeKey, args.EventType),
+		tag.Insert(ResponseCodeKey, strconv.Itoa(args.ResponseCode)),
+		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(args.ResponseCode)),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
