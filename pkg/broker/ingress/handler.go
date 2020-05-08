@@ -167,7 +167,7 @@ func (h *Handler) toEvent(request *nethttp.Request) (event *cev2.Event, msg stri
 		h.logger.Error(msg)
 		return nil, msg, nethttp.StatusBadRequest
 	}
-	return event, "", nethttp.StatusAccepted
+	return event, "", nethttp.StatusOK
 }
 
 func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
