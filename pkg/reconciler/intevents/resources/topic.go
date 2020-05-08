@@ -21,7 +21,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 type TopicArgs struct {
@@ -35,22 +35,22 @@ type TopicArgs struct {
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
 // for a given GCS.
-func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
-	return &pubsubv1alpha1.Topic{
+func MakeTopic(args *TopicArgs) *inteventsv1alpha1.Topic {
+	return &inteventsv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
 			Labels:          args.Labels,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: pubsubv1alpha1.TopicSpec{
+		Spec: inteventsv1alpha1.TopicSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
 				GoogleServiceAccount: args.Spec.IdentitySpec.GoogleServiceAccount,
 			},
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,
-			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 }

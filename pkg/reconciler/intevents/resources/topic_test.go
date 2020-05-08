@@ -25,7 +25,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -72,7 +72,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 	got := MakeTopic(args)
 
 	yes := true
-	want := &pubsubv1alpha1.Topic{
+	want := &inteventsv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "storage-namespace",
 			Name:      "storage-name",
@@ -89,7 +89,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.TopicSpec{
+		Spec: inteventsv1alpha1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -98,7 +98,7 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 
@@ -149,7 +149,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 	got := MakeTopic(args)
 
 	yes := true
-	want := &pubsubv1alpha1.Topic{
+	want := &inteventsv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "scheduler-namespace",
 			Name:      "scheduler-name",
@@ -166,7 +166,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.TopicSpec{
+		Spec: inteventsv1alpha1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -175,7 +175,7 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 

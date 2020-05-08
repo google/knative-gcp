@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pubsub
+package intevents
 
 import (
 	"context"
 	"fmt"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/resources"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -60,7 +60,7 @@ type PubSubBase struct {
 // "TopicReady", and "PullSubscriptionReady"
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
-func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*pubsubv1alpha1.Topic, *pubsubv1alpha1.PullSubscription, error) {
+func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1alpha1.Topic, *inteventsv1alpha1.PullSubscription, error) {
 	if pubsubable == nil {
 		return nil, nil, fmt.Errorf("nil pubsubable passed in")
 	}
@@ -69,7 +69,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	spec := pubsubable.PubSubSpec()
 	status := pubsubable.PubSubStatus()
 
-	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
+	topics := psb.pubsubClient.InternalV1alpha1().Topics(namespace)
 	t, err := topics.Get(name, v1.GetOptions{})
 
 	if err != nil {
@@ -106,7 +106,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	return t, ps, nil
 }
 
-func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*pubsubv1alpha1.PullSubscription, pkgreconciler.Event) {
+func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*inteventsv1alpha1.PullSubscription, pkgreconciler.Event) {
 	if pubsubable == nil {
 		logging.FromContext(ctx).Desugar().Error("Nil pubsubable passed in")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, nilPubsubableReason, "nil pubsubable passed in")
@@ -119,7 +119,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	cs := pubsubable.ConditionSet()
 
-	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
+	pullSubscriptions := psb.pubsubClient.InternalV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
@@ -137,7 +137,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 			Annotations: resources.GetAnnotations(annotations, resourceGroup),
 		}
 		if isPushCompatible {
-			args.Mode = pubsubv1alpha1.ModePushCompatible
+			args.Mode = inteventsv1alpha1.ModePushCompatible
 		}
 
 		newPS := resources.MakePullSubscription(args)
@@ -158,7 +158,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	return ps, nil
 }
 
-func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
+func propagatePullSubscriptionStatus(ps *inteventsv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
 	pc := ps.Status.GetTopLevelCondition()
 	if pc == nil {
 		status.MarkPullSubscriptionNotConfigured(cs)
@@ -180,7 +180,7 @@ func propagatePullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscription, status
 	return nil
 }
 
-func propagateTopicStatus(t *pubsubv1alpha1.Topic, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, topic string) error {
+func propagateTopicStatus(t *inteventsv1alpha1.Topic, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet, topic string) error {
 	tc := t.Status.GetTopLevelCondition()
 	if tc == nil {
 		status.MarkTopicNotConfigured(cs)

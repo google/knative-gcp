@@ -22,7 +22,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -78,7 +78,7 @@ func TestMakePullSubscription(t *testing.T) {
 	got := MakePullSubscription(args)
 
 	yes := true
-	want := &pubsubv1alpha1.PullSubscription{
+	want := &inteventsv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "bucket-namespace",
 			Name:      "bucket-name",
@@ -98,7 +98,7 @@ func TestMakePullSubscription(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
+		Spec: inteventsv1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{

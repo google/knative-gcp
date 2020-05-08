@@ -22,7 +22,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 type PullSubscriptionArgs struct {
@@ -32,15 +32,15 @@ type PullSubscriptionArgs struct {
 	Owner       kmeta.OwnerRefable
 	Topic       string
 	AdapterType string
-	Mode        pubsubv1alpha1.ModeType
+	Mode        inteventsv1alpha1.ModeType
 	Labels      map[string]string
 	Annotations map[string]string
 }
 
 // MakePullSubscription creates the spec for, but does not create, a GCP PullSubscription
 // for a given GCS.
-func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscription {
-	ps := &pubsubv1alpha1.PullSubscription{
+func MakePullSubscription(args *PullSubscriptionArgs) *inteventsv1alpha1.PullSubscription {
+	ps := &inteventsv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            args.Name,
 			Namespace:       args.Namespace,
@@ -48,7 +48,7 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
+		Spec: inteventsv1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					GoogleServiceAccount: args.Spec.IdentitySpec.GoogleServiceAccount,
