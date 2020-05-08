@@ -624,14 +624,14 @@ func TestDeletes(t *testing.T) {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "topics"},
+					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "topics"},
 				},
 				Name: name,
 			}, {
 				ActionImpl: clientgotesting.ActionImpl{
 					Namespace: testNS,
 					Verb:      "delete",
-					Resource:  schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"},
+					Resource:  schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"},
 				},
 				Name: name,
 			},
