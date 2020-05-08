@@ -36,6 +36,8 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -139,7 +141,7 @@ func TestHandler(t *testing.T) {
 			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
 		{
-			name:     "valid event but unsupported http  method",
+			name:     "valid event but unsupported http method",
 			method:   "PUT",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
@@ -227,7 +229,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resetMetrics()
+			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -327,7 +329,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	statsReporter, err := NewStatsReporter(PodName(pod), ContainerName(container))
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
 		cancel()
 		t.Fatal(err)
