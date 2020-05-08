@@ -36,6 +36,8 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -105,13 +107,13 @@ func TestHandler(t *testing.T) {
 			name:           "happy case",
 			path:           "/ns1/broker1",
 			event:          createTestEvent("test-event"),
-			wantCode:       nethttp.StatusOK,
+			wantCode:       nethttp.StatusAccepted,
 			wantEventCount: 1,
 			wantMetricTags: map[string]string{
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -122,7 +124,7 @@ func TestHandler(t *testing.T) {
 			name:     "trace context",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			wantCode: nethttp.StatusAccepted,
 			header: nethttp.Header{
 				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
 			},
@@ -131,7 +133,7 @@ func TestHandler(t *testing.T) {
 				metricskey.LabelNamespaceName:     "ns1",
 				metricskey.LabelBrokerName:        "broker1",
 				metricskey.LabelEventType:         eventType,
-				metricskey.LabelResponseCode:      "200",
+				metricskey.LabelResponseCode:      "202",
 				metricskey.LabelResponseCodeClass: "2xx",
 				metricskey.PodName:                pod,
 				metricskey.ContainerName:          container,
@@ -227,7 +229,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resetMetrics()
+			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -250,7 +252,7 @@ func TestHandler(t *testing.T) {
 			verifyMetrics(t, tc)
 
 			// If event is accepted, check that it's stored in the decouple sink.
-			if res.StatusCode == nethttp.StatusOK {
+			if res.StatusCode == nethttp.StatusAccepted {
 				m, err := rec.Receive(ctx)
 				if err != nil {
 					t.Fatal(err)
@@ -327,7 +329,7 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	statsReporter, err := NewStatsReporter(PodName(pod), ContainerName(container))
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
 	if err != nil {
 		cancel()
 		t.Fatal(err)
