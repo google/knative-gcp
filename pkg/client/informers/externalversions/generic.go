@@ -27,7 +27,6 @@ import (
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	policyv1alpha1 "github.com/google/knative-gcp/pkg/apis/policy/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -103,16 +102,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=messaging.cloud.google.com, Version=v1beta1
 	case messagingv1beta1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1beta1().Channels().Informer()}, nil
-
-		// Group=policy.run.cloud.google.com, Version=v1alpha1
-	case policyv1alpha1.SchemeGroupVersion.WithResource("eventpolicies"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().EventPolicies().Informer()}, nil
-	case policyv1alpha1.SchemeGroupVersion.WithResource("eventpolicybindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().EventPolicyBindings().Informer()}, nil
-	case policyv1alpha1.SchemeGroupVersion.WithResource("httppolicies"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().HTTPPolicies().Informer()}, nil
-	case policyv1alpha1.SchemeGroupVersion.WithResource("httppolicybindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Policy().V1alpha1().HTTPPolicyBindings().Informer()}, nil
 
 		// Group=pubsub.cloud.google.com, Version=v1alpha1
 	case pubsubv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):
