@@ -43,8 +43,8 @@ import (
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	gstatus "google.golang.org/grpc/status"
 )
 
@@ -61,7 +61,7 @@ const (
 
 // Reconciler implements controller.Reconciler for Topic resources.
 type Reconciler struct {
-	*pubsub.PubSubBase
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// topicLister index properties about topics.

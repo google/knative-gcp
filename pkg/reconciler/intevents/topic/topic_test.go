@@ -43,8 +43,8 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -587,7 +587,7 @@ func TestAllCases(t *testing.T) {
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
-		pubsubBase := &pubsub.PubSubBase{
+		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
 		r := &Reconciler{
@@ -689,7 +689,7 @@ func makeFalseStatusPublisher(reason, message string) *servingv1.Service {
 }
 
 func newPublisher() *servingv1.Service {
-	topic := NewTopic(topicName, testNS,
+	t := NewTopic(topicName, testNS,
 		WithTopicUID(topicUID),
 		WithTopicSpec(pubsubv1alpha1.TopicSpec{
 			Project: testProject,
@@ -698,7 +698,7 @@ func newPublisher() *servingv1.Service {
 		}))
 	args := &resources.PublisherArgs{
 		Image:  testImage,
-		Topic:  topic,
+		Topic:  t,
 		Labels: resources.GetLabels(controllerAgentName, topicName),
 	}
 	return resources.MakePublisher(args)

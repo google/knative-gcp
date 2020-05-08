@@ -36,7 +36,7 @@ import (
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	pubsubreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
 
 const (
@@ -53,7 +53,7 @@ const (
 )
 
 type Reconciler struct {
-	*pubsubreconciler.PubSubBase
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	auditLogsSourceLister  listers.CloudAuditLogsSourceLister

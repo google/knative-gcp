@@ -487,7 +487,7 @@ func TestAllCases(t *testing.T) {
 			}},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{ActionImpl: clientgotesting.ActionImpl{
-					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
 					Name: "cre-sub-testsubscription-abc-123",
 				},
 			},
@@ -535,8 +535,8 @@ func TestAllCases(t *testing.T) {
 			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
 			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetPubSubTopicLister(),
-			pullSubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
+			topicLister:            listers.GetTopicLister(),
+			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)

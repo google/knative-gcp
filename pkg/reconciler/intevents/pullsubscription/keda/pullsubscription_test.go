@@ -51,10 +51,10 @@ import (
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/pullsubscription"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
 	. "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/resources"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"knative.dev/eventing/pkg/duck"
 )
@@ -790,7 +790,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
-		pubsubBase := &pubsub.PubSubBase{
+		pubsubBase := &intevents.PubSubBase{
 			Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 		}
 		r := &Reconciler{
