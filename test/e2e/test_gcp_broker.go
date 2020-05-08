@@ -17,10 +17,11 @@ limitations under the License.
 package e2e
 
 import (
-	"knative.dev/eventing/test/lib/duck"
 	"net/url"
 	"testing"
 	"time"
+
+	"knative.dev/eventing/test/lib/duck"
 
 	v1 "k8s.io/api/core/v1"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
