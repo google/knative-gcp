@@ -29,9 +29,12 @@ import (
 	"knative.dev/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
+
+const defaultEventHopsLimit int32 = 255
 
 // Processor delivers events based on the broker/target in the context.
 type Processor struct {
@@ -81,6 +84,15 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
+	// Hops is a broker local counter so remove any hops value before forwarding.
+	// Do not modify the original event as we need to send the original
+	// event to retry queue on failure.
+	copy := event.Clone()
+	// This will decrement the remaining hops if there is an existing value.
+	eventutil.UpdateRemainingHops(ctx, &copy, defaultEventHopsLimit)
+	hops, _ := eventutil.GetRemainingHops(ctx, &copy)
+	eventutil.DeleteRemainingHops(ctx, &copy)
+
 	dctx := ctx
 	if p.DeliverTimeout > 0 {
 		var cancel context.CancelFunc
@@ -88,7 +100,8 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		defer cancel()
 	}
 
-	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), *event)
+	// Forward the event copy that has hops removed.
+	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), copy)
 	if !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
 			return fmt.Errorf("target delivery failed: %v", res.Error())
@@ -100,6 +113,17 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	if resp == nil {
 		return nil
 	}
+
+	if hops <= 0 {
+		logging.FromContext(ctx).Debug("dropping event based on remaining hops status",
+			zap.String("target", tk),
+			zap.Int32("hops", hops),
+			zap.String("event.id", resp.ID()))
+		return nil
+	}
+
+	// Attach the previous hops for the reply.
+	eventutil.SetRemainingHops(ctx, resp, hops)
 
 	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
 		if !p.RetryOnFailure {
