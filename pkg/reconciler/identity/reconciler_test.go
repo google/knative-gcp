@@ -75,13 +75,7 @@ func TestCreates(t *testing.T) {
 		expectedServiceAccount *corev1.ServiceAccount
 		wantCreates            []runtime.Object
 		wantErrCode            codes.Code
-		wantErr                bool
-		addClusterName         bool
 	}{{
-		name:           "k8s service account doesn't exist, failed to get cluster name",
-		addClusterName: false,
-		wantErr:        true,
-	}, {
 		name: "k8s service account doesn't exist, create it",
 		wantCreates: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
@@ -96,8 +90,7 @@ func TestCreates(t *testing.T) {
 				BlockOwnerDeletion: &trueVal,
 			}}),
 		),
-		wantErrCode:    codes.NotFound,
-		addClusterName: true,
+		wantErrCode: codes.NotFound,
 	}, {
 		name: "k8s service account exists, but doesn't have ownerReference",
 		objects: []runtime.Object{
@@ -113,8 +106,7 @@ func TestCreates(t *testing.T) {
 				BlockOwnerDeletion: &trueVal,
 			}}),
 		),
-		wantErrCode:    codes.NotFound,
-		addClusterName: true,
+		wantErrCode: codes.NotFound,
 	}}
 
 	for _, tc := range testCases {
@@ -136,11 +128,9 @@ func TestCreates(t *testing.T) {
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
-			if tc.addClusterName {
-				identifiable.SetAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})
-			}
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
@@ -150,8 +140,6 @@ func TestCreates(t *testing.T) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 				}
-			} else if tc.wantErr != (err != nil) {
-				t.Fatalf("Unexpected failure. Got %v", err)
 			} else {
 				if tc.wantErrCode != codes.OK {
 					t.Fatal(err)
@@ -184,29 +172,11 @@ func TestCreates(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		name           string
-		wantDeletes    []clientgotesting.DeleteActionImpl
-		objects        []runtime.Object
-		wantErrCode    codes.Code
-		wantErr        bool
-		addClusterName bool
+		name        string
+		wantDeletes []clientgotesting.DeleteActionImpl
+		objects     []runtime.Object
+		wantErrCode codes.Code
 	}{{
-		name: "delete k8s service account, failed with get cluster name.",
-		objects: []runtime.Object{
-			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					UID:                "test-pubsub-uid",
-					Name:               identifiableName,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		},
-		wantErr:        true,
-		addClusterName: false,
-	}, {
 		name: "delete k8s service account, failed with removing iam policy binding.",
 		objects: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
@@ -220,8 +190,7 @@ func TestDeletes(t *testing.T) {
 				}}),
 			),
 		},
-		wantErrCode:    codes.NotFound,
-		addClusterName: true,
+		wantErrCode: codes.NotFound,
 	}, {
 		name: "no need to remove k8s service account",
 		objects: []runtime.Object{
@@ -243,7 +212,6 @@ func TestDeletes(t *testing.T) {
 				}}),
 			),
 		},
-		addClusterName: true,
 	}}
 
 	for _, tc := range testCases {
@@ -266,12 +234,9 @@ func TestDeletes(t *testing.T) {
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
 				WithCloudPubSubSourceServiceAccountName("test"))
-
-			if tc.addClusterName {
-				identifiable.SetAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				})
-			}
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			})
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			err = identity.DeleteWorkloadIdentity(ctx, projectID, identifiable)
@@ -281,8 +246,6 @@ func TestDeletes(t *testing.T) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 				}
-			} else if tc.wantErr != (err != nil) {
-				t.Fatalf("Unexpected failure. Got %v", err)
 			} else {
 				if tc.wantErrCode != codes.OK {
 					t.Fatal(err)
