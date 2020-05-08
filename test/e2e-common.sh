@@ -41,14 +41,13 @@ function knative_setup() {
 # Tear down tmp files which store the private key.
 function test_teardown() {
   if (( ! IS_PROW )); then
-    rm ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+    rm "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
   fi
 }
 
 function publish_test_images() {
   # Publish test images.
   echo ">> Publishing test images"
-  sed -i 's@ko://knative.dev/eventing/test/test_images@ko://github.com/google/knative-gcp/vendor/knative.dev/eventing/test/test_images@g' vendor/knative.dev/eventing/test/test_images/*/*.yaml
   $(dirname $0)/upload-test-images.sh ${VENDOR_EVENTING_TEST_IMAGES} e2e || fail_test "Error uploading test images from eventing"
   $(dirname $0)/upload-test-images.sh "test/test_images" e2e || fail_test "Error uploading test images from knative-gcp"
 }
@@ -56,7 +55,7 @@ function publish_test_images() {
 # Create resources required for CloudSchedulerSource.
 function create_app_engine() {
   echo "Create App Engine with region US-central needed for CloudSchedulerSource"
-    # Please rememeber the region of App Engine and the location of CloudSchedulerSource defined in e2e tests(./test_scheduler.go) should be consistent.
+  # Please rememeber the region of App Engine and the location of CloudSchedulerSource defined in e2e tests(./test_scheduler.go) should be consistent.
   gcloud app create --region=${APP_ENGINE_REGION} || echo "AppEngine app with region ${APP_ENGINE_REGION} probably already exists, ignoring..."
 }
 
@@ -95,8 +94,8 @@ function enable_monitoring(){
   # Enable monitoring
   echo "Enable Monitoring"
   gcloud services enable monitoring
-  gcloud projects add-iam-policy-binding ${project_id} \
-      --member=serviceAccount:${pubsub_service_account}@${project_id}.iam.gserviceaccount.com \
+  gcloud projects add-iam-policy-binding "${project_id}" \
+      --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
       --role roles/monitoring.editor
 }
 
