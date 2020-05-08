@@ -36,7 +36,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -61,13 +60,12 @@ type TriggerReconciler struct {
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
 
-	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
-	// This is needed so that we can inject a mock client for UTs purposes.
-	CreateClientFn gpubsub.CreateFn
-
 	// projectID is used as the GCP project ID when present, skipping the
 	// metadata server check. Used by tests.
 	projectID string
+
+	// pubsubClient is used as the Pubsub client when present.
+	pubsubClient *pubsub.Client
 }
 
 // Check that TriggerReconciler implements Interface
@@ -200,12 +198,15 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.ProjectID = projectID
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateRetryTopicName(trig)
@@ -256,7 +257,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	if !subExists {
 		// TODO If this can ever change through the Broker's lifecycle, add
 		// update handling
-		subConfig := gpubsub.SubscriptionConfig{
+		subConfig := pubsub.SubscriptionConfig{
 			Topic: topic,
 			Labels: map[string]string{
 				"resource":  "triggers",
@@ -301,12 +302,15 @@ func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context,
 		return err
 	}
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
