@@ -34,7 +34,7 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 		orig     *CloudSchedulerSource
 		expected *CloudSchedulerSource
 	}{
-		"missing defaults": {
+		"missing defaults, except cluster name annotations": {
 			orig: &CloudSchedulerSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{

@@ -23,12 +23,10 @@ import (
 	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
 
 func (t *Topic) Validate(ctx context.Context) *apis.FieldError {
-	errs := t.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateClusterNameAnnotation(t.Annotations, errs, metadataClient.NewDefaultMetadataClient())
+	return t.Spec.Validate(ctx).ViaField("spec")
 }
 
 func (ts *TopicSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -59,7 +57,6 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 	}
 
 	var errs *apis.FieldError
-
 	// Topic is immutable.
 	if original.Spec.Topic != current.Spec.Topic {
 		errs = errs.Also(
@@ -69,5 +66,6 @@ func (current *Topic) CheckImmutableFields(ctx context.Context, original *Topic)
 				Details: fmt.Sprintf("was %q, now %q", original.Spec.Topic, current.Spec.Topic),
 			})
 	}
-	return errs
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

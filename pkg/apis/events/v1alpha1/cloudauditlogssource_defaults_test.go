@@ -33,7 +33,7 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 		orig     *CloudAuditLogsSource
 		expected *CloudAuditLogsSource
 	}{
-		"missing defaults": {
+		"missing defaults, except cluster name annotations": {
 			orig: &CloudAuditLogsSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{

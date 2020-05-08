@@ -26,14 +26,35 @@ var (
 	FakeProjectID   = "fake-project-id"
 )
 
+// TestClientData is the data used to configure the test metadata client.
+type TestClientData struct {
+	ClusterNameErr error
+	ProjectIDErr   error
+	CloseErr       error
+}
+
 type testMetadataClient struct {
+	data TestClientData
 }
 
-func NewTestClient() metadata.Client {
-	return &testMetadataClient{}
+func NewTestClient(data TestClientData) metadata.Client {
+	return &testMetadataClient{
+		data: data,
+	}
 }
 
-func (c *testMetadataClient) InstanceAttributeValue(attr string) (string, error) {
+// Verify that it satisfies the metadata.Client interface.
+var _ metadata.Client = &testMetadataClient{}
+
+// Close implements client.Close
+func (c *testMetadataClient) Close() error {
+	return c.data.CloseErr
+}
+
+func (m *testMetadataClient) InstanceAttributeValue(attr string) (string, error) {
+	if m.data.ClusterNameErr != nil {
+		return "", m.data.ClusterNameErr
+	}
 	if attr == clusterNameAttr {
 		return FakeClusterName, nil
 	} else {
@@ -42,6 +63,9 @@ func (c *testMetadataClient) InstanceAttributeValue(attr string) (string, error)
 }
 
 func (m *testMetadataClient) ProjectID() (string, error) {
+	if m.data.ProjectIDErr != nil {
+		return "", m.data.ProjectIDErr
+	}
 	return FakeProjectID, nil
 }
 

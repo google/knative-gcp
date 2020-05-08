@@ -21,11 +21,13 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 var (
@@ -209,13 +211,24 @@ func TestPubSubCheckValidationFields(t *testing.T) {
 
 func TestPubSubCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated PullSubscriptionSpec
-		allowed bool
+		orig              interface{}
+		updated           PullSubscriptionSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: pullSubscriptionSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Secret.Name changed": {
 			orig: &pullSubscriptionSpec,
@@ -573,7 +586,13 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *PullSubscription
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &PullSubscription{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*PullSubscriptionSpec); ok {
 					orig = &PullSubscription{
 						Spec: *spec,
@@ -581,6 +600,9 @@ func TestPubSubCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &PullSubscription{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

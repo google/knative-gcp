@@ -17,6 +17,7 @@ limitations under the License.
 package utils
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -27,23 +28,40 @@ import (
 func TestProjectID(t *testing.T) {
 	testCases := map[string]struct {
 		want  string
+		data  testingMetadataClient.TestClientData
 		input string
+		error bool
 	}{
-		"cluster name exists": {
+		"project id exists": {
 			want:  "testing-project",
+			data:  testingMetadataClient.TestClientData{},
 			input: "testing-project",
+			error: false,
 		},
-		"cluster name doesn't exist": {
+		"project id doesn't exist, successfully get project id ": {
 			want:  testingMetadataClient.FakeProjectID,
+			data:  testingMetadataClient.TestClientData{},
 			input: "",
+			error: false,
+		},
+		"project id doesn't exist, get project idfailed": {
+			want: "",
+			data: testingMetadataClient.TestClientData{
+				ProjectIDErr: fmt.Errorf("error getting project id"),
+			},
+			input: "",
+			error: true,
 		},
 	}
-	client := testingMetadataClient.NewTestClient()
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			got, _ := ProjectID(tc.input, client)
+			client := testingMetadataClient.NewTestClient(tc.data)
+			got, err := ProjectID(tc.input, client)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}
 		})
 	}
@@ -52,23 +70,40 @@ func TestProjectID(t *testing.T) {
 func TestClusterName(t *testing.T) {
 	testCases := map[string]struct {
 		want  string
+		data  testingMetadataClient.TestClientData
 		input string
+		error bool
 	}{
 		"cluster name exists": {
 			want:  "testing-cluster-name",
+			data:  testingMetadataClient.TestClientData{},
 			input: "testing-cluster-name",
+			error: false,
 		},
-		"cluster name doesn't exist": {
+		"cluster name doesn't exist, successfully get cluster name": {
 			want:  testingMetadataClient.FakeClusterName,
+			data:  testingMetadataClient.TestClientData{},
 			input: "",
+			error: false,
+		},
+		"cluster name doesn't exist, get cluster name failed": {
+			want: "",
+			data: testingMetadataClient.TestClientData{
+				ClusterNameErr: fmt.Errorf("get project id failed"),
+			},
+			input: "",
+			error: true,
 		},
 	}
-	client := testingMetadataClient.NewTestClient()
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			got, _ := ClusterName(tc.input, client)
+			client := testingMetadataClient.NewTestClient(tc.data)
+			got, err := ClusterName(tc.input, client)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}
 		})
 	}

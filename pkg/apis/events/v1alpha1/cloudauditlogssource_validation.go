@@ -21,17 +21,15 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (current *CloudAuditLogsSource) Validate(ctx context.Context) *apis.FieldError {
-	errs := current.Spec.Validate(ctx).ViaField("spec")
-	return duckv1alpha1.ValidateClusterNameAnnotation(current.Annotations, errs, metadataClient.NewDefaultMetadataClient())
+	return current.Spec.Validate(ctx).ViaField("spec")
 }
 
 func (current *CloudAuditLogsSourceSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -65,15 +63,18 @@ func (current *CloudAuditLogsSource) CheckImmutableFields(ctx context.Context, o
 		return nil
 	}
 
+	var errs *apis.FieldError
 	// Modification of Topic, Secret, ServiceAccount, Project, ServiceName, MethodName, and ResourceName are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudAuditLogsSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
-			Message: "Immutable fields changed (-old +new)",
-			Paths:   []string{"spec"},
-			Details: diff,
-		}
+		errs = errs.Also(
+			&apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{"spec"},
+				Details: diff,
+			})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

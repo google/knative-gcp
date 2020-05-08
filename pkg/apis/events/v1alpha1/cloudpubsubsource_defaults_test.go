@@ -81,7 +81,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 			},
 		},
 	}, {
-		name: "nil",
+		name: "nil, except cluster name annotations",
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{

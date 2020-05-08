@@ -226,9 +226,11 @@ func TestChannelValidation(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated ChannelSpec
-		allowed bool
+		orig              interface{}
+		updated           ChannelSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: ChannelSpec{},
@@ -249,7 +251,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *Channel
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &Channel{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*ChannelSpec); ok {
 					orig = &Channel{
 						Spec: *spec,
@@ -257,6 +265,9 @@ func TestCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &Channel{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

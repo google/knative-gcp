@@ -75,7 +75,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 		},
 	}, {
-		name: "missing defaults",
+		name: "missing defaults, except cluster name annotations",
 		start: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{

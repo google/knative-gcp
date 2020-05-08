@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -214,15 +215,24 @@ func TestValidateAutoscalingAnnotations(t *testing.T) {
 func TestSetClusterNameAnnotation(t *testing.T) {
 	testCases := map[string]struct {
 		orig     *v1.ObjectMeta
+		data     testingMetadataClient.TestClientData
 		expected *v1.ObjectMeta
 	}{
-		"no annotation": {
+		"no annotation, successfully get the clusterName": {
 			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{},
 			expected: &v1.ObjectMeta{
 				Annotations: map[string]string{
 					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				},
 			},
+		},
+		"no annotation, get clusterName failed": {
+			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{
+				ClusterNameErr: fmt.Errorf("error when get clusterName"),
+			},
+			expected: &v1.ObjectMeta{},
 		},
 		"has annotation": {
 			orig: &v1.ObjectMeta{
@@ -230,6 +240,7 @@ func TestSetClusterNameAnnotation(t *testing.T) {
 					ClusterNameAnnotation: "testing-cluster-name",
 				},
 			},
+			data: testingMetadataClient.TestClientData{},
 			expected: &v1.ObjectMeta{
 				Annotations: map[string]string{
 					ClusterNameAnnotation: "testing-cluster-name",
@@ -239,7 +250,7 @@ func TestSetClusterNameAnnotation(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			SetClusterNameAnnotation(tc.orig, testingMetadataClient.NewTestClient())
+			SetClusterNameAnnotation(tc.orig, testingMetadataClient.NewTestClient(tc.data))
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
@@ -247,17 +258,41 @@ func TestSetClusterNameAnnotation(t *testing.T) {
 	}
 }
 
-func TestValidateClusterNameAnnotation(t *testing.T) {
+func TestCheckImmutableClusterNameAnnotation(t *testing.T) {
 	testCases := map[string]struct {
-		objMeta *v1.ObjectMeta
-		error   bool
+		original *v1.ObjectMeta
+		current  *v1.ObjectMeta
+		error    bool
 	}{
-		"no annotation, can successfully get the clusterName": {
-			objMeta: &v1.ObjectMeta{},
-			error:   false,
+		"update empty annotation": {
+			original: &v1.ObjectMeta{},
+			current: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			error: false,
 		},
-		"has annotation": {
-			objMeta: &v1.ObjectMeta{
+		"update non-empty annotation": {
+			original: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName + "old",
+				},
+			},
+			current: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName + "new",
+				},
+			},
+			error: true,
+		},
+		"unchanged annotation": {
+			original: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			current: &v1.ObjectMeta{
 				Annotations: map[string]string{
 					ClusterNameAnnotation: "testing-cluster-name",
 				},
@@ -267,8 +302,8 @@ func TestValidateClusterNameAnnotation(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			var errs *apis.FieldError
-			err := ValidateClusterNameAnnotation(tc.objMeta.Annotations, errs, testingMetadataClient.NewTestClient())
+			var err *apis.FieldError
+			err = CheckImmutableClusterNameAnnotation(tc.current, tc.original, err)
 			if tc.error != (err != nil) {
 				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}

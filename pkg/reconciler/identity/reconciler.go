@@ -68,7 +68,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
 	if clusterName == "" {
-		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
+		err := fmt.Errorf(`unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, v1alpha1.ClusterNameAnnotation)
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get cluster name: %w", err)
 	}
@@ -113,7 +113,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
 	if clusterName == "" {
-		err := fmt.Errorf(`not able to get cluster name, please provide it by adding annotation "cluster-name=$CLUSTER_NAME" to source`)
+		err := fmt.Errorf(`unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, v1alpha1.ClusterNameAnnotation)
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		return fmt.Errorf("failed to get cluster name: %w", err)
 	}

@@ -88,7 +88,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		orig     *CloudStorageSource
 		expected *CloudStorageSource
 	}{
-		"missing defaults": {
+		"missing defaults, except cluster name annotations": {
 			orig: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{

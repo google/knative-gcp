@@ -19,6 +19,7 @@ package identity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -41,6 +42,7 @@ import (
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
@@ -74,7 +76,13 @@ func TestCreates(t *testing.T) {
 		expectedServiceAccount *corev1.ServiceAccount
 		wantCreates            []runtime.Object
 		wantErrCode            codes.Code
+		wantErr                error
+		addClusterName         bool
 	}{{
+		name:           "k8s service account doesn't exist, failed to get cluster name",
+		addClusterName: false,
+		wantErr:        fmt.Errorf(`failed to get cluster name: unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, duckv1alpha1.ClusterNameAnnotation),
+	}, {
 		name: "k8s service account doesn't exist, create it",
 		wantCreates: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
@@ -89,7 +97,8 @@ func TestCreates(t *testing.T) {
 				BlockOwnerDeletion: &trueVal,
 			}}),
 		),
-		wantErrCode: codes.NotFound,
+		wantErrCode:    codes.NotFound,
+		addClusterName: true,
 	}, {
 		name: "k8s service account exists, but doesn't have ownerReference",
 		objects: []runtime.Object{
@@ -105,7 +114,8 @@ func TestCreates(t *testing.T) {
 				BlockOwnerDeletion: &trueVal,
 			}}),
 		),
-		wantErrCode: codes.NotFound,
+		wantErrCode:    codes.NotFound,
+		addClusterName: true,
 	}}
 
 	for _, tc := range testCases {
@@ -127,9 +137,11 @@ func TestCreates(t *testing.T) {
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
-			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-			})
+			if tc.addClusterName {
+				identifiable.SetAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})
+			}
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
@@ -139,13 +151,17 @@ func TestCreates(t *testing.T) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
 				}
+			} else if err != nil {
+				if diff := cmp.Diff(err.Error(), tc.wantErr.Error()); diff != "" {
+					t.Fatalf("error: %v", diff)
+				}
 			} else {
 				if tc.wantErrCode != codes.OK {
 					t.Fatal(err)
 				}
 			}
 			if diff := cmp.Diff(tc.expectedServiceAccount, kserviceAccount, ignoreLastTransitionTime); diff != "" {
-				t.Errorf("unexpected topic (-want, +got) = %v", diff)
+				t.Errorf("unexpected kserviceAccount (-want, +got) = %v", diff)
 			}
 
 			// Validate creates.
@@ -171,11 +187,29 @@ func TestCreates(t *testing.T) {
 func TestDeletes(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
-		name        string
-		wantDeletes []clientgotesting.DeleteActionImpl
-		objects     []runtime.Object
-		wantErrCode codes.Code
+		name           string
+		wantDeletes    []clientgotesting.DeleteActionImpl
+		objects        []runtime.Object
+		wantErrCode    codes.Code
+		wantErr        error
+		addClusterName bool
 	}{{
+		name: "delete k8s service account, failed with get cluster name.",
+		objects: []runtime.Object{
+			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+		},
+		wantErr:        fmt.Errorf(`failed to get cluster name: unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, duckv1alpha1.ClusterNameAnnotation),
+		addClusterName: false,
+	}, {
 		name: "delete k8s service account, failed with removing iam policy binding.",
 		objects: []runtime.Object{
 			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
@@ -189,7 +223,8 @@ func TestDeletes(t *testing.T) {
 				}}),
 			),
 		},
-		wantErrCode: codes.NotFound,
+		wantErrCode:    codes.NotFound,
+		addClusterName: true,
 	}, {
 		name: "no need to remove k8s service account",
 		objects: []runtime.Object{
@@ -211,6 +246,7 @@ func TestDeletes(t *testing.T) {
 				}}),
 			),
 		},
+		addClusterName: true,
 	}}
 
 	for _, tc := range testCases {
@@ -234,9 +270,11 @@ func TestDeletes(t *testing.T) {
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
 				WithCloudPubSubSourceServiceAccountName("test"))
 
-			identifiable.SetAnnotations(map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-			})
+			if tc.addClusterName {
+				identifiable.SetAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})
+			}
 
 			arl := pkgtesting.ActionRecorderList{cs}
 			err = identity.DeleteWorkloadIdentity(ctx, projectID, identifiable)
@@ -245,6 +283,10 @@ func TestDeletes(t *testing.T) {
 			if errors.As(err, &statusErr) {
 				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
 					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
+				}
+			} else if err != nil {
+				if diff := cmp.Diff(err.Error(), tc.wantErr.Error()); diff != "" {
+					t.Fatalf("error: %v", diff)
 				}
 			} else {
 				if tc.wantErrCode != codes.OK {

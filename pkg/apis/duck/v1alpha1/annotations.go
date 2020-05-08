@@ -22,6 +22,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 
@@ -170,24 +171,27 @@ func validateAnnotationNotExists(annotations map[string]string, annotation strin
 	return errs
 }
 
-// ValidateClusterNameAnnotation validates the cluster-name annotation.
-func ValidateClusterNameAnnotation(annotations map[string]string, errs *apis.FieldError, client metadataClient.Client) *apis.FieldError {
-	if client.OnGCE() {
-		if _, err := utils.ClusterName(annotations[ClusterNameAnnotation], client); err != nil {
-			// If metadata access is disabled for some reason, validation will fail and ask user to provide clusterName by adding this annotation.
-			return errs.Also(apis.ErrGeneric(
-				fmt.Sprintf(`not able to get cluster name with error: %s, please provide it by adding annotation "cluster-name=$CLUSTER_NAME"`, err.Error()),
-				fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)))
-		}
-	}
-	return errs
-}
-
+// SetClusterNameAnnotation sets the cluster-name annotation when running on GKE or GCE.
 func SetClusterNameAnnotation(obj *metav1.ObjectMeta, client metadataClient.Client) {
-	if client.OnGCE() {
-		clusterName, err := utils.ClusterName(obj.GetAnnotations()[ClusterNameAnnotation], client)
+	if _, ok := obj.Annotations[ClusterNameAnnotation]; !ok && client.OnGCE() {
+		clusterName, err := utils.ClusterName(obj.Annotations[ClusterNameAnnotation], client)
+		// If metadata access is disabled for some reason, leave the annotation to be empty.
 		if err == nil {
 			setDefaultAnnotationIfNotPresent(obj, ClusterNameAnnotation, clusterName)
 		}
 	}
+}
+
+// CheckImmutableClusterNameAnnotation checks non-empty cluster-name annotation is immutable.
+func CheckImmutableClusterNameAnnotation(current *metav1.ObjectMeta, original *metav1.ObjectMeta, errs *apis.FieldError) *apis.FieldError {
+	if _, ok := original.Annotations[ClusterNameAnnotation]; ok {
+		if diff := cmp.Diff(original.Annotations[ClusterNameAnnotation], current.Annotations[ClusterNameAnnotation]); diff != "" {
+			return errs.Also(&apis.FieldError{
+				Message: "Immutable fields changed (-old +new)",
+				Paths:   []string{fmt.Sprintf("metadata.annotations[%s]", ClusterNameAnnotation)},
+				Details: diff,
+			})
+		}
+	}
+	return errs
 }

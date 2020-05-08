@@ -22,12 +22,11 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
 	"knative.dev/pkg/apis"
@@ -43,8 +42,7 @@ const (
 
 func (current *PullSubscription) Validate(ctx context.Context) *apis.FieldError {
 	errs := current.Spec.Validate(ctx).ViaField("spec")
-	errs = duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
-	return duckv1alpha1.ValidateClusterNameAnnotation(current.Annotations, errs, metadataClient.NewDefaultMetadataClient())
+	return duckv1alpha1.ValidateAutoscalingAnnotations(ctx, current.Annotations, errs)
 }
 
 func (current *PullSubscriptionSpec) Validate(ctx context.Context) *apis.FieldError {
@@ -123,15 +121,17 @@ func (current *PullSubscription) CheckImmutableFields(ctx context.Context, origi
 		return nil
 	}
 
+	var errs *apis.FieldError
 	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(PullSubscriptionSpec{},
 			"Sink", "Transformer", "Mode", "AckDeadline", "RetainAckedMessages", "RetentionDuration", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }
