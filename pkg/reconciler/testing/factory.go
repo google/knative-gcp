@@ -30,7 +30,6 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 
 	fakerunclient "github.com/google/knative-gcp/pkg/client/injection/client/fake"
-	fakeistioclient "github.com/google/knative-gcp/pkg/client/istio/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
 	fakeservingclient "knative.dev/serving/pkg/client/injection/client/fake"
@@ -59,7 +58,6 @@ func MakeFactory(ctor Ctor) Factory {
 		ctx, kubeClient := fakekubeclient.With(ctx, ls.GetKubeObjects()...)
 		ctx, client := fakerunclient.With(ctx, ls.GetEventsObjects()...)
 		ctx, servingclient := fakeservingclient.With(ctx, ls.GetServingObjects()...)
-		ctx, istioclient := fakeistioclient.With(ctx, ls.GetIstioObjects()...)
 
 		dynamicScheme := runtime.NewScheme()
 		for _, addTo := range clientSetSchemes {
@@ -89,7 +87,6 @@ func MakeFactory(ctor Ctor) Factory {
 			client.PrependReactor("*", "*", reactor)
 			dynamicClient.PrependReactor("*", "*", reactor)
 			servingclient.PrependReactor("*", "*", reactor)
-			istioclient.PrependReactor("*", "*", reactor)
 		}
 
 		// Validate all Create operations through the serving client.
@@ -102,7 +99,7 @@ func MakeFactory(ctor Ctor) Factory {
 			return ValidateUpdates(context.Background(), action)
 		})
 
-		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, servingclient, istioclient}
+		actionRecorderList := ActionRecorderList{dynamicClient, client, kubeClient, servingclient}
 		eventList := EventList{Recorder: eventRecorder}
 
 		return c, actionRecorderList, eventList
