@@ -27,17 +27,17 @@ import (
 )
 
 const deprecationMessage = "This Kind is deprecated and the CRD has been made 'internal'. This " +
-	"means, end-users should not create objects of this CRD directly. If you need a non-internal " +
+	"means, end users should not create objects of this CRD directly. If you need a non-internal " +
 	"variant, then please let us know by commenting on " +
 	"https://github.com/google/knative-gcp/issues/905. Moreover, the object must be deleted " +
 	"before upgrading to 0.16 to avoid orphaning the Google Cloud Platform resources that were " +
-	"created on-behalf of this object, such as Pub/Sub Topics and Subscriptions."
+	"created on behalf of this object, such as Pub/Sub Topics and Subscriptions."
 
 // deprecatedCondition is the condition to add to types that will be removed in 0.16.
 // See https://github.com/google/knative-gcp/issues/905 for more context.
 var deprecatedCondition = apis.Condition{
 	Type:     "Deprecated",
-	Reason:   "willBeRemoved",
+	Reason:   "WillBeRemoved",
 	Status:   corev1.ConditionTrue,
 	Severity: apis.ConditionSeverityWarning,
 	Message:  deprecationMessage,
