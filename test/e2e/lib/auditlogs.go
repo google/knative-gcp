@@ -25,6 +25,11 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+const (
+	ServiceName = "pubsub.googleapis.com"
+	MethodName  = "google.pubsub.v1.Publisher.CreateTopic"
+)
+
 func MakeAuditLogsOrDie(client *Client,
 	auditlogsName, methodName, project, resourceName, serviceName, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudAuditLogsSourceOption,
