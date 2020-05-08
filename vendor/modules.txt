@@ -1043,7 +1043,7 @@ knative.dev/eventing/test/test_images/logevents
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200506142844-5b98a558168e
+# knative.dev/pkg v0.0.0-20200507220045-66f1d63f1019
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
 knative.dev/pkg/apis/duck/v1

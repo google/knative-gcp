@@ -20,18 +20,18 @@ package cloudschedulersource
 
 import (
 	context "context"
-	"encoding/json"
-	"reflect"
+	json "encoding/json"
+	reflect "reflect"
 
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	versioned "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	zap "go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
+	equality "k8s.io/apimachinery/pkg/api/equality"
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	types "k8s.io/apimachinery/pkg/types"
 	sets "k8s.io/apimachinery/pkg/util/sets"
 	cache "k8s.io/client-go/tools/cache"
 	record "k8s.io/client-go/tools/record"
