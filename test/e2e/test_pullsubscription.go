@@ -28,7 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
@@ -46,8 +46,8 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
@@ -55,7 +55,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 				},
 			},
 		}),
-		kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, svcName))
+		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
@@ -80,15 +80,15 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					authConfig.PubsubServiceAccount,
 				},
 			},
-		}), kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, targetName))
+		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)

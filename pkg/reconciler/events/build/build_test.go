@@ -37,7 +37,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -166,22 +166,22 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1alpha1.PubSubSpec{
 							Secret: &secret,
 						},
 					}),
-					WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
-					WithPubSubPullSubscriptionLabels(map[string]string{
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionLabels(map[string]string{
 						"receive-adapter":                     receiveAdapterName,
 						"events.cloud.google.com/source-name": buildName,
 					}),
-					WithPubSubPullSubscriptionAnnotations(map[string]string{
+					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group": resourceGroup,
 					}),
-					WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -199,8 +199,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -230,8 +230,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -261,9 +261,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReady(sinkURI),
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 				),
 				newSink(),
 			},
