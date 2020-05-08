@@ -152,13 +152,11 @@ function storage_admin_set_up() {
   echo "Update ServiceAccount for Storage Admin"
   local project_id=${1}
   local pubsub_service_account=${2}
-  local pubsub_service_account_key_temp=${3}
   local project_number="$(gcloud projects describe "${project_id}" --format="value(projectNumber)")"
   local access_token="$(gcloud auth application-default print-access-token)"
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
   echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
-  echo "parameter pubsub_service_account_key_temp used when setting up storage admin is'${pubsub_service_account_key_temp}'"
   echo "Update ServiceAccount for Storage Admin"
   gcloud services enable storage-component.googleapis.com
   gcloud services enable storage-api.googleapis.com

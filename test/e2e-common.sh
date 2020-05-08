@@ -68,7 +68,7 @@ function scheduler_setup() {
 # Create resources required for Storage Admin setup.
 function storage_setup() {
   if (( ! IS_PROW )); then
-    storage_admin_set_up "${E2E_PROJECT_ID}" ${PUBSUB_SERVICE_ACCOUNT_NON_PROW} "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
+    storage_admin_set_up "${E2E_PROJECT_ID}" ${PUBSUB_SERVICE_ACCOUNT_NON_PROW}
   fi
 }
 
