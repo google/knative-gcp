@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	ServiceName = "pubsub.googleapis.com"
-	MethodName  = "google.pubsub.v1.Publisher.CreateTopic"
+	PubSubServiceName           = "pubsub.googleapis.com"
+	PubSubCreateTopicMethodName = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
 func MakeAuditLogsOrDie(client *Client,

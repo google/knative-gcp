@@ -43,15 +43,15 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, lib.MethodName, project, resourceName, lib.ServiceName, targetName)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,
 		auditlogsName,
-		lib.MethodName,
+		lib.PubSubCreateTopicMethodName,
 		project,
 		resourceName,
-		lib.ServiceName,
+		lib.PubSubServiceName,
 		targetName,
 		authConfig.PubsubServiceAccount,
 	)

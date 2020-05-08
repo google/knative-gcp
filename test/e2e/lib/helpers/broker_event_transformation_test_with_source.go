@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package helpers
 
 import (
@@ -24,6 +40,21 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
+
+/*
+ BrokerEventTransformationTestHelper provides the helper methods which test the following scenario:
+
+                              5                   4
+                    ------------------   --------------------
+                    |                 | |                    |
+          1         v	      2       | v         3          |
+(Sender) --->   Broker ---> dummyTrigger -------> Knative Service(Receiver)
+                    |
+                    |    6                   7
+                    |-------> respTrigger -------> Service(Target)
+
+Note: the number denotes the sequence of the event that flows in this test case.
+*/
 
 func BrokerEventTransformationTestHelper(t *testing.T, client *lib.Client, brokerURL url.URL, brokerName string) {
 	senderName := helpers.AppendRandomString("sender")
@@ -144,7 +175,7 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(t *testing.T, client
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, lib.MethodName, project, resourceName, lib.ServiceName, targetName)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName)
 	createTriggersAndKService(client, brokerName, targetName)
 	var url apis.URL = apis.URL(brokerURL)
 	// Just to make sure all resources are ready.
@@ -153,14 +184,16 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(t *testing.T, client
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,
 		auditlogsName,
-		lib.MethodName,
+		lib.PubSubCreateTopicMethodName,
 		project,
 		resourceName,
-		lib.ServiceName,
+		lib.PubSubServiceName,
 		targetName,
 		authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
 	)
+
+	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
 	// Tried with 45 seconds but the test has been quite flaky.
@@ -168,33 +201,10 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(t *testing.T, client
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
-	if err != nil {
-		t.Error(err)
-	}
-
-	t.Logf("Last term message => %s", msg)
-
-	if msg != "" {
-		out := &lib.TargetOutput{}
-		if err := json.Unmarshal([]byte(msg), out); err != nil {
-			t.Error(err)
-		}
-		if !out.Success {
-			// Log the output cloudauditlogssource pods.
-			if logs, err := client.LogsFor(client.Namespace, auditlogsName, lib.CloudAuditLogsSourceTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("cloudauditlogssource: %+v", logs)
-			}
-			// Log the output of the target job pods.
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("job: %s\n", logs)
-			}
-			t.Fail()
-		}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
 	}
 }
 
@@ -215,35 +225,11 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(t *testing.T, client
 		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
 	)
 
-	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
-	if err != nil {
-		t.Error(err)
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName, t); !done {
+		t.Error("resp event didn't hit the target pod")
+		t.Failed()
 	}
-
-	t.Logf("Last termination message => %s", msg)
-	if msg != "" {
-		out := &lib.TargetOutput{}
-		if err := json.Unmarshal([]byte(msg), out); err != nil {
-			t.Error(err)
-		}
-		if !out.Success {
-			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("scheduler log: %+v", logs)
-			}
-
-			// Log the output of the target job pods
-			if logs, err := client.LogsFor(client.Namespace, targetName, lib.JobTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("addressable job: %+v", logs)
-			}
-			t.Fail()
-		}
-	}
-
 }
 
 func CreateKService(client *lib.Client) string {
@@ -257,6 +243,7 @@ func CreateKService(client *lib.Client) string {
 }
 
 func createTriggerWithKServiceSubscriber(client *lib.Client, brokerName, kserviceName string) {
+	// Please refer to the graph in the file to check what dummy trigger is used for.
 	dummyTriggerName := "dummy-broker-" + brokerName
 	client.Core.CreateTriggerOrFail(
 		dummyTriggerName,
@@ -312,20 +299,20 @@ func jobDone(client *lib.Client, podName string, t *testing.T) bool {
 	if msg == "" {
 		t.Error("No terminating message from the pod")
 		return false
-	} else {
-		out := &lib.TargetOutput{}
-		if err := json.Unmarshal([]byte(msg), out); err != nil {
+	}
+
+	out := &lib.TargetOutput{}
+	if err := json.Unmarshal([]byte(msg), out); err != nil {
+		t.Error(err)
+		return false
+	}
+	if !out.Success {
+		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
 			t.Error(err)
-			return false
+		} else {
+			t.Logf("job: %s\n", logs)
 		}
-		if !out.Success {
-			if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
-				t.Error(err)
-			} else {
-				t.Logf("job: %s\n", logs)
-			}
-			return false
-		}
+		return false
 	}
 	return true
 }

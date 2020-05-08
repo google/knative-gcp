@@ -33,7 +33,7 @@ import (
 )
 
 /*
-PubSubWithBrokerTestImpl tests the following scenario:
+GCPBrokerTestImpl tests the following scenario:
 
                               5                   4
                     ------------------   --------------------
