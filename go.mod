@@ -27,9 +27,6 @@ require (
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
-	istio.io/api v0.0.0-20200227213531-891bf31f3c32
-	istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
-	istio.io/gogo-genproto v0.0.0-20200130224810-a0338448499a // indirect
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
