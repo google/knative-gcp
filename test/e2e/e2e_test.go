@@ -311,5 +311,5 @@ func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	GCPBrokerTestImpl(t, authConfig)
+	GCPBrokerTestImpl(t, false, authConfig)
 }

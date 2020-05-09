@@ -96,8 +96,8 @@ func (in *ChannelSpec) DeepCopyInto(out *ChannelSpec) {
 		*out = new(v1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.Subscribable != nil {
-		in, out := &in.Subscribable, &out.Subscribable
+	if in.SubscribableSpec != nil {
+		in, out := &in.SubscribableSpec, &out.SubscribableSpec
 		*out = new(duckv1beta1.SubscribableSpec)
 		(*in).DeepCopyInto(*out)
 	}

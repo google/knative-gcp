@@ -19,8 +19,10 @@ package v1beta1
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/messaging/internal"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/eventing/pkg/apis/messaging"
 )
 
 const (
@@ -40,10 +42,26 @@ func defaultSecretSelector() *corev1.SecretKeySelector {
 }
 
 func (c *Channel) SetDefaults(ctx context.Context) {
+	// We need to set this to the _stored_ version of the Channel. If we set to anything other than
+	// the stored version, then when reading the stored version, conversion won't be called so
+	// nothing will set it to the stored version.
+	// Note that if a user sends a bad version of this annotation (e.g. sets it to v1beta1), then we
+	// won't overwrite their bad input. This is because the webhook:
+	// 1. Reads the stored version.
+	// 2. Converts to the desired version.
+	// 3. Defaults the desired version.
+	// So we don't know if the user or the converter put the value here, therefore we are forced to
+	// assume it was the converter and shouldn't change it.
+	if c.Annotations == nil {
+		c.Annotations = make(map[string]string, 1)
+	}
+	if _, present := c.Annotations[messaging.SubscribableDuckVersionAnnotation]; !present {
+		c.Annotations[messaging.SubscribableDuckVersionAnnotation] = internal.StoredChannelVersion
+	}
 	c.Spec.SetDefaults(ctx)
 }
 
-func (cs *ChannelSpec) SetDefaults(ctx context.Context) {
+func (cs *ChannelSpec) SetDefaults(_ context.Context) {
 	if cs.GoogleServiceAccount == "" && (cs.Secret == nil || equality.Semantic.DeepEqual(cs.Secret, &corev1.SecretKeySelector{})) {
 		cs.Secret = defaultSecretSelector()
 	}
