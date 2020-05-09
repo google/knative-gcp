@@ -75,6 +75,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 		},
 	}, {
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
 		name: "missing defaults, except cluster name annotations",
 		start: &CloudBuildSource{
 			ObjectMeta: metav1.ObjectMeta{

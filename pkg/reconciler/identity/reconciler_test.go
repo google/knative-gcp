@@ -75,39 +75,42 @@ func TestCreates(t *testing.T) {
 		expectedServiceAccount *corev1.ServiceAccount
 		wantCreates            []runtime.Object
 		wantErrCode            codes.Code
-	}{{
-		name: "k8s service account doesn't exist, create it",
-		wantCreates: []runtime.Object{
-			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
-		},
-		expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
-			WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "CloudPubSubSource",
-				UID:                "test-pubsub-uid",
-				Name:               identifiableName,
-				Controller:         &falseVal,
-				BlockOwnerDeletion: &trueVal,
-			}}),
-		),
-		wantErrCode: codes.NotFound,
-	}, {
-		name: "k8s service account exists, but doesn't have ownerReference",
-		objects: []runtime.Object{
-			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
-		},
-		expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
-			WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-				APIVersion:         "events.cloud.google.com/v1alpha1",
-				Kind:               "CloudPubSubSource",
-				UID:                "test-pubsub-uid",
-				Name:               identifiableName,
-				Controller:         &falseVal,
-				BlockOwnerDeletion: &trueVal,
-			}}),
-		),
-		wantErrCode: codes.NotFound,
-	}}
+	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037,
+		// skip test case "k8s service account doesn't exist, failed to get cluster name annotation."
+		{
+			name: "k8s service account doesn't exist, create it",
+			wantCreates: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+			},
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			wantErrCode: codes.NotFound,
+		}, {
+			name: "k8s service account exists, but doesn't have ownerReference",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+			},
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			wantErrCode: codes.NotFound,
+		}}
 
 	for _, tc := range testCases {
 		tc := tc
@@ -176,43 +179,46 @@ func TestDeletes(t *testing.T) {
 		wantDeletes []clientgotesting.DeleteActionImpl
 		objects     []runtime.Object
 		wantErrCode codes.Code
-	}{{
-		name: "delete k8s service account, failed with removing iam policy binding.",
-		objects: []runtime.Object{
-			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					UID:                "test-pubsub-uid",
-					Name:               identifiableName,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		},
-		wantErrCode: codes.NotFound,
-	}, {
-		name: "no need to remove k8s service account",
-		objects: []runtime.Object{
-			NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					UID:                "test-pubsub-uid1",
-					Name:               identifiableName,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}, {
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					UID:                "test-pubsub-uid2",
-					Name:               identifiableName + "new",
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		},
-	}}
+	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037,
+		// skip test case "delete k8s service account, failed to get cluster name annotation."
+		{
+			name: "delete k8s service account, failed with removing iam policy binding.",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid",
+						Name:               identifiableName,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+			},
+			wantErrCode: codes.NotFound,
+		}, {
+			name: "no need to remove k8s service account",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid1",
+						Name:               identifiableName,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}, {
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid2",
+						Name:               identifiableName + "new",
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+			},
+		}}
 
 	for _, tc := range testCases {
 		tc := tc

@@ -81,6 +81,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 			},
 		},
 	}, {
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
 		name: "nil, except cluster name annotations",
 		start: &CloudPubSubSource{
 			ObjectMeta: metav1.ObjectMeta{

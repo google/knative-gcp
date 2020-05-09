@@ -88,6 +88,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 		orig     *CloudStorageSource
 		expected *CloudStorageSource
 	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
 		"missing defaults, except cluster name annotations": {
 			orig: &CloudStorageSource{
 				ObjectMeta: metav1.ObjectMeta{
