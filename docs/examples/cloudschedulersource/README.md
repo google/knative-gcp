@@ -17,7 +17,7 @@ scheduled events from
    [`CloudSchedulerSource`](cloudschedulersource.yaml)
 
    ```shell
-   export APP_ENGINE_LOCATION=us-central1
+   export APP_ENGINE_LOCATION=us-central
    gcloud app create --region=$APP_ENGINE_LOCATION
    ```
 
