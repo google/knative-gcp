@@ -159,6 +159,11 @@ func WithPubSubTopicNoTopic(reason, message string) PubSubTopicOption {
 		t.Status.MarkNoTopic(reason, message)
 	}
 }
+func WithPubSubTopicDeprecated() PubSubTopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Status.MarkDeprecated()
+	}
+}
 
 func WithPubSubTopicAnnotations(annotations map[string]string) PubSubTopicOption {
 	return func(c *v1alpha1.Topic) {
