@@ -152,8 +152,8 @@ function storage_admin_set_up() {
   echo "Update ServiceAccount for Storage Admin"
   local project_id=${1}
   local pubsub_service_account=${2}
+  local pubsub_service_account_key_temp=${3}
   local project_number="$(gcloud projects describe "${project_id}" --format="value(projectNumber)")"
-  local access_token="$(gcloud auth application-default print-access-token)"
 
   echo "parameter project_id used when setting up storage admin is'${project_id}'"
   echo "parameter pubsub_service_account used when setting up storage admin is'${pubsub_service_account}'"
@@ -164,7 +164,8 @@ function storage_admin_set_up() {
     --member=serviceAccount:"${pubsub_service_account}"@"${project_id}".iam.gserviceaccount.com \
     --role roles/storage.admin
 
-  curl -s -X GET -H "Authorization: Bearer ${access_token}" "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount"
+  curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${pubsub_service_account_key_temp} gcloud auth application-default print-access-token\`" \
+    "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount"
   gcloud projects add-iam-policy-binding "${project_id}" \
     --member="serviceAccount:service-${project_number}@gs-project-accounts.iam.gserviceaccount.com" \
     --role roles/pubsub.publisher
