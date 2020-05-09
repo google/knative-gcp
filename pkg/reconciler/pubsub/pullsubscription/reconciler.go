@@ -101,6 +101,8 @@ func (r *Base) ReconcileKind(ctx context.Context, ps *v1alpha1.PullSubscription)
 	ps.Status.InitializeConditions()
 	ps.Status.ObservedGeneration = ps.Generation
 
+	ps.Status.MarkDeprecated()
+
 	// If pullsubscription doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
 	// Otherwise, its owner will reconcile workload identity.
 	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.GoogleServiceAccount != "" {

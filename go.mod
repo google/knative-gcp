@@ -23,6 +23,7 @@ require (
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/api v0.22.1-0.20200430202532-ac9be1f8f530
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
@@ -30,13 +31,15 @@ require (
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.14.1-0.20200506063944-e9eb527e1295
-	knative.dev/pkg v0.0.0-20200507220045-66f1d63f1019
-	knative.dev/serving v0.14.1-0.20200506171253-f2c76cb8a6dd
-	knative.dev/test-infra v0.0.0-20200506193944-431dda291f8c // indirect
+	knative.dev/eventing v0.14.1-0.20200508175545-d76621b63ac4
+	knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
+	knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
+	knative.dev/test-infra v0.0.0-20200508162345-7ee959873933 // indirect
 )
 
 replace (
+	// Remove this when https://github.com/googleapis/google-cloud-go/commit/1466466ca24673483374da05f6e333d21a1450fb is released.
+	cloud.google.com/go/pubsub => cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
 	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32

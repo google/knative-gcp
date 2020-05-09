@@ -22,7 +22,12 @@ export GO111MODULE=on
 
 source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
 
-readonly TMP_DIFFROOT="$(mktemp -d "${REPO_ROOT_DIR}"/tmpdiffroot.XXXXXX)"
+# There is a directory named `internal`, so we need to move the backup files out
+# of the repo root, otherwise go tools will complain that something is trying to
+# import an internal package that it can't see. E.g.
+# ${REPO_ROOT_DIR}/tmpdiffroot.abcdef/pkg/apis/messaging/v1beta1/deprecated_condition.go
+# tries to import ${REPO_ROOT_DIR}/pkg/apis/messaging/internal.
+readonly TMP_DIFFROOT="$(mktemp -d -t tmpdiffroot.XXXXXX)"
 
 cleanup() {
   rm -rf "${TMP_DIFFROOT}"

@@ -246,3 +246,9 @@ func WithPubSubPullSubscriptionMode(mode v1alpha1.ModeType) PubSubPullSubscripti
 		s.Spec.Mode = mode
 	}
 }
+
+func WithPubSubPullSubscriptionDeprecated() PubSubPullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Status.MarkDeprecated()
+	}
+}
