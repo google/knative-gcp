@@ -34,6 +34,7 @@ require (
 	knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
 	knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
 	knative.dev/test-infra v0.0.0-20200508162345-7ee959873933 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
