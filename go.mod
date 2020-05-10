@@ -71,24 +71,6 @@ replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
 
 replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 
-replace golang.org/x/lint => golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
-
-replace golang.org/x/net => golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
-
-replace golang.org/x/oauth2 => golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-
-replace golang.org/x/sync => golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190927073244-c990c680b611
-
-replace golang.org/x/text => golang.org/x/text v0.3.2
-
-replace golang.org/x/time => golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0
-
-replace golang.org/x/tools => golang.org/x/tools v0.0.0-20190930152728-90aeebe84374
-
-replace golang.org/x/xerrors => golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
-
 replace gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 
 replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
