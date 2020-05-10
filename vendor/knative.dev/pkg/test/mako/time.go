@@ -1,7 +1,5 @@
-// +build tools
-
 /*
-Copyright 2020 Google LLC.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tools imports tool dependencies
-package tools
+package mako
 
 import (
-	_ "knative.dev/pkg/hack"
-
-	_ "knative.dev/eventing/test/test_images/logevents"
-	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/sendevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
-
-	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
-	_ "knative.dev/eventing/test/test_images/performance"
-
-	_ "github.com/google/wire/cmd/wire"
+	"time"
 )
+
+// XTime converts a time.Time into a Mako x-axis compatible timestamp.
+func XTime(t time.Time) float64 {
+	return float64(t.UnixNano()) / (1000.0 * 1000.0)
+}

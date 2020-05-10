@@ -1,7 +1,5 @@
-// +build tools
-
 /*
-Copyright 2020 Google LLC.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tools imports tool dependencies
-package tools
+package receiver
 
-import (
-	_ "knative.dev/pkg/hack"
+import cloudevents "github.com/cloudevents/sdk-go"
 
-	_ "knative.dev/eventing/test/test_images/logevents"
-	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/sendevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
+// IdExtractor is used by the receiver to establish the id of the received event
+type IdExtractor func(event cloudevents.Event) string
 
-	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
-	_ "knative.dev/eventing/test/test_images/performance"
-
-	_ "github.com/google/wire/cmd/wire"
-)
+// EventIdExtractor uses
+//  event.ID()
+// to extract the event id
+func EventIdExtractor(event cloudevents.Event) string {
+	return event.ID()
+}
