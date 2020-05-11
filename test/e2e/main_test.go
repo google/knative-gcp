@@ -51,6 +51,14 @@ func TestMain(m *testing.M) {
 					eventingtestlib.FeatureRedelivery,
 					eventingtestlib.FeaturePersistence,
 				},
+				{
+					APIVersion: resources.MessagingV1beta1APIVersion,
+					Kind:       "Channel",
+				}: {
+					eventingtestlib.FeatureBasic,
+					eventingtestlib.FeatureRedelivery,
+					eventingtestlib.FeaturePersistence,
+				},
 			},
 			ChannelsToTest: eventingtest.EventingFlags.Channels,
 		}
