@@ -17,10 +17,12 @@ limitations under the License.
 package brokercell
 
 import (
+	"os"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/metrics"
@@ -29,17 +31,18 @@ import (
 	tracingconfig "knative.dev/pkg/tracing/config"
 
 	// Fake injection informers
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell/fake"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake"
 )
 
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
+
+	setReconcilerEnv()
 
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
@@ -68,4 +71,10 @@ func TestNew(t *testing.T) {
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
 	}
+}
+
+func setReconcilerEnv() {
+	_ = os.Setenv("BROKER_CELL_INGRESS_IMAGE", "ingress")
+	_ = os.Setenv("BROKER_CELL_FANOUT_IMAGE", "fanout")
+	_ = os.Setenv("BROKER_CELL_RETRY_IMAGE", "retry")
 }

@@ -1104,6 +1104,8 @@ knative.dev/pkg/client/injection/kube/informers/core/v1/pod
 knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake
 knative.dev/pkg/client/injection/kube/informers/core/v1/secret
 knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake
+knative.dev/pkg/client/injection/kube/informers/core/v1/service
+knative.dev/pkg/client/injection/kube/informers/core/v1/service/fake
 knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount
 knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake
 knative.dev/pkg/client/injection/kube/informers/factory
@@ -1213,6 +1215,7 @@ knative.dev/serving/pkg/client/listers/serving/v1beta1
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
+## explicit
 sigs.k8s.io/yaml
 # cloud.google.com/go/pubsub => cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 # contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
