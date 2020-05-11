@@ -66,8 +66,9 @@ func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
 	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
 	_, err := pubsubs.Create(pubsub)
 	if err != nil {
-		c.T.Fatalf("Failed to create pubsub %q: %v", pubsub.Name, err)
+		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
 	}
+	c.T.Logf("Created pubsub: %s/%s", c.Namespace, pubsub.Name)
 	c.Tracker.AddObj(pubsub)
 }
 
