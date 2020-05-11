@@ -21,17 +21,54 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestChannelDefaults(t *testing.T) {
-	want := &Channel{Spec: ChannelSpec{
-		Secret: defaultSecretSelector(),
-	}}
+	for n, tc := range map[string]struct {
+		in   Channel
+		want Channel
+	}{
+		"no subscribable annotation": {
+			in: Channel{},
+			want: Channel{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						"messaging.knative.dev/subscribable": "v1alpha1",
+					},
+				},
+				Spec: ChannelSpec{
+					Secret: defaultSecretSelector(),
+				},
+			},
+		},
+		"with a subscribable annotation": {
+			in: Channel{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						"messaging.knative.dev/subscribable": "v1beta1",
+					},
+				},
+			},
+			want: Channel{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: map[string]string{
+						"messaging.knative.dev/subscribable": "v1beta1",
+					},
+				},
+				Spec: ChannelSpec{
+					Secret: defaultSecretSelector(),
+				},
+			},
+		},
+	} {
+		t.Run(n, func(t *testing.T) {
+			got := tc.in
+			got.SetDefaults(context.Background())
 
-	got := &Channel{Spec: ChannelSpec{}}
-	got.SetDefaults(context.Background())
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("failed to get expected (-want, +got) = %v", diff)
+			}
+		})
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -68,4 +69,62 @@ func WithBrokerCellStatusObservedGeneration(gen int64) BrokerCellOption {
 func WithBrokerCellDeletionTimestamp(bc *intv1alpha1.BrokerCell) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	bc.ObjectMeta.SetDeletionTimestamp(&t)
+}
+
+func WithIngressTemplate(address string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.SetIngressTemplate(address)
+	}
+}
+
+func WithBrokerCellReady(bc *intv1alpha1.BrokerCell) {
+	bc.Status = *intv1alpha1.TestHelper.ReadyBrokerCellStatus()
+}
+
+func WithBrokerCellIngressFailed(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkIngressFailed(reason, msg)
+	}
+}
+
+func WithBrokerCellIngressAvailable() BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.PropagateIngressAvailability(v1alpha1.TestHelper.AvailableEndpoints())
+	}
+}
+
+func WithBrokerCellFanoutAvailable() BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.PropagateFanoutAvailability(v1alpha1.TestHelper.AvailableDeployment())
+	}
+}
+
+func WithBrokerCellFanoutFailed(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkFanoutFailed(reason, msg)
+	}
+}
+
+func WithBrokerCellRetryAvailable() BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.PropagateFanoutAvailability(v1alpha1.TestHelper.AvailableDeployment())
+	}
+}
+
+func WithBrokerCellRetryFailed(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkRetryFailed(reason, msg)
+	}
+}
+
+func WithTargetsCofigReady() BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkTargetsConfigReady()
+	}
+}
+
+func WithTargetsCofigFailed(reason, msg string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.Status.MarkTargetsConfigFailed(reason, msg)
+	}
 }

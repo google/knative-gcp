@@ -169,6 +169,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithPubSubInitTopicConditions,
+				WithPubSubTopicDeprecated(),
 				WithPubSubTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-client-induced-error"))),
 		}},
 	}, {
@@ -213,6 +214,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithPubSubInitTopicConditions,
+				WithPubSubTopicDeprecated(),
 				WithPubSubTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "topic-exists-induced-error"))),
 		}},
 	}, {
@@ -250,6 +252,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopicPropagationPolicy("NoCreateNoDelete"),
 				// Updates
 				WithPubSubInitTopicConditions,
+				WithPubSubTopicDeprecated(),
 				WithPubSubTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: Topic %q does not exist and the topic policy doesn't allow creation", failedToReconcileTopicMsg, testTopicID))),
 		}},
 	}, {
@@ -292,6 +295,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithPubSubInitTopicConditions,
+				WithPubSubTopicDeprecated(),
 				WithPubSubTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
@@ -332,6 +336,7 @@ func TestAllCases(t *testing.T) {
 				WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithPubSubInitTopicConditions,
+				WithPubSubTopicDeprecated(),
 				WithPubSubTopicReady(testTopicID),
 				WithPubSubTopicPublisherNotConfigured()),
 		}},
@@ -377,6 +382,7 @@ func TestAllCases(t *testing.T) {
 					WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithPubSubInitTopicConditions,
+					WithPubSubTopicDeprecated(),
 					WithPubSubTopicReady(testTopicID),
 					WithPubSubTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed")),
 			}},
@@ -421,6 +427,7 @@ func TestAllCases(t *testing.T) {
 					WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithPubSubInitTopicConditions,
+					WithPubSubTopicDeprecated(),
 					WithPubSubTopicReady(testTopicID),
 					WithPubSubTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
 			}},
@@ -465,6 +472,7 @@ func TestAllCases(t *testing.T) {
 					WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithPubSubInitTopicConditions,
+					WithPubSubTopicDeprecated(),
 					WithPubSubTopicReady(testTopicID),
 					WithPubSubTopicPublisherDeployed,
 					WithPubSubTopicAddress(testTopicURI)),
@@ -510,6 +518,7 @@ func TestAllCases(t *testing.T) {
 					WithPubSubTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithPubSubInitTopicConditions,
+					WithPubSubTopicDeprecated(),
 					WithPubSubTopicReady(testTopicID),
 					WithPubSubTopicPublisherDeployed,
 					WithPubSubTopicAddress(testTopicURI)),

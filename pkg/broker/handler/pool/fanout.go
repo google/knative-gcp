@@ -24,7 +24,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
@@ -137,22 +136,13 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 			p.pool.Delete(b.Key())
 		}
 
-		ps, err := cepubsub.New(ctx,
-			cepubsub.WithClient(p.pubsubClient),
-			cepubsub.WithTopicID(b.DecoupleQueue.Topic),
-			cepubsub.WithSubscriptionID(b.DecoupleQueue.Subscription),
-			cepubsub.WithReceiveSettings(&p.options.PubsubReceiveSettings),
-		)
-		if err != nil {
-			logging.FromContext(ctx).Error("failed to create pubsub protocol", zap.String("broker", b.Key()), zap.Error(err))
-			errs++
-			return true
-		}
+		sub := p.pubsubClient.Subscription(b.DecoupleQueue.Subscription)
+		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
 		hc := &fanoutHandlerCache{
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
-				PubsubEvents: ps,
+				Subscription: sub,
 				Processor: processors.ChainProcessors(
 					&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
 					&filter.Processor{Targets: p.targets},
