@@ -1,7 +1,5 @@
-// +build tools
-
 /*
-Copyright 2020 Google LLC.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tools imports tool dependencies
-package tools
+package common
 
-import (
-	_ "knative.dev/pkg/hack"
+import "time"
 
-	_ "knative.dev/eventing/test/test_images/logevents"
-	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/sendevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
-
-	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
-	_ "knative.dev/eventing/test/test_images/performance"
-
-	_ "github.com/google/wire/cmd/wire"
+const (
+	WarmupEventType   = "warmup.perf-test"
+	MeasureEventType  = "measure.perf-test"
+	GCEventType       = "gc.perf-test"
+	EndEventType      = "end.perf-test"
+	CEReceiverPort    = "8080"
+	WaitForFlush      = 5 * time.Second
+	WaitForReceiverGC = 3 * time.Second
+	WaitAfterWarmup   = 5 * time.Second
 )

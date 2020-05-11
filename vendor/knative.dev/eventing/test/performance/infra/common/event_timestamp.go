@@ -1,7 +1,5 @@
-// +build tools
-
 /*
-Copyright 2020 Google LLC.
+Copyright 2019 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,19 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package tools imports tool dependencies
-package tools
+package common
 
-import (
-	_ "knative.dev/pkg/hack"
+import "github.com/golang/protobuf/ptypes/timestamp"
 
-	_ "knative.dev/eventing/test/test_images/logevents"
-	_ "knative.dev/eventing/test/test_images/recordevents"
-	_ "knative.dev/eventing/test/test_images/sendevents"
-	_ "knative.dev/eventing/test/test_images/transformevents"
-
-	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
-	_ "knative.dev/eventing/test/test_images/performance"
-
-	_ "github.com/google/wire/cmd/wire"
-)
+// EventTimestamp is the recorded EventTimestamp of an event.
+type EventTimestamp struct {
+	EventId string
+	At      *timestamp.Timestamp
+}
