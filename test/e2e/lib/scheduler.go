@@ -28,6 +28,7 @@ func MakeSchedulerOrDie(client *Client,
 	sName, data, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudSchedulerSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceData(data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
@@ -40,6 +41,7 @@ func MakeSchedulerOrDie(client *Client,
 }
 
 func MakeSchedulerJobOrDie(client *Client, data, targetName string) {
+	client.T.Helper()
 	job := resources.SchedulerJob(targetName, []v1.EnvVar{
 		{
 			Name:  "TIME",

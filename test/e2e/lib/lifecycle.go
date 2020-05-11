@@ -43,6 +43,7 @@ import (
 
 // Setup runs the Setup in the common eventing test framework.
 func Setup(t *testing.T, runInParallel, workloadIdentity bool) *Client {
+	t.Helper()
 	client, err := newClient(pkgTest.Flags.Kubeconfig, pkgTest.Flags.Cluster)
 	if err != nil {
 		t.Fatalf("Failed to initialize client for Knative GCP: %v", err)
@@ -72,6 +73,7 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 
 // TearDown runs the TearDown in the common eventing test framework.
 func TearDown(client *Client) {
+	client.T.Helper()
 	lib.TearDown(client.Core)
 }
 
@@ -88,6 +90,7 @@ type Client struct {
 var setStackDriverConfigOnce = sync.Once{}
 
 func (c *Client) SetupStackDriverMetrics(t *testing.T) {
+	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
 		err := c.Core.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "true",
