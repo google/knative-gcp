@@ -99,7 +99,7 @@ func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1alpha1.CloudSchedulerS
 	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
 	_, err := schedulers.Create(scheduler)
 	if err != nil {
-		c.T.Fatalf("Failed to create scheduler %q: %v", scheduler.Name, err)
+		c.T.Fatalf("Failed to create scheduler %s/%s: %v", c.Namespace, scheduler.Name, err)
 	}
 	c.T.Logf("Created scheduler: %s/%s", c.Namespace, scheduler.Name)
 	c.Tracker.AddObj(scheduler)
