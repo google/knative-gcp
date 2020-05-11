@@ -32,8 +32,8 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	psreconciler "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"github.com/kelseyhightower/envconfig"
 
 	eventingduck "knative.dev/eventing/pkg/duck"
@@ -92,7 +92,7 @@ func newControllerWithIAMPolicyManager(
 		logger.Fatal("Failed to process env var", zap.Error(err))
 	}
 
-	pubsubBase := &pubsub.PubSubBase{
+	pubsubBase := &intevents.PubSubBase{
 		Base: reconciler.NewBase(ctx, controllerAgentName, cmw),
 	}
 
