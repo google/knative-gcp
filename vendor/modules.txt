@@ -19,7 +19,7 @@ cloud.google.com/go/logging
 cloud.google.com/go/logging/apiv2
 cloud.google.com/go/logging/internal
 cloud.google.com/go/logging/logadmin
-# cloud.google.com/go/pubsub v1.3.2-0.20200331222814-69e77e66e597 => cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
+# cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 ## explicit
 cloud.google.com/go/pubsub
 cloud.google.com/go/pubsub/apiv1
@@ -1259,7 +1259,6 @@ knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
 sigs.k8s.io/yaml
-# cloud.google.com/go/pubsub => cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 # contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
 # go.opencensus.io => go.opencensus.io v0.22.1
 # istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
