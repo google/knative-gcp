@@ -33,6 +33,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/wire"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
@@ -103,6 +104,7 @@ func (h *Handler) Start(ctx context.Context) error {
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
 func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
+	ctx := request.Context()
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
 	startTime := time.Now()
 	if request.Method != nethttp.MethodPost {
@@ -119,6 +121,10 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		return
 	}
 	ns, broker := pieces[1], pieces[2]
+
+	ctx, span := trace.StartSpan(ctx, fmt.Sprintf("broker:%s.%s", broker, ns))
+	defer span.End()
+
 	event, err := h.toEvent(request)
 	if err != nil {
 		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
@@ -131,7 +137,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
 	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
 	statusCode := nethttp.StatusAccepted
-	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
+	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
 	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, startTime) }()
 	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
