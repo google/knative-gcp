@@ -54,10 +54,10 @@ func BrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig, as
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-	brokerURL, brokerName := createBrokerWithPubSubChannel(t, client)
-	kngcphelpers.BrokerEventTransformationTestHelper(t, client, brokerURL, brokerName)
+	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
+	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
 	if assertMetrics {
-		lib.AssertBrokerMetrics(t, client)
+		lib.AssertBrokerMetrics(client)
 	}
 }
 
@@ -65,8 +65,8 @@ func PubSubSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.Au
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createBrokerWithPubSubChannel(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
+	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(client, authConfig, brokerURL, brokerName)
 	// TODO(nlopezgi): assert StackDriver metrics after https://github.com/google/knative-gcp/issues/317 is resolved
 }
 
@@ -74,16 +74,16 @@ func StorageSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.A
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createBrokerWithPubSubChannel(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
+	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func AuditLogsSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createBrokerWithPubSubChannel(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
+	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(client, authConfig, brokerURL, brokerName)
 
 }
 
@@ -91,12 +91,12 @@ func SchedulerSourceBrokerWithPubSubChannelTestImpl(t *testing.T, authConfig lib
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createBrokerWithPubSubChannel(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createBrokerWithPubSubChannel(client)
+	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(client, authConfig, brokerURL, brokerName)
 
 }
 
-func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client) (url.URL, string) {
+func createBrokerWithPubSubChannel(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("pubsub")
 	// Create a new Broker.
 	// TODO(chizhg): maybe we don't need to create these RBAC resources as they will now be automatically created?
@@ -114,7 +114,7 @@ func createBrokerWithPubSubChannel(t *testing.T, client *lib.Client) (url.URL, s
 	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
-		t.Error(err.Error())
+		client.T.Error(err.Error())
 	}
 	return u, brokerName
 }

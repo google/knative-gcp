@@ -34,6 +34,7 @@ var setTracingConfigOnce = sync.Once{}
 
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.
 func DuplicatePubSubSecret(client *eventingtestlib.Client) {
+	client.T.Helper()
 	secret, err := client.Kube.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(pubSubSecretName, metav1.GetOptions{})
 	if err != nil {
 		client.T.Fatalf("could not get secret: %v", err)
@@ -54,12 +55,14 @@ func DuplicatePubSubSecret(client *eventingtestlib.Client) {
 }
 
 func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
+	client.T.Helper()
 	if !workloadIdentity {
 		DuplicatePubSubSecret(client)
 	}
 }
 
 func SetTracingToZipkin(client *eventingtestlib.Client) {
+	client.T.Helper()
 	setTracingConfigOnce.Do(func() {
 		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
 			"backend":         "zipkin",

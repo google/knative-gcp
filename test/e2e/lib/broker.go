@@ -19,16 +19,16 @@ package lib
 import (
 	"net/http"
 	"os"
-	"testing"
 	"time"
 
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 	pkgmetrics "knative.dev/pkg/metrics"
 )
 
-func AssertBrokerMetrics(t *testing.T, client *Client) {
+func AssertBrokerMetrics(client *Client) {
+	client.T.Helper()
 	sleepTime := 4 * time.Minute
-	t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
+	client.T.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 	time.Sleep(sleepTime)
 
 	// If we reach this point, the projectID should have been set.
@@ -43,15 +43,15 @@ func AssertBrokerMetrics(t *testing.T, client *Client) {
 	}
 
 	filter := metrics.StringifyStackDriverFilter(f)
-	t.Logf("Filter expression: %s", filter)
+	client.T.Logf("Filter expression: %s", filter)
 
 	actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
 	if err != nil {
-		t.Fatalf("failed to get stackdriver event count metric: %v", err)
+		client.T.Fatalf("failed to get stackdriver event count metric: %v", err)
 	}
 	expectedCount := int64(1)
 	if *actualCount != expectedCount {
-		t.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
-		t.Fail()
+		client.T.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+		client.T.Fail()
 	}
 }
