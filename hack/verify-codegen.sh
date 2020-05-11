@@ -20,7 +20,7 @@ set -o pipefail
 
 export GO111MODULE=on
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
 
 # There is a directory named `internal`, so we need to move the backup files out
 # of the repo root, otherwise go tools will complain that something is trying to
@@ -57,9 +57,8 @@ diff -Naupr --no-dereference \
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/pkg" "${TMP_DIFFROOT}/pkg" || ret=1
 
-# TODO uncomment this once we fix https://github.com/google/knative-gcp/issues/702
-# diff -Naupr --no-dereference \
-#  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
 
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1

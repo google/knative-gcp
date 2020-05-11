@@ -25,7 +25,7 @@ set -o errexit
 set -o nounset
 set -euo pipefail
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
 readonly DEFAULT_CLUSTER_LOCATION_TYPE="zonal"
 
