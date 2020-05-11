@@ -137,6 +137,6 @@ func (c *Client) CreateJobOrFail(job *batchv1.Job, options ...func(*batchv1.Job,
 	if _, err := jobs.Create(job); err != nil {
 		c.T.Fatalf("Failed to create job %s/%s: %v", job.Namespace, job.Name, err)
 	}
-	c.T.Logf("Created job %q", job.Name)
+	c.T.Logf("Created job %s/%s", job.Namespace, job.Name)
 	c.Tracker.Add("batch", "v1", "jobs", job.Namespace, job.Name)
 }
