@@ -88,6 +88,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 	topic.Status.InitializeConditions()
 	topic.Status.ObservedGeneration = topic.Generation
 
+	topic.Status.MarkDeprecated()
+
 	// If topic doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
 	// Otherwise, its owner will reconcile workload identity.
 	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.GoogleServiceAccount != "" {

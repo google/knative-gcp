@@ -188,22 +188,36 @@ func MustParseClientGenTags(lines []string) Tags {
 	return ret
 }
 
-func extractReconcilerClassTag(t *types.Type) (string, bool) {
+func extractCommentTags(t *types.Type) map[string]map[string]string {
 	comments := append(append([]string{}, t.SecondClosestCommentLines...), t.CommentLines...)
-	values := types.ExtractCommentTags("+", comments)["genreconciler:class"]
-	for _, v := range values {
-		if len(v) == 0 {
-			continue
-		}
-		return v, true
-	}
-	return "", false
+	return ExtractCommentTags("+", comments)
 }
 
-func isNonNamespaced(t *types.Type) bool {
-	comments := append(append([]string{}, t.SecondClosestCommentLines...), t.CommentLines...)
-	_, nonNamespaced := types.ExtractCommentTags("+", comments)["genclient:nonNamespaced"]
-	return nonNamespaced
+func extractReconcilerClassTag(tags map[string]map[string]string) (string, bool) {
+	vals, ok := tags["genreconciler"]
+	if !ok {
+		return "", false
+	}
+	classname, has := vals["class"]
+	return classname, has
+}
+
+func isNonNamespaced(tags map[string]map[string]string) bool {
+	vals, has := tags["genclient"]
+	if !has {
+		return false
+	}
+	_, has = vals["nonNamespaced"]
+	return has
+}
+
+func isKRShaped(tags map[string]map[string]string) bool {
+	vals, has := tags["genclient"]
+	if !has {
+		return false
+	}
+	shaped, _ := vals["krshapedlogic"]
+	return shaped == "true"
 }
 
 func vendorless(p string) string {
@@ -416,8 +430,10 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 		// Fix for golang iterator bug.
 		t := t
 
-		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(t)
-		nonNamespaced := isNonNamespaced(t)
+		extracted := extractCommentTags(t)
+		reconcilerClass, hasReconcilerClass := extractReconcilerClassTag(extracted)
+		nonNamespaced := isNonNamespaced(extracted)
+		isKRShaped := isKRShaped(extracted)
 
 		packagePath := filepath.Join(packagePath, strings.ToLower(t.Name.Name))
 
@@ -506,6 +522,7 @@ func reconcilerPackages(basePackage string, groupPkgName string, gv clientgentyp
 					reconcilerClass:    reconcilerClass,
 					hasReconcilerClass: hasReconcilerClass,
 					nonNamespaced:      nonNamespaced,
+					isKRShaped:         isKRShaped,
 				})
 
 				return generators

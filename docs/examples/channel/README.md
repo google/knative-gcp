@@ -54,7 +54,7 @@ intended to provide a durable messaging solution.
    kubectl get subscription demo
    ```
 
-1. Create an Event Source, in this case, a CronJobSource from
+1. Create an Event Source, in this case, a `PingSource` from
    [source.yaml](source.yaml).
 
    ```shell
@@ -85,8 +85,8 @@ You should see log lines similar to:
 Validation: valid
 Context Attributes,
   specversion: 1.0
-  type: dev.knative.cronjob.event
-  source: /apis/v1/namespaces/default/cronjobsources/hello-world
+  type: dev.knative.sources.ping
+  source: /apis/v1/namespaces/default/pingsources/hello-world
   id: 37a8a186-acc0-4c63-b1ad-a8dac9caf288
   time: 2019-08-26T20:48:00.000475893Z
   datacontenttype: application/json
@@ -96,8 +96,8 @@ Data,
   }
 ```
 
-These events are generated from the `hello-world` `CronJobSource`, sent through
-the `demo` `Channel` and delivered to the `event-display` via the `demo`
+These events are generated from the `hello-world` `PingSource`, sent through the
+`demo` `Channel` and delivered to the `event-display` via the `demo`
 `Subscription`.
 
 ## What's Next

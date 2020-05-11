@@ -36,6 +36,7 @@ import (
 )
 
 func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
+	t.Helper()
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 

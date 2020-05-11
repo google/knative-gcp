@@ -73,3 +73,13 @@ func (t testHelper) UnavailableDeployment() *appsv1.Deployment {
 	}
 	return d
 }
+
+func (t testHelper) ReadyBrokerCellStatus() *BrokerCellStatus {
+	bs := &BrokerCellStatus{}
+	bs.PropagateIngressAvailability(t.AvailableEndpoints())
+	bs.SetIngressTemplate("http://localhost")
+	bs.PropagateFanoutAvailability(t.AvailableDeployment())
+	bs.PropagateRetryAvailability(t.AvailableDeployment())
+	bs.MarkTargetsConfigReady()
+	return bs
+}

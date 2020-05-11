@@ -34,6 +34,8 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+var newSubscriberClientHook clientHook
+
 // SubscriberCallOptions contains the retry settings for each method of SubscriberClient.
 type SubscriberCallOptions struct {
 	CreateSubscription []gax.CallOption
@@ -286,7 +288,17 @@ type SubscriberClient struct {
 // consume messages from a subscription via the Pull method or by
 // establishing a bi-directional stream using the StreamingPull method.
 func NewSubscriberClient(ctx context.Context, opts ...option.ClientOption) (*SubscriberClient, error) {
-	connPool, err := gtransport.DialPool(ctx, append(defaultSubscriberClientOptions(), opts...)...)
+	clientOpts := defaultSubscriberClientOptions()
+
+	if newSubscriberClientHook != nil {
+		hookOpts, err := newSubscriberClientHook(ctx, clientHookParams{})
+		if err != nil {
+			return nil, err
+		}
+		clientOpts = append(clientOpts, hookOpts...)
+	}
+
+	connPool, err := gtransport.DialPool(ctx, append(clientOpts, opts...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +308,7 @@ func NewSubscriberClient(ctx context.Context, opts ...option.ClientOption) (*Sub
 
 		subscriberClient: pubsubpb.NewSubscriberClient(connPool),
 	}
-	c.SetGoogleClientInfo()
+	c.setGoogleClientInfo()
 
 	return c, nil
 }
@@ -314,10 +326,10 @@ func (c *SubscriberClient) Close() error {
 	return c.connPool.Close()
 }
 
-// SetGoogleClientInfo sets the name and version of the application in
+// setGoogleClientInfo sets the name and version of the application in
 // the `x-goog-api-client` header passed on each request. Intended for
 // use by Google-written clients.
-func (c *SubscriberClient) SetGoogleClientInfo(keyval ...string) {
+func (c *SubscriberClient) setGoogleClientInfo(keyval ...string) {
 	kv := append([]string{"gl-go", versionGo()}, keyval...)
 	kv = append(kv, "gapic", versionClient, "gax", gax.Version, "grpc", grpc.Version)
 	c.xGoogMetadata = metadata.Pairs("x-goog-api-client", gax.XGoogHeader(kv...))

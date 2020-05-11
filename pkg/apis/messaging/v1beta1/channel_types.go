@@ -78,7 +78,7 @@ type ChannelSpec struct {
 
 	// Channel conforms to Duck type Subscribable.
 	// +optional
-	Subscribable *eventingduck.SubscribableSpec `json:"subscribable,omitempty"`
+	*eventingduck.SubscribableSpec `json:",inline"`
 }
 
 var channelCondSet = apis.NewLivingConditionSet(
