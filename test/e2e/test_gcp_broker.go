@@ -17,14 +17,11 @@ limitations under the License.
 package e2e
 
 import (
-	"knative.dev/eventing/test/lib/duck"
 	"net/url"
 	"testing"
-	"time"
 
-	v1 "k8s.io/api/core/v1"
-	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/test/helpers"
 
@@ -32,11 +29,11 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	kngcphelpers "github.com/google/knative-gcp/test/e2e/lib/helpers"
 )
 
 /*
-PubSubWithBrokerTestImpl tests the following scenario:
+GCPBrokerTestImpl tests the following scenario:
 
                               5                   4
                     ------------------   --------------------
@@ -50,86 +47,60 @@ PubSubWithBrokerTestImpl tests the following scenario:
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func GCPBrokerTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
-	senderName := helpers.AppendRandomString("sender")
-	targetName := helpers.AppendRandomString("target")
-
+func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bool) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
-
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-
-	// Create a target Job to receive the events.
-	makeTargetJobOrDie(client, targetName)
-
-	u := createGCPBroker(t, client, targetName)
-
-	// Just to make sure all resources are ready.
-	time.Sleep(10 * time.Second)
-
-	// Create a sender Job to sender the event.
-	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
-		Name:  "BROKER_URL",
-		Value: u.String(),
-	}})
-	client.CreateJobOrFail(senderJob)
-
-	// Check if dummy CloudEvent is sent out.
-	if done := jobDone(client, senderName, t); !done {
-		t.Error("dummy event wasn't sent to broker")
-		t.Failed()
-	}
-	// Check if resp CloudEvent hits the target Service.
-	if done := jobDone(client, targetName, t); !done {
-		t.Error("resp event didn't hit the target pod")
-		t.Failed()
-	}
-
+	brokerURL, brokerName := createGCPBroker(t, client)
+	kngcphelpers.BrokerEventTransformationTestHelper(t, client, brokerURL, brokerName)
 	if assertMetrics {
 		lib.AssertBrokerMetrics(t, client)
 	}
 }
 
-func createGCPBroker(t *testing.T, client *lib.Client, targetName string) url.URL {
-	brokerName := helpers.AppendRandomString("gcp")
-	dummyTriggerName := "dummy-broker-" + brokerName
-	respTriggerName := "resp-broker-" + brokerName
-	kserviceName := helpers.AppendRandomString("kservice")
+func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
 
+	brokerURL, brokerName := createGCPBroker(t, client)
+	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(t, client, authConfig, brokerURL, brokerName)
+}
+
+func StorageSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	brokerURL, brokerName := createGCPBroker(t, client)
+	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(t, client, authConfig, brokerURL, brokerName)
+}
+
+func AuditLogsSourceBrokerWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	brokerURL, brokerName := createGCPBroker(t, client)
+	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(t, client, authConfig, brokerURL, brokerName)
+
+}
+
+func SchedulerSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	brokerURL, brokerName := createGCPBroker(t, client)
+	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(t, client, authConfig, brokerURL, brokerName)
+
+}
+
+func createGCPBroker(t *testing.T, client *lib.Client) (url.URL, string) {
+	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
 	client.Core.CreateBrokerV1Beta1OrFail(brokerName, eventingtestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
 
-	// Create the Knative Service.
-	kservice := resources.ReceiverKService(
-		kserviceName, client.Namespace)
-	client.CreateUnstructuredObjOrFail(kservice)
-
-	// Create a Trigger with the Knative Service subscriber.
-	client.Core.CreateTriggerOrFail(
-		dummyTriggerName,
-		eventingtestresources.WithBroker(brokerName),
-		eventingtestresources.WithAttributesTriggerFilter(
-			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
-			map[string]interface{}{"type": "e2e-testing-dummy"}),
-		eventingtestresources.WithSubscriberServiceRefForTrigger(kserviceName),
-	)
-
-	// Create a Trigger with the target Service subscriber.
-	client.Core.CreateTriggerOrFail(
-		respTriggerName,
-		eventingtestresources.WithBroker(brokerName),
-		eventingtestresources.WithAttributesTriggerFilter(
-			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
-			map[string]interface{}{"type": "e2e-testing-resp"}),
-		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
-	)
-
-	// Wait for broker, trigger, ksvc ready.
+	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
-	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
 
 	// Get broker URL.
 	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
@@ -137,5 +108,5 @@ func createGCPBroker(t *testing.T, client *lib.Client, targetName string) url.UR
 	if err != nil {
 		t.Error(err.Error())
 	}
-	return u
+	return u, brokerName
 }

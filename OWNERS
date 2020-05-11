@@ -7,6 +7,7 @@ approvers:
 - yolocs
 - ericlem
 - liu-cong
+- grac3gao
 
 # Reviewers are suggested from the reviewers list first, then the approvers
 # list. To add reviewers while spreading the load among existing approvers,
@@ -22,3 +23,4 @@ reviewers:
 - liu-cong
 # Add reviewers below
 - bskaplan
+- grac3gao

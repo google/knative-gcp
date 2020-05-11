@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
-source $(dirname $0)/../hack/lib.sh
+source $(dirname "$0")/../hack/lib.sh
 
-source $(dirname $0)/e2e-common.sh
+source $(dirname "$0")/e2e-common.sh
 
 # Eventing main config.
 readonly E2E_TEST_NAMESPACE="default"
@@ -60,7 +60,7 @@ function test_setup() {
 # Tear down tmp files which store the private key.
 function knative_teardown() {
   if (( ! IS_PROW )); then
-    rm ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}
+    rm "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}"
   fi
 }
 
@@ -69,14 +69,14 @@ function control_plane_setup() {
   # When not running on Prow we need to set up a service account for managing resources.
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount used by the Control Plane"
-    init_control_plane_service_account ${E2E_PROJECT_ID} ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}
-    gcloud iam service-accounts keys create ${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP} \
-      --iam-account=${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    init_control_plane_service_account "${E2E_PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"
+    gcloud iam service-accounts keys create "${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP}" \
+      --iam-account="${CONTROL_PLANE_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
   echo "Create the control plane secret"
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${CONTROL_PLANE_SECRET_NAME} --from-file=key.json=${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${CONTROL_PLANE_SECRET_NAME}" --from-file=key.json="${CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP}"
   echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh the created/patched secret"
-  kubectl delete pod -n ${CONTROL_PLANE_NAMESPACE} --selector role=controller
+  kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
 }
 
 # Create resources required for Pub/Sub Admin setup.
@@ -90,17 +90,17 @@ function pubsub_setup() {
   # When not running on Prow we need to set up a service account for PubSub
   if (( ! IS_PROW )); then
     echo "Set up ServiceAccount for Pub/Sub Admin"
-    init_pubsub_service_account ${E2E_PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT_NON_PROW}
-    enable_monitoring ${E2E_PROJECT_ID} ${PUBSUB_SERVICE_ACCOUNT_NON_PROW}
-    gcloud iam service-accounts keys create ${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP} \
-      --iam-account=${PUBSUB_SERVICE_ACCOUNT_NON_PROW}@${E2E_PROJECT_ID}.iam.gserviceaccount.com
+    init_pubsub_service_account "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
+    enable_monitoring "${E2E_PROJECT_ID}" "${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"
+    gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
+      --iam-account="${PUBSUB_SERVICE_ACCOUNT_NON_PROW}"@"${E2E_PROJECT_ID}".iam.gserviceaccount.com
   fi
-  kubectl -n ${E2E_TEST_NAMESPACE} create secret generic ${PUBSUB_SECRET_NAME} --from-file=key.json=${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+  kubectl -n ${E2E_TEST_NAMESPACE} create secret generic "${PUBSUB_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
 }
 
 # Create resources required for GCP Broker authentication setup.
 function gcp_broker_setup() {
   echo "Authentication setup for GCP Broker"
-  kubectl -n ${CONTROL_PLANE_NAMESPACE} create secret generic ${GCP_BROKER_SECRET_NAME} --from-file=key.json=${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}
+  kubectl -n "${CONTROL_PLANE_NAMESPACE}" create secret generic "${GCP_BROKER_SECRET_NAME}" --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}"
 }
 

@@ -311,5 +311,33 @@ func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	GCPBrokerTestImpl(t, false, authConfig)
+	GCPBrokerTestImpl(t, authConfig, false /* assertMetrics */)
+}
+
+// TestCloudPubSubSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudPubSubSource.
+func TestCloudPubSubSourceWithGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	PubSubSourceWithGCPBrokerTestImpl(t, authConfig)
+}
+
+// TestCloudStorageSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudStorageSource.
+func TestCloudStorageSourceWithGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	StorageSourceWithGCPBrokerTestImpl(t, authConfig)
+}
+
+// TestCloudAuditLogsSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudAuditLogsSource.
+func TestCloudAuditLogsSourceWithGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	AuditLogsSourceBrokerWithGCPBrokerTestImpl(t, authConfig)
+}
+
+// TestCloudSchedulerSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudSchedulerSource.
+func TestCloudSchedulerSourceWithGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SchedulerSourceWithGCPBrokerTestImpl(t, authConfig)
 }

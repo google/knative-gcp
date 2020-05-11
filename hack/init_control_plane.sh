@@ -21,7 +21,7 @@ set -o errexit
 set -o nounset
 set -euo pipefail
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
 readonly CONTROL_PLANE_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
 

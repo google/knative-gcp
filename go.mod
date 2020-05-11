@@ -23,6 +23,7 @@ require (
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	google.golang.org/api v0.22.1-0.20200430202532-ac9be1f8f530
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
@@ -30,10 +31,11 @@ require (
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.14.1-0.20200506063944-e9eb527e1295
-	knative.dev/pkg v0.0.0-20200507220045-66f1d63f1019
-	knative.dev/serving v0.14.1-0.20200506171253-f2c76cb8a6dd
-	knative.dev/test-infra v0.0.0-20200506193944-431dda291f8c // indirect
+	knative.dev/eventing v0.14.1-0.20200508175545-d76621b63ac4
+	knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
+	knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
+	knative.dev/test-infra v0.0.0-20200508162345-7ee959873933 // indirect
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
@@ -69,24 +71,6 @@ replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
 replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
 
 replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
-
-replace golang.org/x/lint => golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
-
-replace golang.org/x/net => golang.org/x/net v0.0.0-20190930134127-c5a3c61f89f3
-
-replace golang.org/x/oauth2 => golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-
-replace golang.org/x/sync => golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20190927073244-c990c680b611
-
-replace golang.org/x/text => golang.org/x/text v0.3.2
-
-replace golang.org/x/time => golang.org/x/time v0.0.0-20190921001708-c4c64cad1fd0
-
-replace golang.org/x/tools => golang.org/x/tools v0.0.0-20190930152728-90aeebe84374
-
-replace golang.org/x/xerrors => golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 
 replace gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 
