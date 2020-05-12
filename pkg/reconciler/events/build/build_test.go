@@ -338,11 +338,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:             intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
-			buildLister:            listers.GetCloudBuildSourceLister(),
-			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
-			serviceAccountLister:   listers.GetServiceAccountLister(),
+			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			buildLister:          listers.GetCloudBuildSourceLister(),
+			serviceAccountLister: listers.GetServiceAccountLister(),
 		}
 		return cloudbuildsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudBuildSourceLister(), r.Recorder, r)
 	}))

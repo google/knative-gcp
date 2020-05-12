@@ -67,12 +67,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
-		channelLister:          channelInformer.Lister(),
-		topicLister:            topicInformer.Lister(),
-		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
-		serviceAccountLister:   serviceAccountInformer.Lister(),
+		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:      identity.NewIdentity(ctx, ipm),
+		channelLister: channelInformer.Lister(),
+		topicLister:   topicInformer.Lister(),
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 

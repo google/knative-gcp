@@ -21,8 +21,6 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
@@ -61,9 +59,6 @@ type Reconciler struct {
 	schedulerLister listers.CloudSchedulerSourceLister
 
 	createClientFn gscheduler.CreateFn
-
-	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.

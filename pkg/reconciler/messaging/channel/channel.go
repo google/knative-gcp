@@ -27,8 +27,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/logging"
@@ -61,11 +59,8 @@ type Reconciler struct {
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// listers index properties about resources
-	channelLister          listers.ChannelLister
-	topicLister            inteventslisters.TopicLister
-	pullSubscriptionLister inteventslisters.PullSubscriptionLister
-	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
+	channelLister listers.ChannelLister
+	topicLister   inteventslisters.TopicLister
 }
 
 // Check that our Reconciler implements Interface.

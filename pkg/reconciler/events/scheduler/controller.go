@@ -71,11 +71,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	c := &Reconciler{
-		PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx, ipm),
-		schedulerLister:      cloudschedulersourceInformer.Lister(),
-		createClientFn:       gscheduler.NewClient,
-		serviceAccountLister: serviceAccountInformer.Lister(),
+		PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		Identity:        identity.NewIdentity(ctx, ipm),
+		schedulerLister: cloudschedulersourceInformer.Lister(),
+		createClientFn:  gscheduler.NewClient,
 	}
 	impl := cloudschedulersourcereconciler.NewImpl(ctx, c)
 

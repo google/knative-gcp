@@ -532,12 +532,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
-			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetTopicLister(),
-			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
-			serviceAccountLister:   listers.GetServiceAccountLister(),
+			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			channelLister: listers.GetChannelLister(),
+			topicLister:   listers.GetTopicLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))

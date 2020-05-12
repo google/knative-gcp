@@ -30,7 +30,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
@@ -54,8 +53,6 @@ type Reconciler struct {
 	*identity.Identity
 	// buildLister for reading cloudbuildsources.
 	buildLister listers.CloudBuildSourceLister
-	// pullsubscriptionLister for reading pullsubscriptions.
-	pullsubscriptionLister inteventslisters.PullSubscriptionLister
 	// serviceAccountLister for reading serviceAccounts.
 	serviceAccountLister corev1listers.ServiceAccountLister
 }

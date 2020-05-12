@@ -71,11 +71,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx, ipm),
-		storageLister:        cloudstoragesourceInformer.Lister(),
-		createClientFn:       gstorage.NewClient,
-		serviceAccountLister: serviceAccountInformer.Lister(),
+		PubSubBase:     intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		Identity:       identity.NewIdentity(ctx, ipm),
+		storageLister:  cloudstoragesourceInformer.Lister(),
+		createClientFn: gstorage.NewClient,
 	}
 	impl := cloudstoragesourcereconciler.NewImpl(ctx, r)
 

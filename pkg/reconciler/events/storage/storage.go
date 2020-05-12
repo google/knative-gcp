@@ -24,7 +24,6 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
 
@@ -75,9 +74,6 @@ type Reconciler struct {
 	// createClientFn is the function used to create the Storage client that interacts with GCS.
 	// This is needed so that we can inject a mock client for UTs purposes.
 	createClientFn gstorage.CreateFn
-
-	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.

@@ -66,11 +66,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
-		buildLister:            cloudbuildsourceInformer.Lister(),
-		serviceAccountLister:   serviceAccountInformer.Lister(),
-		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
+		PubSubBase:           intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
+		Identity:             identity.NewIdentity(ctx, ipm),
+		buildLister:          cloudbuildsourceInformer.Lister(),
+		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
 	impl := cloudbuildsourcereconciler.NewImpl(ctx, r)
 
