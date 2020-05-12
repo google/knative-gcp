@@ -35,6 +35,7 @@ import (
 
 // SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state.
 func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -56,6 +57,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
 func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
+	t.Helper()
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
