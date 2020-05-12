@@ -28,6 +28,7 @@ import (
 	_ "knative.dev/eventing/test/test_images/transformevents"
 
 	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
+	_ "knative.dev/eventing/test/test_images/performance"
 
 	_ "github.com/google/wire/cmd/wire"
 )

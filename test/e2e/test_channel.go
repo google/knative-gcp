@@ -27,6 +27,7 @@ import (
 
 // SmokeTestChannelImpl makes sure we can run tests.
 func SmokeTestChannelImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 

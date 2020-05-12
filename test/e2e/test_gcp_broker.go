@@ -53,10 +53,10 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bo
 	if assertMetrics {
 		client.SetupStackDriverMetrics(t)
 	}
-	brokerURL, brokerName := createGCPBroker(t, client)
-	kngcphelpers.BrokerEventTransformationTestHelper(t, client, brokerURL, brokerName)
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
 	if assertMetrics {
-		lib.AssertBrokerMetrics(t, client)
+		lib.AssertBrokerMetrics(client)
 	}
 }
 
@@ -64,24 +64,24 @@ func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createGCPBroker(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTestWithPubSubSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func StorageSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createGCPBroker(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTestWithStorageSourceHelper(client, authConfig, brokerURL, brokerName)
 }
 
 func AuditLogsSourceBrokerWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createGCPBroker(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTestWithAuditLogsSourceHelper(client, authConfig, brokerURL, brokerName)
 
 }
 
@@ -89,12 +89,12 @@ func SchedulerSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfi
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	brokerURL, brokerName := createGCPBroker(t, client)
-	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(t, client, authConfig, brokerURL, brokerName)
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTestWithSchedulerSourceHelper(client, authConfig, brokerURL, brokerName)
 
 }
 
-func createGCPBroker(t *testing.T, client *lib.Client) (url.URL, string) {
+func createGCPBroker(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
 	client.Core.CreateBrokerV1Beta1OrFail(brokerName, eventingtestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
@@ -106,7 +106,7 @@ func createGCPBroker(t *testing.T, client *lib.Client) (url.URL, string) {
 	metaAddressable := eventingtestresources.NewMetaResource(brokerName, client.Namespace, eventingtestlib.BrokerTypeMeta)
 	u, err := duck.GetAddressableURI(client.Core.Dynamic, metaAddressable)
 	if err != nil {
-		t.Error(err.Error())
+		client.T.Error(err.Error())
 	}
 	return u, brokerName
 }

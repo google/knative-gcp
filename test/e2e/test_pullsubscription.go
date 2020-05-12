@@ -36,6 +36,7 @@ import (
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
 func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -63,6 +64,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 

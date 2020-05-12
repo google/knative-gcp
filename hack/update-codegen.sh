@@ -18,38 +18,37 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
 
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../../../k8s.io/code-generator)}
+CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../../../k8s.io/code-generator)}
 
-KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd ${REPO_ROOT_DIR}; ls -d -1 ./vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
+KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./vendor/knative.dev/pkg 2>/dev/null || echo ../pkg)}
 
-chmod +x ${CODEGEN_PKG}/generate-groups.sh
+chmod +x "${CODEGEN_PKG}"/generate-groups.sh
 # Only deepcopy the Duck types, as they are not real resources.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy" \
+"${CODEGEN_PKG}"/generate-groups.sh "deepcopy" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "duck:v1alpha1 duck:v1beta1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 # generate the code with:
 # --output-base    because this script should also be able to run inside the vendor dir of
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,informer,lister" \
+"${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 pubsub:v1beta1 messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 broker:v1beta1 intevents:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
-
+  --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 # Knative Injection
-chmod +x ${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh
-${KNATIVE_CODEGEN_PKG}/hack/generate-knative.sh "injection" \
+chmod +x "${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh
+"${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
   "pubsub:v1alpha1 pubsub:v1beta1 messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 duck:v1alpha1 duck:v1beta1 broker:v1beta1 intevents:v1alpha1" \
-  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt
+  --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 go install github.com/google/wire/cmd/wire
-go generate ${REPO_ROOT_DIR}/...
+go generate "${REPO_ROOT_DIR}"/...
 
 # Make sure our dependencies are up-to-date
-${REPO_ROOT_DIR}/hack/update-deps.sh
+"${REPO_ROOT_DIR}"/hack/update-deps.sh
