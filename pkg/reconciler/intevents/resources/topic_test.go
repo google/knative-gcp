@@ -26,6 +26,8 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
@@ -35,6 +37,9 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			Name:      "storage-name",
 			Namespace: "storage-namespace",
 			UID:       "storage-uid",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+			},
 		},
 		Spec: v1alpha1.CloudStorageSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -68,6 +73,9 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 			"receive-adapter": "storage.events.cloud.google.com",
 			"source":          source.Name,
 		},
+		Annotations: map[string]string{
+			duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+		},
 	}
 	got := MakeTopic(args)
 
@@ -88,6 +96,9 @@ func TestMakeTopicWithCloudStorageSource(t *testing.T) {
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+			},
 		},
 		Spec: inteventsv1alpha1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
@@ -113,6 +124,9 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			Name:      "scheduler-name",
 			Namespace: "scheduler-namespace",
 			UID:       "scheduler-uid",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+			},
 		},
 		Spec: v1alpha1.CloudSchedulerSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -145,6 +159,9 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 			"receive-adapter": "scheduler.events.cloud.google.com",
 			"source":          source.Name,
 		},
+		Annotations: map[string]string{
+			duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+		},
 	}
 	got := MakeTopic(args)
 
@@ -165,6 +182,9 @@ func TestMakeTopicWithCloudSchedulerSource(t *testing.T) {
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName,
+			},
 		},
 		Spec: inteventsv1alpha1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
