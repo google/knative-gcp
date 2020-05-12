@@ -5,7 +5,7 @@ go 1.14
 require (
 	cloud.google.com/go v0.56.0
 	cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
-	cloud.google.com/go/pubsub v1.3.2-0.20200331222814-69e77e66e597
+	cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
 	github.com/cloudevents/sdk-go v1.2.0
 	github.com/cloudevents/sdk-go/v2 v2.0.0-RC2
@@ -39,8 +39,6 @@ require (
 )
 
 replace (
-	// Remove this when https://github.com/googleapis/google-cloud-go/commit/1466466ca24673483374da05f6e333d21a1450fb is released.
-	cloud.google.com/go/pubsub => cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
 	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
