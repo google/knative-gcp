@@ -61,8 +61,21 @@ type PubSubBase struct {
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
 func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1alpha1.Topic, *inteventsv1alpha1.PullSubscription, error) {
+	t, err := psb.reconcileTopic(ctx, pubsubable, topic)
+	if err != nil {
+		return t, nil, err
+	}
+
+	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
+	if err != nil {
+		return t, ps, err
+	}
+	return t, ps, nil
+}
+
+func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSubable, topic string) (*inteventsv1alpha1.Topic, pkgreconciler.Event) {
 	if pubsubable == nil {
-		return nil, nil, fmt.Errorf("nil pubsubable passed in")
+		return nil, fmt.Errorf("nil pubsubable passed in")
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
@@ -76,7 +89,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	if err != nil {
 		if !apierrs.IsNotFound(err) {
 			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
+			return nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
 		args := &resources.TopicArgs{
 			Namespace:   namespace,
@@ -91,21 +104,16 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
+			return nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 	}
 
 	cs := pubsubable.ConditionSet()
 
 	if err := propagateTopicStatus(t, status, cs, topic); err != nil {
-		return t, nil, err
+		return t, err
 	}
-
-	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
-	if err != nil {
-		return t, ps, err
-	}
-	return t, ps, nil
+	return t, nil
 }
 
 func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*inteventsv1alpha1.PullSubscription, pkgreconciler.Event) {
