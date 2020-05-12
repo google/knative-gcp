@@ -14,25 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package intevents contains API versions for internal use by other
-// resources.
-package intevents
-
-import "k8s.io/apimachinery/pkg/runtime/schema"
-
-const (
-	GroupName = "internal.events.cloud.google.com"
-)
-
-var (
-	// PullSubscriptionsResource represents a PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
-	}
-	// TopicsResource represents a Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
-	}
-)
+// Package static implements the Pub/Sub PullSubscription controller for non-scalable PullSubscriptions.
+package static

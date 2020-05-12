@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package intevents contains API versions for internal use by other
-// resources.
 package intevents
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"testing"
 
-const (
-	GroupName = "internal.events.cloud.google.com"
+	"knative.dev/pkg/configmap"
+	logtesting "knative.dev/pkg/logging/testing"
+	. "knative.dev/pkg/reconciler/testing"
 )
 
-var (
-	// PullSubscriptionsResource represents a PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
+func TestNew(t *testing.T) {
+	defer logtesting.ClearAll()
+	ctx, _ := SetupFakeContext(t)
+
+	c := NewPubSubBase(ctx, "test-controller", "test-ra", configmap.NewStaticWatcher())
+
+	if c == nil {
+		t.Fatal("Expected NewPubSubBase to return a non-nil value")
 	}
-	// TopicsResource represents a Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
-	}
-)
+}

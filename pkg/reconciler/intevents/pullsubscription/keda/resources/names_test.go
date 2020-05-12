@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package intevents contains API versions for internal use by other
-// resources.
-package intevents
+package resources
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"testing"
 
-const (
-	GroupName = "internal.events.cloud.google.com"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	// PullSubscriptionsResource represents a PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
+func TestGenerateScaledObjectName(t *testing.T) {
+	want := "cre-so-a-uid"
+	got := GenerateScaledObjectName(&v1alpha1.PullSubscription{
+		ObjectMeta: v1.ObjectMeta{
+			UID: "a-uid",
+		},
+	})
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
-	// TopicsResource represents a Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
-	}
-)
+}

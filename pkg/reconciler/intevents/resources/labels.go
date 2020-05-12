@@ -14,25 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package intevents contains API versions for internal use by other
-// resources.
-package intevents
+package resources
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
-
-const (
-	GroupName = "internal.events.cloud.google.com"
-)
-
-var (
-	// PullSubscriptionsResource represents a PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
+func GetLabels(receiveAdapterName, source string) map[string]string {
+	return map[string]string{
+		"receive-adapter":                     receiveAdapterName,
+		"events.cloud.google.com/source-name": source,
 	}
-	// TopicsResource represents a Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
-	}
-)
+}

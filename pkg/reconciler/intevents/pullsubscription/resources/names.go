@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC
+Copyright 2019 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,25 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package intevents contains API versions for internal use by other
-// resources.
-package intevents
+package resources
 
-import "k8s.io/apimachinery/pkg/runtime/schema"
+import (
+	"fmt"
 
-const (
-	GroupName = "internal.events.cloud.google.com"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
-var (
-	// PullSubscriptionsResource represents a PullSubscription.
-	PullSubscriptionsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "pullsubscriptions",
-	}
-	// TopicsResource represents a Topic.
-	TopicsResource = schema.GroupResource{
-		Group:    GroupName,
-		Resource: "topics",
-	}
-)
+func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {
+	return fmt.Sprintf("cre-pull-%s", string(src.UID))
+}
