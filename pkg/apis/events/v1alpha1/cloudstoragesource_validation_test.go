@@ -21,7 +21,11 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -343,13 +347,24 @@ func TestSpecValidationFields(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudStorageSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudStorageSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: storageSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Bucket changed": {
 			orig: &storageSourceSpec,
@@ -453,7 +468,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudStorageSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudStorageSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudStorageSourceSpec); ok {
 					orig = &CloudStorageSource{
 						Spec: *spec,
@@ -461,6 +482,9 @@ func TestCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudStorageSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

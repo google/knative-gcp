@@ -20,12 +20,15 @@ import (
 	"context"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (t *Topic) SetDefaults(ctx context.Context) {
 	t.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
 
 func (ts *TopicSpec) SetDefaults(ctx context.Context) {

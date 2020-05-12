@@ -18,10 +18,12 @@ package main
 
 import (
 	"github.com/google/knative-gcp/pkg/broker/ingress"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
+
 	"go.uber.org/zap"
 )
 
@@ -50,7 +52,7 @@ func main() {
 	defer res.Cleanup()
 	logger := res.Logger
 
-	projectID, err := utils.ProjectID(env.ProjectID)
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Desugar().Fatal("Failed to create project id", zap.Error(err))
 	}

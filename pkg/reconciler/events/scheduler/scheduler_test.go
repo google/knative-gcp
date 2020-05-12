@@ -35,17 +35,19 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
+	. "knative.dev/pkg/reconciler/testing"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"google.golang.org/grpc/codes"
-	gstatus "google.golang.org/grpc/status"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -163,6 +165,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -174,6 +179,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
@@ -186,6 +194,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": schedulerName,
+				}),
+				WithTopicAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -404,6 +415,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicReady(testTopicID),
@@ -421,6 +435,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
 			}},
@@ -437,7 +454,8 @@ func TestAllCases(t *testing.T) {
 						"receive-adapter":                     receiveAdapterName,
 						"events.cloud.google.com/source-name": schedulerName}),
 					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group": resourceGroup,
+						"metrics-resource-group":           resourceGroup,
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
@@ -969,8 +987,11 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123"),
+					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 				),
 				newSink(),
 			},
@@ -984,14 +1005,17 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudSchedulerSourceDeletionTimestamp,
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-					WithCloudSchedulerSourceServiceAccountName("test123"),
-					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
 				),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 		}}
 

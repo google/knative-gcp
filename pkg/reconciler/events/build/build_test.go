@@ -35,14 +35,16 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	. "knative.dev/pkg/reconciler/testing"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -149,6 +151,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceObjectMetaGeneration(generation),
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 				),
 				newSink(),
 			},
@@ -161,6 +166,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourceObjectMetaGeneration(generation),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 				),
 			}},
@@ -178,7 +186,8 @@ func TestAllCases(t *testing.T) {
 						"events.cloud.google.com/source-name": buildName,
 					}),
 					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group": resourceGroup,
+						"metrics-resource-group":           resourceGroup,
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
@@ -314,7 +323,10 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceDeletionTimestamp,
 					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123"),
+					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 				),
 				newSink(),
 			},
@@ -325,13 +337,16 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 					WithCloudBuildSourceDeletionTimestamp,
-					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithCloudBuildSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
 					WithCloudBuildSourceGCPServiceAccount(gServiceAccount),
-					WithCloudBuildSourceServiceAccountName("test123"),
+					WithCloudBuildSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithCloudBuildSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 				),
 			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudBuildSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 		}}
 

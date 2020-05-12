@@ -179,3 +179,9 @@ func WithTopicFinalizers(finalizers ...string) TopicOption {
 		s.Finalizers = finalizers
 	}
 }
+
+func WithTopicAnnotations(annotations map[string]string) TopicOption {
+	return func(c *v1alpha1.Topic) {
+		c.ObjectMeta.Annotations = annotations
+	}
+}

@@ -27,6 +27,7 @@ import (
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
@@ -175,7 +176,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 }
 
 func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
-	projectID, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return nil, err
 	}

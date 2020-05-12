@@ -164,3 +164,9 @@ func WithPubSubTopicDeprecated() PubSubTopicOption {
 		t.Status.MarkDeprecated()
 	}
 }
+
+func WithPubSubTopicAnnotations(annotations map[string]string) PubSubTopicOption {
+	return func(c *v1alpha1.Topic) {
+		c.ObjectMeta.Annotations = annotations
+	}
+}

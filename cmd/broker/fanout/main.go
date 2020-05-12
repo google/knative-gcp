@@ -21,11 +21,14 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
+
 	"go.uber.org/zap"
 )
 
@@ -58,7 +61,7 @@ func main() {
 
 	logger.Info("Starting the broker fanout")
 
-	projectID, err := utils.ProjectID(env.ProjectID)
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Fatalf("failed to get default ProjectID: %v", err)
 	}

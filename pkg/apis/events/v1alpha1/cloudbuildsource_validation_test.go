@@ -20,7 +20,11 @@ import (
 	"context"
 	"testing"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -199,13 +203,24 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 
 func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudBuildSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudBuildSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: buildSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Secret.Name changed": {
 			orig: &buildSourceSpec,
@@ -424,7 +439,13 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudBuildSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudBuildSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudBuildSourceSpec); ok {
 					orig = &CloudBuildSource{
 						Spec: *spec,
@@ -432,6 +453,9 @@ func TestCloudBuildSourceCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudBuildSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

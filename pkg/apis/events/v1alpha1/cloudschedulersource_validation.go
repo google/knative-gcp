@@ -21,10 +21,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (current *CloudSchedulerSource) Validate(ctx context.Context) *apis.FieldError {
@@ -68,15 +70,17 @@ func (current *CloudSchedulerSource) CheckImmutableFields(ctx context.Context, o
 	if original == nil {
 		return nil
 	}
+	var errs *apis.FieldError
 	// Modification of Location, Schedule, Data, Secret, ServiceAccount, Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudSchedulerSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

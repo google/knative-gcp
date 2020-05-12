@@ -32,6 +32,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
@@ -153,6 +154,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		subDeletes = append(subDeletes, e)
 	}
 
+	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	for _, s := range subCreates {
 		genName := resources.GenerateSubscriptionName(s.UID)
 
@@ -164,7 +166,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			ServiceAccount: channel.Spec.GoogleServiceAccount,
 			Secret:         channel.Spec.Secret,
 			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
 			Subscriber:     s,
 		})
 		ps, err := r.RunClientSet.InternalV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -199,7 +201,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			ServiceAccount: channel.Spec.GoogleServiceAccount,
 			Secret:         channel.Spec.Secret,
 			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
 			Subscriber:     s,
 		})
 
@@ -305,6 +307,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		}
 		return topic, nil
 	}
+	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	t := resources.MakeTopic(&resources.TopicArgs{
 		Owner:          channel,
 		Name:           resources.GeneratePublisherName(channel),
@@ -313,6 +316,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		Secret:         channel.Spec.Secret,
 		Topic:          resources.GenerateTopicID(channel.UID),
 		Labels:         resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Annotations:    resources.GetTopicAnnotations(clusterName),
 	})
 
 	topic, err = r.RunClientSet.InternalV1alpha1().Topics(channel.Namespace).Create(t)

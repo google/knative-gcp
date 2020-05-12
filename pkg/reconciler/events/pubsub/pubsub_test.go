@@ -35,14 +35,16 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	. "knative.dev/pkg/reconciler/testing"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -147,6 +149,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -159,6 +164,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
@@ -177,7 +185,8 @@ func TestAllCases(t *testing.T) {
 					"events.cloud.google.com/source-name": pubsubName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":           resourceGroup,
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -313,7 +322,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123"),
+				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -324,13 +336,16 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
-				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-				WithCloudPubSubSourceServiceAccountName("test123"),
+				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 		},
 	}}
 

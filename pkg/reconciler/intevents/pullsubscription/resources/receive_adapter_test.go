@@ -21,8 +21,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -345,7 +348,8 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 			Name:      "source-name",
 			Namespace: "source-namespace",
 			Annotations: map[string]string{
-				"metrics-resource-group": "test-resource-group",
+				"metrics-resource-group":           "test-resource-group",
+				duckv1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			},
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
@@ -423,7 +427,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "test",
+					ServiceAccountName: "test-fake-cluster-name",
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",

@@ -21,7 +21,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"knative.dev/pkg/apis"
@@ -50,12 +53,22 @@ func TestChannelValidation(t *testing.T) {
 	}{{
 		name: "empty",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{},
 		},
 		want: nil,
 	}, {
 		name: "valid subscribers array",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -68,6 +81,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "empty subscriber at index 1",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -84,6 +102,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "2 empty subscribers",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{}, {}},
@@ -103,6 +126,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "nil secret",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -115,6 +143,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "invalid GCP service account",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					GoogleServiceAccount: invalidServiceAccountName,
@@ -136,6 +169,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "valid GCP service account",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					GoogleServiceAccount: validServiceAccountName,
@@ -151,6 +189,11 @@ func TestChannelValidation(t *testing.T) {
 	}, {
 		name: "have GCP service account and secret at the same time",
 		cr: &Channel{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					GoogleServiceAccount: validServiceAccountName,
@@ -183,9 +226,11 @@ func TestChannelValidation(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated ChannelSpec
-		allowed bool
+		orig              interface{}
+		updated           ChannelSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: ChannelSpec{},
@@ -206,7 +251,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *Channel
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &Channel{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*ChannelSpec); ok {
 					orig = &Channel{
 						Spec: *spec,
@@ -214,6 +265,9 @@ func TestCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &Channel{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)
