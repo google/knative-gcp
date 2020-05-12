@@ -186,3 +186,9 @@ func WithChannelLabels(labels map[string]string) ChannelOption {
 		c.ObjectMeta.Labels = labels
 	}
 }
+
+func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.ObjectMeta.Annotations = Annotations
+	}
+}

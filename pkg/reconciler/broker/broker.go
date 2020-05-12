@@ -26,14 +26,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/gogo/protobuf/proto"
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -51,6 +43,16 @@ import (
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
@@ -216,7 +218,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
@@ -323,7 +325,7 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	logger.Debug("Deleting decoupling topic")
 
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err

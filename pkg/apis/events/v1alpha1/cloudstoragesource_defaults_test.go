@@ -21,11 +21,15 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestCloudStorageSource_SetDefaults(t *testing.T) {
+func TestCloudStorageSourceSpec_SetDefaults(t *testing.T) {
 	testCases := map[string]struct {
 		orig     *CloudStorageSourceSpec
 		expected *CloudStorageSourceSpec
@@ -64,6 +68,97 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 							Name: "secret-name",
 						},
 						Key: "secret-key.json",
+					},
+				},
+			},
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			tc.orig.SetDefaults(context.Background())
+			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
+	}
+}
+
+func TestCloudStorageSource_SetDefaults(t *testing.T) {
+	testCases := map[string]struct {
+		orig     *CloudStorageSource
+		expected *CloudStorageSource
+	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
+		"missing defaults, except cluster name annotations": {
+			orig: &CloudStorageSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+			},
+			expected: &CloudStorageSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: CloudStorageSourceSpec{
+					EventTypes: []string{
+						"com.google.cloud.storage.object.finalize",
+						"com.google.cloud.storage.object.delete",
+						"com.google.cloud.storage.object.archive",
+						"com.google.cloud.storage.object.metadataUpdate",
+					},
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "google-cloud-key",
+							},
+							Key: "key.json",
+						},
+					},
+				},
+			},
+		},
+		"defaults present": {
+			orig: &CloudStorageSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: CloudStorageSourceSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "secret-name",
+							},
+							Key: "secret-key.json",
+						},
+					},
+				},
+			},
+			expected: &CloudStorageSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: CloudStorageSourceSpec{
+					EventTypes: []string{
+						"com.google.cloud.storage.object.finalize",
+						"com.google.cloud.storage.object.delete",
+						"com.google.cloud.storage.object.archive",
+						"com.google.cloud.storage.object.metadataUpdate",
+					},
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "secret-name",
+							},
+							Key: "secret-key.json",
+						},
 					},
 				},
 			},

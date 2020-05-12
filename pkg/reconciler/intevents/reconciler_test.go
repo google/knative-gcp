@@ -32,9 +32,11 @@ import (
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	fakePubsubClient "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	testingmetadata "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	rectesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -100,6 +102,9 @@ func TestCreates(t *testing.T) {
 				"receive-adapter":                     receiveAdapterName,
 				"events.cloud.google.com/source-name": name,
 			}),
+			rectesting.WithTopicAnnotations(map[string]string{
+				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
 		expectedPS:  nil,
@@ -113,6 +118,9 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithTopicAnnotations(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
@@ -296,6 +304,9 @@ func TestCreates(t *testing.T) {
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": name,
 				}),
+				rectesting.WithTopicAnnotations(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				}),
 				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				rectesting.WithTopicProjectID(testProjectID),
 				rectesting.WithTopicReady(testTopicID),
@@ -311,6 +322,9 @@ func TestCreates(t *testing.T) {
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
 				"events.cloud.google.com/source-name": name,
+			}),
+			rectesting.WithTopicAnnotations(map[string]string{
+				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			rectesting.WithTopicReady(testTopicID),
@@ -330,7 +344,8 @@ func TestCreates(t *testing.T) {
 				"events.cloud.google.com/source-name": name,
 			}),
 			rectesting.WithPullSubscriptionAnnotations(map[string]string{
-				"metrics-resource-group": resourceGroup,
+				"metrics-resource-group":       resourceGroup,
+				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 			}),
 			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 		),
@@ -348,7 +363,8 @@ func TestCreates(t *testing.T) {
 					"events.cloud.google.com/source-name": name,
 				}),
 				rectesting.WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+					"metrics-resource-group":       resourceGroup,
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
 				}),
 				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),

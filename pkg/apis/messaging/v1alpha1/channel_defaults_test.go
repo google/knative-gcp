@@ -22,6 +22,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestChannelDefaults(t *testing.T) {
@@ -29,13 +32,21 @@ func TestChannelDefaults(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Annotations: map[string]string{
 				"messaging.knative.dev/subscribable": "v1alpha1",
+				duckv1alpha1.ClusterNameAnnotation:   testingMetadataClient.FakeClusterName,
 			},
 		},
 		Spec: ChannelSpec{
 			Secret: defaultSecretSelector(),
 		}}
 
-	got := &Channel{Spec: ChannelSpec{}}
+	got := &Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
+		Spec: ChannelSpec{},
+	}
 	got.SetDefaults(context.Background())
 
 	if diff := cmp.Diff(want, got); diff != "" {

@@ -45,6 +45,7 @@ import (
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/pubsub/v1alpha1/pullsubscription"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
@@ -508,6 +509,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubPullSubscriptionDeprecated(),
 				WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
 				WithPubSubPullSubscriptionMarkSink(sinkURI),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 			newSecret(),
@@ -545,6 +549,9 @@ func TestAllCases(t *testing.T) {
 				WithPubSubPullSubscriptionMarkSink(sinkURI),
 				WithPubSubPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
 				WithPubSubPullSubscriptionTransformerURI(nil),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				// Updates
 				WithPubSubPullSubscriptionStatusObservedGeneration(generation),
 				WithPubSubPullSubscriptionMarkSubscribed(testSubscriptionID),
@@ -568,6 +575,9 @@ func TestAllCases(t *testing.T) {
 					Topic: testTopicID,
 				}),
 				WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 			newSecret(),
@@ -599,6 +609,9 @@ func TestAllCases(t *testing.T) {
 					},
 					Topic: testTopicID,
 				}),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithPubSubInitPullSubscriptionConditions,
 				WithPubSubPullSubscriptionDeprecated(),
 				WithPubSubPullSubscriptionProjectID(testProject),
@@ -623,6 +636,9 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					},
 					Topic: testTopicID,
+				}),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
 				WithPubSubPullSubscriptionTransformer(transformerGVK, transformerName),
@@ -666,6 +682,9 @@ func TestAllCases(t *testing.T) {
 						Project: testProject,
 					},
 					Topic: testTopicID,
+				}),
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPubSubInitPullSubscriptionConditions,
 				WithPubSubPullSubscriptionDeprecated(),
@@ -804,7 +823,11 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 				Project: testProject,
 			},
 			Topic: testTopicID,
-		}))
+		}),
+		WithPubSubPullSubscriptionAnnotations(map[string]string{
+			duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+		}),
+	)
 	args := &resources.ReceiveAdapterArgs{
 		Image:          image,
 		Source:         source,

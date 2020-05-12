@@ -36,13 +36,16 @@ import (
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
+	. "knative.dev/pkg/reconciler/testing"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -121,6 +124,9 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithChannelDefaults,
+				WithChannelAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 		},
 		Key: testNS + "/" + channelName,
@@ -140,6 +146,9 @@ func TestAllCases(t *testing.T) {
 				WithInitChannelConditions,
 				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicID(testTopicID),
+				WithChannelAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithChannelTopicUnknown("TopicNotConfigured", "Topic has not yet been reconciled"),
 			),
 		}},
@@ -506,12 +515,15 @@ func TestAllCases(t *testing.T) {
 					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDefaults,
 					WithChannelDeletionTimestamp,
-					WithChannelServiceAccountName("test123"),
+					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithChannelAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
 				),
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed",
+					`Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -522,9 +534,12 @@ func TestAllCases(t *testing.T) {
 					WithInitChannelConditions,
 					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDefaults,
-					WithChannelServiceAccountName("test123"),
+					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 					WithChannelDeletionTimestamp,
-					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed",
+						`serviceaccounts "test123-fake-cluster-name" not found`),
+					WithChannelAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
 				),
 			}},
 		}}
@@ -561,6 +576,9 @@ func newTopic() *pubsubv1alpha1.Topic {
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Annotations: map[string]string{
+			duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+		},
 	})
 }
 
@@ -602,7 +620,7 @@ func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channe
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
 		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
-		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
+		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})
 }

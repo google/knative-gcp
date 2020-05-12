@@ -66,6 +66,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 	}
 	namespace := pubsubable.GetObjectMeta().GetNamespace()
 	name := pubsubable.GetObjectMeta().GetName()
+	annotations := pubsubable.GetObjectMeta().GetAnnotations()
 	spec := pubsubable.PubSubSpec()
 	status := pubsubable.PubSubStatus()
 
@@ -78,12 +79,13 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
 		args := &resources.TopicArgs{
-			Namespace: namespace,
-			Name:      name,
-			Spec:      spec,
-			Owner:     pubsubable,
-			Topic:     topic,
-			Labels:    resources.GetLabels(psb.receiveAdapterName, name),
+			Namespace:   namespace,
+			Name:        name,
+			Spec:        spec,
+			Owner:       pubsubable,
+			Topic:       topic,
+			Labels:      resources.GetLabels(psb.receiveAdapterName, name),
+			Annotations: annotations,
 		}
 		newTopic := resources.MakeTopic(args)
 		t, err = topics.Create(newTopic)

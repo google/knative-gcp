@@ -24,6 +24,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -37,6 +39,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 	}{{
 		name: "defaults present",
 		start: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
@@ -50,6 +57,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 		},
 		want: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: &corev1.SecretKeySelector{
@@ -63,12 +75,22 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 		},
 	}, {
-		name: "missing defaults",
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
+		name: "missing defaults, except cluster name annotations",
 		start: &CloudBuildSource{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       CloudBuildSourceSpec{},
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			Spec: CloudBuildSourceSpec{},
 		},
 		want: &CloudBuildSource{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
@@ -92,6 +114,11 @@ func TestBuildSourceDefaults(t *testing.T) {
 
 func TestCloudBuildSourceDefaults_NoChange(t *testing.T) {
 	want := &CloudBuildSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
 		Spec: CloudBuildSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{

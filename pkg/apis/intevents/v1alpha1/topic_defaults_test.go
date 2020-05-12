@@ -22,20 +22,36 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 func TestTopicDefaults(t *testing.T) {
-	want := &Topic{Spec: TopicSpec{
-		PropagationPolicy: TopicPolicyCreateNoDelete,
-		Secret: &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "google-cloud-key",
+	want := &Topic{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			},
-			Key: "key.json",
 		},
-	}}
+		Spec: TopicSpec{
+			PropagationPolicy: TopicPolicyCreateNoDelete,
+			Secret: &corev1.SecretKeySelector{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: "google-cloud-key",
+				},
+				Key: "key.json",
+			},
+		}}
 
-	got := &Topic{Spec: TopicSpec{}}
+	got := &Topic{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
+		Spec: TopicSpec{}}
 	got.SetDefaults(context.Background())
 
 	if diff := cmp.Diff(want, got); diff != "" {

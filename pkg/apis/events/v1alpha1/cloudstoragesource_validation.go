@@ -19,10 +19,11 @@ package v1alpha1
 import (
 	"context"
 
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -59,15 +60,17 @@ func (current *CloudStorageSource) CheckImmutableFields(ctx context.Context, ori
 	if original == nil {
 		return nil
 	}
+	var errs *apis.FieldError
 	// Modification of EventType, Secret, ServiceAccount, Project, Bucket, ObjectNamePrefix and PayloadFormat are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudStorageSourceSpec{},
 			"Sink", "CloudEventOverrides", "ServiceAccountName")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

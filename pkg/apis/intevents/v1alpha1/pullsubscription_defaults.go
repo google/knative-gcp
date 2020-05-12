@@ -21,6 +21,8 @@ import (
 	"time"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/ptr"
@@ -33,6 +35,7 @@ const (
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
 	s.Spec.SetDefaults(ctx)
+	duckv1alpha1.SetClusterNameAnnotation(&s.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
