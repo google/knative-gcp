@@ -113,6 +113,14 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	if err := propagateTopicStatus(t, status, cs, topic); err != nil {
 		return t, err
 	}
+
+	if t.Status.IsReady() {
+		err := psb.deleteOldPubSubTopicCO(ctx, pubsubable, t)
+		if err != nil {
+			return t, err
+		}
+	}
+
 	return t, nil
 }
 
@@ -165,7 +173,51 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	}
 
 	status.SinkURI = ps.Status.SinkURI
+
+	if ps.Status.IsReady() {
+		err = psb.deleteOldPubSubPullSubscriptionCO(ctx, pubsubable, ps)
+		if err != nil {
+			return ps, err
+		}
+	}
+
 	return ps, nil
+}
+
+func (psb *PubSubBase) deleteOldPubSubTopicCO(_ context.Context, pubsubable duck.PubSubable, t *inteventsv1alpha1.Topic) pkgreconciler.Event {
+	oldT, err := psb.pubsubClient.PubsubV1alpha1().Topics(t.Namespace).Get(t.Name, v1.GetOptions{})
+	if apierrs.IsNotFound(err) {
+		// It doesn't exist, so there is nothing to delete.
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("unable to get old Topic in the `pubsub.events.cloud.google.com` API group: %w", err)
+	}
+	if !v1.IsControlledBy(oldT, pubsubable.GetObjectMeta()) {
+		return fmt.Errorf("old Topic in the `pubsub.events.cloud.google.com` API group is not owned by this pubsubable, so won't be deleted. Actual owners: %v", oldT.OwnerReferences)
+	}
+	err = psb.pubsubClient.PubsubV1alpha1().Topics(oldT.Namespace).Delete(oldT.Name, nil)
+	if err != nil {
+		return fmt.Errorf("unable to delete old Topic in the `pubsub.events.cloud.google.com` API group: %w", err)
+	}
+	return nil
+}
+
+func (psb *PubSubBase) deleteOldPubSubPullSubscriptionCO(_ context.Context, pubsubable duck.PubSubable, ps *inteventsv1alpha1.PullSubscription) pkgreconciler.Event {
+	oldPS, err := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(ps.Namespace).Get(ps.Name, v1.GetOptions{})
+	if apierrs.IsNotFound(err) {
+		// It doesn't exist, so there is nothing to delete.
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("unable to get old PullSubscription in the `pubsub.events.cloud.google.com` API group: %w", err)
+	}
+	if !v1.IsControlledBy(oldPS, pubsubable.GetObjectMeta()) {
+		return fmt.Errorf("old PullSubscription in the `pubsub.events.cloud.google.com` API group is not owned by this pubsubable, so won't be deleted. Actual owners: %v", oldPS.OwnerReferences)
+	}
+	err = psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(oldPS.Namespace).Delete(oldPS.Name, nil)
+	if err != nil {
+		return fmt.Errorf("unable to delete old PullSubscription in the `pubsub.events.cloud.google.com` API group: %w", err)
+	}
+	return nil
 }
 
 func propagatePullSubscriptionStatus(ps *inteventsv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
