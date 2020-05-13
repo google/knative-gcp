@@ -18,17 +18,19 @@ package filter
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/extensions"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/logging"
+	kntracing "knative.dev/eventing/pkg/tracing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	"github.com/google/knative-gcp/pkg/tracing"
 )
 
 // Processor is the processor to filter events based on trigger filters.
@@ -55,10 +57,24 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		return nil
 	}
 
+	trigger := types.NamespacedName{
+		Namespace: target.Namespace,
+		Name:      target.Name,
+	}
+	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		var span *trace.Span
-		ctx, span = dt.StartChildSpan(ctx, fmt.Sprintf("trigger:%s.%s", target.Name, target.Namespace))
-		defer span.End()
+		ctx, span = dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+	} else {
+		ctx, span = trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+	}
+	defer span.End()
+	if span.IsRecordingEvents() {
+		span.AddAttributes(
+			kntracing.MessagingSystemAttribute,
+			tracing.PubSubProtocolAttribute,
+			kntracing.TriggerMessagingDestinationAttribute(trigger),
+			kntracing.MessagingMessageIDAttribute(event.ID()),
+		)
 	}
 
 	if target.FilterAttributes == nil {
