@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/kmeta"
 
@@ -24,6 +25,9 @@ import (
 )
 
 type Identifiable interface {
+	// runtime.Object can be removed once the old Topic and PullSubscription are removed.
+	runtime.Object
+
 	kmeta.OwnerRefable
 	// IdentitySpec returns the IdentitySpec portion of the Spec.
 	IdentitySpec() *duckv1alpha1.IdentitySpec
