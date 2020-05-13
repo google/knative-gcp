@@ -68,8 +68,6 @@ replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
 
 replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
 
-replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
-
 replace gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 
 replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
