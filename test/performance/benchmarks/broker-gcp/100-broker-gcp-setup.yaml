@@ -65,3 +65,26 @@ spec:
       port: 10000
       targetPort: grpc
       protocol: TCP
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perf-gcpbroker
+  namespace: default
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perf-gcpbroker
+subjects:
+  - kind: ServiceAccount
+    name: perf-gcpbroker
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

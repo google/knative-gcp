@@ -29,6 +29,7 @@ import (
 
 	_ "knative.dev/pkg/testutils/clustermanager/perf-tests"
 	_ "knative.dev/eventing/test/test_images/performance"
+	_ "knative.dev/pkg/test/mako/stub-sidecar"
 
 	_ "github.com/google/wire/cmd/wire"
 )

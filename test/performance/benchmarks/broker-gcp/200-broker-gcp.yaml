@@ -31,12 +31,13 @@ spec:
         role: broker-gcp-receiver
     spec:
       restartPolicy: Never
+      serviceAccountName: perf-gcpbroker
       containers:
       - name: sender-receiver
         image: ko://knative.dev/eventing/test/test_images/performance
         args:
           - "--roles=sender,receiver"
-          - "--sink=http://gcp-broker"
+          - "--sink=http://broker-ingress.cloud-run-events/default/gcp"
           - "--aggregator=broker-gcp-aggregator:10000"
           - "--pace=100:10,200:20,400:30,500:60,600:60"
         env:
@@ -57,6 +58,7 @@ spec:
         ports:
           - name: cloudevents
             containerPort: 8080
+        terminationMessagePolicy: FallbackToLogsOnError
 
 ---
 
@@ -69,6 +71,7 @@ metadata:
     role: broker-gcp-aggregator
 spec:
   restartPolicy: Never
+  serviceAccountName: perf-gcpbroker
   containers:
   - name: aggregator
     image: ko://knative.dev/eventing/test/test_images/performance
@@ -103,4 +106,4 @@ spec:
   - name: config-mako
     configMap:
       name: config-mako
-      
+
