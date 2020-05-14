@@ -61,12 +61,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		Namespace: target.Namespace,
 		Name:      target.Name,
 	}
-	var span *trace.Span
-	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		ctx, span = dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
-	} else {
-		ctx, span = trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
-	}
+	ctx, span := startSpan(ctx, trigger, event)
 	defer span.End()
 	if span.IsRecordingEvents() {
 		span.AddAttributes(
@@ -86,6 +81,14 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 	logging.FromContext(ctx).Debug("event does not pass filter for target", zap.Any("target", target))
 	return nil
+}
+
+func startSpan(ctx context.Context, trigger types.NamespacedName, event *event.Event) (context.Context, *trace.Span) {
+	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
+		return dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+	} else {
+		return trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+	}
 }
 
 func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, event *event.Event) bool {
