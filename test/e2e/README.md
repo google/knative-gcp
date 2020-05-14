@@ -47,7 +47,7 @@ There are two ways to set up authentication mechanism.
     --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
     export GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json
     ```
-1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md#deployment).
+1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md).
 1.  [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md)
     installed.
 1.  [CloudSchedulerSource Prerequisites](../../docs/examples/cloudschedulersource/README.md#prerequisites).
