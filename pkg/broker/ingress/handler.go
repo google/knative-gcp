@@ -38,8 +38,6 @@ import (
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
 	kntracing "knative.dev/eventing/pkg/tracing"
-
-	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
