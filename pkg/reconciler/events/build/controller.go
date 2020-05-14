@@ -23,13 +23,13 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudbuildsourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudbuildsource"
-	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
+	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
 	cloudbuildsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
 
 const (
@@ -66,11 +66,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
-		buildLister:            cloudbuildsourceInformer.Lister(),
-		serviceAccountLister:   serviceAccountInformer.Lister(),
-		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
+		PubSubBase:           intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudBuildConverter, cmw),
+		Identity:             identity.NewIdentity(ctx, ipm),
+		buildLister:          cloudbuildsourceInformer.Lister(),
+		serviceAccountLister: serviceAccountInformer.Lister(),
 	}
 	impl := cloudbuildsourcereconciler.NewImpl(ctx, r)
 

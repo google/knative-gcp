@@ -24,8 +24,8 @@ import (
 	"knative.dev/eventing/test/lib/resources"
 
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func (c *Client) CreateUnstructuredObjOrFail(spec *unstructured.Unstructured) {
@@ -83,9 +83,9 @@ func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.CloudStorageSource)
 	c.Tracker.AddObj(storage)
 }
 
-func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *pubsubv1alpha1.PullSubscription) {
+func (c *Client) CreatePullSubscriptionOrFail(pullsubscription *inteventsv1alpha1.PullSubscription) {
 	c.T.Helper()
-	pullsubscriptions := c.KnativeGCP.PubsubV1alpha1().PullSubscriptions(c.Namespace)
+	pullsubscriptions := c.KnativeGCP.InternalV1alpha1().PullSubscriptions(c.Namespace)
 	_, err := pullsubscriptions.Create(pullsubscription)
 	if err != nil {
 		c.T.Fatalf("Failed to create pullsubscription %s/%s: %v", c.Namespace, pullsubscription.Name, err)

@@ -25,7 +25,7 @@ import (
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
