@@ -165,6 +165,7 @@ function storage_admin_set_up() {
 
   curl -s -X GET -H "Authorization: Bearer \`GOOGLE_APPLICATION_CREDENTIALS=${pubsub_service_account_key_temp} gcloud auth application-default print-access-token\`" \
     "https://www.googleapis.com/storage/v1/projects/${project_id}/serviceAccount"
+  local project_number="$(gcloud projects describe ${project_id} --format="value(projectNumber)")"
   gcloud projects add-iam-policy-binding "${project_id}" \
     --member="serviceAccount:service-${project_number}@gs-project-accounts.iam.gserviceaccount.com" \
     --role roles/pubsub.publisher
