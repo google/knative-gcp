@@ -30,26 +30,24 @@ knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 There are two ways to set up authentication mechanism.
 
-- If you want to run E2E tests with authentication mechanism using
-  **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**,
-  please follow below instructions to configure the authentication mechanism
-  with **[Workload
-  Identity]**(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
-  **[Workload
-  Identity]**(https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)
-  is GKE specific.
-- If you want to run E2E tests with authentication mechanism using **Kubernetes
-  Secrets**, please follow below instructions to configure the authentication
-  mechanism with **Kubernetes Secrets**.
+- (GKE Specific) If you want to run E2E tests with **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**
+  as the authentication mechanism, please follow below instructions to configure the authentication mechanism
+  with **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**.
+- If you want to run E2E tests with **Kubernetes Secrets** as the authentication mechanism, please
+  follow below instructions to configure the authentication mechanism with **Kubernetes Secrets**.
 
 1.  A running Kubernetes cluster with
     [knative-gcp](../../docs/install/install-knative-gcp.md) installed and
     configured.
-1.  [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md)
-    installed.
-1.  [GCP Broker Deployment](../../docs/install/install-gcp-broker.md#deployment)
-    and
-    [GCP Broker Authentication Setup](../../docs/install/install-gcp-broker.md#authentication-setup-for-gcp-broker).
+1.  Create a [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md).
+    Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var. This is used by
+    some tests(e.g., `TestSmokePullSubscription`) to authorize the Google SDK clients.
+    ```
+    gcloud iam service-accounts keys create cre-pubsub.json \
+    --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    export GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json
+    ```
+1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md#deployment).
 1.  [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md)
     installed.
 1.  [CloudSchedulerSource Prerequisites](../../docs/examples/cloudschedulersource/README.md#prerequisites).
@@ -115,9 +113,11 @@ E2E_PROJECT_ID=<project name> \
 
 ### Running E2E tests with authentication mechanism using Workload Identity.
 
-`-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
-where `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the
+Add ` -workloadIndentity=true` and `-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
+to the `go test` command, where `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the
 Pub/Sub enabled Google Cloud Service Account.
+
+For example,
 
 ```shell
 E2E_PROJECT_ID=<project name> go test --tags=e2e \
@@ -126,32 +126,7 @@ E2E_PROJECT_ID=<project name> go test --tags=e2e \
   ./test/e2e/...
 ```
 
-And count is supported too:
 
-```shell
-E2E_PROJECT_ID=<project name> go test --tags=e2e \
-  -workloadIndentity=true \
-  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
-  ./test/e2e/... --count=3
-```
-
-If you want to run a specific test:
-
-```shell
-E2E_PROJECT_ID=<project name> go test --tags=e2e \
-  -workloadIndentity=true \
-  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
-  ./test/e2e/... -run NameOfTest
-```
-
-For example, to run TestPullSubscription:
-
-```shell
-E2E_PROJECT_ID=<project name> go test --tags=e2e \
-  -workloadIndentity=true \
-  -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
-  ./test/e2e/... -run TestPullSubscription
-```
 
 ## Running E2E Tests on an new cluster
 

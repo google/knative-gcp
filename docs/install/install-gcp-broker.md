@@ -11,14 +11,6 @@ for GCP broker and how is it different from the channel based broker.
 
 2. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
 
-## Deployment
-
-Apply GCP broker yamls:
-
-```shell
-ko apply -f ./config/broker/
-```
-
 ## Authentication Setup for GCP Broker
 
 ### Option 1: Use Workload Identity
@@ -76,12 +68,21 @@ Workload Identity see
 
    `google-broker-key` and `key.json` are default values expected by our
    resources.
+   
+## Deployment
+
+Apply GCP broker yamls:
+
+```shell
+ko apply -f ./config/broker/
+```
 
 ## Usage
 
 ```shell
 export NAMESPACE=cloud-run-events-example
 export BROKER=test-broker
+kubectl create namespace ${NAMESPACE}
 ```
 
 1. Create a New GCP Broker
@@ -91,9 +92,9 @@ export BROKER=test-broker
    apiVersion: eventing.knative.dev/v1beta1
    kind: Broker
    metadata:
-   name: ${BROKER}
-   namespace: ${NAMESPACE}
-   annotations:
+     name: ${BROKER}
+     namespace: ${NAMESPACE}
+     annotations:
        "eventing.knative.dev/broker.class": "googlecloud"
    END
    ```
