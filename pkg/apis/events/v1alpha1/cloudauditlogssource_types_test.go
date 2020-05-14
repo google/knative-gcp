@@ -88,16 +88,31 @@ func TestCloudAuditLogsSourceEventID(t *testing.T) {
 	}
 }
 
-func TestCloudAuditLogsSourceGetIdentity(t *testing.T) {
+func TestCloudAuditLogsSourceIdentitySpec(t *testing.T) {
 	s := &CloudAuditLogsSource{
 		Spec: CloudAuditLogsSourceSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
-				ServiceAccount: "test@test",
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: "test@test",
+				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.GetIdentity()
+	got := s.IdentitySpec().GoogleServiceAccount
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudAuditLogsSourceIdentityStatus(t *testing.T) {
+	s := &CloudAuditLogsSource{
+		Status: CloudAuditLogsSourceStatus{
+			PubSubStatus: duckv1alpha1.PubSubStatus{},
+		},
+	}
+	want := &duckv1alpha1.IdentityStatus{}
+	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

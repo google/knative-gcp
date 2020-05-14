@@ -16,48 +16,75 @@ limitations under the License.
 
 syntax = "proto3";
 package config;
+option go_package="github.com/google/knative-gcp/pkg/broker/config";
+
+// The state of the object.
+// We may add additional intermediate states if needed.
+enum State {
+  UNKNOWN = 0;
+  READY = 1;
+}
+
+// A pubsub "queue".
+message Queue {
+  string topic = 1;
+  string subscription = 2;
+}
+
+// Represents a broker.
+message Broker {
+  // The id of the object. E.g. UID of the resource.
+  string id = 1;
+
+  // The name of the object.
+  string name = 2;
+
+  // The namespace of the object.
+  string namespace = 3;
+
+  // The broker address.
+  // Will we have more than one address?
+  string address = 4;
+
+  // The decouple queue for the broker.
+  Queue decouple_queue = 5;
+
+  // All targets of the broker.
+  map<string, Target> targets = 6;
+
+  // The broker state.
+  State state = 7;
+}
 
 // Target defines the config schema for a broker subscription target.
 message Target {
-  // The id of the target. E.g. UID of the trigger resource.
+  // The id of the object. E.g. UID of the resource.
   string id = 1;
 
-  // The name of the target.
+  // The name of the object.
   string name = 2;
 
-  // The namespace of the target.
+  // The namespace of the object.
   string namespace = 3;
 
+  // The broker name that the trigger is referencing.
+  string broker = 4;
+
   // The resolved subscriber URI of the target.
-  string subscriber_uri = 4;
+  string address = 5;
 
   // Optional filters from the trigger.
-  map<string, string> filter_attributes = 5;
+  map<string, string> filter_attributes = 6;
 
-  // The state of the target.
-  // We may add additional intermediate states if needed.
-  enum State {
-    UNKNOWN = 0;
-    READY = 1;
-  }
-  State state = 6;
+  // The retry queue for the target.
+  Queue retry_queue = 7;
 
-  // The Pubsub topic name for retrying the events.
-  string retry_topic = 7;
-
-  // The Pubsub subscription name for retrying the events.
-  string retry_subscription = 8;
-
-  // The broker name that the trigger is referencing.
-  string broker = 9;
-}
-
-// NamespacedTargets is the collection of targets grouped by namespaces.
-message NamespacedTargets {
-  map<string, Target> names = 1;
+  // The target state.
+  State state = 8;
 }
 
 // TargetsConfig is the collection of all Targets.
 message TargetsConfig {
-  map<string, NamespacedTargets> namespaces = 1;
+  // Keybed by broker namespace/name.
+  map<string, Broker> brokers = 1;
 }

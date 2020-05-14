@@ -66,6 +66,7 @@ rules:
     - cloudstoragesources
     - cloudschedulersources
     - cloudpubsubsources
+    - cloudbuildsources
   verbs: *everything
 
 - apiGroups:
@@ -75,6 +76,7 @@ rules:
     - cloudstoragesources/status
     - cloudschedulersources/status
     - cloudpubsubsources/status
+    - cloudbuildsources/status
   verbs:
     - get
     - update
@@ -104,14 +106,15 @@ rules:
   resources:
     - services
     - serviceaccounts
+    - pods # For updating pod annotation to trigger configmap mount refresh.
   verbs: *everything
 
 - apiGroups:
     - ""
   resources:
     - configmaps
-    - pods # For reading termination messages
     - secrets
+    - endpoints
   verbs: &readOnly
     - get
     - list
@@ -125,9 +128,19 @@ rules:
     - patch
 
 - apiGroups:
+    - internal.events.cloud.google.com
+  resources:
+    - brokercells
+    - brokercells/status
+  verbs: *everything
+
+- apiGroups:
     - eventing.knative.dev
   resources:
-    - eventtypes
+    - brokers
+    - brokers/status
+    - triggers
+    - triggers/status
   verbs: *everything
 
 - apiGroups:
@@ -160,6 +173,7 @@ rules:
       - "cloudpubsubsources"
       - "cloudauditlogssources"
       - "cloudschedulersources"
+      - "cloudbuildsources"
     verbs:
       - get
       - list

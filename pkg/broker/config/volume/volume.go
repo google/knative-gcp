@@ -23,40 +23,31 @@ import (
 	"path/filepath"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
 	defaultPath = "/var/run/cloud-run-events/broker/targets"
 )
 
-// Targets implements config.ReadOnlyTargets with data
+// Targets implements config.ReadonlyTargets with data
 // loaded from a file.
 // It also watches the file for any changes and will automatically
 // refresh the in memory cache.
 type Targets struct {
-	config.BaseTargets
-	path string
+	config.CachedTargets
+	path       string
+	notifyChan chan<- struct{}
 }
 
-var _ config.ReadOnlyTargets = (*Targets)(nil)
-
-// Option is the option to load targets.
-type Option func(*Targets)
-
-// WithPath is the option to load targets from the given path.
-func WithPath(path string) Option {
-	return func(t *Targets) {
-		t.path = path
-	}
-}
+var _ config.ReadonlyTargets = (*Targets)(nil)
 
 // NewTargetsFromFile initializes the targets config from a file.
-func NewTargetsFromFile(opts ...Option) (config.ReadOnlyTargets, error) {
+func NewTargetsFromFile(opts ...Option) (config.ReadonlyTargets, error) {
 	t := &Targets{
-		BaseTargets: config.BaseTargets{},
-		path:        defaultPath,
+		CachedTargets: config.CachedTargets{},
+		path:          defaultPath,
 	}
 
 	for _, opt := range opts {
@@ -72,15 +63,19 @@ func NewTargetsFromFile(opts ...Option) (config.ReadOnlyTargets, error) {
 		return nil, err
 	}
 
-	t.watchWith(watcher)
+	if err := t.watchWith(watcher); err != nil {
+		return nil, err
+	}
 	return t, nil
 }
 
-func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
+func (t *Targets) watchWith(watcher *fsnotify.Watcher) error {
 	configFile := filepath.Clean(t.path)
 	configDir, _ := filepath.Split(t.path)
 	realConfigFile, _ := filepath.EvalSymlinks(t.path)
-	watcher.Add(configDir)
+	if err := watcher.Add(configDir); err != nil {
+		return err
+	}
 
 	go func() {
 		defer watcher.Close()
@@ -102,10 +97,10 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 					realConfigFile = currentConfigFile
 					if err := t.sync(); err != nil {
 						log.Printf("error syncing config: %v\n", err)
+					} else if t.notifyChan != nil {
+						// File got updated and notify the external channel.
+						t.notifyChan <- struct{}{}
 					}
-				} else if filepath.Clean(event.Name) == configFile &&
-					event.Op&fsnotify.Remove != 0 {
-					return
 				}
 
 			case err, ok := <-watcher.Errors:
@@ -116,6 +111,7 @@ func (t *Targets) watchWith(watcher *fsnotify.Watcher) {
 			}
 		}
 	}()
+	return nil
 }
 
 func (t *Targets) sync() error {
@@ -124,12 +120,12 @@ func (t *Targets) sync() error {
 		return fmt.Errorf("failed to read config file: %w", err)
 	}
 
-	var cfg config.TargetsConfig
-	if err := proto.Unmarshal(b, &cfg); err != nil {
+	var val config.TargetsConfig
+	if err := proto.Unmarshal(b, &val); err != nil {
 		return fmt.Errorf("failed to unmarshal config file: %w", err)
 	}
 
-	t.Internal.Store(&cfg)
+	t.Store(&val)
 	return nil
 }
 

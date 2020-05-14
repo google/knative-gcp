@@ -20,9 +20,12 @@ import (
 	"testing"
 	"time"
 
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -88,6 +91,64 @@ func TestGetRetentionDuration_default(t *testing.T) {
 	got := s.GetRetentionDuration()
 
 	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionIdentitySpec(t *testing.T) {
+	s := &PullSubscription{
+		Spec: PullSubscriptionSpec{
+			PubSubSpec: v1alpha1.PubSubSpec{
+				IdentitySpec: v1alpha1.IdentitySpec{
+					GoogleServiceAccount: "test@test",
+				},
+			},
+		},
+	}
+	want := "test@test"
+	got := s.IdentitySpec().GoogleServiceAccount
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionIdentityStatus(t *testing.T) {
+	s := &PullSubscription{
+		Status: PullSubscriptionStatus{
+			PubSubStatus: v1alpha1.PubSubStatus{
+				IdentityStatus: v1alpha1.IdentityStatus{},
+			},
+		},
+	}
+	want := &v1alpha1.IdentityStatus{}
+	got := s.IdentityStatus()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestPullSubscriptionConditionSet(t *testing.T) {
+	want := []apis.Condition{{
+		Type: PullSubscriptionConditionSinkProvided,
+	}, {
+		Type: PullSubscriptionConditionDeployed,
+	}, {
+		Type: PullSubscriptionConditionSubscribed,
+	}, {
+		Type: apis.ConditionReady,
+	}}
+	c := &PullSubscription{}
+
+	c.ConditionSet().Manage(&c.Status).InitializeConditions()
+	var got []apis.Condition = c.Status.GetConditions()
+
+	compareConditionTypes := cmp.Transformer("ConditionType", func(c apis.Condition) apis.ConditionType {
+		return c.Type
+	})
+	sortConditionTypes := cmpopts.SortSlices(func(a, b apis.Condition) bool {
+		return a.Type < b.Type
+	})
+	if diff := cmp.Diff(want, got, sortConditionTypes, compareConditionTypes); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
 }

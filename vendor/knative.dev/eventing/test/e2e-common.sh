@@ -16,6 +16,8 @@
 
 # This script includes common functions for testing setup and teardown.
 
+export GO111MODULE=on
+
 source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
 
 # If gcloud is not available make it a no-op, not an error.
@@ -35,9 +37,11 @@ readonly IN_MEMORY_CHANNEL_CRD_CONFIG_DIR="config/channels/in-memory-channel"
 
 # MT Channel Based Broker config.
 readonly MT_CHANNEL_BASED_BROKER_CONFIG_DIR="config/brokers/mt-channel-broker"
+# MT Channel Based Broker config.
+readonly MT_CHANNEL_BASED_BROKER_DEFAULT_CONFIG="test/config/mt-channel-broker.yaml"
 
 # Channel Based Broker Controller.
-readonly CHANNEL_BASED_BROKER_CONTROLLER="config/500-broker-controller.yaml"
+readonly CHANNEL_BASED_BROKER_CONTROLLER="config/brokers/channel-broker"
 
 # Setup the Knative environment for running tests. This installs
 # Everything from the config dir but then removes the Channel Based Broker.
@@ -48,10 +52,6 @@ function knative_setup() {
   echo "Installing Knative Eventing"
   ko apply --strict -f ${EVENTING_CONFIG} || return 1
 
-  # Remove the Channel Based Broker so it will not interfere with other tests later
-  echo "Uninstalling Channel Based Broker Controller"
-  uninstall_broker || fail_test "Could not uninstall Channel Based Broker"
-
   wait_until_pods_running knative-eventing || fail_test "Knative Eventing did not come up"
 
   echo "Installing Knative Monitoring"
@@ -60,10 +60,14 @@ function knative_setup() {
 
 function install_broker() {
   ko apply --strict -f ${CHANNEL_BASED_BROKER_CONTROLLER} || return 1
+  wait_until_pods_running knative-eventing || fail_test "Knative Eventing with Broker did not come up"
 }
 
 function install_mt_broker() {
+  ko apply --strict -f ${MT_CHANNEL_BASED_BROKER_DEFAULT_CONFIG} || return 1
   ko apply --strict -f ${MT_CHANNEL_BASED_BROKER_CONFIG_DIR} || return 1
+  wait_until_pods_running knative-eventing || return 1
+  kubectl -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running knative-eventing || fail_test "Knative Eventing with MT Broker did not come up"
 }
 

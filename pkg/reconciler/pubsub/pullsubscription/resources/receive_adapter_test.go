@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,14 +37,16 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 			Namespace: "source-namespace",
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
-			Project: "eventing-name",
-			Topic:   "topic",
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
 				},
-				Key: "eventing-secret-key",
+				Project: "eventing-name",
 			},
+			Topic: "topic",
 		},
 	}
 
@@ -182,22 +185,24 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 			},
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
-			Project:     "eventing-name",
-			Topic:       "topic",
-			AdapterType: "adapter-type",
-			SourceSpec: duckv1.SourceSpec{
-				CloudEventOverrides: &duckv1.CloudEventOverrides{
-					Extensions: map[string]string{
-						"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
+				},
+				Project: "eventing-name",
+				SourceSpec: duckv1.SourceSpec{
+					CloudEventOverrides: &duckv1.CloudEventOverrides{
+						Extensions: map[string]string{
+							"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+						},
 					},
 				},
 			},
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
-				},
-				Key: "eventing-secret-key",
-			},
+			Topic:       "topic",
+			AdapterType: "adapter-type",
 		},
 	}
 
@@ -340,21 +345,32 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 			Name:      "source-name",
 			Namespace: "source-namespace",
 			Annotations: map[string]string{
-				"metrics-resource-group": "test-resource-group",
+				"metrics-resource-group":           "test-resource-group",
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
 			},
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
-			Project:     "eventing-name",
-			Topic:       "topic",
-			AdapterType: "adapter-type",
-			SourceSpec: duckv1.SourceSpec{
-				CloudEventOverrides: &duckv1.CloudEventOverrides{
-					Extensions: map[string]string{
-						"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: gServiceAccountName,
+				},
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
+				},
+				Project: "eventing-name",
+				SourceSpec: duckv1.SourceSpec{
+					CloudEventOverrides: &duckv1.CloudEventOverrides{
+						Extensions: map[string]string{
+							"foo": "bar", // base64 value is eyJmb28iOiJiYXIifQ==
+						},
 					},
 				},
 			},
-			ServiceAccount: gServiceAccountName,
+			Topic:       "topic",
+			AdapterType: "adapter-type",
 		},
 	}
 
@@ -408,7 +424,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "test",
+					ServiceAccountName: "test-cluster",
 					Containers: []corev1.Container{{
 						Name:  "receive-adapter",
 						Image: "test-image",

@@ -23,6 +23,7 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 
+	gcpduckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -45,10 +46,15 @@ type PullSubscriptionArgs struct {
 func MakePullSubscription(args *PullSubscriptionArgs) *v1alpha1.PullSubscription {
 
 	spec := v1alpha1.PullSubscriptionSpec{
-		ServiceAccount: args.ServiceAccount,
-		Secret:         args.Secret,
-		Project:        args.Project,
-		Topic:          args.Topic,
+		PubSubSpec: gcpduckv1alpha1.PubSubSpec{
+			SourceSpec: duckv1.SourceSpec{},
+			IdentitySpec: gcpduckv1alpha1.IdentitySpec{
+				GoogleServiceAccount: args.ServiceAccount,
+			},
+			Secret:  args.Secret,
+			Project: args.Project,
+		},
+		Topic: args.Topic,
 	}
 
 	reply := args.Subscriber.ReplyURI

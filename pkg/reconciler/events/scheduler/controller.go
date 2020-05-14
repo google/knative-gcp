@@ -22,6 +22,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	"k8s.io/client-go/tools/cache"
 	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
@@ -53,7 +54,17 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	return newControllerWithIAMPolicyManager(
+		ctx,
+		cmw,
+		iam.DefaultIAMPolicyManager())
+}
 
+func newControllerWithIAMPolicyManager(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	ipm iam.IAMPolicyManager,
+) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
 	cloudschedulersourceInformer := cloudschedulersourceinformers.Get(ctx)
@@ -61,7 +72,7 @@ func NewController(
 
 	c := &Reconciler{
 		PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:             identity.NewIdentity(ctx),
+		Identity:             identity.NewIdentity(ctx, ipm),
 		schedulerLister:      cloudschedulersourceInformer.Lister(),
 		createClientFn:       gscheduler.NewClient,
 		serviceAccountLister: serviceAccountInformer.Lister(),

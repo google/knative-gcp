@@ -79,7 +79,7 @@ func WithCloudSchedulerSourceSchedule(schedule string) CloudSchedulerSourceOptio
 
 func WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount string) CloudSchedulerSourceOption {
 	return func(ps *v1alpha1.CloudSchedulerSource) {
-		ps.Spec.ServiceAccount = gServiceAccount
+		ps.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -99,11 +99,24 @@ func WithInitCloudSchedulerSourceConditions(s *v1alpha1.CloudSchedulerSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudSchedulerSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudSchedulerSourceServiceAccountName(name string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
+func WithCloudSchedulerSourceWorkloadIdentityFailed(reason, message string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 // WithCloudSchedulerSourceTopicFailed marks the condition that the
 // status of topic is False.
 func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkTopicFailed(reason, message)
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -111,7 +124,7 @@ func WithCloudSchedulerSourceTopicFailed(reason, message string) CloudSchedulerS
 // status of topic is Unknown.
 func WithCloudSchedulerSourceTopicUnknown(reason, message string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkTopicUnknown(reason, message)
+		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -119,7 +132,9 @@ func WithCloudSchedulerSourceTopicUnknown(reason, message string) CloudScheduler
 // topic is not ready.
 func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkTopicReady(topicID, projectID)
+		s.Status.MarkTopicReady(s.ConditionSet())
+		s.Status.TopicID = topicID
+		s.Status.ProjectID = projectID
 	}
 }
 
@@ -127,7 +142,7 @@ func WithCloudSchedulerSourceTopicReady(topicID, projectID string) CloudSchedule
 // topic is False.
 func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkPullSubscriptionFailed(reason, message)
+		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -135,7 +150,7 @@ func WithCloudSchedulerSourcePullSubscriptionFailed(reason, message string) Clou
 // topic is Unknown.
 func WithCloudSchedulerSourcePullSubscriptionUnknown(reason, message string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkPullSubscriptionUnknown(reason, message)
+		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -143,7 +158,7 @@ func WithCloudSchedulerSourcePullSubscriptionUnknown(reason, message string) Clo
 // topic is ready.
 func WithCloudSchedulerSourcePullSubscriptionReady() CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 	}
 }
 
@@ -180,5 +195,11 @@ func WithCloudSchedulerSourceJobName(jobName string) CloudSchedulerSourceOption 
 func WithCloudSchedulerSourceFinalizers(finalizers ...string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Finalizers = finalizers
+	}
+}
+
+func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.ObjectMeta.Annotations = Annotations
 	}
 }

@@ -42,7 +42,8 @@ import (
 )
 
 // Setup runs the Setup in the common eventing test framework.
-func Setup(t *testing.T, runInParallel bool) *Client {
+func Setup(t *testing.T, runInParallel, workloadIdentity bool) *Client {
+	t.Helper()
 	client, err := newClient(pkgTest.Flags.Kubeconfig, pkgTest.Flags.Cluster)
 	if err != nil {
 		t.Fatalf("Failed to initialize client for Knative GCP: %v", err)
@@ -53,7 +54,7 @@ func Setup(t *testing.T, runInParallel bool) *Client {
 	client.Namespace = coreClient.Namespace
 	client.Tracker = coreClient.Tracker
 	client.T = t
-	DuplicatePubSubSecret(coreClient)
+	GetCredential(coreClient, workloadIdentity)
 	return client
 }
 
@@ -72,6 +73,7 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 
 // TearDown runs the TearDown in the common eventing test framework.
 func TearDown(client *Client) {
+	client.T.Helper()
 	lib.TearDown(client.Core)
 }
 
@@ -88,6 +90,7 @@ type Client struct {
 var setStackDriverConfigOnce = sync.Once{}
 
 func (c *Client) SetupStackDriverMetrics(t *testing.T) {
+	t.Helper()
 	setStackDriverConfigOnce.Do(func() {
 		err := c.Core.Kube.UpdateConfigMap("cloud-run-events", "config-observability", map[string]string{
 			"metrics.allow-stackdriver-custom-metrics":     "true",
@@ -98,6 +101,12 @@ func (c *Client) SetupStackDriverMetrics(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Unable to set the ConfigMap: %v", err)
 		}
+	})
+	_ = c.Core.CreateConfigMapOrFail("eventing-config-observability", c.Namespace, map[string]string{
+		"metrics.allow-stackdriver-custom-metrics":     "true",
+		"metrics.backend-destination":                  "stackdriver",
+		"metrics.stackdriver-custom-metrics-subdomain": "cloud.google.com",
+		"metrics.reporting-period-seconds":             "60",
 	})
 }
 

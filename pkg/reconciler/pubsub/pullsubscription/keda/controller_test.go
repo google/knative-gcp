@@ -20,6 +20,8 @@ import (
 	"os"
 	"testing"
 
+	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
+
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -36,6 +38,7 @@ import (
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
 	_ "knative.dev/pkg/injection/clients/dynamicclient/fake"
 
 	// Why is serving needed here?
@@ -50,7 +53,7 @@ func TestNew(t *testing.T) {
 
 	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
 
-	c := NewController(ctx, configmap.NewStaticWatcher(
+	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -72,9 +75,10 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	))
+	),
+		iamtesting.NoopIAMPolicyManager)
 
 	if c == nil {
-		t.Fatal("Expected NewController to return a non-nil value")
+		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")
 	}
 }

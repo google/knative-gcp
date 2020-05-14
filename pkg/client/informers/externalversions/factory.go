@@ -24,11 +24,12 @@ import (
 	time "time"
 
 	versioned "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	broker "github.com/google/knative-gcp/pkg/client/informers/externalversions/broker"
 	events "github.com/google/knative-gcp/pkg/client/informers/externalversions/events"
 	internalinterfaces "github.com/google/knative-gcp/pkg/client/informers/externalversions/internalinterfaces"
+	intevents "github.com/google/knative-gcp/pkg/client/informers/externalversions/intevents"
 	messaging "github.com/google/knative-gcp/pkg/client/informers/externalversions/messaging"
 	pubsub "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub"
-	security "github.com/google/knative-gcp/pkg/client/informers/externalversions/security"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -175,14 +176,23 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
+	Eventing() broker.Interface
 	Events() events.Interface
+	Internal() intevents.Interface
 	Messaging() messaging.Interface
 	Pubsub() pubsub.Interface
-	Security() security.Interface
+}
+
+func (f *sharedInformerFactory) Eventing() broker.Interface {
+	return broker.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Events() events.Interface {
 	return events.New(f, f.namespace, f.tweakListOptions)
+}
+
+func (f *sharedInformerFactory) Internal() intevents.Interface {
+	return intevents.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Messaging() messaging.Interface {
@@ -191,8 +201,4 @@ func (f *sharedInformerFactory) Messaging() messaging.Interface {
 
 func (f *sharedInformerFactory) Pubsub() pubsub.Interface {
 	return pubsub.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Security() security.Interface {
-	return security.New(f, f.namespace, f.tweakListOptions)
 }

@@ -86,3 +86,8 @@ func (s *pubsubSubscription) Update(ctx context.Context, cfg SubscriptionConfig)
 func (s *pubsubSubscription) Delete(ctx context.Context) error {
 	return s.sub.Delete(ctx)
 }
+
+// ID implements pubsub.Subscription.ID
+func (s *pubsubSubscription) ID() string {
+	return s.sub.ID()
+}

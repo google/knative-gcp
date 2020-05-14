@@ -8,10 +8,18 @@ scheduled events from
 
 ## Prerequisites
 
-1. [Install Knative-GCP](../../install/install-knative-gcp.md). Note that your
-   project needs to be created with an App Engine application. Refer to this
+1. [Install Knative-GCP](../../install/install-knative-gcp.md).
+
+1. Create with an App Engine application in your project. Refer to this
    [guide](https://cloud.google.com/scheduler/docs/quickstart#create_a_project_with_an_app_engine_app)
-   for more details.
+   for more details. You can change the APP_ENGINE_LOCATION, but please make
+   sure you also update the spec.location in
+   [`CloudSchedulerSource`](cloudschedulersource.yaml)
+
+   ```shell
+   export APP_ENGINE_LOCATION=us-central
+   gcloud app create --region=$APP_ENGINE_LOCATION
+   ```
 
 1. [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md)
 
@@ -27,7 +35,7 @@ scheduled events from
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
-      update `serviceAccount` with the Pub/Sub enabled service account you
+      update `googleServiceAccount` with the Pub/Sub enabled service account you
       created in
       [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md).
 
@@ -86,12 +94,16 @@ Data,
 
 ## What's Next
 
+1. For more details on Cloud Pub/Sub formats refer to the
+   [Subscriber overview guide](https://cloud.google.com/pubsub/docs/subscriber).
 1. For integrating with Cloud Pub/Sub, see the
    [PubSub example](../../examples/cloudpubsubsource/README.md).
 1. For integrating with Cloud Storage see the
    [Storage example](../../examples/cloudstoragesource/README.md).
 1. For integrating with Cloud Audit Logs see the
    [Cloud Audit Logs example](../../examples/cloudauditlogssource/README.md).
+1. For integrating with Cloud Build see the
+   [Build example](../../examples/cloudbuildsource/README.md).
 1. For more information about CloudEvents, see the
    [HTTP transport bindings documentation](https://github.com/cloudevents/spec).
 

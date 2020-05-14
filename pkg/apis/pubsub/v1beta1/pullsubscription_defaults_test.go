@@ -1,0 +1,1 @@
+../../intevents/v1beta1/pullsubscription_defaults_test.go

@@ -20,9 +20,18 @@ import (
 	"context"
 
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
+	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/messaging"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
@@ -36,6 +45,7 @@ import (
 	"knative.dev/pkg/webhook/certificates"
 	"knative.dev/pkg/webhook/configmaps"
 	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook/resourcesemantics/conversion"
 	"knative.dev/pkg/webhook/resourcesemantics/defaulting"
 	"knative.dev/pkg/webhook/resourcesemantics/validation"
 )
@@ -49,13 +59,18 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudSchedulerSource"): &eventsv1alpha1.CloudSchedulerSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
+	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1alpha1.CloudBuildSource{},
+
+	// For group internal.events.cloud.google.com.
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
 
 	// For group pubsub.cloud.google.com.
 	pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
 	pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 }
 
-func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
 		return ctx
@@ -80,7 +95,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 	)
 }
 
-func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+func NewValidationAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return validation.NewAdmissionController(ctx,
 
 		// Name of the validation webhook.
@@ -103,7 +118,7 @@ func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher
 	)
 }
 
-func NewConfigValidationController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
 	return configmaps.NewAdmissionController(ctx,
 
 		// Name of the configmap webhook.
@@ -122,6 +137,107 @@ func NewConfigValidationController(ctx context.Context, cmw configmap.Watcher) *
 	)
 }
 
+func NewConversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+	var (
+		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
+		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
+		messagingv1alpha1_ = messagingv1alpha1.SchemeGroupVersion.Version
+		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
+		pubsubv1alpha1_    = pubsubv1alpha1.SchemeGroupVersion.Version
+		pubsubv1beta1_     = pubsubv1beta1.SchemeGroupVersion.Version
+		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
+		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
+	)
+
+	return conversion.NewConversionController(ctx,
+		// The path on which to serve the webhook
+		"/resource-conversion",
+
+		// Specify the types of custom resource definitions that should be converted
+		map[schema.GroupKind]conversion.GroupKindConversion{
+			// events
+			eventsv1alpha1.Kind("CloudAuditLogsSource"): {
+				DefinitionName: events.CloudAuditLogsSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudAuditLogsSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudAuditLogsSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudPubSubSource"): {
+				DefinitionName: events.CloudPubSubSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudPubSubSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudPubSubSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudSchedulerSource"): {
+				DefinitionName: events.CloudSchedulerSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudSchedulerSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudSchedulerSource{},
+				},
+			},
+			eventsv1alpha1.Kind("CloudStorageSource"): {
+				DefinitionName: events.CloudStorageSourcesResource.String(),
+				HubVersion:     eventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					eventsv1alpha1_: &eventsv1alpha1.CloudStorageSource{},
+					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
+				},
+			},
+			// intevents
+			inteventsv1alpha1.Kind("PullSubscription"): {
+				DefinitionName: intevents.PullSubscriptionsResource.String(),
+				HubVersion:     inteventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					inteventsv1alpha1_: &inteventsv1alpha1.PullSubscription{},
+					inteventsv1beta1_:  &inteventsv1beta1.PullSubscription{},
+				},
+			},
+			inteventsv1alpha1.Kind("Topic"): {
+				DefinitionName: intevents.TopicsResource.String(),
+				HubVersion:     inteventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					inteventsv1alpha1_: &inteventsv1alpha1.Topic{},
+					inteventsv1beta1_:  &inteventsv1beta1.Topic{},
+				},
+			},
+			// messaging
+			messagingv1alpha1.Kind("Channel"): {
+				DefinitionName: messaging.ChannelsResource.String(),
+				HubVersion:     messagingv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					messagingv1alpha1_: &messagingv1alpha1.Channel{},
+					messagingv1beta1_:  &messagingv1beta1.Channel{},
+				},
+			},
+			// pubsub
+			pubsubv1beta1.Kind("PullSubscription"): {
+				DefinitionName: pubsub.PullSubscriptionsResource.String(),
+				HubVersion:     pubsubv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					pubsubv1alpha1_: &pubsubv1alpha1.PullSubscription{},
+					pubsubv1beta1_:  &pubsubv1beta1.PullSubscription{},
+				},
+			},
+			pubsubv1beta1.Kind("Topic"): {
+				DefinitionName: pubsub.TopicsResource.String(),
+				HubVersion:     pubsubv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					pubsubv1alpha1_: &pubsubv1alpha1.Topic{},
+					pubsubv1beta1_:  &pubsubv1beta1.Topic{},
+				},
+			},
+		},
+		// We don't want to alter the incoming context, so just pass it as-is.
+		func(ctx context.Context) context.Context {
+			return ctx
+		},
+	)
+}
 func main() {
 	// Set up a signal context with our webhook options
 	ctx := webhook.WithOptions(signals.NewContext(), webhook.Options{
@@ -136,5 +252,6 @@ func main() {
 		NewConfigValidationController,
 		NewValidationAdmissionController,
 		NewDefaultingAdmissionController,
+		NewConversionController,
 	)
 }

@@ -1,0 +1,178 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  labels:
+    duck.knative.dev/source: "true"
+    events.cloud.google.com/release: devel
+    events.cloud.google.com/crd-install: "true"
+  annotations:
+    registry.knative.dev/eventTypes: |
+      [
+        { "type": "com.google.cloud.build.event", "description": "This event is sent when your build's state changes, such as when your build is created, when your build transitions to a working state, and when your build completes."}
+      ]
+  name: cloudbuildsources.events.cloud.google.com
+spec:
+  group: events.cloud.google.com
+  version: v1alpha1
+  names:
+    categories:
+      - all
+      - knative
+      - cloudbuildsource
+      - sources
+    kind: CloudBuildSource
+    plural: cloudbuildsources
+  scope: Namespaced
+  subresources:
+    status: {}
+  preserveUnknownFields: false
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+  validation:
+    openAPIV3Schema:
+      type: object
+      properties:
+        spec:
+          type: object
+          required:
+            - sink
+          properties:
+            sink:
+              type: object
+              description: >
+                Sink which receives the notifications.
+              properties:
+                uri:
+                  type: string
+                  minLength: 1
+                ref:
+                  type: object
+                  required:
+                    - apiVersion
+                    - kind
+                    - name
+                  properties:
+                    apiVersion:
+                      type: string
+                      minLength: 1
+                    kind:
+                      type: string
+                      minLength: 1
+                    namespace:
+                      type: string
+                    name:
+                      type: string
+                      minLength: 1
+            ceOverrides:
+              type: object
+              description: >
+                Defines overrides to control modifications of the event sent to the sink.
+              properties:
+                extensions:
+                  type: object
+                  description: >
+                    Extensions specify what attribute are added or overridden on the outbound event. Each
+                    `Extensions` key-value pair are set on the event as an attribute extension independently.
+                  x-kubernetes-preserve-unknown-fields: true
+            googleServiceAccount:
+              type: string
+              description: >
+                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                account must be a valid Google service account (see
+                https://cloud.google.com/iam/docs/service-accounts).
+            secret:
+              type: object
+              description: >
+                Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the
+                Subscription, only to poll it. The value of the secret entry must be a service account key in
+                the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys).
+                Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'.
+              properties:
+                name:
+                  type: string
+                key:
+                  type: string
+                optional:
+                  type: boolean
+            project:
+              type: string
+              description: >
+                Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                the Project ID from the GKE cluster metadata service.
+            topic:
+              type: string
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be `cloud-builds` if
+                specified. Defaults to `cloud-builds`.
+        status:
+          type: object
+          properties:
+            observedGeneration:
+              type: integer
+              format: int64
+            conditions:
+              type: array
+              items:
+                type: object
+                properties:
+                  lastTransitionTime:
+                    # We use a string in the stored object but a wrapper object at runtime.
+                    type: string
+                  message:
+                    type: string
+                  reason:
+                    type: string
+                  severity:
+                    type: string
+                  status:
+                    type: string
+                  type:
+                    type: string
+                required:
+                  - type
+                  - status
+            serviceAccountName:
+              type: string
+            sinkUri:
+              type: string
+            ceAttributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  source:
+                    type: string
+            projectId:
+              type: string
+            topicId:
+              type: string
+            subscriptionId:
+              type: string

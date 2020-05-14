@@ -24,6 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 )
@@ -70,8 +71,9 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 	}
 
 	// If GCP service account is specified, use that service account as credential.
-	if args.Topic.Spec.ServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.ServiceAccount)
+	if args.Topic.Spec.GoogleServiceAccount != "" {
+		clusterName := args.Topic.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.GoogleServiceAccount, clusterName)
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{

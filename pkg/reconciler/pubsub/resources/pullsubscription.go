@@ -49,15 +49,19 @@ func MakePullSubscription(args *PullSubscriptionArgs) *pubsubv1alpha1.PullSubscr
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			ServiceAccount: args.Spec.ServiceAccount,
-			Secret:         args.Spec.Secret,
-			Project:        args.Spec.Project,
-			Topic:          args.Topic,
-			AdapterType:    args.AdapterType,
-			Mode:           args.Mode,
-			SourceSpec: duckv1.SourceSpec{
-				Sink: args.Spec.SourceSpec.Sink,
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: args.Spec.IdentitySpec.GoogleServiceAccount,
+				},
+				Secret:  args.Spec.Secret,
+				Project: args.Spec.Project,
+				SourceSpec: duckv1.SourceSpec{
+					Sink: args.Spec.SourceSpec.Sink,
+				},
 			},
+			Topic:       args.Topic,
+			AdapterType: args.AdapterType,
+			Mode:        args.Mode,
 		},
 	}
 	if args.Spec.CloudEventOverrides != nil && args.Spec.CloudEventOverrides.Extensions != nil {

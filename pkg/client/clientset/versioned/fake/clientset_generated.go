@@ -20,14 +20,22 @@ package fake
 
 import (
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
+	eventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1"
+	fakeeventingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/broker/v1beta1/fake"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	fakeeventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1/fake"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
+	fakeeventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1/fake"
+	internalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1"
+	fakeinternalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1/fake"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
 	fakemessagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1"
+	fakemessagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1/fake"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
 	fakepubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
-	securityv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/security/v1alpha1"
-	fakesecurityv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/security/v1alpha1/fake"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1"
+	fakepubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -82,9 +90,24 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 
 var _ clientset.Interface = &Clientset{}
 
+// EventingV1beta1 retrieves the EventingV1beta1Client
+func (c *Clientset) EventingV1beta1() eventingv1beta1.EventingV1beta1Interface {
+	return &fakeeventingv1beta1.FakeEventingV1beta1{Fake: &c.Fake}
+}
+
 // EventsV1alpha1 retrieves the EventsV1alpha1Client
 func (c *Clientset) EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface {
 	return &fakeeventsv1alpha1.FakeEventsV1alpha1{Fake: &c.Fake}
+}
+
+// EventsV1beta1 retrieves the EventsV1beta1Client
+func (c *Clientset) EventsV1beta1() eventsv1beta1.EventsV1beta1Interface {
+	return &fakeeventsv1beta1.FakeEventsV1beta1{Fake: &c.Fake}
+}
+
+// InternalV1alpha1 retrieves the InternalV1alpha1Client
+func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface {
+	return &fakeinternalv1alpha1.FakeInternalV1alpha1{Fake: &c.Fake}
 }
 
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
@@ -92,12 +115,17 @@ func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Inter
 	return &fakemessagingv1alpha1.FakeMessagingV1alpha1{Fake: &c.Fake}
 }
 
+// MessagingV1beta1 retrieves the MessagingV1beta1Client
+func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
+	return &fakemessagingv1beta1.FakeMessagingV1beta1{Fake: &c.Fake}
+}
+
 // PubsubV1alpha1 retrieves the PubsubV1alpha1Client
 func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
 	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
 }
 
-// SecurityV1alpha1 retrieves the SecurityV1alpha1Client
-func (c *Clientset) SecurityV1alpha1() securityv1alpha1.SecurityV1alpha1Interface {
-	return &fakesecurityv1alpha1.FakeSecurityV1alpha1{Fake: &c.Fake}
+// PubsubV1beta1 retrieves the PubsubV1beta1Client
+func (c *Clientset) PubsubV1beta1() pubsubv1beta1.PubsubV1beta1Interface {
+	return &fakepubsubv1beta1.FakePubsubV1beta1{Fake: &c.Fake}
 }

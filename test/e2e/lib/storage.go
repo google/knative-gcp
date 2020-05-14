@@ -29,11 +29,13 @@ import (
 )
 
 func MakeStorageOrDie(client *Client,
-	bucketName, storageName, targetName string,
+	bucketName, storageName, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudStorageSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
 	so = append(so, kngcptesting.WithCloudStorageSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
 
@@ -41,6 +43,7 @@ func MakeStorageOrDie(client *Client,
 }
 
 func MakeStorageJobOrDie(client *Client, fileName, targetName string) {
+	client.T.Helper()
 	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
 		Name:  "SUBJECT",
 		Value: fileName,
@@ -52,6 +55,7 @@ func MakeStorageJobOrDie(client *Client, fileName, targetName string) {
 }
 
 func AddRandomFile(ctx context.Context, t *testing.T, bucketName, fileName, project string) {
+	t.Helper()
 	// Add a random name file in the bucket
 	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
 	wc := bucketHandle.Object(fileName).NewWriter(ctx)
@@ -74,6 +78,7 @@ func AddRandomFile(ctx context.Context, t *testing.T, bucketName, fileName, proj
 
 // MakeBucket retrieves the bucket name for the test. If it does not exist, it will create it.
 func MakeBucket(ctx context.Context, t *testing.T, project string) string {
+	t.Helper()
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -106,6 +111,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 }
 
 func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project string) *storage.BucketHandle {
+	t.Helper()
 	// Prow sticks the project in this key
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)

@@ -25,12 +25,13 @@ import (
 )
 
 type TopicArgs struct {
-	Namespace string
-	Name      string
-	Spec      *duckv1alpha1.PubSubSpec
-	Owner     kmeta.OwnerRefable
-	Topic     string
-	Labels    map[string]string
+	Namespace   string
+	Name        string
+	Spec        *duckv1alpha1.PubSubSpec
+	Owner       kmeta.OwnerRefable
+	Topic       string
+	Labels      map[string]string
+	Annotations map[string]string
 }
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
@@ -41,10 +42,13 @@ func MakeTopic(args *TopicArgs) *pubsubv1alpha1.Topic {
 			Name:            args.Name,
 			Namespace:       args.Namespace,
 			Labels:          args.Labels,
+			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: pubsubv1alpha1.TopicSpec{
-			ServiceAccount:    args.Spec.ServiceAccount,
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				GoogleServiceAccount: args.Spec.IdentitySpec.GoogleServiceAccount,
+			},
 			Secret:            args.Spec.Secret,
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,

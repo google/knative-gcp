@@ -27,6 +27,7 @@ import (
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
@@ -34,36 +35,43 @@ import (
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
-func SmokePullSubscriptionTestImpl(t *testing.T) {
+func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topic + "-sub"
 	svcName := "event-display"
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					authConfig.PubsubServiceAccount,
+				},
+			},
 		}),
-		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
+		kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
 }
 
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
-func PullSubscriptionWithTargetTestImpl(t *testing.T) {
+func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
@@ -74,10 +82,15 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T) {
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
-		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					authConfig.PubsubServiceAccount,
+				},
+			},
+		}), kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)

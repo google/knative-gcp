@@ -35,16 +35,19 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
+	. "knative.dev/pkg/reconciler/testing"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	schedulerv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	"google.golang.org/grpc/codes"
-	gstatus "google.golang.org/grpc/status"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -64,10 +67,11 @@ const (
 	onceAMinuteSchedule = "* * * * *"
 
 	// Message for when the topic and pullsubscription with the above variables are not ready.
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToReconcileJobMsg              = `Failed to reconcile CloudSchedulerSource job`
-	failedToDeleteJobMsg                 = `Failed to delete CloudSchedulerSource job`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToReconcileJobMsg                    = `Failed to reconcile CloudSchedulerSource job`
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
+	failedToDeleteJobMsg                       = `Failed to delete CloudSchedulerSource job`
 )
 
 var (
@@ -90,7 +94,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -141,6 +145,7 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	schedulerSinkURL := sinkURI
 
@@ -153,52 +158,6 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudSchedulerSource(schedulerName, testNS,
-				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-				WithCloudSchedulerSourceLocation(location),
-				WithCloudSchedulerSourceData(testData),
-				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + schedulerName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudSchedulerSource(schedulerName, testNS,
-				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-				WithCloudSchedulerSourceLocation(location),
-				WithCloudSchedulerSourceData(testData),
-				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-				WithInitCloudSchedulerSourceConditions,
-				WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudSchedulerSource",
-					Name:               "my-test-scheduler",
-					UID:                schedulerUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, schedulerName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, schedulerName),
-		},
-		WantErr: true,
-	}, {
 		Name: "topic created, not ready",
 		Objects: []runtime.Object{
 			NewCloudSchedulerSource(schedulerName, testNS,
@@ -206,6 +165,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceLocation(location),
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -217,20 +179,26 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewTopic(schedulerName, testNS,
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 				}),
-				WithTopicLabels(map[string]string{
+				WithPubSubTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": schedulerName,
 				}),
-				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				WithPubSubTopicAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+				WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -249,8 +217,8 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicTopicID(testTopicID),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicTopicID(testTopicID),
 			),
 			newSink(),
 		},
@@ -280,9 +248,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 			newSink(),
 		},
@@ -313,10 +281,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicReady(""),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicReady(""),
+				WithPubSubTopicProjectID(testProject),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 			newSink(),
 		},
@@ -347,10 +315,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicReady("garbaaaaage"),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicReady("garbaaaaage"),
+				WithPubSubTopicProjectID(testProject),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 			newSink(),
 		},
@@ -381,9 +349,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicFailed(),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicFailed(),
+				WithPubSubTopicProjectID(testProject),
 			),
 			newSink(),
 		},
@@ -414,9 +382,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 			),
-			NewTopic(schedulerName, testNS,
-				WithTopicUnknown(),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(schedulerName, testNS,
+				WithPubSubTopicUnknown(),
+				WithPubSubTopicProjectID(testProject),
 			),
 			newSink(),
 		},
@@ -447,11 +415,14 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceLocation(location),
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
 				newSink(),
 			},
@@ -464,23 +435,29 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceTopicReady(testTopicID, testProject),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-						Topic:  testTopicID,
-						Secret: &secret,
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Secret: &secret,
+						},
 					}),
-					WithPullSubscriptionSink(sinkGVK, sinkName),
-					WithPullSubscriptionLabels(map[string]string{
+					WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
+					WithPubSubPullSubscriptionLabels(map[string]string{
 						"receive-adapter":                     receiveAdapterName,
 						"events.cloud.google.com/source-name": schedulerName}),
-					WithPullSubscriptionAnnotations(map[string]string{
-						"metrics-resource-group": resourceGroup,
+					WithPubSubPullSubscriptionAnnotations(map[string]string{
+						"metrics-resource-group":           resourceGroup,
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+					WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -488,7 +465,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
@@ -499,12 +476,12 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS),
 				newSink(),
 			},
 			Key: testNS + "/" + schedulerName,
@@ -524,7 +501,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -535,12 +512,12 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPullSubscriptionFailed()),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPubSubPullSubscriptionFailed()),
 				newSink(),
 			},
 			Key: testNS + "/" + schedulerName,
@@ -560,7 +537,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is False", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: the status of PullSubscription %q is False`, failedToPropagatePullSubscriptionStatusMsg, schedulerName),
 			},
 		}, {
 			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -571,12 +548,12 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPullSubscriptionUnknown()),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS, WithPubSubPullSubscriptionUnknown()),
 				newSink(),
 			},
 			Key: testNS + "/" + schedulerName,
@@ -596,7 +573,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is Unknown", schedulerName),
+				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: the status of PullSubscription %q is Unknown`, failedToPropagatePullSubscriptionStatusMsg, schedulerName),
 			},
 		}, {
 			Name: "topic and pullsubscription exist and ready, create client fails",
@@ -608,13 +585,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -654,13 +631,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -700,13 +677,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -746,13 +723,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -793,13 +770,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -839,13 +816,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceData(testData),
 					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -886,13 +863,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -922,13 +899,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -958,13 +935,13 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
 				),
-				NewTopic(schedulerName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
+				NewPubSubTopic(schedulerName, testNS,
+					WithPubSubTopicReady(testTopicID),
+					WithPubSubTopicAddress(testTopicURI),
+					WithPubSubTopicProjectID(testProject),
 				),
-				NewPullSubscriptionWithNoDefaults(schedulerName, testNS,
-					WithPullSubscriptionReady(sinkURI),
+				NewPubSubPullSubscriptionWithNoDefaults(schedulerName, testNS,
+					WithPubSubPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
 			},
@@ -1010,14 +987,35 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudSchedulerSourceConditions,
 					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
 					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
 					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
+					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 				),
 				newSink(),
 			},
-			Key:               testNS + "/" + schedulerName,
-			WantStatusUpdates: nil,
+			Key: testNS + "/" + schedulerName,
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudSchedulerSource(schedulerName, testNS,
+					WithCloudSchedulerSourceProject(testProject),
+					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+					WithCloudSchedulerSourceLocation(location),
+					WithCloudSchedulerSourceData(testData),
+					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+					WithInitCloudSchedulerSourceConditions,
+					WithCloudSchedulerSourceSinkURI(schedulerSinkURL),
+					WithCloudSchedulerSourceAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					}),
+					WithCloudSchedulerSourceDeletionTimestamp,
+					WithCloudSchedulerSourceGCPServiceAccount(gServiceAccount),
+					WithCloudSchedulerSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithCloudSchedulerSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
+				),
+			}},
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudSchedulerSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 		}}
 
@@ -1025,7 +1023,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:             identity.NewIdentity(ctx),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			schedulerLister:      listers.GetCloudSchedulerSourceLister(),
 			createClientFn:       gscheduler.TestClientCreator(testData["scheduler"]),
 			serviceAccountLister: listers.GetServiceAccountLister(),

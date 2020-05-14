@@ -44,3 +44,7 @@ func (t *pubsubTopic) Delete(ctx context.Context) error {
 func (t *pubsubTopic) IAM() iam.Handle {
 	return iam.NewIamHandle(t.topic.IAM())
 }
+
+func (t *pubsubTopic) ID() string {
+	return t.topic.ID()
+}

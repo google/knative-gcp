@@ -19,9 +19,9 @@ package kncloudevents
 import (
 	nethttp "net/http"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
-	"github.com/cloudevents/sdk-go/v1/cloudevents/client"
-	"github.com/cloudevents/sdk-go/v1/cloudevents/transport/http"
+	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/client"
+	"github.com/cloudevents/sdk-go/pkg/cloudevents/transport/http"
 )
 
 // ConnectionArgs allow to configure connection parameters to the underlying
@@ -61,29 +61,6 @@ func NewDefaultClient(target ...string) (cloudevents.Client, error) {
 		return nil, err
 	}
 	return NewDefaultHTTPClient(t)
-}
-
-// NewDefaultClientGivenHttpTransport is deprecated: use NewDefaultHTTPClient instead.
-func NewDefaultClientGivenHttpTransport(t *cloudevents.HTTPTransport, connectionArgs *ConnectionArgs, opts ...client.Option) (cloudevents.Client, error) {
-	// Add connection options to the default transport.
-	var base = nethttp.DefaultTransport.(*nethttp.Transport).Clone()
-	connectionArgs.ConfigureTransport(base)
-	t.Client = &nethttp.Client{
-		Transport: base,
-	}
-
-	if opts == nil {
-		opts = make([]client.Option, 0)
-	}
-	opts = append(opts, cloudevents.WithUUIDs(), cloudevents.WithTimeNow())
-
-	// Use the transport to make a new CloudEvents client.
-	c, err := cloudevents.NewClient(t, opts...)
-
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 // NewDefaultHTTPClient creates a new client from an HTTP transport.

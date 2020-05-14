@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 // TopicOption enables further configuration of a Topic.
@@ -177,5 +177,11 @@ func WithTopicNoTopic(reason, message string) TopicOption {
 func WithTopicFinalizers(finalizers ...string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Finalizers = finalizers
+	}
+}
+
+func WithTopicAnnotations(annotations map[string]string) TopicOption {
+	return func(c *v1alpha1.Topic) {
+		c.ObjectMeta.Annotations = annotations
 	}
 }

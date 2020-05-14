@@ -25,7 +25,9 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 // CloudStorageSourceOption enables further configuration of a CloudStorageSource.
@@ -38,6 +40,9 @@ func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOptio
 			Name:      name,
 			Namespace: namespace,
 			UID:       "test-storage-uid",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testing.FakeClusterName,
+			},
 		},
 	}
 	for _, opt := range so {
@@ -82,9 +87,22 @@ func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudStorageSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudStorageSourceServiceAccountName(name string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
+func WithCloudStorageSourceWorkloadIdentityFailed(reason, message string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorageSourceOption {
 	return func(ps *v1alpha1.CloudStorageSource) {
-		ps.Spec.ServiceAccount = gServiceAccount
+		ps.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -92,7 +110,7 @@ func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorag
 // topic is False
 func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicFailed(reason, message)
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -100,7 +118,7 @@ func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourc
 // topic is False
 func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicUnknown(reason, message)
+		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -108,7 +126,7 @@ func WithCloudStorageSourceTopicUnknown(reason, message string) CloudStorageSour
 // topic is not ready
 func WithCloudStorageSourceTopicReady(topicID string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkTopicReady()
+		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 	}
 }
@@ -123,7 +141,7 @@ func WithCloudStorageSourceTopicID(topicID string) CloudStorageSourceOption {
 // status of topic is False
 func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionFailed(reason, message)
+		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -131,7 +149,7 @@ func WithCloudStorageSourcePullSubscriptionFailed(reason, message string) CloudS
 // status of topic is Unknown.
 func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionUnknown(reason, message)
+		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
@@ -139,7 +157,7 @@ func WithCloudStorageSourcePullSubscriptionUnknown(reason, message string) Cloud
 // topic is ready.
 func WithCloudStorageSourcePullSubscriptionReady() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 	}
 }
 
@@ -196,5 +214,11 @@ func WithDeletionTimestamp() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
+	}
+}
+
+func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.ObjectMeta.Annotations = Annotations
 	}
 }

@@ -40,11 +40,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudauditlogssource"
 	testiam "github.com/google/knative-gcp/pkg/gclient/iam/testing"
 	glogadmin "github.com/google/knative-gcp/pkg/gclient/logging/logadmin"
 	glogadmintesting "github.com/google/knative-gcp/pkg/gclient/logging/logadmin/testing"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -69,13 +72,14 @@ const (
 	sinkName = "sink"
 	sinkDNS  = sinkName + ".mynamespace.svc.cluster.local"
 
-	topicNotReadyMsg                     = `Topic "test-cloudauditlogssource" not ready`
-	pullSubscriptionNotReadyMsg          = `PullSubscription "test-cloudauditlogssource" not ready`
-	failedToReconcileTopicMsg            = `Topic has not yet been reconciled`
-	failedToReconcilePullSubscriptionMsg = `PullSubscription has not yet been reconciled`
-	failedToCreateSinkMsg                = `failed to ensure creation of logging sink`
-	failedToSetPermissionsMsg            = `failed to ensure sink has pubsub.publisher permission on source topic`
-	failedToDeleteSinkMsg                = `Failed to delete Stackdriver sink`
+	topicNotReadyMsg                           = `Topic "test-cloudauditlogssource" not ready`
+	pullSubscriptionNotReadyMsg                = `PullSubscription "test-cloudauditlogssource" not ready`
+	failedToReconcileTopicMsg                  = `Topic has not yet been reconciled`
+	failedToReconcilePullSubscriptionMsg       = `PullSubscription has not yet been reconciled`
+	failedToCreateSinkMsg                      = `failed to ensure creation of logging sink`
+	failedToSetPermissionsMsg                  = `failed to ensure sink has pubsub.publisher permission on source topic`
+	failedToDeleteSinkMsg                      = `Failed to delete Stackdriver sink`
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
 var (
@@ -95,7 +99,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 
 	sinkURI = apis.HTTP(sinkDNS)
 )
@@ -124,6 +128,7 @@ func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActi
 	return action
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	calSinkURL := sinkURI
 
@@ -135,55 +140,15 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "k8s service account created",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		},
-		Key: testNS + "/" + sourceName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceProjectID(testProject),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount)),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudAuditLogsSource",
-					Name:               sourceName,
-					UID:                sourceUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, sourceName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, sourceName),
-		},
-		WantErr: true,
-	}, {
 		Name: "topic created, not yet been reconciled",
 		Objects: []runtime.Object{
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName)),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -192,20 +157,25 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg)),
+				WithCloudAuditLogsSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})),
 		}},
 		WantCreates: []runtime.Object{
-			NewTopic(sourceName, testNS,
-				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
 					Topic:             "cloudauditlogssource-" + sourceUID,
 					PropagationPolicy: "CreateDelete",
 				}),
-				WithTopicLabels(map[string]string{
+				WithPubSubTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": sourceName,
 				}),
-				WithTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
-			),
+				WithPubSubTopicOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
+				WithPubSubTopicAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -221,9 +191,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicTopicID(testTopicID),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicTopicID(testTopicID),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -232,7 +205,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName)),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				})),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -249,9 +225,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -279,10 +255,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(""),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(""),
+				WithPubSubTopicProjectID(testProject),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -310,10 +286,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady("garbaaaaage"),
-				WithTopicProjectID(testProject),
-				WithTopicAddress(testTopicURI),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady("garbaaaaage"),
+				WithPubSubTopicProjectID(testProject),
+				WithPubSubTopicAddress(testTopicURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -341,9 +317,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicFailed(),
-				WithTopicTopicID(testTopicID),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicFailed(),
+				WithPubSubTopicTopicID(testTopicID),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -370,9 +346,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicUnknown(),
-				WithTopicTopicID(testTopicID),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicUnknown(),
+				WithPubSubTopicTopicID(testTopicID),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -398,11 +374,14 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -414,25 +393,31 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceProjectID(testProject),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceTopicReady(testTopicID),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic:       testTopicID,
-					Secret:      &secret,
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 					AdapterType: converters.CloudAuditLogsConverter,
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionLabels(map[string]string{
+				WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
+				WithPubSubPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": sourceName,
 				}),
-				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group":           resourceGroup,
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
+				WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -440,7 +425,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
@@ -450,12 +435,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -474,7 +459,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: PullSubscription %q has not yet been reconciled", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: PullSubscription %q has not yet been reconciled`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
@@ -484,12 +469,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionFailed()),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS, WithPubSubPullSubscriptionFailed()),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -508,7 +493,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is False", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: %s: the status of PullSubscription %q is False`, failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
@@ -518,12 +503,12 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS, WithPullSubscriptionUnknown()),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS, WithPubSubPullSubscriptionUnknown()),
 		},
 		Key: testNS + "/" + sourceName,
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
@@ -542,7 +527,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: the status of PullSubscription %q is Unknown", sourceName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: %s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, sourceName),
 		},
 	}, {
 		Name: "logging client create fails",
@@ -552,13 +537,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -595,13 +580,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -638,13 +623,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -681,13 +666,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -725,13 +710,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -779,13 +764,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -833,13 +818,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceMethodName(testMethodName)),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -882,13 +867,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -942,13 +927,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -988,13 +973,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -1046,13 +1031,13 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceSinkID(testSinkID),
 				WithCloudAuditLogsSourceDeletionTimestamp,
 			),
-			NewTopic(sourceName, testNS,
-				WithTopicReady(testTopicID),
-				WithTopicAddress(testTopicURI),
-				WithTopicProjectID(testProject),
+			NewPubSubTopic(sourceName, testNS,
+				WithPubSubTopicReady(testTopicID),
+				WithPubSubTopicAddress(testTopicURI),
+				WithPubSubTopicProjectID(testProject),
 			),
-			NewPullSubscriptionWithNoDefaults(sourceName, testNS,
-				WithPullSubscriptionReady(sinkURI),
+			NewPubSubPullSubscriptionWithNoDefaults(sourceName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -1089,15 +1074,34 @@ func TestAllCases(t *testing.T) {
 			NewCloudAuditLogsSource(sourceName, testNS,
 				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
 				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
 				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
 				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 		},
-		Key:               testNS + "/" + sourceName,
-		WantStatusUpdates: nil,
+		Key: testNS + "/" + sourceName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudAuditLogsSource(sourceName, testNS,
+				WithCloudAuditLogsSourceMethodName(testMethodName),
+				WithCloudAuditLogsSourceServiceName(testServiceName),
+				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
+				WithInitCloudAuditLogsSourceConditions,
+				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
+				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
+				WithCloudAuditLogsSourceDeletionTimestamp,
+				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudAuditLogsSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+			),
+		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 		},
 	}}
 
@@ -1112,7 +1116,7 @@ func TestAllCases(t *testing.T) {
 				func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 					r := &Reconciler{
 						PubSubBase:             pubsub.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
-						Identity:               identity.NewIdentity(ctx),
+						Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 						auditLogsSourceLister:  listers.GetCloudAuditLogsSourceLister(),
 						logadminClientProvider: logadminClientProvider,
 						pubsubClientProvider:   gpubsub.TestClientCreator(testData["pubsub"]),

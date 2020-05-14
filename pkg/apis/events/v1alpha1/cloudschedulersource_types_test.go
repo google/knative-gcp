@@ -78,16 +78,31 @@ func TestCloudSchedulerSourceConditionSet(t *testing.T) {
 	}
 }
 
-func TestCloudSchedulerSourceGetIdentity(t *testing.T) {
+func TestCloudSchedulerSourceIdentitySpec(t *testing.T) {
 	s := &CloudSchedulerSource{
 		Spec: CloudSchedulerSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
-				ServiceAccount: "test@test",
+				IdentitySpec: v1alpha1.IdentitySpec{
+					GoogleServiceAccount: "test@test",
+				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.GetIdentity()
+	got := s.IdentitySpec().GoogleServiceAccount
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudSchedulerSourceIdentityStatus(t *testing.T) {
+	s := &CloudSchedulerSource{
+		Status: CloudSchedulerSourceStatus{
+			PubSubStatus: v1alpha1.PubSubStatus{},
+		},
+	}
+	want := &v1alpha1.IdentityStatus{}
+	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

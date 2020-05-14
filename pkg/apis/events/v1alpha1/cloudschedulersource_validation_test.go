@@ -22,7 +22,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -280,6 +283,9 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -290,13 +296,12 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 			},
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"serviceAccount"},
+				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
+				Paths:   []string{"googleServiceAccount"},
 			}
 			return fe
 		}(),
@@ -307,6 +312,9 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -317,7 +325,6 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{},
 					Key:                  "secret-test-key",
@@ -326,7 +333,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccount and spec.secret at the same time",
+				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
 				Paths:   []string{""},
 			}
 			return fe
@@ -345,13 +352,24 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 
 func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudSchedulerSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudSchedulerSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: schedulerWithSecret,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Location changed": {
 			orig: &schedulerWithSecret,
@@ -423,9 +441,11 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				Schedule: schedulerWithSecret.Schedule,
 				Data:     schedulerWithSecret.Data,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec:     schedulerWithSecret.SourceSpec,
-					Secret:         schedulerWithSecret.Secret,
-					ServiceAccount: "new-service-account",
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: "new-service-account",
+					},
+					SourceSpec: schedulerWithSecret.SourceSpec,
+					Secret:     schedulerWithSecret.Secret,
 				},
 			},
 			allowed: false,
@@ -436,7 +456,13 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudSchedulerSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudSchedulerSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudSchedulerSourceSpec); ok {
 					orig = &CloudSchedulerSource{
 						Spec: *spec,
@@ -444,6 +470,9 @@ func TestCloudSchedulerSourceSpecCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudSchedulerSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

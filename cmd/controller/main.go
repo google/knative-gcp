@@ -17,11 +17,15 @@ limitations under the License.
 package main
 
 import (
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	"github.com/google/knative-gcp/pkg/reconciler/broker"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler/deployment"
 	"github.com/google/knative-gcp/pkg/reconciler/events/auditlogs"
+	"github.com/google/knative-gcp/pkg/reconciler/events/build"
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage"
@@ -29,20 +33,24 @@ import (
 	kedapullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda"
 	staticpullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/static"
 	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic"
-
+	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"knative.dev/pkg/injection/sharedmain"
 )
 
 func main() {
+	appcredentials.MustExistOrUnsetEnv()
 	sharedmain.Main("controller",
 		auditlogs.NewController,
 		storage.NewController,
 		scheduler.NewController,
 		pubsub.NewController,
+		build.NewController,
 		staticpullsubscription.NewController,
 		kedapullsubscription.NewController,
 		topic.NewController,
 		channel.NewController,
 		deployment.NewController,
+		broker.NewController,
+		brokercell.NewController,
 	)
 }

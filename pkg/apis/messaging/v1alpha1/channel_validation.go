@@ -21,8 +21,10 @@ import (
 	"fmt"
 
 	"github.com/google/go-cmp/cmp"
-	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+
 	"knative.dev/pkg/apis"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
 func (c *Channel) Validate(ctx context.Context) *apis.FieldError {
@@ -42,7 +44,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.ServiceAccount); err != nil {
+	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.GoogleServiceAccount); err != nil {
 		errs = errs.Also(err)
 	}
 
@@ -54,24 +56,27 @@ func (current *Channel) CheckImmutableFields(ctx context.Context, original *Chan
 		return nil
 	}
 
+	var errs *apis.FieldError
+
 	// Modification of TopicID is not allowed.
 	if original.Status.TopicID != "" {
 		if diff := cmp.Diff(original.Status.TopicID, current.Status.TopicID); diff != "" {
-			return &apis.FieldError{
+			errs = errs.Also(&apis.FieldError{
 				Message: "Immutable fields changed (-old +new)",
 				Paths:   []string{"status", "topicId"},
 				Details: diff,
-			}
+			})
 		}
 	}
 
-	if diff := cmp.Diff(original.Spec.ServiceAccount, current.Spec.ServiceAccount); diff != "" {
-		return &apis.FieldError{
+	if diff := cmp.Diff(original.Spec.GoogleServiceAccount, current.Spec.GoogleServiceAccount); diff != "" {
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"status", "serviceAccount"},
 			Details: diff,
-		}
+		})
 	}
 
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

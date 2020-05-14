@@ -26,7 +26,8 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
 
-	"github.com/google/knative-gcp/pkg/duck"
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	kngcpduck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 )
 
 // +genclient
@@ -50,22 +51,19 @@ type Channel struct {
 
 // Check that Channel can be validated, can be defaulted, and has immutable fields.
 var (
-	_ apis.Validatable             = (*Channel)(nil)
+	_ apis.Convertible             = (*Channel)(nil)
 	_ apis.Defaultable             = (*Channel)(nil)
+	_ apis.Validatable             = (*Channel)(nil)
 	_ runtime.Object               = (*Channel)(nil)
 	_ resourcesemantics.GenericCRD = (*Channel)(nil)
-	_ duck.Identifiable            = (*Channel)(nil)
+	_ kngcpduck.Identifiable       = (*Channel)(nil)
 )
 
 // ChannelSpec defines which subscribers have expressed interest in
 // receiving events from this Channel.
 // arguments for a Channel.
 type ChannelSpec struct {
-	// ServiceAccount is the GCP service account which has required permissions to poll from a Cloud Pub/Sub subscription.
-	// If not specified, defaults to use secret.
-	// +optional
-	ServiceAccount string `json:"serviceAccount,omitempty"`
-
+	duckv1alpha1.IdentitySpec `json:",inline"`
 	// Secret is the credential to use to create, publish, and poll the Pub/Sub
 	// Topic and Subscriptions. The value of the secret entry must be a
 	// service account key in the JSON format
@@ -104,10 +102,7 @@ const (
 
 // ChannelStatus represents the current state of a Channel.
 type ChannelStatus struct {
-	// inherits duck/v1beta1 Status, which currently provides:
-	// * ObservedGeneration - the 'Generation' of the Service that was last processed by the controller.
-	// * Conditions - the latest available observations of a resource's current state.
-	duckv1.Status `json:",inline"`
+	duckv1alpha1.IdentityStatus `json:",inline"`
 
 	// Channel is Addressable. It currently exposes the endpoint as a
 	// fully-qualified DNS name which will distribute traffic over the
@@ -128,9 +123,20 @@ type ChannelStatus struct {
 	TopicID string `json:"topicId,omitempty"`
 }
 
-// Methods for identifiable interface
-func (c *Channel) GetIdentity() string {
-	return c.Spec.ServiceAccount
+// Methods for identifiable interface.
+// IdentitySpec returns the IdentitySpec portion of the Spec.
+func (c *Channel) IdentitySpec() *duckv1alpha1.IdentitySpec {
+	return &c.Spec.IdentitySpec
+}
+
+// IdentityStatus returns the IdentityStatus portion of the Status.
+func (c *Channel) IdentityStatus() *duckv1alpha1.IdentityStatus {
+	return &c.Status.IdentityStatus
+}
+
+// ConditionSet returns the apis.ConditionSet of the embedding object
+func (s *Channel) ConditionSet() *apis.ConditionSet {
+	return &channelCondSet
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

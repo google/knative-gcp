@@ -20,7 +20,11 @@ import (
 	"context"
 	"testing"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -115,7 +119,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 		"invalid GCP service account": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
@@ -123,7 +127,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 		"have GCP service account and secret at the same time": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.ServiceAccount = invalidServiceAccountName
+				obj.GoogleServiceAccount = invalidServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
@@ -142,13 +146,24 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 
 func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudAuditLogsSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudAuditLogsSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: auditLogsSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"ServiceName changed": {
 			orig: &auditLogsSourceSpec,
@@ -205,13 +220,15 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			orig: &auditLogsSourceSpec,
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: "new-service-account",
+					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: auditLogsSourceSpec.PubSubSpec.Secret.Name,
 						},
 						Key: auditLogsSourceSpec.PubSubSpec.Secret.Key,
 					},
-					ServiceAccount: "new-service-account",
 					SourceSpec: duckv1.SourceSpec{
 						Sink: auditLogsSourceSpec.PubSubSpec.Sink,
 					},
@@ -269,7 +286,13 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudAuditLogsSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudAuditLogsSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudAuditLogsSourceSpec); ok {
 					orig = &CloudAuditLogsSource{
 						Spec: *spec,
@@ -277,6 +300,9 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudAuditLogsSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

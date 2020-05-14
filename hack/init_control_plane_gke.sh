@@ -14,41 +14,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Usage: ./init_control_plane_gke.sh
-# The current project set in gcloud MUST be the same as where the cluster is running.
+# Usage: ./init_control_plane_gke.sh [CLUSTER_NAME] [CLUSTER_LOCATION] [CLUSTER_LOCATION_TYPE] [PROJECT_ID]
+#  [CLUSTER_NAME] is an optional parameter to specify the cluster to use, default to `gcloud config get-value run/cluster`.
+#  [CLUSTER_LOCATION] is an optional parameter to specify the cluster location to use, default to `gcloud config get-value run/cluster_location`.
+#  [CLUSTER_LOCATION_TYPE] is an optional parameter to specify the cluster location type to use, default to `zonal`. CLUSTER_LOCATION_TYPE must be `zonal` or `regional`.
+#  [PROJECT_ID] is an optional parameter to specify the project to use, default to `gcloud config get-value project`.
+#  If user want to specify a parameter, user will also need to specify all parameters before that specific paramater
+# The script always uses the same service account called cloud-run-events.
+set -o errexit
+set -o nounset
+set -euo pipefail
 
-NAMESPACE=cloud-run-events
-GSA_NAME=cloud-run-events
-PROJECT_ID=$(gcloud config get-value project)
-CLUSTER_NAME="$(cut -d'_' -f4 <<<"$(kubectl config current-context)")"
-KSA_NAME=controller
+source $(dirname "$0")/lib.sh
 
-# Enable APIs.
-gcloud services enable pubsub.googleapis.com
-gcloud services enable storage-component.googleapis.com
-gcloud services enable storage-api.googleapis.com
-gcloud services enable cloudscheduler.googleapis.com
-gcloud services enable logging.googleapis.com
-gcloud services enable stackdriver.googleapis.com
+readonly DEFAULT_CLUSTER_LOCATION_TYPE="zonal"
 
-# Enable workload identity.
-gcloud beta container clusters update ${CLUSTER_NAME} \
-  --identity-namespace=${PROJECT_ID}.svc.id.goog
+CLUSTER_NAME=${1:-$(gcloud config get-value run/cluster)}
+CLUSTER_LOCATION=${2:-$(gcloud config get-value run/cluster_location)}
+CLUSTER_LOCATION_TYPE=${3:-$DEFAULT_CLUSTER_LOCATION_TYPE}
+PROJECT_ID=${4:-$(gcloud config get-value project)}
 
-# Create the service account for the control plane.
-gcloud iam service-accounts create ${GSA_NAME}
+echo "CLUSTER_NAME used when init_control_plane_gke is'${CLUSTER_NAME}'"
+echo "CLUSTER_LOCATION used when init_control_plane_gke is'${CLUSTER_LOCATION}'"
+echo "CLUSTER_LOCATION_TYPE used when init_control_plane_gke is'${CLUSTER_LOCATION_TYPE}'"
+echo "PROJECT_ID used when init_control_plane_gke is'${PROJECT_ID}'"
 
-# Grant permissions to the service account for the control plane to manage native GCP resources.
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/pubsub.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/storage.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/cloudscheduler.admin
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.configWriter
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/logging.privateLogViewer
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member=serviceAccount:${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com --role roles/iam.serviceAccountAdmin
+init_control_plane_service_account "${PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT}"
+enable_workload_identity "${PROJECT_ID}" "${CONTROL_PLANE_SERVICE_ACCOUNT}" "${CLUSTER_NAME}" "${CLUSTER_LOCATION}" "${CLUSTER_LOCATION_TYPE}"
 
 # Allow the Kubernetes service account to use Google service account.
-MEMBER="serviceAccount:"${PROJECT_ID}".svc.id.goog["${NAMESPACE}"/"${KSA_NAME}"]"
-gcloud iam service-accounts add-iam-policy-binding --role roles/iam.workloadIdentityUser --member $MEMBER ${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+MEMBER="serviceAccount:${PROJECT_ID}.svc.id.goog[${CONTROL_PLANE_NAMESPACE}/${K8S_CONTROLLER_SERVICE_ACCOUNT}]"
+gcloud iam service-accounts add-iam-policy-binding \
+  --role roles/iam.workloadIdentityUser \
+  --member "$MEMBER" "${CONTROL_PLANE_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
 # Add annotation to Kubernetes service account.
-kubectl annotate serviceaccount --namespace ${NAMESPACE} ${KSA_NAME} iam.gke.io/gcp-service-account=${GSA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+kubectl annotate --overwrite serviceaccount "${K8S_CONTROLLER_SERVICE_ACCOUNT}" iam.gke.io/gcp-service-account="${CONTROL_PLANE_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com \
+  --namespace "${CONTROL_PLANE_NAMESPACE}"
+
+# Delete the controller pod in the control plane namespace to refresh
+kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller

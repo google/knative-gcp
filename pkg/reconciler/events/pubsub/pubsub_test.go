@@ -35,13 +35,17 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 
+	. "knative.dev/pkg/reconciler/testing"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
-	"github.com/google/knative-gcp/pkg/reconciler"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	reconcilerpubsub "github.com/google/knative-gcp/pkg/reconciler/pubsub"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
-	. "knative.dev/pkg/reconciler/testing"
 )
 
 const (
@@ -49,9 +53,10 @@ const (
 	pubsubUID  = "test-pubsub-uid"
 	sinkName   = "sink"
 
-	testNS      = "testnamespace"
-	testTopicID = "test-topic"
-	generation  = 1
+	testNS                                     = "testnamespace"
+	testTopicID                                = "test-topic"
+	generation                                 = 1
+	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
 var (
@@ -74,7 +79,7 @@ var (
 		Key: "key.json",
 	}
 
-	gServiceAccount = "test@test"
+	gServiceAccount = "test123@test123.iam.gserviceaccount.com"
 )
 
 func init() {
@@ -125,6 +130,7 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
+// TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	attempts := 0
 	pubsubSinkURL := sinkURI
@@ -138,58 +144,15 @@ func TestAllCases(t *testing.T) {
 		// Make sure Reconcile handles good keys that don't exist.
 		Key: "foo/not-found",
 	}, {
-		Name: "k8s serviceaccount created",
-		Objects: []runtime.Object{
-			NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-			),
-			newSink(),
-		},
-		Key: testNS + "/" + pubsubName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudPubSubSource(pubsubName, testNS,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceStatusObservedGeneration(generation),
-				WithCloudPubSubSourceTopic(testTopicID),
-				WithCloudPubSubSourceSink(sinkGVK, sinkName),
-				WithInitCloudPubSubSourceConditions,
-				WithCloudPubSubSourceObjectMetaGeneration(generation),
-				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
-			),
-		}},
-		WantCreates: []runtime.Object{
-			NewServiceAccount("test", testNS, gServiceAccount),
-		},
-		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewServiceAccount("test", testNS, gServiceAccount,
-				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
-					APIVersion:         "events.cloud.google.com/v1alpha1",
-					Kind:               "CloudPubSubSource",
-					Name:               pubsubName,
-					UID:                pubsubUID,
-					Controller:         &falseVal,
-					BlockOwnerDeletion: &trueVal,
-				}}),
-			),
-		}},
-		WantPatches: []clientgotesting.PatchActionImpl{
-			patchFinalizers(testNS, pubsubName, true),
-		},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "%s": invalid value: test@test, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$: spec.serviceAccount`, pubsubName),
-		},
-		WantErr: true,
-	}, {
 		Name: "pullsubscription created",
 		Objects: []runtime.Object{
 			NewCloudPubSubSource(pubsubName, testNS,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
@@ -202,25 +165,31 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
 		WantCreates: []runtime.Object{
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
-					Topic:  testTopicID,
-					Secret: &secret,
+			NewPubSubPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+					},
 				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMode(pubsubv1alpha1.ModePushCompatible),
-				WithPullSubscriptionLabels(map[string]string{
+				WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
+				WithPubSubPullSubscriptionMode(pubsubv1alpha1.ModePushCompatible),
+				WithPubSubPullSubscriptionLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
 					"events.cloud.google.com/source-name": pubsubName,
 				}),
-				WithPullSubscriptionAnnotations(map[string]string{
-					"metrics-resource-group": resourceGroup,
+				WithPubSubPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group":           resourceGroup,
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -228,7 +197,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is false",
@@ -238,8 +207,8 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
+			NewPubSubPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPubSubPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
@@ -259,7 +228,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and the status is unknown",
@@ -269,8 +238,8 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
+			NewPubSubPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPubSubPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 			newSink(),
 		},
 		Key: testNS + "/" + pubsubName,
@@ -290,7 +259,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", pubsubName),
-			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `CloudPubSubSource reconciled: "%s/%s"`, testNS, pubsubName),
+			Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, pubsubName),
 		},
 	}, {
 		Name: "pullsubscription exists and ready, with retry",
@@ -300,9 +269,9 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceTopic(testTopicID),
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 			),
-			NewPullSubscriptionWithNoDefaults(pubsubName, testNS,
-				WithPullSubscriptionReady(sinkURI),
-				WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+			NewPubSubPullSubscriptionWithNoDefaults(pubsubName, testNS,
+				WithPubSubPullSubscriptionReady(sinkURI),
+				WithPubSubPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 			),
 			newSink(),
 		},
@@ -354,24 +323,40 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceSink(sinkGVK, sinkName),
 				WithCloudPubSubSourceDeletionTimestamp,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 			newSink(),
 		},
-		Key:               testNS + "/" + pubsubName,
-		WantStatusUpdates: nil,
+		Key: testNS + "/" + pubsubName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudPubSubSource(pubsubName, testNS,
+				WithCloudPubSubSourceObjectMetaGeneration(generation),
+				WithCloudPubSubSourceTopic(testTopicID),
+				WithCloudPubSubSourceSink(sinkGVK, sinkName),
+				WithCloudPubSubSourceDeletionTimestamp,
+				WithCloudPubSubSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccount),
+				WithCloudPubSubSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+				WithCloudPubSubSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+			),
+		}},
 		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test" not found`),
+			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudPubSubSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:               identity.NewIdentity(ctx),
+			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
 			pubsubLister:           listers.GetCloudPubSubSourceLister(),
-			pullsubscriptionLister: listers.GetPullSubscriptionLister(),
-			receiveAdapterName:     receiveAdapterName,
+			pullsubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
 			serviceAccountLister:   listers.GetServiceAccountLister(),
 		}
 		return cloudpubsubsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudPubSubSourceLister(), r.Recorder, r)

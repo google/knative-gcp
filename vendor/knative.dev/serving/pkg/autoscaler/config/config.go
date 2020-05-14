@@ -67,6 +67,14 @@ type Config struct {
 	// the number of activators per revision.
 	ActivatorCapacity float64
 
+	// AllowZeroInitialScale indicates whether InitialScale and
+	// autoscaling.internal.knative.dev/initialScale are allowed to be set to 0.
+	AllowZeroInitialScale bool
+
+	// InitialScale is the cluster-wide default initial revision size for newly deployed
+	// services. This can be set to 0 iff AllowZeroInitialScale is true.
+	InitialScale int32
+
 	// General autoscaler algorithm configuration.
 	MaxScaleUpRate           float64
 	MaxScaleDownRate         float64
@@ -75,36 +83,58 @@ type Config struct {
 	PanicThresholdPercentage float64
 	TickInterval             time.Duration
 
-	ScaleToZeroGracePeriod time.Duration
+	ScaleToZeroGracePeriod        time.Duration
+	ScaleToZeroPodRetentionPeriod time.Duration
 
 	PodAutoscalerClass string
 }
 
+func defaultConfig() *Config {
+	return &Config{
+		EnableScaleToZero:                  true,
+		EnableGracefulScaledown:            false,
+		ContainerConcurrencyTargetFraction: defaultTargetUtilization,
+		ContainerConcurrencyTargetDefault:  100,
+		// TODO(#1956): Tune target usage based on empirical data.
+		TargetUtilization:             defaultTargetUtilization,
+		RPSTargetDefault:              200,
+		MaxScaleUpRate:                1000,
+		MaxScaleDownRate:              2,
+		TargetBurstCapacity:           200,
+		PanicWindowPercentage:         10,
+		ActivatorCapacity:             100,
+		PanicThresholdPercentage:      200,
+		StableWindow:                  60 * time.Second,
+		ScaleToZeroGracePeriod:        30 * time.Second,
+		ScaleToZeroPodRetentionPeriod: 0 * time.Second,
+		TickInterval:                  2 * time.Second,
+		PodAutoscalerClass:            autoscaling.KPA,
+		AllowZeroInitialScale:         false,
+		InitialScale:                  1,
+	}
+}
+
 // NewConfigFromMap creates a Config from the supplied map
 func NewConfigFromMap(data map[string]string) (*Config, error) {
-	lc := &Config{
-		TargetUtilization: defaultTargetUtilization,
-	}
+	lc := defaultConfig()
 
 	// Process bool fields.
 	for _, b := range []struct {
-		key          string
-		field        *bool
-		defaultValue bool
+		key   string
+		field *bool
 	}{
 		{
-			key:          "enable-scale-to-zero",
-			field:        &lc.EnableScaleToZero,
-			defaultValue: true,
+			key:   "enable-scale-to-zero",
+			field: &lc.EnableScaleToZero,
 		},
 		{
-			key:          "enable-graceful-scaledown",
-			field:        &lc.EnableGracefulScaledown,
-			defaultValue: false,
+			key:   "enable-graceful-scaledown",
+			field: &lc.EnableGracefulScaledown,
+		}, {
+			key:   "allow-zero-initial-scale",
+			field: &lc.AllowZeroInitialScale,
 		}} {
-		if raw, ok := data[b.key]; !ok {
-			*b.field = b.defaultValue
-		} else {
+		if raw, ok := data[b.key]; ok {
 			*b.field = strings.EqualFold(raw, "true")
 		}
 	}
@@ -113,52 +143,57 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 	for _, f64 := range []struct {
 		key   string
 		field *float64
-		// specified exactly when optional
-		defaultValue float64
 	}{{
-		key:          "max-scale-up-rate",
-		field:        &lc.MaxScaleUpRate,
-		defaultValue: 1000.0,
+		key:   "max-scale-up-rate",
+		field: &lc.MaxScaleUpRate,
 	}, {
-		key:          "max-scale-down-rate",
-		field:        &lc.MaxScaleDownRate,
-		defaultValue: 2.0,
+		key:   "max-scale-down-rate",
+		field: &lc.MaxScaleDownRate,
 	}, {
 		key:   "container-concurrency-target-percentage",
 		field: &lc.ContainerConcurrencyTargetFraction,
-		// TODO(#1956): Tune target usage based on empirical data.
-		defaultValue: defaultTargetUtilization,
 	}, {
-		key:          "container-concurrency-target-default",
-		field:        &lc.ContainerConcurrencyTargetDefault,
-		defaultValue: 100.0,
+		key:   "container-concurrency-target-default",
+		field: &lc.ContainerConcurrencyTargetDefault,
 	}, {
-		key:          "requests-per-second-target-default",
-		field:        &lc.RPSTargetDefault,
-		defaultValue: 200.0,
+		key:   "requests-per-second-target-default",
+		field: &lc.RPSTargetDefault,
 	}, {
-		key:          "target-burst-capacity",
-		field:        &lc.TargetBurstCapacity,
-		defaultValue: 200,
+		key:   "target-burst-capacity",
+		field: &lc.TargetBurstCapacity,
 	}, {
-		key:          "panic-window-percentage",
-		field:        &lc.PanicWindowPercentage,
-		defaultValue: 10.0,
+		key:   "panic-window-percentage",
+		field: &lc.PanicWindowPercentage,
 	}, {
-		key:          "activator-capacity",
-		field:        &lc.ActivatorCapacity,
-		defaultValue: 100.0,
+		key:   "activator-capacity",
+		field: &lc.ActivatorCapacity,
 	}, {
-		key:          "panic-threshold-percentage",
-		field:        &lc.PanicThresholdPercentage,
-		defaultValue: 200.0,
+		key:   "panic-threshold-percentage",
+		field: &lc.PanicThresholdPercentage,
 	}} {
-		if raw, ok := data[f64.key]; !ok {
-			*f64.field = f64.defaultValue
-		} else if val, err := strconv.ParseFloat(raw, 64); err != nil {
-			return nil, err
-		} else {
+		if raw, ok := data[f64.key]; ok {
+			val, err := strconv.ParseFloat(raw, 64)
+			if err != nil {
+				return nil, err
+			}
 			*f64.field = val
+		}
+	}
+
+	// Process int fields
+	for _, i := range []struct {
+		key   string
+		field *int32
+	}{{
+		key:   "initial-scale",
+		field: &lc.InitialScale,
+	}} {
+		if raw, ok := data[i.key]; ok {
+			val, err := strconv.ParseInt(raw, 10, 32)
+			if err != nil {
+				return nil, err
+			}
+			*i.field = int32(val)
 		}
 	}
 
@@ -172,32 +207,30 @@ func NewConfigFromMap(data map[string]string) (*Config, error) {
 
 	// Process Duration fields
 	for _, dur := range []struct {
-		key          string
-		field        *time.Duration
-		defaultValue time.Duration
+		key   string
+		field *time.Duration
 	}{{
-		key:          "stable-window",
-		field:        &lc.StableWindow,
-		defaultValue: 60 * time.Second,
+		key:   "stable-window",
+		field: &lc.StableWindow,
 	}, {
-		key:          "scale-to-zero-grace-period",
-		field:        &lc.ScaleToZeroGracePeriod,
-		defaultValue: 30 * time.Second,
+		key:   "scale-to-zero-grace-period",
+		field: &lc.ScaleToZeroGracePeriod,
 	}, {
-		key:          "tick-interval",
-		field:        &lc.TickInterval,
-		defaultValue: 2 * time.Second,
+		key:   "scale-to-zero-pod-retention-period",
+		field: &lc.ScaleToZeroPodRetentionPeriod,
+	}, {
+		key:   "tick-interval",
+		field: &lc.TickInterval,
 	}} {
-		if raw, ok := data[dur.key]; !ok {
-			*dur.field = dur.defaultValue
-		} else if val, err := time.ParseDuration(raw); err != nil {
-			return nil, err
-		} else {
+		if raw, ok := data[dur.key]; ok {
+			val, err := time.ParseDuration(raw)
+			if err != nil {
+				return nil, err
+			}
 			*dur.field = val
 		}
 	}
 
-	lc.PodAutoscalerClass = autoscaling.KPA
 	if pac, ok := data["pod-autoscaler-class"]; ok {
 		lc.PodAutoscalerClass = pac
 	}
@@ -209,8 +242,13 @@ func validate(lc *Config) (*Config, error) {
 	if lc.ScaleToZeroGracePeriod < autoscaling.WindowMin {
 		return nil, fmt.Errorf("scale-to-zero-grace-period must be at least %v, got %v", autoscaling.WindowMin, lc.ScaleToZeroGracePeriod)
 	}
+
+	if lc.ScaleToZeroPodRetentionPeriod < 0 {
+		return nil, fmt.Errorf("scale-to-zero-pod-retention-period cannot be negative, was: %v", lc.ScaleToZeroPodRetentionPeriod)
+	}
+
 	if lc.TargetBurstCapacity < 0 && lc.TargetBurstCapacity != -1 {
-		return nil, fmt.Errorf("target-burst-capacity must be non-negative, got %f", lc.TargetBurstCapacity)
+		return nil, fmt.Errorf("target-burst-capacity must be either non-negative or -1 (for unlimited), got %f", lc.TargetBurstCapacity)
 	}
 
 	if lc.ContainerConcurrencyTargetFraction <= 0 || lc.ContainerConcurrencyTargetFraction > 1 {
@@ -250,6 +288,9 @@ func validate(lc *Config) (*Config, error) {
 		return nil, fmt.Errorf("panic-window-percentage = %v, must be in [%v, 100] interval", lc.PanicWindowPercentage, 100*float64(BucketSize)/float64(lc.StableWindow))
 	}
 
+	if lc.InitialScale < 0 || (lc.InitialScale == 0 && !lc.AllowZeroInitialScale) {
+		return nil, fmt.Errorf("initial-scale = %v, must be at least 0 (or at least 1 when allow-zero-initial-scale is false)", lc.InitialScale)
+	}
 	return lc, nil
 }
 

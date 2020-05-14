@@ -41,19 +41,19 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	fakeservingclientset "knative.dev/serving/pkg/client/clientset/versioned/fake"
 
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	EventsV1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
+	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
 	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
-	securitylisters "github.com/google/knative-gcp/pkg/client/listers/security/v1alpha1"
-
-	fakeistioclientset "github.com/google/knative-gcp/pkg/client/istio/clientset/versioned/fake"
-	istiov1beta1listers "github.com/google/knative-gcp/pkg/client/istio/listers/security/v1beta1"
-	istiov1beta1 "istio.io/client-go/pkg/apis/security/v1beta1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -65,7 +65,6 @@ var clientSetSchemes = []func(*runtime.Scheme) error{
 	fakekubeclientset.AddToScheme,
 	fakeeventsclientset.AddToScheme,
 	fakeservingclientset.AddToScheme,
-	fakeistioclientset.AddToScheme,
 	sinkAddToScheme,
 }
 
@@ -117,15 +116,19 @@ func (l *Listers) GetServingObjects() []runtime.Object {
 	return l.sorter.ObjectsForSchemeFunc(fakeservingclientset.AddToScheme)
 }
 
-func (l *Listers) GetIstioObjects() []runtime.Object {
-	return l.sorter.ObjectsForSchemeFunc(fakeistioclientset.AddToScheme)
+func (l *Listers) GetPullSubscriptionLister() inteventslisters.PullSubscriptionLister {
+	return inteventslisters.NewPullSubscriptionLister(l.indexerFor(&inteventsv1alpha1.PullSubscription{}))
 }
 
-func (l *Listers) GetPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
+func (l *Listers) GetTopicLister() inteventslisters.TopicLister {
+	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1alpha1.Topic{}))
+}
+
+func (l *Listers) GetPubSubPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
 	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
 }
 
-func (l *Listers) GetTopicLister() pubsublisters.TopicLister {
+func (l *Listers) GetPubSubTopicLister() pubsublisters.TopicLister {
 	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
@@ -151,6 +154,10 @@ func (l *Listers) GetCloudSchedulerSourceLister() eventslisters.CloudSchedulerSo
 
 func (l *Listers) GetCloudPubSubSourceLister() eventslisters.CloudPubSubSourceLister {
 	return eventslisters.NewCloudPubSubSourceLister(l.indexerFor(&EventsV1alpha1.CloudPubSubSource{}))
+}
+
+func (l *Listers) GetCloudBuildSourceLister() eventslisters.CloudBuildSourceLister {
+	return eventslisters.NewCloudBuildSourceLister(l.indexerFor(&EventsV1alpha1.CloudBuildSource{}))
 }
 
 func (l *Listers) GetDeploymentLister() appsv1listers.DeploymentLister {
@@ -181,6 +188,10 @@ func (l *Listers) GetServiceAccountLister() corev1listers.ServiceAccountLister {
 	return corev1listers.NewServiceAccountLister(l.indexerFor(&corev1.ServiceAccount{}))
 }
 
+func (l *Listers) GetPodLister() corev1listers.PodLister {
+	return corev1listers.NewPodLister(l.indexerFor(&corev1.Pod{}))
+}
+
 func (l *Listers) GetRoleBindingLister() rbacv1listers.RoleBindingLister {
 	return rbacv1listers.NewRoleBindingLister(l.indexerFor(&rbacv1.RoleBinding{}))
 }
@@ -193,26 +204,14 @@ func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
 	return corev1listers.NewConfigMapLister(l.indexerFor(&corev1.ConfigMap{}))
 }
 
-func (l *Listers) GetHTTPPolicyLister() securitylisters.HTTPPolicyLister {
-	return securitylisters.NewHTTPPolicyLister(l.indexerFor(&securityv1alpha1.HTTPPolicy{}))
+func (l *Listers) GetBrokerLister() brokerlisters.BrokerLister {
+	return brokerlisters.NewBrokerLister(l.indexerFor(&brokerv1beta1.Broker{}))
 }
 
-func (l *Listers) GetHTTPPolicyBindingLister() securitylisters.HTTPPolicyBindingLister {
-	return securitylisters.NewHTTPPolicyBindingLister(l.indexerFor(&securityv1alpha1.HTTPPolicyBinding{}))
+func (l *Listers) GetTriggerLister() brokerlisters.TriggerLister {
+	return brokerlisters.NewTriggerLister(l.indexerFor(&brokerv1beta1.Trigger{}))
 }
 
-func (l *Listers) GetEventPolicyLister() securitylisters.EventPolicyLister {
-	return securitylisters.NewEventPolicyLister(l.indexerFor(&securityv1alpha1.EventPolicy{}))
-}
-
-func (l *Listers) GetEventPolicyBindingLister() securitylisters.EventPolicyBindingLister {
-	return securitylisters.NewEventPolicyBindingLister(l.indexerFor(&securityv1alpha1.EventPolicyBinding{}))
-}
-
-func (l *Listers) GetRequestAuthenticationLister() istiov1beta1listers.RequestAuthenticationLister {
-	return istiov1beta1listers.NewRequestAuthenticationLister(l.indexerFor(&istiov1beta1.RequestAuthentication{}))
-}
-
-func (l *Listers) GetAuthorizationPolicyLister() istiov1beta1listers.AuthorizationPolicyLister {
-	return istiov1beta1listers.NewAuthorizationPolicyLister(l.indexerFor(&istiov1beta1.AuthorizationPolicy{}))
+func (l *Listers) GetBrokerCellLister() intlisters.BrokerCellLister {
+	return intlisters.NewBrokerCellLister(l.indexerFor(&intv1alpha1.BrokerCell{}))
 }

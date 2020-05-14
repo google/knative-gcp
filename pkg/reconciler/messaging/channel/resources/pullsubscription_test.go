@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	duckpubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -94,19 +95,21 @@ func TestMakePullSubscription(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
 				},
-				Key: "eventing-secret-key",
-			},
-			Project: "project-123",
-			Topic:   "topic-abc",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+				Project: "project-123",
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+					},
 				},
 			},
+			Topic: "topic-abc",
 			Transformer: &duckv1.Destination{
 				URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
 			},
@@ -178,19 +181,21 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
 				},
-				Key: "eventing-secret-key",
-			},
-			Project: "project-123",
-			Topic:   "topic-abc",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
+				Project: "project-123",
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						URI: &apis.URL{Scheme: "http", Host: "subscriber", Path: "/"},
+					},
 				},
 			},
+			Topic: "topic-abc",
 		},
 	}
 
@@ -259,19 +264,21 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
+			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
 				},
-				Key: "eventing-secret-key",
-			},
-			Project: "project-123",
-			Topic:   "topic-abc",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+				Project: "project-123",
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						URI: &apis.URL{Scheme: "http", Host: "reply", Path: "/"},
+					},
 				},
 			},
+			Topic: "topic-abc",
 		},
 	}
 

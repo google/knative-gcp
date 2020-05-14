@@ -31,12 +31,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const (
-	serviceName = "pubsub.googleapis.com"
-	methodName  = "google.pubsub.v1.Publisher.CreateTopic"
-)
-
-func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
+func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -44,20 +39,21 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T) {
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
-	client := lib.Setup(t, true)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, methodName, project, resourceName, serviceName, targetName)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,
 		auditlogsName,
-		methodName,
+		lib.PubSubCreateTopicMethodName,
 		project,
 		resourceName,
-		serviceName,
+		lib.PubSubServiceName,
 		targetName,
+		authConfig.PubsubServiceAccount,
 	)
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)

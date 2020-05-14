@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
@@ -79,6 +80,19 @@ func WithInitChannelConditions(s *v1alpha1.Channel) {
 	s.Status.InitializeConditions()
 }
 
+// WithChannelServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithChannelServiceAccountName(name string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
+func WithChannelWorkloadIdentityFailed(reason, message string) ChannelOption {
+	return func(s *v1alpha1.Channel) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 func WithChannelTopic(topicID string) ChannelOption {
 	return func(s *v1alpha1.Channel) {
 		s.Status.MarkTopicReady()
@@ -116,7 +130,7 @@ func WithChannelDefaults(s *v1alpha1.Channel) {
 
 func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
 	return func(ps *v1alpha1.Channel) {
-		ps.Spec.ServiceAccount = gServiceAccount
+		ps.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -148,7 +162,7 @@ func WithChannelSubscribers(subscribers []duckv1alpha1.SubscriberSpec) ChannelOp
 	}
 }
 
-func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) ChannelOption {
+func WithChannelSubscribersStatus(subscribers []eventingduckv1beta1.SubscriberStatus) ChannelOption {
 	return func(c *v1alpha1.Channel) {
 		c.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{
 			Subscribers: subscribers,
@@ -170,5 +184,11 @@ func WithChannelOwnerReferences(ownerReferences []metav1.OwnerReference) Channel
 func WithChannelLabels(labels map[string]string) ChannelOption {
 	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.Labels = labels
+	}
+}
+
+func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.ObjectMeta.Annotations = Annotations
 	}
 }

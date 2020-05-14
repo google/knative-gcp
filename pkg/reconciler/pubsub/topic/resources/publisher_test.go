@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
@@ -33,6 +34,9 @@ func TestMakePublisher(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			},
 		},
 		Spec: v1alpha1.TopicSpec{
 			Project: "eventing-name",
@@ -142,11 +146,16 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			},
 		},
 		Spec: v1alpha1.TopicSpec{
-			Project:        "eventing-name",
-			Topic:          "topic-name",
-			ServiceAccount: gServiceAccountName,
+			Project: "eventing-name",
+			Topic:   "topic-name",
+			IdentitySpec: duckv1alpha1.IdentitySpec{
+				GoogleServiceAccount: gServiceAccountName,
+			},
 		},
 	}
 
@@ -201,7 +210,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 									Value: "TracingConfig-ABC123",
 								}},
 							}},
-							ServiceAccountName: "test",
+							ServiceAccountName: "test-cluster",
 						},
 					},
 				}},

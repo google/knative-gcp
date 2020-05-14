@@ -29,6 +29,7 @@ import (
 )
 
 func MakeTopicOrDie(t *testing.T) (string, func()) {
+	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -57,6 +58,7 @@ func MakeTopicOrDie(t *testing.T) (string, func()) {
 }
 
 func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
+	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -84,6 +86,7 @@ func MakeTopicWithNameOrDie(t *testing.T, topicName string) (string, func()) {
 }
 
 func GetTopic(t *testing.T, topicName string) *pubsub.Topic {
+	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
 	project := os.Getenv(ProwProjectKey)
@@ -98,6 +101,7 @@ func GetTopic(t *testing.T, topicName string) *pubsub.Topic {
 }
 
 func DeleteTopicOrDie(t *testing.T, topicName string) {
+	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key.
 	project := os.Getenv(ProwProjectKey)

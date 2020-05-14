@@ -17,12 +17,14 @@
 # Include after test-infra/scripts/library.sh
 
 readonly CLOUD_RUN_EVENTS_CONFIG="config/"
+readonly CLOUD_RUN_EVENTS_GCP_BROKER_CONFIG="config/broker"
 readonly CLOUD_RUN_EVENTS_ISTIO_CONFIG="config/istio"
 
 # Install all required components for running knative-gcp.
 function start_knative_gcp() {
   start_latest_knative_serving || return 1
   start_latest_knative_eventing || return 1
+  start_knative_monitoring "$KNATIVE_MONITORING_RELEASE" || return 1
   cloud_run_events_setup || return 1
   istio_patch || return 1
 }
@@ -33,6 +35,7 @@ function cloud_run_events_setup() {
   header "Starting Cloud Run Events"
   subheader "Installing Cloud Run Events"
   ko apply --strict -f ${CLOUD_RUN_EVENTS_CONFIG} || return 1
+  ko apply --strict -f ${CLOUD_RUN_EVENTS_GCP_BROKER_CONFIG} || return 1
   ko apply --strict -f ${CLOUD_RUN_EVENTS_ISTIO_CONFIG} || return 1
   wait_until_pods_running cloud-run-events || return 1
 }

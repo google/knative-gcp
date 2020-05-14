@@ -61,7 +61,7 @@ func WithCloudPubSubSourceSink(gvk metav1.GroupVersionKind, name string) CloudPu
 
 func WithCloudPubSubSourceGCPServiceAccount(gServiceAccount string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Spec.ServiceAccount = gServiceAccount
+		ps.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -87,11 +87,24 @@ func WithInitCloudPubSubSourceConditions(ps *v1alpha1.CloudPubSubSource) {
 	ps.Status.InitializeConditions()
 }
 
+// WithCloudPubSubSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudPubSubSourceServiceAccountName(name string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
+func WithCloudPubSubSourceWorkloadIdentityFailed(reason, message string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
+	}
+}
+
 // WithCloudPubSubSourcePullSubscriptionFailed marks the condition that the
 // status of PullSubscription is False
 func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionFailed(reason, message)
+		ps.Status.MarkPullSubscriptionFailed(ps.ConditionSet(), reason, message)
 	}
 }
 
@@ -99,7 +112,7 @@ func WithCloudPubSubSourcePullSubscriptionFailed(reason, message string) CloudPu
 // topic is Unknown
 func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionUnknown(reason, message)
+		ps.Status.MarkPullSubscriptionUnknown(ps.ConditionSet(), reason, message)
 	}
 }
 
@@ -107,7 +120,7 @@ func WithCloudPubSubSourcePullSubscriptionUnknown(reason, message string) CloudP
 // topic is not ready
 func WithCloudPubSubSourcePullSubscriptionReady() CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
-		ps.Status.MarkPullSubscriptionReady()
+		ps.Status.MarkPullSubscriptionReady(ps.ConditionSet())
 	}
 }
 
@@ -133,5 +146,11 @@ func WithCloudPubSubSourceStatusObservedGeneration(generation int64) CloudPubSub
 func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.ObjectMeta.Generation = generation
+	}
+}
+
+func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.ObjectMeta.Annotations = Annotations
 	}
 }

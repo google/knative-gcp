@@ -30,6 +30,8 @@ import (
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
+	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
+	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
 )
 
 const (
@@ -50,23 +52,33 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+	return newControllerWithIAMPolicyManager(
+		ctx,
+		cmw,
+		iam.DefaultIAMPolicyManager())
+}
 
+func newControllerWithIAMPolicyManager(
+	ctx context.Context,
+	cmw configmap.Watcher,
+	ipm iam.IAMPolicyManager,
+) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	cloudpubsubsourceInformer := cloudpubsubsourceinformers.Get(ctx)
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:               identity.NewIdentity(ctx),
+		PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+		Identity:               identity.NewIdentity(ctx, ipm),
 		pubsubLister:           cloudpubsubsourceInformer.Lister(),
 		pullsubscriptionLister: pullsubscriptionInformer.Lister(),
 		serviceAccountLister:   serviceAccountInformer.Lister(),
-		receiveAdapterName:     receiveAdapterName,
 	}
 	impl := cloudpubsubsourcereconciler.NewImpl(ctx, r)
 
 	r.Logger.Info("Setting up event handlers")
-	cloudpubsubsourceInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	cloudpubsubsourceInformer.Informer().AddEventHandlerWithResyncPeriod(
+		controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	pullsubscriptionInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.Filter(v1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource")),

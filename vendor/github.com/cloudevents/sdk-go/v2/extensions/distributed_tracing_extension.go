@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	"github.com/cloudevents/sdk-go/v2/types"
@@ -55,6 +56,38 @@ func GetDistributedTracingExtension(event event.Event) (DistributedTracingExtens
 	return DistributedTracingExtension{}, false
 }
 
+func (d *DistributedTracingExtension) ReadTransformer() binding.TransformerFunc {
+	return func(reader binding.MessageMetadataReader, writer binding.MessageMetadataWriter) error {
+		tp := reader.GetExtension(TraceParentExtension)
+		if tp != nil {
+			tpFormatted, err := types.Format(tp)
+			if err != nil {
+				return err
+			}
+			d.TraceParent = tpFormatted
+		}
+		ts := reader.GetExtension(TraceStateExtension)
+		if ts != nil {
+			tsFormatted, err := types.Format(ts)
+			if err != nil {
+				return err
+			}
+			d.TraceState = tsFormatted
+		}
+		return nil
+	}
+}
+
+func (d *DistributedTracingExtension) WriteTransformer() binding.TransformerFunc {
+	return func(reader binding.MessageMetadataReader, writer binding.MessageMetadataWriter) error {
+		err := writer.SetExtension(TraceParentExtension, d.TraceParent)
+		if err != nil {
+			return nil
+		}
+		return writer.SetExtension(TraceStateExtension, d.TraceState)
+	}
+}
+
 // FromSpanContext populates DistributedTracingExtension from a SpanContext.
 func FromSpanContext(sc trace.SpanContext) DistributedTracingExtension {
 	tp := traceparent.TraceParent{
@@ -87,17 +120,19 @@ func (d DistributedTracingExtension) ToSpanContext() (trace.SpanContext, error) 
 		SpanID:  tp.SpanID,
 	}
 	if tp.Flags.Recorded {
-		sc.TraceOptions &= 1
+		sc.TraceOptions |= 1
 	}
 
 	if ts, err := tracestate.ParseString(d.TraceState); err == nil {
 		entries := make([]octs.Entry, 0, len(ts))
 		for _, member := range ts {
 			var key string
-			if member.Vendor != "" {
-				key = member.Tenant + "@" + member.Vendor
+			if member.Tenant != "" {
+				// Due to github.com/lightstep/tracecontext.go/issues/6,
+				// the meaning of Vendor and Tenant are swapped here.
+				key = member.Vendor + "@" + member.Tenant
 			} else {
-				key = member.Tenant
+				key = member.Vendor
 			}
 			entries = append(entries, octs.Entry{Key: key, Value: member.Value})
 		}

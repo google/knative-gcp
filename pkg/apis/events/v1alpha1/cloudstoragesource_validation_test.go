@@ -20,8 +20,12 @@ import (
 	"context"
 	"testing"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
@@ -256,6 +260,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -266,13 +273,12 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 			},
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, serviceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"serviceAccount"},
+				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
+				Paths:   []string{"googleServiceAccount"},
 			}
 			return fe
 		}(),
@@ -281,6 +287,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: validServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -291,7 +300,6 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: validServiceAccountName,
 			},
 		},
 		want: nil,
@@ -300,6 +308,9 @@ func TestSpecValidationFields(t *testing.T) {
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
+				IdentitySpec: duckv1alpha1.IdentitySpec{
+					GoogleServiceAccount: invalidServiceAccountName,
+				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
 						Ref: &duckv1.KReference{
@@ -310,7 +321,6 @@ func TestSpecValidationFields(t *testing.T) {
 						},
 					},
 				},
-				ServiceAccount: invalidServiceAccountName,
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{},
 					Key:                  "secret-test-key",
@@ -319,7 +329,7 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.serviceAccount and spec.secret at the same time",
+				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
 				Paths:   []string{""},
 			}
 			return fe
@@ -337,13 +347,24 @@ func TestSpecValidationFields(t *testing.T) {
 
 func TestCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudStorageSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudStorageSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: storageSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Bucket changed": {
 			orig: &storageSourceSpec,
@@ -432,9 +453,11 @@ func TestCheckImmutableFields(t *testing.T) {
 				ObjectNamePrefix: storageSourceSpec.ObjectNamePrefix,
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					SourceSpec:     storageSourceSpec.SourceSpec,
-					Secret:         storageSourceSpec.Secret,
-					ServiceAccount: "new-service-account",
+					IdentitySpec: duckv1alpha1.IdentitySpec{
+						GoogleServiceAccount: "new-service-account",
+					},
+					SourceSpec: storageSourceSpec.SourceSpec,
+					Secret:     storageSourceSpec.Secret,
 				},
 			},
 			allowed: false,
@@ -445,7 +468,13 @@ func TestCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudStorageSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudStorageSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudStorageSourceSpec); ok {
 					orig = &CloudStorageSource{
 						Spec: *spec,
@@ -453,6 +482,9 @@ func TestCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudStorageSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

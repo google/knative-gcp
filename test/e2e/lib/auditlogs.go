@@ -25,15 +25,22 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+const (
+	PubSubServiceName           = "pubsub.googleapis.com"
+	PubSubCreateTopicMethodName = "google.pubsub.v1.Publisher.CreateTopic"
+)
+
 func MakeAuditLogsOrDie(client *Client,
-	auditlogsName, methodName, project, resourceName, serviceName, targetName string,
+	auditlogsName, methodName, project, resourceName, serviceName, targetName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudAuditLogsSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(methodName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
@@ -41,6 +48,7 @@ func MakeAuditLogsOrDie(client *Client,
 }
 
 func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName string) {
+	client.T.Helper()
 	job := resources.AuditLogsTargetJob(targetName, []v1.EnvVar{{
 		Name:  "SERVICENAME",
 		Value: serviceName,

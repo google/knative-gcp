@@ -22,8 +22,8 @@ import (
 	"context"
 	"fmt"
 
-	cloudevents "github.com/cloudevents/sdk-go/v1"
-	cepubsub "github.com/cloudevents/sdk-go/v1/cloudevents/transport/pubsub"
+	cloudevents "github.com/cloudevents/sdk-go"
+	cepubsub "github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub"
 )
 
 // ModeType is the type for mode enum.
@@ -57,6 +57,7 @@ func init() {
 		CloudAuditLogsConverter: convertCloudAuditLogs,
 		CloudStorageConverter:   convertCloudStorage,
 		CloudSchedulerConverter: convertCloudScheduler,
+		CloudBuildConverter:     convertCloudBuild,
 	}
 }
 

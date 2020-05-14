@@ -47,40 +47,53 @@ func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
 }
 
+// WithCloudAuditLogsSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.
+func WithCloudAuditLogsSourceServiceAccountName(name string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.ServiceAccountName = name
+	}
+}
+
 func WithCloudAuditLogsSourceTopicFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicFailed(reason, message)
+		s.Status.MarkTopicFailed(s.ConditionSet(), reason, message)
+	}
+}
+
+func WithCloudAuditLogsSourceWorkloadIdentityFailed(reason, message string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.MarkWorkloadIdentityFailed(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourceTopicUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicUnknown(reason, message)
+		s.Status.MarkTopicUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourceTopicReady(topicID string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkTopicReady()
+		s.Status.MarkTopicReady(s.ConditionSet())
 		s.Status.TopicID = topicID
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionFailed(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionFailed(reason, message)
+		s.Status.MarkPullSubscriptionFailed(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionUnknown(reason, message string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionUnknown(reason, message)
+		s.Status.MarkPullSubscriptionUnknown(s.ConditionSet(), reason, message)
 	}
 }
 
 func WithCloudAuditLogsSourcePullSubscriptionReady() CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Status.MarkPullSubscriptionReady()
+		s.Status.MarkPullSubscriptionReady(s.ConditionSet())
 	}
 }
 
@@ -146,7 +159,7 @@ func WithCloudAuditLogsSourceServiceName(serviceName string) CloudAuditLogsSourc
 
 func WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
-		s.Spec.ServiceAccount = gServiceAccount
+		s.Spec.GoogleServiceAccount = gServiceAccount
 	}
 }
 
@@ -165,4 +178,10 @@ func WithCloudAuditLogsSourceFinalizers(finalizers ...string) CloudAuditLogsSour
 func WithCloudAuditLogsSourceDeletionTimestamp(s *v1alpha1.CloudAuditLogsSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)
+}
+
+func WithCloudAuditLogsSourceAnnotations(Annotations map[string]string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.ObjectMeta.Annotations = Annotations
+	}
 }

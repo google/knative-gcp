@@ -76,16 +76,31 @@ func TestCloudStorageSourceSourceConditionSet(t *testing.T) {
 	}
 }
 
-func TestCloudStorageSourceGetIdentity(t *testing.T) {
+func TestCloudStorageSourceIdentitySpec(t *testing.T) {
 	s := &CloudStorageSource{
 		Spec: CloudStorageSourceSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
-				ServiceAccount: "test@test",
+				IdentitySpec: v1alpha1.IdentitySpec{
+					GoogleServiceAccount: "test@test",
+				},
 			},
 		},
 	}
 	want := "test@test"
-	got := s.GetIdentity()
+	got := s.IdentitySpec().GoogleServiceAccount
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+	}
+}
+
+func TestCloudStorageSourceIdentityStatus(t *testing.T) {
+	s := &CloudStorageSource{
+		Status: CloudStorageSourceStatus{
+			PubSubStatus: v1alpha1.PubSubStatus{},
+		},
+	}
+	want := &v1alpha1.IdentityStatus{}
+	got := s.IdentityStatus()
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

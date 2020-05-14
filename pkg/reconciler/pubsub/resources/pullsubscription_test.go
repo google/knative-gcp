@@ -99,29 +99,31 @@ func TestMakePullSubscription(t *testing.T) {
 			}},
 		},
 		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "eventing-secret-name",
+			PubSubSpec: duckv1alpha1.PubSubSpec{
+				Secret: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "eventing-secret-name",
+					},
+					Key: "eventing-secret-key",
 				},
-				Key: "eventing-secret-key",
+				Project: "project-123",
+				SourceSpec: duckv1.SourceSpec{
+					Sink: duckv1.Destination{
+						Ref: &duckv1.KReference{
+							APIVersion: "v1",
+							Kind:       "Kitchen",
+							Name:       "sink",
+						},
+					},
+					CloudEventOverrides: &duckv1.CloudEventOverrides{
+						Extensions: map[string]string{
+							"foo": "bar",
+						},
+					},
+				},
 			},
-			Project:     "project-123",
 			Topic:       "topic-abc",
 			AdapterType: "google.storage",
-			SourceSpec: duckv1.SourceSpec{
-				Sink: duckv1.Destination{
-					Ref: &duckv1.KReference{
-						APIVersion: "v1",
-						Kind:       "Kitchen",
-						Name:       "sink",
-					},
-				},
-				CloudEventOverrides: &duckv1.CloudEventOverrides{
-					Extensions: map[string]string{
-						"foo": "bar",
-					},
-				},
-			},
 		},
 	}
 

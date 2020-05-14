@@ -30,9 +30,11 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
@@ -77,7 +79,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 	channel.Status.ObservedGeneration = channel.Generation
 
 	// If GCP ServiceAccount is provided, reconcile workload identity.
-	if channel.Spec.ServiceAccount != "" {
+	if channel.Spec.GoogleServiceAccount != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Channel workload identity: %s", err.Error())
 		}
@@ -110,15 +112,15 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: make([]eventingduck.SubscriberStatus, 0),
+			Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
 		}
 	} else if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
 
 	subCreates := []eventingduck.SubscriberSpec(nil)
 	subUpdates := []eventingduck.SubscriberSpec(nil)
-	subDeletes := []eventingduck.SubscriberStatus(nil)
+	subDeletes := []eventingduckv1beta1.SubscriberStatus(nil)
 
 	// Make a map of name to PullSubscription for lookup.
 	pullsubs := make(map[string]pubsubv1alpha1.PullSubscription)
@@ -130,7 +132,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 	}
 
-	exists := make(map[types.UID]eventingduck.SubscriberStatus)
+	exists := make(map[types.UID]eventingduckv1beta1.SubscriberStatus)
 	for _, s := range channel.Status.SubscribableStatus.Subscribers {
 		exists[s.UID] = s
 	}
@@ -157,6 +159,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		subDeletes = append(subDeletes, e)
 	}
 
+	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	for _, s := range subCreates {
 		genName := resources.GenerateSubscriptionName(s.UID)
 
@@ -165,10 +168,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Name:           genName,
 			Project:        channel.Spec.Project,
 			Topic:          channel.Status.TopicID,
-			ServiceAccount: channel.Spec.ServiceAccount,
+			ServiceAccount: channel.Spec.GoogleServiceAccount,
 			Secret:         channel.Spec.Secret,
 			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
 			Subscriber:     s,
 		})
 		ps, err := r.RunClientSet.PubsubV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
@@ -186,7 +189,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		}
 		r.Recorder.Eventf(channel, corev1.EventTypeNormal, "SubscriberCreated", "Created Subscriber %q", genName)
 
-		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduck.SubscriberStatus{
+		channel.Status.SubscribableStatus.Subscribers = append(channel.Status.SubscribableStatus.Subscribers, eventingduckv1beta1.SubscriberStatus{
 			UID:                s.UID,
 			ObservedGeneration: s.Generation,
 		})
@@ -200,10 +203,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Name:           genName,
 			Project:        channel.Spec.Project,
 			Topic:          channel.Status.TopicID,
-			ServiceAccount: channel.Spec.ServiceAccount,
+			ServiceAccount: channel.Spec.GoogleServiceAccount,
 			Secret:         channel.Spec.Secret,
 			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name),
+			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
 			Subscriber:     s,
 		})
 
@@ -266,10 +269,10 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha1.Channel) error {
 	if channel.Status.SubscribableStatus == nil {
 		channel.Status.SubscribableStatus = &eventingduck.SubscribableStatus{
-			Subscribers: make([]eventingduck.SubscriberStatus, 0),
+			Subscribers: make([]eventingduckv1beta1.SubscriberStatus, 0),
 		}
 	} else if channel.Status.SubscribableStatus.Subscribers == nil {
-		channel.Status.SubscribableStatus.Subscribers = make([]eventingduck.SubscriberStatus, 0)
+		channel.Status.SubscribableStatus.Subscribers = make([]eventingduckv1beta1.SubscriberStatus, 0)
 	}
 
 	// Make a map of subscriber name to PullSubscription for lookup.
@@ -309,14 +312,16 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		}
 		return topic, nil
 	}
+	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	t := resources.MakeTopic(&resources.TopicArgs{
 		Owner:          channel,
 		Name:           resources.GeneratePublisherName(channel),
 		Project:        channel.Spec.Project,
-		ServiceAccount: channel.Spec.ServiceAccount,
+		ServiceAccount: channel.Spec.GoogleServiceAccount,
 		Secret:         channel.Spec.Secret,
 		Topic:          resources.GenerateTopicID(channel.UID),
 		Labels:         resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Annotations:    resources.GetTopicAnnotations(clusterName),
 	})
 
 	topic, err = r.RunClientSet.PubsubV1alpha1().Topics(channel.Namespace).Create(t)
@@ -378,7 +383,7 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *pubsubv1alpha1.PullSubscripti
 func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
 	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if channel.Spec.ServiceAccount != "" {
+	if channel.Spec.GoogleServiceAccount != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Channel workload identity: %s", err.Error())
 		}

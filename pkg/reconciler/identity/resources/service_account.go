@@ -17,6 +17,7 @@ limitations under the License.
 package resources
 
 import (
+	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -24,22 +25,22 @@ import (
 )
 
 const (
-	workloadIdentityKey = "iam.gke.io/gcp-service-account"
+	WorkloadIdentityKey = "iam.gke.io/gcp-service-account"
 )
 
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
-func GenerateServiceAccountName(gServiceAccount string) string {
-	return strings.Split(gServiceAccount, "@")[0]
+func GenerateServiceAccountName(gServiceAccount, clusterName string) string {
+	return fmt.Sprintf("%s-%s", strings.Split(gServiceAccount, "@")[0], clusterName)
 }
 
 // MakeServiceAccount creates a K8s ServiceAccount object for the Namespace.
-func MakeServiceAccount(namespace string, gServiceAccount string) *corev1.ServiceAccount {
+func MakeServiceAccount(namespace string, gServiceAccount, clusterName string) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      GenerateServiceAccountName(gServiceAccount),
+			Name:      GenerateServiceAccountName(gServiceAccount, clusterName),
 			Annotations: map[string]string{
-				workloadIdentityKey: gServiceAccount,
+				WorkloadIdentityKey: gServiceAccount,
 			},
 		},
 	}

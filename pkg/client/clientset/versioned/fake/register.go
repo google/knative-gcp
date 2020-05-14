@@ -19,10 +19,14 @@ limitations under the License.
 package fake
 
 import (
+	eventingv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	internalv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	securityv1alpha1 "github.com/google/knative-gcp/pkg/apis/security/v1alpha1"
+	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,10 +38,14 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 var parameterCodec = runtime.NewParameterCodec(scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
+	eventingv1beta1.AddToScheme,
 	eventsv1alpha1.AddToScheme,
+	eventsv1beta1.AddToScheme,
+	internalv1alpha1.AddToScheme,
 	messagingv1alpha1.AddToScheme,
+	messagingv1beta1.AddToScheme,
 	pubsubv1alpha1.AddToScheme,
-	securityv1alpha1.AddToScheme,
+	pubsubv1beta1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

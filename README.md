@@ -15,6 +15,7 @@ choice.
 
 1. [Installing Knative-GCP](./docs/install/install-knative-gcp.md)
 1. [Installing Pub/Sub Enabled Service Account](./docs/install/pubsub-service-account.md)
+1. [Installing GCP Broker](./docs/install/install-gcp-broker.md)
 1. [Installing Broker with PubSub Channel](./docs/install/install-broker-with-pubsub-channel.md)
 1. [Managing Multiple Projects](./docs/install/managing-multiple-projects.md)
 
@@ -30,6 +31,7 @@ how to configure and consume events from different GCP services.
 1. [CloudStorageSource](./docs/examples/cloudstoragesource/README.md)
 1. [CloudSchedulerSource](./docs/examples/cloudschedulersource/README.md)
 1. [CloudAuditLogsSource](./docs/examples/cloudauditlogssource/README.md)
+1. [CloudBuildSource](./docs/examples/cloudbuildsource/README.md)
 
 All of the above Sources are Pull-based, i.e., they poll messages from Pub/Sub
 subscriptions. Different mechanisms can be used to scale them out. Roughly

@@ -17,6 +17,9 @@ limitations under the License.
 package lib
 
 import (
+	"sync"
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingtestlib "knative.dev/eventing/test/lib"
@@ -27,8 +30,11 @@ const (
 	pubSubSecretNamespace = "default"
 )
 
+var setTracingConfigOnce = sync.Once{}
+
 // DuplicatePubSubSecret duplicates the PubSub secret to the test namespace.
 func DuplicatePubSubSecret(client *eventingtestlib.Client) {
+	client.T.Helper()
 	secret, err := client.Kube.Kube.CoreV1().Secrets(pubSubSecretNamespace).Get(pubSubSecretName, metav1.GetOptions{})
 	if err != nil {
 		client.T.Fatalf("could not get secret: %v", err)
@@ -46,4 +52,26 @@ func DuplicatePubSubSecret(client *eventingtestlib.Client) {
 	}); err != nil {
 		client.T.Fatalf("could not create secret: %v", err)
 	}
+}
+
+func GetCredential(client *eventingtestlib.Client, workloadIdentity bool) {
+	client.T.Helper()
+	if !workloadIdentity {
+		DuplicatePubSubSecret(client)
+	}
+}
+
+func SetTracingToZipkin(client *eventingtestlib.Client) {
+	client.T.Helper()
+	setTracingConfigOnce.Do(func() {
+		err := client.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+			"backend":         "zipkin",
+			"zipkin-endpoint": "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans",
+		})
+		if err != nil {
+			client.T.Fatalf("Unable to set the ConfigMap: %v", err)
+		}
+		// Wait for 5 seconds to let the ConfigMap be synced up.
+		time.Sleep(5 * time.Second)
+	})
 }
