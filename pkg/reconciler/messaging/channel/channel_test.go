@@ -39,8 +39,8 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -89,7 +89,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+	_ = inteventsv1alpha1.AddToScheme(scheme.Scheme)
 }
 
 func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
@@ -496,7 +496,7 @@ func TestAllCases(t *testing.T) {
 			}},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{ActionImpl: clientgotesting.ActionImpl{
-					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
 					Name: "cre-sub-testsubscription-abc-123",
 				},
 			},
@@ -547,19 +547,17 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
-			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetPubSubTopicLister(),
-			pullSubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
-			serviceAccountLister:   listers.GetServiceAccountLister(),
+			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			channelLister: listers.GetChannelLister(),
+			topicLister:   listers.GetTopicLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))
 
 }
 
-func newTopic() *pubsubv1alpha1.Topic {
+func newTopic() *inteventsv1alpha1.Topic {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
 		WithChannelSpec(v1alpha1.ChannelSpec{
@@ -582,7 +580,7 @@ func newTopic() *pubsubv1alpha1.Topic {
 	})
 }
 
-func newReadyTopic() *pubsubv1alpha1.Topic {
+func newReadyTopic() *inteventsv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
@@ -591,7 +589,7 @@ func newReadyTopic() *pubsubv1alpha1.Topic {
 	return topic
 }
 
-func newFalseTopic() *pubsubv1alpha1.Topic {
+func newFalseTopic() *inteventsv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
@@ -599,7 +597,7 @@ func newFalseTopic() *pubsubv1alpha1.Topic {
 	return topic
 }
 
-func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1.PullSubscription {
+func newPullSubscription(subscriber eventingduck.SubscriberSpec) *inteventsv1alpha1.PullSubscription {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
 		WithChannelSpec(v1alpha1.ChannelSpec{
@@ -612,7 +610,7 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 	return newPullSubscriptionWithOwner(subscriber, channel)
 }
 
-func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *pubsubv1alpha1.PullSubscription {
+func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *inteventsv1alpha1.PullSubscription {
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 		Owner:       channel,
 		Name:        resources.GenerateSubscriptionName(subscriber.UID),

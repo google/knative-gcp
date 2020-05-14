@@ -64,11 +64,11 @@ func eventsTypeMeta(kind string) *metav1.TypeMeta {
 	}
 }
 
-var PullSubscriptionTypeMeta = pubsubTypeMeta(resources.PullSubscriptionKind)
+var PullSubscriptionTypeMeta = inteventsTypeMeta(resources.PullSubscriptionKind)
 
-func pubsubTypeMeta(kind string) *metav1.TypeMeta {
+func inteventsTypeMeta(kind string) *metav1.TypeMeta {
 	return &metav1.TypeMeta{
 		Kind:       kind,
-		APIVersion: resources.PubSubAPIVersion,
+		APIVersion: resources.IntEventsAPIVersion,
 	}
 }

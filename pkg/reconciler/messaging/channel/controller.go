@@ -24,9 +24,9 @@ import (
 	"knative.dev/pkg/controller"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
+	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
+	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
 	channelinformer "github.com/google/knative-gcp/pkg/client/injection/informers/messaging/v1alpha1/channel"
-	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/pullsubscription"
-	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/pubsub/v1alpha1/topic"
 	channelreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -67,12 +67,10 @@ func newControllerWithIAMPolicyManager(
 	serviceAccountInformer := serviceaccountinformers.Get(ctx)
 
 	r := &Reconciler{
-		Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
-		channelLister:          channelInformer.Lister(),
-		topicLister:            topicInformer.Lister(),
-		pullSubscriptionLister: pullSubscriptionInformer.Lister(),
-		serviceAccountLister:   serviceAccountInformer.Lister(),
+		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+		Identity:      identity.NewIdentity(ctx, ipm),
+		channelLister: channelInformer.Lister(),
+		topicLister:   topicInformer.Lister(),
 	}
 	impl := channelreconciler.NewImpl(ctx, r)
 
