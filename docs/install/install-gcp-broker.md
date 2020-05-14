@@ -4,7 +4,7 @@
 
 The GCP Broker is a Broker implementation that's highly optimized for running in GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
-Knative Eventing allows different Broker implementations via [`BrokerClass`](https://knative.dev/development/eventing/broker/broker-trigger/)
+Knative Eventing allows different Broker implementations via [`BrokerClass`](https://knative.dev/development/eventing/broker-trigger/)
 annotation. If annotated with  `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP` contorller will
 create a GCP Broker. Compared to the default [Channel Based Broker](https://knative.dev/development/eventing/broker/channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub message consumption.
@@ -121,9 +121,9 @@ export BROKER=test-broker
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
-create [Triggers](https://knative.dev/docs/eventing/broker/broker-trigger/#trigger) to
+create [Triggers](https://knative.dev/docs/eventing/broker-trigger/#trigger) to
 receive events from it, just like any Knative Eventing
-[Brokers](https://knative.dev/docs/eventing/broker/broker-trigger/#broker).
+[Brokers](https://knative.dev/docs/eventing/broker-trigger/#broker).
 
 You can find demos of the GCP broker in the
 [examples](../examples/gcpbroker/README.md).
