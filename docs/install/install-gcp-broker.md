@@ -4,9 +4,9 @@
 
 The GCP Broker is a Broker implementation that's highly optimized for running in GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
-Knative Eventing allows different Broker implementations via [`BrokerClass`](https://knative.dev/development/eventing/broker-trigger/)
-annotation. If annotated with  `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP` contorller will
-create a GCP Broker. Compared to the default [Channel Based Broker](https://knative.dev/development/eventing/broker/channel-based-broker/),
+Knative Eventing allows different Broker implementations via `BrokerClass` annotation.
+If annotated with  `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP` contorller will
+create a GCP Broker. Compared to the default [Channel Based Broker](https://knative.dev/docs/eventing/channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub message consumption.
 
 ## Deployment
