@@ -34,6 +34,7 @@ func MakePubSubOrDie(client *Client,
 	psName, targetName, topicName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudPubSubSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(gvk, targetName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
@@ -44,6 +45,7 @@ func MakePubSubOrDie(client *Client,
 }
 
 func AssertMetrics(t *testing.T, client *Client, topicName, psName string) {
+	t.Helper()
 	sleepTime := 1 * time.Minute
 	t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 	time.Sleep(sleepTime)

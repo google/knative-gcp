@@ -148,3 +148,9 @@ func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSour
 		ps.ObjectMeta.Generation = generation
 	}
 }
+
+func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.ObjectMeta.Annotations = Annotations
+	}
+}

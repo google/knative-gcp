@@ -18,6 +18,21 @@ limitations under the License.
 // resources.
 package intevents
 
+import "k8s.io/apimachinery/pkg/runtime/schema"
+
 const (
 	GroupName = "internal.events.cloud.google.com"
+)
+
+var (
+	// PullSubscriptionsResource represents a PullSubscription.
+	PullSubscriptionsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "pullsubscriptions",
+	}
+	// TopicsResource represents a Topic.
+	TopicsResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "topics",
+	}
 )

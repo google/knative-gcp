@@ -108,7 +108,7 @@ func TestDeploymentReconciler(t *testing.T) {
 				reactions: []clientgotesting.ReactionFunc{deploymentCreateFailure},
 				wantErr:   true,
 			},
-			in:   deployment,
+			in: deployment,
 		},
 		{
 			commonCase: commonCase{
@@ -126,7 +126,7 @@ func TestDeploymentReconciler(t *testing.T) {
 				existing:  []runtime.Object{deploymentDifferentSpec},
 				wantErr:   true,
 			},
-			in:   deployment,
+			in: deployment,
 		},
 	}
 
@@ -154,8 +154,8 @@ func TestDeploymentReconciler(t *testing.T) {
 func TestServiceReconciler(t *testing.T) {
 	var tests = []struct {
 		commonCase
-		in       *corev1.Service
-		want     *corev1.Endpoints
+		in   *corev1.Service
+		want *corev1.Endpoints
 	}{
 		{
 			commonCase: commonCase{
@@ -168,7 +168,7 @@ func TestServiceReconciler(t *testing.T) {
 		{
 			commonCase: commonCase{
 				name:       "service created",
-				existing: []runtime.Object{endPoints},
+				existing:   []runtime.Object{endPoints},
 				wantEvents: []string{serviceCreatedEvent},
 			},
 			in:   service,
@@ -180,7 +180,7 @@ func TestServiceReconciler(t *testing.T) {
 				reactions: []clientgotesting.ReactionFunc{serviceCreateFailure},
 				wantErr:   true,
 			},
-			in:   service,
+			in: service,
 		},
 		{
 			commonCase: commonCase{
@@ -198,7 +198,7 @@ func TestServiceReconciler(t *testing.T) {
 				existing:  []runtime.Object{serviceDifferentSpec, endPoints},
 				wantErr:   true,
 			},
-			in:   service,
+			in: service,
 		},
 	}
 
@@ -207,10 +207,10 @@ func TestServiceReconciler(t *testing.T) {
 			tr.setup(test.commonCase)
 
 			rec := ServiceReconciler{
-				KubeClient: tr.client,
-				ServiceLister:     tr.listers.GetK8sServiceLister(),
+				KubeClient:      tr.client,
+				ServiceLister:   tr.listers.GetK8sServiceLister(),
 				EndpointsLister: tr.listers.GetEndpointsLister(),
-				Recorder:   tr.recorder,
+				Recorder:        tr.recorder,
 			}
 			out, err := rec.ReconcileService(obj, test.in)
 

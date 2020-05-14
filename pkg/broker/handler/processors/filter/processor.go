@@ -18,8 +18,11 @@ package filter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/extensions"
+	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
@@ -50,6 +53,12 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 		// If the target no longer exists, then there is nothing to process.
 		logging.FromContext(ctx).Warn("target no longer exist in the config", zap.String("target", tk))
 		return nil
+	}
+
+	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
+		var span *trace.Span
+		ctx, span = dt.StartChildSpan(ctx, fmt.Sprintf("trigger:%s.%s", target.Name, target.Namespace))
+		defer span.End()
 	}
 
 	if target.FilterAttributes == nil {

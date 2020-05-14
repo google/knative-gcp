@@ -20,7 +20,11 @@ import (
 	"context"
 	"testing"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -142,13 +146,24 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 
 func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated CloudAuditLogsSourceSpec
-		allowed bool
+		orig              interface{}
+		updated           CloudAuditLogsSourceSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: auditLogsSourceSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"ServiceName changed": {
 			orig: &auditLogsSourceSpec,
@@ -271,7 +286,13 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *CloudAuditLogsSource
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &CloudAuditLogsSource{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*CloudAuditLogsSourceSpec); ok {
 					orig = &CloudAuditLogsSource{
 						Spec: *spec,
@@ -279,6 +300,9 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &CloudAuditLogsSource{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

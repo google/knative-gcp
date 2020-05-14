@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	_ "knative.dev/pkg/metrics/testing"
+
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"

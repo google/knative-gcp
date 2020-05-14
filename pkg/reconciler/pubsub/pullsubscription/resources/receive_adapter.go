@@ -22,13 +22,15 @@ import (
 
 	"go.uber.org/zap"
 
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
+	"knative.dev/pkg/logging"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
-	"knative.dev/pkg/apis"
-	"knative.dev/pkg/kmeta"
-	"knative.dev/pkg/logging"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -151,7 +153,8 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 
 	// If GCP service account is specified, use that service account as credential.
 	if args.Source.Spec.GoogleServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.GoogleServiceAccount)
+		clusterName := args.Source.GetObjectMeta().GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.GoogleServiceAccount, clusterName)
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{

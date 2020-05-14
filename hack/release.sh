@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/release.sh
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/release.sh
 
 # Yaml files to generate, and the source config dir for them.
 declare -A COMPONENTS
@@ -44,17 +44,17 @@ function build_release() {
   for yaml in "${!COMPONENTS[@]}"; do
     local config="${COMPONENTS[${yaml}]}"
     echo "Building Cloud Run Events Components - ${config}"
-    ko resolve --strict ${KO_FLAGS} -f ${config}/ | "${LABEL_YAML_CMD[@]}" > ${yaml}
+    ko resolve --strict "${KO_FLAGS}" -f "${config}"/ | "${LABEL_YAML_CMD[@]}" > "${yaml}"
     all_yamls+=(${yaml})
   done
   # Assemble the release
   for yaml in "${!RELEASES[@]}"; do
     echo "Assembling Cloud Run Events - ${yaml}"
-    echo "" > ${yaml}
+    echo "" > "${yaml}"
     for component in ${RELEASES[${yaml}]}; do
-      echo "---" >> ${yaml}
-      echo "# ${component}" >> ${yaml}
-      cat ${component} >> ${yaml}
+      echo "---" >> "${yaml}"
+      echo "# ${component}" >> "${yaml}"
+      cat "${component}" >> "${yaml}"
     done
     all_yamls+=(${yaml})
   done

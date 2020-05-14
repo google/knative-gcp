@@ -20,7 +20,7 @@
 
 # Setup env vars to override the default settings
 export PROJECT_NAME="knative-eventing-performance"
-export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/google/knative-gcp/test/performance/benchmarks"
+export BENCHMARK_ROOT_PATH="test/performance/benchmarks"
 
 source vendor/knative.dev/test-infra/scripts/performance-tests.sh
 source $(dirname $0)/../lib.sh
@@ -52,12 +52,6 @@ function update_knative() {
 }
 
 function update_benchmark() {
-  echo ">> Updating benchmark $1"
-  pushd .
-  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
-  git clone https://github.com/knative/eventing
-  popd
-
   local benchmark_path="${BENCHMARK_ROOT_PATH}/$1"
   # TODO(chizhg): add update_environment function in test-infra/scripts/performance-tests.sh and move the below code there
   echo ">> Updating configmap"

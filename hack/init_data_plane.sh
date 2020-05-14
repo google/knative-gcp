@@ -23,7 +23,7 @@ set -o errexit
 set -o nounset
 set -euo pipefail
 
-source $(dirname $0)/lib.sh
+source $(dirname "$0")/lib.sh
 
 PUBSUB_SERVICE_ACCOUNT_KEY_TEMP="$(mktemp)"
 DEFAULT_NAMESPACE="default"
@@ -48,7 +48,7 @@ gcloud iam service-accounts keys create "${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" \
   --iam-account="${PUBSUB_SERVICE_ACCOUNT}"@"${PROJECT_ID}".iam.gserviceaccount.com
 
 # Create/Patch the secret with the download JSON key in the data plane namespace
-kubectl --namespace "${NAMESPACE}" create secret generic ${PUBSUB_SECRET_NAME} \
+kubectl --namespace "${NAMESPACE}" create secret generic "${PUBSUB_SECRET_NAME}" \
   --from-file=key.json="${PUBSUB_SERVICE_ACCOUNT_KEY_TEMP}" --dry-run -o yaml | kubectl apply --filename -
 
 # Remove the tmp file.

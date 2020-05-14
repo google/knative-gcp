@@ -21,8 +21,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
@@ -30,9 +34,21 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 		orig     *CloudSchedulerSource
 		expected *CloudSchedulerSource
 	}{
-		"missing defaults": {
-			orig: &CloudSchedulerSource{},
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037, specifying the cluster name annotation.
+		"missing defaults, except cluster name annotations": {
+			orig: &CloudSchedulerSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+			},
 			expected: &CloudSchedulerSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
@@ -47,6 +63,11 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 		},
 		"defaults present": {
 			orig: &CloudSchedulerSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
@@ -59,6 +80,11 @@ func TestCloudSchedulerSource_SetDefaults(t *testing.T) {
 				},
 			},
 			expected: &CloudSchedulerSource{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
 				Spec: CloudSchedulerSourceSpec{
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret: &corev1.SecretKeySelector{
