@@ -99,3 +99,22 @@ function enable_monitoring(){
       --role roles/monitoring.editor
 }
 
+function dump_extra_cluster_state() {
+  # Collecting logs from all namespace `cloud-run-events` pods.
+  echo "============================================================"
+  local namespace=${CONTROL_PLANE_NAMESPACE}
+  for pod in $(kubectl get pod -n $namespace | grep Running | awk '{print $1}' ); do
+    for container in $(kubectl get pod "${pod}" -n $namespace -ojsonpath='{.spec.containers[*].name}'); do
+      local current_output="${ARTIFACTS}/k8s.dump-$(basename ${E2E_SCRIPT})-${namespace}-${pod}-${container}.txt"
+      echo ">>> The dump of Namespace, Pod, Container: ${namespace}, ${pod}, ${container} is located at ${current_output}"
+      echo "Namespace, Pod, Container: ${namespace}, ${pod}, ${container}"  >> "${current_output}"
+      kubectl logs -n $namespace "${pod}" -c "${container}" >> "${current_output}"
+      echo "----------------------------------------------------------"
+      local previous_output="${ARTIFACTS}/k8s.dump-$(basename ${E2E_SCRIPT})-${namespace}-${pod}-${container}-previous.txt"
+      echo ">>> The dump of Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container} is located at ${previous_output}"
+      echo "Namespace, Pod, Container (Previous instance): ${namespace}, ${pod}, ${container}"  >> "${previous_output}"
+      kubectl logs -p -n $namespace "${pod}" -c "${container}" >> "${previous_output}"
+      echo "============================================================"
+    done
+  done
+}
