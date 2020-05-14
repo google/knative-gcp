@@ -20,17 +20,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"os"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/test/helpers"
+	"knative.dev/pkg/test/monitoring"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -74,6 +79,8 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 		Value: brokerURL.String(),
 	}})
 	client.CreateJobOrFail(senderJob)
+
+	defer printAllPodMetricsIfTestFailed(client)
 
 	// Check if dummy CloudEvent is sent out.
 	if done := jobDone(client, senderName); !done {
@@ -126,6 +133,8 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 		client.T.Logf("%s", err)
 	}
 
+	defer printAllPodMetricsIfTestFailed(client)
+
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
 		client.T.Error("resp event didn't hit the target pod")
@@ -162,10 +171,11 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, client.T, bucketName, fileName, project)
 
+	defer printAllPodMetricsIfTestFailed(client)
+
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
 		client.T.Error("resp event didn't hit the target pod")
-		client.T.Failed()
 	}
 }
 
@@ -204,6 +214,8 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(client.T, topicName)
 	defer deleteTopic()
 
+	defer printAllPodMetricsIfTestFailed(client)
+
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
 		client.T.Error("resp event didn't hit the target pod")
@@ -228,6 +240,8 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount,
 		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
 	)
+
+	defer printAllPodMetricsIfTestFailed(client)
 
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
@@ -325,4 +339,58 @@ func jobDone(client *lib.Client, podName string) bool {
 		return false
 	}
 	return true
+}
+
+// printAllPodMetricsIfTestFailed lists all Pods in the namespace and attempts to print out their
+// metrics.
+//
+// The hope is that this will allow better understanding of where events are lost. E.g. did the
+// source try to send the event to the channel/broker/sink?
+func printAllPodMetricsIfTestFailed(client *lib.Client) {
+	if !client.T.Failed() {
+		// No failure, so no need for logs!
+		return
+	}
+	pods, err := client.Core.Kube.Kube.CoreV1().Pods(client.Namespace).List(metav1.ListOptions{})
+	if err != nil {
+		client.T.Logf("Unable to list pods: %v", err)
+		return
+	}
+	for _, pod := range pods.Items {
+		printPodMetrics(client, pod)
+	}
+}
+
+// printPodMetrics attempts to print the metrics from a single Pod to the test logs.
+func printPodMetrics(client *lib.Client, pod v1.Pod) {
+	podName := types.NamespacedName{
+		Namespace: pod.Namespace,
+		Name:      pod.Name,
+	}
+	podList := &v1.PodList{
+		Items: []v1.Pod{
+			pod,
+		},
+	}
+	localPort := 58295
+	// There is almost certainly a better way to do this, but for now, just use kubectl to port
+	// forward and use HTTP to read the metrics.
+	pid, err := monitoring.PortForward(client.T.Logf, podList, localPort, 9090, pod.Namespace)
+	if err != nil {
+		client.T.Logf("Unable to port forward for Pod '%v': %v", podName, err)
+		return
+	}
+	defer monitoring.Cleanup(pid)
+	r, err := http.Get(fmt.Sprintf("http://localhost:%v/metrics", localPort))
+	if err != nil {
+		client.T.Logf("Unable to read metrics from Pod '%v': %v", podName, err)
+		return
+	}
+	defer r.Body.Close()
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		client.T.Logf("Unable to read HTTP response body for Pod '%v': %v", podName, err)
+		return
+	}
+	client.T.Logf("Metrics logs for Pod '%v': %s", podName, string(b))
 }
