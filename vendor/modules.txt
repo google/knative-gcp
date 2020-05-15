@@ -108,7 +108,7 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
-# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
+# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -1282,4 +1282,3 @@ sigs.k8s.io/yaml
 # gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 # honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 # sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-# github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
