@@ -15,6 +15,7 @@ choice.
 
 1. [Installing Knative-GCP](./docs/install/install-knative-gcp.md)
 1. [Installing Pub/Sub Enabled Service Account](./docs/install/pubsub-service-account.md)
+1. [Installing GCP Broker](./docs/install/install-gcp-broker.md)
 1. [Installing Broker with PubSub Channel](./docs/install/install-broker-with-pubsub-channel.md)
 1. [Managing Multiple Projects](./docs/install/managing-multiple-projects.md)
 

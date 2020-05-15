@@ -21,9 +21,10 @@ import (
 	"testing"
 	"time"
 
-	"go.opencensus.io/tag"
+	_ "knative.dev/pkg/metrics/testing"
 
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 )
 
 const (

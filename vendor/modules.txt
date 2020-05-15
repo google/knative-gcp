@@ -333,7 +333,7 @@ go.uber.org/atomic
 # go.uber.org/multierr v1.5.0
 ## explicit
 go.uber.org/multierr
-# go.uber.org/zap v1.14.1 => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
+# go.uber.org/zap v1.14.1
 ## explicit
 go.uber.org/zap
 go.uber.org/zap/buffer
@@ -1005,7 +1005,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.14.1-0.20200508175545-d76621b63ac4
+# knative.dev/eventing v0.14.1-0.20200513200558-1689191fdf85
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1106,7 +1106,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
+# knative.dev/pkg v0.0.0-20200513172958-40ed633032cb
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1178,6 +1178,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/system/testing
 knative.dev/pkg/test
+knative.dev/pkg/test/gcs
 knative.dev/pkg/test/ghutil
 knative.dev/pkg/test/gke
 knative.dev/pkg/test/helpers
@@ -1190,6 +1191,7 @@ knative.dev/pkg/test/mako/alerter/github
 knative.dev/pkg/test/mako/alerter/slack
 knative.dev/pkg/test/mako/config
 knative.dev/pkg/test/monitoring
+knative.dev/pkg/test/prow
 knative.dev/pkg/test/slackutil
 knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
@@ -1207,7 +1209,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
+# knative.dev/serving v0.14.1-0.20200513190758-ab4f8c05a713
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1253,8 +1255,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200508162345-7ee959873933
-## explicit
+# knative.dev/test-infra v0.0.0-20200513011557-d03429a76034
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
@@ -1277,7 +1278,6 @@ sigs.k8s.io/yaml
 # github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
 # github.com/pkg/errors => github.com/pkg/errors v0.8.1
 # github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
-# go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 # gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 # gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 # honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3

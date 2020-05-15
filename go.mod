@@ -31,10 +31,9 @@ require (
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.14.1-0.20200508175545-d76621b63ac4
-	knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
-	knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
-	knative.dev/test-infra v0.0.0-20200508162345-7ee959873933 // indirect
+	knative.dev/eventing v0.14.1-0.20200513200558-1689191fdf85
+	knative.dev/pkg v0.0.0-20200513172958-40ed633032cb
+	knative.dev/serving v0.14.1-0.20200513190758-ab4f8c05a713
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -67,8 +66,6 @@ replace github.com/modern-go/reflect2 => github.com/modern-go/reflect2 v0.0.0-20
 replace github.com/pkg/errors => github.com/pkg/errors v0.8.1
 
 replace github.com/robfig/cron/v3 => github.com/robfig/cron/v3 v3.0.0
-
-replace go.uber.org/zap => go.uber.org/zap v1.9.2-0.20180814183419-67bc79d13d15
 
 replace gomodules.xyz/jsonpatch/v2 => gomodules.xyz/jsonpatch/v2 v2.0.1
 
