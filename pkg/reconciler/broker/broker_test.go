@@ -21,16 +21,11 @@ import (
 	"fmt"
 	"testing"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -38,6 +33,13 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
 const (
@@ -45,7 +47,6 @@ const (
 	brokerName = "test-broker"
 
 	testProject = "test-project-id"
-	generation  = 1
 	testUID     = "abc123"
 	systemNS    = "knative-testing"
 
@@ -72,6 +73,7 @@ func init() {
 }
 
 func TestAllCases(t *testing.T) {
+	// TODO Add tests cases for broker with triggers and verify the target-config content.
 	table := TableTest{{
 		Name: "bad workqueue key",
 		Key:  "too/many/parts",
@@ -192,15 +194,6 @@ func patchFinalizers(namespace, name, finalizer string) clientgotesting.PatchAct
 	action.Name = name
 	action.Namespace = namespace
 	patch := `{"metadata":{"finalizers":["` + finalizer + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
 }
