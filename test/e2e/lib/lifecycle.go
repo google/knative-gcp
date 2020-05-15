@@ -75,10 +75,7 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 func TearDown(client *Client) {
 	client.T.Helper()
 
-	if client.T.Failed() {
-		printAllPodMetricsIfTestFailed(client)
-	}
-
+	printAllPodMetricsIfTestFailed(client)
 	lib.TearDown(client.Core)
 }
 
