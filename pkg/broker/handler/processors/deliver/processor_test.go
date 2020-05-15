@@ -38,6 +38,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	logtest "knative.dev/pkg/logging/testing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
@@ -99,6 +100,7 @@ func TestDeliverSuccess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
@@ -106,10 +108,6 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create ingress cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
 			targetSvr := httptest.NewServer(targetClient)
 			defer targetSvr.Close()
@@ -123,11 +121,11 @@ func TestDeliverSuccess(t *testing.T) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
-			ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 			p := &Processor{
-				DeliverClient: deliverClient,
+				DeliverClient: http.DefaultClient,
 				Targets:       testTargets,
 			}
 
@@ -225,14 +223,10 @@ func TestDeliverFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
 			targetSvr := httptest.NewServer(targetClient)
 			defer targetSvr.Close()
@@ -274,7 +268,7 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 			p := &Processor{
-				DeliverClient:      deliverClient,
+				DeliverClient:      http.DefaultClient,
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
@@ -432,15 +426,6 @@ func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
 func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
 	sampleEvent := newSampleEvent()
 
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
@@ -451,7 +436,7 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
+		DeliverClient: &httpClient,
 		Targets:       testTargets,
 	}
 
@@ -471,14 +456,6 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 	sampleReply.SetID("reply")
 
 	httpClient, targetAddress := makeTarget(b, &sampleReply)
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
@@ -491,7 +468,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
+		DeliverClient: &httpClient,
 		Targets:       testTargets,
 	}
 

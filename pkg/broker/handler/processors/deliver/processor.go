@@ -19,12 +19,15 @@ package deliver
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/cloudevents/sdk-go/v2/binding"
+	"github.com/cloudevents/sdk-go/v2/binding/spec"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	cecontext "github.com/cloudevents/sdk-go/v2/context"
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/cloudevents/sdk-go/v2/protocol"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"go.uber.org/zap"
 	"knative.dev/pkg/logging"
 
@@ -41,7 +44,7 @@ type Processor struct {
 	processors.BaseProcessor
 
 	// DeliverClient is the cloudevents client to send events.
-	DeliverClient ceclient.Client
+	DeliverClient *http.Client
 
 	// Targets is the targets from config.
 	Targets config.ReadonlyTargets
@@ -101,41 +104,69 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 
 	// Forward the event copy that has hops removed.
-	resp, res := p.DeliverClient.Request(cecontext.WithTarget(dctx, target.Address), copy)
-	if !protocol.IsACK(res) {
+	if err := p.deliver(dctx, target, broker, (*binding.EventMessage)(&copy), hops); err != nil {
 		if !p.RetryOnFailure {
-			return fmt.Errorf("target delivery failed: %v", res.Error())
+			return err
 		}
 
-		logging.FromContext(ctx).Warn("target delivery failed", zap.String("target", tk), zap.String("error", res.Error()))
+		logging.FromContext(ctx).Warn("target delivery failed", zap.String("target", tk), zap.Error(err))
 		return p.sendToRetryTopic(ctx, target, event)
 	}
-	if resp == nil {
+	// For post-delivery processing.
+	return p.Next().Process(ctx, event)
+}
+
+// deliver delivers msg to target and sends the target's reply to the broker ingress.
+func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.Broker, msg binding.Message, hops int32) error {
+	resp, err := p.sendMsg(ctx, target.Address, msg)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logging.FromContext(ctx).Warn("failed to close response body", zap.Error(err))
+		}
+	}()
+
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("event delivery failed: HTTP status code %d.", resp.StatusCode)
+	}
+
+	respMsg := cehttp.NewMessageFromHttpResponse(resp)
+	if respMsg.ReadEncoding() == binding.EncodingUnknown {
+		// No reply
 		return nil
 	}
 
 	if hops <= 0 {
+		_, id := respMsg.GetAttribute(spec.ID)
 		logging.FromContext(ctx).Debug("dropping event based on remaining hops status",
-			zap.String("target", tk),
+			zap.String("target", target.Name),
 			zap.Int32("hops", hops),
-			zap.String("event.id", resp.ID()))
+			zap.Any("event.id", id))
 		return nil
 	}
 
 	// Attach the previous hops for the reply.
-	eventutil.SetRemainingHops(ctx, resp, hops)
-
-	if res := p.DeliverClient.Send(cecontext.WithTarget(dctx, broker.Address), *resp); !protocol.IsACK(res) {
-		if !p.RetryOnFailure {
-			return fmt.Errorf("delivery of replied event failed: %v", res.Error())
-		}
-
-		logging.FromContext(ctx).Warn("delivery of replied event failed", zap.String("target", tk), zap.String("error", res.Error()))
-		return p.sendToRetryTopic(ctx, target, event)
+	replyResp, err := p.sendMsg(ctx, broker.Address, respMsg, eventutil.SetRemainingHopsTransformer(hops))
+	if err != nil {
+		return err
 	}
+	if err := replyResp.Body.Close(); err != nil {
+		logging.FromContext(ctx).Warn("failed to close reply response body", zap.Error(err))
+	}
+	return nil
+}
 
-	// For post-delivery processing.
-	return p.Next().Process(ctx, event)
+func (p *Processor) sendMsg(ctx context.Context, address string, msg binding.Message, transformers ...binding.Transformer) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, "POST", address, nil)
+	if err != nil {
+		return nil, err
+	}
+	if err := cehttp.WriteRequest(ctx, msg, req, transformers...); err != nil {
+		return nil, err
+	}
+	return p.DeliverClient.Do(req)
 }
 
 func (p *Processor) sendToRetryTopic(ctx context.Context, target *config.Target, event *event.Event) error {
