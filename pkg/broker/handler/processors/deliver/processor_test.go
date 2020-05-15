@@ -19,6 +19,7 @@ package deliver
 import (
 	"context"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -318,6 +319,109 @@ func TestDeliverFailure(t *testing.T) {
 			}
 			<-rctx.Done()
 		})
+	}
+}
+
+type NoReplyHandler struct{}
+
+func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusAccepted)
+	// Read body to allow the connection to be reused.
+	io.Copy(ioutil.Discard, req.Body)
+	req.Body.Close()
+}
+
+func BenchmarkDeliveryNoReply(b *testing.B) {
+	sampleEvent := event.New()
+	sampleEvent.SetID("id")
+	sampleEvent.SetSource("source")
+	sampleEvent.SetSubject("subject")
+	sampleEvent.SetType("type")
+	sampleEvent.SetTime(time.Now())
+
+	deliverClient, err := ceclient.NewDefault()
+	if err != nil {
+		b.Fatalf("failed to create requester cloudevents client: %v", err)
+	}
+	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
+	defer targetSvr.Close()
+	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
+	defer ingressSvr.Close()
+
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.SetAddress(ingressSvr.URL)
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{
+		DeliverClient: deliverClient,
+		Targets:       testTargets,
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		if err := p.Process(ctx, &sampleEvent); err != nil {
+			b.Errorf("unexpected error from processing: %v", err)
+		}
+	}
+}
+
+type ReplyHandler struct {
+	msg binding.Message
+}
+
+func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
+	// Read body to allow the connection to be reused.
+	io.Copy(ioutil.Discard, req.Body)
+	req.Body.Close()
+}
+
+func BenchmarkDeliveryWithReply(b *testing.B) {
+	sampleEvent := event.New()
+	sampleEvent.SetID("id")
+	sampleEvent.SetSource("source")
+	sampleEvent.SetSubject("subject")
+	sampleEvent.SetType("type")
+	sampleEvent.SetTime(time.Now())
+
+	sampleReply := sampleEvent.Clone()
+	sampleReply.SetID("reply")
+
+	deliverClient, err := ceclient.NewDefault()
+	if err != nil {
+		b.Fatalf("failed to create requester cloudevents client: %v", err)
+	}
+	targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(&sampleReply)})
+	defer targetSvr.Close()
+	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
+	defer ingressSvr.Close()
+
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.SetAddress(ingressSvr.URL)
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{
+		DeliverClient: deliverClient,
+		Targets:       testTargets,
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		if err := p.Process(ctx, &sampleEvent); err != nil {
+			b.Errorf("unexpected error from processing: %v", err)
+		}
 	}
 }
 
