@@ -19,6 +19,7 @@ package lib
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -86,8 +87,11 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 			pod,
 		},
 	}
-	// This is just a random number, could be anything. Probably should retry if this port is taken.
-	localPort := 58295
+	localPort, err := findAvailablePort()
+	if err != nil {
+		client.T.Logf("Unable to find an avaiable port for Pod '%v': %v", podName, err)
+		return
+	}
 	// There is almost certainly a better way to do this, but for now, just use kubectl to port
 	// forward and use HTTP to read the metrics.
 	pid, err := monitoring.PortForward(client.T.Logf, podList, localPort, metricsPort, pod.Namespace)
@@ -97,7 +101,7 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 	}
 	defer monitoring.Cleanup(pid)
 
-	// Port forwarding takes a bit of time to start running, so try gets until it works.
+	// Port forwarding takes a bit of time to start running, so try GETs until it works.
 	var resp *http.Response
 	err = wait.PollImmediate(500*time.Millisecond, 10*time.Second, func() (bool, error) {
 		req, _ := http.NewRequest("GET", fmt.Sprintf("http://localhost:%v/metrics", localPort), nil)
@@ -105,11 +109,12 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 		c := &http.Client{
 			Transport: &http.Transport{DisableKeepAlives: true},
 		}
-		resp, err = c.Do(req)
-		if net.IsConnectionRefused(err) {
+		var innerErr error
+		resp, innerErr = c.Do(req)
+		if net.IsConnectionRefused(innerErr) {
 			return false, nil
 		} else {
-			return true, err
+			return true, innerErr
 		}
 	})
 
@@ -128,6 +133,28 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 		return
 	}
 	client.T.Logf("Metrics logs for root %q: %s", root, string(b))
+}
+
+func findAvailablePort() (int, error) {
+	const portMin = 40_000
+	const portMax = 60_000
+	portRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	var localPort int
+	var internalErr error
+	// These times were chosen arbitrarily, feel free to change.
+	err := wait.PollImmediate(20*time.Millisecond, 5*time.Second, func() (bool, error) {
+		localPort = portMin + portRand.Intn(portMax-portMin)
+		if err := monitoring.CheckPortAvailability(localPort); err != nil {
+			internalErr = err
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return -1, fmt.Errorf("timeout finding an available port: %w", internalErr)
+	}
+	return localPort, nil
 }
 
 func getRootOwnerOfPod(client *Client, pod corev1.Pod) (string, error) {
