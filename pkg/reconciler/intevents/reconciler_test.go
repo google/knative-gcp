@@ -22,11 +22,14 @@ import (
 	"strings"
 	"testing"
 
+	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgotesting "k8s.io/client-go/testing"
+	"k8s.io/client-go/tools/record"
+	"knative.dev/pkg/apis"
 
 	logtesting "knative.dev/pkg/logging/testing"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
@@ -48,7 +51,6 @@ const (
 	testProjectID                              = "project"
 	receiveAdapterName                         = "test-receive-adapter"
 	resourceGroup                              = "test-resource-group"
-	sinkName                                   = "sink"
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
@@ -579,50 +581,296 @@ func TestCreates(t *testing.T) {
 	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
-		cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
+		t.Run(tc.name, func(t *testing.T) {
+			cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
 
-		psBase := &PubSubBase{
-			Base:               &reconciler.Base{},
-			pubsubClient:       cs,
-			receiveAdapterName: receiveAdapterName,
-		}
-		psBase.Logger = logtesting.TestLogger(t)
-
-		arl := pkgtesting.ActionRecorderList{cs}
-		topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
-
-		if (tc.expectedErr != "" && err == nil) ||
-			(tc.expectedErr == "" && err != nil) ||
-			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
-			t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
-		}
-		if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("Test case %q, unexpected topic (-want, +got) = %v", tc.name, diff)
-		}
-		if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
-		}
-
-		// Validate creates.
-		actions, err := arl.ActionsByVerb()
-		if err != nil {
-			t.Errorf("Error capturing actions by verb: %q", err)
-		}
-		for i, want := range tc.wantCreates {
-			if i >= len(actions.Creates) {
-				t.Errorf("Missing create: %#v", want)
-				continue
+			psBase := &PubSubBase{
+				Base:               &reconciler.Base{},
+				pubsubClient:       cs,
+				receiveAdapterName: receiveAdapterName,
 			}
-			got := actions.Creates[i]
-			obj := got.GetObject()
-			if diff := cmp.Diff(want, obj); diff != "" {
-				t.Errorf("Unexpected create (-want, +got): %s", diff)
+			psBase.Logger = logtesting.TestLogger(t)
+
+			arl := pkgtesting.ActionRecorderList{cs}
+			topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
+
+			if (tc.expectedErr != "" && err == nil) ||
+				(tc.expectedErr == "" && err != nil) ||
+				(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
+				t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
 			}
+			if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
+				t.Errorf("Test case %q, unexpected topic (-want, +got) = %v", tc.name, diff)
+			}
+			if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
+				t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
+			}
+
+			// Validate creates.
+			actions, err := arl.ActionsByVerb()
+			if err != nil {
+				t.Errorf("Error capturing actions by verb: %q", err)
+			}
+
+			verifyCreateActions(t, actions.Creates, tc.wantCreates)
+		})
+	}
+}
+
+func TestDeletesOldPubSub(t *testing.T) {
+	testCases := []struct {
+		name        string
+		objects     []runtime.Object
+		expectedErr string
+		wantUpdates []runtime.Object
+		wantDeletes []clientgotesting.DeleteActionImpl
+	}{
+		{
+			name: "old topic exists - CreateDelete",
+			objects: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateDelete",
+					}),
+					rectesting.WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			wantUpdates: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic: testTopicID,
+						// Policy is changed to NoDelete version.
+						PropagationPolicy: "CreateNoDelete",
+					}),
+					rectesting.WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			wantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Resource: schema.GroupVersionResource{
+							Group:    "pubsub.cloud.google.com",
+							Version:  "v1alpha1",
+							Resource: "topics",
+						},
+					},
+					Name: name,
+				},
+			},
+		},
+		{
+			name: "old topic exists - CreateNoDelete",
+			objects: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateNoDelete",
+					}),
+					rectesting.WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			wantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Resource: schema.GroupVersionResource{
+							Group:    "pubsub.cloud.google.com",
+							Version:  "v1alpha1",
+							Resource: "topics",
+						},
+					},
+					Name: name,
+				},
+			},
+		},
+		{
+			name: "old topic exists - NoCreateNoDelete",
+			objects: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "NoCreateNoDelete",
+					}),
+					rectesting.WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			wantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Resource: schema.GroupVersionResource{
+							Group:    "pubsub.cloud.google.com",
+							Version:  "v1alpha1",
+							Resource: "topics",
+						},
+					},
+					Name: name,
+				},
+			},
+		},
+		{
+			name: "old topic exists - Bad Propagation Policy",
+			objects: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "bad-policy",
+					}),
+					rectesting.WithPubSubTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			expectedErr: "unknown propagation policy on old Topic: bad-policy",
+		},
+		{
+			name: "old topic exists - Not owned by the Pubsubable",
+			objects: []runtime.Object{
+				rectesting.NewPubSubTopic(name, testNS,
+					rectesting.WithPubSubTopicSpec(pubsubv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "bad-policy",
+					}),
+				),
+			},
+		},
+		{
+			name: "old PullSubscription exists - Not Owned by Pubsubable",
+			objects: []runtime.Object{
+				rectesting.NewPubSubPullSubscription(name, testNS),
+			},
+		},
+		{
+			name: "old PullSubscription exists - Deleted",
+			objects: []runtime.Object{
+				rectesting.NewPubSubPullSubscription(name, testNS,
+					rectesting.WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				),
+			},
+			wantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Resource: schema.GroupVersionResource{
+							Group:    "pubsub.cloud.google.com",
+							Version:  "v1alpha1",
+							Resource: "pullsubscriptions",
+						},
+					},
+					Name: name,
+				},
+			},
+		},
+	}
+
+	defer logtesting.ClearAll()
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			objects := append(tc.objects, []runtime.Object{
+				// Ready Topic.
+				rectesting.NewTopic(name, testNS,
+					rectesting.WithTopicProjectID(testProjectID),
+					rectesting.WithTopicReady(testTopicID),
+					rectesting.WithTopicAddress(testTopicURI),
+				),
+				// Ready PullSubscription
+				rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+					rectesting.WithPullSubscriptionReady(apis.HTTP("foo")),
+				),
+			}...)
+			cs := fakePubsubClient.NewSimpleClientset(objects...)
+
+			psBase := &PubSubBase{
+				Base: &reconciler.Base{
+					Recorder: &record.FakeRecorder{},
+				},
+				pubsubClient:       cs,
+				receiveAdapterName: receiveAdapterName,
+			}
+			psBase.Logger = logtesting.TestLogger(t)
+
+			arl := pkgtesting.ActionRecorderList{cs}
+			_, _, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
+
+			if (tc.expectedErr != "" && err == nil) ||
+				(tc.expectedErr == "" && err != nil) ||
+				(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
+				t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
+			}
+
+			actions, err := arl.ActionsByVerb()
+			if err != nil {
+				t.Errorf("Error capturing actions by verb: %q", err)
+			}
+
+			verifyUpdateActions(t, actions.Updates, tc.wantUpdates)
+			verifyDeleteActions(t, actions.Deletes, tc.wantDeletes)
+		})
+	}
+}
+
+func verifyCreateActions(t *testing.T, actual []clientgotesting.CreateAction, expected []runtime.Object) {
+	for i, want := range expected {
+		if i >= len(actual) {
+			t.Errorf("Missing create: %#v", want)
+			continue
 		}
-		if got, want := len(actions.Creates), len(tc.wantCreates); got > want {
-			for _, extra := range actions.Creates[want:] {
-				t.Errorf("Extra create: %#v", extra.GetObject())
-			}
+		got := actual[i]
+		obj := got.GetObject()
+		if diff := cmp.Diff(want, obj); diff != "" {
+			t.Errorf("Unexpected create (-want, +got): %s", diff)
+		}
+	}
+	if got, want := len(actual), len(expected); got > want {
+		for _, extra := range actual[want:] {
+			t.Errorf("Extra create: %#v", extra.GetObject())
+		}
+	}
+}
+
+func verifyUpdateActions(t *testing.T, actual []clientgotesting.UpdateAction, expected []runtime.Object) {
+	for i, want := range expected {
+		if i >= len(actual) {
+			t.Errorf("Missing update: %#v", want)
+			continue
+		}
+		got := actual[i]
+		obj := got.GetObject()
+		if diff := cmp.Diff(want, obj); diff != "" {
+			t.Errorf("Unexpected update (-want, +got): %s", diff)
+		}
+	}
+	if got, want := len(actual), len(expected); got > want {
+		for _, extra := range actual[want:] {
+			t.Errorf("Extra update: %#v", extra.GetObject())
+		}
+	}
+}
+
+func verifyDeleteActions(t *testing.T, actual []clientgotesting.DeleteAction, expected []clientgotesting.DeleteActionImpl) {
+	for i, want := range expected {
+		if i >= len(actual) {
+			t.Errorf("Missing delete: %#v", want)
+			continue
+		}
+		got := actual[i]
+
+		wantGVR := want.GetResource()
+		gotGVR := got.GetResource()
+		if diff := cmp.Diff(wantGVR, gotGVR); diff != "" {
+			t.Errorf("Unexpected delete GVR (-want +got): %s", diff)
+		}
+		if w, g := want.Namespace, got.GetNamespace(); w != g {
+			t.Errorf("Unexpected delete namespace. Expected %q, actually %q", w, g)
+		}
+		if w, g := want.Name, got.GetName(); w != g {
+			t.Errorf("Unexpected delete name. Expected %q, actually %q", w, g)
+		}
+	}
+	if got, want := len(actual), len(expected); got > want {
+		for _, extra := range actual[want:] {
+			t.Errorf("Extra delete: %#v", extra)
 		}
 	}
 }
