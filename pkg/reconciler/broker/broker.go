@@ -435,7 +435,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 	existing, err := r.configMapLister.ConfigMaps(desired.Namespace).Get(desired.Name)
 	if errors.IsNotFound(err) {
 		r.Logger.Debug("Creating targets ConfigMap", zap.String("namespace", desired.Namespace), zap.String("name", desired.Name))
-		_, err = r.KubeClientSet.CoreV1().ConfigMaps(desired.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.CoreV1().ConfigMaps(desired.Namespace).Create(desired)
 		if err != nil {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}

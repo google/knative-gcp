@@ -39,12 +39,11 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudbuildsource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
-	reconcilerpubsub "github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
@@ -174,23 +173,23 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 			WantCreates: []runtime.Object{
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionSpecWithNoDefaults(pubsubv1alpha1.PullSubscriptionSpec{
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
 						Topic: testTopicID,
 						PubSubSpec: duckv1alpha1.PubSubSpec{
 							Secret: &secret,
 						},
 					}),
-					WithPubSubPullSubscriptionSink(sinkGVK, sinkName),
-					WithPubSubPullSubscriptionLabels(map[string]string{
+					WithPullSubscriptionSink(sinkGVK, sinkName),
+					WithPullSubscriptionLabels(map[string]string{
 						"receive-adapter":                     receiveAdapterName,
 						"events.cloud.google.com/source-name": buildName,
 					}),
-					WithPubSubPullSubscriptionAnnotations(map[string]string{
+					WithPullSubscriptionAnnotations(map[string]string{
 						"metrics-resource-group":           resourceGroup,
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithPubSubPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -198,7 +197,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", buildName),
-				Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, buildName),
+				Eventf(corev1.EventTypeWarning, intevents.PullSubscriptionStatusPropagateFailedReason, "%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, buildName),
 			},
 		}, {
 			Name: "pullsubscription exists and the status is false",
@@ -208,8 +207,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReadyStatus(corev1.ConditionFalse, "PullSubscriptionFalse", "status false test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -229,7 +228,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", buildName),
-				Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, buildName),
+				Eventf(corev1.EventTypeWarning, intevents.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is False", failedToPropagatePullSubscriptionStatusMsg, buildName),
 			},
 		}, {
 			Name: "pullsubscription exists and the status is unknown",
@@ -239,8 +238,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReadyStatus(corev1.ConditionUnknown, "PullSubscriptionUnknown", "status unknown test message")),
 				newSink(),
 			},
 			Key: testNS + "/" + buildName,
@@ -260,7 +259,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", buildName),
-				Eventf(corev1.EventTypeWarning, reconcilerpubsub.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, buildName),
+				Eventf(corev1.EventTypeWarning, intevents.PullSubscriptionStatusPropagateFailedReason, "%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, buildName),
 			},
 		}, {
 			Name: "pullsubscription exists and ready, with retry",
@@ -270,9 +269,9 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceTopic(testTopicID),
 					WithCloudBuildSourceSink(sinkGVK, sinkName),
 				),
-				NewPubSubPullSubscriptionWithNoDefaults(buildName, testNS,
-					WithPubSubPullSubscriptionReady(sinkURI),
-					WithPubSubPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
+				NewPullSubscriptionWithNoDefaults(buildName, testNS,
+					WithPullSubscriptionReady(sinkURI),
+					WithPullSubscriptionReadyStatus(corev1.ConditionTrue, "PullSubscriptionNoReady", ""),
 				),
 				newSink(),
 			},
@@ -354,11 +353,10 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			PubSubBase:             pubsub.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
-			buildLister:            listers.GetCloudBuildSourceLister(),
-			pullsubscriptionLister: listers.GetPubSubPullSubscriptionLister(),
-			serviceAccountLister:   listers.GetServiceAccountLister(),
+			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			buildLister:          listers.GetCloudBuildSourceLister(),
+			serviceAccountLister: listers.GetServiceAccountLister(),
 		}
 		return cloudbuildsource.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetCloudBuildSourceLister(), r.Recorder, r)
 	}))
