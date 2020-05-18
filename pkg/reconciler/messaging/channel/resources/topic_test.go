@@ -23,8 +23,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 )
 
 func TestMakeTopic(t *testing.T) {
@@ -61,7 +61,7 @@ func TestMakeTopic(t *testing.T) {
 	})
 
 	yes := true
-	want := &pubsubv1alpha1.Topic{
+	want := &inteventsv1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-channel-name-chan",
@@ -77,7 +77,7 @@ func TestMakeTopic(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.TopicSpec{
+		Spec: inteventsv1alpha1.TopicSpec{
 			Secret: &corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: "eventing-secret-name",
@@ -86,7 +86,7 @@ func TestMakeTopic(t *testing.T) {
 			},
 			Project:           "project-123",
 			Topic:             "topic-abc",
-			PropagationPolicy: pubsubv1alpha1.TopicPolicyCreateDelete,
+			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
 		},
 	}
 
