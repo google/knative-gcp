@@ -361,6 +361,9 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 	msg, err := bIng.client.Receive(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	msg.Finish(nil)
@@ -413,6 +416,9 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	msg, respFn, err := consumer.client.Respond(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	gotEvent, err = binding.ToEvent(ctx, msg)
@@ -463,6 +469,9 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 	msg, err := psTmp.Receive(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	msg.Finish(nil)
