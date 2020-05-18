@@ -165,7 +165,6 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {
 		client.T.Error("resp event didn't hit the target pod")
-		client.T.Failed()
 	}
 }
 
