@@ -108,7 +108,7 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
-# github.com/cloudevents/sdk-go/v2 v2.0.0-RC2 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
+# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -1005,7 +1005,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.14.1-0.20200513200558-1689191fdf85
+# knative.dev/eventing v0.14.1-0.20200515141201-4a46afff07a6
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1106,7 +1106,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200513172958-40ed633032cb
+# knative.dev/pkg v0.0.0-20200515002500-16d7b963416f
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1122,7 +1122,6 @@ knative.dev/pkg/client/injection/ducks/duck/v1/addressable
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake
-knative.dev/pkg/client/injection/ducks/duck/v1alpha1/addressable
 knative.dev/pkg/client/injection/kube/client
 knative.dev/pkg/client/injection/kube/client/fake
 knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration
@@ -1209,7 +1208,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.14.1-0.20200513190758-ab4f8c05a713
+# knative.dev/serving v0.14.1-0.20200515044100-3d827ca18c00
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1255,7 +1254,8 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200513011557-d03429a76034
+# knative.dev/test-infra v0.0.0-20200514223200-ef4fd3ad398f
+## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
