@@ -72,13 +72,13 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 		}
 	}
 	if metricsPort < 0 {
-		client.T.Logf("Pod '%v' does not have a metrics port", podName)
+		client.T.Logf("Pod %q does not have a metrics port", podName)
 		return
 	}
 
 	root, err := getRootOwnerOfPod(client, pod)
 	if err != nil {
-		client.T.Logf("Unable to get root owner of the Pod '%v': %v", podName, err)
+		client.T.Logf("Unable to get root owner of the Pod %q: %v", podName, err)
 		root = "root-unknown"
 	}
 
@@ -89,14 +89,14 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 	}
 	localPort, err := findAvailablePort()
 	if err != nil {
-		client.T.Logf("Unable to find an avaiable port for Pod '%v': %v", podName, err)
+		client.T.Logf("Unable to find an avaiable port for Pod %q: %v", podName, err)
 		return
 	}
-	// There is almost certainly a better way to do this, but for now, just use kubectl to port
-	// forward and use HTTP to read the metrics.
+	// TODO There is almost certainly a better way to do this, but for now, just use kubectl to port
+	// forward and use HTTP to read the metrics. https://github.com/google/knative-gcp/issues/1083
 	pid, err := monitoring.PortForward(client.T.Logf, podList, localPort, metricsPort, pod.Namespace)
 	if err != nil {
-		client.T.Logf("Unable to port forward for Pod '%v': %v", podName, err)
+		client.T.Logf("Unable to port forward for Pod %q: %v", podName, err)
 		return
 	}
 	defer monitoring.Cleanup(pid)
@@ -119,12 +119,12 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 	})
 
 	if err != nil {
-		client.T.Logf("Unable to read metrics from Pod '%v' (root %q): %v", podName, root, err)
+		client.T.Logf("Unable to read metrics from Pod %q (root %q): %v", podName, root, err)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.ContentLength == 0 {
-		client.T.Logf("Pod had no metrics reported '%v' (root %q)", podName, root)
+		client.T.Logf("Pod had no metrics reported %q (root %q)", podName, root)
 		return
 	}
 	b, err := ioutil.ReadAll(resp.Body)
