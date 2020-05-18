@@ -63,14 +63,6 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	}
 	ctx, span := startSpan(ctx, trigger, event)
 	defer span.End()
-	if span.IsRecordingEvents() {
-		span.AddAttributes(
-			kntracing.MessagingSystemAttribute,
-			tracing.PubSubProtocolAttribute,
-			kntracing.TriggerMessagingDestinationAttribute(trigger),
-			kntracing.MessagingMessageIDAttribute(event.ID()),
-		)
-	}
 
 	if target.FilterAttributes == nil {
 		return p.Next().Process(ctx, event)
@@ -84,11 +76,21 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 }
 
 func startSpan(ctx context.Context, trigger types.NamespacedName, event *event.Event) (context.Context, *trace.Span) {
+	var span *trace.Span
 	if dt, ok := extensions.GetDistributedTracingExtension(*event); ok {
-		return dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+		ctx, span = dt.StartChildSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
 	} else {
-		return trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
+		ctx, span = trace.StartSpan(ctx, kntracing.TriggerMessagingDestination(trigger))
 	}
+	if span.IsRecordingEvents() {
+		span.AddAttributes(
+			kntracing.MessagingSystemAttribute,
+			tracing.PubSubProtocolAttribute,
+			kntracing.TriggerMessagingDestinationAttribute(trigger),
+			kntracing.MessagingMessageIDAttribute(event.ID()),
+		)
+	}
+	return ctx, span
 }
 
 func (p *Processor) passFilter(ctx context.Context, attrs map[string]string, event *event.Event) bool {
