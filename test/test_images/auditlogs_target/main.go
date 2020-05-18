@@ -40,6 +40,8 @@ const (
 	resourceName = "resourceName"
 )
 
+var shutDown = make(chan struct{}, 1)
+
 func main() {
 	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
@@ -63,16 +65,22 @@ func main() {
 	timer := time.NewTimer(time.Second * time.Duration(duration))
 	defer timer.Stop()
 	go func() {
-		<-timer.C
-		// Write the termination message if time out
-		fmt.Printf("time out to wait for event with type %q source %q subject %q service_name %q method_name %q resource_name %q .\n",
-			r.Type, r.Source, r.Subject, r.ServiceName, r.MethodName, r.ResourceName)
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
+		select {
+		case <-shutDown:
+			// Give the receiver a little time to finish responding.
+			time.Sleep(time.Second)
+			os.Exit(0)
+		case <-timer.C:
+			// Write the termination message if time out
+			fmt.Printf("time out to wait for event with type %q source %q subject %q service_name %q method_name %q resource_name %q .\n",
+				r.Type, r.Source, r.Subject, r.ServiceName, r.MethodName, r.ResourceName)
+			if err := r.writeTerminationMessage(map[string]interface{}{
+				"success": false,
+			}); err != nil {
+				fmt.Printf("failed to write termination message, %s.\n", err.Error())
+			}
+			os.Exit(0)
 		}
-		os.Exit(0)
 	}()
 
 	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
@@ -136,7 +144,7 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 		}); err != nil {
 			fmt.Printf("failed to write termination message, %s.\n", err.Error())
 		}
-		os.Exit(0)
+		shutDown <- struct{}{}
 	} else {
 		for k, v := range unmatchedProps {
 			fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.eventProp, v.receiverProp)

@@ -21,6 +21,8 @@ const (
 	eventType    = "type"
 )
 
+var shutDown = make(chan struct{}, 1)
+
 func main() {
 	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
@@ -39,15 +41,21 @@ func main() {
 	defer timer.Stop()
 
 	go func() {
-		<-timer.C
-		// Write the termination message if time out occurred
-		fmt.Println("Timed out waiting for event from scheduler")
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Println("Failed to write termination message, got error:", err.Error())
+		select {
+		case <-shutDown:
+			// Give the receiver a little time to finish responding.
+			time.Sleep(time.Second)
+			os.Exit(0)
+		case <-timer.C:
+			// Write the termination message if time out occurred
+			fmt.Println("Timed out waiting for event from scheduler")
+			if err := r.writeTerminationMessage(map[string]interface{}{
+				"shutDown": false,
+			}); err != nil {
+				fmt.Println("Failed to write termination message, got error:", err.Error())
+			}
+			os.Exit(0)
 		}
-		os.Exit(0)
 	}()
 
 	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
@@ -116,7 +124,7 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 			}
 		}
 	}
-	os.Exit(0)
+	shutDown <- struct{}{}
 }
 
 func (r *Receiver) writeTerminationMessage(result interface{}) error {

@@ -14,6 +14,8 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+var shutDown = make(chan struct{}, 1)
+
 func main() {
 	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
@@ -32,15 +34,21 @@ func main() {
 	timer := time.NewTimer(time.Second * time.Duration(duration))
 	defer timer.Stop()
 	go func() {
-		<-timer.C
-		// Write the termination message if time out
-		fmt.Printf("time out to wait for event with subject %q.\n", r.Subject)
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
+		select {
+		case <-shutDown:
+			// Give the reciever a little time to finish.
+			time.Sleep(time.Second)
+			os.Exit(0)
+		case <-timer.C:
+			// Write the termination message if time out
+			fmt.Printf("time out to wait for event with subject %q.\n", r.Subject)
+			if err := r.writeTerminationMessage(map[string]interface{}{
+				"success": false,
+			}); err != nil {
+				fmt.Printf("failed to write termination message, %s.\n", err.Error())
+			}
+			os.Exit(0)
 		}
-		os.Exit(0)
 	}()
 
 	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
@@ -64,7 +72,7 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 		}); err != nil {
 			fmt.Printf("failed to write termination message, %s.\n", err.Error())
 		}
-		os.Exit(0)
+		shutDown <- struct{}{}
 	} else {
 		fmt.Printf("subject doesn't match, %q != %q.\n", eventSubject, r.Subject)
 	}
