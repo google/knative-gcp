@@ -132,7 +132,11 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 		client.T.Logf("Unable to read HTTP response body for root %q: %v", root, err)
 		return
 	}
-	client.T.Logf("Metrics logs for root %q: %s", root, string(b))
+	s := string(b)
+	if len(s) == 0 {
+		s = "<Empty Metrics>"
+	}
+	client.T.Logf("Metrics logs for root %q: %s", root, s)
 }
 
 func findAvailablePort() (int, error) {
