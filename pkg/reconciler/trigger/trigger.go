@@ -81,8 +81,6 @@ var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
-	t.Status.InitializeConditions()
-
 	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 
 	// If there is an error getting the Broker or the Broker is deleted, we mark the Trigger status
@@ -112,6 +110,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger
 
 // reconciles the Trigger given that its Broker exists and is not being deleted.
 func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) pkgreconciler.Event {
+	t.Status.InitializeConditions()
 	t.Status.PropagateBrokerStatus(&b.Status)
 
 	if err := r.resolveSubscriber(ctx, t, b); err != nil {
