@@ -80,7 +80,7 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		Labels:      resources.GetLabels(psb.receiveAdapterName, name),
 		Annotations: annotations,
 	}
-	desired := resources.MakeTopic(args)
+	newTopic := resources.MakeTopic(args)
 
 	topics := psb.pubsubClient.PubsubV1alpha1().Topics(namespace)
 	t, err := topics.Get(name, v1.GetOptions{})
@@ -89,17 +89,18 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
 			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
 		}
-		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", desired))
-		t, err = topics.Create(desired)
+		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", newTopic))
+		t, err = topics.Create(newTopic)
 		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", desired), zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
 			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 		// Check whether the specs differ and update the Topic if so.
-	} else if !equality.Semantic.DeepDerivative(desired.Spec, t.Spec) {
+	} else if !equality.Semantic.DeepDerivative(newTopic.Spec, t.Spec) {
 		// Don't modify the informers copy.
 		desired := t.DeepCopy()
-		desired.Spec = t.Spec
+		desired.Spec = newTopic.Spec
+		logging.FromContext(ctx).Desugar().Debug("Updating Topic", zap.Any("topic", desired))
 		t, err = topics.Update(desired)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update Topic", zap.Any("topic", t), zap.Error(err))
@@ -146,7 +147,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	if isPushCompatible {
 		args.Mode = pubsubv1alpha1.ModePushCompatible
 	}
-	desired := resources.MakePullSubscription(args)
+	newPS := resources.MakePullSubscription(args)
 
 	pullSubscriptions := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
@@ -155,17 +156,18 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionGetFailedReason, "Getting PullSubscription failed with: %s", err.Error())
 		}
-		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", desired))
-		ps, err = pullSubscriptions.Create(desired)
+		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
+		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
-			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", desired), zap.Error(err))
+			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionCreateFailedReason, "Creating PullSubscription failed with: %s", err.Error())
 		}
 		// Check whether the specs differ and update the PS if so.
-	} else if !equality.Semantic.DeepDerivative(desired.Spec, ps.Spec) {
+	} else if !equality.Semantic.DeepDerivative(newPS.Spec, ps.Spec) {
 		// Don't modify the informers copy.
 		desired := ps.DeepCopy()
-		desired.Spec = ps.Spec
+		desired.Spec = newPS.Spec
+		logging.FromContext(ctx).Desugar().Debug("Updating PullSubscription", zap.Any("ps", desired))
 		ps, err = pullSubscriptions.Update(desired)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update PullSubscription", zap.Any("ps", ps), zap.Error(err))

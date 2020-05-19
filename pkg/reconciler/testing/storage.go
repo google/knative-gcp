@@ -82,6 +82,12 @@ func WithCloudStorageSourceSink(gvk metav1.GroupVersionKind, name string) CloudS
 	}
 }
 
+func WithCloudStorageSourceSinkDestination(sink duckv1.Destination) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Spec.Sink = sink
+	}
+}
+
 // WithInitCloudStorageSourceConditions initializes the CloudStorageSources's conditions.
 func WithInitCloudStorageSourceConditions(s *v1alpha1.CloudStorageSource) {
 	s.Status.InitializeConditions()
