@@ -74,6 +74,8 @@ func newClient(configPath string, clusterName string) (*Client, error) {
 // TearDown runs the TearDown in the common eventing test framework.
 func TearDown(client *Client) {
 	client.T.Helper()
+
+	printAllPodMetricsIfTestFailed(client)
 	lib.TearDown(client.Core)
 }
 
