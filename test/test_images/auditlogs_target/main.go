@@ -17,16 +17,11 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"strconv"
-	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -40,15 +35,8 @@ const (
 	resourceName = "resourceName"
 )
 
-var shutDown = make(chan struct{}, 1)
-
 func main() {
-	client, err := cloudevents.NewDefaultClient()
-	if err != nil {
-		panic(err)
-	}
-
-	r := Receiver{}
+	r := &auditLogReceiver{}
 	if err := envconfig.Process("", &r); err != nil {
 		panic(err)
 	}
@@ -60,42 +48,18 @@ func main() {
 	fmt.Printf("Source to match: %q.\n", r.Source)
 	fmt.Printf("Subject to match: %q.\n", r.Subject)
 
-	// Create a timer
-	duration, _ := strconv.Atoi(r.Time)
-	timer := time.NewTimer(time.Second * time.Duration(duration))
-	defer timer.Stop()
-	go func() {
-		select {
-		case <-shutDown:
-			// Give the receiver a little time to finish responding.
-			time.Sleep(time.Second)
-			os.Exit(0)
-		case <-timer.C:
-			// Write the termination message if time out
-			fmt.Printf("time out to wait for event with type %q source %q subject %q service_name %q method_name %q resource_name %q .\n",
-				r.Type, r.Source, r.Subject, r.ServiceName, r.MethodName, r.ResourceName)
-			if err := r.writeTerminationMessage(map[string]interface{}{
-				"success": false,
-			}); err != nil {
-				fmt.Printf("failed to write termination message, %s.\n", err.Error())
-			}
-			os.Exit(0)
-		}
-	}()
-
-	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
-		log.Fatal(err)
-	}
+	knockdown.Main(r.Config, r)
 }
 
-type Receiver struct {
+type auditLogReceiver struct {
+	knockdown.Config
+
 	ServiceName  string `envconfig:"SERVICENAME" required:"true"`
 	MethodName   string `envconfig:"METHODNAME" required:"true"`
 	ResourceName string `envconfig:"RESOURCENAME" required:"true"`
 	Type         string `envconfig:"TYPE" required:"true"`
 	Source       string `envconfig:"SOURCE" required:"true"`
 	Subject      string `envconfig:"SUBJECT" required:"true"`
-	Time         string `envconfig:"TIME" required:"true"`
 }
 
 type propPair struct {
@@ -103,7 +67,7 @@ type propPair struct {
 	receiverProp string
 }
 
-func (r *Receiver) Receive(event cloudevents.Event) {
+func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	fmt.Printf("event.Context is %s", event.Context.String())
 	var eventData map[string]interface{}
 	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
@@ -138,24 +102,10 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 	}
 
 	if len(unmatchedProps) == 0 {
-		// Write the termination message if the subject successfully matches
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": true,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
-		}
-		shutDown <- struct{}{}
-	} else {
-		for k, v := range unmatchedProps {
-			fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.eventProp, v.receiverProp)
-		}
+		return true
 	}
-}
-
-func (r *Receiver) writeTerminationMessage(result interface{}) error {
-	b, err := json.Marshal(result)
-	if err != nil {
-		return err
+	for k, v := range unmatchedProps {
+		fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.eventProp, v.receiverProp)
 	}
-	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+	return false
 }

@@ -45,7 +45,7 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName string) {
 	job := resources.SchedulerJob(targetName, []v1.EnvVar{
 		{
 			Name:  "TIME",
-			Value: "360",
+			Value: "6m",
 		},
 		{
 			Name:  "SUBJECT_PREFIX",
