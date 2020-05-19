@@ -59,13 +59,7 @@ func TestInvalidContext(t *testing.T) {
 }
 
 func TestDeliverSuccess(t *testing.T) {
-	sampleEvent := event.New()
-	sampleEvent.SetID("id")
-	sampleEvent.SetSource("source")
-	sampleEvent.SetSubject("subject")
-	sampleEvent.SetType("type")
-	sampleEvent.SetTime(time.Now())
-
+	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
@@ -77,8 +71,8 @@ func TestDeliverSuccess(t *testing.T) {
 		wantReply  *event.Event
 	}{{
 		name:       "success",
-		origin:     &sampleEvent,
-		wantOrigin: &sampleEvent,
+		origin:     sampleEvent,
+		wantOrigin: sampleEvent,
 		reply:      &sampleReply,
 		wantReply: func() *event.Event {
 			copy := sampleReply.Clone()
@@ -92,7 +86,7 @@ func TestDeliverSuccess(t *testing.T) {
 			eventutil.UpdateRemainingHops(context.Background(), &copy, 1)
 			return &copy
 		}(),
-		wantOrigin: &sampleEvent,
+		wantOrigin: sampleEvent,
 		reply:      &sampleReply,
 	}}
 
@@ -280,12 +274,7 @@ func TestDeliverFailure(t *testing.T) {
 				DeliverTimeout:     500 * time.Millisecond,
 			}
 
-			origin := event.New()
-			origin.SetID("id")
-			origin.SetSource("source")
-			origin.SetSubject("subject")
-			origin.SetType("type")
-			origin.SetTime(time.Now())
+			origin := newSampleEvent()
 
 			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
@@ -313,7 +302,7 @@ func TestDeliverFailure(t *testing.T) {
 				}
 			}()
 
-			err = p.Process(ctx, &origin)
+			err = p.Process(ctx, origin)
 			if (err != nil) != tc.wantErr {
 				t.Errorf("processing got error=%v, want=%v", err, tc.wantErr)
 			}
@@ -332,13 +321,7 @@ func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
-	sampleEvent := event.New()
-	sampleEvent.SetID("id")
-	sampleEvent.SetSource("source")
-	sampleEvent.SetSubject("subject")
-	sampleEvent.SetType("type")
-	sampleEvent.SetTime(time.Now())
-
+	sampleEvent := newSampleEvent()
 	deliverClient, err := ceclient.NewDefault()
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
@@ -362,7 +345,7 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, &sampleEvent); err != nil {
+		if err := p.Process(ctx, sampleEvent); err != nil {
 			b.Errorf("unexpected error from processing: %v", err)
 		}
 	}
@@ -380,13 +363,7 @@ func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
-	sampleEvent := event.New()
-	sampleEvent.SetID("id")
-	sampleEvent.SetSource("source")
-	sampleEvent.SetSubject("subject")
-	sampleEvent.SetType("type")
-	sampleEvent.SetTime(time.Now())
-
+	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
@@ -416,7 +393,7 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, &sampleEvent); err != nil {
+		if err := p.Process(ctx, sampleEvent); err != nil {
 			b.Errorf("unexpected error from processing: %v", err)
 		}
 	}
@@ -446,4 +423,14 @@ func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pst
 		t.Fatalf("failed to create test pubsub client: %v", err)
 	}
 	return srv, c, close
+}
+
+func newSampleEvent() *event.Event {
+	sampleEvent := event.New()
+	sampleEvent.SetID("id")
+	sampleEvent.SetSource("source")
+	sampleEvent.SetSubject("subject")
+	sampleEvent.SetType("type")
+	sampleEvent.SetTime(time.Now())
+	return &sampleEvent
 }
