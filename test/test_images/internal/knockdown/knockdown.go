@@ -40,11 +40,6 @@ type Config struct {
 	Time time.Duration `envconfig:"TIME" required:"true"`
 }
 
-// cancel will cancel the main receiver's context. Calling this will cause Main() to become
-// unblocked and call os.Exit(0). In general, write{Successful,Failed}TerminationMessage should be
-// called first.
-var cancel func()
-
 // Main should be called by the process' main function. It will run the knockdown test. It will not
 // return. Instead, it will call os.Exit.
 func Main(config Config, kdr Receiver) {
@@ -58,7 +53,7 @@ func Main(config Config, kdr Receiver) {
 	}
 
 	var ctx context.Context
-	ctx, cancel = context.WithCancel(context.Background())
+	ctx, r.cancel = context.WithCancel(context.Background())
 
 	timer := time.NewTimer(config.Time)
 	defer timer.Stop()
@@ -69,7 +64,7 @@ func Main(config Config, kdr Receiver) {
 		if err := r.writeFailedTerminationMessage(); err != nil {
 			fmt.Printf("Failed to write termination message, %v\n", err)
 		}
-		cancel()
+		r.cancel()
 	}()
 
 	fmt.Printf("Waiting to receive event (timeout in %s)...", config.Time.String())
@@ -85,6 +80,11 @@ func Main(config Config, kdr Receiver) {
 
 type receiver struct {
 	kdr Receiver
+
+	// cancel will cancel the main receiver's context. Calling this will cause Main() to become
+	// unblocked and call os.Exit(0). In general, write{Successful,Failed}TerminationMessage should be
+	// called first.
+	cancel func()
 }
 
 type Receiver interface {
@@ -97,7 +97,7 @@ func (r *receiver) Receive(event cloudevents.Event) {
 		if err := r.writeSuccessfulTerminationMessage(); err != nil {
 			fmt.Printf("Failed to write termination message, %s.\n", err.Error())
 		}
-		cancel()
+		r.cancel()
 		return
 	}
 	fmt.Printf("Event did not knockdown the process.")
