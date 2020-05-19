@@ -345,14 +345,11 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	}
 	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer targetSvr.Close()
-	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
-	defer ingressSvr.Close()
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
 	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.SetAddress(ingressSvr.URL)
 		bm.UpsertTargets(target)
 	})
 	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
