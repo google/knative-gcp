@@ -53,12 +53,6 @@ type FanoutPool struct {
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient ceclient.Client
-	// For fanout delivery, we need a slightly shorter timeout
-	// than the handler timeout per event.
-	// It allows the delivery processor to timeout the delivery
-	// before the handler nacks the pubsub message, which will
-	// cause event re-delivery for all targets.
-	deliverTimeout time.Duration
 }
 
 type fanoutHandlerCache struct {
@@ -101,14 +95,20 @@ func NewFanoutPool(
 		return nil, fmt.Errorf("timeout per event cannot be lower than %v", 5*time.Second)
 	}
 
+	// For fanout delivery, we need a slightly shorter timeout
+	// than the handler timeout per event.
+	// It allows the delivery processor to timeout the delivery
+	// before the handler nacks the pubsub message, which will
+	// cause event re-delivery for all targets.
+	if options.DeliveryTimeout == 0 || options.DeliveryTimeout > options.TimeoutPerEvent-(5*time.Second) {
+		options.DeliveryTimeout = options.TimeoutPerEvent - (5 * time.Second)
+	}
 	p := &FanoutPool{
 		targets:            targets,
 		options:            options,
 		pubsubClient:       pubsubClient,
 		deliverClient:      deliverClient,
 		deliverRetryClient: retryClient,
-		// Set the deliver timeout slightly less than the total timeout for each event.
-		deliverTimeout: options.TimeoutPerEvent - (5 * time.Second),
 	}
 	return p, nil
 }
@@ -151,7 +151,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 						Targets:            p.targets,
 						RetryOnFailure:     true,
 						DeliverRetryClient: p.deliverRetryClient,
-						DeliverTimeout:     p.deliverTimeout,
+						DeliverTimeout:     p.options.DeliveryTimeout,
 					},
 				),
 			},
