@@ -308,7 +308,11 @@ func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
+	p, err := cepubsub.New(ctx,
+		cepubsub.WithClient(ps),
+		cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
