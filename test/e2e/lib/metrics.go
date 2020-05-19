@@ -89,7 +89,7 @@ func printPodMetrics(client *Client, pod corev1.Pod) {
 	}
 	localPort, err := findAvailablePort()
 	if err != nil {
-		client.T.Logf("Unable to find an avaiable port for Pod %q: %v", podName, err)
+		client.T.Logf("Unable to find an available port for Pod %q: %v", podName, err)
 		return
 	}
 	// TODO There is almost certainly a better way to do this, but for now, just use kubectl to port
