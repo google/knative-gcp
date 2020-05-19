@@ -137,22 +137,6 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
-func TestBrokerTracing(t *testing.T) {
-	t.Skip("Skipping tracing tests due to flakiness. See https://github.com/google/knative-gcp/issues/818.")
-	if authConfig.WorkloadIdentity {
-		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
-	}
-	cancel := logstream.Start(t)
-	defer cancel()
-	conformancehelpers.BrokerTracingTestHelperWithChannelTestRunner(
-		t, "ChannelBasedBroker", channelTestRunner,
-		func(client *eventingtestlib.Client) {
-			lib.GetCredential(client, authConfig.WorkloadIdentity)
-			lib.SetTracingToZipkin(client)
-		},
-	)
-}
-
 func TestChannelTracing(t *testing.T) {
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
