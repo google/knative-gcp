@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go"
@@ -40,9 +39,9 @@ type Config struct {
 	Time time.Duration `envconfig:"TIME" required:"true"`
 }
 
-// Main should be called by the process' main function. It will run the knockdown test. It will not
-// return. Instead, it will call os.Exit.
-func Main(config Config, kdr Receiver) {
+// Main should be called by the process' main function. It will run the knockdown test. The return
+// value MUST be used in os.Exit().
+func Main(config Config, kdr Receiver) int {
 	client, err := cloudevents.NewDefaultClient()
 	if err != nil {
 		panic(err)
@@ -75,7 +74,7 @@ func Main(config Config, kdr Receiver) {
 		log.Fatal(err)
 	}
 
-	os.Exit(0)
+	return 0
 }
 
 type receiver struct {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
@@ -9,12 +10,16 @@ import (
 )
 
 func main() {
+	os.Exit(mainWithExitCode())
+}
+
+func mainWithExitCode() int {
 	r := &Receiver{}
 	if err := envconfig.Process("", &r); err != nil {
 		panic(err)
 	}
 
-	knockdown.Main(r.Config, r)
+	return knockdown.Main(r.Config, r)
 }
 
 type Receiver struct {

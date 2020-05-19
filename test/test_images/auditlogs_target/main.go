@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
@@ -36,6 +37,10 @@ const (
 )
 
 func main() {
+	os.Exit(mainWithExitCode())
+}
+
+func mainWithExitCode() int {
 	r := &auditLogReceiver{}
 	if err := envconfig.Process("", &r); err != nil {
 		panic(err)
@@ -48,7 +53,7 @@ func main() {
 	fmt.Printf("Source to match: %q.\n", r.Source)
 	fmt.Printf("Subject to match: %q.\n", r.Subject)
 
-	knockdown.Main(r.Config, r)
+	return knockdown.Main(r.Config, r)
 }
 
 type auditLogReceiver struct {
