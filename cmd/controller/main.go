@@ -28,10 +28,13 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/events/pubsub"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler"
 	"github.com/google/knative-gcp/pkg/reconciler/events/storage"
+	kedapullsubscription "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/keda"
+	staticpullsubscription "github.com/google/knative-gcp/pkg/reconciler/intevents/pullsubscription/static"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents/topic"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
-	kedapullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda"
-	staticpullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/static"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub/topic"
+	pubsubkedapullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/keda"
+	pubsubstaticpullsubscription "github.com/google/knative-gcp/pkg/reconciler/pubsub/pullsubscription/static"
+	pubsubtopic "github.com/google/knative-gcp/pkg/reconciler/pubsub/topic"
 	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"knative.dev/pkg/injection/sharedmain"
@@ -48,6 +51,9 @@ func main() {
 		staticpullsubscription.NewController,
 		kedapullsubscription.NewController,
 		topic.NewController,
+		pubsubstaticpullsubscription.NewController,
+		pubsubkedapullsubscription.NewController,
+		pubsubtopic.NewController,
 		channel.NewController,
 		deployment.NewController,
 		broker.NewController,

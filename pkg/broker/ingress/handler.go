@@ -24,18 +24,20 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
-
 	cev2 "github.com/cloudevents/sdk-go/v2"
-
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/binding/transformer"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/metrics"
+	"github.com/google/knative-gcp/pkg/tracing"
 	"github.com/google/wire"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/eventing/pkg/logging"
+	kntracing "knative.dev/eventing/pkg/tracing"
 )
 
 const (
@@ -103,6 +105,7 @@ func (h *Handler) Start(ctx context.Context) error {
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
 func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
+	ctx := request.Context()
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
 	startTime := time.Now()
 	if request.Method != nethttp.MethodPost {
@@ -118,7 +121,11 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 		nethttp.Error(response, msg, nethttp.StatusNotFound)
 		return
 	}
-	ns, broker := pieces[1], pieces[2]
+	broker := types.NamespacedName{
+		Namespace: pieces[1],
+		Name:      pieces[2],
+	}
+
 	event, err := h.toEvent(request)
 	if err != nil {
 		nethttp.Error(response, err.Error(), nethttp.StatusBadRequest)
@@ -127,15 +134,26 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 
 	event.SetExtension(EventArrivalTime, cev2.Timestamp{Time: time.Now()})
 
+	ctx, span := trace.StartSpan(ctx, kntracing.BrokerMessagingDestination(broker))
+	defer span.End()
+	if span.IsRecordingEvents() {
+		span.AddAttributes(
+			kntracing.MessagingSystemAttribute,
+			tracing.PubSubProtocolAttribute,
+			kntracing.BrokerMessagingDestinationAttribute(broker),
+			kntracing.MessagingMessageIDAttribute(event.ID()),
+		)
+	}
+
 	// Optimistically set status code to StatusAccepted. It will be updated if there is an error.
 	// According to the data plane spec (https://github.com/knative/eventing/blob/master/docs/spec/data-plane.md), a
 	// non-callable SINK (which broker is) MUST respond with 202 Accepted if the request is accepted.
 	statusCode := nethttp.StatusAccepted
-	ctx, cancel := context.WithTimeout(request.Context(), decoupleSinkTimeout)
+	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(request.Context(), ns, broker, event, statusCode, startTime) }()
-	if res := h.decouple.Send(ctx, ns, broker, *event); !cev2.IsACK(res) {
-		msg := fmt.Sprintf("Error publishing to PubSub for broker %v/%v. event: %+v, err: %v.", ns, broker, event, res)
+	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode, startTime) }()
+	if res := h.decouple.Send(ctx, broker.Namespace, broker.Name, *event); !cev2.IsACK(res) {
+		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
 		h.logger.Error(msg)
 		statusCode = nethttp.StatusInternalServerError
 		if errors.Is(res, ErrNotFound) {
@@ -171,14 +189,14 @@ func (h *Handler) toEvent(request *nethttp.Request) (*cev2.Event, error) {
 	return event, nil
 }
 
-func (h *Handler) reportMetrics(ctx context.Context, ns, broker string, event *cev2.Event, statusCode int, start time.Time) {
+func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName, event *cev2.Event, statusCode int, start time.Time) {
 	args := metrics.IngressReportArgs{
-		Namespace:    ns,
-		Broker:       broker,
+		Namespace:    broker.Namespace,
+		Broker:       broker.Name,
 		EventType:    event.Type(),
 		ResponseCode: statusCode,
 	}
 	if err := h.reporter.ReportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
-		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", ns), zap.Any("broker", broker), zap.Error(err))
+		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
 	}
 }

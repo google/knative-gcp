@@ -108,7 +108,7 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
-# github.com/cloudevents/sdk-go/v2 v2.0.0-RC2 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
+# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -1005,7 +1005,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.14.1-0.20200508175545-d76621b63ac4
+# knative.dev/eventing v0.14.1-0.20200518183527-6fe800e66613
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1106,7 +1106,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200508172045-3a7a787c428e
+# knative.dev/pkg v0.0.0-20200518174206-60f4ae1dbe6f
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1122,7 +1122,6 @@ knative.dev/pkg/client/injection/ducks/duck/v1/addressable
 knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions
 knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake
-knative.dev/pkg/client/injection/ducks/duck/v1alpha1/addressable
 knative.dev/pkg/client/injection/kube/client
 knative.dev/pkg/client/injection/kube/client/fake
 knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration
@@ -1178,6 +1177,7 @@ knative.dev/pkg/signals
 knative.dev/pkg/system
 knative.dev/pkg/system/testing
 knative.dev/pkg/test
+knative.dev/pkg/test/gcs
 knative.dev/pkg/test/ghutil
 knative.dev/pkg/test/gke
 knative.dev/pkg/test/helpers
@@ -1190,6 +1190,7 @@ knative.dev/pkg/test/mako/alerter/github
 knative.dev/pkg/test/mako/alerter/slack
 knative.dev/pkg/test/mako/config
 knative.dev/pkg/test/monitoring
+knative.dev/pkg/test/prow
 knative.dev/pkg/test/slackutil
 knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
@@ -1207,7 +1208,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.14.1-0.20200508214645-9a9665c96b8a
+# knative.dev/serving v0.14.1-0.20200519013656-d369aaa6fa7d
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1253,7 +1254,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200508162345-7ee959873933
+# knative.dev/test-infra v0.0.0-20200519015156-82551620b0a9
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0

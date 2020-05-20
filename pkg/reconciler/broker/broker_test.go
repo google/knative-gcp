@@ -180,6 +180,7 @@ func TestAllCases(t *testing.T) {
 			triggerLister:      listers.GetTriggerLister(),
 			configMapLister:    listers.GetConfigMapLister(),
 			endpointsLister:    listers.GetEndpointsLister(),
+			deploymentLister:   listers.GetDeploymentLister(),
 			targetsConfig:      memory.NewEmptyTargets(),
 			targetsNeedsUpdate: make(chan struct{}),
 			projectID:          testProject,
