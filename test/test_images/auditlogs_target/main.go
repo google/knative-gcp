@@ -42,7 +42,7 @@ func main() {
 
 func mainWithExitCode() int {
 	r := &auditLogReceiver{}
-	if err := envconfig.Process("", &r); err != nil {
+	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
 

@@ -22,7 +22,7 @@ func main() {
 
 func mainWithExitCode() int {
 	r := &Receiver{}
-	if err := envconfig.Process("", &r); err != nil {
+	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
 
