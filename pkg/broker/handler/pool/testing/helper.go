@@ -94,7 +94,10 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 	if err != nil {
 		return nil, err
 	}
-	ceps, err := cepubsub.New(ctx, cepubsub.WithClient(c))
+	ceps, err := cepubsub.New(ctx,
+		cepubsub.WithClient(c),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -449,6 +452,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 		cepubsub.WithClient(h.PubsubClient),
 		cepubsub.WithTopicID(target.RetryQueue.Topic),
 		cepubsub.WithSubscriptionID(target.RetryQueue.Subscription),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
 	)
 	if err != nil {
 		t.Fatalf("failed to create temporary pubsub protocol to receive retry events: %v", err)
