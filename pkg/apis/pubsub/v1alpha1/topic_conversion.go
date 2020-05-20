@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	convert "github.com/google/knative-gcp/pkg/apis/convert"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"knative.dev/pkg/apis"
 )
 
