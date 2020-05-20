@@ -24,6 +24,8 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/wire"
+	"go.opencensus.io/plugin/ochttp"
+	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
 )
 
 var (
@@ -31,6 +33,10 @@ var (
 		ceclient.WithUUIDs(),
 		ceclient.WithTimeNow(),
 		ceclient.WithTracePropagation(),
+	}
+
+	DefaultHTTPOpts = []cehttp.Option{
+		cehttp.WithRoundTripper(&ochttp.Transport{Propagation: &tracecontext.HTTPFormat{}}),
 	}
 
 	// ProviderSet provides the fanout and retry sync pools using the default client options. In
@@ -43,7 +49,7 @@ var (
 		NewDeliverClient,
 		NewPubsubClient,
 		NewRetryClient,
-		wire.Value([]cehttp.Option(nil)),
+		wire.Value(DefaultHTTPOpts),
 		wire.Value(DefaultCEClientOpts),
 	)
 )
