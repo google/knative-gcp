@@ -19,7 +19,6 @@ package deliver
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -315,9 +314,6 @@ type NoReplyHandler struct{}
 
 func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
-	// Read body to allow the connection to be reused.
-	io.Copy(ioutil.Discard, req.Body)
-	req.Body.Close()
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
@@ -357,9 +353,6 @@ type ReplyHandler struct {
 
 func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
-	// Read body to allow the connection to be reused.
-	io.Copy(ioutil.Discard, req.Body)
-	req.Body.Close()
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
