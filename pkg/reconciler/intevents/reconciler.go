@@ -29,6 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/intevents/resources"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -103,16 +104,26 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	topics := psb.pubsubClient.InternalV1alpha1().Topics(newTopic.Namespace)
 	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
 	if apierrs.IsNotFound(err) {
+		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", newTopic))
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
 			return nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
 	} else if err != nil {
-		logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
-		return nil, fmt.Errorf("failed to get Topics: %w", err)
-	} else {
-		// TODO Compare the actual Topic we found with the desired one and update as needed.
+		logging.FromContext(ctx).Desugar().Error("Failed to get Topic", zap.Error(err))
+		return nil, fmt.Errorf("failed to get Topic: %w", err)
+		// Check whether the specs differ and update the Topic if so.
+	} else if !equality.Semantic.DeepDerivative(newTopic.Spec, t.Spec) {
+		// Don't modify the informers copy.
+		desired := t.DeepCopy()
+		desired.Spec = newTopic.Spec
+		logging.FromContext(ctx).Desugar().Debug("Updating Topic", zap.Any("topic", desired))
+		t, err = topics.Update(desired)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to update Topic", zap.Any("topic", t), zap.Error(err))
+			return nil, fmt.Errorf("failed to update Topic: %w", err)
+		}
 	}
 
 	status := pubsubable.PubSubStatus()
@@ -137,6 +148,21 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 
 	cs := pubsubable.ConditionSet()
 
+	args := &resources.PullSubscriptionArgs{
+		Namespace:   namespace,
+		Name:        name,
+		Spec:        spec,
+		Owner:       pubsubable,
+		Topic:       topic,
+		AdapterType: psb.adapterType,
+		Labels:      resources.GetLabels(psb.receiveAdapterName, name),
+		Annotations: resources.GetAnnotations(annotations, resourceGroup),
+	}
+	if isPushCompatible {
+		args.Mode = inteventsv1alpha1.ModePushCompatible
+	}
+	newPS := resources.MakePullSubscription(args)
+
 	pullSubscriptions := psb.pubsubClient.InternalV1alpha1().PullSubscriptions(namespace)
 	ps, err := pullSubscriptions.Get(name, v1.GetOptions{})
 	if err != nil {
@@ -144,26 +170,22 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 			logging.FromContext(ctx).Desugar().Error("Failed to get PullSubscription", zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionGetFailedReason, "Getting PullSubscription failed with: %s", err.Error())
 		}
-		args := &resources.PullSubscriptionArgs{
-			Namespace:   namespace,
-			Name:        name,
-			Spec:        spec,
-			Owner:       pubsubable,
-			Topic:       topic,
-			AdapterType: psb.adapterType,
-			Labels:      resources.GetLabels(psb.receiveAdapterName, name),
-			Annotations: resources.GetAnnotations(annotations, resourceGroup),
-		}
-		if isPushCompatible {
-			args.Mode = inteventsv1alpha1.ModePushCompatible
-		}
-
-		newPS := resources.MakePullSubscription(args)
 		logging.FromContext(ctx).Desugar().Debug("Creating PullSubscription", zap.Any("ps", newPS))
 		ps, err = pullSubscriptions.Create(newPS)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create PullSubscription", zap.Any("ps", newPS), zap.Error(err))
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, pullSubscriptionCreateFailedReason, "Creating PullSubscription failed with: %s", err.Error())
+		}
+		// Check whether the specs differ and update the PS if so.
+	} else if !equality.Semantic.DeepDerivative(newPS.Spec, ps.Spec) {
+		// Don't modify the informers copy.
+		desired := ps.DeepCopy()
+		desired.Spec = newPS.Spec
+		logging.FromContext(ctx).Desugar().Debug("Updating PullSubscription", zap.Any("ps", desired))
+		ps, err = pullSubscriptions.Update(desired)
+		if err != nil {
+			logging.FromContext(ctx).Desugar().Error("Failed to update PullSubscription", zap.Any("ps", ps), zap.Error(err))
+			return nil, err
 		}
 	}
 
