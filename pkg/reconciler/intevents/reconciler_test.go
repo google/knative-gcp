@@ -19,15 +19,22 @@ package intevents
 import (
 	"context"
 	"fmt"
+	"path"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	clientgotesting "k8s.io/client-go/testing"
+	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 	logtesting "knative.dev/pkg/logging/testing"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
@@ -63,11 +70,30 @@ var (
 		},
 		Key: "key.json",
 	}
-	pubsubable = rectesting.NewCloudStorageSource(name, testNS)
+
+	oldSecret = corev1.SecretKeySelector{
+		LocalObjectReference: corev1.LocalObjectReference{
+			Name: "old-secret",
+		},
+		Key: "key.json",
+	}
+
+	sink = duckv1.Destination{
+		URI: apis.HTTP("sink"),
+	}
+
+	oldSink = duckv1.Destination{
+		URI: apis.HTTP("oldSink"),
+	}
+
+	pubsubable = rectesting.NewCloudStorageSource(name, testNS,
+		rectesting.WithCloudStorageSourceSinkDestination(sink))
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
 	}, cmp.Ignore())
+
+	safeDeployDiff = cmpopts.IgnoreUnexported(resource.Quantity{})
 )
 
 // Returns an ownerref for the test object
@@ -90,6 +116,7 @@ func TestCreates(t *testing.T) {
 		expectedPS    *inteventsv1alpha1.PullSubscription
 		expectedErr   string
 		wantCreates   []runtime.Object
+		wantUpdates   []clientgotesting.UpdateActionImpl
 	}{{
 		name: "topic does not exist, created, not yet been reconciled",
 		expectedTopic: rectesting.NewTopic(name, testNS,
@@ -293,6 +320,111 @@ func TestCreates(t *testing.T) {
 		expectedPS:  nil,
 		expectedErr: fmt.Sprintf("Topic %q did not expose topicid", name),
 	}, {
+		name: "topic updated due to different secret, pullsubscription created, not yet been reconciled",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Secret:            &oldSecret,
+					Topic:             testTopicID,
+					PropagationPolicy: "CreatDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithTopicAnnotations(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
+			}),
+			rectesting.WithTopicAnnotations(map[string]string{
+				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
+				},
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
+			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group":       resourceGroup,
+				v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedErr: fmt.Sprintf("%s: PullSubscription %q has not yet been reconciled", failedToPropagatePullSubscriptionStatusMsg, name),
+		wantCreates: []runtime.Object{
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
+					},
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group":       resourceGroup,
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		},
+		wantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Secret:            &secret,
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithTopicAnnotations(map[string]string{
+					v1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicAddress(testTopicURI),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		}},
+	}, {
 		name: "topic exists and is ready, pullsubscription created, not yet been reconciled",
 		objects: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
@@ -337,6 +469,9 @@ func TestCreates(t *testing.T) {
 				Topic: testTopicID,
 				PubSubSpec: v1alpha1.PubSubSpec{
 					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
 				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -356,6 +491,9 @@ func TestCreates(t *testing.T) {
 					Topic: testTopicID,
 					PubSubSpec: v1alpha1.PubSubSpec{
 						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
 					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -391,6 +529,9 @@ func TestCreates(t *testing.T) {
 					Topic: testTopicID,
 					PubSubSpec: v1alpha1.PubSubSpec{
 						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
 					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -424,6 +565,9 @@ func TestCreates(t *testing.T) {
 				Topic: testTopicID,
 				PubSubSpec: v1alpha1.PubSubSpec{
 					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
 				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -458,6 +602,9 @@ func TestCreates(t *testing.T) {
 					Topic: testTopicID,
 					PubSubSpec: v1alpha1.PubSubSpec{
 						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
 					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -492,6 +639,9 @@ func TestCreates(t *testing.T) {
 				Topic: testTopicID,
 				PubSubSpec: v1alpha1.PubSubSpec{
 					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
 				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -527,6 +677,9 @@ func TestCreates(t *testing.T) {
 					Topic: testTopicID,
 					PubSubSpec: v1alpha1.PubSubSpec{
 						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
 					},
 				}),
 				rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -561,6 +714,9 @@ func TestCreates(t *testing.T) {
 				Topic: testTopicID,
 				PubSubSpec: v1alpha1.PubSubSpec{
 					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
 				},
 			}),
 			rectesting.WithPullSubscriptionLabels(map[string]string{
@@ -574,6 +730,103 @@ func TestCreates(t *testing.T) {
 			rectesting.WithPullSubscriptionUnknown(),
 		),
 		expectedErr: fmt.Sprintf("%s: the status of PullSubscription %q is Unknown", failedToPropagatePullSubscriptionStatusMsg, name),
+	}, {
+		name: "topic exists and is ready, pullsubscription is updated due to different sink",
+		objects: []runtime.Object{
+			rectesting.NewTopic(name, testNS,
+				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				rectesting.WithTopicLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithTopicProjectID(testProjectID),
+				rectesting.WithTopicReady(testTopicID),
+				rectesting.WithTopicAddress(testTopicURI),
+			),
+			rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: oldSink,
+						},
+					},
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": resourceGroup,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithPullSubscriptionReady(oldSink.URI),
+			),
+		},
+		expectedTopic: rectesting.NewTopic(name, testNS,
+			rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+				Secret:            &secret,
+				Topic:             testTopicID,
+				PropagationPolicy: "CreateDelete",
+			}),
+			rectesting.WithTopicLabels(map[string]string{
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
+			}),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			rectesting.WithTopicReady(testTopicID),
+			rectesting.WithTopicProjectID(testProjectID),
+			rectesting.WithTopicAddress(testTopicURI),
+			rectesting.WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+		),
+		expectedPS: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+			rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+				Topic: testTopicID,
+				PubSubSpec: v1alpha1.PubSubSpec{
+					Secret: &secret,
+					SourceSpec: duckv1.SourceSpec{
+						Sink: sink,
+					},
+				},
+			}),
+			rectesting.WithPullSubscriptionLabels(map[string]string{
+				"receive-adapter":                     receiveAdapterName,
+				"events.cloud.google.com/source-name": name,
+			}),
+			rectesting.WithPullSubscriptionAnnotations(map[string]string{
+				"metrics-resource-group": resourceGroup,
+			}),
+			rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			// The SinkURI is the old one because we are not calling the PS reconciler in the UT.
+			rectesting.WithPullSubscriptionReady(oldSink.URI),
+		),
+		wantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: rectesting.NewPullSubscriptionWithNoDefaults(name, testNS,
+				rectesting.WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: v1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: sink,
+						},
+					},
+				}),
+				rectesting.WithPullSubscriptionLabels(map[string]string{
+					"receive-adapter":                     receiveAdapterName,
+					"events.cloud.google.com/source-name": name,
+				}),
+				rectesting.WithPullSubscriptionAnnotations(map[string]string{
+					"metrics-resource-group": resourceGroup,
+				}),
+				rectesting.WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				rectesting.WithPullSubscriptionReady(oldSink.URI),
+			),
+		}},
 	}}
 
 	defer logtesting.ClearAll()
@@ -603,6 +856,12 @@ func TestCreates(t *testing.T) {
 			t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
 		}
 
+		// Previous state is used to diff resource expected state for update requests that were missed.
+		objPrevState := make(map[string]runtime.Object, len(tc.objects))
+		for _, o := range tc.objects {
+			objPrevState[objKey(o)] = o
+		}
+
 		// Validate creates.
 		actions, err := arl.ActionsByVerb()
 		if err != nil {
@@ -624,7 +883,74 @@ func TestCreates(t *testing.T) {
 				t.Errorf("Extra create: %#v", extra.GetObject())
 			}
 		}
+
+		updates := filterUpdatesWithSubresource("", actions.Updates)
+		for i, want := range tc.wantUpdates {
+			if i >= len(updates) {
+				wo := want.GetObject()
+				key := objKey(wo)
+				oldObj, ok := objPrevState[key]
+				if !ok {
+					t.Errorf("Object %s was never created: want: %#v", key, wo)
+					continue
+				}
+				t.Errorf("Missing update for %s (-want, +prevState): %s", key,
+					cmp.Diff(wo, oldObj, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()))
+				continue
+			}
+
+			if want.GetSubresource() != "" {
+				t.Errorf("Expectation was invalid - it should not include a subresource: %#v", want)
+			}
+
+			got := updates[i].GetObject()
+
+			// Update the object state.
+			objPrevState[objKey(got)] = got
+
+			if diff := cmp.Diff(want.GetObject(), got, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("Unexpected update (-want, +got): %s", diff)
+			}
+		}
+		if got, want := len(updates), len(tc.wantUpdates); got > want {
+			for _, extra := range updates[want:] {
+				t.Errorf("Extra update: %#v", extra.GetObject())
+			}
+		}
 	}
+}
+
+// Code extracted from the the Table framework in knative.dev/pkg
+
+func filterUpdatesWithSubresource(
+	subresource string,
+	actions []clientgotesting.UpdateAction) (result []clientgotesting.UpdateAction) {
+	for _, action := range actions {
+		if action.GetSubresource() == subresource {
+			result = append(result, action)
+		}
+	}
+	return
+}
+
+func objKey(o runtime.Object) string {
+	on := o.(kmeta.Accessor)
+
+	var typeOf string
+	if gvk := on.GroupVersionKind(); gvk.Group != "" {
+		// This must be populated if we're dealing with unstructured.Unstructured.
+		typeOf = gvk.String()
+	} else if or, ok := on.(kmeta.OwnerRefable); ok {
+		// This is typically implemented by Knative resources.
+		typeOf = or.GetGroupVersionKind().String()
+	} else {
+		// Worst case, fallback on a non-GVK string.
+		typeOf = reflect.TypeOf(o).String()
+	}
+
+	// namespace + name is not unique, and the tests don't populate k8s kind
+	// information, so use GoLang's type name as part of the key.
+	return path.Join(typeOf, on.GetNamespace(), on.GetName())
 }
 
 func TestDeletes(t *testing.T) {
