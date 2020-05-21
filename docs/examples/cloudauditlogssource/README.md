@@ -27,13 +27,13 @@ directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
    You can change the `serviceName`, `methodName` and `resourceName` (see
    detailed description
    [here](https://cloud.google.com/logging/docs/reference/audit/auditlog/rest/Shared.Types/AuditLog))
-   to select the Cloud Audit Log Entries you want to view.  
-   
-   | CloudAuditLogsSource | Audit Log Entry Fields
-   :-------------------: | :--------------------------:
-   spec.serviceName | protoPayload.serviceName
-   spec.methodName | protoPayload.methodName
-   spec.resourceName | protoPayload.resourceName
+   to select the Cloud Audit Log Entries you want to view.
+
+   | CloudAuditLogsSource |  Audit Log Entry Fields   |
+   | :------------------: | :-----------------------: |
+   |   spec.serviceName   | protoPayload.serviceName  |
+   |   spec.methodName    |  protoPayload.methodName  |
+   |  spec.resourceName   | protoPayload.resourceName |
 
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
