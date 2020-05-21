@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 	"time"
 
@@ -318,7 +319,16 @@ func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
 	sampleEvent := newSampleEvent()
-	deliverClient, err := ceclient.NewDefault()
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: runtime.NumCPU(),
+		},
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+	deliverClient, err := ceclient.New(httpProtocol)
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
@@ -362,7 +372,16 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
-	deliverClient, err := ceclient.NewDefault()
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: runtime.NumCPU(),
+		},
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+	deliverClient, err := ceclient.New(httpProtocol)
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
