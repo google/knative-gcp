@@ -20,6 +20,9 @@ func mainWithExitCode() int {
 	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
+	fmt.Printf("SubjectPrefix to match: %q.\n", r.SubjectPrefix)
+	fmt.Printf("Data to match: %q.\n", r.Data)
+	fmt.Printf("Type to match: %q.\n", r.Type)
 
 	return knockdown.Main(r.Config, r)
 }

@@ -20,6 +20,9 @@ func mainWithExitCode() int {
 		panic(err)
 	}
 
+	fmt.Printf("Type to match: %q.\n", r.Type)
+	fmt.Printf("Source to match: %q.\n", r.Source)
+	fmt.Printf("Subject to match: %q.\n", r.Subject)
 	return knockdown.Main(r.Config, r)
 }
 

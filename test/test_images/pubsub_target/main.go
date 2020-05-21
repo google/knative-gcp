@@ -1,62 +1,36 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"strconv"
-	"time"
-
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
+	"os"
 )
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
-	if err != nil {
+	os.Exit(mainWithExitCode())
+}
+
+func mainWithExitCode() int {
+	r := &pubsubReceiver{}
+	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
-
-	r := Receiver{}
-	if err := envconfig.Process("", &r); err != nil {
-		panic(err)
-	}
-
 	fmt.Printf("Type to match: %q.\n", r.Type)
 	fmt.Printf("Source to match: %q.\n", r.Source)
-
-	// Create a timer
-	duration, _ := strconv.Atoi(r.Time)
-	timer := time.NewTimer(time.Second * time.Duration(duration))
-	defer timer.Stop()
-	go func() {
-		<-timer.C
-		// Write the termination message if time out
-		fmt.Printf("time out to wait for event with source %q.\n", r.Source)
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
-		}
-		os.Exit(0)
-	}()
-
-	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
-		log.Fatal(err)
-	}
+	return knockdown.Main(r.Config, r)
 }
 
-type Receiver struct {
-	Type string `envconfig:"TYPE" required:"true"`
+type pubsubReceiver struct {
+	knockdown.Config
+	Type   string `envconfig:"TYPE" required:"true"`
 	Source string `envconfig:"SOURCE" required:"true"`
-	Time    string `envconfig:"TIME" required:"true"`
 }
 
-func (r *Receiver) Receive(event cloudevents.Event) {
+func (r *pubsubReceiver) Knockdown(event cloudevents.Event) bool {
+	// Print out event received to log
 	// Print out event received to log
 	fmt.Printf("pubsub target received event\n")
 	fmt.Printf("context of event is: %v\n", event.Context.String())
@@ -74,29 +48,10 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 	}
 
 	if len(incorrectAttributes) == 0 {
-		// Write the termination message.
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": true,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err)
-		}
-	} else {
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err)
-		}
-		for k, v := range incorrectAttributes {
-			fmt.Println(k, "expected:", v.Expected, "got:", v.Received)
-		}
+		return true
 	}
-	os.Exit(0)
-}
-
-func (r *Receiver) writeTerminationMessage(result interface{}) error {
-	b, err := json.Marshal(result)
-	if err != nil {
-		return err
+	for k, v := range incorrectAttributes {
+		fmt.Println(k, "expected:", v.Expected, "got:", v.Received)
 	}
-	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+	return false
 }

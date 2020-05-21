@@ -58,7 +58,7 @@ func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType stri
 			Value: source,
 		}, {
 			Name:  "TIME",
-			Value: "120",
+			Value: "6m",
 		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }

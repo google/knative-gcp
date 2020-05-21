@@ -59,7 +59,7 @@ func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType
 			Value: fileName,
 		}, {
 			Name:  "TIME",
-			Value: "2m",
+			Value: "6m",
 		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }

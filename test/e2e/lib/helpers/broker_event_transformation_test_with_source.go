@@ -368,7 +368,7 @@ func makeTargetJobOrDie(client *lib.Client, targetName string) {
 	client.T.Helper()
 	job := resources.TargetJob(targetName, []v1.EnvVar{{
 		Name:  "TIME",
-		Value: "120",
+		Value: "2m",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }
