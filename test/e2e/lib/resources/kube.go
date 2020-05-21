@@ -25,13 +25,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	pkgTest "knative.dev/pkg/test"
 )
+func PubSubTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
+	return baseJob(name, "pubsub_target", envVars)
+}
+
+func StorageTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
+	return baseJob(name, "storage_target", envVars)
+}
 
 func AuditLogsTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 	return baseJob(name, "auditlogs_target", envVars)
 }
 
-func StorageTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
-	return baseJob(name, "storage_target", envVars)
+func SchedulerTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
+	return baseJob(name, "scheduler_target", envVars)
 }
 
 func TargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
@@ -40,10 +47,6 @@ func TargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 
 func SenderJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 	return baseJob(name, "sender", envVars)
-}
-
-func SchedulerJob(name string, envVars []v1.EnvVar) *batchv1.Job {
-	return baseJob(name, "scheduler_target", envVars)
 }
 
 // baseJob will return a base Job that has imageName and envVars set for its PodTemplateSpec.

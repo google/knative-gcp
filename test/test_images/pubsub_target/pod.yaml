@@ -15,9 +15,9 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: storage_target
+  name: pubsub_target
 spec:
   containers:
-    - name: storage_target
-      image: ko://github.com/google/knative-gcp/test/test_images/storage_target
+    - name: pubsub_target
+      image: ko://github.com/google/knative-gcp/test/test_images/pubsub_target
 

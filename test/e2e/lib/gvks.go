@@ -16,8 +16,15 @@ limitations under the License.
 
 package lib
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 var ServiceGVK = metav1.GroupVersionKind{
 	Version: "v1",
 	Kind:    "Service"}
+
+var BrokerGVK= metav1.GroupVersionKind{
+	Group: "eventing.knative.dev",
+	Version: "v1beta1",
+	Kind: "Broker"}
