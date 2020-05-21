@@ -75,5 +75,3 @@ replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-
-replace github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1

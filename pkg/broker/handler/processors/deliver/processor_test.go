@@ -340,11 +340,13 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, sampleEvent); err != nil {
-			b.Errorf("unexpected error from processing: %v", err)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
 		}
-	}
+	})
 }
 
 type ReplyHandler struct {
@@ -385,11 +387,13 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, sampleEvent); err != nil {
-			b.Errorf("unexpected error from processing: %v", err)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
 		}
-	}
+	})
 }
 
 func toFakePubsubMessage(m *pstest.Message) *pubsub.Message {
