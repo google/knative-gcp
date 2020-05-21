@@ -95,7 +95,7 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 	// The old and new Topics use the same, deterministic names. So delete the old one before
 	// creating the new one. They cannot both be Ready=true at the same time, so by deleting the old
 	// Topic, we allow the new Topic to become ready.
-	err := psb.deleteOldPubSubTopicCO(ctx, pubsubable, newTopic)
+	err := psb.deleteOldPubSubTopic(ctx, pubsubable, newTopic)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Info("Unable to delete old Topic", zap.Error(err))
 		return nil, err
@@ -189,8 +189,6 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		}
 	}
 
-	// TODO Compare the actual PullSubscription we found with the desired one and update as needed.
-
 	if err := propagatePullSubscriptionStatus(ps, status, cs); err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to propagate PullSubscription status: %s", zap.Error(err))
 		return ps, pkgreconciler.NewEvent(corev1.EventTypeWarning, PullSubscriptionStatusPropagateFailedReason, "Failed to propagate PullSubscription status: %s", err.Error())
@@ -202,7 +200,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	// double event delivery over dropped events, don't delete the old one until the new one is
 	// ready.
 	if ps.Status.IsReady() {
-		err = psb.deleteOldPubSubPullSubscriptionCO(ctx, pubsubable, ps)
+		err = psb.deleteOldPubSubPullSubscription(ctx, pubsubable, ps)
 		if err != nil {
 			return ps, err
 		}
@@ -211,7 +209,9 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	return ps, nil
 }
 
-func (psb *PubSubBase) deleteOldPubSubTopicCO(_ context.Context, pubsubable duck.PubSubable, t *inteventsv1alpha1.Topic) pkgreconciler.Event {
+func (psb *PubSubBase) deleteOldPubSubTopic(_ context.Context, pubsubable duck.PubSubable, t *inteventsv1alpha1.Topic) pkgreconciler.Event {
+	// TODO This will be deleted at the same time as the old pubsub.cloud.google.com CRDs. That is
+	// expected to happen after 0.15, before 0.16.
 	oldT, err := psb.pubsubClient.PubsubV1alpha1().Topics(t.Namespace).Get(t.Name, v1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		// It doesn't exist, so there is nothing to delete.
@@ -258,7 +258,9 @@ func (psb *PubSubBase) deleteOldPubSubTopicCO(_ context.Context, pubsubable duck
 	return nil
 }
 
-func (psb *PubSubBase) deleteOldPubSubPullSubscriptionCO(_ context.Context, pubsubable duck.PubSubable, ps *inteventsv1alpha1.PullSubscription) pkgreconciler.Event {
+func (psb *PubSubBase) deleteOldPubSubPullSubscription(_ context.Context, pubsubable duck.PubSubable, ps *inteventsv1alpha1.PullSubscription) pkgreconciler.Event {
+	// TODO This will be deleted at the same time as the old pubsub.cloud.google.com CRDs. That is
+	// expected to happen after 0.15, before 0.16.
 	oldPS, err := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(ps.Namespace).Get(ps.Name, v1.GetOptions{})
 	if apierrs.IsNotFound(err) {
 		// It doesn't exist, so there is nothing to delete.
