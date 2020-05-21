@@ -27,7 +27,6 @@ import (
 	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"knative.dev/pkg/test/helpers"
 )
 
 func MakeStorageOrDie(client *Client,
@@ -60,7 +59,7 @@ func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType
 			Value: fileName,
 		}, {
 			Name:  "TIME",
-			Value: "120",
+			Value: "2m",
 		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
@@ -98,7 +97,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := helpers.AppendRandomString(project)
+	bucketName := "storage-e2e-test-" + project
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()

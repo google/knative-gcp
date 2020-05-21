@@ -26,8 +26,6 @@ KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./v
 
 PUBSUBAPICOPY=(
 	"implements_test.go"
-	"pullsubscription_conversion.go"
-	"pullsubscription_conversion_test.go"
 	"pullsubscription_defaults.go"
 	"pullsubscription_defaults_test.go"
 	"pullsubscription_lifecycle.go"
@@ -35,8 +33,6 @@ PUBSUBAPICOPY=(
 	"pullsubscription_types.go"
 	"pullsubscription_validation.go"
 	"pullsubscription_validation_test.go"
-	"topic_conversion.go"
-	"topic_conversion_test.go"
 	"topic_defaults.go"
 	"topic_defaults_test.go"
 	"topic_lifecycle.go"

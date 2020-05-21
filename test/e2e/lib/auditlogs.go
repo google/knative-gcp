@@ -71,7 +71,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: resourceName,
 	}, {
 		Name:  "TIME",
-		Value: "360",
+		Value: "6m",
 	}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }

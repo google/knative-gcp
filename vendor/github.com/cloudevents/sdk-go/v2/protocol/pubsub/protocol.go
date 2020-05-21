@@ -26,8 +26,6 @@ type subscriptionWithTopic struct {
 
 // Protocol acts as both a pubsub topic and a pubsub subscription .
 type Protocol struct {
-	transformers binding.Transformers
-
 	// PubSub
 
 	// ReceiveSettings is used to configure Pubsub pull subscription.
@@ -93,7 +91,7 @@ func (t *Protocol) applyOptions(opts ...Option) error {
 }
 
 // Send implements Sender.Send
-func (t *Protocol) Send(ctx context.Context, in binding.Message) error {
+func (t *Protocol) Send(ctx context.Context, in binding.Message, transformers ...binding.Transformer) error {
 	var err error
 	defer func() { _ = in.Finish(err) }()
 
@@ -105,7 +103,7 @@ func (t *Protocol) Send(ctx context.Context, in binding.Message) error {
 	conn := t.getOrCreateConnection(ctx, topic, "")
 
 	msg := &pubsub.Message{}
-	if err := WritePubSubMessage(ctx, in, msg, t.transformers...); err != nil {
+	if err := WritePubSubMessage(ctx, in, msg, transformers...); err != nil {
 		return err
 	}
 
@@ -161,31 +159,32 @@ func (t *Protocol) getOrCreateConnection(ctx context.Context, topic, subscriptio
 
 // Receive implements Receiver.Receive
 func (t *Protocol) Receive(ctx context.Context) (binding.Message, error) {
-	m, ok := <-t.incoming
-	if !ok {
-		return nil, io.EOF
-	}
+	select {
+	case m, ok := <-t.incoming:
+		if !ok {
+			return nil, io.EOF
+		}
 
-	msg := NewMessage(&m)
-	return msg, nil
+		msg := NewMessage(&m)
+		return msg, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
-func (t *Protocol) startSubscriber(ctx context.Context, sub subscriptionWithTopic, done func(error)) {
+func (t *Protocol) startSubscriber(ctx context.Context, sub subscriptionWithTopic) error {
 	logger := cecontext.LoggerFrom(ctx)
 	logger.Infof("starting subscriber for Topic %q, Subscription %q", sub.topicID, sub.subscriptionID)
 	conn := t.getOrCreateConnection(ctx, sub.topicID, sub.subscriptionID)
 
 	logger.Info("conn is", conn)
 	if conn == nil {
-		err := fmt.Errorf("failed to find connection for Topic: %q, Subscription: %q", sub.topicID, sub.subscriptionID)
-		done(err)
-		return
+		return fmt.Errorf("failed to find connection for Topic: %q, Subscription: %q", sub.topicID, sub.subscriptionID)
 	}
 	// Ok, ready to start pulling.
-	err := conn.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
+	return conn.Receive(ctx, func(ctx context.Context, m *pubsub.Message) {
 		t.incoming <- *m
 	})
-	done(err)
 }
 
 func (t *Protocol) OpenInbound(ctx context.Context) error {
@@ -199,13 +198,14 @@ func (t *Protocol) OpenInbound(ctx context.Context) error {
 
 	// Start up each subscription.
 	for _, sub := range t.subscriptions {
-		go t.startSubscriber(cctx, sub, func(err error) {
+		go func(ctx context.Context, sub subscriptionWithTopic) {
+			err := t.startSubscriber(cctx, sub)
 			if err != nil {
 				errc <- err
 			} else {
 				quit <- struct{}{}
 			}
-		})
+		}(ctx, sub)
 	}
 
 	// Collect errors and done calls until we have n of them.
@@ -230,6 +230,10 @@ func (t *Protocol) OpenInbound(ctx context.Context) error {
 
 	close(quit)
 	close(errc)
+
+	if errs == nil {
+		return nil
+	}
 
 	return errors.New(strings.Join(errs, "\n"))
 }

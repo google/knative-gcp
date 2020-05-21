@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/configmap"
@@ -144,6 +145,17 @@ func newSink() *unstructured.Unstructured {
 	}
 }
 
+func newSinkDestination() duckv1.Destination {
+	return duckv1.Destination{
+		Ref: &duckv1.KReference{
+			APIVersion: "testing.cloud.google.com/v1alpha1",
+			Kind:       "Sink",
+			Name:       sinkName,
+			Namespace:  testNS,
+		},
+	}
+}
+
 // TODO add a unit test for successfully creating a k8s service account, after issue https://github.com/google/knative-gcp/issues/657 gets solved.
 func TestAllCases(t *testing.T) {
 	storageSinkURL := sinkURI
@@ -215,7 +227,11 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
-				WithTopicTopicID(testTopicID),
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				WithTopicUnknown(),
 			),
 			newSink(),
 		},
@@ -245,6 +261,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 			),
@@ -277,6 +297,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
@@ -310,6 +334,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
 				WithTopicAddress(testTopicURI),
@@ -343,6 +371,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicFailed(),
 				WithTopicProjectID(testProject),
 			),
@@ -375,6 +407,10 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicUnknown(),
 				WithTopicProjectID(testProject),
 			),
@@ -410,6 +446,10 @@ func TestAllCases(t *testing.T) {
 				}),
 			),
 			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
@@ -459,165 +499,218 @@ func TestAllCases(t *testing.T) {
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
 			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
 		},
-	},
-		{
-			Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-				),
-				NewTopic(storageName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
-				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS),
-				newSink(),
-			},
-			Key: testNS + "/" + storageName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceStatusObservedGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithInitCloudStorageSourceConditions,
-					WithCloudStorageSourceTopicReady(testTopicID),
-					WithCloudStorageSourceProjectID(testProject),
-					WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
-				),
-			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, storageName, true),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
-			},
-		}, {
-			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-				),
-				NewTopic(storageName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
-				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS, WithPullSubscriptionFailed()),
-			},
-			Key: testNS + "/" + storageName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceStatusObservedGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithInitCloudStorageSourceConditions,
-					WithCloudStorageSourceTopicReady(testTopicID),
-					WithCloudStorageSourceProjectID(testProject),
-					WithCloudStorageSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
-				),
-			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, storageName, true),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
-			},
-		}, {
-			Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-				),
-				NewTopic(storageName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
-				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS, WithPullSubscriptionUnknown()),
-			},
-			Key: testNS + "/" + storageName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceStatusObservedGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithInitCloudStorageSourceConditions,
-					WithCloudStorageSourceTopicReady(testTopicID),
-					WithCloudStorageSourceProjectID(testProject),
-					WithCloudStorageSourcePullSubscriptionUnknown("", ""),
-				),
-			}},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, storageName, true),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
+	}, {
+		Name: "topic exists and ready, pullsubscription exists but has not yet been reconciled",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: newSinkDestination(),
+						},
+					},
+				})),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceTopicReady(testTopicID),
+				WithCloudStorageSourceProjectID(testProject),
+				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: PullSubscription %q has not yet been reconciled", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
+		},
+	}, {
+		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is false",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: newSinkDestination(),
+						},
+					},
+				}), WithPullSubscriptionFailed()),
+		},
+		Key: testNS + "/" + storageName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceTopicReady(testTopicID),
+				WithCloudStorageSourceProjectID(testProject),
+				WithCloudStorageSourcePullSubscriptionFailed("InvalidSink", `failed to get ref &ObjectReference{Kind:Sink,Namespace:testnamespace,Name:sink,UID:,APIVersion:testing.cloud.google.com/v1alpha1,ResourceVersion:,FieldPath:,}: sinks.testing.cloud.google.com "sink" not found`),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is False", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
+		},
+	}, {
+		Name: "topic exists and ready, pullsubscription exists and the status of pullsubscription is unknown",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+				}),
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS, WithPullSubscriptionUnknown(),
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret: &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: newSinkDestination(),
+						},
+					},
+				})),
+		},
+		Key: testNS + "/" + storageName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceTopicReady(testTopicID),
+				WithCloudStorageSourceProjectID(testProject),
+				WithCloudStorageSourcePullSubscriptionUnknown("", ""),
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf("%s: %s: the status of PullSubscription %q is Unknown", failedToReconcilePubSubMsg, failedToPropagatePullSubscriptionStatusMsg, storageName)),
+		},
+	}, {
+		Name: "client create fails",
+		Objects: []runtime.Object{
+			NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceProject(testProject),
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+			),
+			NewTopic(storageName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+					Project:           testProject,
+				}),
+				WithTopicReady(testTopicID),
+				WithTopicAddress(testTopicURI),
+				WithTopicProjectID(testProject),
+			),
+			NewPullSubscriptionWithNoDefaults(storageName, testNS,
+				WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+					Topic: testTopicID,
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Project: testProject,
+						Secret:  &secret,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: newSinkDestination(),
+						},
+					},
+				}),
+				WithPullSubscriptionReady(sinkURI),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + storageName,
+		OtherTestData: map[string]interface{}{
+			"storage": gstorage.TestClientData{
+				CreateClientErr: errors.New("create-client-induced-error"),
 			},
 		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+			Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, storageName, true),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudStorageSource(storageName, testNS,
+				WithCloudStorageSourceProject(testProject),
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceStatusObservedGeneration(generation),
+				WithCloudStorageSourceBucket(bucket),
+				WithCloudStorageSourceSink(sinkGVK, sinkName),
+				WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+				WithInitCloudStorageSourceConditions,
+				WithCloudStorageSourceObjectMetaGeneration(generation),
+				WithCloudStorageSourceTopicReady(testTopicID),
+				WithCloudStorageSourceProjectID(testProject),
+				WithCloudStorageSourcePullSubscriptionReady(),
+				WithCloudStorageSourceSinkURI(storageSinkURL),
+				WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
+			),
+		}},
+	},
 		{
-			Name: "client create fails",
-			Objects: []runtime.Object{
-				NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceProject(testProject),
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
-				),
-				NewTopic(storageName, testNS,
-					WithTopicReady(testTopicID),
-					WithTopicAddress(testTopicURI),
-					WithTopicProjectID(testProject),
-				),
-				NewPullSubscriptionWithNoDefaults(storageName, testNS,
-					WithPullSubscriptionReady(sinkURI),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + storageName,
-			OtherTestData: map[string]interface{}{
-				"storage": gstorage.TestClientData{
-					CreateClientErr: errors.New("create-client-induced-error"),
-				},
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-				Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, storageName, true),
-			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudStorageSource(storageName, testNS,
-					WithCloudStorageSourceProject(testProject),
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceStatusObservedGeneration(generation),
-					WithCloudStorageSourceBucket(bucket),
-					WithCloudStorageSourceSink(sinkGVK, sinkName),
-					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
-					WithInitCloudStorageSourceConditions,
-					WithCloudStorageSourceObjectMetaGeneration(generation),
-					WithCloudStorageSourceTopicReady(testTopicID),
-					WithCloudStorageSourceProjectID(testProject),
-					WithCloudStorageSourcePullSubscriptionReady(),
-					WithCloudStorageSourceSinkURI(storageSinkURL),
-					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "create-client-induced-error")),
-				),
-			}},
-		}, {
 			Name: "bucket notifications fails",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
@@ -628,11 +721,26 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 				),
 				NewTopic(storageName, testNS,
+					WithTopicSpec(inteventsv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateDelete",
+						Project:           testProject,
+					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
 				),
 				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Project: testProject,
+							Secret:  &secret,
+							SourceSpec: duckv1.SourceSpec{
+								Sink: newSinkDestination(),
+							},
+						},
+					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -680,11 +788,26 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 				),
 				NewTopic(storageName, testNS,
+					WithTopicSpec(inteventsv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateDelete",
+						Project:           testProject,
+					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
 				),
 				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Project: testProject,
+							Secret:  &secret,
+							SourceSpec: duckv1.SourceSpec{
+								Sink: newSinkDestination(),
+							},
+						},
+					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -732,11 +855,26 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
 				),
 				NewTopic(storageName, testNS,
+					WithTopicSpec(inteventsv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateDelete",
+						Project:           testProject,
+					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
 				),
 				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Project: testProject,
+							Secret:  &secret,
+							SourceSpec: duckv1.SourceSpec{
+								Sink: newSinkDestination(),
+							},
+						},
+					}),
 					WithPullSubscriptionReady(sinkURI),
 				),
 				newSink(),
@@ -951,7 +1089,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", storageName)),
 					WithDeletionTimestamp()),
 			}},
-		}}
+		},
+	}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {

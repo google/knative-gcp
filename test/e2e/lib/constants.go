@@ -32,6 +32,7 @@ const (
 	EventSubject = "subject"
 	EventSubjectPrefix = "subject-prefix"
 	EventID = "id"
+	EventData = "data"
 
 	E2ERespEventIDPrefix = "e2e-testing-resp-event-id"
 	E2EPubSubRespEventID = E2ERespEventIDPrefix + "-pubsub"

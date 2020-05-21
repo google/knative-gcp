@@ -62,6 +62,12 @@ function update_benchmark() {
   echo ">> Updating benchmark $1"
   ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true --wait=false
   sleep 30
+
+  # Add Git info in kodata so the benchmark can show which commit it's running on.
+  local kodata_path="vendor/knative.dev/eventing/test/test_images/performance/kodata"
+  mkdir "${kodata_path}"
+  ln -s "${REPO_ROOT_DIR}/.git/HEAD" "${kodata_path}"
+  ln -s "${REPO_ROOT_DIR}/.git/refs" "${kodata_path}"
   ko apply --strict -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 
   echo "Sleeping 2 min to wait for all resources to setup"

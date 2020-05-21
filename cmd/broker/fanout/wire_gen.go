@@ -45,6 +45,6 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 }
 
 var (
-	_wireValue  = []http.Option(nil)
+	_wireValue  = pool.DefaultHTTPOpts
 	_wireValue2 = pool.DefaultCEClientOpts
 )
