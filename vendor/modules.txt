@@ -1106,7 +1106,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200520073958-94316e20e860
+# knative.dev/pkg v0.0.0-20200519155757-14eb3ae3a5a7
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1254,8 +1254,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200521070558-cd7a8d4eff9d
-## explicit
+# knative.dev/test-infra v0.0.0-20200519161858-554a95a37986
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
