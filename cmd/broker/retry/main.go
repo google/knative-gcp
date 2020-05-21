@@ -44,6 +44,12 @@ type envConfig struct {
 	TargetsConfigPath  string `envconfig:"TARGETS_CONFIG_PATH" default:"/var/run/cloud-run-events/broker/targets"`
 	HandlerConcurrency int    `envconfig:"HANDLER_CONCURRENCY"`
 
+	// Outstanding messages effectively limits how many connections we will create to each subscriber.
+	// If such connections are long, it will consume a lot of memory (aggregated) without limiting.
+	OutstandingMessagesPerSub int `envconfig:"OUTSTANDING_MESSAGES_PER_SUB" default:"100"`
+	// 3Mi. We also want to limit the memory usage from each subscription.
+	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"3000000"`
+
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -116,6 +122,8 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	// NumGoroutines is ignored.
 	// TODO Need to revisit it. For the case when synchronous is true, default value of MaxOutstandingMessages and MaxOutstandingBytes might need to override.
 	rs.Synchronous = true
+	rs.MaxOutstandingMessages = env.OutstandingMessagesPerSub
+	rs.MaxOutstandingBytes = env.OutstandingBytesPerSub
 	var opts []pool.Option
 	if env.HandlerConcurrency > 0 {
 		opts = append(opts, pool.WithHandlerConcurrency(env.HandlerConcurrency))
