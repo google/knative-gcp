@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: storage_receiver
+spec:
+  containers:
+    - name: storage_receiver
+      image: ko://github.com/google/knative-gcp/test/test_images/storage_receiver
+

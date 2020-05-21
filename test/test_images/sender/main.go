@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/test/e2e/lib"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -62,11 +63,11 @@ func main() {
 
 func dummyCloudEvent() cloudevents.Event {
 	event := cloudevents.NewEvent(cloudevents.VersionV1)
-	event.SetID("dummy")
-	event.SetType("e2e-testing-dummy")
-	event.SetSource("e2e-testing")
+	event.SetID(lib.E2EDummyEventID)
+	event.SetType(lib.E2EDummyEventType)
+	event.SetSource(lib.E2EDummyEventSource)
 	event.SetDataContentType(cloudevents.ApplicationJSON)
-	event.SetData(`{"hello": "world!"}`)
+	event.SetData(`{"source": "sender!"}`)
 	return event
 }
 

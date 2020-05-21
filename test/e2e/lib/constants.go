@@ -26,4 +26,29 @@ const (
 
 	BrokerEventCountMetricType = "knative.dev/eventing/broker/event_count"
 	BrokerMetricResourceType   = "knative_broker"
+
+	EventType    = "type"
+	EventSource  = "source"
+	EventSubject = "subject"
+	EventSubjectPrefix = "subject-prefix"
+	EventID = "id"
+
+	E2ERespEventIDPrefix = "e2e-testing-resp-event-id"
+	E2EPubSubRespEventID = E2ERespEventIDPrefix + "-pubsub"
+	E2EStorageRespEventID = E2ERespEventIDPrefix + "-storage"
+	E2EAuditLogsRespEventID = E2ERespEventIDPrefix + "-auditlogs"
+	E2ESchedulerRespEventID = E2ERespEventIDPrefix + "-scheduler"
+	E2EDummyRespEventID = E2ERespEventIDPrefix + "-dummy"
+
+	E2ERespEventTypePrefix = "e2e-testing-resp-event-type"
+	E2EPubSubRespEventType = E2ERespEventTypePrefix + "-pubsub"
+	E2EStorageRespEventType = E2ERespEventTypePrefix + "-storage"
+	E2EAuditLogsRespType = E2ERespEventTypePrefix + "-auditlogs"
+	E2ESchedulerRespType = E2ERespEventTypePrefix + "-scheduler"
+	E2EDummyRespEventType = E2ERespEventTypePrefix + "-dummy"
+
+	E2EDummyEventID = "e2e-dummy-event-id"
+	E2EDummyEventType = "e2e-dummy-event-type"
+	E2EDummyEventSource = "e2e-dummy-event-source"
+	E2EDummyRespEventSource = "e2e-dummy-resp-event-source"
 )

@@ -26,15 +26,17 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/test/helpers"
 )
 
 func MakeStorageOrDie(client *Client,
-	bucketName, storageName, targetName, pubsubServiceAccount string,
+	gvk metav1.GroupVersionKind, bucketName, storageName, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudStorageSourceOption,
 ) {
 	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudStorageSourceSink(gvk, sinkName))
 	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
@@ -42,15 +44,24 @@ func MakeStorageOrDie(client *Client,
 	client.Core.WaitForResourceReadyOrFail(storageName, CloudStorageSourceTypeMeta)
 }
 
-func MakeStorageJobOrDie(client *Client, fileName, targetName string) {
+func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType string) {
 	client.T.Helper()
-	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
-		Name:  "SUBJECT",
-		Value: fileName,
-	}, {
-		Name:  "TIME",
-		Value: "120",
-	}})
+	job := resources.StorageTargetJob(targetName, []v1.EnvVar{
+		{
+			Name:  "TYPE",
+			Value: eventType,
+		},
+		{
+			Name:  "SOURCE",
+			Value: source,
+		},
+		{
+			Name:  "SUBJECT",
+			Value: fileName,
+		}, {
+			Name:  "TIME",
+			Value: "120",
+		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
 
@@ -87,7 +98,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 		t.Fatalf("failed to create storage client, %s", err.Error())
 	}
 	it := client.Buckets(ctx, project)
-	bucketName := "storage-e2e-test-" + project
+	bucketName := helpers.AppendRandomString(project)
 	// Iterate buckets to check if there has a bucket for e2e test
 	for {
 		bucketAttrs, err := it.Next()

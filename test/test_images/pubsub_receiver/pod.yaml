@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pubsub_receiver
+spec:
+  containers:
+    - name: pubsub_receiver
+      image: ko://github.com/google/knative-gcp/test/test_images/pubsub_receiver
+

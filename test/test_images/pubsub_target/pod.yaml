@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pubsub_target
+spec:
+  containers:
+    - name: pubsub_target
+      image: ko://github.com/google/knative-gcp/test/test_images/pubsub_target
+

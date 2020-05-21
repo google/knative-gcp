@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"net/url"
 	"os"
 	"time"
@@ -29,13 +31,11 @@ import (
 	eventingv1alpha1 "knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
@@ -47,7 +47,7 @@ import (
                     ------------------   --------------------
                     |                 | |                    |
           1         v	      2       | v         3          |
-(Sender) --->   Broker ---> dummyTrigger -------> Knative Service(Receiver)
+(Sender or Source) --->   Broker ---> trigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
                     |-------> respTrigger -------> Service(Target)
@@ -63,7 +63,24 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	// Create a target Job to receive the events.
 	makeTargetJobOrDie(client, targetName)
 
-	createTriggersAndKService(client, brokerName, targetName)
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter:=eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyEventType})
+	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter:=eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+		map[string]interface{}{"type": 	lib.E2EDummyRespEventType})
+	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
@@ -89,36 +106,54 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 
 func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, authConfig lib.AuthConfig, brokerURL url.URL, brokerName string) {
 	client.T.Helper()
+	project := os.Getenv(lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(client.T)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
+	data := fmt.Sprintf(`{"topic":%s}`, topicName)
+	source := v1alpha1.CloudPubSubSourceEventSource(project, topicName)
 
-	// Create a target Job to receive the events.
-	makeTargetJobOrDie(client, targetName)
-	createTriggersAndKService(client, brokerName, targetName)
-	var url apis.URL = apis.URL(brokerURL)
+	// Create a target PubSub Job to receive the events.
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, lib.E2EPubSubRespEventType)
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "pubsub_receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+			eventingv1alpha1.TriggerAnyFilter,
+			v1beta1.CloudPubSubSourcePublish,
+			map[string]interface{}{})
+	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		lib.E2EPubSubRespEventType,
+		map[string]interface{}{})
+	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client,
-		lib.ServiceGVK,
+		lib.BrokerGVK,
 		psName,
-		targetName,
+		brokerName,
 		topicName,
 		authConfig.PubsubServiceAccount,
-		kngcptesting.WithCloudPubSubSourceSinkURI(&url),
 	)
 
 	topic := lib.GetTopic(client.T, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
-		Attributes: map[string]string{
-			"target": "falldown",
-		},
-		Data: []byte(`{"foo":bar}`),
+		Data: []byte(data),
 	})
 
 	_, err := r.Get(context.TODO())
@@ -138,25 +173,45 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
 
-	bucketName := lib.MakeBucket(ctx, client.T, project)
+	bucketName :=  lib.MakeBucket(ctx, client.T, project)
 	storageName := helpers.AppendRandomString(bucketName + "-storage")
 	targetName := helpers.AppendRandomString(bucketName + "-target")
+	source := v1alpha1.CloudStorageSourceEventSource(bucketName)
 	fileName := helpers.AppendRandomString("test-file-for-storage")
 	// Create a target StorageJob to receive the events.
-	lib.MakeStorageJobOrDie(client, fileName, targetName)
-	createTriggersAndKService(client, brokerName, targetName)
-	var url apis.URL = apis.URL(brokerURL)
+	lib.MakeStorageJobOrDie(client, source, fileName, targetName, lib.E2EStorageRespEventType)
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "storage_receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		v1beta1.CloudStorageSourceFinalize,
+		map[string]interface{}{})
+	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		lib.E2EStorageRespEventType,
+		map[string]interface{}{})
+	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(
 		client,
+		lib.BrokerGVK,
 		bucketName,
 		storageName,
-		targetName,
+		brokerName,
 		authConfig.PubsubServiceAccount,
-		kngcptesting.WithCloudStorageSourceSinkURI(&url),
 	)
 
 	// Add a random name file in the bucket
@@ -177,22 +232,40 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName)
-	createTriggersAndKService(client, brokerName, targetName)
-	var url apis.URL = apis.URL(brokerURL)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, lib.E2EAuditLogsRespType)
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "auditlogs_receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		v1beta1.CloudAuditLogsSourceEvent,
+		map[string]interface{}{})
+	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		lib.E2EAuditLogsRespType,
+		map[string]interface{}{})
+	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,
+		lib.BrokerGVK,
 		auditlogsName,
 		lib.PubSubCreateTopicMethodName,
 		project,
 		resourceName,
 		lib.PubSubServiceName,
-		targetName,
+		brokerName,
 		authConfig.PubsubServiceAccount,
-		kngcptesting.WithCloudAuditLogsSourceSinkURI(&url),
 	)
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
@@ -212,20 +285,38 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 
 func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, authConfig lib.AuthConfig, brokerURL url.URL, brokerName string) {
 	client.T.Helper()
-	data := "my test data"
-	targetName := "event-display"
-	sName := "scheduler-test"
-	// Create a target Job to receive the events.
-	lib.MakeSchedulerJobOrDie(client, data, targetName)
-	createTriggersAndKService(client, brokerName, targetName)
+	data := helpers.AppendRandomString("scheduler-source-with-broker")
+	schedulerName := helpers.AppendRandomString("scheduler-e2e-test")
+	targetName := helpers.AppendRandomString(schedulerName + "-target")
 
-	var url apis.URL = apis.URL(brokerURL)
+	lib.MakeSchedulerJobOrDie(client, data, targetName, lib.E2ESchedulerRespType)
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "scheduler_receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		v1beta1.CloudSchedulerSourceExecute,
+		map[string]interface{}{})
+	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter,
+		lib.E2ESchedulerRespType,
+		map[string]interface{}{})
+	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+	// Just to make sure all resources are ready.
+
 	// Just to make sure all resources are ready.
 	time.Sleep(5 * time.Second)
 
 	// Create the CloudSchedulerSource.
-	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount,
-		kngcptesting.WithCloudSchedulerSourceSinkURI(&url),
+	lib.MakeSchedulerOrDie(client, lib.BrokerGVK, schedulerName, data, brokerName, authConfig.PubsubServiceAccount,
 	)
 
 	// Check if resp CloudEvent hits the target Service.
@@ -235,65 +326,49 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	}
 }
 
-func CreateKService(client *lib.Client) string {
+func CreateKService(client *lib.Client, imageName string) string {
 	client.T.Helper()
 	kserviceName := helpers.AppendRandomString("kservice")
 	// Create the Knative Service.
 	kservice := resources.ReceiverKService(
-		kserviceName, client.Namespace)
+		kserviceName, client.Namespace, imageName)
 	client.CreateUnstructuredObjOrFail(kservice)
 	return kserviceName
 
 }
 
-func createTriggerWithKServiceSubscriber(client *lib.Client, brokerName, kserviceName string) {
+func createTriggerWithKServiceSubscriber(client *lib.Client,
+	brokerName, kserviceName string,
+	triggerFilter eventingtestresources.TriggerOption) {
 	client.T.Helper()
 	// Please refer to the graph in the file to check what dummy trigger is used for.
-	dummyTriggerName := "dummy-broker-" + brokerName
+	triggerName := "trigger-broker-" + brokerName
 	client.Core.CreateTriggerOrFail(
-		dummyTriggerName,
+		triggerName,
 		eventingtestresources.WithBroker(brokerName),
-		eventingtestresources.WithAttributesTriggerFilter(
-			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
-			map[string]interface{}{"type": "e2e-testing-dummy"}),
+		triggerFilter,
 		eventingtestresources.WithSubscriberServiceRefForTrigger(kserviceName),
 	)
 }
 
-func createTriggerWithTargetServiceSubscriber(client *lib.Client, brokerName, targetName string) {
+func createTriggerWithTargetServiceSubscriber(client *lib.Client,
+	brokerName, targetName string,
+	triggerFilter eventingtestresources.TriggerOption) {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
 	client.Core.CreateTriggerOrFail(
 		respTriggerName,
 		eventingtestresources.WithBroker(brokerName),
-		eventingtestresources.WithAttributesTriggerFilter(
-			eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
-			map[string]interface{}{"type": "e2e-testing-resp"}),
+		triggerFilter,
 		eventingtestresources.WithSubscriberServiceRefForTrigger(targetName),
 	)
-}
-
-func createTriggersAndKService(client *lib.Client, brokerName, targetName string) {
-	client.T.Helper()
-	// Create the Knative Service.
-	kserviceName := CreateKService(client)
-
-	// Create a Trigger with the Knative Service subscriber.
-	createTriggerWithKServiceSubscriber(client, brokerName, kserviceName)
-
-	// Create a Trigger with the target Service subscriber.
-	createTriggerWithTargetServiceSubscriber(client, brokerName, targetName)
-
-	// Wait for ksvc, trigger ready.
-	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
-	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
 }
 
 func makeTargetJobOrDie(client *lib.Client, targetName string) {
 	client.T.Helper()
 	job := resources.TargetJob(targetName, []v1.EnvVar{{
-		Name:  "TARGET",
-		Value: "falldown",
+		Name:  "TIME",
+		Value: "120",
 	}})
 	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
 }

@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/knative-gcp/test/e2e/lib"
 	"io/ioutil"
 	"log"
 	"os"
@@ -96,6 +97,7 @@ type propPair struct {
 }
 
 func (r *Receiver) Receive(event cloudevents.Event) {
+	fmt.Printf("auditlogs target received event\n")
 	fmt.Printf("event.Context is %s", event.Context.String())
 	var eventData map[string]interface{}
 	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
@@ -108,40 +110,45 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 	fmt.Printf("event.Data.%s is %s \n", methodName, eventDataMethodName)
 	eventDataResourceName := payload[resourceName].(string)
 	fmt.Printf("event.Data.%s is %s \n", resourceName, eventDataResourceName)
-	unmatchedProps := make(map[string]propPair)
+	incorrectAttributes := make(map[string]lib.PropPair)
 
 	if event.Context.GetType() != r.Type {
-		unmatchedProps[eventType] = propPair{event.Context.GetType(), r.Type}
+		incorrectAttributes[eventType] = lib.PropPair{event.Context.GetType(), r.Type}
 	}
 	if event.Context.GetSource() != r.Source {
-		unmatchedProps[eventSource] = propPair{event.Context.GetSource(), r.Source}
+		incorrectAttributes[eventSource] = lib.PropPair{event.Context.GetSource(), r.Source}
 	}
 	if event.Context.GetSubject() != r.Subject {
-		unmatchedProps[eventSubject] = propPair{event.Context.GetSubject(), r.Subject}
+		incorrectAttributes[eventSubject] = lib.PropPair{event.Context.GetSubject(), r.Subject}
 	}
 	if eventDataServiceName != r.ServiceName {
-		unmatchedProps[serviceName] = propPair{eventDataServiceName, r.ServiceName}
+		incorrectAttributes[serviceName] = lib.PropPair{eventDataServiceName, r.ServiceName}
 	}
 	if eventDataMethodName != r.MethodName {
-		unmatchedProps[methodName] = propPair{eventDataMethodName, r.MethodName}
+		incorrectAttributes[methodName] = lib.PropPair{eventDataMethodName, r.MethodName}
 	}
 	if eventDataResourceName != r.ResourceName {
-		unmatchedProps[resourceName] = propPair{eventDataResourceName, r.ResourceName}
+		incorrectAttributes[resourceName] = lib.PropPair{eventDataResourceName, r.ResourceName}
 	}
 
-	if len(unmatchedProps) == 0 {
-		// Write the termination message if the subject successfully matches
+	if len(incorrectAttributes) == 0 {
+		// Write the termination message.
 		if err := r.writeTerminationMessage(map[string]interface{}{
 			"success": true,
 		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
+			fmt.Printf("failed to write termination message, %s.\n", err)
 		}
-		os.Exit(0)
 	} else {
-		for k, v := range unmatchedProps {
-			fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.eventProp, v.receiverProp)
+		if err := r.writeTerminationMessage(map[string]interface{}{
+			"success": false,
+		}); err != nil {
+			fmt.Printf("failed to write termination message, %s.\n", err)
+		}
+		for k, v := range incorrectAttributes {
+			fmt.Println(k, "expected:", v.Expected, "got:", v.Received)
 		}
 	}
+	os.Exit(0)
 }
 
 func (r *Receiver) writeTerminationMessage(result interface{}) error {
