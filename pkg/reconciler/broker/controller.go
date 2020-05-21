@@ -25,6 +25,7 @@ import (
 	injectionclient "github.com/google/knative-gcp/pkg/client/injection/client"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
+	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -61,6 +62,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	endpointsInformer := endpointsinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	podInformer := podinformer.Get(ctx)
+	bcInformer := brokercellinformer.Get(ctx)
 
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
@@ -84,6 +86,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		endpointsLister:    endpointsInformer.Lister(),
 		deploymentLister:   deploymentInformer.Lister(),
 		podLister:          podInformer.Lister(),
+		brokerCellLister:   bcInformer.Lister(),
 		pubsubClient:       client,
 		targetsNeedsUpdate: make(chan struct{}),
 	}

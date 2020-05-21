@@ -38,8 +38,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/logging"
-	"knative.dev/eventing/pkg/reconciler/names"
-	"knative.dev/pkg/apis"
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
@@ -49,9 +47,11 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -61,6 +61,7 @@ const (
 	brokerReconciled     = "BrokerReconciled"
 	brokerFinalized      = "BrokerFinalized"
 	topicCreated         = "TopicCreated"
+	brokerCellCreated    = "BrokerCellCreated"
 	subCreated           = "SubscriptionCreated"
 	topicDeleted         = "TopicDeleted"
 	subDeleted           = "SubscriptionDeleted"
@@ -68,13 +69,15 @@ const (
 	targetsCMName         = "broker-targets"
 	targetsCMKey          = "targets"
 	targetsCMResyncPeriod = 10 * time.Second
-
-	ingressServiceName = "broker-ingress"
 )
 
-// Hard-coded for now. TODO(https://github.com/google/knative-gcp/issues/867)
+// Hard-coded for now. TODO(https://github.com/google/knative-gcp/issues/863)
 // BrokerCell will handle this.
-var dataPlaneDeployments = []string{"broker-ingress", "broker-fanout", "broker-retry"}
+var dataPlaneDeployments = []string{
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.IngressName),
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.FanoutName),
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.RetryName),
+}
 
 // TODO
 // idea: assign broker resources to cell (configmap) in webhook based on a
@@ -96,6 +99,7 @@ type Reconciler struct {
 	endpointsLister  corev1listers.EndpointsLister
 	deploymentLister appsv1listers.DeploymentLister
 	podLister        corev1listers.PodLister
+	brokerCellLister inteventslisters.BrokerCellLister
 
 	// Reconciles a broker's triggers
 	triggerReconciler controller.Reconciler
@@ -169,29 +173,15 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
+	if err := r.reconcileBrokerCell(ctx, b); err != nil {
+		return fmt.Errorf("brokercell reconcile failed: %v", err)
+	}
+
 	// Create decoupling topic and pullsub for this broker. Ingress will push
 	// to this topic and fanout will pull from the pull sub.
 	if err := r.reconcileDecouplingTopicAndSubscription(ctx, b); err != nil {
 		return fmt.Errorf("Decoupling topic reconcile failed: %w", err)
 	}
-
-	//TODO in a webhook annotate the broker object with its ingress details
-	// Route to shared ingress with namespace/name in the path as the broker
-	// identifier.
-	b.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   names.ServiceHostName(ingressServiceName, system.Namespace()),
-		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
-	})
-
-	// Verify the ingress service is healthy via endpoints.
-	ingressEndpoints, err := r.endpointsLister.Endpoints(system.Namespace()).Get(ingressServiceName)
-	if err != nil {
-		logger.Error("Problem getting endpoints for ingress", zap.String("namespace", system.Namespace()), zap.Error(err))
-		b.Status.MarkIngressFailed("ServiceFailure", "%v", err)
-		return err
-	}
-	b.Status.PropagateIngressAvailability(ingressEndpoints)
 
 	r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
 		m.SetID(string(b.UID))
@@ -466,7 +456,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 	return nil
 }
 
-// TODO(https://github.com/google/knative-gcp/issues/867) With BrokerCell, we
+// TODO(https://github.com/google/knative-gcp/issues/863) With BrokerCell, we
 // will reconcile data plane deployments dynamically.
 func (r *Reconciler) reconcileDataPlaneDeployments() error {
 	var err error
