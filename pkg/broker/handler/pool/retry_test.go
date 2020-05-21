@@ -23,6 +23,7 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
@@ -129,55 +130,86 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t.Run("target with same broker but different trigger did't receive retry events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
 		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
+		group, ctx := errgroup.WithContext(ctx)
 		// Target1 for broker1 should receive the event e1.
-		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), &e1)
-		// Target2 for broker1 should't receive the event e2.
-		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), nil)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t1.Key(), &e1)
+			return nil
+		})
+		// Target2 for broker1 shouldn't receive the event e2.
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t2.Key(), nil)
+			return nil
+		})
 
 		// Only send an event to trigger topic 1.
 		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
-		<-vctx.Done()
+
+		if err := group.Wait(); err != nil {
+			t.Error(err)
+		}
 	})
 
 	t.Run("target with different broker did't receive retry events", func(t *testing.T) {
 		// Set timeout context so that verification can be done before
 		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		// Target1 for broker1 should't  receive the event e3.
-		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), nil)
-		// Target2 for broker1 should't receive the event e2.
-		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), nil)
+		group, ctx := errgroup.WithContext(ctx)
+		// Target1 for broker1 shouldn't  receive the event e3.
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t1.Key(), nil)
+			return nil
+		})
+		// Target2 for broker1 shouldn't receive the event e2.
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t2.Key(), nil)
+			return nil
+		})
 		// Target3 for broker2 should receive the event e3.
-		go helper.VerifyNextTargetEvent(vctx, t, t3.Key(), &e3)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t3.Key(), &e3)
+			return nil
+		})
 
 		// Only send an event to trigger topic 3.
 		helper.SendEventToRetryQueue(ctx, t, t3.Key(), &e3)
-		<-vctx.Done()
+
+		if err := group.Wait(); err != nil {
+			t.Error(err)
+		}
 	})
 
 	t.Run("broker's target receive correct retry events", func(t *testing.T) {
-		// Set timeout context so that verification can be done before
-		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-
+		group, ctx := errgroup.WithContext(ctx)
 		// Target1 for broker1 should receive the event e1.
-		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), &e1)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t1.Key(), &e1)
+			return nil
+		})
 		// Target2 for broker1 should receive the event e2.
-		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e2)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t2.Key(), &e2)
+			return nil
+		})
 		// Target3 for broker2 should receive the event e3.
-		go helper.VerifyNextTargetEvent(vctx, t, t3.Key(), &e3)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t3.Key(), &e3)
+			return nil
+		})
 
 		// Send different event to different trigger topic.
 		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
 		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e2)
 		helper.SendEventToRetryQueue(ctx, t, t3.Key(), &e3)
-		<-vctx.Done()
+
+		if err := group.Wait(); err != nil {
+			t.Error(err)
+		}
 	})
 
 	t.Run("broker's target receive correct retry events with the latest filter", func(t *testing.T) {
@@ -193,31 +225,43 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 			bm.UpsertTargets(t1)
 		})
 
+		group, ctx := errgroup.WithContext(ctx)
 		// Target1 for broker1 shouldn't receive the event e1, as filter attributes is updated.
-		go helper.VerifyNextTargetEvent(vctx, t, t1.Key(), nil)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(vctx, t, t1.Key(), nil)
+			return nil
+		})
 		//  Target1 for broker1 should receive the event e1.
-		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
+			return nil
+		})
 
 		// Send the same event to different trigger topic.
 		helper.SendEventToRetryQueue(ctx, t, t1.Key(), &e1)
 		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
-		<-vctx.Done()
+
+		if err := group.Wait(); err != nil {
+			t.Error(err)
+		}
 	})
 
 	t.Run("event delivered after target retry queue update", func(t *testing.T) {
 		helper.RenewTarget(ctx, t, t2.Key())
 		signal <- struct{}{}
 
-		// Set timeout context so that verification can be done before
-		// exiting test func.
-		vctx, cancel := context.WithTimeout(ctx, 2*time.Second)
-		defer cancel()
-
+		group, ctx := errgroup.WithContext(ctx)
 		// t2 should continue to receive the event.
-		go helper.VerifyNextTargetEvent(vctx, t, t2.Key(), &e1)
+		group.Go(func() error {
+			helper.VerifyNextTargetEvent(ctx, t, t2.Key(), &e1)
+			return nil
+		})
 
 		helper.SendEventToRetryQueue(ctx, t, t2.Key(), &e1)
-		<-vctx.Done()
+
+		if err := group.Wait(); err != nil {
+			t.Error(err)
+		}
 	})
 }
 
