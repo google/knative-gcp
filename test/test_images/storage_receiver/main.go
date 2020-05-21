@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,16 +18,14 @@ package main
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"fmt"
 	"log"
 	"net/http"
-	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
-
-
 
 type Receiver struct {
 	client cloudevents.Client

@@ -20,13 +20,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/knative-gcp/test/e2e/lib"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 const (

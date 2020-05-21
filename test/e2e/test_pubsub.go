@@ -20,8 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"os"
 	"testing"
 
@@ -29,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -65,7 +64,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
-	source := v1alpha1.CloudPubSubSourceEventSource(project, topicName)
+	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)

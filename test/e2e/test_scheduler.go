@@ -18,10 +18,11 @@ package e2e
 
 import (
 	"encoding/json"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
-	"knative.dev/pkg/test/helpers"
 	"testing"
 
+	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )

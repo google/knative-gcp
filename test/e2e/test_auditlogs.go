@@ -19,11 +19,11 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 
 	"knative.dev/pkg/test/helpers"
@@ -44,7 +44,7 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, v1alpha1.CloudAuditLogsSourceEvent)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, v1beta1.CloudAuditLogsSourceEvent)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,

@@ -32,7 +32,7 @@ const (
 )
 
 func MakeAuditLogsOrDie(client *Client,
-	gvk metav1.GroupVersionKind,
+	sinkGVK metav1.GroupVersionKind,
 	auditlogsName, methodName, project, resourceName, serviceName, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudAuditLogsSourceOption,
 ) {
@@ -41,7 +41,7 @@ func MakeAuditLogsOrDie(client *Client,
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(methodName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(gvk, sinkName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)

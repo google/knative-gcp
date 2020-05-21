@@ -25,14 +25,14 @@ import (
 )
 
 func MakeSchedulerOrDie(client *Client,
-	gvk metav1.GroupVersionKind, schedulerName, data, sinkName, pubsubServiceAccount string,
+	sinkGVK metav1.GroupVersionKind, schedulerName, data, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudSchedulerSourceOption,
 ) {
 	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceData(data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(gvk, sinkName))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(pubsubServiceAccount))
 	scheduler := kngcptesting.NewCloudSchedulerSource(schedulerName, client.Namespace, so...)
 

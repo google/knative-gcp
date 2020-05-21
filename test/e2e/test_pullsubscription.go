@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"os"
 	"testing"
 
@@ -29,7 +28,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
@@ -72,7 +71,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
-	source := eventsv1alpha1.CloudPubSubSourceEventSource(project, topicName)
+	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
 	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)

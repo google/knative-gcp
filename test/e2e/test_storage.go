@@ -19,7 +19,7 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"net/http"
 	"os"
 	"testing"
@@ -28,7 +28,7 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 
@@ -52,7 +52,7 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 	defer lib.TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
-	source :=v1alpha1.CloudStorageSourceEventSource(bucketName)
+	source := v1beta1.CloudStorageSourceEventSource(bucketName)
 
 	// Create a storage_target Job to receive the events.
 	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceFinalize)
