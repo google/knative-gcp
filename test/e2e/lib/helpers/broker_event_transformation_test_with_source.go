@@ -315,8 +315,7 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 	time.Sleep(5 * time.Second)
 
 	// Create the CloudSchedulerSource.
-	lib.MakeSchedulerOrDie(client, lib.BrokerGVK, schedulerName, data, brokerName, authConfig.PubsubServiceAccount,
-	)
+	lib.MakeSchedulerOrDie(client, lib.BrokerGVK, schedulerName, data, brokerName, authConfig.PubsubServiceAccount)
 
 	// Check if resp CloudEvent hits the target Service.
 	if done := jobDone(client, targetName); !done {

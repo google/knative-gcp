@@ -17,8 +17,9 @@ limitations under the License.
 package reconciler
 
 import (
-	"k8s.io/client-go/tools/record"
 	"testing"
+
+	"k8s.io/client-go/tools/record"
 
 	"github.com/google/go-cmp/cmp"
 	reconcilertesting "github.com/google/knative-gcp/pkg/reconciler/testing"

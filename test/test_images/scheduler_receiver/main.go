@@ -18,16 +18,15 @@ package main
 
 import (
 	"context"
-	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"fmt"
 	"log"
 	"net/http"
-	"fmt"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
-
-
 
 type Receiver struct {
 	client cloudevents.Client
