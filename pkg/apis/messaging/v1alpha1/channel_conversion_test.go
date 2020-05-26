@@ -24,12 +24,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	eventingduckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
+	"knative.dev/eventing/pkg/apis/messaging"
 	"knative.dev/pkg/apis"
 	pkgduckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -147,7 +148,7 @@ var (
 
 	completeSubscribableTypeStatus = eventingduckv1alpha1.SubscribableTypeStatus{
 		SubscribableStatus: &eventingduckv1alpha1.SubscribableStatus{
-			Subscribers: []eventingduckv1alpha1.SubscriberStatus{
+			Subscribers: []eventingduckv1beta1.SubscriberStatus{
 				{
 					UID:                "uid-1",
 					ObservedGeneration: 1,
@@ -199,7 +200,15 @@ func TestChannelConversionBadType(t *testing.T) {
 
 func TestChannelConversion(t *testing.T) {
 	// Just one for now, just adding the for loop for ease of future changes.
-	versions := []apis.Convertible{&v1beta1.Channel{}}
+	versions := []struct {
+		version                 apis.Convertible
+		duckSubscribableVersion string
+	}{
+		{
+			version:                 &v1beta1.Channel{},
+			duckSubscribableVersion: "v1beta1",
+		},
+	}
 
 	tests := []struct {
 		name string
@@ -221,14 +230,29 @@ func TestChannelConversion(t *testing.T) {
 	for _, test := range tests {
 		for _, version := range versions {
 			t.Run(test.name, func(t *testing.T) {
-				ver := version
+				ver := version.version
 				if err := test.in.ConvertTo(context.Background(), ver); err != nil {
 					t.Errorf("ConvertTo() = %v", err)
 				}
+
+				// Verify that after conversion the duck subscribable annotation matches the version
+				// converted to.
+				o := ver.(metav1.Object)
+				if sv := o.GetAnnotations()[messaging.SubscribableDuckVersionAnnotation]; sv != version.duckSubscribableVersion {
+					t.Errorf("Incorrect subscribable duck version annotation. Want %q. Got %q", version.duckSubscribableVersion, sv)
+				}
+
 				got := &Channel{}
 				if err := got.ConvertFrom(context.Background(), ver); err != nil {
 					t.Errorf("ConvertFrom() = %v", err)
 				}
+
+				// The duck subscribable version of a v1alpha1 Channel will always be set to
+				// v1alpha1, even if it was not set in the original.
+				if test.in.Annotations == nil {
+					test.in.Annotations = make(map[string]string, 1)
+				}
+				test.in.Annotations[messaging.SubscribableDuckVersionAnnotation] = "v1alpha1"
 
 				// DeadLetterSinkURI exists exclusively in v1alpha1, it has not yet been promoted to
 				// v1beta1. So it won't round trip, it will be silently removed.

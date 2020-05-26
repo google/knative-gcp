@@ -21,17 +21,14 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudpubsubsourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudpubsubsource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
-	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 )
 
 const (
@@ -44,15 +41,11 @@ const (
 
 // Reconciler is the controller implementation for the CloudPubSubSource source.
 type Reconciler struct {
-	*pubsub.PubSubBase
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// pubsubLister for reading cloudpubsubsources.
 	pubsubLister listers.CloudPubSubSourceLister
-	// pullsubscriptionLister for reading pullsubscriptions.
-	pullsubscriptionLister pubsublisters.PullSubscriptionLister
-	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.

@@ -26,14 +26,16 @@ import (
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	"google.golang.org/api/iterator"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MakeStorageOrDie(client *Client,
-	bucketName, storageName, targetName, pubsubServiceAccount string,
+	sinkGVK metav1.GroupVersionKind, bucketName, storageName, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudStorageSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudStorageSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
@@ -41,18 +43,29 @@ func MakeStorageOrDie(client *Client,
 	client.Core.WaitForResourceReadyOrFail(storageName, CloudStorageSourceTypeMeta)
 }
 
-func MakeStorageJobOrDie(client *Client, fileName, targetName string) {
-	job := resources.StorageTargetJob(targetName, []v1.EnvVar{{
-		Name:  "SUBJECT",
-		Value: fileName,
-	}, {
-		Name:  "TIME",
-		Value: "120",
-	}})
+func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType string) {
+	client.T.Helper()
+	job := resources.StorageTargetJob(targetName, []v1.EnvVar{
+		{
+			Name:  "TYPE",
+			Value: eventType,
+		},
+		{
+			Name:  "SOURCE",
+			Value: source,
+		},
+		{
+			Name:  "SUBJECT",
+			Value: fileName,
+		}, {
+			Name:  "TIME",
+			Value: "6m",
+		}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }
 
 func AddRandomFile(ctx context.Context, t *testing.T, bucketName, fileName, project string) {
+	t.Helper()
 	// Add a random name file in the bucket
 	bucketHandle := getBucketHandle(ctx, t, bucketName, project)
 	wc := bucketHandle.Object(fileName).NewWriter(ctx)
@@ -75,6 +88,7 @@ func AddRandomFile(ctx context.Context, t *testing.T, bucketName, fileName, proj
 
 // MakeBucket retrieves the bucket name for the test. If it does not exist, it will create it.
 func MakeBucket(ctx context.Context, t *testing.T, project string) string {
+	t.Helper()
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
 	}
@@ -107,6 +121,7 @@ func MakeBucket(ctx context.Context, t *testing.T, project string) string {
 }
 
 func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project string) *storage.BucketHandle {
+	t.Helper()
 	// Prow sticks the project in this key
 	if project == "" {
 		t.Fatalf("failed to find %q in envvars", ProwProjectKey)

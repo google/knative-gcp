@@ -21,23 +21,23 @@ import (
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
+
+	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	cloudschedulersourcereconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudschedulersource"
 	listers "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	gscheduler "github.com/google/knative-gcp/pkg/gclient/scheduler"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
-	"github.com/google/knative-gcp/pkg/reconciler/pubsub"
+	"github.com/google/knative-gcp/pkg/reconciler/intevents"
 	"github.com/google/knative-gcp/pkg/utils"
-	schedulerpb "google.golang.org/genproto/googleapis/cloud/scheduler/v1"
-	"google.golang.org/grpc/codes"
-	gstatus "google.golang.org/grpc/status"
 )
 
 const (
@@ -54,16 +54,13 @@ const (
 
 // Reconciler is the controller implementation for Google Cloud Scheduler Jobs.
 type Reconciler struct {
-	*pubsub.PubSubBase
+	*intevents.PubSubBase
 	// identity reconciler for reconciling workload identity.
 	*identity.Identity
 	// schedulerLister for reading schedulers.
 	schedulerLister listers.CloudSchedulerSourceLister
 
 	createClientFn gscheduler.CreateFn
-
-	// serviceAccountLister for reading serviceAccounts.
-	serviceAccountLister corev1listers.ServiceAccountLister
 }
 
 // Check that our Reconciler implements Interface.
@@ -100,7 +97,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, scheduler *v1alpha1.Clou
 
 func (r *Reconciler) reconcileJob(ctx context.Context, scheduler *v1alpha1.CloudSchedulerSource, topic, jobName string) error {
 	if scheduler.Status.ProjectID == "" {
-		projectID, err := utils.ProjectID(scheduler.Spec.Project)
+		projectID, err := utils.ProjectID(scheduler.Spec.Project, metadataClient.NewDefaultMetadataClient())
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to find project id", zap.Error(err))
 			return err

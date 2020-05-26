@@ -20,7 +20,7 @@
 
 # Setup env vars to override the default settings
 export PROJECT_NAME="knative-eventing-performance"
-export BENCHMARK_ROOT_PATH="$GOPATH/src/github.com/google/knative-gcp/test/performance/benchmarks"
+export BENCHMARK_ROOT_PATH="test/performance/benchmarks"
 
 source vendor/knative.dev/test-infra/scripts/performance-tests.sh
 source $(dirname $0)/../lib.sh
@@ -52,12 +52,6 @@ function update_knative() {
 }
 
 function update_benchmark() {
-  echo ">> Updating benchmark $1"
-  pushd .
-  cd ${GOPATH} && mkdir -p src/knative.dev && cd src/knative.dev
-  git clone https://github.com/knative/eventing
-  popd
-
   local benchmark_path="${BENCHMARK_ROOT_PATH}/$1"
   # TODO(chizhg): add update_environment function in test-infra/scripts/performance-tests.sh and move the below code there
   echo ">> Updating configmap"
@@ -68,6 +62,12 @@ function update_benchmark() {
   echo ">> Updating benchmark $1"
   ko delete -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} --ignore-not-found=true --wait=false
   sleep 30
+
+  # Add Git info in kodata so the benchmark can show which commit it's running on.
+  local kodata_path="vendor/knative.dev/eventing/test/test_images/performance/kodata"
+  mkdir "${kodata_path}"
+  ln -s "${REPO_ROOT_DIR}/.git/HEAD" "${kodata_path}"
+  ln -s "${REPO_ROOT_DIR}/.git/refs" "${kodata_path}"
   ko apply --strict -f "${benchmark_path}"/${TEST_CONFIG_VARIANT} || abort "failed to apply benchmark $1"
 
   echo "Sleeping 2 min to wait for all resources to setup"

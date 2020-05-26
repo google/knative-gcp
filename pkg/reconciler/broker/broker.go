@@ -26,15 +26,6 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/gogo/protobuf/proto"
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -52,6 +43,16 @@ import (
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
@@ -96,10 +97,6 @@ type Reconciler struct {
 	deploymentLister appsv1listers.DeploymentLister
 	podLister        corev1listers.PodLister
 
-	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
-	// This is needed so that we can inject a mock client for UTs purposes.
-	CreateClientFn gpubsub.CreateFn
-
 	// Reconciles a broker's triggers
 	triggerReconciler controller.Reconciler
 
@@ -114,6 +111,9 @@ type Reconciler struct {
 	// projectID is used as the GCP project ID when present, skipping the
 	// metadata server check. Used by tests.
 	projectID string
+
+	// pubsubClient is used as the Pubsub client when present.
+	pubsubClient *pubsub.Client
 }
 
 // Check that Reconciler implements Interface
@@ -218,7 +218,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
@@ -227,12 +227,15 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	//TODO uncomment when eventing webhook allows this
 	//b.Status.ProjectID = projectID
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateDecouplingTopicName(b)
@@ -284,7 +287,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	if !subExists {
 		// TODO If this can ever change through the Broker's lifecycle, add
 		// update handling
-		subConfig := gpubsub.SubscriptionConfig{
+		subConfig := pubsub.SubscriptionConfig{
 			Topic: topic,
 			Labels: map[string]string{
 				"resource":     "brokers",
@@ -322,18 +325,21 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	logger.Debug("Deleting decoupling topic")
 
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
 	}
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
@@ -429,7 +435,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 	existing, err := r.configMapLister.ConfigMaps(desired.Namespace).Get(desired.Name)
 	if errors.IsNotFound(err) {
 		r.Logger.Debug("Creating targets ConfigMap", zap.String("namespace", desired.Namespace), zap.String("name", desired.Name))
-		_, err = r.KubeClientSet.CoreV1().ConfigMaps(desired.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.CoreV1().ConfigMaps(desired.Namespace).Create(desired)
 		if err != nil {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}

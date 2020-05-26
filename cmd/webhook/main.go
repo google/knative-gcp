@@ -23,6 +23,9 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	"github.com/google/knative-gcp/pkg/apis/messaging"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
@@ -57,6 +60,10 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudPubSubSource"):    &eventsv1alpha1.CloudPubSubSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudAuditLogsSource"): &eventsv1alpha1.CloudAuditLogsSource{},
 	eventsv1alpha1.SchemeGroupVersion.WithKind("CloudBuildSource"):     &eventsv1alpha1.CloudBuildSource{},
+
+	// For group internal.events.cloud.google.com.
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
+	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
 
 	// For group pubsub.cloud.google.com.
 	pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
@@ -138,6 +145,8 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
 		pubsubv1alpha1_    = pubsubv1alpha1.SchemeGroupVersion.Version
 		pubsubv1beta1_     = pubsubv1beta1.SchemeGroupVersion.Version
+		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
+		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
 	)
 
 	return conversion.NewConversionController(ctx,
@@ -177,6 +186,23 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				Zygotes: map[string]conversion.ConvertibleObject{
 					eventsv1alpha1_: &eventsv1alpha1.CloudStorageSource{},
 					eventsv1beta1_:  &eventsv1beta1.CloudStorageSource{},
+				},
+			},
+			// intevents
+			inteventsv1alpha1.Kind("PullSubscription"): {
+				DefinitionName: intevents.PullSubscriptionsResource.String(),
+				HubVersion:     inteventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					inteventsv1alpha1_: &inteventsv1alpha1.PullSubscription{},
+					inteventsv1beta1_:  &inteventsv1beta1.PullSubscription{},
+				},
+			},
+			inteventsv1alpha1.Kind("Topic"): {
+				DefinitionName: intevents.TopicsResource.String(),
+				HubVersion:     inteventsv1alpha1_,
+				Zygotes: map[string]conversion.ConvertibleObject{
+					inteventsv1alpha1_: &inteventsv1alpha1.Topic{},
+					inteventsv1beta1_:  &inteventsv1beta1.Topic{},
 				},
 			},
 			// messaging

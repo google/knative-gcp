@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 )
@@ -161,7 +162,7 @@ func WithChannelSubscribers(subscribers []duckv1alpha1.SubscriberSpec) ChannelOp
 	}
 }
 
-func WithChannelSubscribersStatus(subscribers []duckv1alpha1.SubscriberStatus) ChannelOption {
+func WithChannelSubscribersStatus(subscribers []eventingduckv1beta1.SubscriberStatus) ChannelOption {
 	return func(c *v1alpha1.Channel) {
 		c.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{
 			Subscribers: subscribers,
@@ -183,5 +184,11 @@ func WithChannelOwnerReferences(ownerReferences []metav1.OwnerReference) Channel
 func WithChannelLabels(labels map[string]string) ChannelOption {
 	return func(c *v1alpha1.Channel) {
 		c.ObjectMeta.Labels = labels
+	}
+}
+
+func WithChannelAnnotations(Annotations map[string]string) ChannelOption {
+	return func(c *v1alpha1.Channel) {
+		c.ObjectMeta.Annotations = Annotations
 	}
 }

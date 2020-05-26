@@ -34,6 +34,9 @@ func TestMakePublisher(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			},
 		},
 		Spec: v1alpha1.TopicSpec{
 			Project: "eventing-name",
@@ -143,6 +146,9 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
 			Namespace: "topic-namespace",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: "cluster",
+			},
 		},
 		Spec: v1alpha1.TopicSpec{
 			Project: "eventing-name",
@@ -204,7 +210,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 									Value: "TracingConfig-ABC123",
 								}},
 							}},
-							ServiceAccountName: "test",
+							ServiceAccountName: "test-cluster",
 						},
 					},
 				}},

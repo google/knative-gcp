@@ -17,33 +17,35 @@ limitations under the License.
 package lib
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcpresources "github.com/google/knative-gcp/pkg/reconciler/events/scheduler/resources"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MakeSchedulerOrDie(client *Client,
-	sName, data, targetName, pubsubServiceAccount string,
+	sinkGVK metav1.GroupVersionKind, schedulerName, data, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudSchedulerSourceOption,
 ) {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceData(data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(pubsubServiceAccount))
-	scheduler := kngcptesting.NewCloudSchedulerSource(sName, client.Namespace, so...)
+	scheduler := kngcptesting.NewCloudSchedulerSource(schedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(sName, CloudSchedulerSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(schedulerName, CloudSchedulerSourceTypeMeta)
 }
 
-func MakeSchedulerJobOrDie(client *Client, data, targetName string) {
-	job := resources.SchedulerJob(targetName, []v1.EnvVar{
+func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {
+	client.T.Helper()
+	job := resources.SchedulerTargetJob(targetName, []v1.EnvVar{
 		{
 			Name:  "TIME",
-			Value: "360",
+			Value: "6m",
 		},
 		{
 			Name:  "SUBJECT_PREFIX",
@@ -55,7 +57,7 @@ func MakeSchedulerJobOrDie(client *Client, data, targetName string) {
 		},
 		{
 			Name:  "TYPE",
-			Value: v1alpha1.CloudSchedulerSourceExecute,
+			Value: eventType,
 		},
 	})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))

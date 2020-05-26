@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 
 	"knative.dev/pkg/test/helpers"
@@ -31,12 +32,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-const (
-	serviceName = "pubsub.googleapis.com"
-	methodName  = "google.pubsub.v1.Publisher.CreateTopic"
-)
-
-func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 
 	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
@@ -48,15 +44,16 @@ func CloudAuditLogsSourceWithTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	lib.MakeAuditLogsJobOrDie(client, methodName, project, resourceName, serviceName, targetName)
+	lib.MakeAuditLogsJobOrDie(client, lib.PubSubCreateTopicMethodName, project, resourceName, lib.PubSubServiceName, targetName, v1beta1.CloudAuditLogsSourceEvent)
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client,
+		lib.ServiceGVK,
 		auditlogsName,
-		methodName,
+		lib.PubSubCreateTopicMethodName,
 		project,
 		resourceName,
-		serviceName,
+		lib.PubSubServiceName,
 		targetName,
 		authConfig.PubsubServiceAccount,
 	)

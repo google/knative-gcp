@@ -193,6 +193,15 @@ func (s *Server) Wait() {
 	s.GServer.wg.Wait()
 }
 
+// ClearMessages removes all published messages
+// from internal containers.
+func (s *Server) ClearMessages() {
+	s.GServer.mu.Lock()
+	s.GServer.msgs = nil
+	s.GServer.msgsByID = make(map[string]*Message)
+	s.GServer.mu.Unlock()
+}
+
 // Close shuts down the server and releases all resources.
 func (s *Server) Close() error {
 	s.srv.Close()
@@ -524,7 +533,6 @@ func newTopic(pt *pb.Topic) *topic {
 func (t *topic) stop() {
 	for _, sub := range t.subs {
 		sub.proto.Topic = "_deleted-topic_"
-		sub.stop()
 	}
 }
 

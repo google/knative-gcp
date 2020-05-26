@@ -17,6 +17,8 @@ limitations under the License.
 package lib
 
 import (
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"testing"
@@ -30,11 +32,12 @@ import (
 )
 
 func MakePubSubOrDie(client *Client,
-	gvk metav1.GroupVersionKind,
-	psName, targetName, topicName, pubsubServiceAccount string,
+	sinkGVK metav1.GroupVersionKind,
+	psName, sinkName, topicName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudPubSubSourceOption,
 ) {
-	so = append(so, kngcptesting.WithCloudPubSubSourceSink(gvk, targetName))
+	client.T.Helper()
+	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
@@ -43,7 +46,25 @@ func MakePubSubOrDie(client *Client,
 	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
 }
 
+func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {
+	client.T.Helper()
+	job := resources.PubSubTargetJob(targetName, []v1.EnvVar{
+		{
+			Name:  "TYPE",
+			Value: eventType,
+		},
+		{
+			Name:  "SOURCE",
+			Value: source,
+		}, {
+			Name:  "TIME",
+			Value: "6m",
+		}})
+	client.CreateJobOrFail(job, WithServiceForJob(targetName))
+}
+
 func AssertMetrics(t *testing.T, client *Client, topicName, psName string) {
+	t.Helper()
 	sleepTime := 1 * time.Minute
 	t.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 	time.Sleep(sleepTime)

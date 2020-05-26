@@ -83,6 +83,10 @@ func (bs *BrokerCellStatus) PropagateIngressAvailability(ep *corev1.Endpoints) {
 	}
 }
 
+func (bs *BrokerCellStatus) MarkIngressFailed(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionIngress, reason, format, args...)
+}
+
 // PropagateFanoutAvailability uses the availability of the provided Deployment
 // to determine if BrokerCellConditionFanout should be marked as true or
 // false.
@@ -92,6 +96,10 @@ func (bs *BrokerCellStatus) PropagateFanoutAvailability(d *appsv1.Deployment) {
 	} else {
 		brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, "DeploymentUnavailable", "Deployment %q is unavailable.", d.Name)
 	}
+}
+
+func (bs *BrokerCellStatus) MarkFanoutFailed(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionFanout, reason, format, args...)
 }
 
 // PropagateRetryAvailability uses the availability of the provided Deployment
@@ -105,10 +113,18 @@ func (bs *BrokerCellStatus) PropagateRetryAvailability(d *appsv1.Deployment) {
 	}
 }
 
+func (bs *BrokerCellStatus) MarkRetryFailed(reason, format string, args ...interface{}) {
+	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionRetry, reason, format, args...)
+}
+
 func (bs *BrokerCellStatus) MarkTargetsConfigReady() {
 	brokerCellCondSet.Manage(bs).MarkTrue(BrokerCellConditionTargetsConfig)
 }
 
 func (bs *BrokerCellStatus) MarkTargetsConfigFailed(reason, format string, args ...interface{}) {
 	brokerCellCondSet.Manage(bs).MarkFalse(BrokerCellConditionTargetsConfig, reason, format, args...)
+}
+
+func (bs *BrokerCellStatus) SetIngressTemplate(address string) {
+	bs.IngressTemplate = address
 }

@@ -21,7 +21,7 @@ metadata:
 rules:
 
 - apiGroups:
-    - pubsub.cloud.google.com
+    - internal.events.cloud.google.com
   resources:
     - pullsubscriptions
     - topics
@@ -33,6 +33,23 @@ rules:
     - update
     - patch
     - delete
+
+- apiGroups:
+    - internal.events.cloud.google.com
+  resources:
+    - pullsubscriptions/status
+    - topics/status
+  verbs:
+    - get
+    - update
+    - patch
+
+- apiGroups:
+    - pubsub.cloud.google.com
+  resources:
+    - pullsubscriptions
+    - topics
+  verbs: *everything
 
 - apiGroups:
     - pubsub.cloud.google.com
@@ -126,6 +143,13 @@ rules:
   verbs:
     - create
     - patch
+
+- apiGroups:
+    - internal.events.cloud.google.com
+  resources:
+    - brokercells
+    - brokercells/status
+  verbs: *everything
 
 - apiGroups:
     - eventing.knative.dev

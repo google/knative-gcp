@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 )
 
@@ -57,15 +58,17 @@ func (current *CloudBuildSource) CheckImmutableFields(ctx context.Context, origi
 		return nil
 	}
 
+	var errs *apis.FieldError
 	// Modification of Topic, Secret and Project are not allowed. Everything else is mutable.
 	if diff := cmp.Diff(original.Spec, current.Spec,
 		cmpopts.IgnoreFields(CloudBuildSourceSpec{},
 			"Sink", "CloudEventOverrides")); diff != "" {
-		return &apis.FieldError{
+		errs = errs.Also(&apis.FieldError{
 			Message: "Immutable fields changed (-old +new)",
 			Paths:   []string{"spec"},
 			Details: diff,
-		}
+		})
 	}
-	return nil
+	// Modification of non-empty cluster name annotation is not allowed.
+	return duckv1alpha1.CheckImmutableClusterNameAnnotation(&current.ObjectMeta, &original.ObjectMeta, errs)
 }

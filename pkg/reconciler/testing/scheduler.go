@@ -197,3 +197,9 @@ func WithCloudSchedulerSourceFinalizers(finalizers ...string) CloudSchedulerSour
 		s.Finalizers = finalizers
 	}
 }
+
+func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.ObjectMeta.Annotations = Annotations
+	}
+}

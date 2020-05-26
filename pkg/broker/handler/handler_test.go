@@ -60,9 +60,10 @@ func TestHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create topic: %v", err)
 	}
-	if _, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
+	sub, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
 		Topic: topic,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("failed to create subscription: %v", err)
 	}
 
@@ -70,7 +71,6 @@ func TestHandler(t *testing.T) {
 		cepubsub.WithClient(c),
 		cepubsub.WithProjectID("test-project"),
 		cepubsub.WithTopicID("test-topic"),
-		cepubsub.WithSubscriptionID("test-sub"),
 	)
 	if err != nil {
 		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
@@ -79,7 +79,7 @@ func TestHandler(t *testing.T) {
 	eventCh := make(chan *event.Event)
 	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
 	h := &Handler{
-		PubsubEvents: p,
+		Subscription: sub,
 		Processor:    processor,
 		Timeout:      time.Second,
 	}

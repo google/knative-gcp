@@ -23,7 +23,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
 // TopicArgs are the arguments needed to create a Channel Topic.
@@ -36,6 +36,7 @@ type TopicArgs struct {
 	ServiceAccount string
 	Secret         *corev1.SecretKeySelector
 	Labels         map[string]string
+	Annotations    map[string]string
 }
 
 // MakeInvoker generates (but does not insert into K8s) the Topic for Channels.
@@ -45,6 +46,7 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 			Namespace:       args.Owner.GetObjectMeta().GetNamespace(),
 			Name:            args.Name,
 			Labels:          args.Labels,
+			Annotations:     args.Annotations,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Owner)},
 		},
 		Spec: v1alpha1.TopicSpec{

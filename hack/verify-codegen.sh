@@ -18,9 +18,16 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/library.sh
+export GO111MODULE=on
 
-readonly TMP_DIFFROOT="$(mktemp -d ${REPO_ROOT_DIR}/tmpdiffroot.XXXXXX)"
+source $(dirname "$0")/../vendor/knative.dev/test-infra/scripts/library.sh
+
+# There is a directory named `internal`, so we need to move the backup files out
+# of the repo root, otherwise go tools will complain that something is trying to
+# import an internal package that it can't see. E.g.
+# ${REPO_ROOT_DIR}/tmpdiffroot.abcdef/pkg/apis/messaging/v1beta1/deprecated_condition.go
+# tries to import ${REPO_ROOT_DIR}/pkg/apis/messaging/internal.
+readonly TMP_DIFFROOT="$(mktemp -d -t tmpdiffroot.XXXXXX)"
 
 cleanup() {
   rm -rf "${TMP_DIFFROOT}"
@@ -34,8 +41,8 @@ cleanup
 mkdir -p "${TMP_DIFFROOT}"
 
 cp -aR \
-  "${REPO_ROOT_DIR}/Gopkg.lock" \
   "${REPO_ROOT_DIR}/config" \
+  "${REPO_ROOT_DIR}/go.sum" \
   "${REPO_ROOT_DIR}/pkg" \
   "${REPO_ROOT_DIR}/third_party" \
   "${REPO_ROOT_DIR}/vendor" \
@@ -46,7 +53,7 @@ echo "Diffing ${REPO_ROOT_DIR} against freshly generated codegen"
 ret=0
 
 diff -Naupr --no-dereference \
-  "${REPO_ROOT_DIR}/Gopkg.lock" "${TMP_DIFFROOT}/Gopkg.lock" || ret=1
+  "${REPO_ROOT_DIR}/go.sum" "${TMP_DIFFROOT}/go.sum" || ret=1
 
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/config" "${TMP_DIFFROOT}/config" || ret=1
@@ -54,17 +61,16 @@ diff -Naupr --no-dereference \
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/pkg" "${TMP_DIFFROOT}/pkg" || ret=1
 
-# TODO uncomment this once we fix https://github.com/google/knative-gcp/issues/702
-# diff -Naupr --no-dereference \
-#  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
+diff -Naupr --no-dereference \
+  "${REPO_ROOT_DIR}/third_party" "${TMP_DIFFROOT}/third_party" || ret=1
 
 diff -Naupr --no-dereference \
   "${REPO_ROOT_DIR}/vendor" "${TMP_DIFFROOT}/vendor" || ret=1
 
 # Restore working tree state
 rm -fr \
-  "${REPO_ROOT_DIR}/Gopkg.lock" \
   "${REPO_ROOT_DIR}/config" \
+  "${REPO_ROOT_DIR}/go.sum" \
   "${REPO_ROOT_DIR}/pkg" \
   "${REPO_ROOT_DIR}/third_party" \
   "${REPO_ROOT_DIR}/vendor"

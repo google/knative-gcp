@@ -34,14 +34,18 @@ import (
 	logtesting "knative.dev/pkg/logging/testing"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	eventingduckv1beta1 "knative.dev/eventing/pkg/apis/duck/v1beta1"
 
+	. "knative.dev/pkg/reconciler/testing"
+
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/messaging/v1alpha1/channel"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel/resources"
-	. "knative.dev/pkg/reconciler/testing"
 
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
@@ -85,7 +89,7 @@ var (
 
 func init() {
 	// Add types to scheme
-	_ = pubsubv1alpha1.AddToScheme(scheme.Scheme)
+	_ = inteventsv1alpha1.AddToScheme(scheme.Scheme)
 }
 
 func patchFinalizers(namespace, name string, add bool) clientgotesting.PatchActionImpl {
@@ -120,6 +124,9 @@ func TestAllCases(t *testing.T) {
 					Project: testProject,
 				}),
 				WithChannelDefaults,
+				WithChannelAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 			),
 		},
 		Key: testNS + "/" + channelName,
@@ -137,8 +144,11 @@ func TestAllCases(t *testing.T) {
 				WithChannelDefaults,
 				// Updates
 				WithInitChannelConditions,
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicID(testTopicID),
+				WithChannelAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
 				WithChannelTopicUnknown("TopicNotConfigured", "Topic has not yet been reconciled"),
 			),
 		}},
@@ -177,7 +187,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -212,7 +222,7 @@ func TestAllCases(t *testing.T) {
 				WithChannelTopic(testTopicID),
 				// Updates
 				WithChannelAddress(topicURI),
-				WithChannelSubscribersStatus([]eventingduck.SubscriberStatus(nil)),
+				WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus(nil)),
 				WithChannelTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
 			),
 		}},
@@ -258,7 +268,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -284,7 +294,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1},
 					}),
 				),
@@ -311,7 +321,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, Generation: 2, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 2, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -364,7 +374,7 @@ func TestAllCases(t *testing.T) {
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{}),
 				),
 			}},
 			WantCreates: []runtime.Object{
@@ -388,7 +398,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1},
 					}),
 				),
@@ -425,7 +435,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{
 						{UID: subscriptionUID, Generation: 1, SubscriberURI: subscriberURI, ReplyURI: replyURI},
 					}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID, ObservedGeneration: 1, Ready: corev1.ConditionFalse, Message: "PullSubscription cre-sub-testsubscription-abc-123 is not ready"},
 					}),
 				),
@@ -456,7 +466,7 @@ func TestAllCases(t *testing.T) {
 					WithChannelTopic(testTopicID),
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{
 						{UID: subscriptionUID},
 					}),
 				),
@@ -481,12 +491,12 @@ func TestAllCases(t *testing.T) {
 					WithChannelAddress(topicURI),
 					WithChannelSubscribers([]eventingduck.SubscriberSpec{}),
 					// Updates
-					WithChannelSubscribersStatus([]eventingduck.SubscriberStatus{}),
+					WithChannelSubscribersStatus([]eventingduckv1beta1.SubscriberStatus{}),
 				),
 			}},
 			WantDeletes: []clientgotesting.DeleteActionImpl{
 				{ActionImpl: clientgotesting.ActionImpl{
-					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "pubsub.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+					Namespace: "testnamespace", Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
 					Name: "cre-sub-testsubscription-abc-123",
 				},
 			},
@@ -505,12 +515,15 @@ func TestAllCases(t *testing.T) {
 					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDefaults,
 					WithChannelDeletionTimestamp,
-					WithChannelServiceAccountName("test123"),
+					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
+					WithChannelAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
 				),
 			},
 			Key: testNS + "/" + channelName,
 			WantEvents: []string{
-				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123" not found`),
+				Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed",
+					`Failed to delete Channel workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 				Object: NewChannel(channelName, testNS,
@@ -521,9 +534,12 @@ func TestAllCases(t *testing.T) {
 					WithInitChannelConditions,
 					WithChannelGCPServiceAccount(gServiceAccount),
 					WithChannelDefaults,
-					WithChannelServiceAccountName("test123"),
+					WithChannelServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
 					WithChannelDeletionTimestamp,
-					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123" not found`),
+					WithChannelWorkloadIdentityFailed("WorkloadIdentityDeleteFailed",
+						`serviceaccounts "test123-fake-cluster-name" not found`),
+					WithChannelAnnotations(map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName}),
 				),
 			}},
 		}}
@@ -531,19 +547,17 @@ func TestAllCases(t *testing.T) {
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
-			Base:                   reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:               identity.NewIdentity(ctx, NoopIAMPolicyManager),
-			channelLister:          listers.GetChannelLister(),
-			topicLister:            listers.GetTopicLister(),
-			pullSubscriptionLister: listers.GetPullSubscriptionLister(),
-			serviceAccountLister:   listers.GetServiceAccountLister(),
+			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			channelLister: listers.GetChannelLister(),
+			topicLister:   listers.GetTopicLister(),
 		}
 		return channel.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetChannelLister(), r.Recorder, r)
 	}))
 
 }
 
-func newTopic() *pubsubv1alpha1.Topic {
+func newTopic() *inteventsv1alpha1.Topic {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
 		WithChannelSpec(v1alpha1.ChannelSpec{
@@ -560,10 +574,13 @@ func newTopic() *pubsubv1alpha1.Topic {
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
 		Labels:  resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Annotations: map[string]string{
+			duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+		},
 	})
 }
 
-func newReadyTopic() *pubsubv1alpha1.Topic {
+func newReadyTopic() *inteventsv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
@@ -572,7 +589,7 @@ func newReadyTopic() *pubsubv1alpha1.Topic {
 	return topic
 }
 
-func newFalseTopic() *pubsubv1alpha1.Topic {
+func newFalseTopic() *inteventsv1alpha1.Topic {
 	topic := newTopic()
 	url, _ := apis.ParseURL(topicURI)
 	topic.Status.SetAddress(url)
@@ -580,7 +597,7 @@ func newFalseTopic() *pubsubv1alpha1.Topic {
 	return topic
 }
 
-func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1.PullSubscription {
+func newPullSubscription(subscriber eventingduck.SubscriberSpec) *inteventsv1alpha1.PullSubscription {
 	channel := NewChannel(channelName, testNS,
 		WithChannelUID(channelUID),
 		WithChannelSpec(v1alpha1.ChannelSpec{
@@ -593,7 +610,7 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *pubsubv1alpha1
 	return newPullSubscriptionWithOwner(subscriber, channel)
 }
 
-func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *pubsubv1alpha1.PullSubscription {
+func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *inteventsv1alpha1.PullSubscription {
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 		Owner:       channel,
 		Name:        resources.GenerateSubscriptionName(subscriber.UID),
@@ -601,7 +618,7 @@ func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channe
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
 		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
-		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name),
+		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})
 }

@@ -14,13 +14,13 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  name: topics.pubsub.cloud.google.com
+  name: topics.internal.events.cloud.google.com
   labels:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
     duck.knative.dev/addressable: "true"
 spec:
-  group: pubsub.cloud.google.com
+  group: internal.events.cloud.google.com
   names:
     kind: Topic
     plural: topics

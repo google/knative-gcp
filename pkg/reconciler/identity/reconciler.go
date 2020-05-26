@@ -32,7 +32,9 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
@@ -64,7 +66,13 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	status.ServiceAccountName = ""
 	// Create corresponding k8s ServiceAccount if it doesn't exist.
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount)
+	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
+	if clusterName == "" {
+		err := fmt.Errorf(`unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, v1alpha1.ClusterNameAnnotation)
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		return nil, fmt.Errorf("failed to get cluster name: %w", err)
+	}
+	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
@@ -103,7 +111,13 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 		return nil
 	}
 	namespace := identifiable.GetObjectMeta().GetNamespace()
-	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount)
+	clusterName := identifiable.GetObjectMeta().GetAnnotations()[v1alpha1.ClusterNameAnnotation]
+	if clusterName == "" {
+		err := fmt.Errorf(`unable to get cluster name, please provide it by adding annotation "%s=$CLUSTER_NAME" to source`, v1alpha1.ClusterNameAnnotation)
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
+		return fmt.Errorf("failed to get cluster name: %w", err)
+	}
+	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
@@ -120,12 +134,12 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	return nil
 }
 
-func (i *Identity) createServiceAccount(ctx context.Context, namespace, gServiceAccount string) (*corev1.ServiceAccount, error) {
-	kServiceAccountName := resources.GenerateServiceAccountName(gServiceAccount)
+func (i *Identity) createServiceAccount(ctx context.Context, namespace, gServiceAccount, clusterName string) (*corev1.ServiceAccount, error) {
+	kServiceAccountName := resources.GenerateServiceAccountName(gServiceAccount, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			expect := resources.MakeServiceAccount(namespace, gServiceAccount)
+			expect := resources.MakeServiceAccount(namespace, gServiceAccount, clusterName)
 			logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
 			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 			if err != nil {
@@ -143,7 +157,7 @@ func (i *Identity) createServiceAccount(ctx context.Context, namespace, gService
 // TODO he iam policy binding should be mocked so that we can unit test it. issue https://github.com/google/knative-gcp/issues/657
 // addIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
 func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectID, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
@@ -156,7 +170,7 @@ func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceA
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
 func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
-	projectID, err := utils.ProjectID(projectID)
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}

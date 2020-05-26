@@ -36,11 +36,19 @@ import (
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
 	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/metrics/metricskey"
+	"knative.dev/pkg/metrics/metricstest"
+
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
@@ -49,6 +57,10 @@ const (
 	subscriptionID = "subscription1"
 
 	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
+
+	eventType = "test-event-type"
+	pod       = "testpod"
+	container = "testcontainer"
 )
 
 var brokerConfig = &config.TargetsConfig{
@@ -84,33 +96,56 @@ type testCase struct {
 	// If method is empty, POST will be used as default.
 	method string
 	// body and header can be specified if the client is making raw HTTP request instead of via cloudevents.
-	body     map[string]string
-	header   nethttp.Header
-	wantCode int
+	body           map[string]string
+	header         nethttp.Header
+	wantCode       int
+	wantMetricTags map[string]string
+	wantEventCount int64
 	// additional assertions on the output event.
-	eventAssertion func(*testing.T, *cloudevents.Event)
+	eventAssertions []eventAssertion
 }
 
 func TestHandler(t *testing.T) {
 	tests := []testCase{
 		{
-			name:     "happy case",
-			path:     "/ns1/broker1",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			name:           "happy case",
+			path:           "/ns1/broker1",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusAccepted,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "202",
+				metricskey.LabelResponseCodeClass: "2xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
+			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime)},
 		},
 		{
 			name:     "trace context",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusOK,
+			wantCode: nethttp.StatusAccepted,
 			header: nethttp.Header{
 				"Traceparent": {fmt.Sprintf("00-%s-00f067aa0ba902b7-01", traceID)},
 			},
-			eventAssertion: assertTraceID(traceID),
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "202",
+				metricskey.LabelResponseCodeClass: "2xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
+			eventAssertions: []eventAssertion{assertExtensionsExist(EventArrivalTime), assertTraceID(traceID)},
 		},
 		{
-			name:     "valid event but unsupported http  method",
+			name:     "valid event but unsupported http method",
 			method:   "PUT",
 			path:     "/ns1/broker1",
 			event:    createTestEvent("test-event"),
@@ -129,28 +164,68 @@ func TestHandler(t *testing.T) {
 			header:   nethttp.Header{},
 		},
 		{
-			name:     "wrong path - broker doesn't exist in given namespace",
-			path:     "/ns1/broker-not-exist",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusNotFound,
+			name:           "wrong path - broker doesn't exist in given namespace",
+			path:           "/ns1/broker-not-exist",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusNotFound,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns1",
+				metricskey.LabelBrokerName:        "broker-not-exist",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "404",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 		{
-			name:     "wrong path - namespace doesn't exist",
-			path:     "/ns-not-exist/broker1",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusNotFound,
+			name:           "wrong path - namespace doesn't exist",
+			path:           "/ns-not-exist/broker1",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusNotFound,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns-not-exist",
+				metricskey.LabelBrokerName:        "broker1",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "404",
+				metricskey.LabelResponseCodeClass: "4xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 		{
-			name:     "broker queue is nil",
-			path:     "/ns2/broker2",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusInternalServerError,
+			name:           "broker queue is nil",
+			path:           "/ns2/broker2",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusInternalServerError,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns2",
+				metricskey.LabelBrokerName:        "broker2",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "500",
+				metricskey.LabelResponseCodeClass: "5xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 		{
-			name:     "broker queue topic is empty",
-			path:     "/ns3/broker3",
-			event:    createTestEvent("test-event"),
-			wantCode: nethttp.StatusInternalServerError,
+			name:           "broker queue topic is empty",
+			path:           "/ns3/broker3",
+			event:          createTestEvent("test-event"),
+			wantCode:       nethttp.StatusInternalServerError,
+			wantEventCount: 1,
+			wantMetricTags: map[string]string{
+				metricskey.LabelNamespaceName:     "ns3",
+				metricskey.LabelBrokerName:        "broker3",
+				metricskey.LabelEventType:         eventType,
+				metricskey.LabelResponseCode:      "500",
+				metricskey.LabelResponseCodeClass: "5xx",
+				metricskey.PodName:                pod,
+				metricskey.ContainerName:          container,
+			},
 		},
 	}
 
@@ -158,6 +233,7 @@ func TestHandler(t *testing.T) {
 	defer client.CloseIdleConnections()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetIngressMetrics()
 			ctx := logging.WithLogger(context.Background(), logtest.TestLogger(t))
 			ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 			defer cancel()
@@ -165,10 +241,8 @@ func TestHandler(t *testing.T) {
 			psSrv := pstest.NewServer()
 			defer psSrv.Close()
 
-			url, cancel1 := createAndStartIngress(ctx, t, psSrv)
-			defer cancel1()
-			rec, cancel2 := setupTestReceiver(ctx, t, psSrv)
-			defer cancel2()
+			url := createAndStartIngress(ctx, t, psSrv)
+			rec := setupTestReceiver(ctx, t, psSrv)
 
 			res, err := client.Do(createRequest(tc, url))
 			if err != nil {
@@ -177,9 +251,10 @@ func TestHandler(t *testing.T) {
 			if res.StatusCode != tc.wantCode {
 				t.Errorf("StatusCode mismatch. got: %v, want: %v", res.StatusCode, tc.wantCode)
 			}
+			verifyMetrics(t, tc)
 
 			// If event is accepted, check that it's stored in the decouple sink.
-			if res.StatusCode == nethttp.StatusOK {
+			if res.StatusCode == nethttp.StatusAccepted {
 				m, err := rec.Receive(ctx)
 				if err != nil {
 					t.Fatal(err)
@@ -195,8 +270,8 @@ func TestHandler(t *testing.T) {
 				if savedToSink.Time().IsZero() {
 					t.Errorf("Saved event should be decorated with timestamp, got zero.")
 				}
-				if tc.eventAssertion != nil {
-					tc.eventAssertion(t, savedToSink)
+				for _, assertion := range tc.eventAssertions {
+					assertion(t, savedToSink)
 				}
 			}
 
@@ -209,60 +284,106 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*pubsub.Client, func()) {
+func BenchmarkIngressHandler(b *testing.B) {
+	// Set parallelism to 32 so that the benchmark is not limited by the Pub/Sub publish latency
+	// over gRPC.
+	b.SetParallelism(32)
+
+	reportertest.ResetIngressMetrics()
+
+	ctx := logging.WithLogger(context.Background(),
+		zaptest.NewLogger(b,
+			zaptest.WrapOptions(zap.AddCaller()),
+			zaptest.Level(zap.WarnLevel),
+		).Sugar())
+
+	psSrv := pstest.NewServer()
+	defer psSrv.Close()
+
+	psClient, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, b, psSrv))
+	if err != nil {
+		b.Fatal(err)
+	}
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient)
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
+	if err != nil {
+		b.Fatal(err)
+	}
+	h := NewHandler(ctx, nil, decouple, statsReporter)
+
+	if _, err := createPubsubClient(ctx, b, psSrv).CreateTopic(ctx, topicID); err != nil {
+		b.Fatal(err)
+	}
+
+	req := httptest.NewRequest("POST", "/ns1/broker1", nil)
+	message := binding.ToMessage(createTestEvent("test-event"))
+	http.WriteRequest(ctx, message, req)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+			if res := w.Result(); w.Result().StatusCode != nethttp.StatusAccepted {
+				b.Errorf("Unexpected HTTP status code %v", res.StatusCode)
+			}
+		}
+	})
+}
+
+func createPubsubClient(ctx context.Context, t testing.TB, psSrv *pstest.Server) *pubsub.Client {
 	conn, err := grpc.Dial(psSrv.Addr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
 	}
-	cancel := func() { conn.Close() }
+	t.Cleanup(func() {
+		conn.Close()
+	})
 
 	psClient, err := pubsub.NewClient(ctx, projectID, option.WithGRPCConn(conn))
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
-	return psClient, cancel
+	return psClient
 }
 
-func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) (*cepubsub.Protocol, func()) {
-	ps, cancel := createPubsubClient(ctx, t, psSrv)
+func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) *cepubsub.Protocol {
+	ps := createPubsubClient(ctx, t, psSrv)
 	topic, err := ps.CreateTopic(ctx, topicID)
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 	_, err = ps.CreateSubscription(ctx, subscriptionID, pubsub.SubscriptionConfig{Topic: topic})
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
-	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
+	p, err := cepubsub.New(ctx,
+		cepubsub.WithClient(ps),
+		cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
+	)
 	if err != nil {
-		cancel()
 		t.Fatal(err)
 	}
 
 	go p.OpenInbound(cecontext.WithLogger(ctx, logtest.TestLogger(t)))
-	return p, cancel
+	return p
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) (string, func()) {
-	p, cancel := createPubsubClient(ctx, t, psSrv)
-	decouple, err := NewMultiTopicDecoupleSink(ctx,
-		WithBrokerConfig(memory.NewTargets(brokerConfig)),
-		WithPubsubClient(p))
+func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server) string {
+	client, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, t, psSrv))
 	if err != nil {
-		cancel()
-		t.Fatalf("Failed to create decouple sink: %v", err)
+		t.Fatal(err)
 	}
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), client)
 
 	receiver := &testHttpMessageReceiver{urlCh: make(chan string)}
-	h := &handler{
-		logger:       logging.FromContext(ctx).Desugar(),
-		httpReceiver: receiver,
-		decouple:     decouple,
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
+	if err != nil {
+		t.Fatal(err)
 	}
+	h := NewHandler(ctx, receiver, decouple, statsReporter)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -270,19 +391,18 @@ func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Serv
 	}()
 	select {
 	case err := <-errCh:
-		cancel()
 		t.Fatalf("Failed to start ingress: %v", err)
 	case url := <-h.httpReceiver.(*testHttpMessageReceiver).urlCh:
-		return url, cancel
+		return url
 	}
-	return "", cancel
+	return ""
 }
 
 func createTestEvent(id string) *cloudevents.Event {
 	event := cloudevents.NewEvent()
 	event.SetID(id)
 	event.SetSource("test-source")
-	event.SetType("test-type")
+	event.SetType(eventType)
 	return &event
 }
 
@@ -305,6 +425,17 @@ func createRequest(tc testCase, url string) *nethttp.Request {
 	return request
 }
 
+// verifyMetrics verifies broker metrics are properly recorded (or not recorded)
+func verifyMetrics(t *testing.T, tc testCase) {
+	if tc.wantEventCount == 0 {
+		metricstest.CheckStatsNotReported(t, "event_count", "event_dispatch_latencies")
+	} else {
+		metricstest.CheckStatsReported(t, "event_count", "event_dispatch_latencies")
+		metricstest.CheckCountData(t, "event_count", tc.wantMetricTags, tc.wantEventCount)
+		metricstest.CheckDistributionCount(t, "event_dispatch_latencies", tc.wantMetricTags, tc.wantEventCount)
+	}
+}
+
 func assertTraceID(id string) eventAssertion {
 	return func(t *testing.T, e *cloudevents.Event) {
 		dt, ok := extensions.GetDistributedTracingExtension(*e)
@@ -319,6 +450,16 @@ func assertTraceID(id string) eventAssertion {
 		}
 		if sc.TraceID.String() != id {
 			t.Errorf("unexpected trace ID: got %q, want %q", sc.TraceID, id)
+		}
+	}
+}
+
+func assertExtensionsExist(extensions ...string) eventAssertion {
+	return func(t *testing.T, e *cloudevents.Event) {
+		for _, extension := range extensions {
+			if _, ok := e.Extensions()[extension]; !ok {
+				t.Errorf("Extension %v doesn't exist.", extension)
+			}
 		}
 	}
 }

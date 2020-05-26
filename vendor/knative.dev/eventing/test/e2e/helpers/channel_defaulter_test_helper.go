@@ -32,6 +32,7 @@ import (
 	"knative.dev/eventing/test/lib/cloudevents"
 	"knative.dev/eventing/test/lib/duck"
 	"knative.dev/eventing/test/lib/resources"
+	reconciler "knative.dev/pkg/reconciler"
 )
 
 const (
@@ -133,31 +134,37 @@ func defaultChannelTestHelper(t *testing.T, client *lib.Client, expectedChannel 
 
 // updateDefaultChannelCM will update the default channel configmap
 func updateDefaultChannelCM(client *lib.Client, updateConfig func(config *config.ChannelDefaults)) error {
-	systemNamespace := resources.SystemNamespace
-	cmInterface := client.Kube.Kube.CoreV1().ConfigMaps(systemNamespace)
-	// get the defaultchannel configmap
-	configMap, err := cmInterface.Get(configMapName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	// get the defaultchannel config value
-	defaultChannelConfig, hasDefault := configMap.Data[channelDefaulterKey]
-	config := &config.ChannelDefaults{}
-	if hasDefault {
-		if err := yaml.Unmarshal([]byte(defaultChannelConfig), config); err != nil {
+	cmInterface := client.Kube.Kube.CoreV1().ConfigMaps(resources.SystemNamespace)
+
+	err := reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		// get the defaultchannel configmap
+		configMap, err := cmInterface.Get(configMapName, metav1.GetOptions{})
+		if err != nil {
 			return err
 		}
-	}
+		// get the defaultchannel config value
+		defaultChannelConfig, hasDefault := configMap.Data[channelDefaulterKey]
+		config := &config.ChannelDefaults{}
+		if hasDefault {
+			if err := yaml.Unmarshal([]byte(defaultChannelConfig), config); err != nil {
+				return err
+			}
+		}
 
-	// update the defaultchannel config
-	updateConfig(config)
-	configBytes, err := yaml.Marshal(*config)
+		// update the defaultchannel config
+		updateConfig(config)
+		configBytes, err := yaml.Marshal(*config)
+		if err != nil {
+			return err
+		}
+		// update the defaultchannel configmap
+		configMap.Data[channelDefaulterKey] = string(configBytes)
+		_, err = cmInterface.Update(configMap)
+		return err
+	})
 	if err != nil {
 		return err
 	}
-	// update the defaultchannel configmap
-	configMap.Data[channelDefaulterKey] = string(configBytes)
-	_, err = cmInterface.Update(configMap)
 	// In cmd/webhook.go, configMapWatcher watches the configmap changes and set the config for channeldefaulter,
 	// the resync time is set to 0, which means the the resync will be delayed as long as possible (until the upstream
 	// source closes the watch or times out, or you stop the controller)

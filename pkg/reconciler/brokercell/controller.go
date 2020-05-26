@@ -19,13 +19,20 @@ limitations under the License.
 package brokercell
 
 import (
-	context "context"
+	"context"
 
-	brokercell "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
+	"go.uber.org/zap"
+
+	"knative.dev/eventing/pkg/logging"
+	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+
+	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
-	configmap "knative.dev/pkg/configmap"
-	controller "knative.dev/pkg/controller"
-	logging "knative.dev/pkg/logging"
+	"github.com/google/knative-gcp/pkg/reconciler"
 )
 
 const (
@@ -42,10 +49,15 @@ func NewController(
 	logger := logging.FromContext(ctx)
 
 	brokercellInformer := brokercell.Get(ctx)
+	deploymentLister := deploymentinformer.Get(ctx).Lister()
+	svcLister := serviceinformer.Get(ctx).Lister()
+	epLister := endpointsinformer.Get(ctx).Lister()
 
-	// TODO: setup additional informers here.
-
-	r := &Reconciler{}
+	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
+	r, err := NewReconciler(base, svcLister, epLister, deploymentLister)
+	if err != nil {
+		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
+	}
 	impl := v1alpha1brokercell.NewImpl(ctx, r)
 
 	logger.Info("Setting up event handlers.")

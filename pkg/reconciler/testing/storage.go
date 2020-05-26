@@ -25,7 +25,9 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 
+	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 // CloudStorageSourceOption enables further configuration of a CloudStorageSource.
@@ -38,6 +40,9 @@ func NewCloudStorageSource(name, namespace string, so ...CloudStorageSourceOptio
 			Name:      name,
 			Namespace: namespace,
 			UID:       "test-storage-uid",
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testing.FakeClusterName,
+			},
 		},
 	}
 	for _, opt := range so {
@@ -74,6 +79,12 @@ func WithCloudStorageSourceSink(gvk metav1.GroupVersionKind, name string) CloudS
 				Name:       name,
 			},
 		}
+	}
+}
+
+func WithCloudStorageSourceSinkDestination(sink duckv1.Destination) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Spec.Sink = sink
 	}
 }
 
@@ -209,5 +220,11 @@ func WithDeletionTimestamp() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		ts := metav1.NewTime(time.Unix(1e9, 0))
 		s.DeletionTimestamp = &ts
+	}
+}
+
+func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.ObjectMeta.Annotations = Annotations
 	}
 }

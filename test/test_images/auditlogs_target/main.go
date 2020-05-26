@@ -17,23 +17,16 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"os"
-	"strconv"
-	"time"
-
-	cloudevents "github.com/cloudevents/sdk-go/v1"
+	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
+	"os"
 )
 
 const (
-	eventType    = "type"
-	eventSource  = "source"
-	eventSubject = "subject"
 	protoPayload = "protoPayload"
 	serviceName  = "serviceName"
 	methodName   = "methodName"
@@ -41,13 +34,12 @@ const (
 )
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
-	if err != nil {
-		panic(err)
-	}
+	os.Exit(mainWithExitCode())
+}
 
-	r := Receiver{}
-	if err := envconfig.Process("", &r); err != nil {
+func mainWithExitCode() int {
+	r := &auditLogReceiver{}
+	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
 
@@ -58,45 +50,26 @@ func main() {
 	fmt.Printf("Source to match: %q.\n", r.Source)
 	fmt.Printf("Subject to match: %q.\n", r.Subject)
 
-	// Create a timer
-	duration, _ := strconv.Atoi(r.Time)
-	timer := time.NewTimer(time.Second * time.Duration(duration))
-	defer timer.Stop()
-	go func() {
-		<-timer.C
-		// Write the termination message if time out
-		fmt.Printf("time out to wait for event with type %q source %q subject %q service_name %q method_name %q resource_name %q .\n",
-			r.Type, r.Source, r.Subject, r.ServiceName, r.MethodName, r.ResourceName)
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": false,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
-		}
-		os.Exit(0)
-	}()
-
-	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
-		log.Fatal(err)
-	}
+	return knockdown.Main(r.Config, r)
 }
 
-type Receiver struct {
+type auditLogReceiver struct {
+	knockdown.Config
+
 	ServiceName  string `envconfig:"SERVICENAME" required:"true"`
 	MethodName   string `envconfig:"METHODNAME" required:"true"`
 	ResourceName string `envconfig:"RESOURCENAME" required:"true"`
 	Type         string `envconfig:"TYPE" required:"true"`
 	Source       string `envconfig:"SOURCE" required:"true"`
 	Subject      string `envconfig:"SUBJECT" required:"true"`
-	Time         string `envconfig:"TIME" required:"true"`
 }
 
-type propPair struct {
-	eventProp    string
-	receiverProp string
-}
 
-func (r *Receiver) Receive(event cloudevents.Event) {
+
+func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
+	fmt.Printf("auditlogs target received event\n")
 	fmt.Printf("event.Context is %s", event.Context.String())
+
 	var eventData map[string]interface{}
 	if err := json.Unmarshal(event.Data.([]byte), &eventData); err != nil {
 		fmt.Printf("failed unmarshall event.Data %s.\n", err.Error())
@@ -108,46 +81,32 @@ func (r *Receiver) Receive(event cloudevents.Event) {
 	fmt.Printf("event.Data.%s is %s \n", methodName, eventDataMethodName)
 	eventDataResourceName := payload[resourceName].(string)
 	fmt.Printf("event.Data.%s is %s \n", resourceName, eventDataResourceName)
-	unmatchedProps := make(map[string]propPair)
+	incorrectAttributes := make(map[string]lib.PropPair)
 
-	if event.Context.GetType() != r.Type {
-		unmatchedProps[eventType] = propPair{event.Context.GetType(), r.Type}
+	if event.Type() != r.Type {
+		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: event.Type(), Received: r.Type}
 	}
-	if event.Context.GetSource() != r.Source {
-		unmatchedProps[eventSource] = propPair{event.Context.GetSource(), r.Source}
+	if event.Source() != r.Source {
+		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: event.Source(), Received: r.Source}
 	}
-	if event.Context.GetSubject() != r.Subject {
-		unmatchedProps[eventSubject] = propPair{event.Context.GetSubject(), r.Subject}
+	if event.Subject() != r.Subject {
+		incorrectAttributes[lib.EventSubject] = lib.PropPair{Expected: event.Subject(), Received: r.Subject}
 	}
 	if eventDataServiceName != r.ServiceName {
-		unmatchedProps[serviceName] = propPair{eventDataServiceName, r.ServiceName}
+		incorrectAttributes[serviceName] = lib.PropPair{Expected: eventDataServiceName, Received: r.ServiceName}
 	}
 	if eventDataMethodName != r.MethodName {
-		unmatchedProps[methodName] = propPair{eventDataMethodName, r.MethodName}
+		incorrectAttributes[methodName] = lib.PropPair{Expected: eventDataMethodName, Received: r.MethodName}
 	}
 	if eventDataResourceName != r.ResourceName {
-		unmatchedProps[resourceName] = propPair{eventDataResourceName, r.ResourceName}
+		incorrectAttributes[resourceName] = lib.PropPair{Expected: eventDataResourceName, Received: r.ResourceName}
 	}
 
-	if len(unmatchedProps) == 0 {
-		// Write the termination message if the subject successfully matches
-		if err := r.writeTerminationMessage(map[string]interface{}{
-			"success": true,
-		}); err != nil {
-			fmt.Printf("failed to write termination message, %s.\n", err.Error())
-		}
-		os.Exit(0)
-	} else {
-		for k, v := range unmatchedProps {
-			fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.eventProp, v.receiverProp)
-		}
+	if len(incorrectAttributes) == 0 {
+		return true
 	}
-}
-
-func (r *Receiver) writeTerminationMessage(result interface{}) error {
-	b, err := json.Marshal(result)
-	if err != nil {
-		return err
+	for k, v := range incorrectAttributes {
+		fmt.Printf("%s doesn't match, event prop is %q while receiver prop is %q \n", k, v.Received, v.Expected)
 	}
-	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+	return false
 }

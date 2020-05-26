@@ -24,7 +24,10 @@ import (
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -41,6 +44,11 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	}{{
 		name: "non-nil structured",
 		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -56,6 +64,11 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 			},
 		},
 		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsStructured,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -73,11 +86,21 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	}, {
 		name: "non-nil push",
 		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode: ModePushCompatible,
 			},
 		},
 		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModePushCompatible,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -90,11 +113,21 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	}, {
 		name: "non-nil invalid",
 		start: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode: "invalid",
 			},
 		},
 		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -107,10 +140,19 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	}, {
 		name: "nil",
 		start: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       PullSubscriptionSpec{},
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			Spec: PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -123,10 +165,19 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	}, {
 		name: "nil secret",
 		start: &PullSubscription{
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec:       PullSubscriptionSpec{},
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			Spec: PullSubscriptionSpec{},
 		},
 		want: &PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
 			Spec: PullSubscriptionSpec{
 				Mode:              ModeCloudEventsBinary,
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
@@ -154,6 +205,11 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	days2 := 2 * 24 * time.Hour
 	secs60 := 60 * time.Second
 	want := &PullSubscription{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			},
+		},
 		Spec: PullSubscriptionSpec{
 			Mode:              ModeCloudEventsBinary,
 			AckDeadline:       ptr.String(secs60.String()),

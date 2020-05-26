@@ -18,16 +18,24 @@ package filter
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/cloudevents/sdk-go/v2/extensions"
 	"github.com/google/go-cmp/cmp"
+	"go.opencensus.io/trace"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+)
+
+const (
+	traceID = "4bf92f3577b34da6a3ce929d0e0e4736"
+	spanID  = "00f067aa0ba902b7"
 )
 
 func TestInvalidContext(t *testing.T) {
@@ -36,6 +44,37 @@ func TestInvalidContext(t *testing.T) {
 	err := p.Process(context.Background(), &e)
 	if err != handlerctx.ErrTargetKeyNotPresent {
 		t.Errorf("Process error got=%v, want=%v", err, handlerctx.ErrTargetKeyNotPresent)
+	}
+}
+
+type VerifyTraceID struct {
+	processors.BaseProcessor
+	wantTraceID string
+}
+
+func (p *VerifyTraceID) Process(ctx context.Context, event *event.Event) error {
+	if got := trace.FromContext(ctx).SpanContext().TraceID.String(); got != p.wantTraceID {
+		return fmt.Errorf("unexpected trace ID: got %s, want %s", got, p.wantTraceID)
+	}
+	return nil
+}
+
+func TestTriggerSpanCreatedFromTraceparent(t *testing.T) {
+	e := event.New()
+	e.SetID("id")
+	e.SetSubject("foo")
+	e.SetType("bar")
+	extensions.DistributedTracingExtension{
+		TraceParent: fmt.Sprintf("00-%s-%s-01", traceID, spanID),
+	}.AddTracingAttributes(&e)
+
+	ctx, testTargets := newTestTargets(nil)
+
+	p := &Processor{Targets: testTargets}
+	p.WithNext(&VerifyTraceID{wantTraceID: traceID})
+
+	if err := p.Process(ctx, &e); err != nil {
+		t.Error(err)
 	}
 }
 
@@ -243,24 +282,12 @@ func TestFilterProcessor(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			testTarget := &config.Target{
-				Name:             "target",
-				Broker:           "broker",
-				Namespace:        "ns",
-				FilterAttributes: tc.filter,
-			}
-			testTargets := memory.NewEmptyTargets()
-			testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-				bm.UpsertTargets(testTarget)
-			})
-
+			ctx, testTargets := newTestTargets(tc.filter)
 			next := &processors.FakeProcessor{}
 			p := &Processor{Targets: testTargets}
 			p.WithNext(next)
 			ch := make(chan *event.Event, 1)
 			next.PrevEventsCh = ch
-			ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())
-
 			defer func() {
 				gotEvent := <-ch
 				if tc.shouldPass {
@@ -282,4 +309,19 @@ func TestFilterProcessor(t *testing.T) {
 			close(ch)
 		})
 	}
+}
+
+func newTestTargets(filter map[string]string) (context.Context, config.Targets) {
+	testTarget := &config.Target{
+		Name:             "target",
+		Broker:           "broker",
+		Namespace:        "ns",
+		FilterAttributes: filter,
+	}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.UpsertTargets(testTarget)
+	})
+	ctx := handlerctx.WithTargetKey(context.Background(), testTarget.Key())
+	return ctx, testTargets
 }

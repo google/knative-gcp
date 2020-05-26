@@ -21,13 +21,6 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
-	"github.com/google/knative-gcp/pkg/utils"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +31,14 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config"
+	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 const (
@@ -59,13 +60,12 @@ type TriggerReconciler struct {
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
 
-	// CreateClientFn is the function used to create the Pub/Sub client that interacts with Pub/Sub.
-	// This is needed so that we can inject a mock client for UTs purposes.
-	CreateClientFn gpubsub.CreateFn
-
 	// projectID is used as the GCP project ID when present, skipping the
 	// metadata server check. Used by tests.
 	projectID string
+
+	// pubsubClient is used as the Pubsub client when present.
+	pubsubClient *pubsub.Client
 }
 
 // Check that TriggerReconciler implements Interface
@@ -189,7 +189,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
@@ -198,12 +198,15 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.ProjectID = projectID
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Check if topic exists, and if not, create it.
 	topicID := resources.GenerateRetryTopicName(trig)
@@ -254,7 +257,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	if !subExists {
 		// TODO If this can ever change through the Broker's lifecycle, add
 		// update handling
-		subConfig := gpubsub.SubscriptionConfig{
+		subConfig := pubsub.SubscriptionConfig{
 			Topic: topic,
 			Labels: map[string]string{
 				"resource":  "triggers",
@@ -293,18 +296,21 @@ func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context,
 
 	// get ProjectID from metadata
 	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID)
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
 	}
 
-	client, err := r.CreateClientFn(ctx, projectID)
-	if err != nil {
-		logger.Error("Failed to create Pub/Sub client", zap.Error(err))
-		return err
+	client := r.pubsubClient
+	if client == nil {
+		client, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			return err
+		}
+		defer client.Close()
 	}
-	defer client.Close()
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.

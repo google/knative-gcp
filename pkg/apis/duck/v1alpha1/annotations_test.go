@@ -18,11 +18,14 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+
+	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 var (
@@ -202,6 +205,105 @@ func TestValidateAutoscalingAnnotations(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var errs *apis.FieldError
 			err := ValidateAutoscalingAnnotations(context.TODO(), tc.objMeta.Annotations, errs)
+			if tc.error != (err != nil) {
+				t.Fatalf("Unexpected validation failure. Got %v", err)
+			}
+		})
+	}
+}
+
+func TestSetClusterNameAnnotation(t *testing.T) {
+	testCases := map[string]struct {
+		orig     *v1.ObjectMeta
+		data     testingMetadataClient.TestClientData
+		expected *v1.ObjectMeta
+	}{
+		"no annotation, successfully get the clusterName": {
+			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+		},
+		"no annotation, get clusterName failed": {
+			orig: &v1.ObjectMeta{},
+			data: testingMetadataClient.TestClientData{
+				ClusterNameErr: fmt.Errorf("error when get clusterName"),
+			},
+			expected: &v1.ObjectMeta{},
+		},
+		"has annotation": {
+			orig: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			data: testingMetadataClient.TestClientData{},
+			expected: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			SetClusterNameAnnotation(tc.orig, testingMetadataClient.NewTestClient(tc.data))
+			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
+	}
+}
+
+func TestCheckImmutableClusterNameAnnotation(t *testing.T) {
+	testCases := map[string]struct {
+		original *v1.ObjectMeta
+		current  *v1.ObjectMeta
+		error    bool
+	}{
+		"update empty annotation": {
+			original: &v1.ObjectMeta{},
+			current: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				},
+			},
+			error: false,
+		},
+		"update non-empty annotation": {
+			original: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName + "old",
+				},
+			},
+			current: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: testingMetadataClient.FakeClusterName + "new",
+				},
+			},
+			error: true,
+		},
+		"unchanged annotation": {
+			original: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			current: &v1.ObjectMeta{
+				Annotations: map[string]string{
+					ClusterNameAnnotation: "testing-cluster-name",
+				},
+			},
+			error: false,
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			var err *apis.FieldError
+			err = CheckImmutableClusterNameAnnotation(tc.current, tc.original, err)
 			if tc.error != (err != nil) {
 				t.Fatalf("Unexpected validation failure. Got %v", err)
 			}

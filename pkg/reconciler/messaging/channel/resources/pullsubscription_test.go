@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	duckpubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	duckinteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
@@ -77,7 +77,7 @@ func TestMakePullSubscription(t *testing.T) {
 	})
 
 	yes := true
-	want := &pubsubv1alpha1.PullSubscription{
+	want := &inteventsv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -94,8 +94,8 @@ func TestMakePullSubscription(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+		Spec: inteventsv1alpha1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -163,7 +163,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 	})
 
 	yes := true
-	want := &pubsubv1alpha1.PullSubscription{
+	want := &inteventsv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -180,8 +180,8 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+		Spec: inteventsv1alpha1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",
@@ -246,7 +246,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 	})
 
 	yes := true
-	want := &pubsubv1alpha1.PullSubscription{
+	want := &inteventsv1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "channel-namespace",
 			Name:      "cre-sub-subscriber-uid",
@@ -263,8 +263,8 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 				BlockOwnerDeletion: &yes,
 			}},
 		},
-		Spec: pubsubv1alpha1.PullSubscriptionSpec{
-			PubSubSpec: duckpubsubv1alpha1.PubSubSpec{
+		Spec: inteventsv1alpha1.PullSubscriptionSpec{
+			PubSubSpec: duckinteventsv1alpha1.PubSubSpec{
 				Secret: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: "eventing-secret-name",

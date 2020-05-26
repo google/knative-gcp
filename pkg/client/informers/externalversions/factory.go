@@ -29,7 +29,6 @@ import (
 	internalinterfaces "github.com/google/knative-gcp/pkg/client/informers/externalversions/internalinterfaces"
 	intevents "github.com/google/knative-gcp/pkg/client/informers/externalversions/intevents"
 	messaging "github.com/google/knative-gcp/pkg/client/informers/externalversions/messaging"
-	policy "github.com/google/knative-gcp/pkg/client/informers/externalversions/policy"
 	pubsub "github.com/google/knative-gcp/pkg/client/informers/externalversions/pubsub"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -181,7 +180,6 @@ type SharedInformerFactory interface {
 	Events() events.Interface
 	Internal() intevents.Interface
 	Messaging() messaging.Interface
-	Policy() policy.Interface
 	Pubsub() pubsub.Interface
 }
 
@@ -199,10 +197,6 @@ func (f *sharedInformerFactory) Internal() intevents.Interface {
 
 func (f *sharedInformerFactory) Messaging() messaging.Interface {
 	return messaging.New(f, f.namespace, f.tweakListOptions)
-}
-
-func (f *sharedInformerFactory) Policy() policy.Interface {
-	return policy.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Pubsub() pubsub.Interface {

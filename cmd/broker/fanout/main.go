@@ -18,37 +18,22 @@ package main
 
 import (
 	"context"
-	"flag"
-	"log"
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/kelseyhightower/envconfig"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/util/wait"
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
-	"knative.dev/pkg/controller"
-	"knative.dev/pkg/injection"
-	"knative.dev/pkg/injection/sharedmain"
-	"knative.dev/pkg/logging"
-	"knative.dev/pkg/signals"
-	"knative.dev/pkg/version"
 
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
-	"github.com/google/knative-gcp/pkg/broker/handler/pool/fanout"
-	"github.com/google/knative-gcp/pkg/observability"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"github.com/google/knative-gcp/pkg/utils/mainhelper"
+
+	"go.uber.org/zap"
 )
 
 const (
 	component = "broker-fanout"
-)
-
-var (
-	masterURL = flag.String("master", "", "The address of the Kubernetes API server. "+
-		"Overrides any value in kubeconfig. Only required if out-of-cluster.")
-	kubeconfig = flag.String("kubeconfig", "", "Path to a kubeconfig. Only required if out-of-cluster.")
 )
 
 type envConfig struct {
@@ -64,65 +49,33 @@ type envConfig struct {
 
 func main() {
 	appcredentials.MustExistOrUnsetEnv()
-	flag.Parse()
-
-	// Set up a context that we can cancel to tell informers and other subprocesses to stop.
-	ctx := signals.NewContext()
-
-	cfg, err := sharedmain.GetConfig(*masterURL, *kubeconfig)
-	if err != nil {
-		log.Fatal("Error building kubeconfig:", err)
-	}
-
-	log.Printf("Registering %d clients", len(injection.Default.GetClients()))
-	log.Printf("Registering %d informer factories", len(injection.Default.GetInformerFactories()))
-	log.Printf("Registering %d informers", len(injection.Default.GetInformers()))
-
-	ctx, informers := injection.Default.SetupInformers(ctx, cfg)
 
 	var env envConfig
-	if err := envconfig.Process("", &env); err != nil {
-		log.Fatal("Failed to process env var", err)
-	}
-
-	kubeClient := kubeclient.Get(ctx)
-
-	// We sometimes startup faster than we can reach kube-api. Poll on failure to prevent us terminating
-	if perr := wait.PollImmediate(time.Second, 60*time.Second, func() (bool, error) {
-		if err = version.CheckMinimumVersion(kubeClient.Discovery()); err != nil {
-			log.Printf("Failed to get k8s version %v", err)
-		}
-		return err == nil, nil
-	}); perr != nil {
-		log.Fatal("Timed out attempting to get k8s version: ", err)
-	}
-
-	ctx, flush, err := observability.SetupDynamicConfig(ctx, component)
-	if err != nil {
-		log.Fatal("Error setting up dynamic observability configuration", err)
-	}
-	defer flush()
-	logger := logging.FromContext(ctx)
-
-	// Run informers instead of starting them from the factory to prevent the sync hanging because of empty handler.
-	if err := controller.StartInformers(ctx.Done(), informers...); err != nil {
-		logger.Fatalw("Failed to start informers", zap.Error(err))
-	}
+	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	defer res.Cleanup()
+	logger := res.Logger
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
 	targetsUpdateCh := make(chan struct{})
-	targetsConifg, err := volume.NewTargetsFromFile(
-		volume.WithPath(env.TargetsConfigPath),
-		volume.WithNotifyChan(targetsUpdateCh))
-	if err != nil {
-		logger.Fatalw("Failed to load targets config", zap.String("path", env.TargetsConfigPath), zap.Error(err))
-	}
 
 	logger.Info("Starting the broker fanout")
 
+	projectID, err := utils.ProjectID(env.ProjectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Fatalf("failed to get default ProjectID: %v", err)
+	}
+
 	syncSignal := poolSyncSignal(ctx, targetsUpdateCh)
-	syncPool, err := fanout.NewSyncPool(ctx, targetsConifg, buildPoolOptions(env)...)
+	syncPool, err := InitializeSyncPool(
+		ctx,
+		pool.ProjectID(projectID),
+		[]volume.Option{
+			volume.WithPath(env.TargetsConfigPath),
+			volume.WithNotifyChan(targetsUpdateCh),
+		},
+		buildPoolOptions(env)...,
+	)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
 	}
@@ -167,9 +120,6 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	}
 	if env.MaxConcurrencyPerEvent > 0 {
 		opts = append(opts, pool.WithMaxConcurrentPerEvent(env.MaxConcurrencyPerEvent))
-	}
-	if env.ProjectID != "" {
-		opts = append(opts, pool.WithProjectID(env.ProjectID))
 	}
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, pool.WithTimeoutPerEvent(env.TimeoutPerEvent))

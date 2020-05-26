@@ -25,7 +25,6 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
@@ -92,14 +91,11 @@ func TestAllCases(t *testing.T) {
 			brokerFinalizedEvent,
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: false,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: false,
-				},
-			},
+			"pre": []PubsubAction{},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			NoTopicsExist(),
+			NoSubscriptionsExist(),
 		},
 	}, {
 		Name: "Broker is being deleted, topic and sub exists",
@@ -117,14 +113,13 @@ func TestAllCases(t *testing.T) {
 			brokerFinalizedEvent,
 		},
 		OtherTestData: map[string]interface{}{
-			"ps": gpubsub.TestClientData{
-				TopicData: gpubsub.TestTopicData{
-					Exists: true,
-				},
-				SubscriptionData: gpubsub.TestSubscriptionData{
-					Exists: true,
-				},
+			"pre": []PubsubAction{
+				TopicAndSub("cre-bkr_testnamespace_test-broker_abc123"),
 			},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			NoTopicsExist(),
+			NoSubscriptionsExist(),
 		},
 	}, {
 		Name: "Broker created",
@@ -152,10 +147,30 @@ func TestAllCases(t *testing.T) {
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, brokerName, brokerFinalizerName),
 		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
+		},
 	}}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
+		// Insert pubsub client for PostConditions and create fixtures
+		psclient, close := TestPubsubClient(ctx, testProject)
+		t.Cleanup(close)
+		if testData != nil {
+			InjectPubsubClient(testData, psclient)
+			if testData["pre"] != nil {
+				fixtures := testData["pre"].([]PubsubAction)
+				for _, f := range fixtures {
+					f(ctx, t, psclient)
+				}
+			}
+		}
+
 		ctx = addressable.WithDuck(ctx)
 		ctx = resource.WithDuck(ctx)
 		r := &Reconciler{
@@ -163,10 +178,11 @@ func TestAllCases(t *testing.T) {
 			triggerLister:      listers.GetTriggerLister(),
 			configMapLister:    listers.GetConfigMapLister(),
 			endpointsLister:    listers.GetEndpointsLister(),
-			CreateClientFn:     gpubsub.TestClientCreator(testData["ps"]),
+			deploymentLister:   listers.GetDeploymentLister(),
 			targetsConfig:      memory.NewEmptyTargets(),
 			targetsNeedsUpdate: make(chan struct{}),
 			projectID:          testProject,
+			pubsubClient:       psclient,
 		}
 		return brokerreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerLister(), r.Recorder, r, brokerv1beta1.BrokerClass)
 	}))

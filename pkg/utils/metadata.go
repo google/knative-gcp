@@ -17,19 +17,36 @@ limitations under the License.
 package utils
 
 import (
-	"cloud.google.com/go/compute/metadata"
+	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+)
+
+var (
+	clusterNameAttr = "cluster-name"
 )
 
 // ProjectID returns the project ID for a particular resource.
-func ProjectID(project string) (string, error) {
+func ProjectID(project string, client metadataClient.Client) (string, error) {
 	// If project is set, then return that one.
 	if project != "" {
 		return project, nil
 	}
 	// Otherwise, ask GKE metadata server.
-	projectID, err := metadata.ProjectID()
+	projectID, err := client.ProjectID()
 	if err != nil {
 		return "", err
 	}
 	return projectID, nil
+}
+
+// ClusterName returns the cluster name for a particular resource.
+func ClusterName(clusterName string, client metadataClient.Client) (string, error) {
+	// If clusterName is set, then return that one.
+	if clusterName != "" {
+		return clusterName, nil
+	}
+	clusterName, err := client.InstanceAttributeValue(clusterNameAttr)
+	if err != nil {
+		return "", err
+	}
+	return clusterName, nil
 }

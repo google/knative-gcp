@@ -18,11 +18,12 @@ package resources
 
 // API versions for the resources.
 const (
-	BatchAPIVersion     = "batch/v1"
-	MessagingAPIVersion = "messaging.cloud.google.com/v1alpha1"
-	EventsAPIVersion    = "events.cloud.google.com/v1alpha1"
-	PubSubAPIVersion    = "pubsub.cloud.google.com/v1alpha1"
-	ServingAPIVersion   = "serving.knative.dev/v1"
+	BatchAPIVersion            = "batch/v1"
+	MessagingAPIVersion        = "messaging.cloud.google.com/v1alpha1"
+	MessagingV1beta1APIVersion = "messaging.cloud.google.com/v1beta1"
+	EventsAPIVersion           = "events.cloud.google.com/v1alpha1"
+	IntEventsAPIVersion        = "internal.events.cloud.google.com/v1alpha1"
+	ServingAPIVersion          = "serving.knative.dev/v1"
 )
 
 // Kind for batch resources.

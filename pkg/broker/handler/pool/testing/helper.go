@@ -35,6 +35,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	"github.com/google/uuid"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -93,7 +94,10 @@ func NewHelper(ctx context.Context, projectID string) (*Helper, error) {
 	if err != nil {
 		return nil, err
 	}
-	ceps, err := cepubsub.New(ctx, cepubsub.WithClient(c))
+	ceps, err := cepubsub.New(ctx,
+		cepubsub.WithClient(c),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -357,6 +361,9 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 	msg, err := bIng.client.Receive(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	msg.Finish(nil)
@@ -387,6 +394,14 @@ func (h *Helper) VerifyNextTargetEventAndDelayResp(ctx context.Context, t *testi
 func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing.T, targetKey string, wantEvent, replyEvent *event.Event, statusCode int, delay time.Duration) {
 	t.Helper()
 
+	// Subscribers should not receive any event with hops.
+	var wantEventCopy *event.Event
+	if wantEvent != nil {
+		copy := wantEvent.Clone()
+		wantEventCopy = &copy
+		eventutil.DeleteRemainingHops(ctx, wantEventCopy)
+	}
+
 	consumer, ok := h.consumers[targetKey]
 	if !ok {
 		t.Errorf("target with key %q doesn't exist", targetKey)
@@ -395,12 +410,15 @@ func (h *Helper) VerifyAndRespondNextTargetEvent(ctx context.Context, t *testing
 	// On timeout or receiving an event, the defer function verifies the event in the end.
 	var gotEvent *event.Event
 	defer func() {
-		assertEvent(t, wantEvent, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
+		assertEvent(t, wantEventCopy, gotEvent, fmt.Sprintf("target (key=%q)", targetKey))
 	}()
 
 	msg, respFn, err := consumer.client.Respond(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	gotEvent, err = binding.ToEvent(ctx, msg)
@@ -440,6 +458,7 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 		cepubsub.WithClient(h.PubsubClient),
 		cepubsub.WithTopicID(target.RetryQueue.Topic),
 		cepubsub.WithSubscriptionID(target.RetryQueue.Subscription),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
 	)
 	if err != nil {
 		t.Fatalf("failed to create temporary pubsub protocol to receive retry events: %v", err)
@@ -450,6 +469,9 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 	msg, err := psTmp.Receive(ctx)
 	if err != nil {
 		// In case Receive is stopped.
+		if wantEvent != nil {
+			t.Errorf("Unexpected error receiving event: %v", err)
+		}
 		return
 	}
 	msg.Finish(nil)
@@ -461,10 +483,24 @@ func (h *Helper) VerifyNextTargetRetryEvent(ctx context.Context, t *testing.T, t
 
 func assertEvent(t *testing.T, want, got *event.Event, msg string) {
 	if got != nil && want != nil {
+		// Clone events so that we don't modify the original copy.
+		gotCopy, wantCopy := got.Clone(), want.Clone()
+		got, want = &gotCopy, &wantCopy
+
 		// Ignore time.
 		got.SetTime(want.Time())
 		// Ignore traceparent.
 		got.SetExtension(extensions.TraceParentExtension, nil)
+
+		// Compare hops explicitly because
+		// cloudevents client sometimes treat hops value as string internally.
+		gotHops, _ := eventutil.GetRemainingHops(context.Background(), got)
+		wantHops, _ := eventutil.GetRemainingHops(context.Background(), want)
+		if gotHops != wantHops {
+			t.Errorf("%s event hops got=%d, want=%d", msg, gotHops, wantHops)
+		}
+		eventutil.DeleteRemainingHops(context.Background(), want)
+		eventutil.DeleteRemainingHops(context.Background(), got)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("%s received event (-want,+got): %v", msg, diff)

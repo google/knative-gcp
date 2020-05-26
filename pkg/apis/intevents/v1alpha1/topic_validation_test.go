@@ -22,7 +22,11 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/webhook/resourcesemantics"
+
+	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
+	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 )
 
 var (
@@ -88,13 +92,24 @@ func TestTopicValidation(t *testing.T) {
 
 func TestTopicCheckImmutableFields(t *testing.T) {
 	testCases := map[string]struct {
-		orig    interface{}
-		updated TopicSpec
-		allowed bool
+		orig              interface{}
+		updated           TopicSpec
+		origAnnotation    map[string]string
+		updatedAnnotation map[string]string
+		allowed           bool
 	}{
 		"nil orig": {
 			updated: topicSpec,
 			allowed: true,
+		},
+		"ClusterName annotation changed": {
+			origAnnotation: map[string]string{
+				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "old",
+			},
+			updatedAnnotation: map[string]string{
+				v1alpha1.ClusterNameAnnotation: metadatatesting.FakeClusterName + "new",
+			},
+			allowed: false,
 		},
 		"Topic changed": {
 			orig: &topicSpec,
@@ -111,7 +126,13 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			var orig *Topic
 
-			if tc.orig != nil {
+			if tc.origAnnotation != nil {
+				orig = &Topic{
+					ObjectMeta: v1.ObjectMeta{
+						Annotations: tc.origAnnotation,
+					},
+				}
+			} else if tc.orig != nil {
 				if spec, ok := tc.orig.(*TopicSpec); ok {
 					orig = &Topic{
 						Spec: *spec,
@@ -119,6 +140,9 @@ func TestTopicCheckImmutableFields(t *testing.T) {
 				}
 			}
 			updated := &Topic{
+				ObjectMeta: v1.ObjectMeta{
+					Annotations: tc.updatedAnnotation,
+				},
 				Spec: tc.updated,
 			}
 			err := updated.CheckImmutableFields(context.TODO(), orig)

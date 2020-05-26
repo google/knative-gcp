@@ -19,22 +19,23 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/test/helpers"
 
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
-
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // SmokeCloudPubSubSourceTestImpl tests we can create a CloudPubSubSource to ready state.
 func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
 	topic, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
@@ -56,11 +57,15 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.
 // If assertMetrics is set to true, we also assert for StackDriver metrics.
 func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
+	t.Helper()
+	project := os.Getenv(lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := helpers.AppendRandomString(topicName + "-pubsub")
 	targetName := helpers.AppendRandomString(topicName + "-target")
+	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
@@ -69,11 +74,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName, []v1.EnvVar{{
-		Name:  "TARGET",
-		Value: "falldown",
-	}})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, authConfig.PubsubServiceAccount)
@@ -81,10 +82,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
-		Attributes: map[string]string{
-			"target": "falldown",
-		},
-		Data: []byte(`{"foo":bar}`),
+		Data: []byte(data),
 	})
 	_, err := r.Get(context.TODO())
 	if err != nil {

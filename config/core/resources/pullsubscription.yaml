@@ -18,9 +18,9 @@ metadata:
   labels:
     events.cloud.google.com/release: devel
     events.cloud.google.com/crd-install: "true"
-  name: pullsubscriptions.pubsub.cloud.google.com
+  name: pullsubscriptions.internal.events.cloud.google.com
 spec:
-  group: pubsub.cloud.google.com
+  group: internal.events.cloud.google.com
   names:
     categories:
     - all
