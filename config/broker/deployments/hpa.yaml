@@ -22,7 +22,7 @@ spec:
       name: memory
       target:
         type: AverageValue
-        averageValue: 900Mi
+        averageValue: 450Mi
 ---
 apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
