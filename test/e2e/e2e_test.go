@@ -36,6 +36,7 @@ import (
 
 // TestSmoke makes sure we can run tests.
 func TestSmokeChannel(t *testing.T) {
+	// DO NOT SUBMIT, just to see why it fails
 	cancel := logstream.Start(t)
 	defer cancel()
 	SmokeTestChannelImpl(t, authConfig)
