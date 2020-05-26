@@ -17,7 +17,9 @@ limitations under the License.
 package deliver
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -395,6 +397,139 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.SetAddress(ingressSvr.URL)
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{
+		DeliverClient: deliverClient,
+		Targets:       testTargets,
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
+		}
+	})
+}
+
+type fakeRoundTripper map[string]*http.Response
+
+func (r fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Body != nil {
+		defer req.Body.Close()
+	}
+	if resp, ok := r[req.URL.String()]; ok {
+		return resp, nil
+	}
+	return nil, fmt.Errorf("URL not found: %q", req.URL)
+}
+
+func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
+	sampleEvent := newSampleEvent()
+	targetAddress := "target"
+	httpClient := http.Client{
+		Transport: fakeRoundTripper(map[string]*http.Response{
+			targetAddress: {
+				StatusCode: 202,
+				Header:     make(map[string][]string),
+				Body:       fakeBody{new(bytes.Buffer)},
+			},
+		}),
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	deliverClient, err := ceclient.New(httpProtocol)
+	if err != nil {
+		b.Fatalf("failed to create requester cloudevents client: %v", err)
+	}
+
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.UpsertTargets(target)
+	})
+	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx = handlerctx.WithTargetKey(ctx, target.Key())
+
+	p := &Processor{
+		DeliverClient: deliverClient,
+		Targets:       testTargets,
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
+		}
+	})
+}
+
+type fakeBody struct {
+	*bytes.Buffer
+}
+
+func (b fakeBody) Close() error {
+	return nil
+}
+
+func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
+	sampleEvent := newSampleEvent()
+	sampleReply := sampleEvent.Clone()
+	sampleReply.SetID("reply")
+
+	targetAddress := "target"
+	ingressAddress := "ingress"
+
+	req, err := http.NewRequest("POST", ingressAddress, nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	cehttp.WriteRequest(context.Background(), binding.ToMessage(&sampleReply), req)
+	body := new(bytes.Buffer)
+	if req.Body != nil {
+		io.Copy(body, req.Body)
+		req.Body.Close()
+	}
+
+	httpClient := http.Client{
+		Transport: fakeRoundTripper(map[string]*http.Response{
+			targetAddress: {
+				StatusCode: 200,
+				Header:     req.Header,
+				Body:       fakeBody{body},
+			},
+			ingressAddress: {
+				StatusCode: 202,
+				Header:     make(map[string][]string),
+				Body:       fakeBody{new(bytes.Buffer)},
+			},
+		}),
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+	deliverClient, err := ceclient.New(httpProtocol)
+	if err != nil {
+		b.Fatalf("failed to create requester cloudevents client: %v", err)
+	}
+
+	broker := &config.Broker{Namespace: "ns", Name: "broker"}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
+	testTargets := memory.NewEmptyTargets()
+	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
+		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
 	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
