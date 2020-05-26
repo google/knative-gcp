@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/apis"
+	duckv1 "knative.dev/pkg/apis/duck/v1"
 
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
@@ -133,6 +134,17 @@ func newSink() *unstructured.Unstructured {
 					"url": sinkURI.String(),
 				},
 			},
+		},
+	}
+}
+
+func newSinkDestination(namespace string) duckv1.Destination {
+	return duckv1.Destination{
+		Ref: &duckv1.KReference{
+			APIVersion: "testing.cloud.google.com/v1alpha1",
+			Kind:       "Sink",
+			Name:       sinkName,
+			Namespace:  namespace,
 		},
 	}
 }
@@ -490,6 +502,136 @@ func TestAllCases(t *testing.T) {
 					PubSubSpec: duckv1alpha1.PubSubSpec{
 						Secret:  &secret,
 						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + sourceName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
+		},
+		OtherTestData: map[string]interface{}{
+			"ps": gpubsub.TestClientData{
+				TopicData: gpubsub.TestTopicData{
+					Exists: true,
+				},
+			},
+		},
+		WantCreates: []runtime.Object{
+			newReceiveAdapter(context.Background(), testImage, nil),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionProjectID(testProject),
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				WithPullSubscriptionTransformerURI(nil),
+				// Updates
+				WithPullSubscriptionStatusObservedGeneration(generation),
+				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				WithPullSubscriptionMarkDeployed,
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
+	}, {
+		Name: "sink namespace empty, default to the source one",
+		Objects: []runtime.Object{
+			NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: newSinkDestination(""),
+						},
+					},
+					Topic: testTopicID,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + sourceName,
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", sourceName),
+			Eventf(corev1.EventTypeNormal, "PullSubscriptionReconciled", `PullSubscription reconciled: "%s/%s"`, testNS, sourceName),
+		},
+		OtherTestData: map[string]interface{}{
+			"ps": gpubsub.TestClientData{
+				TopicData: gpubsub.TestTopicData{
+					Exists: true,
+				},
+			},
+		},
+		WantCreates: []runtime.Object{
+			newReceiveAdapter(context.Background(), testImage, nil),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+					},
+					Topic: testTopicID,
+				}),
+				WithInitPullSubscriptionConditions,
+				WithPullSubscriptionProjectID(testProject),
+				WithPullSubscriptionSink(sinkGVK, sinkName),
+				WithPullSubscriptionMarkSink(sinkURI),
+				WithPullSubscriptionMarkNoTransformer("TransformerNil", "Transformer is nil"),
+				WithPullSubscriptionTransformerURI(nil),
+				// Updates
+				WithPullSubscriptionStatusObservedGeneration(generation),
+				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
+				WithPullSubscriptionMarkDeployed,
+			),
+		}},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, sourceName, resourceGroup),
+		},
+	}, {
+		Name: "sink URI set instead of ref",
+		Objects: []runtime.Object{
+			NewPullSubscription(sourceName, testNS,
+				WithPullSubscriptionUID(sourceUID),
+				WithPullSubscriptionObjectMetaGeneration(generation),
+				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
+					PubSubSpec: duckv1alpha1.PubSubSpec{
+						Secret:  &secret,
+						Project: testProject,
+						SourceSpec: duckv1.SourceSpec{
+							Sink: duckv1.Destination{
+								URI: sinkURI,
+							},
+						},
 					},
 					Topic: testTopicID,
 				}),

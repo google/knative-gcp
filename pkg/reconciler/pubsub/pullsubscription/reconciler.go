@@ -390,8 +390,10 @@ func (r *Base) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 }
 
 func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destination, ps *v1alpha1.PullSubscription) (*apis.URL, error) {
-	// Setting up the namespace.
-	if destination.Ref != nil {
+	// To call URIFromDestinationV1(), dest.Ref must have a Namespace. If there is
+	// no Namespace defined in dest.Ref, we will use the Namespace of the PS
+	// as the Namespace of dest.Ref.
+	if destination.Ref != nil && destination.Ref.Namespace == "" {
 		destination.Ref.Namespace = ps.Namespace
 	}
 	url, err := r.UriResolver.URIFromDestinationV1(destination, ps)
