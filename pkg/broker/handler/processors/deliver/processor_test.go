@@ -367,6 +367,9 @@ func (r fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return nil, fmt.Errorf("URL not found: %q", req.URL)
 }
 
+// BenchmarkDeliveryNoReplyFakeClient benchmarks delivery using a fake HTTP client. Use of the
+// fake client helps to better isolate the performance of the processor itself and can provide
+// better profiling data.
 func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 	targetAddress := "target"
 	httpClient := http.Client{
@@ -419,6 +422,9 @@ func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.
 	return
 }
 
+// BenchmarkDeliveryWithReplyFakeClient benchmarks delivery with reply using a fake HTTP client. Use
+// of the fake client helps to better isolate the performance of the processor itself and can
+// provide better profiling data.
 func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
 	benchmarkWithReply(b, fakeIngressAddress, makeFakeTargetWithReply)
 }
