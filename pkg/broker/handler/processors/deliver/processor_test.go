@@ -45,6 +45,11 @@ import (
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 )
 
+const (
+	fakeTargetAddress  = "target"
+	fakeIngressAddress = "ingress"
+)
+
 func TestInvalidContext(t *testing.T) {
 	p := &Processor{Targets: memory.NewEmptyTargets()}
 	e := event.New()
@@ -320,45 +325,15 @@ func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
-	sampleEvent := newSampleEvent()
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: runtime.NumCPU(),
 		},
 	}
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
 	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer targetSvr.Close()
 
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.UpsertTargets(target)
-	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
-
-	p := &Processor{
-		DeliverClient: deliverClient,
-		Targets:       testTargets,
-	}
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			if err := p.Process(ctx, sampleEvent); err != nil {
-				b.Errorf("unexpected error from processing: %v", err)
-			}
-		}
-	})
+	benchmarkNoReply(b, httpClient, targetSvr.URL)
 }
 
 type ReplyHandler struct {
@@ -370,50 +345,13 @@ func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
-	sampleEvent := newSampleEvent()
-	sampleReply := sampleEvent.Clone()
-	sampleReply.SetID("reply")
-
-	httpClient := http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: runtime.NumCPU(),
-		},
-	}
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-	targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(&sampleReply)})
-	defer targetSvr.Close()
+	httpClient := http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: runtime.NumCPU()}}
 	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer ingressSvr.Close()
-
-	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
-	testTargets := memory.NewEmptyTargets()
-	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.SetAddress(ingressSvr.URL)
-		bm.UpsertTargets(target)
-	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
-	ctx = handlerctx.WithTargetKey(ctx, target.Key())
-
-	p := &Processor{
-		DeliverClient: deliverClient,
-		Targets:       testTargets,
-	}
-
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			if err := p.Process(ctx, sampleEvent); err != nil {
-				b.Errorf("unexpected error from processing: %v", err)
-			}
-		}
+	benchmarkWithReply(b, ingressSvr.URL, func(b *testing.B, reply *event.Event) (http.Client, string) {
+		targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(reply)})
+		b.Cleanup(targetSvr.Close)
+		return httpClient, targetSvr.URL
 	})
 }
 
@@ -430,7 +368,6 @@ func (r fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
-	sampleEvent := newSampleEvent()
 	targetAddress := "target"
 	httpClient := http.Client{
 		Transport: fakeRoundTripper(map[string]*http.Response{
@@ -441,11 +378,58 @@ func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 			},
 		}),
 	}
+	benchmarkNoReply(b, httpClient, targetAddress)
+}
+
+type fakeBody struct {
+	*bytes.Buffer
+}
+
+func (b fakeBody) Close() error {
+	return nil
+}
+
+func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.Client, targetAddress string) {
+	req, err := http.NewRequest("POST", "", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	cehttp.WriteRequest(context.Background(), binding.ToMessage(reply), req)
+	body := new(bytes.Buffer)
+	if req.Body != nil {
+		io.Copy(body, req.Body)
+		req.Body.Close()
+	}
+
+	httpClient = http.Client{
+		Transport: fakeRoundTripper(map[string]*http.Response{
+			fakeTargetAddress: {
+				StatusCode: 200,
+				Header:     req.Header,
+				Body:       fakeBody{body},
+			},
+			fakeIngressAddress: {
+				StatusCode: 202,
+				Header:     make(map[string][]string),
+				Body:       fakeBody{new(bytes.Buffer)},
+			},
+		}),
+	}
+	targetAddress = fakeTargetAddress
+	return
+}
+
+func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
+	benchmarkWithReply(b, fakeIngressAddress, makeFakeTargetWithReply)
+}
+
+func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
+	sampleEvent := newSampleEvent()
+
 	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
 	if err != nil {
 		b.Fatal(err)
 	}
-
 	deliverClient, err := ceclient.New(httpProtocol)
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
@@ -475,47 +459,12 @@ func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
 	})
 }
 
-type fakeBody struct {
-	*bytes.Buffer
-}
-
-func (b fakeBody) Close() error {
-	return nil
-}
-
-func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
+func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
 	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
-	targetAddress := "target"
-	ingressAddress := "ingress"
-
-	req, err := http.NewRequest("POST", ingressAddress, nil)
-	if err != nil {
-		b.Fatal(err)
-	}
-	cehttp.WriteRequest(context.Background(), binding.ToMessage(&sampleReply), req)
-	body := new(bytes.Buffer)
-	if req.Body != nil {
-		io.Copy(body, req.Body)
-		req.Body.Close()
-	}
-
-	httpClient := http.Client{
-		Transport: fakeRoundTripper(map[string]*http.Response{
-			targetAddress: {
-				StatusCode: 200,
-				Header:     req.Header,
-				Body:       fakeBody{body},
-			},
-			ingressAddress: {
-				StatusCode: 202,
-				Header:     make(map[string][]string),
-				Body:       fakeBody{new(bytes.Buffer)},
-			},
-		}),
-	}
+	httpClient, targetAddress := makeTarget(b, &sampleReply)
 	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
 	if err != nil {
 		b.Fatal(err)
