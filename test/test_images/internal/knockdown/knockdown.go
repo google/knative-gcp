@@ -106,7 +106,8 @@ func (r *receiver) Receive(event cloudevents.Event) {
 // all the expected events.
 func (r *receiver) writeSuccessfulTerminationMessage() error {
 	return r.writeTerminationMessage(map[string]interface{}{
-		"success": true,
+		// DO NOT SUBMIT
+		"success": false,
 	})
 }
 
