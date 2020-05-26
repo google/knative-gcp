@@ -29,14 +29,15 @@ import (
 // TopicArgs are the arguments needed to create a Channel Topic.
 // Every field is required.
 type TopicArgs struct {
-	Owner          kmeta.OwnerRefable
-	Name           string
-	Project        string
-	Topic          string
-	ServiceAccount string
-	Secret         *corev1.SecretKeySelector
-	Labels         map[string]string
-	Annotations    map[string]string
+	Owner              kmeta.OwnerRefable
+	Name               string
+	Project            string
+	Topic              string
+	ServiceAccount     string
+	ServiceAccountName string
+	Secret             *corev1.SecretKeySelector
+	Labels             map[string]string
+	Annotations        map[string]string
 }
 
 // MakeInvoker generates (but does not insert into K8s) the Topic for Channels.
@@ -52,6 +53,7 @@ func MakeTopic(args *TopicArgs) *v1alpha1.Topic {
 		Spec: v1alpha1.TopicSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
 				GoogleServiceAccount: args.ServiceAccount,
+				ServiceAccountName:   args.ServiceAccountName,
 			},
 			Secret:            args.Secret,
 			Project:           args.Project,
