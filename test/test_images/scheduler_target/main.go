@@ -6,14 +6,9 @@ import (
 	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
-)
-
-const (
-	eventSubject = "subject"
-	eventData    = "data"
-	eventType    = "type"
 )
 
 func main() {
@@ -21,63 +16,58 @@ func main() {
 }
 
 func mainWithExitCode() int {
-	r := &Receiver{}
+	r := &schedulerReceiver{}
 	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
+	fmt.Printf("SubjectPrefix to match: %q.\n", r.SubjectPrefix)
+	fmt.Printf("Data to match: %q.\n", r.Data)
+	fmt.Printf("Type to match: %q.\n", r.Type)
 
 	return knockdown.Main(r.Config, r)
 }
 
-type Receiver struct {
+type schedulerReceiver struct {
 	knockdown.Config
 
 	SubjectPrefix string `envconfig:"SUBJECT_PREFIX" required:"true"`
 	Data          string `envconfig:"DATA" required:"true"`
-	EventType     string `envconfig:"TYPE" required:"true"`
+	Type          string `envconfig:"TYPE" required:"true"`
 }
 
-type propPair struct {
-	expected string
-	received string
-}
-
-func (r *Receiver) Knockdown(event cloudevents.Event) bool {
+func (r *schedulerReceiver) Knockdown(event cloudevents.Event) bool {
 	// Print out event received to log
-	fmt.Printf("Received event\n")
-	fmt.Printf("	Context: %v\n", event.Context.String())
-	fmt.Printf("	Data: %s\n", event.Data)
-	fmt.Printf("	Encoded: %v\n", event.DataEncoded)
-	fmt.Printf("	Binary: %v\n", event.DataBinary)
+	fmt.Printf("scheduler target received event\n")
+	fmt.Printf(event.Context.String())
 
-	incorrectAttributes := make(map[string]propPair)
+	incorrectAttributes := make(map[string]lib.PropPair)
 
 	// Check subject prefix
 	subject := event.Subject()
 	if !strings.HasPrefix(subject, r.SubjectPrefix) {
-		incorrectAttributes[eventSubject] = propPair{r.SubjectPrefix, subject}
+		incorrectAttributes[lib.EventSubjectPrefix] = lib.PropPair{Expected: r.SubjectPrefix, Received: subject}
 	}
 
 	// Check type
 	evType := event.Type()
-	if evType != r.EventType {
-		incorrectAttributes[eventType] = propPair{r.EventType, evType}
+	if evType != r.Type {
+		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: r.Type, Received: evType}
 	}
 
 	// Check data
 	data := string(event.Data.([]uint8))
 	if data != r.Data {
-		incorrectAttributes[eventData] = propPair{r.Data, data}
+		incorrectAttributes[lib.EventData] = lib.PropPair{Expected: r.Data, Received: data}
 	}
 
 	if len(incorrectAttributes) == 0 {
 		return true
 	}
 	for k, v := range incorrectAttributes {
-		if k == eventSubject {
-			fmt.Println(v.received, "did not have expected prefix", v.expected)
+		if k == lib.EventSubjectPrefix {
+			fmt.Println(v.Received, "did not have expected prefix", v.Expected)
 		} else {
-			fmt.Println(k, "expected:", v.expected, "got:", v.received)
+			fmt.Println(k, "expected:", v.Expected, "got:", v.Received)
 		}
 	}
 	return false

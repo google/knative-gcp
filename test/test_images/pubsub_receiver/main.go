@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,12 +18,16 @@ package main
 
 import (
 	"context"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"log"
 	"net/http"
+	"fmt"
 
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
+
+
 
 type Receiver struct {
 	client cloudevents.Client
@@ -43,17 +47,22 @@ func main() {
 }
 
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
-	// Check if the received event is the dummy event sent by sender pod.
+	// Check if the received event is the event sent by CloudPubSubSource.
 	// If it is, send back a response CloudEvent.
-	if event.ID() == lib.E2EDummyEventID {
+	// Print out event received to log
+	fmt.Printf("pubsub receiver received event\n")
+	fmt.Printf("context of event is: %v\n", event.Context.String())
+
+	if event.Type() == v1beta1.CloudPubSubSourcePublish {
 		resp.Status = http.StatusAccepted
-		event = cloudevents.NewEvent(cloudevents.VersionV1)
-		event.SetID(lib.E2EDummyRespEventID)
-		event.SetType(lib.E2EDummyRespEventType)
-		event.SetSource(lib.E2EDummyRespEventSource)
-		event.SetDataContentType(cloudevents.ApplicationJSON)
-		event.SetData(`{"source": "receiver!"}`)
-		resp.Event = &event
+		respEvent := cloudevents.NewEvent(cloudevents.VersionV1)
+		respEvent.SetID(lib.E2EPubSubRespEventID)
+		respEvent.SetType(lib.E2EPubSubRespEventType)
+		respEvent.SetSource(event.Source())
+		respEvent.SetDataContentType(event.DataContentType())
+		respEvent.SetData(`{"source": "pubsub"}`)
+		fmt.Printf("context of respEvent is: %v\n", respEvent.Context.String())
+		resp.Event = &respEvent
 	} else {
 		resp.Status = http.StatusForbidden
 	}

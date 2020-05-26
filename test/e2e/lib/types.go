@@ -24,3 +24,9 @@ type AuthConfig struct {
 	WorkloadIdentity     bool
 	PubsubServiceAccount string
 }
+
+type PropPair struct {
+	Expected string
+	Received string
+}
+
