@@ -184,7 +184,7 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 		"have k8s service account and secret at the same time": {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
-				obj.ServiceAccountName = invalidServiceAccountName
+				obj.ServiceAccountName = validServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),

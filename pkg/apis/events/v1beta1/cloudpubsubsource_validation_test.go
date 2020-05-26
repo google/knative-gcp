@@ -203,7 +203,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 		"have k8s service account and secret at the same time": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.ServiceAccountName = invalidServiceAccountName
+				obj.ServiceAccountName = validServiceAccountName
 				obj.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),

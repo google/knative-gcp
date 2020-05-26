@@ -313,7 +313,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccountName: invalidServiceAccountName,
+					ServiceAccountName: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{

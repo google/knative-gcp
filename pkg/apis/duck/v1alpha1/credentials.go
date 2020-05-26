@@ -55,12 +55,16 @@ func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName st
 		}
 	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
 		return validateSecret(secret)
-	} else if gServiceAccountName != "" {
-		return validateGCPServiceAccount(gServiceAccountName)
-	} else if kServiceAccountName != "" {
-		return validateK8sServiceAccount(kServiceAccountName)
+	} else {
+		var errs *apis.FieldError
+		if kServiceAccountName != "" {
+			errs = errs.Also(validateK8sServiceAccount(kServiceAccountName))
+		}
+		if gServiceAccountName != "" {
+			errs = errs.Also(validateGCPServiceAccount(gServiceAccountName))
+		}
+		return errs
 	}
-	return nil
 }
 
 func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {

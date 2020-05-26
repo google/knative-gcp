@@ -309,7 +309,7 @@ func TestSpecValidationFields(t *testing.T) {
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					ServiceAccountName: invalidServiceAccountName,
+					ServiceAccountName: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{

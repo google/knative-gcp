@@ -123,7 +123,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 		"have k8s service account and secret at the same time": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.ServiceAccountName = invalidServiceAccountName
+				obj.ServiceAccountName = validServiceAccountName
 				obj.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
