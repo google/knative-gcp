@@ -19,6 +19,7 @@ package deliver
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"net/http"
@@ -548,4 +549,18 @@ func newSampleEvent() *event.Event {
 	sampleEvent.SetType("type")
 	sampleEvent.SetTime(time.Now())
 	return &sampleEvent
+}
+
+func newSampleEventWithRandomData(t testing.TB, size int) *event.Event {
+	event := newSampleEvent()
+	if size > 0 {
+		data := make([]byte, size)
+		_, err := rand.Read(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		event.DataEncoded = data
+		return event
+	}
+	return event
 }
