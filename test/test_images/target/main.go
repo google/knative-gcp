@@ -1,88 +1,58 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"strings"
 
 	cloudevents "github.com/cloudevents/sdk-go"
-	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
+	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
-	client, err := cloudevents.NewDefaultClient()
-	if err != nil {
+	os.Exit(mainWithExitCode())
+}
+
+func mainWithExitCode() int {
+	r := &receiver{}
+	if err := envconfig.Process("", r); err != nil {
 		panic(err)
 	}
 
-	r := Receiver{}
-	if err := envconfig.Process("", &r); err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Target prefix to match: %q.\n", r.Target)
-
-	if err := client.StartReceiver(context.Background(), r.Receive); err != nil {
-		log.Fatal(err)
-	}
+	return knockdown.Main(r.Config, r)
 }
 
-type Receiver struct {
-	Target string `envconfig:"TARGET" required:"true"`
+type receiver struct {
+	knockdown.Config
 }
 
-func (r *Receiver) Receive(event cloudevents.Event) {
-	var target string
+func (r *receiver) Knockdown(event cloudevents.Event) bool {
+	// Print out event received to log
+	fmt.Printf("target received event\n")
+	fmt.Printf("context of event is: %v\n", event.Context.String())
 
-	// Try Pull first used by the PullSubscription.
-	err := event.ExtensionAs("target", &target)
-	if err != nil {
-		// If it fails, try Push format used by the CloudPubSubSource.
-		data, err := event.DataBytes()
-		if err != nil {
-			fmt.Println("failed to get data from event", err)
-			return
-		}
-		push := converters.PushMessage{}
-		if err := json.Unmarshal(data, &push); err != nil {
-			fmt.Println("failed to unmarshall PubMessage", err)
-			return
-		}
+	incorrectAttributes := make(map[string]lib.PropPair)
 
-		if tt, ok := push.Message.Attributes["target"]; !ok {
-			fmt.Println("failed to get target from attributes:", err)
-			return
-		} else {
-			target = tt
-		}
+	//Check ID
+	if event.ID() != lib.E2EDummyRespEventID {
+		incorrectAttributes[lib.EventID] = lib.PropPair{Expected: lib.E2EDummyRespEventID, Received: lib.E2EDummyRespEventID}
+	}
+	// Check type
+	if event.Type() != lib.E2EDummyRespEventType {
+		incorrectAttributes[lib.EventType] = lib.PropPair{Expected: lib.E2EDummyRespEventType, Received: event.Type()}
 	}
 
-	var success bool
-	if strings.Contains(r.Target, target) {
-		fmt.Printf("Target found, %q.\n", r.Target)
-		success = true
-	} else {
-		fmt.Printf("Target not found, got:%q, want:%q.\n", target, r.Target)
-		success = false
+	// Check source
+	if event.Source() != lib.E2EDummyRespEventSource {
+		incorrectAttributes[lib.EventSource] = lib.PropPair{Expected: lib.E2EDummyRespEventType, Received: event.Source()}
 	}
-	// Write the termination message.
-	if err := r.writeTerminationMessage(map[string]interface{}{
-		"success": success,
-	}); err != nil {
-		fmt.Printf("failed to write termination message, %s.\n", err)
-	}
-	os.Exit(0)
-}
 
-func (r *Receiver) writeTerminationMessage(result interface{}) error {
-	b, err := json.Marshal(result)
-	if err != nil {
-		return err
+	if len(incorrectAttributes) == 0 {
+		return true
 	}
-	return ioutil.WriteFile("/dev/termination-log", b, 0644)
+	for k, v := range incorrectAttributes {
+		fmt.Println(k, "expected:", v.Expected, "got:", v.Received)
+	}
+	return false
 }

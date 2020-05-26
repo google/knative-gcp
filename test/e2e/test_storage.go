@@ -19,6 +19,7 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"net/http"
 	"os"
 	"testing"
@@ -27,7 +28,7 @@ import (
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
 
@@ -35,7 +36,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
+func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
 	ctx := context.Background()
 	project := os.Getenv(lib.ProwProjectKey)
@@ -51,12 +52,13 @@ func CloudStorageSourceWithTestImpl(t *testing.T, assertMetrics bool, authConfig
 	defer lib.TearDown(client)
 
 	fileName := helpers.AppendRandomString("test-file-for-storage")
+	source := v1beta1.CloudStorageSourceEventSource(bucketName)
 
 	// Create a storage_target Job to receive the events.
-	lib.MakeStorageJobOrDie(client, fileName, targetName)
+	lib.MakeStorageJobOrDie(client, source, fileName, targetName, v1beta1.CloudStorageSourceFinalize)
 
 	// Create the Storage source.
-	lib.MakeStorageOrDie(client, bucketName, storageName, targetName, authConfig.PubsubServiceAccount)
+	lib.MakeStorageOrDie(client, lib.ServiceGVK, bucketName, storageName, targetName, authConfig.PubsubServiceAccount)
 
 	// Add a random name file in the bucket
 	lib.AddRandomFile(ctx, t, bucketName, fileName, project)

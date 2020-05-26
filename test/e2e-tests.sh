@@ -18,7 +18,7 @@ source $(dirname "$0")/e2e-secret-tests.sh
 
 initialize $@
 
-go_test_e2e -timeout=20m -parallel=12 ./test/e2e \
+go_test_e2e -timeout=30m -parallel=12 ./test/e2e \
   -channels='messaging.cloud.google.com/v1alpha1:Channel,messaging.cloud.google.com/v1beta1:Channel' \
   || fail_test
 

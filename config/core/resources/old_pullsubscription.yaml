@@ -106,15 +106,11 @@ spec:
                     kind:
                       type: string
                       minLength: 1
+                    namespace:
+                      type: string
                     name:
                       type: string
                       minLength: 1
-              anyOf:
-                - properties:
-                    uri:
-                      minLength: 1
-                - properties:
-                    ref: {}
             transformer:
               type: object
               description: "Reference to an object that will resolve to a domain name to use as the transformer."
