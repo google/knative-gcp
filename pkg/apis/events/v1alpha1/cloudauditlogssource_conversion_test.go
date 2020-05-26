@@ -99,7 +99,7 @@ var (
 	}
 
 	completeIdentitySpec = duckv1alpha1.IdentitySpec{
-		GoogleServiceAccount: "googleServiceAccount",
+		ServiceAccountName: "k8sServiceAccount",
 	}
 
 	completeSecret = &v1.SecretKeySelector{

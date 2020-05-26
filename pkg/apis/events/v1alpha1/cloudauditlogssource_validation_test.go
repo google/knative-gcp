@@ -54,8 +54,8 @@ var (
 			Project: "my-eventing-project",
 		},
 	}
-	validServiceAccountName   = "test123@test123.iam.gserviceaccount.com"
-	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
+	validServiceAccountName   = "test"
+	invalidServiceAccountName = "@test"
 )
 
 func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
@@ -116,18 +116,18 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			}(),
 			error: true,
 		},
-		"invalid GCP service account": {
+		"invalid k8s service account": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret at the same time": {
+		"have k8s service account and secret at the same time": {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
@@ -221,7 +221,7 @@ func TestCloudAuditLogsSourceCheckImmutableFields(t *testing.T) {
 			updated: CloudAuditLogsSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
 					IdentitySpec: duckv1alpha1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

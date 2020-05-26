@@ -100,13 +100,13 @@ func TestPullSubscriptionIdentitySpec(t *testing.T) {
 		Spec: PullSubscriptionSpec{
 			PubSubSpec: v1alpha1.PubSubSpec{
 				IdentitySpec: v1alpha1.IdentitySpec{
-					GoogleServiceAccount: "test@test",
+					ServiceAccountName: "test",
 				},
 			},
 		},
 	}
-	want := "test@test"
-	got := s.IdentitySpec().GoogleServiceAccount
+	want := "test"
+	got := s.IdentitySpec().ServiceAccountName
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

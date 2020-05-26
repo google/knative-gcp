@@ -277,14 +277,14 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "invalid GCP service account",
+		name: "invalid k8s service account",
 		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: invalidServiceAccountName,
+					ServiceAccountName: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -300,20 +300,20 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"googleServiceAccount"},
+				Message: `invalid value: @test, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
+				Paths:   []string{"serviceAccountName"},
 			}
 			return fe
 		}(),
 	}, {
-		name: "have GCP service account and secret at the same time",
+		name: "have k8s service account and secret at the same time",
 		spec: &CloudSchedulerSourceSpec{
 			Location: "my-test-location",
 			Schedule: "* * * * *",
 			Data:     "data",
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: invalidServiceAccountName,
+					ServiceAccountName: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -333,7 +333,7 @@ func TestCloudSchedulerSourceSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
+				Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 				Paths:   []string{""},
 			}
 			return fe

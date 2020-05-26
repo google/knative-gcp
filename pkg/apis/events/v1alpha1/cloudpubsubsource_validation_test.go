@@ -196,18 +196,18 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: false,
 		},
-		"invalid GCP service account": {
+		"invalid k8s service account": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret at the same time": {
+		"have k8s service account and secret at the same time": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),

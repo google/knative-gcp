@@ -252,12 +252,12 @@ func TestSpecValidationFields(t *testing.T) {
 			return fe
 		}(),
 	}, {
-		name: "invalid GCP service account",
+		name: "invalid k8s service account",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1beta1.PubSubSpec{
 				IdentitySpec: duckv1beta1.IdentitySpec{
-					GoogleServiceAccount: invalidServiceAccountName,
+					ServiceAccountName: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -273,18 +273,18 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"googleServiceAccount"},
+				Message: `invalid value: @test, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
+				Paths:   []string{"serviceAccountName"},
 			}
 			return fe
 		}(),
 	}, {
-		name: "valid GCP service account",
+		name: "valid k8s service account",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1beta1.PubSubSpec{
 				IdentitySpec: duckv1beta1.IdentitySpec{
-					GoogleServiceAccount: validServiceAccountName,
+					ServiceAccountName: validServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -300,12 +300,12 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "have GCP service account and secret at the same time",
+		name: "have k8s service account and secret at the same time",
 		spec: &CloudStorageSourceSpec{
 			Bucket: "my-test-bucket",
 			PubSubSpec: duckv1beta1.PubSubSpec{
 				IdentitySpec: duckv1beta1.IdentitySpec{
-					GoogleServiceAccount: invalidServiceAccountName,
+					ServiceAccountName: invalidServiceAccountName,
 				},
 				SourceSpec: duckv1.SourceSpec{
 					Sink: duckv1.Destination{
@@ -325,7 +325,7 @@ func TestSpecValidationFields(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
+				Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 				Paths:   []string{""},
 			}
 			return fe
@@ -439,7 +439,7 @@ func TestCheckImmutableFields(t *testing.T) {
 				PayloadFormat:    storageSourceSpec.PayloadFormat,
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
 					SourceSpec: storageSourceSpec.SourceSpec,
 					Secret:     storageSourceSpec.Secret,

@@ -163,6 +163,17 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}
 	}
 
+	// If k8s service account is specified, use that service account as credential.
+	if args.Source.Spec.ServiceAccountName != "" {
+		kServiceAccountName := args.Source.Spec.ServiceAccountName
+		return &corev1.PodSpec{
+			ServiceAccountName: kServiceAccountName,
+			Containers: []corev1.Container{
+				receiveAdapterContainer,
+			},
+		}
+	}
+
 	// Otherwise, use secret as credential.
 	secret := args.Source.Spec.Secret
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)

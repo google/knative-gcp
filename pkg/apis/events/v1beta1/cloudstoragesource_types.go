@@ -60,13 +60,6 @@ type CloudStorageSourceSpec struct {
 	// Sink, CloudEventOverrides, Secret, PubSubSecret, and Project
 	duckv1beta1.PubSubSpec `json:",inline"`
 
-	// ServiceAccountName holds the name of the Kubernetes service account
-	// as which the underlying K8s resources should be run. If unspecified
-	// this will default to the "default" service account for the namespace
-	// in which the GCS exists.
-	// +optional
-	ServiceAccountName string `json:"serviceAccountName,omitempty"`
-
 	// Bucket to subscribe to.
 	Bucket string `json:"bucket"`
 

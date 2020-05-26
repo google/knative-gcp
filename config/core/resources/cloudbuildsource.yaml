@@ -100,12 +100,12 @@ spec:
                     Extensions specify what attribute are added or overridden on the outbound event. Each
                     `Extensions` key-value pair are set on the event as an attribute extension independently.
                   x-kubernetes-preserve-unknown-fields: true
-            googleServiceAccount:
+            serviceAccountName:
               type: string
               description: >
-                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
-                account must be a valid Google service account (see
-                https://cloud.google.com/iam/docs/service-accounts).
+                k8s service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription.
+                The value of the k8s service account must be a valid DNS subdomain name.
+                (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)
             secret:
               type: object
               description: >

@@ -37,12 +37,11 @@ var (
 	completeCloudStorageSource = &CloudStorageSource{
 		ObjectMeta: completeObjectMeta,
 		Spec: CloudStorageSourceSpec{
-			PubSubSpec:         completePubSubSpec,
-			ServiceAccountName: "serviceAccountName",
-			Bucket:             "bucket",
-			EventTypes:         []string{"event", "types"},
-			ObjectNamePrefix:   "objectNamePrefix",
-			PayloadFormat:      "payloadFormat",
+			PubSubSpec:       completePubSubSpec,
+			Bucket:           "bucket",
+			EventTypes:       []string{"event", "types"},
+			ObjectNamePrefix: "objectNamePrefix",
+			PayloadFormat:    "payloadFormat",
 		},
 		Status: CloudStorageSourceStatus{
 			PubSubStatus:   completePubSubStatus,
