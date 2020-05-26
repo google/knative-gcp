@@ -17,7 +17,7 @@ limitations under the License.
 package reconciler
 
 import (
-	"k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -49,7 +49,7 @@ type DeploymentReconciler struct {
 }
 
 // ReconcileDeployment reconciles the K8s Deployment 'd'.
-func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *v1.Deployment) (*v1.Deployment, error) {
+func (r *DeploymentReconciler) ReconcileDeployment(obj runtime.Object, d *appsv1.Deployment) (*appsv1.Deployment, error) {
 	current, err := r.Lister.Deployments(d.Namespace).Get(d.Name)
 	if apierrs.IsNotFound(err) {
 		current, err = r.KubeClient.AppsV1().Deployments(d.Namespace).Create(d)

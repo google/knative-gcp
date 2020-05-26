@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	cloudevents "github.com/cloudevents/sdk-go"
+	"github.com/google/knative-gcp/test/e2e/lib"
 )
 
 type Receiver struct {
@@ -44,15 +45,14 @@ func main() {
 func (r *Receiver) Receive(ctx context.Context, event cloudevents.Event, resp *cloudevents.EventResponse) {
 	// Check if the received event is the dummy event sent by sender pod.
 	// If it is, send back a response CloudEvent.
-	if event.ID() == "dummy" {
+	if event.ID() == lib.E2EDummyEventID {
 		resp.Status = http.StatusAccepted
 		event = cloudevents.NewEvent(cloudevents.VersionV1)
-		event.SetID("target")
-		event.SetType("e2e-testing-resp")
-		event.SetSource("e2e-testing")
+		event.SetID(lib.E2EDummyRespEventID)
+		event.SetType(lib.E2EDummyRespEventType)
+		event.SetSource(lib.E2EDummyRespEventSource)
 		event.SetDataContentType(cloudevents.ApplicationJSON)
-		event.SetData(`{"hello": "world!"}`)
-		event.SetExtension("target", "falldown")
+		event.SetData(`{"source": "receiver!"}`)
 		resp.Event = &event
 	} else {
 		resp.Status = http.StatusForbidden

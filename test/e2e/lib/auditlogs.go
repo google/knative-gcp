@@ -23,6 +23,7 @@ import (
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -31,7 +32,8 @@ const (
 )
 
 func MakeAuditLogsOrDie(client *Client,
-	auditlogsName, methodName, project, resourceName, serviceName, targetName, pubsubServiceAccount string,
+	sinkGVK metav1.GroupVersionKind,
+	auditlogsName, methodName, project, resourceName, serviceName, sinkName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudAuditLogsSourceOption,
 ) {
 	client.T.Helper()
@@ -39,7 +41,7 @@ func MakeAuditLogsOrDie(client *Client,
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(methodName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(ServiceGVK, targetName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
@@ -47,7 +49,7 @@ func MakeAuditLogsOrDie(client *Client,
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, CloudAuditLogsSourceTypeMeta)
 }
 
-func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName string) {
+func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName, eventType string) {
 	client.T.Helper()
 	job := resources.AuditLogsTargetJob(targetName, []v1.EnvVar{{
 		Name:  "SERVICENAME",
@@ -60,7 +62,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: resourceName,
 	}, {
 		Name:  "TYPE",
-		Value: v1alpha1.CloudAuditLogsSourceEvent,
+		Value: eventType,
 	}, {
 		Name:  "SOURCE",
 		Value: v1alpha1.CloudAuditLogsSourceEventSource(serviceName, fmt.Sprintf("projects/%s", project)),
@@ -69,7 +71,7 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: resourceName,
 	}, {
 		Name:  "TIME",
-		Value: "360",
+		Value: "6m",
 	}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
 }

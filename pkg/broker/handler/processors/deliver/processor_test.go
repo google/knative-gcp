@@ -19,9 +19,9 @@ package deliver
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"testing"
 	"time"
 
@@ -315,14 +315,20 @@ type NoReplyHandler struct{}
 
 func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
-	// Read body to allow the connection to be reused.
-	io.Copy(ioutil.Discard, req.Body)
-	req.Body.Close()
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
 	sampleEvent := newSampleEvent()
-	deliverClient, err := ceclient.NewDefault()
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: runtime.NumCPU(),
+		},
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+	deliverClient, err := ceclient.New(httpProtocol)
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
@@ -344,11 +350,13 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, sampleEvent); err != nil {
-			b.Errorf("unexpected error from processing: %v", err)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
 		}
-	}
+	})
 }
 
 type ReplyHandler struct {
@@ -357,9 +365,6 @@ type ReplyHandler struct {
 
 func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
-	// Read body to allow the connection to be reused.
-	io.Copy(ioutil.Discard, req.Body)
-	req.Body.Close()
 }
 
 func BenchmarkDeliveryWithReply(b *testing.B) {
@@ -367,7 +372,16 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
-	deliverClient, err := ceclient.NewDefault()
+	httpClient := http.Client{
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost: runtime.NumCPU(),
+		},
+	}
+	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
+	if err != nil {
+		b.Fatal(err)
+	}
+	deliverClient, err := ceclient.New(httpProtocol)
 	if err != nil {
 		b.Fatalf("failed to create requester cloudevents client: %v", err)
 	}
@@ -392,11 +406,13 @@ func BenchmarkDeliveryWithReply(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		if err := p.Process(ctx, sampleEvent); err != nil {
-			b.Errorf("unexpected error from processing: %v", err)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			if err := p.Process(ctx, sampleEvent); err != nil {
+				b.Errorf("unexpected error from processing: %v", err)
+			}
 		}
-	}
+	})
 }
 
 func toFakePubsubMessage(m *pstest.Message) *pubsub.Message {

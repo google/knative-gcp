@@ -22,8 +22,7 @@ import (
 )
 
 // ReceiverKService creates a Knative Service as an event receiver.
-func ReceiverKService(name, namespace string) *unstructured.Unstructured {
-	imageName := "receiver"
+func ReceiverKService(name, namespace, imageName string) *unstructured.Unstructured {
 	obj := map[string]interface{}{
 		"apiVersion": "serving.knative.dev/v1",
 		"kind":       "Service",
