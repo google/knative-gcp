@@ -20,6 +20,9 @@ import (
 	"encoding/json"
 	"testing"
 
+	"knative.dev/pkg/test/helpers"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 )
@@ -52,14 +55,12 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	defer lib.TearDown(client)
 
 	// Create an Addressable to receive scheduler events
-	data := "my test data"
-	targetName := "event-display"
-	lib.MakeSchedulerJobOrDie(client, data, targetName)
-
-	// Create a scheduler
-	sName := "scheduler-test"
-
-	lib.MakeSchedulerOrDie(client, sName, data, targetName, authConfig.PubsubServiceAccount)
+	data := helpers.AppendRandomString("scheduler-source-with-target")
+	// Create the target and scheduler
+	schedulerName := helpers.AppendRandomString("scheduler")
+	targetName := helpers.AppendRandomString(schedulerName + "-target")
+	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceExecute)
+	lib.MakeSchedulerOrDie(client, lib.ServiceGVK, schedulerName, data, targetName, authConfig.PubsubServiceAccount)
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {
@@ -74,7 +75,7 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 		}
 		if !out.Success {
 			// Log the output of scheduler pods
-			if logs, err := client.LogsFor(client.Namespace, sName, lib.CloudSchedulerSourceTypeMeta); err != nil {
+			if logs, err := client.LogsFor(client.Namespace, schedulerName, lib.CloudSchedulerSourceTypeMeta); err != nil {
 				t.Error(err)
 			} else {
 				t.Logf("scheduler log: %+v", logs)

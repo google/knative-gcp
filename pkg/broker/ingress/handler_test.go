@@ -38,6 +38,8 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/metrics"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"knative.dev/eventing/pkg/kncloudevents"
@@ -45,6 +47,8 @@ import (
 	logtest "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
+
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
@@ -280,7 +284,54 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server) *pubsub.Client {
+func BenchmarkIngressHandler(b *testing.B) {
+	// Set parallelism to 32 so that the benchmark is not limited by the Pub/Sub publish latency
+	// over gRPC.
+	b.SetParallelism(32)
+
+	reportertest.ResetIngressMetrics()
+
+	ctx := logging.WithLogger(context.Background(),
+		zaptest.NewLogger(b,
+			zaptest.WrapOptions(zap.AddCaller()),
+			zaptest.Level(zap.WarnLevel),
+		).Sugar())
+
+	psSrv := pstest.NewServer()
+	defer psSrv.Close()
+
+	psClient, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, b, psSrv))
+	if err != nil {
+		b.Fatal(err)
+	}
+	decouple := NewMultiTopicDecoupleSink(ctx, memory.NewTargets(brokerConfig), psClient)
+	statsReporter, err := metrics.NewIngressReporter(metrics.PodName(pod), metrics.ContainerName(container))
+	if err != nil {
+		b.Fatal(err)
+	}
+	h := NewHandler(ctx, nil, decouple, statsReporter)
+
+	if _, err := createPubsubClient(ctx, b, psSrv).CreateTopic(ctx, topicID); err != nil {
+		b.Fatal(err)
+	}
+
+	req := httptest.NewRequest("POST", "/ns1/broker1", nil)
+	message := binding.ToMessage(createTestEvent("test-event"))
+	http.WriteRequest(ctx, message, req)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, req)
+			if res := w.Result(); w.Result().StatusCode != nethttp.StatusAccepted {
+				b.Errorf("Unexpected HTTP status code %v", res.StatusCode)
+			}
+		}
+	})
+}
+
+func createPubsubClient(ctx context.Context, t testing.TB, psSrv *pstest.Server) *pubsub.Client {
 	conn, err := grpc.Dial(psSrv.Addr, grpc.WithInsecure())
 	if err != nil {
 		t.Fatal(err)
@@ -296,7 +347,7 @@ func createPubsubClient(ctx context.Context, t *testing.T, psSrv *pstest.Server)
 	return psClient
 }
 
-func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) *cepubsub.Protocol {
+func setupTestReceiver(ctx context.Context, t testing.TB, psSrv *pstest.Server) *cepubsub.Protocol {
 	ps := createPubsubClient(ctx, t, psSrv)
 	topic, err := ps.CreateTopic(ctx, topicID)
 	if err != nil {
@@ -306,7 +357,11 @@ func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	p, err := cepubsub.New(ctx, cepubsub.WithClient(ps), cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID))
+	p, err := cepubsub.New(ctx,
+		cepubsub.WithClient(ps),
+		cepubsub.WithSubscriptionAndTopicID(subscriptionID, topicID),
+		cepubsub.WithReceiveSettings(&pubsub.DefaultReceiveSettings),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +371,7 @@ func setupTestReceiver(ctx context.Context, t *testing.T, psSrv *pstest.Server) 
 }
 
 // createAndStartIngress creates an ingress and calls its Start() method in a goroutine.
-func createAndStartIngress(ctx context.Context, t *testing.T, psSrv *pstest.Server) string {
+func createAndStartIngress(ctx context.Context, t testing.TB, psSrv *pstest.Server) string {
 	client, err := NewPubsubDecoupleClient(ctx, createPubsubClient(ctx, t, psSrv))
 	if err != nil {
 		t.Fatal(err)

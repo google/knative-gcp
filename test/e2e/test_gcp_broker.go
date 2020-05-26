@@ -39,7 +39,7 @@ GCPBrokerTestImpl tests the following scenario:
                     ------------------   --------------------
                     |                 | |                    |
           1         v	      2       | v         3          |
-(Sender) ---> GCP Broker ---> dummyTrigger -------> Knative Service(Receiver)
+(Sender or source) ---> GCP Broker ---> trigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
                     |-------> respTrigger -------> Service(Target)

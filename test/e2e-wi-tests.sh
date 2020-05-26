@@ -142,8 +142,8 @@ function create_private_key_for_pubsub_service_account {
 }
 
 # Create a cluster with Workload Identity enabled.
-# Specify cluster version for issue: https://github.com/google/knative-gcp/issues/1000
-initialize $@ --cluster-version "1.15.11-gke.9" --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
+# We could specify --cluster-version to force the cluster using a particular GKE version.
+initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
 go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -pubsubServiceAccount="${PUBSUB_SERVICE_ACCOUNT_EMAIL}" || fail_test

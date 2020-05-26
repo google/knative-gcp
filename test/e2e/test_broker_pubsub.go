@@ -40,7 +40,7 @@ PubSubWithBrokerTestImpl tests the following scenario:
                     ------------------   --------------------
                     |                 | |                    |
           1         v	      2       | v         3          |
-(Sender) ---> Broker(PubSub) ---> dummyTrigger -------> Knative Service(Receiver)
+(Sender or Source) ---> Broker(PubSub) ---> trigger -------> Knative Service(Receiver)
                     |
                     |    6                   7
                     |-------> respTrigger -------> Service(Target)

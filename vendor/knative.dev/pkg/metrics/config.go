@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"strconv"
@@ -32,10 +31,6 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/metrics/metricskey"
-)
-
-const (
-	DomainEnv = "METRICS_DOMAIN"
 )
 
 // metricsBackend specifies the backend to use for metrics
@@ -54,6 +49,8 @@ const (
 	StackdriverGCPLocationKey = "metrics.stackdriver-gcp-location"
 	StackdriverClusterNameKey = "metrics.stackdriver-cluster-name"
 	StackdriverUseSecretKey   = "metrics.stackdriver-use-secret"
+
+	DomainEnv = "METRICS_DOMAIN"
 
 	// Stackdriver is used for Stackdriver backend
 	Stackdriver metricsBackend = "stackdriver"
@@ -155,14 +152,6 @@ func NewStackdriverClientConfigFromMap(config map[string]string) *StackdriverCli
 // measurements in the metricsConfig's designated backend.
 func (mc *metricsConfig) record(ctx context.Context, mss []stats.Measurement, ros ...stats.Options) error {
 	if mc == nil {
-		log.Println(`The metricsConfig has not been initialized yet.
-
-If this is a Go unit test consuming metric.Record(...) or metric.RecordBatch(...) then
-it should add the following import:
-
-import (
-	_ "knative.dev/pkg/metrics/testing"
-)`)
 		// Don't record data points if the metric config is not initialized yet.
 		// At this point, it's unclear whether should record or not.
 		return nil

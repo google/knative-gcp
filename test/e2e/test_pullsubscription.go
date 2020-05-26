@@ -19,19 +19,19 @@ package e2e
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"testing"
 
 	"cloud.google.com/go/pubsub"
-	v1 "k8s.io/api/core/v1"
-
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
+	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 // SmokePullSubscriptionTestImpl tests we can create a pull subscription to ready state.
@@ -47,8 +47,8 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topic,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
@@ -56,7 +56,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 				},
 			},
 		}),
-		kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, svcName))
+		kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, svcName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
@@ -65,32 +65,31 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 // PullSubscriptionWithTargetTestImpl tests we can receive an event from a PullSubscription.
 func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	t.Helper()
+	project := os.Getenv(lib.ProwProjectKey)
 	topicName, deleteTopic := lib.MakeTopicOrDie(t)
 	defer deleteTopic()
 
 	psName := topicName + "-sub"
 	targetName := topicName + "-target"
+	source := v1beta1.CloudPubSubSourceEventSource(project, topicName)
+	data := fmt.Sprintf(`{"topic":%s}`, topicName)
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
 	// Create a target Job to receive the events.
-	job := resources.TargetJob(targetName, []v1.EnvVar{{
-		Name:  "TARGET",
-		Value: "falldown",
-	}})
-	client.CreateJobOrFail(job, lib.WithServiceForJob(targetName))
+	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
 
 	// Create PullSubscription.
-	pullsubscription := kngcptesting.NewPubSubPullSubscription(psName, client.Namespace,
-		kngcptesting.WithPubSubPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
+	pullsubscription := kngcptesting.NewPullSubscription(psName, client.Namespace,
+		kngcptesting.WithPullSubscriptionSpec(v1alpha1.PullSubscriptionSpec{
 			Topic: topicName,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					authConfig.PubsubServiceAccount,
 				},
 			},
-		}), kngcptesting.WithPubSubPullSubscriptionSink(lib.ServiceGVK, targetName))
+		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))
 	client.CreatePullSubscriptionOrFail(pullsubscription)
 
 	client.Core.WaitForResourceReadyOrFail(psName, lib.PullSubscriptionTypeMeta)
@@ -98,10 +97,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 	topic := lib.GetTopic(t, topicName)
 
 	r := topic.Publish(context.TODO(), &pubsub.Message{
-		Attributes: map[string]string{
-			"target": "falldown",
-		},
-		Data: []byte(`{"foo":bar}`),
+		Data: []byte(data),
 	})
 	_, err := r.Get(context.TODO())
 	if err != nil {
