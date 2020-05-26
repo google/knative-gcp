@@ -43,9 +43,9 @@ There are two ways to set up authentication mechanism.
     Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var. This is used by
     some tests(e.g., `TestSmokePullSubscription`) to authorize the Google SDK clients.
     ```
-    gcloud iam service-accounts keys create cre-pubsub.json \
-    --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
-    export GOOGLE_APPLICATION_CREDENTIALS=./cre-pubsub.json
+    cred_file=$(pwd)/cre-pubsub.json
+    gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
+    export GOOGLE_APPLICATION_CREDENTIALS=${cred_file}
     ```
 1.  [Install GCP Broker](../../docs/install/install-gcp-broker.md).
 1.  [Broker with Pub/Sub Channel](../../docs/install/install-broker-with-pubsub-channel.md)
