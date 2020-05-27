@@ -62,39 +62,47 @@ type PubSubBase struct {
 // Also sets the following fields in the pubsubable.Status upon success
 // TopicID, ProjectID, and SinkURI
 func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string) (*inteventsv1alpha1.Topic, *inteventsv1alpha1.PullSubscription, error) {
-	if pubsubable == nil {
-		return nil, nil, fmt.Errorf("nil pubsubable passed in")
+	t, err := psb.reconcileTopic(ctx, pubsubable, topic)
+	if err != nil {
+		return t, nil, err
 	}
-	namespace := pubsubable.GetObjectMeta().GetNamespace()
-	name := pubsubable.GetObjectMeta().GetName()
-	spec := pubsubable.PubSubSpec()
-	annotations := pubsubable.GetObjectMeta().GetAnnotations()
-	status := pubsubable.PubSubStatus()
 
+	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
+	if err != nil {
+		return t, ps, err
+	}
+	return t, ps, nil
+}
+
+func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSubable, topic string) (*inteventsv1alpha1.Topic, pkgreconciler.Event) {
+	if pubsubable == nil {
+		return nil, fmt.Errorf("nil pubsubable passed in")
+	}
+
+	name := pubsubable.GetObjectMeta().GetName()
 	args := &resources.TopicArgs{
-		Namespace:   namespace,
+		Namespace:   pubsubable.GetObjectMeta().GetNamespace(),
 		Name:        name,
-		Spec:        spec,
+		Spec:        pubsubable.PubSubSpec(),
 		Owner:       pubsubable,
 		Topic:       topic,
 		Labels:      resources.GetLabels(psb.receiveAdapterName, name),
-		Annotations: annotations,
+		Annotations: pubsubable.GetObjectMeta().GetAnnotations(),
 	}
 	newTopic := resources.MakeTopic(args)
 
-	topics := psb.pubsubClient.InternalV1alpha1().Topics(namespace)
-	t, err := topics.Get(name, v1.GetOptions{})
-	if err != nil {
-		if !apierrs.IsNotFound(err) {
-			logging.FromContext(ctx).Desugar().Error("Failed to get Topics", zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to get Topics: %w", err)
-		}
+	topics := psb.pubsubClient.InternalV1alpha1().Topics(newTopic.Namespace)
+	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
+	if apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Debug("Creating Topic", zap.Any("topic", newTopic))
 		t, err = topics.Create(newTopic)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to create Topic", zap.Any("topic", newTopic), zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to create Topic: %w", err)
+			return nil, fmt.Errorf("failed to create Topic: %w", err)
 		}
+	} else if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to get Topic", zap.Error(err))
+		return nil, fmt.Errorf("failed to get Topic: %w", err)
 		// Check whether the specs differ and update the Topic if so.
 	} else if !equality.Semantic.DeepDerivative(newTopic.Spec, t.Spec) {
 		// Don't modify the informers copy.
@@ -104,21 +112,17 @@ func (psb *PubSubBase) ReconcilePubSub(ctx context.Context, pubsubable duck.PubS
 		t, err = topics.Update(desired)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Failed to update Topic", zap.Any("topic", t), zap.Error(err))
-			return nil, nil, fmt.Errorf("failed to update Topic: %w", err)
+			return nil, fmt.Errorf("failed to update Topic: %w", err)
 		}
 	}
 
+	status := pubsubable.PubSubStatus()
 	cs := pubsubable.ConditionSet()
-
 	if err := propagateTopicStatus(t, status, cs, topic); err != nil {
-		return t, nil, err
+		return t, err
 	}
 
-	ps, err := psb.ReconcilePullSubscription(ctx, pubsubable, topic, resourceGroup, false)
-	if err != nil {
-		return t, ps, err
-	}
-	return t, ps, nil
+	return t, nil
 }
 
 func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable duck.PubSubable, topic, resourceGroup string, isPushCompatible bool) (*inteventsv1alpha1.PullSubscription, pkgreconciler.Event) {

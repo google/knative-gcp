@@ -108,7 +108,7 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
-# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1
+# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -1005,7 +1005,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.14.1-0.20200520123858-f378da1aafe5
+# knative.dev/eventing v0.15.1-0.20200526203649-32751c56844f
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1106,7 +1106,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200520073958-94316e20e860
+# knative.dev/pkg v0.0.0-20200527024749-495174c96651
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1208,7 +1208,7 @@ knative.dev/pkg/webhook/resourcesemantics
 knative.dev/pkg/webhook/resourcesemantics/conversion
 knative.dev/pkg/webhook/resourcesemantics/defaulting
 knative.dev/pkg/webhook/resourcesemantics/validation
-# knative.dev/serving v0.14.1-0.20200520101257-064e8097fb0f
+# knative.dev/serving v0.15.1-0.20200527151759-5b8ff09ace4f
 ## explicit
 knative.dev/serving/pkg/apis/autoscaling
 knative.dev/serving/pkg/apis/autoscaling/v1alpha1
@@ -1254,7 +1254,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200520132958-07b268f95d0f
+# knative.dev/test-infra v0.0.0-20200527032149-1fa26194e82d
 ## explicit
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
@@ -1282,4 +1282,3 @@ sigs.k8s.io/yaml
 # gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 # honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 # sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-# github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0-RC1

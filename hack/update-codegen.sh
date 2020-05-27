@@ -26,8 +26,6 @@ KNATIVE_CODEGEN_PKG=${KNATIVE_CODEGEN_PKG:-$(cd "${REPO_ROOT_DIR}"; ls -d -1 ./v
 
 PUBSUBAPICOPY=(
 	"implements_test.go"
-	"pullsubscription_conversion.go"
-	"pullsubscription_conversion_test.go"
 	"pullsubscription_defaults.go"
 	"pullsubscription_defaults_test.go"
 	"pullsubscription_lifecycle.go"
@@ -35,8 +33,6 @@ PUBSUBAPICOPY=(
 	"pullsubscription_types.go"
 	"pullsubscription_validation.go"
 	"pullsubscription_validation_test.go"
-	"topic_conversion.go"
-	"topic_conversion_test.go"
 	"topic_defaults.go"
 	"topic_defaults_test.go"
 	"topic_lifecycle.go"
@@ -45,12 +41,6 @@ PUBSUBAPICOPY=(
 	"topic_validation.go"
 	"topic_validation_test.go"
 )
-
-echo "Copying pubsub apis"
-for fn in "${PUBSUBAPICOPY[@]}"; do
-	cp pkg/apis/intevents/v1alpha1/"$fn" pkg/apis/pubsub/v1alpha1
-	cp pkg/apis/intevents/v1beta1/"$fn" pkg/apis/pubsub/v1beta1
-done
 
 chmod +x "${CODEGEN_PKG}"/generate-groups.sh
 # Only deepcopy the Duck types, as they are not real resources.
@@ -65,14 +55,14 @@ chmod +x "${CODEGEN_PKG}"/generate-groups.sh
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 pubsub:v1beta1 messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 broker:v1beta1 intevents:v1alpha1" \
+  "messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 broker:v1beta1 intevents:v1alpha1" \
   --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 # Knative Injection
 chmod +x "${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh
 "${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh "injection" \
   github.com/google/knative-gcp/pkg/client github.com/google/knative-gcp/pkg/apis \
-  "pubsub:v1alpha1 pubsub:v1beta1 messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 duck:v1alpha1 duck:v1beta1 broker:v1beta1 intevents:v1alpha1" \
+  "messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 duck:v1alpha1 duck:v1beta1 broker:v1beta1 intevents:v1alpha1" \
   --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 go install github.com/google/wire/cmd/wire

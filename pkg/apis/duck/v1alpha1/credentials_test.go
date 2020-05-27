@@ -59,26 +59,26 @@ func TestValidateCredential(t *testing.T) {
 		serviceAccount: "",
 		wantErr:        true,
 	}, {
-		name:           "nil secret, and valid service account",
+		name:           "nil secret, and valid k8s service account",
 		secret:         nil,
-		serviceAccount: "test123@test123.iam.gserviceaccount.com",
+		serviceAccount: "test123",
 		wantErr:        false,
 	}, {
 		name:           "nil secret, and invalid service account",
 		secret:         nil,
-		serviceAccount: "test@test",
+		serviceAccount: "@test",
 		wantErr:        true,
 	}, {
 		name:           "secret and service account exist at the same time",
 		secret:         DefaultGoogleCloudSecretSelector(),
-		serviceAccount: "test@test.iam.gserviceaccount.com",
+		serviceAccount: "test",
 		wantErr:        true,
 	}}
 
 	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
-		errs := ValidateCredential(tc.secret, tc.serviceAccount)
+		errs := ValidateCredential(tc.secret, "", tc.serviceAccount)
 		got := errs != nil
 		if diff := cmp.Diff(tc.wantErr, got); diff != "" {
 			t.Errorf("unexpected resource (-want, +got) = %v", diff)

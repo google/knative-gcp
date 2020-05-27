@@ -32,8 +32,8 @@ import (
 )
 
 var (
-	validServiceAccountName   = "test123@test123.iam.gserviceaccount.com"
-	invalidServiceAccountName = "test@test.iam.kserviceaccount.com"
+	validServiceAccountName   = "test"
+	invalidServiceAccountName = "@test"
 
 	channelSpec = ChannelSpec{
 		Subscribable: &eventingduck.Subscribable{
@@ -141,7 +141,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "invalid GCP service account",
+		name: "invalid k8s service account",
 		cr: &Channel{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
@@ -150,7 +150,7 @@ func TestChannelValidation(t *testing.T) {
 			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: invalidServiceAccountName,
+					ServiceAccountName: invalidServiceAccountName,
 				},
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -161,13 +161,13 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: `invalid value: test@test.iam.kserviceaccount.com, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				Paths:   []string{"spec.googleServiceAccount"},
+				Message: `invalid value: @test, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
+				Paths:   []string{"spec.serviceAccountName"},
 			}
 			return fe
 		}(),
 	}, {
-		name: "valid GCP service account",
+		name: "valid k8s service account",
 		cr: &Channel{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
@@ -176,7 +176,7 @@ func TestChannelValidation(t *testing.T) {
 			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: validServiceAccountName,
+					ServiceAccountName: validServiceAccountName,
 				},
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
@@ -187,7 +187,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: nil,
 	}, {
-		name: "have GCP service account and secret at the same time",
+		name: "have k8s service account and secret at the same time",
 		cr: &Channel{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
@@ -196,7 +196,7 @@ func TestChannelValidation(t *testing.T) {
 			},
 			Spec: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: validServiceAccountName,
+					ServiceAccountName: validServiceAccountName,
 				},
 				Secret: defaultSecretSelector(),
 				Subscribable: &eventingduck.Subscribable{
@@ -208,7 +208,7 @@ func TestChannelValidation(t *testing.T) {
 		},
 		want: func() *apis.FieldError {
 			fe := &apis.FieldError{
-				Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
+				Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 				Paths:   []string{"spec"},
 			}
 			return fe

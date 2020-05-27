@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	validation_regexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`)
+	validation_regexp_k8s = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`)
 )
 
 // DefaultGoogleCloudSecretSelector is the default secret selector used to load
@@ -46,16 +46,16 @@ func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 }
 
 // ValidateCredential checks secret and GCP service account.
-func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string) *apis.FieldError {
-	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && gServiceAccountName != "" {
+func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
+	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
 		return &apis.FieldError{
-			Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
+			Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 			Paths:   []string{""},
 		}
 	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
 		return validateSecret(secret)
-	} else if gServiceAccountName != "" {
-		return validateGCPServiceAccount(gServiceAccountName)
+	} else if kServiceAccountName != "" {
+		return validateK8sServiceAccount(kServiceAccountName)
 	}
 	return nil
 }
@@ -71,20 +71,16 @@ func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
 	return errs
 }
 
-func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
-	// The format of gServiceAccountName is service-account-name@project-id.iam.gserviceaccount.com
+func validateK8sServiceAccount(kServiceAccountName string) *apis.FieldError {
+	// The name of a k8s ServiceAccount object must be a valid DNS subdomain name.
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 
-	// Service account name must be between 6 and 30 characters (inclusive),
-	// must begin with a lowercase letter, and consist of lowercase alphanumeric characters that can be separated by hyphens.
-
-	// Project IDs must start with a lowercase letter and can have lowercase ASCII letters, digits or hyphens,
-	// must be between 6 and 30 characters.
-	match := validation_regexp.FindStringSubmatch(gServiceAccountName)
+	match := validation_regexp_k8s.FindStringSubmatch(kServiceAccountName)
 	if len(match) == 0 {
 		return &apis.FieldError{
-			Message: fmt.Sprintf(`invalid value: %s, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
-				gServiceAccountName),
-			Paths: []string{"googleServiceAccount"},
+			Message: fmt.Sprintf(`invalid value: %s, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
+				kServiceAccountName),
+			Paths: []string{"serviceAccountName"},
 		}
 	}
 	return nil

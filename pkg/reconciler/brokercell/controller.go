@@ -62,7 +62,7 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
 	// TODO: add additional informer event handlers here.
 

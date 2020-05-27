@@ -1,7 +1,5 @@
 # Installing GCP Broker
 
-## GCP Broker
-
 The GCP Broker is a Broker implementation that's highly optimized for running in
 GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
@@ -13,19 +11,11 @@ contorller will create a GCP Broker. Compared to the default
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
 message consumption.
 
-## Deployment
-
-### Prerequisites
+## Prerequisites
 
 1. [Install Knative-GCP](./install-knative-gcp.md).
 
 2. [Create a Pub/Sub enabled Service Account](./pubsub-service-account.md).
-
-Apply GCP broker yamls:
-
-```shell
-ko apply -f ./config/broker/
-```
 
 ## Authentication Setup for GCP Broker
 
@@ -85,11 +75,20 @@ Workload Identity see
    `google-broker-key` and `key.json` are default values expected by our
    resources.
 
+## Deployment
+
+Apply GCP broker yamls:
+
+```shell
+ko apply -f ./config/broker/
+```
+
 ## Usage
 
 ```shell
 export NAMESPACE=cloud-run-events-example
 export BROKER=test-broker
+kubectl create namespace ${NAMESPACE}
 ```
 
 1. Create a New GCP Broker
@@ -99,9 +98,9 @@ export BROKER=test-broker
    apiVersion: eventing.knative.dev/v1beta1
    kind: Broker
    metadata:
-   name: ${BROKER}
-   namespace: ${NAMESPACE}
-   annotations:
+     name: ${BROKER}
+     namespace: ${NAMESPACE}
+     annotations:
        "eventing.knative.dev/broker.class": "googlecloud"
    END
    ```

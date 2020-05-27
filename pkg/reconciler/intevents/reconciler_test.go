@@ -55,7 +55,6 @@ const (
 	testProjectID                              = "project"
 	receiveAdapterName                         = "test-receive-adapter"
 	resourceGroup                              = "test-resource-group"
-	sinkName                                   = "sink"
 	failedToPropagatePullSubscriptionStatusMsg = `Failed to propagate PullSubscription status`
 )
 
@@ -832,90 +831,126 @@ func TestCreates(t *testing.T) {
 	defer logtesting.ClearAll()
 
 	for _, tc := range testCases {
-		cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
+		t.Run(tc.name, func(t *testing.T) {
+			cs := fakePubsubClient.NewSimpleClientset(tc.objects...)
 
-		psBase := &PubSubBase{
-			Base:               &reconciler.Base{},
-			pubsubClient:       cs,
-			receiveAdapterName: receiveAdapterName,
-		}
-		psBase.Logger = logtesting.TestLogger(t)
+			psBase := &PubSubBase{
+				Base:               &reconciler.Base{},
+				pubsubClient:       cs,
+				receiveAdapterName: receiveAdapterName,
+			}
+			psBase.Logger = logtesting.TestLogger(t)
 
-		arl := pkgtesting.ActionRecorderList{cs}
-		topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
+			arl := pkgtesting.ActionRecorderList{cs}
+			topic, ps, err := psBase.ReconcilePubSub(context.Background(), pubsubable, testTopicID, resourceGroup)
 
-		if (tc.expectedErr != "" && err == nil) ||
-			(tc.expectedErr == "" && err != nil) ||
-			(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
-			t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
-		}
-		if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("Test case %q, unexpected topic (-want, +got) = %v", tc.name, diff)
-		}
-		if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
-			t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
-		}
+			if (tc.expectedErr != "" && err == nil) ||
+				(tc.expectedErr == "" && err != nil) ||
+				(tc.expectedErr != "" && err != nil && tc.expectedErr != err.Error()) {
+				t.Errorf("Test case %q, Error mismatch, want: %q got: %q", tc.name, tc.expectedErr, err)
+			}
+			if diff := cmp.Diff(tc.expectedTopic, topic, ignoreLastTransitionTime); diff != "" {
+				t.Errorf("Test case %q, unexpected topic (-want, +got) = %v", tc.name, diff)
+			}
+			if diff := cmp.Diff(tc.expectedPS, ps, ignoreLastTransitionTime); diff != "" {
+				t.Errorf("Test case %q, unexpected pullsubscription (-want, +got) = %v", tc.name, diff)
+			}
 
-		// Previous state is used to diff resource expected state for update requests that were missed.
-		objPrevState := make(map[string]runtime.Object, len(tc.objects))
-		for _, o := range tc.objects {
-			objPrevState[objKey(o)] = o
-		}
+			// Validate creates.
+			actions, err := arl.ActionsByVerb()
+			if err != nil {
+				t.Errorf("Error capturing actions by verb: %q", err)
+			}
 
-		// Validate creates.
-		actions, err := arl.ActionsByVerb()
-		if err != nil {
-			t.Errorf("Error capturing actions by verb: %q", err)
+			verifyCreateActions(t, actions.Creates, tc.wantCreates)
+		})
+	}
+}
+
+func verifyCreateActions(t *testing.T, actual []clientgotesting.CreateAction, expected []runtime.Object) {
+	for i, want := range expected {
+		if i >= len(actual) {
+			t.Errorf("Missing create: %#v", want)
+			continue
 		}
-		for i, want := range tc.wantCreates {
-			if i >= len(actions.Creates) {
-				t.Errorf("Missing create: %#v", want)
+		got := actual[i]
+		obj := got.GetObject()
+		if diff := cmp.Diff(want, obj); diff != "" {
+			t.Errorf("Unexpected create (-want, +got): %s", diff)
+		}
+	}
+	if got, want := len(actual), len(expected); got > want {
+		for _, extra := range actual[want:] {
+			t.Errorf("Extra create: %#v", extra.GetObject())
+		}
+	}
+}
+
+func verifyUpdateActions(t *testing.T, actual []clientgotesting.UpdateAction, expected []runtime.Object, originalObjects []runtime.Object) {
+	// Previous state is used to diff resource expected state for update requests that were missed.
+	objPrevState := make(map[string]runtime.Object, len(originalObjects))
+	for _, o := range originalObjects {
+		objPrevState[objKey(o)] = o
+	}
+
+	updates := filterUpdatesWithSubresource("", actual)
+	for i, want := range actual {
+		if i >= len(updates) {
+			wo := want.GetObject()
+			key := objKey(wo)
+			oldObj, ok := objPrevState[key]
+			if !ok {
+				t.Errorf("Object %s was never created: want: %#v", key, wo)
 				continue
 			}
-			got := actions.Creates[i]
-			obj := got.GetObject()
-			if diff := cmp.Diff(want, obj); diff != "" {
-				t.Errorf("Unexpected create (-want, +got): %s", diff)
-			}
-		}
-		if got, want := len(actions.Creates), len(tc.wantCreates); got > want {
-			for _, extra := range actions.Creates[want:] {
-				t.Errorf("Extra create: %#v", extra.GetObject())
-			}
+			t.Errorf("Missing update for %s (-want, +prevState): %s", key,
+				cmp.Diff(wo, oldObj, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()))
+			continue
 		}
 
-		updates := filterUpdatesWithSubresource("", actions.Updates)
-		for i, want := range tc.wantUpdates {
-			if i >= len(updates) {
-				wo := want.GetObject()
-				key := objKey(wo)
-				oldObj, ok := objPrevState[key]
-				if !ok {
-					t.Errorf("Object %s was never created: want: %#v", key, wo)
-					continue
-				}
-				t.Errorf("Missing update for %s (-want, +prevState): %s", key,
-					cmp.Diff(wo, oldObj, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()))
-				continue
-			}
-
-			if want.GetSubresource() != "" {
-				t.Errorf("Expectation was invalid - it should not include a subresource: %#v", want)
-			}
-
-			got := updates[i].GetObject()
-
-			// Update the object state.
-			objPrevState[objKey(got)] = got
-
-			if diff := cmp.Diff(want.GetObject(), got, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
-				t.Errorf("Unexpected update (-want, +got): %s", diff)
-			}
+		if want.GetSubresource() != "" {
+			t.Errorf("Expectation was invalid - it should not include a subresource: %#v", want)
 		}
-		if got, want := len(updates), len(tc.wantUpdates); got > want {
-			for _, extra := range updates[want:] {
-				t.Errorf("Extra update: %#v", extra.GetObject())
-			}
+
+		got := updates[i].GetObject()
+
+		// Update the object state.
+		objPrevState[objKey(got)] = got
+
+		if diff := cmp.Diff(want.GetObject(), got, ignoreLastTransitionTime, safeDeployDiff, cmpopts.EquateEmpty()); diff != "" {
+			t.Errorf("Unexpected update (-want, +got): %s", diff)
+		}
+	}
+	if got, want := len(updates), len(actual); got > want {
+		for _, extra := range updates[want:] {
+			t.Errorf("Extra update: %#v", extra.GetObject())
+		}
+	}
+}
+
+func verifyDeleteActions(t *testing.T, actual []clientgotesting.DeleteAction, expected []clientgotesting.DeleteActionImpl) {
+	for i, want := range expected {
+		if i >= len(actual) {
+			t.Errorf("Missing delete: %#v", want)
+			continue
+		}
+		got := actual[i]
+
+		wantGVR := want.GetResource()
+		gotGVR := got.GetResource()
+		if diff := cmp.Diff(wantGVR, gotGVR); diff != "" {
+			t.Errorf("Unexpected delete GVR (-want +got): %s", diff)
+		}
+		if w, g := want.Namespace, got.GetNamespace(); w != g {
+			t.Errorf("Unexpected delete namespace. Expected %q, actually %q", w, g)
+		}
+		if w, g := want.Name, got.GetName(); w != g {
+			t.Errorf("Unexpected delete name. Expected %q, actually %q", w, g)
+		}
+	}
+	if got, want := len(actual), len(expected); got > want {
+		for _, extra := range actual[want:] {
+			t.Errorf("Extra delete: %#v", extra)
 		}
 	}
 }

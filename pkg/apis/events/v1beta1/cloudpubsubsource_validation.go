@@ -76,7 +76,7 @@ func (current *CloudPubSubSourceSpec) Validate(ctx context.Context) *apis.FieldE
 		}
 	}
 
-	if err := duckv1beta1.ValidateCredential(current.Secret, current.GoogleServiceAccount); err != nil {
+	if err := duckv1beta1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 
