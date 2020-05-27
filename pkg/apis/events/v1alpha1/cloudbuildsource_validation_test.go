@@ -173,18 +173,18 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: false,
 		},
-		"invalid GCP service account": {
+		"invalid k8s service account": {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret at the same time": {
+		"have k8s service account and secret at the same time": {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = validServiceAccountName
 				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),

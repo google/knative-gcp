@@ -192,18 +192,18 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			}(),
 			error: false,
 		},
-		"invalid GCP service account": {
+		"invalid k8s service account": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = invalidServiceAccountName
 				return *obj
 			}(),
 			error: true,
 		},
-		"have GCP service account and secret at the same time": {
+		"have k8s service account and secret at the same time": {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
-				obj.GoogleServiceAccount = invalidServiceAccountName
+				obj.ServiceAccountName = validServiceAccountName
 				obj.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
 				return *obj
 			}(),
@@ -292,7 +292,7 @@ func TestCloudPubSubSourceCheckImmutableFields(t *testing.T) {
 			updated: CloudPubSubSourceSpec{
 				PubSubSpec: duckv1beta1.PubSubSpec{
 					IdentitySpec: duckv1beta1.IdentitySpec{
-						GoogleServiceAccount: "new-service-account",
+						ServiceAccountName: "new-service-account",
 					},
 					Secret: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{

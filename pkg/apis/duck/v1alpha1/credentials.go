@@ -31,7 +31,8 @@ const (
 )
 
 var (
-	validation_regexp = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`)
+	validation_regexp     = regexp.MustCompile(`^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`)
+	validation_regexp_k8s = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`)
 )
 
 // DefaultGoogleCloudSecretSelector is the default secret selector used to load
@@ -45,19 +46,25 @@ func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
 	}
 }
 
-// ValidateCredential checks secret and GCP service account.
-func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string) *apis.FieldError {
-	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && gServiceAccountName != "" {
+// ValidateCredential checks secret and service account.
+func ValidateCredential(secret *corev1.SecretKeySelector, gServiceAccountName string, kServiceAccountName string) *apis.FieldError {
+	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {
 		return &apis.FieldError{
-			Message: "Can't have spec.googleServiceAccount and spec.secret at the same time",
+			Message: "Can't have spec.serviceAccountName and spec.secret at the same time",
 			Paths:   []string{""},
 		}
 	} else if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) {
 		return validateSecret(secret)
-	} else if gServiceAccountName != "" {
-		return validateGCPServiceAccount(gServiceAccountName)
+	} else {
+		var errs *apis.FieldError
+		if kServiceAccountName != "" {
+			errs = errs.Also(validateK8sServiceAccount(kServiceAccountName))
+		}
+		if gServiceAccountName != "" {
+			errs = errs.Also(validateGCPServiceAccount(gServiceAccountName))
+		}
+		return errs
 	}
-	return nil
 }
 
 func validateSecret(secret *corev1.SecretKeySelector) *apis.FieldError {
@@ -85,6 +92,21 @@ func validateGCPServiceAccount(gServiceAccountName string) *apis.FieldError {
 			Message: fmt.Sprintf(`invalid value: %s, googleServiceAccount should have format: ^[a-z][a-z0-9-]{5,29}@[a-z][a-z0-9-]{5,29}.iam.gserviceaccount.com$`,
 				gServiceAccountName),
 			Paths: []string{"googleServiceAccount"},
+		}
+	}
+	return nil
+}
+
+func validateK8sServiceAccount(kServiceAccountName string) *apis.FieldError {
+	// The name of a k8s ServiceAccount object must be a valid DNS subdomain name.
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
+
+	match := validation_regexp_k8s.FindStringSubmatch(kServiceAccountName)
+	if len(match) == 0 {
+		return &apis.FieldError{
+			Message: fmt.Sprintf(`invalid value: %s, serviceAccountName should have format: ^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`,
+				kServiceAccountName),
+			Paths: []string{"serviceAccountName"},
 		}
 	}
 	return nil

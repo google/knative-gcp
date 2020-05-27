@@ -59,13 +59,12 @@ spec:
           mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
           mountPath: /var/secrets/google          
-        resources: # TODO(issue #876): determine good values for resource requests/limits
+        resources:
           limits:
-            cpu: 1000m
-            memory: 1000Mi
+            memory: 500Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 1000m
+            memory: 500Mi
         ports:
         - name: http
           containerPort: 8080
@@ -128,13 +127,12 @@ spec:
           mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
           mountPath: /var/secrets/google            
-        resources: # TODO(issue #876): determine good values for resource requests/limits
+        resources:
           limits:
-            cpu: 1000m
             memory: 1000Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 1500m
+            memory: 1000Mi
       volumes:
       - name: broker-config
         configMap:
@@ -191,13 +189,12 @@ spec:
           mountPath: /var/run/cloud-run-events/broker
         - name: google-broker-key
           mountPath: /var/secrets/google 
-        resources: # TODO(issue #876): determine good values for resource requests/limits
+        resources:
           limits:
-            cpu: 1000m
-            memory: 1000Mi
+            memory: 1500Mi
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 1000m
+            memory: 1500Mi
       volumes:
       - name: broker-config
         configMap:

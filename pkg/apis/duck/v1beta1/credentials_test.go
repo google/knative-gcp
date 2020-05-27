@@ -61,17 +61,17 @@ func TestValidateCredential(t *testing.T) {
 	}, {
 		name:           "nil secret, and valid service account",
 		secret:         nil,
-		serviceAccount: "test123@test123.iam.gserviceaccount.com",
+		serviceAccount: "test",
 		wantErr:        false,
 	}, {
 		name:           "nil secret, and invalid service account",
 		secret:         nil,
-		serviceAccount: "test@test",
+		serviceAccount: "@test",
 		wantErr:        true,
 	}, {
 		name:           "secret and service account exist at the same time",
 		secret:         DefaultGoogleCloudSecretSelector(),
-		serviceAccount: "test@test.iam.gserviceaccount.com",
+		serviceAccount: "test",
 		wantErr:        true,
 	}}
 

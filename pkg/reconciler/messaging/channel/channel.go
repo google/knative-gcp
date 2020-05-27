@@ -159,15 +159,16 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		genName := resources.GenerateSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:          channel,
-			Name:           genName,
-			Project:        channel.Spec.Project,
-			Topic:          channel.Status.TopicID,
-			ServiceAccount: channel.Spec.GoogleServiceAccount,
-			Secret:         channel.Spec.Secret,
-			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
-			Subscriber:     s,
+			Owner:              channel,
+			Name:               genName,
+			Project:            channel.Spec.Project,
+			Topic:              channel.Status.TopicID,
+			ServiceAccount:     channel.Spec.GoogleServiceAccount,
+			ServiceAccountName: channel.Spec.ServiceAccountName,
+			Secret:             channel.Spec.Secret,
+			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:        resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
+			Subscriber:         s,
 		})
 		ps, err := r.RunClientSet.InternalV1alpha1().PullSubscriptions(channel.Namespace).Create(ps)
 		if apierrs.IsAlreadyExists(err) {
@@ -194,15 +195,16 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		genName := resources.GenerateSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
-			Owner:          channel,
-			Name:           genName,
-			Project:        channel.Spec.Project,
-			Topic:          channel.Status.TopicID,
-			ServiceAccount: channel.Spec.GoogleServiceAccount,
-			Secret:         channel.Spec.Secret,
-			Labels:         resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
-			Annotations:    resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
-			Subscriber:     s,
+			Owner:              channel,
+			Name:               genName,
+			Project:            channel.Spec.Project,
+			Topic:              channel.Status.TopicID,
+			ServiceAccount:     channel.Spec.GoogleServiceAccount,
+			ServiceAccountName: channel.Spec.ServiceAccountName,
+			Secret:             channel.Spec.Secret,
+			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
+			Annotations:        resources.GetPullSubscriptionAnnotations(channel.Name, clusterName),
+			Subscriber:         s,
 		})
 
 		existingPs, found := pullsubs[genName]
@@ -309,14 +311,15 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 	}
 	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	t := resources.MakeTopic(&resources.TopicArgs{
-		Owner:          channel,
-		Name:           resources.GeneratePublisherName(channel),
-		Project:        channel.Spec.Project,
-		ServiceAccount: channel.Spec.GoogleServiceAccount,
-		Secret:         channel.Spec.Secret,
-		Topic:          resources.GenerateTopicID(channel.UID),
-		Labels:         resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
-		Annotations:    resources.GetTopicAnnotations(clusterName),
+		Owner:              channel,
+		Name:               resources.GeneratePublisherName(channel),
+		Project:            channel.Spec.Project,
+		ServiceAccount:     channel.Spec.GoogleServiceAccount,
+		ServiceAccountName: channel.Spec.ServiceAccountName,
+		Secret:             channel.Spec.Secret,
+		Topic:              resources.GenerateTopicID(channel.UID),
+		Labels:             resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
+		Annotations:        resources.GetTopicAnnotations(clusterName),
 	})
 
 	topic, err = r.RunClientSet.InternalV1alpha1().Topics(channel.Namespace).Create(t)

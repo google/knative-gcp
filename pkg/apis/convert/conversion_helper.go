@@ -46,12 +46,12 @@ func FromV1beta1PubSubSpec(from duckv1beta1.PubSubSpec) duckv1alpha1.PubSubSpec 
 
 func ToV1beta1IdentitySpec(from duckv1alpha1.IdentitySpec) duckv1beta1.IdentitySpec {
 	to := duckv1beta1.IdentitySpec{}
-	to.GoogleServiceAccount = from.GoogleServiceAccount
+	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
 func FromV1beta1IdentitySpec(from duckv1beta1.IdentitySpec) duckv1alpha1.IdentitySpec {
 	to := duckv1alpha1.IdentitySpec{}
-	to.GoogleServiceAccount = from.GoogleServiceAccount
+	to.ServiceAccountName = from.ServiceAccountName
 	return to
 }
 
