@@ -193,10 +193,11 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, b *brokerv1beta1.Broke
 	// TODO Maybe get rid of BrokerMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
-	// First delete the broker entry.
-	r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) { m.Delete() })
-	// Then reconstruct the broker entry and insert it
 	r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
+		// First delete the broker entry.
+		m.Delete()
+
+		// Then reconstruct the broker entry and insert it
 		m.SetID(string(b.UID))
 		m.SetAddress(b.Status.Address.URL.String())
 		m.SetDecoupleQueue(&config.Queue{
@@ -208,14 +209,10 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, b *brokerv1beta1.Broke
 		} else {
 			m.SetState(config.State_UNKNOWN)
 		}
-	})
-	// Insert each Trigger to the config.
-	for _, t := range triggers {
-		if t.Spec.Broker == b.Name {
-			logger := logging.FromContext(ctx).With(zap.String("trigger", t.Name), zap.String("broker", b.Name))
-			ctx = logging.WithLogger(ctx, logger)
 
-			r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
+		// Insert each Trigger to the config.
+		for _, t := range triggers {
+			if t.Spec.Broker == b.Name {
 				target := &config.Target{
 					Id:        string(t.UID),
 					Name:      t.Name,
@@ -236,9 +233,9 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, b *brokerv1beta1.Broke
 					target.State = config.State_UNKNOWN
 				}
 				m.UpsertTargets(target)
-			})
+			}
 		}
-	}
+	})
 }
 
 func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b *brokerv1beta1.Broker) error {
