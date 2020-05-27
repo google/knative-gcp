@@ -23,6 +23,11 @@ type IdentitySpec struct {
 	// If not specified, defaults to use secret.
 	// +optional
 	GoogleServiceAccount string `json:"googleServiceAccount,omitempty"`
+	// ServiceAccountName is the k8s service account which binds to a google service account.
+	// This google service account has required permissions to poll from a Cloud Pub/Sub subscription.
+	// If not specified, defaults to use secret.
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
 // IdentityStatus inherits duck/v1 Status and adds a ServiceAccountName.

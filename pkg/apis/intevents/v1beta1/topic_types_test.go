@@ -46,12 +46,12 @@ func TestTopicIdentitySpec(t *testing.T) {
 	s := &Topic{
 		Spec: TopicSpec{
 			IdentitySpec: v1beta1.IdentitySpec{
-				GoogleServiceAccount: "test@test",
+				ServiceAccountName: "test",
 			},
 		},
 	}
-	want := "test@test"
-	got := s.IdentitySpec().GoogleServiceAccount
+	want := "test"
+	got := s.IdentitySpec().ServiceAccountName
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
