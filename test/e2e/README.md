@@ -30,18 +30,23 @@ knative-gcp should be added under [knative-gcp e2e test lib](lib).
 
 There are two ways to set up authentication mechanism.
 
-- (GKE Specific) If you want to run E2E tests with **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**
-  as the authentication mechanism, please follow below instructions to configure the authentication mechanism
-  with **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**.
-- If you want to run E2E tests with **Kubernetes Secrets** as the authentication mechanism, please
-  follow below instructions to configure the authentication mechanism with **Kubernetes Secrets**.
+- (GKE Specific) If you want to run E2E tests with
+  **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**
+  as the authentication mechanism, please follow below instructions to configure
+  the authentication mechanism with
+  **[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity)**.
+- If you want to run E2E tests with **Kubernetes Secrets** as the authentication
+  mechanism, please follow below instructions to configure the authentication
+  mechanism with **Kubernetes Secrets**.
 
 1.  A running Kubernetes cluster with
     [knative-gcp](../../docs/install/install-knative-gcp.md) installed and
     configured.
-1.  Create a [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md).
-    Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var. This is used by
-    some tests(e.g., `TestSmokePullSubscription`) to authorize the Google SDK clients.
+1.  Create a
+    [Pub/Sub Enabled Service Account](../../docs/install/pubsub-service-account.md).
+    Download a credential file and set `GOOGLE_APPLICATION_CREDENTIALS` env var.
+    This is used by some tests(e.g., `TestSmokePullSubscription`) to authorize
+    the Google SDK clients.
     ```
     cred_file=$(pwd)/cre-pubsub.json
     gcloud iam service-accounts keys create ${cred_file} --iam-account=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com
@@ -113,9 +118,11 @@ E2E_PROJECT_ID=<project name> \
 
 ### Running E2E tests with authentication mechanism using Workload Identity.
 
-Add ` -workloadIndentity=true` and `-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
-to the `go test` command, where `$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the
-Pub/Sub enabled Google Cloud Service Account.
+Add `-workloadIndentity=true` and
+`-pubsubServiceAccount=$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com`
+to the `go test` command, where
+`$PUBSUB_SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com` is the Pub/Sub
+enabled Google Cloud Service Account.
 
 For example,
 
@@ -125,8 +132,6 @@ E2E_PROJECT_ID=<project name> go test --tags=e2e \
   -pubsubServiceAccount=cre-pubsub@$PROJECT_ID.iam.gserviceaccount.com \
   ./test/e2e/...
 ```
-
-
 
 ## Running E2E Tests on an new cluster
 
