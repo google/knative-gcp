@@ -29,9 +29,6 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/messaging"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	"github.com/google/knative-gcp/pkg/apis/pubsub"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/eventing/pkg/logconfig"
 	"knative.dev/pkg/configmap"
@@ -64,10 +61,6 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	// For group internal.events.cloud.google.com.
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &inteventsv1alpha1.PullSubscription{},
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
-
-	// For group pubsub.cloud.google.com.
-	pubsubv1alpha1.SchemeGroupVersion.WithKind("PullSubscription"): &pubsubv1alpha1.PullSubscription{},
-	pubsubv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &pubsubv1alpha1.Topic{},
 }
 
 func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
@@ -143,8 +136,6 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
 		messagingv1alpha1_ = messagingv1alpha1.SchemeGroupVersion.Version
 		messagingv1beta1_  = messagingv1beta1.SchemeGroupVersion.Version
-		pubsubv1alpha1_    = pubsubv1alpha1.SchemeGroupVersion.Version
-		pubsubv1beta1_     = pubsubv1beta1.SchemeGroupVersion.Version
 		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
 		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
 	)
@@ -212,23 +203,6 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				Zygotes: map[string]conversion.ConvertibleObject{
 					messagingv1alpha1_: &messagingv1alpha1.Channel{},
 					messagingv1beta1_:  &messagingv1beta1.Channel{},
-				},
-			},
-			// pubsub
-			pubsubv1beta1.Kind("PullSubscription"): {
-				DefinitionName: pubsub.PullSubscriptionsResource.String(),
-				HubVersion:     pubsubv1alpha1_,
-				Zygotes: map[string]conversion.ConvertibleObject{
-					pubsubv1alpha1_: &pubsubv1alpha1.PullSubscription{},
-					pubsubv1beta1_:  &pubsubv1beta1.PullSubscription{},
-				},
-			},
-			pubsubv1beta1.Kind("Topic"): {
-				DefinitionName: pubsub.TopicsResource.String(),
-				HubVersion:     pubsubv1alpha1_,
-				Zygotes: map[string]conversion.ConvertibleObject{
-					pubsubv1alpha1_: &pubsubv1alpha1.Topic{},
-					pubsubv1beta1_:  &pubsubv1beta1.Topic{},
 				},
 			},
 		},
