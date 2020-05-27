@@ -22,7 +22,6 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	clientset "github.com/google/knative-gcp/pkg/client/clientset/versioned"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -91,15 +90,6 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 		Annotations: pubsubable.GetObjectMeta().GetAnnotations(),
 	}
 	newTopic := resources.MakeTopic(args)
-
-	// The old and new Topics use the same, deterministic names. So delete the old one before
-	// creating the new one. They cannot both be Ready=true at the same time, so by deleting the old
-	// Topic, we allow the new Topic to become ready.
-	err := psb.deleteOldPubSubTopic(ctx, pubsubable, newTopic)
-	if err != nil {
-		logging.FromContext(ctx).Desugar().Info("Unable to delete old Topic", zap.Error(err))
-		return nil, err
-	}
 
 	topics := psb.pubsubClient.InternalV1alpha1().Topics(newTopic.Namespace)
 	t, err := topics.Get(newTopic.Name, v1.GetOptions{})
@@ -195,95 +185,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 	}
 
 	status.SinkURI = ps.Status.SinkURI
-
-	// The old and new PullSubscriptions can co-exist without any problems. So to bias in favor of
-	// double event delivery over dropped events, don't delete the old one until the new one is
-	// ready.
-	if ps.Status.IsReady() {
-		err = psb.deleteOldPubSubPullSubscription(ctx, pubsubable, ps)
-		if err != nil {
-			return ps, err
-		}
-	}
-
 	return ps, nil
-}
-
-func (psb *PubSubBase) deleteOldPubSubTopic(_ context.Context, pubsubable duck.PubSubable, t *inteventsv1alpha1.Topic) pkgreconciler.Event {
-	// TODO This will be deleted at the same time as the old pubsub.cloud.google.com CRDs. That is
-	// expected to happen after 0.15, before 0.16.
-	oldT, err := psb.pubsubClient.PubsubV1alpha1().Topics(t.Namespace).Get(t.Name, v1.GetOptions{})
-	if apierrs.IsNotFound(err) {
-		// It doesn't exist, so there is nothing to delete.
-		return nil
-	} else if err != nil {
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldTopicGetFailed", "unable to get old Topic in the `pubsub.events.cloud.google.com` API group: %w", err)
-	}
-	if !v1.IsControlledBy(oldT, pubsubable.GetObjectMeta()) {
-		// If this pubsubable doesn't own it, then just ignore it. Generate an event in case users
-		// are interested, but do not stop reconciliation of pubsubable, nor give it a Ready=false
-		// status.
-		psb.Recorder.Eventf(pubsubable,
-			corev1.EventTypeWarning,
-			"OldTopicNotControlled",
-			"old Topic '%s/%s' in the `pubsub.events.cloud.google.com` API group is not controlled by this pubsubable, so won't be deleted. Actual owners: %v",
-			oldT.Namespace, oldT.Name, oldT.OwnerReferences)
-		return nil
-	}
-
-	// First, to make sure the Topic is not deleted in GCP, update the Topic with a new deletion
-	// policy.
-	switch pp := oldT.Spec.PropagationPolicy; pp {
-	case pubsubv1alpha1.TopicPolicyCreateDelete:
-		c := oldT.DeepCopy()
-		c.Spec.PropagationPolicy = pubsubv1alpha1.TopicPolicyCreateNoDelete
-		oldT, err = psb.pubsubClient.PubsubV1alpha1().Topics(oldT.Namespace).Update(c)
-		if err != nil {
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldTopicUpdateFailed", "unable to update propagation policy on old Topic: %w", err)
-		}
-	case pubsubv1alpha1.TopicPolicyCreateNoDelete:
-		// Already marked for non-deletion.
-		break
-	case pubsubv1alpha1.TopicPolicyNoCreateNoDelete:
-		// Already marked for non-deletion.
-		break
-	default:
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldTopicUnknownPropagationPolicy", "unknown propagation policy on old Topic: %v", pp)
-	}
-
-	err = psb.pubsubClient.PubsubV1alpha1().Topics(oldT.Namespace).Delete(oldT.Name, nil)
-	if err != nil {
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldTopicDeletionFailed", "unable to delete old Topic in the `pubsub.events.cloud.google.com` API group: %w", err)
-	}
-	return nil
-}
-
-func (psb *PubSubBase) deleteOldPubSubPullSubscription(_ context.Context, pubsubable duck.PubSubable, ps *inteventsv1alpha1.PullSubscription) pkgreconciler.Event {
-	// TODO This will be deleted at the same time as the old pubsub.cloud.google.com CRDs. That is
-	// expected to happen after 0.15, before 0.16.
-	oldPS, err := psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(ps.Namespace).Get(ps.Name, v1.GetOptions{})
-	if apierrs.IsNotFound(err) {
-		// It doesn't exist, so there is nothing to delete.
-		return nil
-	} else if err != nil {
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldPullSubscriptionGetFailed", "unable to get old PullSubscription in the `pubsub.events.cloud.google.com` API group: %w", err)
-	}
-	if !v1.IsControlledBy(oldPS, pubsubable.GetObjectMeta()) {
-		// If this pubsubable doesn't own it, then just ignore it. Generate an event in case users
-		// are interested, but do not stop reconciliation of pubsubable, nor give it a Ready=false
-		// status.
-		psb.Recorder.Eventf(pubsubable,
-			corev1.EventTypeWarning,
-			"oldPullSubscriptionNotControlled",
-			"old PullSubscription '%s/%s' in the `pubsub.events.cloud.google.com` API group is not controlled by this pubsubable, so won't be deleted. Actual owners: %v",
-			oldPS.Namespace, oldPS.Name, oldPS.OwnerReferences)
-		return nil
-	}
-	err = psb.pubsubClient.PubsubV1alpha1().PullSubscriptions(oldPS.Namespace).Delete(oldPS.Name, nil)
-	if err != nil {
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "OldPullSubscriptionDeletionFailed", "unable to delete old PullSubscription in the `pubsub.events.cloud.google.com` API group: %w", err)
-	}
-	return nil
 }
 
 func propagatePullSubscriptionStatus(ps *inteventsv1alpha1.PullSubscription, status *duckv1alpha1.PubSubStatus, cs *apis.ConditionSet) error {
