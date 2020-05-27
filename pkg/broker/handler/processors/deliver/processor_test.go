@@ -36,8 +36,11 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"knative.dev/pkg/logging"
 	logtest "knative.dev/pkg/logging/testing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -432,7 +435,8 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
@@ -464,7 +468,8 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
