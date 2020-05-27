@@ -193,11 +193,11 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, b *brokerv1beta1.Broke
 	// TODO Maybe get rid of BrokerMutation and add Delete() and Upsert(broker) methods to TargetsConfig. Now we always
 	//  delete or update the entire broker entry and we don't need partial updates per trigger.
 	// The code can be simplified to r.targetsConfig.Upsert(brokerConfigEntry)
-
-	// First delete the broker entry.
-	r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) { m.Delete() })
-	// Then reconstruct the broker entry and insert it
 	r.targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
+		// First delete the broker entry.
+		m.Delete()
+
+		// Then reconstruct the broker entry and insert it
 		m.SetID(string(b.UID))
 		m.SetAddress(b.Status.Address.URL.String())
 		m.SetDecoupleQueue(&config.Queue{
