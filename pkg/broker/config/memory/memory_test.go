@@ -149,8 +149,10 @@ func TestMutateBroker(t *testing.T) {
 	})
 
 	t.Run("insert and delete targets", func(t *testing.T) {
-		delete(wantBroker.Targets, "t2")
-		wantBroker.Targets["t3"] = t3
+		wantBroker.Targets = map[string]*config.Target{
+			"t1": t1,
+			"t3": t3,
+		}
 		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
 			// Chain insert and delete.
 			m.UpsertTargets(t3).DeleteTargets(t2)
@@ -158,8 +160,30 @@ func TestMutateBroker(t *testing.T) {
 		assertBroker(t, wantBroker, "ns", "broker", targets)
 	})
 
-	t.Run("delete broker", func(t *testing.T) {
+	t.Run("delete and then change broker", func(t *testing.T) {
+		wantBroker.Targets = map[string]*config.Target{
+			"t1": t1,
+			"t2": t2,
+		}
 		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
+			// Delete should "delete" the broker.
+			m.Delete()
+			// Then make some changes which should "recreate" the broker.
+			m.SetID("b-uid").SetAddress("external.broker.example.com").SetState(config.State_READY)
+			m.SetDecoupleQueue(&config.Queue{
+				Topic:        "topic",
+				Subscription: "sub",
+			})
+			m.UpsertTargets(t1, t2)
+		})
+		assertBroker(t, wantBroker, "ns", "broker", targets)
+	})
+
+	t.Run("make change then delete broker", func(t *testing.T) {
+		targets.MutateBroker("ns", "broker", func(m config.BrokerMutation) {
+			m.UpsertTargets(t3).DeleteTargets(t2)
+			// Because we delete in the end, the broker should really be deleted
+			// no matter what changes have been made.
 			m.Delete()
 		})
 		if _, ok := targets.GetBroker("ns", "broker"); ok {
