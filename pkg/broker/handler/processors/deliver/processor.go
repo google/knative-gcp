@@ -129,7 +129,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 	}()
 
 	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("event delivery failed: HTTP status code %d.", resp.StatusCode)
+		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
 
 	respMsg := cehttp.NewMessageFromHttpResponse(resp)
@@ -159,7 +159,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 }
 
 func (p *Processor) sendMsg(ctx context.Context, address string, msg binding.Message, transformers ...binding.Transformer) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, "POST", address, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, address, nil)
 	if err != nil {
 		return nil, err
 	}
