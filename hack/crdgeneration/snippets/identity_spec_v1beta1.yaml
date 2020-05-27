@@ -1,0 +1,6 @@
+serviceAccountName:
+  type: string
+  description: >
+    Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub
+    Subscription. The value of the k8s service account must be a valid DNS subdomain name (see
+    https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names).

@@ -1,1 +1,4 @@
-# This is a generated file, do not alter it.
+###########################################################################
+# This is a generated file, do not alter it.                              #
+# Alter the .gofmt.yaml equivalent and then run `hack/update-codegen.sh`. #
+###########################################################################

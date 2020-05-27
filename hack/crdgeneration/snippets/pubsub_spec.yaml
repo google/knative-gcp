@@ -1,5 +1,5 @@
 {{- replace_with 0 "source_spec" }}
-{{- replace_with 0 "identity_spec" }}
+{{- replace_with 0 "identity_spec_v1alpha1" }}
 secret:
   type: object
   description: >

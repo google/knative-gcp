@@ -68,7 +68,7 @@ spec:
             spec:
               type: object
               properties:
-                {{- replace_with 16 "identity_spec" }}
+                {{- replace_with 16 "identity_spec_v1alpha1" }}
                 {{- replace_with 16 "secret_key_selector" }}
                 project:
                   type: string
@@ -97,7 +97,7 @@ spec:
             spec:
               type: object
               properties:
-                {{- replace_with 16 "identity_spec" }}
+                {{- replace_with 16 "identity_spec_v1beta1" }}
                 {{- replace_with 16 "secret_key_selector" }}
                 project:
                   type: string
