@@ -26,6 +26,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
+	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -83,13 +84,18 @@ var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
 	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 
-	// If there is an error getting the Broker or the Broker is deleted, we mark the Trigger status
-	// regardless of whether the Trigger belongs to this controller or not. It doesn't hurt.
+	// This logic is shared for all trigger controllers. Ideally there is a shared eventing controller
+	// that does this and our GCP controller doesn't need to care about this.
 	if err != nil && !apierrs.IsNotFound(err) {
-		msg := fmt.Sprintf("Unknown error getting broker: %v", err)
-		logging.FromContext(ctx).Error(msg)
-		t.Status.MarkBrokerUnknown("UnknownBroker", msg)
-		return err
+		condition := t.Status.GetCondition(eventingv1beta1.TriggerConditionBroker)
+		// If another contoller sets a different message, we should not update it as the controllers
+		// may fight against each other. The condition status is important, not the message.
+		if condition == nil || condition.Status != corev1.ConditionUnknown {
+			msg := fmt.Sprintf("Unknown error getting broker: %v", err)
+			logging.FromContext(ctx).Error(msg)
+			t.Status.MarkBrokerUnknown("UnknownBroker", msg)
+			return err
+		}
 	}
 	// If the broker has been or is being deleted, we clean up resources created by this controller
 	// for the given trigger.
