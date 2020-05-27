@@ -29,9 +29,18 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+
+	_ "knative.dev/pkg/metrics/testing"
+)
+
+const (
+	fanoutPod       = "fanout-pod"
+	fanoutContainer = "fanout-container"
 )
 
 func TestFanoutWatchAndSync(t *testing.T) {
+	reportertest.ResetDeliveryMetrics()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -42,7 +51,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestFanoutPool(ctx, helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestFanoutPool(ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -93,6 +102,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 }
 
 func TestFanoutSyncPoolE2E(t *testing.T) {
+	reportertest.ResetDeliveryMetrics()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -110,10 +120,14 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 	t1 := helper.GenerateTarget(ctx, t, b1.Key(), nil)
 	t2 := helper.GenerateTarget(ctx, t, b1.Key(), map[string]string{"subject": "foo"})
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
+	expectMetrics := reportertest.NewExpectDelivery()
+	expectMetrics.AddTrigger(t, t1.Name, wantTags(t1))
+	expectMetrics.AddTrigger(t, t2.Name, wantTags(t2))
+	expectMetrics.AddTrigger(t, t3.Name, wantTags(t3))
 
 	signal := make(chan struct{})
 	syncPool, err := InitializeTestFanoutPool(
-		ctx, helper.Targets, helper.PubsubClient,
+		ctx, fanoutPod, fanoutContainer, helper.Targets, helper.PubsubClient,
 		WithDeliveryTimeout(500*time.Millisecond),
 	)
 	if err != nil {
@@ -158,6 +172,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t1.Name)
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("target with unmatching filter didn't receive event", func(t *testing.T) {
@@ -197,6 +215,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t1.Name)
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event sent to a broker didn't reach another broker's targets", func(t *testing.T) {
@@ -227,6 +249,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event failed initial delivery was sent to retry queue", func(t *testing.T) {
@@ -245,6 +270,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.ExpectProcessing(t, t3.Name)
+		expectMetrics.ExpectDelivery(t, t3.Name, 500)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event with delivery timeout was sent to retry queue", func(t *testing.T) {
@@ -282,6 +311,10 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.ExpectProcessing(t, t1.Name)
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event replied was sent to broker ingress", func(t *testing.T) {
@@ -311,6 +344,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event delivered after broker decouple queue update", func(t *testing.T) {
@@ -330,6 +366,9 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Verify(t)
 	})
 }
 
@@ -350,5 +389,16 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 
 	if diff := cmp.Diff(wantHandlers, gotHandlers); diff != "" {
 		t.Errorf("handlers map (-want,+got): %v", diff)
+	}
+}
+
+func wantTags(target *config.Target) map[string]string {
+	return map[string]string{
+		"trigger_name":   target.Name,
+		"broker_name":    target.Broker,
+		"namespace_name": target.Namespace,
+		"filter_type":    "any",
+		"pod_name":       fanoutPod,
+		"container_name": fanoutContainer,
 	}
 }

@@ -28,9 +28,18 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+
+	_ "knative.dev/pkg/metrics/testing"
+)
+
+const (
+	retryPod       = "retry-pod"
+	retryContainer = "retry-container"
 )
 
 func TestRetryWatchAndSync(t *testing.T) {
+	reportertest.ResetDeliveryMetrics()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -41,7 +50,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 	defer helper.Close()
 
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestRetryPool(helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestRetryPool(helper.Targets, retryPod, retryContainer, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -95,6 +104,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 }
 
 func TestRetrySyncPoolE2E(t *testing.T) {
+	reportertest.ResetDeliveryMetrics()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
@@ -113,8 +123,13 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	t2 := helper.GenerateTarget(ctx, t, b1.Key(), nil)
 	t3 := helper.GenerateTarget(ctx, t, b2.Key(), nil)
 
+	expectMetrics := reportertest.NewExpectDelivery()
+	expectMetrics.AddTrigger(t, t1.Name, wantRetryTags(t1))
+	expectMetrics.AddTrigger(t, t2.Name, wantRetryTags(t2))
+	expectMetrics.AddTrigger(t, t3.Name, wantRetryTags(t3))
+
 	signal := make(chan struct{})
-	syncPool, err := InitializeTestRetryPool(helper.Targets, helper.PubsubClient)
+	syncPool, err := InitializeTestRetryPool(helper.Targets, retryPod, retryContainer, helper.PubsubClient)
 	if err != nil {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
@@ -151,6 +166,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t1.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("target with different broker did't receive retry events", func(t *testing.T) {
@@ -182,6 +200,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("broker's target receive correct retry events", func(t *testing.T) {
@@ -210,6 +231,11 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t1.Name)
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Expect200(t, t3.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("broker's target receive correct retry events with the latest filter", func(t *testing.T) {
@@ -244,6 +270,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Verify(t)
 	})
 
 	t.Run("event delivered after target retry queue update", func(t *testing.T) {
@@ -262,6 +291,9 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 		if err := group.Wait(); err != nil {
 			t.Error(err)
 		}
+
+		expectMetrics.Expect200(t, t2.Name)
+		expectMetrics.Verify(t)
 	})
 }
 
@@ -293,4 +325,15 @@ func genTestEvent(subject, t, id, source string) event.Event {
 	e.SetSource(source)
 	eventutil.UpdateRemainingHops(context.Background(), &e, 123)
 	return e
+}
+
+func wantRetryTags(target *config.Target) map[string]string {
+	return map[string]string{
+		"trigger_name":   target.Name,
+		"broker_name":    target.Broker,
+		"namespace_name": target.Namespace,
+		"filter_type":    "any",
+		"pod_name":       retryPod,
+		"container_name": retryContainer,
+	}
 }

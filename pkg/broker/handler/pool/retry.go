@@ -33,6 +33,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // RetryPool is the sync pool for retry handlers.
@@ -48,6 +49,7 @@ type RetryPool struct {
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient *http.Client
+	statsReporter *metrics.DeliveryReporter
 }
 
 type retryHandlerCache struct {
@@ -74,7 +76,12 @@ func (hc *retryHandlerCache) shouldRenew(t *config.Target) bool {
 }
 
 // NewRetryPool creates a new retry handler pool.
-func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient *http.Client, opts ...Option) (*RetryPool, error) {
+func NewRetryPool(
+	targets config.ReadonlyTargets,
+	pubsubClient *pubsub.Client,
+	deliverClient *http.Client,
+	statsReporter *metrics.DeliveryReporter,
+	opts ...Option) (*RetryPool, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -85,6 +92,7 @@ func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, d
 		options:       options,
 		pubsubClient:  pubsubClient,
 		deliverClient: deliverClient,
+		statsReporter: statsReporter,
 	}
 	return p, nil
 }
@@ -92,6 +100,11 @@ func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, d
 // SyncOnce syncs once the handler pool based on the targets config.
 func (p *RetryPool) SyncOnce(ctx context.Context) error {
 	var errs int
+
+	ctx, err := p.statsReporter.AddTags(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
+	}
 
 	p.pool.Range(func(key, value interface{}) bool {
 		// Each target represents a trigger.
@@ -125,17 +138,23 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 					&deliver.Processor{
 						DeliverClient: p.deliverClient,
 						Targets:       p.targets,
+						StatsReporter: p.statsReporter,
 					},
 				),
 			},
 			t: t,
 		}
 
+		ctx, err := metrics.AddTargetTags(ctx, t)
+		if err != nil {
+			logging.FromContext(ctx).Error("failed to add target tags to context", zap.Error(err))
+		}
+
 		// Deliver processor needs the broker in the context for reply.
-		tctx := handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.Broker))
-		tctx = handlerctx.WithTargetKey(tctx, t.Key())
+		ctx = handlerctx.WithBrokerKey(ctx, config.BrokerKey(t.Namespace, t.Broker))
+		ctx = handlerctx.WithTargetKey(ctx, t.Key())
 		// Start the handler with target in context.
-		hc.Start(tctx, func(err error) {
+		hc.Start(ctx, func(err error) {
 			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470
 			if err != nil {
 				logging.FromContext(ctx).Error("handler for trigger has stopped with error", zap.String("trigger", t.Key()), zap.Error(err))

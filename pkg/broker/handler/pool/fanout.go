@@ -35,6 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/fanout"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/filter"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // FanoutPool is the sync pool for fanout handlers.
@@ -54,6 +55,7 @@ type FanoutPool struct {
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
 	deliverClient *http.Client
+	statsReporter *metrics.DeliveryReporter
 }
 
 type fanoutHandlerCache struct {
@@ -85,6 +87,7 @@ func NewFanoutPool(
 	pubsubClient *pubsub.Client,
 	deliverClient *http.Client,
 	retryClient RetryClient,
+	statsReporter *metrics.DeliveryReporter,
 	opts ...Option,
 ) (*FanoutPool, error) {
 	options, err := NewOptions(opts...)
@@ -110,6 +113,7 @@ func NewFanoutPool(
 		pubsubClient:       pubsubClient,
 		deliverClient:      deliverClient,
 		deliverRetryClient: retryClient,
+		statsReporter:      statsReporter,
 	}
 	return p, nil
 }
@@ -117,6 +121,11 @@ func NewFanoutPool(
 // SyncOnce syncs once the handler pool based on the targets config.
 func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 	var errs int
+
+	ctx, err := p.statsReporter.AddTags(ctx)
+	if err != nil {
+		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
+	}
 
 	p.pool.Range(func(key, value interface{}) bool {
 		if _, ok := p.targets.GetBrokerByKey(key.(string)); !ok {
@@ -153,11 +162,13 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 						RetryOnFailure:     true,
 						DeliverRetryClient: p.deliverRetryClient,
 						DeliverTimeout:     p.options.DeliveryTimeout,
+						StatsReporter:      p.statsReporter,
 					},
 				),
 			},
 			b: b,
 		}
+
 		// Start the handler with broker key in context.
 		hc.Start(handlerctx.WithBrokerKey(ctx, b.Key()), func(err error) {
 			// We will anyway get an error because of https://github.com/cloudevents/sdk-go/issues/470

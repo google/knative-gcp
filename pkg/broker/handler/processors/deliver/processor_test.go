@@ -47,6 +47,10 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
@@ -103,6 +107,7 @@ func TestDeliverSuccess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
 			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
@@ -127,9 +132,14 @@ func TestDeliverSuccess(t *testing.T) {
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
 				DeliverClient: http.DefaultClient,
 				Targets:       testTargets,
+				StatsReporter: r,
 			}
 
 			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -226,6 +236,7 @@ func TestDeliverFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
 			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
@@ -270,12 +281,17 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
 				DeliverClient:      http.DefaultClient,
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
 				DeliverTimeout:     500 * time.Millisecond,
+				StatsReporter:      r,
 			}
 
 			origin := newSampleEvent()
