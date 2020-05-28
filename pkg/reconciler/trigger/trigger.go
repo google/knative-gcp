@@ -140,6 +140,9 @@ func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b 
 // 3) the Broker of this Trigger is updated with one that is not a GCP broker.
 func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
 	// Don't care if the Trigger doesn't have the GCP Broker specific finalizer string.
+	// Right now all triggers have the finalizer because genreconciler automatically adds it.
+	// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
+	// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
 	if !hasGCPBrokerFinalizer(t) {
 		return nil
 	}
