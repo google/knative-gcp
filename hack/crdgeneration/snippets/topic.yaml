@@ -1,0 +1,6 @@
+topic:
+  type: string
+  description: >
+    ID of the Cloud Pub/Sub Topic to Subscribe to. It must be in the form of the unique
+    identifier within the project, not the entire name. E.g. it must be 'laconia', not
+    'projects/my-gcp-project/topics/laconia'.

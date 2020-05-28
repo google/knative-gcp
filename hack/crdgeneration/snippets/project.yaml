@@ -1,0 +1,5 @@
+project:
+  type: string
+  description: >
+    Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+    the Project ID from the GKE cluster metadata service.

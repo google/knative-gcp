@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+###########################################################################
+# This is a generated file, do not alter it.                              #
+# Alter the .gofmt.yaml equivalent and then run `hack/update-codegen.sh`. #
+###########################################################################
+
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -71,13 +77,23 @@ spec:
           properties:
             googleServiceAccount:
               type: string
-              description: "GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service account must be a valid Google service account (see https://cloud.google.com/iam/docs/service-accounts)."
+              description: >
+                GCP service account used to poll the Cloud Pub/Sub Subscription. The value of the service
+                account must be a valid Google service account (see
+                https://cloud.google.com/iam/docs/service-accounts).
             serviceAccountName:
               type: string
-              description: "Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub Subscription. The value of the Kubernetes service account must be a valid DNS subdomain name. (see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names)"
+              description: >
+                Kubernetes service account used to bind to a google service account to poll the Cloud Pub/Sub
+                Subscription. The value of the k8s service account must be a valid DNS subdomain name (see
+                https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names).
             secret:
               type: object
-              description: "Credential used to poll the Cloud Pub/Sub Subscription. It is not used to create or delete the Subscription, only to poll it. The value of the secret entry must be a service account key in the JSON format (see https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to secret.name of 'google-cloud-key' and secret.key of 'key.json'."
+              description: >
+                Credential to use to manage Cloud Pub/Sub. The value of the secret entry must be a service
+                account key in the JSON format (see
+                https://cloud.google.com/iam/docs/creating-managing-service-account-keys). Defaults to
+                secret.name of 'google-cloud-key' and secret.key of 'key.json'.
               properties:
                 name:
                   type: string
@@ -87,14 +103,24 @@ spec:
                   type: boolean
             project:
               type: string
-              description: "ID of the Google Cloud Project to own the Pub/Sub credentials. E.g. 'my-project-1234' rather than its display name, 'My Project' or its number '1234567890'. If omitted uses the Project ID from the GKE cluster metadata service."
+              description: >
+                Google Cloud Project ID of the project into which the topic should be created. If omitted uses
+                the Project ID from the GKE cluster metadata service.
             topic:
               type: string
-              description: "ID of the Cloud Pub/Sub Topic to create. It must be in the form of the unique identifier within the project, not the entire name. E.g. it must be 'laconia', not 'projects/my-gcp-project/topics/laconia'."
+              description: >
+                ID of the Cloud Pub/Sub Topic to Subscribe to. It must be in the form of the unique
+                identifier within the project, not the entire name. E.g. it must be 'laconia', not
+                'projects/my-gcp-project/topics/laconia'.
             propagationPolicy:
               type: string
-              enum: [CreateDelete, CreateNoDelete, NoCreateNoDelete]
-              description: "Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle changes. Default is CreateNoDelete."
+              enum:
+                - CreateDelete
+                - CreateNoDelete
+                - NoCreateNoDelete
+              description: >
+                Propagation policy defines how Topic controls the Cloud Pub/Sub topic for lifecycle
+                changes. Default is CreateNoDelete.
         status:
           type: object
           properties:
@@ -107,8 +133,7 @@ spec:
                 type: object
                 properties:
                   lastTransitionTime:
-                    # we use a string in the stored object but a wrapper object
-                    # at runtime.
+                    # We use a string in the stored object but a wrapper object at runtime.
                     type: string
                   message:
                     type: string
@@ -125,13 +150,16 @@ spec:
                   - status
             serviceAccountName:
               type: string
-            projectId:
-              type: string
-            topicId:
-              type: string
             address:
               type: object
               properties:
                 url:
                   type: string
-
+            projectId:
+              type: string
+              description: >
+                The resolved GCP project ID in use by the Topic.
+            topicId:
+              type: string
+              description: >
+                The ID of the Topic created in GCP Pub/Sub.

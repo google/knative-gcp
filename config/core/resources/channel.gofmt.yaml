@@ -42,18 +42,7 @@ spec:
   preserveUnknownFields: false
   {{- replace_with 2 "conversion_webhook" }}
   additionalPrinterColumns:
-    - name: Ready
-      type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
-    - name: Reason
-      type: string
-      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
-    - name: Address
-      type: string
-      JSONPath: .status.address.url
-    - name: Age
-      type: date
-      JSONPath: .metadata.creationTimestamp
+    {{- replace_with 4 "ready_reason_address_age" }}
   versions:
     - name: v1alpha1
       served: true
