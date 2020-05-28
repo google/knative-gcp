@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,12 +47,25 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
+	lib.MakePubSubOrDieWithOutClean(client, metav1.GroupVersionKind{
 		Version: "v1",
 		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
 
-	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
+	createdPubSub := client.GetPubSubOrFail(psName)
+	subId := createdPubSub.Status.SubscriptionID
 
+	createdSubExists := lib.SubscriptionExists(t, subId)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subId)
+	}
+
+	client.DeletePubSubOrFail(psName)
+	//Wait for 10 seconds for subscription to get deleted in gcp
+	time.Sleep(10*time.Second)
+	deletedSubExists := lib.SubscriptionExists(t, subId)
+	if deletedSubExists {
+		t.Fatalf("Expected subscription %q to get deleted", subId)
+	}
 }
 
 // CloudPubSubSourceWithTargetTestImpl tests we can receive an event from a CloudPubSubSource.

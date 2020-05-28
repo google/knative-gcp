@@ -72,6 +72,16 @@ func (c *Client) CreatePubSubOrFail(pubsub *eventsv1alpha1.CloudPubSubSource) {
 	c.Tracker.AddObj(pubsub)
 }
 
+func (c *Client) CreatePubSubOrFailWithoutClean(pubsub *eventsv1alpha1.CloudPubSubSource) {
+	c.T.Helper()
+	pubsubs := c.KnativeGCP.EventsV1alpha1().CloudPubSubSources(c.Namespace)
+	_, err := pubsubs.Create(pubsub)
+	if err != nil {
+		c.T.Fatalf("Failed to create pubsub %s/%s: %v", c.Namespace, pubsub.Name, err)
+	}
+	c.T.Logf("Created pubsub: %s/%s", c.Namespace, pubsub.Name)
+}
+
 func (c *Client) CreateStorageOrFail(storage *eventsv1alpha1.CloudStorageSource) {
 	c.T.Helper()
 	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)

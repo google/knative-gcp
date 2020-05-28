@@ -184,6 +184,7 @@ func (psb *PubSubBase) ReconcilePullSubscription(ctx context.Context, pubsubable
 		return ps, pkgreconciler.NewEvent(corev1.EventTypeWarning, PullSubscriptionStatusPropagateFailedReason, "Failed to propagate PullSubscription status: %s", err.Error())
 	}
 
+	status.SubscriptionID = ps.Status.SubscriptionID
 	status.SinkURI = ps.Status.SinkURI
 	return ps, nil
 }
