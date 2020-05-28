@@ -173,7 +173,7 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
-	if err := r.reconcileBrokerCell(ctx, b); err != nil {
+	if err := r.ensureBrokerCellExists(ctx, b); err != nil {
 		return fmt.Errorf("brokercell reconcile failed: %v", err)
 	}
 

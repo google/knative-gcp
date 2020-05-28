@@ -19,22 +19,24 @@ package broker
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/eventing/pkg/logging"
 	"knative.dev/eventing/pkg/reconciler/names"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/system"
 
-	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 )
 
-// reconcileBrokerCell creates a BrokerCell if it doesn't exist, and update broker status based on brokercell status.
-func (r *Reconciler) reconcileBrokerCell(ctx context.Context, b *brokerv1beta1.Broker) error {
+// ensureBrokerCellExists creates a BrokerCell if it doesn't exist, and update broker status based on brokercell status.
+func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta1.Broker) error {
 	var bc *inteventsv1alpha1.BrokerCell
 	var err error
 	// TODO(#866) Get brokercell based on the label (or annotation) on the broker.
@@ -48,13 +50,25 @@ func (r *Reconciler) reconcileBrokerCell(ctx context.Context, b *brokerv1beta1.B
 
 	if apierrs.IsNotFound(err) {
 		want := resources.CreateBrokerCell(b)
-		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(system.Namespace()).Create(want)
-		if err != nil {
+		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(want)
+		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
 			b.Status.MarkBrokerCelllFailed("CreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
 			return err
 		}
-		r.Recorder.Eventf(b, corev1.EventTypeNormal, brokerCellCreated, "Created brokercell %s/%s", bc.Namespace, bc.Name)
+		if apierrs.IsAlreadyExists(err) {
+			logging.FromContext(ctx).Info("Brokercell already exists", zap.String("namespace", b.Namespace), zap.String("broker", b.Name))
+			// There can be a race condition where the informer is not updated. In this case we directly
+			// read from the API server.
+			bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Get(want.Name, metav1.GetOptions{})
+			if err != nil {
+				logging.FromContext(ctx).Error("Failed to get the brokercell from the API server", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
+				return err
+			}
+		}
+		if err == nil {
+			r.Recorder.Eventf(b, corev1.EventTypeNormal, brokerCellCreated, "Created brokercell %s/%s", bc.Namespace, bc.Name)
+		}
 	}
 
 	if bc.Status.IsReady() {
@@ -73,4 +87,3 @@ func (r *Reconciler) reconcileBrokerCell(ctx context.Context, b *brokerv1beta1.B
 
 	return nil
 }
-
