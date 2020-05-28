@@ -84,3 +84,8 @@ spec:
                 required:
                   - type
                   - status
+            ingressTemplate:
+              type: string
+              description: >
+                IngressTemplate contains a URI template as specified by RFC6570 to generate Broker
+                ingress URIs. It may contain variables `name` and `namespace`.
