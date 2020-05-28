@@ -20,7 +20,7 @@ import (
 	"fmt"
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
-	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
+	"github.com/google/knative-gcp/test/test_images/int/knockdown"
 	"github.com/kelseyhightower/envconfig"
 	"os"
 )
