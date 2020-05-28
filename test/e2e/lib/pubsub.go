@@ -46,7 +46,7 @@ func MakePubSubOrDie(client *Client,
 	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
 }
 
-func MakePubSubOrDieWithOutClean(client *Client,
+func MakePubSubOrDieWithoutOwnerRef(client *Client,
 	sinkGVK metav1.GroupVersionKind,
 	psName, sinkName, topicName, pubsubServiceAccount string,
 	so ...kngcptesting.CloudPubSubSourceOption,
@@ -56,7 +56,7 @@ func MakePubSubOrDieWithOutClean(client *Client,
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
 	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
-	client.CreatePubSubOrFailWithoutClean(eventsPubsub)
+	client.CreatePubSubOrFailWithoutOwnerRef(eventsPubsub)
 
 	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
 }

@@ -47,7 +47,7 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDieWithOutClean(client, metav1.GroupVersionKind{
+	lib.MakePubSubOrDieWithoutOwnerRef(client, metav1.GroupVersionKind{
 		Version: "v1",
 		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
 
