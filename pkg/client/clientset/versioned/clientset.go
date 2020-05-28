@@ -25,6 +25,7 @@ import (
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1"
 	internalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1"
+	internalv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1"
 	discovery "k8s.io/client-go/discovery"
@@ -38,6 +39,7 @@ type Interface interface {
 	EventsV1alpha1() eventsv1alpha1.EventsV1alpha1Interface
 	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface
+	InternalV1beta1() internalv1beta1.InternalV1beta1Interface
 	MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface
 	MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface
 }
@@ -50,6 +52,7 @@ type Clientset struct {
 	eventsV1alpha1    *eventsv1alpha1.EventsV1alpha1Client
 	eventsV1beta1     *eventsv1beta1.EventsV1beta1Client
 	internalV1alpha1  *internalv1alpha1.InternalV1alpha1Client
+	internalV1beta1   *internalv1beta1.InternalV1beta1Client
 	messagingV1alpha1 *messagingv1alpha1.MessagingV1alpha1Client
 	messagingV1beta1  *messagingv1beta1.MessagingV1beta1Client
 }
@@ -72,6 +75,11 @@ func (c *Clientset) EventsV1beta1() eventsv1beta1.EventsV1beta1Interface {
 // InternalV1alpha1 retrieves the InternalV1alpha1Client
 func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface {
 	return c.internalV1alpha1
+}
+
+// InternalV1beta1 retrieves the InternalV1beta1Client
+func (c *Clientset) InternalV1beta1() internalv1beta1.InternalV1beta1Interface {
+	return c.internalV1beta1
 }
 
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
@@ -121,6 +129,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.internalV1beta1, err = internalv1beta1.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 	cs.messagingV1alpha1, err = messagingv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -145,6 +157,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.eventsV1alpha1 = eventsv1alpha1.NewForConfigOrDie(c)
 	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.internalV1alpha1 = internalv1alpha1.NewForConfigOrDie(c)
+	cs.internalV1beta1 = internalv1beta1.NewForConfigOrDie(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.NewForConfigOrDie(c)
 	cs.messagingV1beta1 = messagingv1beta1.NewForConfigOrDie(c)
 
@@ -159,6 +172,7 @@ func New(c rest.Interface) *Clientset {
 	cs.eventsV1alpha1 = eventsv1alpha1.New(c)
 	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.internalV1alpha1 = internalv1alpha1.New(c)
+	cs.internalV1beta1 = internalv1beta1.New(c)
 	cs.messagingV1alpha1 = messagingv1alpha1.New(c)
 	cs.messagingV1beta1 = messagingv1beta1.New(c)
 
