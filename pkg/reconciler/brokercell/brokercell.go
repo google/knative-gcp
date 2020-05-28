@@ -98,21 +98,21 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	ingressArgs := r.makeIngressArgs(bc)
 	ind, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeIngressDeployment(ingressArgs))
 	if err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile ingress deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile ingress deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressDeploymentFailed", "Failed to reconcile ingress deployment: %v", err)
 		return err
 	}
 
-	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, r.makeIngressHPA(bc))
+	ingressHPA := resources.MakeHorizontalPodAutoscaler(ind, r.makeIngressHPAArgs(bc))
 	if err := r.reconcileAutoscaling(ctx, bc, ingressHPA); err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile ingress HPA for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile ingress HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile ingress HorizontalPodAutoscaler: %v", err)
 		return err
 	}
 
 	endpoints, err := r.svcRec.ReconcileService(bc, resources.MakeIngressService(ingressArgs))
 	if err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile ingress service for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile ingress service", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkIngressFailed("IngressServiceFailed", "Failed to reconcile ingress service: %v", err)
 		return err
 	}
@@ -123,14 +123,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	// Reconcile fanout deployment and HPA.
 	fd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeFanoutDeployment(r.makeFanoutArgs(bc)))
 	if err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile fanout deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile fanout deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkFanoutFailed("FanoutDeploymentFailed", "Failed to reconcile fanout deployment: %v", err)
 		return err
 	}
 
-	fanoutHPA := resources.MakeHorizontalPodAutoscaler(fd, r.makeFanoutHPA(bc))
+	fanoutHPA := resources.MakeHorizontalPodAutoscaler(fd, r.makeFanoutHPAArgs(bc))
 	if err := r.reconcileAutoscaling(ctx, bc, fanoutHPA); err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile fanout HPA for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile fanout HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkFanoutFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile fanout HorizontalPodAutoscaler: %v", err)
 		return err
 	}
@@ -139,14 +139,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 	// Reconcile retry deployment and HPA.
 	rd, err := r.deploymentRec.ReconcileDeployment(bc, resources.MakeRetryDeployment(r.makeRetryArgs(bc)))
 	if err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile retry deployment for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile retry deployment", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkRetryFailed("RetryDeploymentFailed", "Failed to reconcile retry deployment: %v", err)
 		return err
 	}
 
-	retryHPA := resources.MakeHorizontalPodAutoscaler(rd, r.makeRetryHPA(bc))
+	retryHPA := resources.MakeHorizontalPodAutoscaler(rd, r.makeRetryHPAArgs(bc))
 	if err := r.reconcileAutoscaling(ctx, bc, retryHPA); err != nil {
-		logging.FromContext(ctx).Error("Failed to reconcile retry HPA for \"%s/%s\": %v", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
+		logging.FromContext(ctx).Error("Failed to reconcile retry HPA", zap.Any("namespace", bc.Namespace), zap.Any("name", bc.Name), zap.Error(err))
 		bc.Status.MarkRetryFailed("HorizontalPodAutoscalerFailed", "Failed to reconcile retry HorizontalPodAutoscaler: %v", err)
 		return err
 	}
@@ -173,7 +173,7 @@ func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.Ingre
 	}
 }
 
-func (r *Reconciler) makeIngressHPA(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
+func (r *Reconciler) makeIngressHPAArgs(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.IngressName,
 		BrokerCell:        bc,
@@ -195,7 +195,7 @@ func (r *Reconciler) makeFanoutArgs(bc *intv1alpha1.BrokerCell) resources.Fanout
 	}
 }
 
-func (r *Reconciler) makeFanoutHPA(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
+func (r *Reconciler) makeFanoutHPAArgs(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.FanoutName,
 		BrokerCell:        bc,
@@ -217,7 +217,7 @@ func (r *Reconciler) makeRetryArgs(bc *intv1alpha1.BrokerCell) resources.RetryAr
 	}
 }
 
-func (r *Reconciler) makeRetryHPA(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
+func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.AutoscalingArgs {
 	return resources.AutoscalingArgs{
 		ComponentName:     resources.RetryName,
 		BrokerCell:        bc,
@@ -253,5 +253,5 @@ func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.B
 		}
 		return err
 	}
-	return err
+	return nil
 }

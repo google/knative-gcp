@@ -572,6 +572,72 @@ func TestAllCases(t *testing.T) {
 			},
 		},
 		{
+			Name: "BrokerCell created, resources updated but resource status not ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS),
+				NewDeployment(brokerCellName+"-brokercell-ingress", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.IngressDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.IngressDeployment(t).ObjectMeta
+					},
+				),
+				NewService(brokerCellName+"-brokercell-ingress", testNS,
+					func(s *corev1.Service) {
+						s.TypeMeta = testingdata.IngressService(t).TypeMeta
+						s.ObjectMeta = testingdata.IngressService(t).ObjectMeta
+					}),
+				NewDeployment(brokerCellName+"-brokercell-fanout", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.FanoutDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.FanoutDeployment(t).ObjectMeta
+					},
+				),
+				NewDeployment(brokerCellName+"-brokercell-retry", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.RetryDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.RetryDeployment(t).ObjectMeta
+					},
+				),
+				emptyHPASpec(testingdata.IngressHPA(t)),
+				emptyHPASpec(testingdata.FanoutHPA(t)),
+				emptyHPASpec(testingdata.RetryHPA(t)),
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.IngressDeployment(t)},
+				{Object: testingdata.IngressHPA(t)},
+				{Object: testingdata.IngressService(t)},
+				{Object: testingdata.FanoutDeployment(t)},
+				{Object: testingdata.FanoutHPA(t)},
+				{Object: testingdata.RetryDeployment(t)},
+				{Object: testingdata.RetryHPA(t)},
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: NewBrokerCell(brokerCellName, testNS,
+					// optimistically set everything to be ready, the following options will override individual conditions
+					WithBrokerCellReady,
+					// For newly created deployments and services, there statues are not ready because
+					// we don't have a controller in the tests to mark their statues ready.
+					// We only verify that they are created in the WantCreates.
+					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
+					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+				)},
+			},
+			WantEvents: []string{
+				ingressDeploymentUpdatedEvent,
+				ingressHPAUpdatedEvent,
+				ingressServiceUpdatedEvent,
+				fanoutDeploymentUpdatedEvent,
+				fanoutHPAUpdatedEvent,
+				retryDeploymentUpdatedEvent,
+				retryHPAUpdatedEvent,
+				brokerCellReconciledEvent,
+			},
+		},
+		{
 			Name: "BrokerCell created successfully but status update failed",
 			Key:  testKey,
 			Objects: []runtime.Object{
