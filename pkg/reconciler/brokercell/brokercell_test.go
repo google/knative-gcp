@@ -537,9 +537,6 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS),
-				// testingdata.IngressHPA(t),
-				// testingdata.FanoutHPA(t),
-				// testingdata.RetryHPA(t),
 			},
 			WantCreates: []runtime.Object{
 				testingdata.IngressDeployment(t),
