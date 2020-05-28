@@ -18,6 +18,7 @@ package testing
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	hpav2beta1 "k8s.io/api/autoscaling/v2beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -25,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
+	hpav2beta1listers "k8s.io/client-go/listers/autoscaling/v2beta1"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
@@ -204,4 +206,8 @@ func (l *Listers) GetTriggerLister() brokerlisters.TriggerLister {
 
 func (l *Listers) GetBrokerCellLister() intlisters.BrokerCellLister {
 	return intlisters.NewBrokerCellLister(l.indexerFor(&intv1alpha1.BrokerCell{}))
+}
+
+func (l *Listers) GetHPALister() hpav2beta1listers.HorizontalPodAutoscalerLister {
+	return hpav2beta1listers.NewHorizontalPodAutoscalerLister(l.indexerFor(&hpav2beta1.HorizontalPodAutoscaler{}))
 }

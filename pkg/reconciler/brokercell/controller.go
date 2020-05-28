@@ -25,6 +25,7 @@ import (
 
 	"knative.dev/eventing/pkg/logging"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	hpainformer "knative.dev/pkg/client/injection/kube/informers/autoscaling/v2beta1/horizontalpodautoscaler"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	serviceinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/configmap"
@@ -52,12 +53,14 @@ func NewController(
 	deploymentLister := deploymentinformer.Get(ctx).Lister()
 	svcLister := serviceinformer.Get(ctx).Lister()
 	epLister := endpointsinformer.Get(ctx).Lister()
+	hpaLister := hpainformer.Get(ctx).Lister()
 
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
 	r, err := NewReconciler(base, svcLister, epLister, deploymentLister)
 	if err != nil {
 		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}
+	r.hpaLister = hpaLister
 	impl := v1alpha1brokercell.NewImpl(ctx, r)
 
 	logger.Info("Setting up event handlers.")
