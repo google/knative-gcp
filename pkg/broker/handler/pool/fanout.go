@@ -136,6 +136,12 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 			p.pool.Delete(b.Key())
 		}
 
+		// Don't start the handler if broker is not ready.
+		// The decouple topic/sub might not be ready at this point.
+		if b.State != config.State_READY {
+			return true
+		}
+
 		sub := p.pubsubClient.Subscription(b.DecoupleQueue.Subscription)
 		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
