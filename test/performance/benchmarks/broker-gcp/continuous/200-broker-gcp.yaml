@@ -42,7 +42,7 @@ spec:
             image: ko://knative.dev/eventing/test/test_images/performance
             args:
               - "--roles=sender,receiver"
-              - "--sink=http://gcp-broker"
+              - "--sink=http://broker-ingress.cloud-run-events/default/gcp"
               - "--aggregator=broker-gcp-aggregator:10000"
               - "--pace=100:10,200:20,400:30,500:60,600:60"
             env:
