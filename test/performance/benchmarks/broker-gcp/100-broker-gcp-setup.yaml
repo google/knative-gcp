@@ -21,7 +21,7 @@ data:
 
 ---
 
-apiVersion: eventing.knative.dev/v1alpha1
+apiVersion: eventing.knative.dev/v1beta1
 kind: Broker
 metadata:
   name: gcp
@@ -36,7 +36,7 @@ spec:
 
 ---
 
-apiVersion: eventing.knative.dev/v1alpha1
+apiVersion: eventing.knative.dev/v1beta1
 kind: Trigger
 metadata:
   name: broker-gcp
@@ -48,6 +48,29 @@ spec:
       apiVersion: v1
       kind: Service
       name: broker-gcp-receiver
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: perf-gcpbroker
+  namespace: default
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perf-gcpbroker
+subjects:
+  - kind: ServiceAccount
+    name: perf-gcpbroker
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
 
 ---
 
@@ -78,26 +101,3 @@ spec:
       port: 10000
       targetPort: grpc
       protocol: TCP
-
----
-
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: perf-gcpbroker
-  namespace: default
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: perf-gcpbroker
-subjects:
-  - kind: ServiceAccount
-    name: perf-gcpbroker
-    namespace: default
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io 

@@ -36,6 +36,7 @@ spec:
           labels:
             role: broker-gcp-receiver
         spec:
+          serviceAccountName: perf-gcpbroker
           restartPolicy: Never
           containers:
           - name: sender-receiver
@@ -88,6 +89,7 @@ spec:
           labels:
             role: broker-gcp-aggregator
         spec:
+          serviceAccountName: perf-gcpbroker
           restartPolicy: Never
           containers:
           - name: aggregator
@@ -96,7 +98,7 @@ spec:
               - "--roles=aggregator"
               # set to the number of sender + receiver (same image that does both counts 2)
               - "--expect-records=2"
-              # - "--mako-tags="
+              - "--mako-tags=channel=pubsub"
             ports:
               - name: grpc
                 containerPort: 10000
