@@ -64,10 +64,6 @@ spec:
             - sink
           properties:
             {{- replace_with 12 "pubsub_spec" }}
-            serviceAccountName:
-              type: string
-              description: >
-                Service Account to run Receive Adapter as. If omitted, uses 'default'.
             bucket:
               type: string
               description: >

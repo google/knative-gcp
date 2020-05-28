@@ -148,10 +148,6 @@ spec:
               description: >
                 Google Cloud Project ID of the project into which the topic should be created. If omitted uses
                 the Project ID from the GKE cluster metadata service.
-            serviceAccountName:
-              type: string
-              description: >
-                Service Account to run Receive Adapter as. If omitted, uses 'default'.
             bucket:
               type: string
               description: >
