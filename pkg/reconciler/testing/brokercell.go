@@ -43,6 +43,12 @@ func NewBrokerCell(name, namespace string, o ...BrokerCellOption) *intv1alpha1.B
 	return bc
 }
 
+func WithBrokerCellAnnotations(annotations map[string]string) BrokerCellOption {
+	return func(bc *intv1alpha1.BrokerCell) {
+		bc.SetAnnotations(annotations)
+	}
+}
+
 // WithInitBrokerCellConditions initializes the BrokerCell's conditions.
 func WithInitBrokerCellConditions(bc *intv1alpha1.BrokerCell) {
 	bc.Status.InitializeConditions()

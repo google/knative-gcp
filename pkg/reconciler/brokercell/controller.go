@@ -30,6 +30,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
+	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	"github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -49,12 +50,13 @@ func NewController(
 	logger := logging.FromContext(ctx)
 
 	brokercellInformer := brokercell.Get(ctx)
+	brokerLister := brokerinformer.Get(ctx).Lister()
 	deploymentLister := deploymentinformer.Get(ctx).Lister()
 	svcLister := serviceinformer.Get(ctx).Lister()
 	epLister := endpointsinformer.Get(ctx).Lister()
 
 	base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-	r, err := NewReconciler(base, svcLister, epLister, deploymentLister)
+	r, err := NewReconciler(base, brokerLister, svcLister, epLister, deploymentLister)
 	if err != nil {
 		logger.Fatal("Failed to create BrokerCell reconciler", zap.Error(err))
 	}

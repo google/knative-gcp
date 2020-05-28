@@ -23,6 +23,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
@@ -32,6 +33,7 @@ import (
 
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	bcreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 )
@@ -46,7 +48,7 @@ type envConfig struct {
 }
 
 // NewReconciler creates a new BrokerCell reconciler.
-func NewReconciler(base *reconciler.Base, serviceLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, deploymentLister appsv1listers.DeploymentLister) (*Reconciler, error) {
+func NewReconciler(base *reconciler.Base, brokerLister brokerlisters.BrokerLister, serviceLister corev1listers.ServiceLister, endpointsLister corev1listers.EndpointsLister, deploymentLister appsv1listers.DeploymentLister) (*Reconciler, error) {
 	var env envConfig
 	if err := envconfig.Process("BROKER_CELL", &env); err != nil {
 		return nil, err
@@ -64,6 +66,7 @@ func NewReconciler(base *reconciler.Base, serviceLister corev1listers.ServiceLis
 	}
 	r := &Reconciler{
 		Base:             base,
+		brokerLister:     brokerLister,
 		serviceLister:    serviceLister,
 		endpointsLister:  endpointsLister,
 		deploymentLister: deploymentLister,
@@ -78,6 +81,7 @@ func NewReconciler(base *reconciler.Base, serviceLister corev1listers.ServiceLis
 type Reconciler struct {
 	*reconciler.Base
 
+	brokerLister     brokerlisters.BrokerLister
 	serviceLister    corev1listers.ServiceLister
 	endpointsLister  corev1listers.EndpointsLister
 	deploymentLister appsv1listers.DeploymentLister
@@ -93,6 +97,11 @@ var _ bcreconciler.Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
+	if r.shouldGC(ctx, bc) {
+		logging.FromContext(ctx).Info("Garbage collecting brokercell",  zap.String("brokercell", bc.Name), zap.String("Namespace", bc.Namespace))
+		return r.delete(ctx, bc)
+	}
+
 	bc.Status.InitializeConditions()
 
 	// Reconcile ingress deployment and service
@@ -134,6 +143,36 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCe
 
 	bc.Status.ObservedGeneration = bc.Generation
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellReconciled", "BrokerCell reconciled: \"%s/%s\"", bc.Namespace, bc.Name)
+}
+
+// shouldGC returns true if
+// 1. the brokercell was automatically created by GCP broker controller (with annotation
+// internal.events.cloud.google.com/creator: googlecloud), and
+// 2. there is no brokers pointing to it
+func (r *Reconciler) shouldGC(ctx context.Context, bc *intv1alpha1.BrokerCell) bool {
+	// TODO use the constants in #1132 once it's merged
+	// We only garbage collect brokercells that were automatically created by the GCP broker controller.
+	if bc.GetAnnotations()["internal.events.cloud.google.com/creator"] != "googlecloud" {
+		return false
+	}
+
+	// TODO(#866) Only select brokers that point to this brokercell by label selector once the
+	// webhook assigns the brokercell label, i.e.,
+	// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+	brokers, err := r.brokerLister.List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Error("Failed to list brokers, skipping garbage collection logic", zap.String("brokercell", bc.Name), zap.String("Namespace", bc.Namespace))
+		return false
+	}
+
+	return len(brokers) == 0
+}
+
+func (r *Reconciler) delete(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
+	if err := r.RunClientSet.InternalV1alpha1().BrokerCells(bc.Namespace).Delete(bc.Name, nil); err != nil {
+		return fmt.Errorf("failed to garbage collect brokercell: %w", err)
+	}
+	return pkgreconciler.NewEvent(corev1.EventTypeNormal, "BrokerCellGarbageCollected", "BrokerCell garbage collected: \"%s/%s\"", bc.Namespace, bc.Name)
 }
 
 func (r *Reconciler) makeIngressArgs(bc *intv1alpha1.BrokerCell) resources.IngressArgs {
