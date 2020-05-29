@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	eventingtestlib "knative.dev/eventing/test/lib"
@@ -104,7 +105,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	gcpBroker := client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
+	gcpBroker := client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1(v1beta1.BrokerClass))
 
 	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
@@ -144,7 +145,7 @@ func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 func createGCPBroker(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
+	client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1(v1beta1.BrokerClass))
 
 	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
