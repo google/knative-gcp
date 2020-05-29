@@ -29,6 +29,7 @@ import (
 	"knative.dev/pkg/test/helpers"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
+	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -46,10 +47,15 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	// Create the PubSub source.
-	lib.MakePubSubOrDieWithoutOwnerRef(client, metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
+	eventPubSub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace,
+		kngcptesting.WithCloudPubSubSourceSink(metav1.GroupVersionKind{
+			Version: "v1",
+			Kind:    "Service"}, svcName),
+		kngcptesting.WithCloudPubSubSourceTopic(topic),
+		kngcptesting.WithCloudPubSubSourceGCPServiceAccount(authConfig.PubsubServiceAccount),
+	)
+	client.CreatePubSubOrFailWithoutOwnerRef(eventPubSub)
+	client.Core.WaitForResourceReadyOrFail(psName, lib.CloudPubSubSourceTypeMeta)
 
 	createdPubSub := client.GetPubSubOrFail(psName)
 	subId := createdPubSub.Status.SubscriptionID
