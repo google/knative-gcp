@@ -45,23 +45,6 @@ rules:
     - patch
 
 - apiGroups:
-    - pubsub.cloud.google.com
-  resources:
-    - pullsubscriptions
-    - topics
-  verbs: *everything
-
-- apiGroups:
-    - pubsub.cloud.google.com
-  resources:
-    - pullsubscriptions/status
-    - topics/status
-  verbs:
-    - get
-    - update
-    - patch
-
-- apiGroups:
     - messaging.cloud.google.com
   resources:
     - channels

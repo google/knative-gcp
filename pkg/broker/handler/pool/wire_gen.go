@@ -8,28 +8,19 @@ package pool
 import (
 	"cloud.google.com/go/pubsub"
 	"context"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
 )
 
 // Injectors from wire.go:
 
 func InitializeTestFanoutPool(ctx context.Context, targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*FanoutPool, error) {
+	client := _wireClientValue
 	v := _wireValue
-	protocol, err := http.New(v...)
+	retryClient, err := NewRetryClient(ctx, pubsubClient, v...)
 	if err != nil {
 		return nil, err
 	}
-	v2 := _wireValue2
-	deliverClient, err := NewDeliverClient(protocol, v2...)
-	if err != nil {
-		return nil, err
-	}
-	retryClient, err := NewRetryClient(ctx, pubsubClient, v2...)
-	if err != nil {
-		return nil, err
-	}
-	fanoutPool, err := NewFanoutPool(targets, pubsubClient, deliverClient, retryClient, opts...)
+	fanoutPool, err := NewFanoutPool(targets, pubsubClient, client, retryClient, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -37,22 +28,13 @@ func InitializeTestFanoutPool(ctx context.Context, targets config.ReadonlyTarget
 }
 
 var (
-	_wireValue  = []http.Option(nil)
-	_wireValue2 = DefaultCEClientOpts
+	_wireClientValue = DefaultHTTPClient
+	_wireValue       = DefaultCEClientOpts
 )
 
 func InitializeTestRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*RetryPool, error) {
-	v := _wireValue3
-	protocol, err := http.New(v...)
-	if err != nil {
-		return nil, err
-	}
-	v2 := _wireValue4
-	deliverClient, err := NewDeliverClient(protocol, v2...)
-	if err != nil {
-		return nil, err
-	}
-	retryPool, err := NewRetryPool(targets, pubsubClient, deliverClient, opts...)
+	client := _wireHttpClientValue
+	retryPool, err := NewRetryPool(targets, pubsubClient, client, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +42,5 @@ func InitializeTestRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsu
 }
 
 var (
-	_wireValue3 = []http.Option(nil)
-	_wireValue4 = DefaultCEClientOpts
+	_wireHttpClientValue = DefaultHTTPClient
 )

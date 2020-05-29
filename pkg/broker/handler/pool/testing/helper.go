@@ -366,7 +366,7 @@ func (h *Helper) VerifyNextBrokerIngressEvent(ctx context.Context, t *testing.T,
 		}
 		return
 	}
-	msg.Finish(nil)
+	defer msg.Finish(nil)
 	gotEvent, err = binding.ToEvent(ctx, msg)
 	if err != nil {
 		t.Errorf("broker (key=%q) received invalid cloudevent: %v", brokerKey, err)
