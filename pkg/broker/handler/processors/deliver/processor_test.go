@@ -443,6 +443,12 @@ func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
 }
 
 func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	sampleEvent := newSampleEvent()
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
@@ -458,6 +464,7 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	p := &Processor{
 		DeliverClient: &httpClient,
 		Targets:       testTargets,
+		StatsReporter: statsReporter,
 	}
 
 	b.ResetTimer()
@@ -471,6 +478,12 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 }
 
 func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
@@ -491,6 +504,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 	p := &Processor{
 		DeliverClient: &httpClient,
 		Targets:       testTargets,
+		StatsReporter: statsReporter,
 	}
 
 	b.ResetTimer()
