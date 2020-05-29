@@ -37,11 +37,8 @@ func MakePubSubOrDie(client *Client,
 	so ...kngcptesting.CloudPubSubSourceOption,
 ) {
 	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
-	client.CreatePubSubOrFail(eventsPubsub)
+	eventsPubSub := makePubSub(client, sinkGVK, psName, sinkName, topicName, pubsubServiceAccount, so...)
+	client.CreatePubSubOrFail(eventsPubSub)
 
 	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
 }
@@ -52,13 +49,22 @@ func MakePubSubOrDieWithoutOwnerRef(client *Client,
 	so ...kngcptesting.CloudPubSubSourceOption,
 ) {
 	client.T.Helper()
+	eventsPubSub := makePubSub(client, sinkGVK, psName, sinkName, topicName, pubsubServiceAccount, so...)
+	client.CreatePubSubOrFailWithoutOwnerRef(eventsPubSub)
+
+	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
+}
+
+func makePubSub(client *Client,
+	sinkGVK metav1.GroupVersionKind,
+	psName, sinkName, topicName, pubsubServiceAccount string,
+	so ...kngcptesting.CloudPubSubSourceOption) *v1alpha1.CloudPubSubSource {
+	client.T.Helper()
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
-	client.CreatePubSubOrFailWithoutOwnerRef(eventsPubsub)
-
-	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
+	pubSub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
+	return pubSub
 }
 
 func MakePubSubTargetJobOrDie(client *Client, source, targetName, eventType string) {
