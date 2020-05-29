@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc/status"
-	"testing"
 	"os"
+	"testing"
 
 	"cloud.google.com/go/logging/logadmin"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -96,9 +96,9 @@ func StackdriverSinkExists(t *testing.T, sinkID string) bool {
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			return false
-		} else {
-			t.Fatalf("Failed from LogAdmin client while retrieving StackdriverSink %s with error %s", sinkID, err.Error())
 		}
+
+		t.Fatalf("Failed from LogAdmin client while retrieving StackdriverSink %s with error %s", sinkID, err.Error())
 	}
 	return true
 }
