@@ -22,7 +22,6 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/wire"
 )
@@ -35,10 +34,8 @@ func InitializeTestFanoutPool(
 ) (*FanoutPool, error) {
 	panic(wire.Build(
 		NewFanoutPool,
-		NewDeliverClient,
 		NewRetryClient,
-		cehttp.New,
-		wire.Value([]cehttp.Option(nil)),
+		wire.Value(DefaultHTTPClient),
 		wire.Value(DefaultCEClientOpts),
 	))
 }
@@ -50,9 +47,6 @@ func InitializeTestRetryPool(
 ) (*RetryPool, error) {
 	panic(wire.Build(
 		NewRetryPool,
-		NewDeliverClient,
-		cehttp.New,
-		wire.Value([]cehttp.Option(nil)),
-		wire.Value(DefaultCEClientOpts),
+		wire.Value(DefaultHTTPClient),
 	))
 }
