@@ -18,7 +18,7 @@ package resources
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
-	hpav2beta1 "k8s.io/api/autoscaling/v2beta1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,37 +26,43 @@ import (
 )
 
 // MakeHorizontalPodAutoscaler makes an HPA for the given arguments.
-func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args AutoscalingArgs) *hpav2beta1.HorizontalPodAutoscaler {
+func MakeHorizontalPodAutoscaler(deployment *appsv1.Deployment, args AutoscalingArgs) *hpav2beta2.HorizontalPodAutoscaler {
 	var one int32 = 1
 	memQuantity := resource.MustParse(args.AvgMemoryUsage)
-	return &hpav2beta1.HorizontalPodAutoscaler{
+	return &hpav2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            deployment.Name + "-hpa",
 			Namespace:       deployment.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.BrokerCell)},
 			Labels:          Labels(args.BrokerCell.Name, args.ComponentName),
 		},
-		Spec: hpav2beta1.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: hpav2beta1.CrossVersionObjectReference{
+		Spec: hpav2beta2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: hpav2beta2.CrossVersionObjectReference{
 				APIVersion: "apps/v1",
 				Kind:       "Deployment",
 				Name:       deployment.Name,
 			},
 			MaxReplicas: args.MaxReplicas,
 			MinReplicas: &one,
-			Metrics: []hpav2beta1.MetricSpec{
+			Metrics: []hpav2beta2.MetricSpec{
 				{
-					Type: hpav2beta1.ResourceMetricSourceType,
-					Resource: &hpav2beta1.ResourceMetricSource{
-						Name:                     corev1.ResourceCPU,
-						TargetAverageUtilization: &args.AvgCPUUtilization,
+					Type: hpav2beta2.ResourceMetricSourceType,
+					Resource: &hpav2beta2.ResourceMetricSource{
+						Name: corev1.ResourceCPU,
+						Target: hpav2beta2.MetricTarget{
+							Type:               hpav2beta2.UtilizationMetricType,
+							AverageUtilization: &args.AvgCPUUtilization,
+						},
 					},
 				},
 				{
-					Type: hpav2beta1.ResourceMetricSourceType,
-					Resource: &hpav2beta1.ResourceMetricSource{
-						Name:               corev1.ResourceMemory,
-						TargetAverageValue: &memQuantity,
+					Type: hpav2beta2.ResourceMetricSourceType,
+					Resource: &hpav2beta2.ResourceMetricSource{
+						Name: corev1.ResourceMemory,
+						Target: hpav2beta2.MetricTarget{
+							Type:         hpav2beta2.AverageValueMetricType,
+							AverageValue: &memQuantity,
+						},
 					},
 				},
 			},

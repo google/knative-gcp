@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
-	hpav2beta1 "k8s.io/api/autoscaling/v2beta1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -61,20 +61,20 @@ func IngressServiceWithStatus(t *testing.T) *corev1.Service {
 	return getService(t, "testingdata/ingress_service_with_status.yaml")
 }
 
-func IngressHPA(t *testing.T) *hpav2beta1.HorizontalPodAutoscaler {
+func IngressHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
 	return getHPA(t, "testingdata/ingress_hpa.yaml")
 }
 
-func FanoutHPA(t *testing.T) *hpav2beta1.HorizontalPodAutoscaler {
+func FanoutHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
 	return getHPA(t, "testingdata/fanout_hpa.yaml")
 }
 
-func RetryHPA(t *testing.T) *hpav2beta1.HorizontalPodAutoscaler {
+func RetryHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
 	return getHPA(t, "testingdata/retry_hpa.yaml")
 }
 
-func getHPA(t *testing.T, path string) *hpav2beta1.HorizontalPodAutoscaler {
-	hpa := &hpav2beta1.HorizontalPodAutoscaler{}
+func getHPA(t *testing.T, path string) *hpav2beta2.HorizontalPodAutoscaler {
+	hpa := &hpav2beta2.HorizontalPodAutoscaler{}
 	if err := getSpecFromFile(path, hpa); err != nil {
 		t.Fatalf("Failed to parse YAML: %v", err)
 	}

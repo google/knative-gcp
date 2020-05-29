@@ -22,12 +22,12 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
-	hpav2beta1 "k8s.io/api/autoscaling/v2beta1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
-	hpav2beta1listers "k8s.io/client-go/listers/autoscaling/v2beta1"
+	hpav2beta2listers "k8s.io/client-go/listers/autoscaling/v2beta2"
 	corev1listers "k8s.io/client-go/listers/core/v1"
 
 	"knative.dev/eventing/pkg/logging"
@@ -79,7 +79,7 @@ func NewReconciler(base *reconciler.Base, serviceLister corev1listers.ServiceLis
 type Reconciler struct {
 	*reconciler.Base
 
-	hpaLister hpav2beta1listers.HorizontalPodAutoscalerLister
+	hpaLister hpav2beta2listers.HorizontalPodAutoscalerLister
 
 	svcRec        *reconciler.ServiceReconciler
 	deploymentRec *reconciler.DeploymentReconciler
@@ -227,10 +227,10 @@ func (r *Reconciler) makeRetryHPAArgs(bc *intv1alpha1.BrokerCell) resources.Auto
 	}
 }
 
-func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.BrokerCell, desired *hpav2beta1.HorizontalPodAutoscaler) error {
+func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.BrokerCell, desired *hpav2beta2.HorizontalPodAutoscaler) error {
 	existing, err := r.hpaLister.HorizontalPodAutoscalers(desired.Namespace).Get(desired.Name)
 	if apierrs.IsNotFound(err) {
-		existing, err = r.KubeClientSet.AutoscalingV2beta1().HorizontalPodAutoscalers(desired.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(desired.Namespace).Create(desired)
 		if apierrs.IsAlreadyExists(err) {
 			return nil
 		}
@@ -247,7 +247,7 @@ func (r *Reconciler) reconcileAutoscaling(ctx context.Context, bc *intv1alpha1.B
 		// Don't modify the informers copy.
 		copy := existing.DeepCopy()
 		copy.Spec = desired.Spec
-		_, err := r.KubeClientSet.AutoscalingV2beta1().HorizontalPodAutoscalers(copy.Namespace).Update(copy)
+		_, err := r.KubeClientSet.AutoscalingV2beta2().HorizontalPodAutoscalers(copy.Namespace).Update(copy)
 		if err == nil {
 			r.Recorder.Eventf(bc, corev1.EventTypeNormal, "HorizontalPodAutoscalerUpdated", "Updated HPA %s/%s", desired.Namespace, desired.Name)
 		}

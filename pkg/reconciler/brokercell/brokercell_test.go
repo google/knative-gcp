@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
-	hpav2beta1 "k8s.io/api/autoscaling/v2beta1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -706,7 +706,7 @@ func TestAllCases(t *testing.T) {
 	}))
 }
 
-func emptyHPASpec(template *hpav2beta1.HorizontalPodAutoscaler) *hpav2beta1.HorizontalPodAutoscaler {
-	template.Spec = hpav2beta1.HorizontalPodAutoscalerSpec{}
+func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.HorizontalPodAutoscaler {
+	template.Spec = hpav2beta2.HorizontalPodAutoscalerSpec{}
 	return template
 }
