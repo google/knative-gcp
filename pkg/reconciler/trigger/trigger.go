@@ -26,7 +26,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
-	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -84,23 +83,14 @@ var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
 	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
 
-	// This logic is shared for all trigger controllers. Ideally there is a shared eventing controller
-	// that does this and our GCP controller doesn't need to care about this.
 	if err != nil && !apierrs.IsNotFound(err) {
-		condition := t.Status.GetCondition(eventingv1beta1.TriggerConditionBroker)
-		// If another contoller sets a different message, we should not update it as the controllers
-		// may fight against each other. The condition status is important, not the message.
-		if condition == nil || condition.Status != corev1.ConditionUnknown {
-			msg := fmt.Sprintf("Unknown error getting broker: %v", err)
-			logging.FromContext(ctx).Error(msg)
-			t.Status.MarkBrokerUnknown("UnknownBroker", msg)
-			return err
-		}
+		// Unknown error. genreconciler will record an `InternalError` event and keep retrying.
+		return err
 	}
+
 	// If the broker has been or is being deleted, we clean up resources created by this controller
 	// for the given trigger.
 	if apierrs.IsNotFound(err) || !b.GetDeletionTimestamp().IsZero() {
-		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
 		return r.FinalizeKind(ctx, t)
 	}
 

@@ -150,13 +150,6 @@ func TestAllCasesTrigger(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
 				triggerFinalizedEvent,
 			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(testUID),
-					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`),
-					WithTriggerFinalizers(finalizerName),
-				),
-			}},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
 					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
@@ -178,13 +171,6 @@ func TestAllCasesTrigger(t *testing.T) {
 				Eventf(corev1.EventTypeNormal, "SubscriptionDeleted", `Deleted PubSub subscription "cre-tgr_testnamespace_test-trigger_abc123"`),
 				triggerFinalizedEvent,
 			},
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewTrigger(triggerName, testNS, brokerName,
-					WithTriggerUID(testUID),
-					WithTriggerBrokerFailed("BrokerDoesNotExist", `Broker "test-broker" does not exist`),
-					WithTriggerFinalizers(finalizerName),
-				),
-			}},
 			OtherTestData: map[string]interface{}{
 				"pre": []PubsubAction{
 					TopicAndSub("cre-tgr_testnamespace_test-trigger_abc123"),
