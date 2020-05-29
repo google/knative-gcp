@@ -92,10 +92,6 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	if deletedSubExists {
 		t.Errorf("Expected subscription %q to get deleted", subID)
 	}
-	t.Logf("topic id is: %v /n, sub id is: %v /n, notification id is %s", topicID, subID, notificationID)
-	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
-	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
-	t.Logf("createdNotificationExists id is: %t /n, deletedNotificationExists is: %t /n", createdNotificationExists, deletedNotificationExists)
 }
 
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {

@@ -305,6 +305,14 @@ func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	CloudSchedulerSourceWithTargetTestImpl(t, authConfig)
 }
 
+// TestSmokeGCPBroker tests if we can create a GCPBroker to ready state and delete a GCPBroker and its underlying resources.
+func TestSmokeGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeGCPBrokerTestImpl(t, authConfig)
+}
+
+
 // TestGCPBroker tests we can knock a Knative Service from a gcp broker.
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)

@@ -78,10 +78,6 @@ func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	if deletedSubExists {
 		t.Errorf("Expected subscription %q to get deleted", subID)
 	}
-	t.Logf("topic id is: %v /n, sub id is: %v /n, job name is: %v /n", topicID, subID, jobName)
-	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
-	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
-	t.Logf("createdJobExists id is: %t /n, deletedJobExists is: %t /n", createdJobExists, deletedJobExists)
 }
 
 // CloudSchedulerSourceWithTargetTestImpl injects a scheduler event and checks if it is in the

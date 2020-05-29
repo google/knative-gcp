@@ -19,7 +19,10 @@ package e2e
 import (
 	"net/url"
 	"testing"
+	"time"
 
+	brokerresources "github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	eventingtestlib "knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/duck"
 	eventingtestresources "knative.dev/eventing/test/lib/resources"
@@ -94,10 +97,54 @@ func SchedulerSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfi
 
 }
 
+// SmokeGCPBrokerTestImpl tests we can create a GCPBroker to ready state and we can delete a GCPBroker and its underlying resources.
+func SmokeGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	brokerName := helpers.AppendRandomString("gcp")
+	// Create a new GCP Broker.
+	gcpBroker := client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
+
+	// Wait for broker ready.
+	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)
+
+	brokerresources.GenerateDecouplingTopicName(gcpBroker)
+
+	topicID := brokerresources.GenerateDecouplingTopicName(gcpBroker)
+	subID := brokerresources.GenerateDecouplingSubscriptionName(gcpBroker)
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+
+	client.DeleteGCPBrokerOrFail(brokerName)
+	//Wait for 10 seconds for subscription to get deleted in gcp
+	time.Sleep(10 * time.Second)
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+	t.Logf("topic id is: %v /n, sub id is: %v /n", topicID, subID)
+	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
+	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
+}
+
 func createGCPBroker(client *lib.Client) (url.URL, string) {
 	brokerName := helpers.AppendRandomString("gcp")
 	// Create a new GCP Broker.
-	client.Core.CreateBrokerV1Beta1OrFail(brokerName, eventingtestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
+	client.CreateGCPBrokerV1Beta1OrFail(brokerName, knativegcptestresources.WithBrokerClassForBrokerV1Beta1("googlecloud"))
 
 	// Wait for broker ready.
 	client.Core.WaitForResourceReadyOrFail(brokerName, eventingtestlib.BrokerTypeMeta)

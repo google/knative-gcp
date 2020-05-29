@@ -95,10 +95,6 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	if deletedSubExists {
 		t.Errorf("Expected subscription %q to get deleted", subID)
 	}
-	t.Logf("topic id is: %v /n, sub id is: %v /n, sink id is %s", topicID, subID, sinkID)
-	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
-	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
-	t.Logf("createdSinkExists id is: %t /n, deletedSinkExists is: %t /n", createdSinkExists, deletedSinkExists)
 }
 
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {

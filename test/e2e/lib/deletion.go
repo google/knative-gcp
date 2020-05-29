@@ -55,3 +55,13 @@ func (c *Client) DeleteAuditLogsOrFail(name string) {
 		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
 	}
 }
+
+
+func (c *Client) DeleteGCPBrokerOrFail(name string) {
+	c.T.Helper()
+	brokers := c.KnativeGCP.EventingV1beta1().Brokers(c.Namespace)
+	err := brokers.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete gcp broker %s/%s: %v", c.Namespace, name, err)
+	}
+}
