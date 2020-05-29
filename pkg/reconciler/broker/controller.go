@@ -23,24 +23,17 @@ import (
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	"knative.dev/eventing/pkg/logging"
-	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
-	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
-	podinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/pod"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
-	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -56,11 +49,6 @@ const (
 
 func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 	brokerInformer := brokerinformer.Get(ctx)
-	triggerInformer := triggerinformer.Get(ctx)
-	configMapInformer := configmapinformer.Get(ctx)
-	endpointsInformer := endpointsinformer.Get(ctx)
-	deploymentInformer := deploymentinformer.Get(ctx)
-	podInformer := podinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
 	// If there is an error, the projectID will be empty. The reconciler will retry
@@ -85,29 +73,10 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	}
 
 	r := &Reconciler{
-		Base:               reconciler.NewBase(ctx, controllerAgentName, cmw),
-		triggerLister:      triggerInformer.Lister(),
-		configMapLister:    configMapInformer.Lister(),
-		endpointsLister:    endpointsInformer.Lister(),
-		deploymentLister:   deploymentInformer.Lister(),
-		podLister:          podInformer.Lister(),
-		brokerCellLister:   bcInformer.Lister(),
-		projectID:          projectID,
-		pubsubClient:       client,
-		targetsNeedsUpdate: make(chan struct{}),
+		Base:             reconciler.NewBase(ctx, controllerAgentName, cmw),
+		brokerCellLister: bcInformer.Lister(),
+		pubsubClient:     client,
 	}
-
-	//TODO wrap this up in a targets struct backed by a configmap
-	// Load targets config from the existing configmap if present
-	if err := r.LoadTargetsConfig(ctx); err != nil {
-		r.Logger.Error("error loading targets config", zap.Error(err))
-		// For some reason the targets config is corrupt, proceed with an
-		// empty one
-		r.targetsConfig = memory.NewEmptyTargets()
-	}
-
-	// Start the single thread updating the targets configmap
-	go r.TargetsConfigUpdater(ctx)
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
 
@@ -121,24 +90,6 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		},
 		reconciler.DefaultResyncPeriod,
 	)
-
-	// Don't watch the targets configmap because it would require reconciling
-	// all brokers every update. In normal operation this
-	// will never be modified except by the controller. The global resync
-	// will resync all brokers every 5 minutes, correcting any issues caused
-	// by users.
-	//configMapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-	//	FilterFunc: pkgreconciler.LabelExistsFilterFunc(eventing.BrokerLabelKey),
-	//	Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
-	//})
-
-	triggerInformer.Informer().AddEventHandler(controller.HandleAll(
-		func(obj interface{}) {
-			if trigger, ok := obj.(*brokerv1beta1.Trigger); ok {
-				impl.EnqueueKey(types.NamespacedName{Namespace: trigger.Namespace, Name: trigger.Spec.Broker})
-			}
-		},
-	))
 
 	bcInformer.Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {

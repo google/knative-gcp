@@ -26,14 +26,14 @@ import (
 
 // Right now we only support one brokercell in the system namespace in the cluster.
 // TODO(#866) Delete hard-coded brokercell once we can dynamically assign brokercell to brokers.
-const DefaultBroekrCellName = "default"
+const DefaultBrokerCellName = "default"
 
 func CreateBrokerCell(b *v1beta1.Broker) *inteventsv1alpha1.BrokerCell {
 	// TODO(#866) Get brokercell from the label (or annotation) from the broker.
 	return &inteventsv1alpha1.BrokerCell{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:   system.Namespace(),
-			Name:        DefaultBroekrCellName,
+			Name:        DefaultBrokerCellName,
 			Annotations: map[string]string{inteventsv1alpha1.CreatorKey: inteventsv1alpha1.Creator},
 		},
 	}

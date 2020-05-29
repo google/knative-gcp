@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 )
 
@@ -33,6 +34,8 @@ const (
 	deploymentUpdated = "DeploymentUpdated"
 	serviceCreated    = "ServiceCreated"
 	serviceUpdated    = "ServiceUpdated"
+	configMapCreated  = "ConfigMapCreated"
+	configMapUpdated  = "ConfigMapUpdated"
 )
 
 type ServiceReconciler struct {
@@ -45,6 +48,12 @@ type ServiceReconciler struct {
 type DeploymentReconciler struct {
 	KubeClient kubernetes.Interface
 	Lister     appsv1listers.DeploymentLister
+	Recorder   record.EventRecorder
+}
+
+type ConfigMapReconciler struct {
+	KubeClient kubernetes.Interface
+	Lister     corev1listers.ConfigMapLister
 	Recorder   record.EventRecorder
 }
 
@@ -111,4 +120,41 @@ func (r *ServiceReconciler) ReconcileService(obj runtime.Object, svc *corev1.Ser
 	}
 
 	return r.EndpointsLister.Endpoints(svc.Namespace).Get(svc.Name)
+}
+
+// ReconcileConfigMap reconciles the K8s ConfigMao 'cm'.
+func (r *ConfigMapReconciler) ReconcileConfigMap(obj runtime.Object, cm *corev1.ConfigMap, handlers ...cache.ResourceEventHandlerFuncs) (*corev1.ConfigMap, error) {
+	current, err := r.Lister.ConfigMaps(cm.Namespace).Get(cm.Name)
+	if apierrs.IsNotFound(err) {
+		current, err = r.KubeClient.CoreV1().ConfigMaps(cm.Namespace).Create(cm)
+		if apierrs.IsAlreadyExists(err) {
+			return current, nil
+		}
+		if err == nil {
+			r.Recorder.Eventf(obj, corev1.EventTypeNormal, configMapCreated, "Created configmap %s/%s", cm.Namespace, cm.Name)
+			for _, h := range handlers {
+				h.OnAdd(current)
+			}
+		}
+		return current, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	if !equality.Semantic.DeepEqual(cm.BinaryData, current.BinaryData) || !equality.Semantic.DeepEqual(cm.Data, current.Data) {
+		// Don't modify the informers copy.
+		desired := current.DeepCopy()
+		desired.Data = cm.Data
+		desired.BinaryData = cm.BinaryData
+		res, err := r.KubeClient.CoreV1().ConfigMaps(desired.Namespace).Update(desired)
+		if err == nil {
+			r.Recorder.Eventf(obj, corev1.EventTypeNormal, configMapUpdated, "Updated configmap %s/%s", res.Namespace, res.Name)
+			for _, h := range handlers {
+				h.OnUpdate(current, desired)
+			}
+		}
+		return res, err
+	}
+	return current, err
 }
