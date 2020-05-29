@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -183,5 +185,11 @@ func WithCloudAuditLogsSourceDeletionTimestamp(s *v1alpha1.CloudAuditLogsSource)
 func WithCloudAuditLogsSourceAnnotations(Annotations map[string]string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudAuditLogsSourceDefaultAuthorization() CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
 	}
 }

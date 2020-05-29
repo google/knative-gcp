@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -152,5 +154,11 @@ func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSour
 func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
 	return func(s *v1alpha1.CloudPubSubSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudPubSubSourceDefaultAuthorization() CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
 	}
 }

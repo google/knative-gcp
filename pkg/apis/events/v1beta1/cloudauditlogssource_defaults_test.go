@@ -17,8 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
+
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
@@ -74,7 +75,7 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(context.Background())
+			tc.orig.SetDefaults(authorizationtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

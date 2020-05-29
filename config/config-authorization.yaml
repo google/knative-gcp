@@ -1,0 +1,90 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-authorization
+  namespace: cloud-run-events
+  labels:
+    events.cloud.google.com/release: devel
+
+data:
+  default-auth-config: |
+    clusterDefaults:
+      secret:
+        name: google-cloud-key
+        key: key.json
+  _example: |
+    ################################
+    #                              #
+    #    EXAMPLE CONFIGURATION     #
+    #                              #
+    ################################
+
+    # This block is not actually functional configuration,
+    # but serves to illustrate the available configuration
+    # options and document them in a way that is accessible
+    # to users that `kubectl edit` this config map.
+    #
+    # These sample configuration options may be copied out of
+    # this example block and unindented to be in the data block
+    # to actually change the configuration.
+
+    # default-auth-config is the configuration for determining the default
+    # authorization to apply to all objects that require GCP auhtorization but,
+    # do not specify it. This is expected to be Channels and Sources.
+    #
+    # When determing the defaults to use for a custom object in a specific
+    # namespace, the precedence rules are:
+    # If the custom object's spec specifies the authorization to use, use that.
+    # If not and that namespace is in the `namespaceDefaults` key, then use the
+    # defaults specified there. If not, then use the defaults specified in
+    # `clusterDefaults`.
+    default-auth-config: |
+      # clusterDefaults are the defaults to apply to every namespace in the
+      # cluster, except those in the `namespaceDefaults` sibling key.
+      clusterDefaults:
+        # The Kubernetes Service Account to use for all data plane pieces. This
+        # is expected to be used for Workload Identity workloads. If omitted or
+        # left blank, then Kubernetes will choose the default Service Account.
+        serviceAccountName: cluster-default-ksa
+        # The Kubernetes SecretKeySelector pointing to the Secret to use. Note
+        # that this secret must exist in the namespace of the custom object
+        # being created.
+        secret:
+          name: google-cloud-key
+          key: key.json
+        # Mapping from Kubernetes Service Account to Google IAM Service Account.
+        # If a custom object's Kubernetes Service Account is in this map, then
+        # the controller will attempt to setup Workload Identity between the
+        # two accounts. If the controller is unable to, then the custom object
+        # will not become ready.
+        workloadIdentityMapping:
+          cluster-wi-ksa1: cluster-wi-gsa1@PROJECT.iam.gserviceaccount.com
+          cluster-wi-ksa2: cluster-wi-gsa2@PROJECT.iam.gserviceaccount.com
+      # namespaceDefaults is a map from namespace name to default configuration.
+      # The default configuration is exactly the same as the one defined in
+      # the `clusterDefaults` sibling key.
+      namespaceDefaults:
+        # It is acceptable to turn off defaulting for any namespace.
+        empty-ns: {}
+        customized-ns:
+          serviceAccountName: ns-default-ksa
+          secret:
+            name: some-other-name
+            key: some-other-key
+          workloadIdentityMapping:
+            ns-wi-ksa1: ns-wi-gsa1@PROJECT.iam.gserviceaccount.com
+            ns-wi-ksa2: ns-wi-gsa2@PROJECT.iam.gserviceaccount.com

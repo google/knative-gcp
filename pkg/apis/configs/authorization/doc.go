@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,18 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+// +k8s:deepcopy-gen=package
 
-import (
-	"context"
-
-	"knative.dev/pkg/apis"
-
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-)
-
-func (s *CloudSchedulerSource) SetDefaults(ctx context.Context) {
-	ctx = apis.WithinParent(ctx, s.ObjectMeta)
-	s.Spec.SetPubSubDefaults(ctx)
-	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
-}
+// authorization holds the typed objects that define the schemas for default authorization of
+// sources and channels.
+package authorization

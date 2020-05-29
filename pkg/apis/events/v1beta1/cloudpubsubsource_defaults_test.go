@@ -17,9 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 	"time"
+
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
 
 	"knative.dev/pkg/ptr"
 
@@ -79,7 +80,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: duckv1beta1.DefaultGoogleCloudSecretSelector(),
+					Secret: &authorizationtesthelper.Secret,
 				},
 			},
 		},
@@ -88,7 +89,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.start
-			got.SetDefaults(context.Background())
+			got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -116,7 +117,7 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	}
 
 	got := want.DeepCopy()
-	got.SetDefaults(context.Background())
+	got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

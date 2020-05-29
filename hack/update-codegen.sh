@@ -65,6 +65,13 @@ chmod +x "${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh
   "messaging:v1alpha1 messaging:v1beta1 events:v1alpha1 events:v1beta1 duck:v1alpha1 duck:v1beta1 broker:v1beta1 intevents:v1alpha1 intevents:v1beta1" \
   --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
+# Deep copy configs.
+${GOPATH}/bin/deepcopy-gen \
+  -O zz_generated.deepcopy \
+  --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
+  -i github.com/google/knative-gcp/pkg/apis/configs/authorization \
+
+
 go install github.com/google/wire/cmd/wire
 go generate "${REPO_ROOT_DIR}"/...
 

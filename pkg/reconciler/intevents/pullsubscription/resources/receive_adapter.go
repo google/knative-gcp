@@ -162,11 +162,10 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		}
 	}
 
-	// If k8s service account is specified, use that service account as credential.
-	if args.Source.Spec.ServiceAccountName != "" {
-		kServiceAccountName := args.Source.Spec.ServiceAccountName
+	// If there is no secret to embed, return what we have.
+	if args.Source.Spec.Secret == nil {
 		return &corev1.PodSpec{
-			ServiceAccountName: kServiceAccountName,
+			ServiceAccountName: args.Source.Spec.ServiceAccountName,
 			Containers: []corev1.Container{
 				receiveAdapterContainer,
 			},
@@ -196,6 +195,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}}
 
 	return &corev1.PodSpec{
+		ServiceAccountName: args.Source.Spec.ServiceAccountName,
 		Containers: []corev1.Container{
 			receiveAdapterContainer,
 		},

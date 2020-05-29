@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -226,5 +228,11 @@ func WithDeletionTimestamp() CloudStorageSourceOption {
 func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudStorageSourceDefaultAuthorization() CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
 	}
 }

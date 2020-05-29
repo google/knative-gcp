@@ -17,8 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
+
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -36,7 +37,7 @@ func TestTopicDefaults(t *testing.T) {
 	}}
 
 	got := &Topic{Spec: TopicSpec{}}
-	got.SetDefaults(context.Background())
+	got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

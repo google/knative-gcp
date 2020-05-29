@@ -208,7 +208,12 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				}
 				return *obj
 			}(),
 			error: true,

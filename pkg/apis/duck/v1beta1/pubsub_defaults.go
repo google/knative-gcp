@@ -17,12 +17,24 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 )
 
-func (s *PubSubSpec) SetPubSubDefaults() {
-	if s.ServiceAccountName == "" && (s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{})) {
-		s.Secret = DefaultGoogleCloudSecretSelector()
+func (s *PubSubSpec) SetPubSubDefaults(ctx context.Context) {
+	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		return
+	}
+	if s.ServiceAccountName == "" {
+		s.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+	}
+	if s.Secret == nil || equality.Semantic.DeepEqual(s.Secret, &corev1.SecretKeySelector{}) {
+		s.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
 }

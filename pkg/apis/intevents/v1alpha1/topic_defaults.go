@@ -19,6 +19,10 @@ package v1alpha1
 import (
 	"context"
 
+	"knative.dev/pkg/apis"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
@@ -27,6 +31,7 @@ import (
 )
 
 func (t *Topic) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
 	duckv1alpha1.SetClusterNameAnnotation(&t.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 }
@@ -35,7 +40,16 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
+
+	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		return
+	}
+	if ts.ServiceAccountName == "" {
+		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+	}
 	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
 }

@@ -19,12 +19,15 @@ package v1beta1
 import (
 	"context"
 
-	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
+	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+	"knative.dev/pkg/apis"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 )
 
 func (t *Topic) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
 }
 
@@ -32,7 +35,16 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	if ts.PropagationPolicy == "" {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
+
+	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	if ad == nil {
+		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		return
+	}
+	if ts.ServiceAccountName == "" {
+		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
+	}
 	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
-		ts.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
+		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
 }

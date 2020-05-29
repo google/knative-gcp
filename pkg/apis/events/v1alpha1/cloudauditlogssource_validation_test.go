@@ -128,7 +128,12 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				}
 				return *obj
 			}(),
 			error: true,

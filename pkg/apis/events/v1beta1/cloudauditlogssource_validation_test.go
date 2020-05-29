@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -124,7 +126,7 @@ func TestCloudAuditLogsSourceValidationFields(t *testing.T) {
 			spec: func() CloudAuditLogsSourceSpec {
 				obj := auditLogsSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &authorizationtesthelper.Secret
 				return *obj
 			}(),
 			error: true,

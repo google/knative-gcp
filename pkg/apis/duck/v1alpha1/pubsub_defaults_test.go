@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"testing"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -109,7 +111,7 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetPubSubDefaults()
+			tc.orig.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
