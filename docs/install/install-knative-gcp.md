@@ -35,7 +35,7 @@ ko apply -f ./config
 1. Pick a knative-gcp release version:
 
    ```shell
-   export KGCP_VERSION=v0.14.0
+   export KGCP_VERSION=v0.15.0
    ```
 
 1. First install the CRDs by running the `kubectl apply` command with the
@@ -76,20 +76,19 @@ information about Workload Identity, please see
 wish to configure the auth manually, refer to
 [manually configure authentication for GCP](./authentication-mechanisms-gcp.md),
 
-- Option 1 (Recommended): Use Workload Identity. **_Note:_** Now, Workload
-  Identity for the Control Plane only works if you install the Knative-GCP
-  Constructs from the master. If you install the Knative-GCP Constructs with our
-  latest release (v0.14.0) or older releases, please use option 2.
+- Option 1 (Recommended): Use Workload Identity.  **_Note:_** If you install 
+the Knative-GCP Constructs with  v0.14.0 or older releases, please use option 2.
 
   Apply [init_control_plane_gke.sh](../../hack/init_control_plane_gke.sh):
 
   ```shell
   ./hack/init_control_plane_gke.sh
   ```
-
+  
   **_Note_**: If you didn't enable Workload Identity when you created your
-  cluster, this step may take a long time to finish. **_Note_**: Optional
-  parameters available.
+  cluster, this step may take a long time to finish.
+  
+  **_Note_**: Optional parameters available.
 
   1. `CLUSTER_NAME`: an optional parameter to specify the cluster to use,
      default to `gcloud config get-value run/cluster`

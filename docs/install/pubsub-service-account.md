@@ -55,65 +55,22 @@ It is the recommended way to access Google Cloud services from within GKE due to
 its improved security properties and manageability. For more information about
 Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
-**_Note:_** Installing Knative-GCP Constructs from the master and installing it
-with our latest release (v0.14.0) both support Workload Identity for the Data
-Plane. Older releases don't support this.
 
-1. Enable Workload Identity. Check
-   [Manually Configure Authentication Mechanism for GCP](authentication-mechanisms-gcp.md)
-   ->
-   [Option 1 (Recommended): Workload Identity](authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
-   -> Enable Workload Identity, for setup details.
+**_Note:_**  If you install 
+the Knative-GCP Constructs with v0.13.0 or older release, please use option 2.
+            
+**_Note:_**  `spec.googleServiceAccount` in v0.14.0 is deprecated for security implications. 
+It has not been promoted to v1beta1 and is expected to be removed from v1alpha1 in the v0.16.0 release.
+Instead, `spec.serviceAccountName` is introduced for Workload Identity in v0.15.0, whose input is a Kubernetes Service Account.
 
-   Skip this step if you have already enabled it during the control plane setup:
-   [Install Knative-GCP](install-knative-gcp.md).
+Using the Google Cloud Service Account you just created and checking 
+[Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity) in 
+[Manually Configure Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md) 
+to configure Workload Identity in the namespace your resources will reside.
 
-1. Give `iam.serviceAccountAdmin` role to your control plane's Google Cloud
-   Service Account. You can skip this step if you granted `roles/owner`
-   privileges during the control plane setup:
-   [Install Knative-GCP](install-knative-gcp.md).
-
-   ```shell
-   gcloud projects add-iam-policy-binding $PROJECT_ID \
-   --member=serviceAccount:cloud-run-events@$PROJECT_ID.iam.gserviceaccount.com \
-   --role roles/iam.serviceAccountAdmin
-   ```
-
-1. Update `spec.googleServiceAccount` with the
-   [Google Cloud Service Account](https://console.cloud.google.com/iam-admin/serviceaccounts/project)
-   you just created when creating resources. Check
-   [example](https://github.com/google/knative-gcp/tree/master/docs/examples) of
-   each resource for detail.
-
-   Generally, updating `spec.googleServiceAccount` will trigger the controller
-   to enable Workload Identity for sources in the data plane. The following
-   steps are handled by the controller:
-
-   1. Create a Kubernetes Service Account with an `OwnerReference` of the
-      source.
-
-   1. Bind the Kubernetes Service Account with Google Cloud Service Account,
-      this will add `role/iam.workloadIdentityUser` to the Google Cloud Service
-      Account. The scope of this role is only for this specific Google Cloud
-      Service Account. It is equivalent to this command:
-
-      ```shell
-      gcloud iam service-accounts add-iam-policy-binding \
-      --role roles/iam.workloadIdentityUser \
-      --member serviceAccount:$PROJECT_ID.svc.id.goog[namespace/Kubernetes-service-account] \
-      GCP-service-account@$PROJECT_ID.iam.gserviceaccount.com
-      ```
-
-   1. Annotate the Kubernetes Service Account with
-      `iam.gke.io/gcp-service-account=GCP-service-account@PROJECT_ID.iam.gserviceaccount.com`
-
-   For every namespace, the Kubernetes Service Account and the Google Cloud
-   Service Account will have a one to one mapping. If multiple source instances
-   use the same Google Cloud Service Account, they will use the same Kubernetes
-   Service Account as well, and the Kubernetes Service Account will have
-   multiple `OwnerReference`s. If all sources using a Kubernetes Service Account
-   are deleted then that Kubernetes Service Account, and its corresponding
-   Google Cloud Service account, will be deleted.
+You will have a Kubernetes Service Account after the above configuration, which is bound to the Google Cloud Service Account you just created. 
+Remember to put this Kubernetes Service Account name under `spec.serviceAccountName` when you follow [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to use 
+resource.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
