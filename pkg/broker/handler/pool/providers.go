@@ -18,10 +18,10 @@ package pool
 
 import (
 	"context"
+	"net/http"
 
 	"cloud.google.com/go/pubsub"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
-	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/wire"
 	"go.opencensus.io/plugin/ochttp"
@@ -35,8 +35,10 @@ var (
 		ceclient.WithTracePropagation(),
 	}
 
-	DefaultHTTPOpts = []cehttp.Option{
-		cehttp.WithRoundTripper(&ochttp.Transport{Propagation: &tracecontext.HTTPFormat{}}),
+	DefaultHTTPClient = &http.Client{
+		Transport: &ochttp.Transport{
+			Propagation: &tracecontext.HTTPFormat{},
+		},
 	}
 
 	// ProviderSet provides the fanout and retry sync pools using the default client options. In
@@ -45,25 +47,17 @@ var (
 	ProviderSet = wire.NewSet(
 		NewFanoutPool,
 		NewRetryPool,
-		cehttp.New,
-		NewDeliverClient,
 		NewPubsubClient,
 		NewRetryClient,
-		wire.Value(DefaultHTTPOpts),
+		wire.Value(DefaultHTTPClient),
 		wire.Value(DefaultCEClientOpts),
 	)
 )
 
 type (
-	ProjectID     string
-	DeliverClient ceclient.Client
-	RetryClient   ceclient.Client
+	ProjectID   string
+	RetryClient ceclient.Client
 )
-
-// NewDeliverClient provides a delivery CE client from an HTTP protocol and a list of CE client options.
-func NewDeliverClient(hp *cehttp.Protocol, opts ...ceclient.Option) (DeliverClient, error) {
-	return ceclient.NewObserved(hp, opts...)
-}
 
 // NewPubsubClient provides a pubsub client for the supplied project ID.
 func NewPubsubClient(ctx context.Context, projectID ProjectID) (*pubsub.Client, error) {
