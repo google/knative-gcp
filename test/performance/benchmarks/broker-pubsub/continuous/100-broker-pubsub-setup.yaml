@@ -29,7 +29,7 @@ metadata:
   name: pubsub
   namespace: default
   annotations:
-    eventing.knative.dev/broker.class: ChannelBasedBroker
+    eventing.knative.dev/broker.class: MTChannelBasedBroker
 spec:
   config:
     apiVersion: v1
