@@ -132,3 +132,27 @@ func getBucketHandle(ctx context.Context, t *testing.T, bucketName, project stri
 	}
 	return client.Bucket(bucketName)
 }
+
+func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx)
+	if err != nil {
+		t.Fatalf("failed to create storage client, %s", err.Error())
+	}
+	defer client.Close()
+
+	client.Bucket(bucketName)
+	bucket := client.Bucket(bucketName)
+
+	notifications, err := bucket.Notifications(ctx)
+	if err != nil {
+		t.Fatalf("Failed to fetch existing notifications %s", err.Error())
+	}
+
+	if _, ok := notifications[notificationID];ok {
+		return true
+	}
+	return  false
+
+}

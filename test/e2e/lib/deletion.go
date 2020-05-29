@@ -28,3 +28,30 @@ func (c *Client) DeletePubSubOrFail(name string) {
 		c.T.Fatalf("Failed to delete pubsub %s/%s: %v", c.Namespace, name, err)
 	}
 }
+
+func (c *Client) DeleteSchedulerOrFail(name string) {
+	c.T.Helper()
+	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
+	err := schedulers.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete scheduler %s/%s: %v", c.Namespace, name, err)
+	}
+}
+
+func (c *Client) DeleteStorageOrFail(name string) {
+	c.T.Helper()
+	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
+	err := storages.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
+	}
+}
+
+func (c *Client) DeleteAuditLogsOrFail(name string) {
+	c.T.Helper()
+	auditLogs := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
+	err := auditLogs.Delete(name, &metav1.DeleteOptions{})
+	if err != nil {
+		c.T.Fatalf("Failed to delete storage %s/%s: %v", c.Namespace, name, err)
+	}
+}

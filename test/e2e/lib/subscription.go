@@ -28,7 +28,7 @@ import (
 )
 
 
-func SubscriptionExists(t *testing.T, subId string) bool {
+func SubscriptionExists(t *testing.T, subID string) bool {
 	t.Helper()
 	ctx := context.Background()
 	// Prow sticks the project in this key
@@ -40,13 +40,11 @@ func SubscriptionExists(t *testing.T, subId string) bool {
 	if err != nil {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
-	sub:=client.Subscription(subId)
+	defer client.Close()
+	sub:=client.Subscription(subID)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		t.Fatalf("failed to verify whether Pub/Sub subscription exists, %s", err.Error())
 	}
 	return exists
 }
-
-
-

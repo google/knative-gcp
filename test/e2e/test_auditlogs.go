@@ -32,6 +32,75 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+// SmokeCloudAuditLogsSourceTestImpl tests if a CloudAuditLogsSource object can be created to ready state and delete a CloudAuditLogsSource resource and its underlying resources..
+func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	project := os.Getenv(lib.ProwProjectKey)
+
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	svcName := helpers.AppendRandomString(auditlogsName + "-event-display")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
+	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
+
+	lib.MakeAuditLogsOrDie(client,
+		lib.ServiceGVK,
+		auditlogsName,
+		lib.PubSubCreateTopicMethodName,
+		project,
+		resourceName,
+		lib.PubSubServiceName,
+		svcName,
+		authConfig.PubsubServiceAccount,
+	)
+
+	createdAuditLogs := client.GetAuditLogsOrFail(auditlogsName)
+
+	topicID := createdAuditLogs.Status.TopicID
+	subID := createdAuditLogs.Status.SubscriptionID
+	sinkID := createdAuditLogs.Status.StackdriverSink
+
+	createdSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if !createdSinkExists {
+		t.Errorf("Expected StackdriverSink%q to exist", sinkID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteAuditLogsOrFail(auditlogsName)
+	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(20*time.Second)
+
+
+	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if deletedSinkExists {
+		t.Errorf("Expected s%q StackdriverSink to get deleted", sinkID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+	t.Logf("topic id is: %v /n, sub id is: %v /n, sink id is %s", topicID, subID, sinkID)
+	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
+	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
+	t.Logf("createdSinkExists id is: %t /n, deletedSinkExists is: %t /n", createdSinkExists, deletedSinkExists)
+}
+
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
 

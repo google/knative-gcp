@@ -121,3 +121,24 @@ func DeleteTopicOrDie(t *testing.T, topicName string) {
 		}
 	}
 }
+
+func TopicExists(t *testing.T, topicID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	// Prow sticks the project in this key
+	project := os.Getenv(ProwProjectKey)
+	if project == "" {
+		t.Fatalf("failed to find %q in envvars", ProwProjectKey)
+	}
+	client, err := pubsub.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create pubsub client, %s", err.Error())
+	}
+	defer client.Close()
+	topic:=client.Topic(topicID)
+	exists, err := topic.Exists(ctx)
+	if err != nil {
+		t.Fatalf("failed to verify whether Pub/Sub topic exists, %s", err.Error())
+	}
+	return exists
+}

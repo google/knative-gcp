@@ -36,6 +36,68 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
+// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	//make the storage source
+	lib.MakeStorageOrDie(client, lib.ServiceGVK, bucketName, storageName, svcName, authConfig.PubsubServiceAccount)
+
+
+	createdStorage := client.GetStorageOrFail(storageName)
+
+	topicID := createdStorage.Status.TopicID
+	subID := createdStorage.Status.SubscriptionID
+	notificationID := createdStorage.Status.NotificationID
+
+	createdNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if !createdNotificationExists {
+		t.Errorf("Expected notification%q to exist", topicID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteStorageOrFail(storageName)
+	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(20*time.Second)
+
+
+	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if deletedNotificationExists {
+		t.Errorf("Expected notification%q tto get deleted", notificationID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+	t.Logf("topic id is: %v /n, sub id is: %v /n, notification id is %s", topicID, subID, notificationID)
+	t.Logf("createdSubExists id is: %t /n, deletedSubExists is: %t /n", createdSubExists, deletedSubExists)
+	t.Logf("createdTopicExists id is: %t /n, deletedTopicExists is: %t /n", createdTopicExists, deletedTopicExists)
+	t.Logf("createdNotificationExists id is: %t /n, deletedNotificationExists is: %t /n", createdNotificationExists, deletedNotificationExists)
+}
+
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()
 	ctx := context.Background()

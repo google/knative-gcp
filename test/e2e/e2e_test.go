@@ -172,7 +172,7 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t, authConfig)
 }
 
-// TestSmokeCloudPubSubSource makes sure we can run tests on the CloudPubSubSource.
+// TestSmokeCloudPubSubSource we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
 func TestSmokeCloudPubSubSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -255,6 +255,13 @@ func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
 	SchedulerSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
 }
 
+// TestSmokeCloudStorageSource tests if we can create a CloudStorageSource to ready state and delete a CloudStorageSource and its underlying resources.
+func TestSmokeCloudStorageSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudStorageSourceTestImpl(t, authConfig)
+}
+
 // TestCloudStorageSourceWithTarget tests we can knock down a target from a CloudStorageSource.
 func TestCloudStorageSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
@@ -270,6 +277,13 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 	CloudStorageSourceWithTargetTestImpl(t, true /*assertMetrics */, authConfig)
 }
 
+// TestSmokeCloudAuditLogsSource tests if we can create a CloudAuditLogsSource to ready state and delete a CloudAuditLogsSource and its underlying resources.
+func TestSmokeCloudAuditLogsSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudAuditLogsSourceTestImpl(t, authConfig)
+}
+
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
@@ -277,11 +291,11 @@ func TestCloudAuditLogsSourceWithTarget(t *testing.T) {
 	CloudAuditLogsSourceWithTargetTestImpl(t, authConfig)
 }
 
-// TestSmokeCloudSchedulerSourceSetup tests if we can create a CloudSchedulerSource resource and get it to a ready state.
-func TestSmokeCloudSchedulerSourceSetup(t *testing.T) {
+// TestSmokeCloudSchedulerSource tests if we can create a CloudSchedulerSource to ready state and delete a CloudSchedulerSource and its underlying resources.
+func TestSmokeCloudSchedulerSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeCloudSchedulerSourceSetup(t, authConfig)
+	SmokeCloudSchedulerSourceTestImpl(t, authConfig)
 }
 
 // TestCloudSchedulerSourceWithTargetTestImpl tests if we can receive an event on a bespoke sink from a CloudSchedulerSource source.
