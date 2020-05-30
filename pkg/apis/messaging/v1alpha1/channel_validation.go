@@ -44,7 +44,7 @@ func (cs *ChannelSpec) Validate(ctx context.Context) *apis.FieldError {
 		}
 	}
 
-	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.GoogleServiceAccount); err != nil {
+	if err := duckv1alpha1.ValidateCredential(cs.Secret, cs.GoogleServiceAccount, cs.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

@@ -46,14 +46,12 @@ import (
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	intv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	MessagingV1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
 	fakeeventsclientset "github.com/google/knative-gcp/pkg/client/clientset/versioned/fake"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	eventslisters "github.com/google/knative-gcp/pkg/client/listers/events/v1alpha1"
 	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	intlisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	messaginglisters "github.com/google/knative-gcp/pkg/client/listers/messaging/v1alpha1"
-	pubsublisters "github.com/google/knative-gcp/pkg/client/listers/pubsub/v1alpha1"
 )
 
 var sinkAddToScheme = func(scheme *runtime.Scheme) error {
@@ -122,14 +120,6 @@ func (l *Listers) GetPullSubscriptionLister() inteventslisters.PullSubscriptionL
 
 func (l *Listers) GetTopicLister() inteventslisters.TopicLister {
 	return inteventslisters.NewTopicLister(l.indexerFor(&inteventsv1alpha1.Topic{}))
-}
-
-func (l *Listers) GetPubSubPullSubscriptionLister() pubsublisters.PullSubscriptionLister {
-	return pubsublisters.NewPullSubscriptionLister(l.indexerFor(&pubsubv1alpha1.PullSubscription{}))
-}
-
-func (l *Listers) GetPubSubTopicLister() pubsublisters.TopicLister {
-	return pubsublisters.NewTopicLister(l.indexerFor(&pubsubv1alpha1.Topic{}))
 }
 
 func (l *Listers) GetChannelLister() messaginglisters.ChannelLister {

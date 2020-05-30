@@ -25,10 +25,9 @@ import (
 	v1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	inteventsv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -95,6 +94,12 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	case inteventsv1alpha1.SchemeGroupVersion.WithResource("topics"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1alpha1().Topics().Informer()}, nil
 
+		// Group=internal.events.cloud.google.com, Version=v1beta1
+	case inteventsv1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1beta1().PullSubscriptions().Informer()}, nil
+	case inteventsv1beta1.SchemeGroupVersion.WithResource("topics"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Internal().V1beta1().Topics().Informer()}, nil
+
 		// Group=messaging.cloud.google.com, Version=v1alpha1
 	case messagingv1alpha1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1alpha1().Channels().Informer()}, nil
@@ -102,18 +107,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=messaging.cloud.google.com, Version=v1beta1
 	case messagingv1beta1.SchemeGroupVersion.WithResource("channels"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Messaging().V1beta1().Channels().Informer()}, nil
-
-		// Group=pubsub.cloud.google.com, Version=v1alpha1
-	case pubsubv1alpha1.SchemeGroupVersion.WithResource("pullsubscriptions"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().PullSubscriptions().Informer()}, nil
-	case pubsubv1alpha1.SchemeGroupVersion.WithResource("topics"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1alpha1().Topics().Informer()}, nil
-
-		// Group=pubsub.cloud.google.com, Version=v1beta1
-	case pubsubv1beta1.SchemeGroupVersion.WithResource("pullsubscriptions"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().PullSubscriptions().Informer()}, nil
-	case pubsubv1beta1.SchemeGroupVersion.WithResource("topics"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Pubsub().V1beta1().Topics().Informer()}, nil
 
 	}
 

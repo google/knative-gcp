@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -73,7 +74,8 @@ func init() {
 	_ = brokerv1beta1.AddToScheme(scheme.Scheme)
 }
 
-func TestBroker(t *testing.T) {
+func TestAllCases(t *testing.T) {
+	// TODO Add tests cases for broker with triggers and verify the target-config content.
 	table := TableTest{{
 		Name: "bad workqueue key",
 		Key:  "too/many/parts",
@@ -297,15 +299,6 @@ func patchFinalizers(namespace, name, finalizer string) clientgotesting.PatchAct
 	action.Name = name
 	action.Namespace = namespace
 	patch := `{"metadata":{"finalizers":["` + finalizer + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
 }

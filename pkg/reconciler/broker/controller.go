@@ -20,25 +20,21 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
+
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	injectionclient "github.com/google/knative-gcp/pkg/client/injection/client"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
 	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/utils"
-	"go.uber.org/zap"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
 	eventingv1beta1 "knative.dev/eventing/pkg/apis/eventing/v1beta1"
-	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
-	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
-	"knative.dev/pkg/client/injection/ducks/duck/v1/conditions"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	configmapinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
@@ -46,7 +42,6 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	pkgreconciler "knative.dev/pkg/reconciler"
-	"knative.dev/pkg/resolver"
 )
 
 const (
@@ -105,27 +100,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	impl := brokerreconciler.NewImpl(ctx, r, brokerv1beta1.BrokerClass)
 
-	tr := &TriggerReconciler{
-		Base:         reconciler.NewBase(ctx, controllerAgentName, cmw),
-		pubsubClient: client,
-	}
-
-	triggerReconciler := triggerreconciler.NewReconciler(
-		ctx,
-		r.Logger,
-		injectionclient.Get(ctx),
-		triggerInformer.Lister(),
-		r.Recorder,
-		tr,
-	)
-
-	r.triggerReconciler = triggerReconciler
-
 	r.Logger.Info("Setting up event handlers")
-
-	tr.kresourceTracker = duck.NewListableTracker(ctx, conditions.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
-	tr.addressableTracker = duck.NewListableTracker(ctx, addressable.Get, impl.EnqueueKey, controller.GetTrackerLease(ctx))
-	tr.uriResolver = resolver.NewURIResolver(ctx, impl.EnqueueKey)
 
 	brokerInformer.Informer().AddEventHandlerWithResyncPeriod(
 		cache.FilteringResourceEventHandler{
@@ -146,27 +121,6 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	//	Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
 	//})
 
-	//TODO https://github.com/knative/eventing/pull/2779/files
-	//TODO Need to watch only the shared ingress
-	// endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-	// 	FilterFunc: pkgreconciler.LabelExistsFilterFunc(eventing.BrokerLabelKey),
-	// 	Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
-	// })
-
-	//TODO Also reconcile triggers when their broker doesn't exist. Maybe use a
-	// synthetic broker and call reconcileTriggers anyway?
-	// How do we do this? We can check the lister to see if the broker exists
-	// and do something different if it does not, but that still allows the
-	// broker to be deleted while the reconcile is in the queue. Need a workaround
-	// for the gen reconciler not reconciling when the reconciled object doesn't exist.
-
-	// Maybe we need to override the genreconciler's Reconcile method to go ahead and reconcile
-	// if the broker doesn't exist.
-
-	// Is there a race if we create a separate controller for the trigger reconciler?
-	// Yes, because the broker and trigger controller could be reconciling at the same time
-	// If we want the broker controller to continue being responsible for reconciling all triggers,
-	// we need the ability to reconcile objects that don't exist
 	triggerInformer.Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
 			if trigger, ok := obj.(*brokerv1beta1.Trigger); ok {

@@ -23,10 +23,9 @@ import (
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	eventsv1beta1 "github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	internalv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
+	internalv1beta1 "github.com/google/knative-gcp/pkg/apis/intevents/v1beta1"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/apis/messaging/v1beta1"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1alpha1"
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/apis/pubsub/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -42,10 +41,9 @@ var localSchemeBuilder = runtime.SchemeBuilder{
 	eventsv1alpha1.AddToScheme,
 	eventsv1beta1.AddToScheme,
 	internalv1alpha1.AddToScheme,
+	internalv1beta1.AddToScheme,
 	messagingv1alpha1.AddToScheme,
 	messagingv1beta1.AddToScheme,
-	pubsubv1alpha1.AddToScheme,
-	pubsubv1beta1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

@@ -47,11 +47,11 @@ func TestChannelIdentitySpec(t *testing.T) {
 	s := &Channel{
 		Spec: ChannelSpec{
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				GoogleServiceAccount: "test@test",
+				GoogleServiceAccount: "test",
 			},
 		},
 	}
-	want := "test@test"
+	want := "test"
 	got := s.IdentitySpec().GoogleServiceAccount
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

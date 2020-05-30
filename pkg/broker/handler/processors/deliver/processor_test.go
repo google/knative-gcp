@@ -17,7 +17,9 @@ limitations under the License.
 package deliver
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -34,13 +36,22 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"knative.dev/pkg/logging"
+	logtest "knative.dev/pkg/logging/testing"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
+)
+
+const (
+	fakeTargetAddress  = "target"
+	fakeIngressAddress = "ingress"
 )
 
 func TestInvalidContext(t *testing.T) {
@@ -92,6 +103,7 @@ func TestDeliverSuccess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
@@ -99,10 +111,6 @@ func TestDeliverSuccess(t *testing.T) {
 			ingressClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create ingress cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
 			targetSvr := httptest.NewServer(targetClient)
 			defer targetSvr.Close()
@@ -116,11 +124,11 @@ func TestDeliverSuccess(t *testing.T) {
 				bm.SetAddress(ingressSvr.URL)
 				bm.UpsertTargets(target)
 			})
-			ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 			p := &Processor{
-				DeliverClient: deliverClient,
+				DeliverClient: http.DefaultClient,
 				Targets:       testTargets,
 			}
 
@@ -218,14 +226,10 @@ func TestDeliverFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
 				t.Fatalf("failed to create target cloudevents client: %v", err)
-			}
-			deliverClient, err := ceclient.NewDefault()
-			if err != nil {
-				t.Fatalf("failed to create requester cloudevents client: %v", err)
 			}
 			targetSvr := httptest.NewServer(targetClient)
 			defer targetSvr.Close()
@@ -267,7 +271,7 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 			p := &Processor{
-				DeliverClient:      deliverClient,
+				DeliverClient:      http.DefaultClient,
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
@@ -318,34 +322,125 @@ func (NoReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func BenchmarkDeliveryNoReply(b *testing.B) {
-	sampleEvent := newSampleEvent()
 	httpClient := http.Client{
 		Transport: &http.Transport{
 			MaxIdleConnsPerHost: runtime.NumCPU(),
 		},
 	}
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
 	targetSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
 	defer targetSvr.Close()
 
+	benchmarkNoReply(b, httpClient, targetSvr.URL)
+}
+
+type ReplyHandler struct {
+	msg binding.Message
+}
+
+func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
+}
+
+func BenchmarkDeliveryWithReply(b *testing.B) {
+	httpClient := http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: runtime.NumCPU()}}
+	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
+	defer ingressSvr.Close()
+	benchmarkWithReply(b, ingressSvr.URL, func(b *testing.B, reply *event.Event) (http.Client, string) {
+		targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(reply)})
+		b.Cleanup(targetSvr.Close)
+		return httpClient, targetSvr.URL
+	})
+}
+
+type fakeRoundTripper map[string]*http.Response
+
+func (r fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req.Body != nil {
+		defer req.Body.Close()
+	}
+	if resp, ok := r[req.URL.String()]; ok {
+		return resp, nil
+	}
+	return nil, fmt.Errorf("URL not found: %q", req.URL)
+}
+
+// BenchmarkDeliveryNoReplyFakeClient benchmarks delivery using a fake HTTP client. Use of the
+// fake client helps to better isolate the performance of the processor itself and can provide
+// better profiling data.
+func BenchmarkDeliveryNoReplyFakeClient(b *testing.B) {
+	targetAddress := "target"
+	httpClient := http.Client{
+		Transport: fakeRoundTripper(map[string]*http.Response{
+			targetAddress: {
+				StatusCode: 202,
+				Header:     make(map[string][]string),
+				Body:       fakeBody{new(bytes.Buffer)},
+			},
+		}),
+	}
+	benchmarkNoReply(b, httpClient, targetAddress)
+}
+
+type fakeBody struct {
+	*bytes.Buffer
+}
+
+func (b fakeBody) Close() error {
+	return nil
+}
+
+func makeFakeTargetWithReply(b *testing.B, reply *event.Event) (httpClient http.Client, targetAddress string) {
+	req, err := http.NewRequest("POST", "", nil)
+	if err != nil {
+		b.Fatal(err)
+	}
+	cehttp.WriteRequest(context.Background(), binding.ToMessage(reply), req)
+	body := new(bytes.Buffer)
+	if req.Body != nil {
+		io.Copy(body, req.Body)
+		req.Body.Close()
+	}
+
+	httpClient = http.Client{
+		Transport: fakeRoundTripper(map[string]*http.Response{
+			fakeTargetAddress: {
+				StatusCode: 200,
+				Header:     req.Header,
+				Body:       fakeBody{body},
+			},
+			fakeIngressAddress: {
+				StatusCode: 202,
+				Header:     make(map[string][]string),
+				Body:       fakeBody{new(bytes.Buffer)},
+			},
+		}),
+	}
+	targetAddress = fakeTargetAddress
+	return
+}
+
+// BenchmarkDeliveryWithReplyFakeClient benchmarks delivery with reply using a fake HTTP client. Use
+// of the fake client helps to better isolate the performance of the processor itself and can
+// provide better profiling data.
+func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
+	benchmarkWithReply(b, fakeIngressAddress, makeFakeTargetWithReply)
+}
+
+func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
+	sampleEvent := newSampleEvent()
+
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
+		DeliverClient: &httpClient,
 		Targets:       testTargets,
 	}
 
@@ -359,49 +454,26 @@ func BenchmarkDeliveryNoReply(b *testing.B) {
 	})
 }
 
-type ReplyHandler struct {
-	msg binding.Message
-}
-
-func (h ReplyHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	cehttp.WriteResponseWriter(req.Context(), h.msg, http.StatusOK, w)
-}
-
-func BenchmarkDeliveryWithReply(b *testing.B) {
+func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
 	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
 
-	httpClient := http.Client{
-		Transport: &http.Transport{
-			MaxIdleConnsPerHost: runtime.NumCPU(),
-		},
-	}
-	httpProtocol, err := cehttp.New(cehttp.WithClient(httpClient))
-	if err != nil {
-		b.Fatal(err)
-	}
-	deliverClient, err := ceclient.New(httpProtocol)
-	if err != nil {
-		b.Fatalf("failed to create requester cloudevents client: %v", err)
-	}
-	targetSvr := httptest.NewServer(ReplyHandler{msg: binding.ToMessage(&sampleReply)})
-	defer targetSvr.Close()
-	ingressSvr := httptest.NewServer(NoReplyHandler(struct{}{}))
-	defer ingressSvr.Close()
+	httpClient, targetAddress := makeTarget(b, &sampleReply)
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
-	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetSvr.URL}
+	target := &config.Target{Namespace: "ns", Name: "target", Broker: "broker", Address: targetAddress}
 	testTargets := memory.NewEmptyTargets()
 	testTargets.MutateBroker("ns", "broker", func(bm config.BrokerMutation) {
-		bm.SetAddress(ingressSvr.URL)
+		bm.SetAddress(ingressAddress)
 		bm.UpsertTargets(target)
 	})
-	ctx := handlerctx.WithBrokerKey(context.Background(), broker.Key())
+	ctx := logging.WithLogger(context.Background(), zaptest.NewLogger(b, zaptest.Level(zap.InfoLevel)).Sugar())
+	ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 	ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
 	p := &Processor{
-		DeliverClient: deliverClient,
+		DeliverClient: &httpClient,
 		Targets:       testTargets,
 	}
 

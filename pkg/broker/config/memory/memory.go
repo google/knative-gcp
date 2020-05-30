@@ -29,26 +29,31 @@ type brokerMutation struct {
 }
 
 func (m *brokerMutation) SetID(id string) config.BrokerMutation {
+	m.delete = false
 	m.b.Id = id
 	return m
 }
 
 func (m *brokerMutation) SetAddress(address string) config.BrokerMutation {
+	m.delete = false
 	m.b.Address = address
 	return m
 }
 
 func (m *brokerMutation) SetDecoupleQueue(q *config.Queue) config.BrokerMutation {
+	m.delete = false
 	m.b.DecoupleQueue = q
 	return m
 }
 
 func (m *brokerMutation) SetState(s config.State) config.BrokerMutation {
+	m.delete = false
 	m.b.State = s
 	return m
 }
 
 func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerMutation {
+	m.delete = false
 	if m.b.Targets == nil {
 		m.b.Targets = make(map[string]*config.Target)
 	}
@@ -61,6 +66,7 @@ func (m *brokerMutation) UpsertTargets(targets ...*config.Target) config.BrokerM
 }
 
 func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerMutation {
+	m.delete = false
 	for _, t := range targets {
 		delete(m.b.Targets, t.Name)
 	}
@@ -68,7 +74,9 @@ func (m *brokerMutation) DeleteTargets(targets ...*config.Target) config.BrokerM
 }
 
 func (m *brokerMutation) Delete() {
+	// Calling delete will "reset" the broker under mutation instantly.
 	m.delete = true
+	m.b = &config.Broker{Name: m.b.Name, Namespace: m.b.Namespace}
 }
 
 type memoryTargets struct {
@@ -125,7 +133,7 @@ func (m *memoryTargets) MutateBroker(namespace, name string, mutate func(config.
 		if newVal.Brokers == nil {
 			newVal.Brokers = make(map[string]*config.Broker)
 		}
-		newVal.Brokers[config.BrokerKey(namespace, name)] = b
+		newVal.Brokers[config.BrokerKey(namespace, name)] = mutation.b
 	}
 
 	// Update the atomic value to be the copy.

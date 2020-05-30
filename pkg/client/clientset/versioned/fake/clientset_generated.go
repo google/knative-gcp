@@ -28,14 +28,12 @@ import (
 	fakeeventsv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/events/v1beta1/fake"
 	internalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1"
 	fakeinternalv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1alpha1/fake"
+	internalv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1beta1"
+	fakeinternalv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/intevents/v1beta1/fake"
 	messagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1"
 	fakemessagingv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1alpha1/fake"
 	messagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1"
 	fakemessagingv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/messaging/v1beta1/fake"
-	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1"
-	fakepubsubv1alpha1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1alpha1/fake"
-	pubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1"
-	fakepubsubv1beta1 "github.com/google/knative-gcp/pkg/client/clientset/versioned/typed/pubsub/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -110,6 +108,11 @@ func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interfac
 	return &fakeinternalv1alpha1.FakeInternalV1alpha1{Fake: &c.Fake}
 }
 
+// InternalV1beta1 retrieves the InternalV1beta1Client
+func (c *Clientset) InternalV1beta1() internalv1beta1.InternalV1beta1Interface {
+	return &fakeinternalv1beta1.FakeInternalV1beta1{Fake: &c.Fake}
+}
+
 // MessagingV1alpha1 retrieves the MessagingV1alpha1Client
 func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Interface {
 	return &fakemessagingv1alpha1.FakeMessagingV1alpha1{Fake: &c.Fake}
@@ -118,14 +121,4 @@ func (c *Clientset) MessagingV1alpha1() messagingv1alpha1.MessagingV1alpha1Inter
 // MessagingV1beta1 retrieves the MessagingV1beta1Client
 func (c *Clientset) MessagingV1beta1() messagingv1beta1.MessagingV1beta1Interface {
 	return &fakemessagingv1beta1.FakeMessagingV1beta1{Fake: &c.Fake}
-}
-
-// PubsubV1alpha1 retrieves the PubsubV1alpha1Client
-func (c *Clientset) PubsubV1alpha1() pubsubv1alpha1.PubsubV1alpha1Interface {
-	return &fakepubsubv1alpha1.FakePubsubV1alpha1{Fake: &c.Fake}
-}
-
-// PubsubV1beta1 retrieves the PubsubV1beta1Client
-func (c *Clientset) PubsubV1beta1() pubsubv1beta1.PubsubV1beta1Interface {
-	return &fakepubsubv1beta1.FakePubsubV1beta1{Fake: &c.Fake}
 }

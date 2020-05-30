@@ -19,6 +19,7 @@ package pool
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -52,7 +53,7 @@ type FanoutPool struct {
 	deliverRetryClient ceclient.Client
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
-	deliverClient ceclient.Client
+	deliverClient *http.Client
 }
 
 type fanoutHandlerCache struct {
@@ -82,7 +83,7 @@ func (hc *fanoutHandlerCache) shouldRenew(b *config.Broker) bool {
 func NewFanoutPool(
 	targets config.ReadonlyTargets,
 	pubsubClient *pubsub.Client,
-	deliverClient DeliverClient,
+	deliverClient *http.Client,
 	retryClient RetryClient,
 	opts ...Option,
 ) (*FanoutPool, error) {
@@ -134,6 +135,12 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 			// Stop and clean up the old handler before we start a new one.
 			value.(*fanoutHandlerCache).Stop()
 			p.pool.Delete(b.Key())
+		}
+
+		// Don't start the handler if broker is not ready.
+		// The decouple topic/sub might not be ready at this point.
+		if b.State != config.State_READY {
+			return true
 		}
 
 		sub := p.pubsubClient.Subscription(b.DecoupleQueue.Subscription)
