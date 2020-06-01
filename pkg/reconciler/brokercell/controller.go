@@ -20,6 +20,7 @@ package brokercell
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -62,7 +63,8 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	// TODO(https://github.com/google/knative-gcp/issues/912) Change the period back to 5min.
+	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), time.Minute)
 
 	// TODO: add additional informer event handlers here.
 

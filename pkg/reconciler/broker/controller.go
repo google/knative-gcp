@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"time"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -109,7 +110,8 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 			FilterFunc: pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/),
 			Handler:    controller.HandleAll(impl.Enqueue),
 		},
-		reconciler.DefaultResyncPeriod,
+		// TODO(https://github.com/google/knative-gcp/issues/1145) Change period back to 5 min.
+		time.Minute,
 	)
 
 	// Don't watch the targets configmap because it would require reconciling
