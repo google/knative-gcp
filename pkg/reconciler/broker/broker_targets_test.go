@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"knative.dev/pkg/logging"
 	logtesting "knative.dev/pkg/logging/testing"
+
 	//. "knative.dev/pkg/reconciler/testing"
 	fakerunclient "github.com/google/knative-gcp/pkg/client/injection/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"

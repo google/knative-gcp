@@ -29,4 +29,3 @@ type PropPair struct {
 	Expected string
 	Received string
 }
-

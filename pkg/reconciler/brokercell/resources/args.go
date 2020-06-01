@@ -62,6 +62,15 @@ type RetryArgs struct {
 	Args
 }
 
+// AutoscalingArgs are the arguments to create HPA for deployments.
+type AutoscalingArgs struct {
+	ComponentName     string
+	BrokerCell        *intv1alpha1.BrokerCell
+	AvgCPUUtilization int32
+	AvgMemoryUsage    string
+	MaxReplicas       int32
+}
+
 // Labels generates the labels present on all resources representing the
 // component of the given BrokerCell.
 func Labels(brokerCellName, componentName string) map[string]string {
