@@ -44,7 +44,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 
 	if err != nil && !apierrs.IsNotFound(err) {
 		logging.FromContext(ctx).Error("Error reconciling brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
-		b.Status.MarkBrokerCelllUnknown("Unknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
+		b.Status.MarkBrokerCelllUnknown("BrokerCellUnknown", "Failed to get brokercell %s/%s", bc.Namespace, bc.Name)
 		return err
 	}
 
@@ -53,7 +53,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 		bc, err = r.RunClientSet.InternalV1alpha1().BrokerCells(want.Namespace).Create(want)
 		if err != nil && !apierrs.IsAlreadyExists(err) {
 			logging.FromContext(ctx).Error("Error creating brokercell", zap.String("namespace", b.Namespace), zap.String("broker", b.Name), zap.Error(err))
-			b.Status.MarkBrokerCelllFailed("CreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
+			b.Status.MarkBrokerCelllFailed("BrokerCellCreationFailed", "Failed to create %s/%s", want.Namespace, want.Name)
 			return err
 		}
 		if apierrs.IsAlreadyExists(err) {
@@ -74,7 +74,7 @@ func (r *Reconciler) ensureBrokerCellExists(ctx context.Context, b *brokerv1beta
 	if bc.Status.IsReady() {
 		b.Status.MarkBrokerCellReady()
 	} else {
-		b.Status.MarkBrokerCelllUnknown("NotReady", "Brokercell %s/%s is not ready", bc.Namespace, bc.Name)
+		b.Status.MarkBrokerCelllUnknown("BrokerCellNotReady", "Brokercell %s/%s is not ready", bc.Namespace, bc.Name)
 	}
 
 	//TODO(#1019) Use the IngressTemplate of brokercell.
