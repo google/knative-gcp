@@ -34,18 +34,45 @@ func MakeIngressDeployment(args IngressArgs) *appsv1.Deployment {
 	// Decorate the container template with ingress port.
 	container.Env = append(container.Env, corev1.EnvVar{Name: "PORT", Value: strconv.Itoa(args.Port)})
 	container.Ports = append(container.Ports, corev1.ContainerPort{Name: "http", ContainerPort: int32(args.Port)})
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1000m"),
+		},
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
 // MakeFanoutDeployment creates the fanout Deployment object.
 func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1000Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1000Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1500m"),
+		},
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
 // MakeRetryDeployment creates the retry Deployment object.
 func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container := containerTemplate(args.Args)
+	container.Resources = corev1.ResourceRequirements{
+		Limits: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1500Mi"),
+		},
+		Requests: corev1.ResourceList{
+			corev1.ResourceMemory: resource.MustParse("1500Mi"),
+			corev1.ResourceCPU:    resource.MustParse("1000m"),
+		},
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
@@ -131,17 +158,6 @@ func containerTemplate(args Args) corev1.Container {
 			{
 				Name:      "google-broker-key",
 				MountPath: "/var/secrets/google",
-			},
-		},
-		// # TODO(issue #876): determine good values for resource requests/limits
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("100m"),
-				corev1.ResourceMemory: resource.MustParse("100Mi"),
-			},
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse("1000m"),
-				corev1.ResourceMemory: resource.MustParse("1000Mi"),
 			},
 		},
 	}
