@@ -22,6 +22,7 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -185,12 +186,7 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "google-cloud-key",
-					},
-					Key: "key.json",
-				}
+				obj.Secret = &authorizationtesthelper.Secret
 				return *obj
 			}(),
 			error: true,

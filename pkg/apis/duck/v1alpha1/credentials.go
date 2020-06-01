@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	// TODO - Remove these
 	DefaultSecretName = "google-cloud-key"
-	defaultSecretKey  = "key.json"
 )
 
 var (

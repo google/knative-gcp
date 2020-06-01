@@ -21,16 +21,10 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"k8s.io/apimachinery/pkg/api/resource"
 	logtesting "knative.dev/pkg/logging/testing"
 
 	. "knative.dev/pkg/configmap/testing"
 )
-
-var ignoreStuff = cmp.Options{
-	cmpopts.IgnoreUnexported(resource.Quantity{}),
-}
 
 func TestStoreLoadWithContext(t *testing.T) {
 	store := NewStore(logtesting.TestLogger(t))
@@ -43,7 +37,7 @@ func TestStoreLoadWithContext(t *testing.T) {
 
 	t.Run("defaults", func(t *testing.T) {
 		expected, _ := NewDefaultsConfigFromConfigMap(defaultsConfig)
-		if diff := cmp.Diff(expected, config.AuthorizationDefaults, ignoreStuff...); diff != "" {
+		if diff := cmp.Diff(expected, config.AuthorizationDefaults); diff != "" {
 			t.Errorf("Unexpected defaults config (-want, +got): %v", diff)
 			t.Fatalf("Unexpected defaults config (-want, +got): %v", diff)
 		}

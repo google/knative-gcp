@@ -103,12 +103,7 @@ func TestCloudPubSubSourceDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "google-cloud-key",
-						},
-						Key: "key.json",
-					},
+					Secret: &authorizationtesthelper.Secret,
 				},
 			},
 		},

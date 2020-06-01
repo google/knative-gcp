@@ -25,9 +25,9 @@ type Defaults struct {
 	// NamespaceDefaults are the default Authorizations CRDs for each namespace. namespace is the
 	// key, the value is the default AuthorizationTemplate to use.
 	NamespaceDefaults map[string]ScopedDefaults `json:"namespaceDefaults,omitempty"`
-	// ClusterDefaultAuthorization is the default Authorization CRD for all namespaces that are not in
-	// NamespaceDefaultAuthorizations.
-	ClusterDefault ScopedDefaults `json:"clusterDefaults,omitempty"`
+	// ClusterDefaults is the default Authorization CRD for all namespaces that are not in
+	// NamespaceDefaults.
+	ClusterDefaults ScopedDefaults `json:"clusterDefaults,omitempty"`
 }
 
 type ScopedDefaults struct {
@@ -38,7 +38,7 @@ type ScopedDefaults struct {
 
 // scoped gets the scoped Authorization defaults for the given namespace.
 func (d *Defaults) scoped(ns string) *ScopedDefaults {
-	scopedDefaults := &d.ClusterDefault
+	scopedDefaults := &d.ClusterDefaults
 	if sd, present := d.NamespaceDefaults[ns]; present {
 		scopedDefaults = &sd
 	}

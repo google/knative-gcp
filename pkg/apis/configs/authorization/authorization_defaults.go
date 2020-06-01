@@ -25,21 +25,20 @@ import (
 )
 
 const (
-	// AuthorizationDefaultsConfigName is the name of config map for the default
-	// authorization that Sources and Channels should use.
+	// ConfigName is the name of config map for the default authorization that Sources and Channels
+	// should use.
 	ConfigName = "config-authorization"
 
-	// AuthorizationDefaulterKey is the key in the ConfigMap to get the name of the default
-	// Authorization CRD.
+	// defaulterKey is the key in the ConfigMap to get the name of the default Authorization CRD.
 	defaulterKey = "default-auth-config"
 )
 
-// NewDefaultsConfigFromConfigMap creates a AuthorizationDefaults from the supplied configMap
+// NewDefaultsConfigFromConfigMap creates a Defaults from the supplied configMap.
 func NewDefaultsConfigFromConfigMap(config *corev1.ConfigMap) (*Defaults, error) {
 	return NewDefaultsConfigFromMap(config.Data)
 }
 
-// NewDefaultsConfigFromMap creates a Defaults from the supplied Map
+// NewDefaultsConfigFromMap creates a Defaults from the supplied Map.
 func NewDefaultsConfigFromMap(data map[string]string) (*Defaults, error) {
 	nc := &Defaults{}
 

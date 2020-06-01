@@ -34,7 +34,7 @@ func (in *Defaults) DeepCopyInto(out *Defaults) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	in.ClusterDefault.DeepCopyInto(&out.ClusterDefault)
+	in.ClusterDefaults.DeepCopyInto(&out.ClusterDefaults)
 	return
 }
 

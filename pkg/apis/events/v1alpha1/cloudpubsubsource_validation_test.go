@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -182,7 +184,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.Secret = &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "name",
+						Name: authorizationtesthelper.Secret.Name,
 					},
 				}
 				return *obj

@@ -47,7 +47,7 @@ func TestValidateCredential(t *testing.T) {
 		name: "invalid secret, and nil service account",
 		secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{
-				Name: DefaultSecretName,
+				Name: authorizationtesthelper.Secret.Name,
 			},
 		},
 		serviceAccount: "",
@@ -56,7 +56,7 @@ func TestValidateCredential(t *testing.T) {
 		name: "invalid secret, and nil service account",
 		secret: &corev1.SecretKeySelector{
 			LocalObjectReference: corev1.LocalObjectReference{},
-			Key:                  defaultSecretKey,
+			Key:                  authorizationtesthelper.Secret.Key,
 		},
 		serviceAccount: "",
 		wantErr:        true,

@@ -23,23 +23,9 @@ metadata:
 data:
   default-auth-config: |
     clusterDefaults:
-      serviceAccountName: cluster-default-ksa
       secret:
         name: google-cloud-key
         key: key.json
-      workloadIdentityMapping:
-        cluster-wi-ksa1: cluster-wi-gsa1@PROJECT.iam.gserviceaccount.com
-        cluster-wi-ksa2: cluster-wi-gsa2@PROJECT.iam.gserviceaccount.com
-    namespaceDefaults:
-      empty-ns: {}
-      customized-ns:
-        serviceAccountName: ns-default-ksa
-        secret:
-          name: some-other-name
-          key: some-other-key
-        workloadIdentityMapping:
-          ns-wi-ksa1: ns-wi-gsa1@PROJECT.iam.gserviceaccount.com
-          ns-wi-ksa2: ns-wi-gsa2@PROJECT.iam.gserviceaccount.com
   _example: |
     ################################
     #                              #

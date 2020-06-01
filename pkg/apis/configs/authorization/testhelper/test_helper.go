@@ -24,6 +24,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
 )
 
+// Secret is the authorization added when using WithDefaults().
 var Secret = corev1.SecretKeySelector{
 	LocalObjectReference: corev1.LocalObjectReference{
 		Name: "google-cloud-key",
@@ -31,10 +32,12 @@ var Secret = corev1.SecretKeySelector{
 	Key: "key.json",
 }
 
+// ContextWithDefaults creates a context and populates it with the ClusterDefaults set to Secret().
 func ContextWithDefaults() context.Context {
 	return WithDefaults(context.Background())
 }
 
+// WithDefaults adds Secret() as the cluster default authorization to the passed in context.
 func WithDefaults(ctx context.Context) context.Context {
 	d, _ := authorization.NewDefaultsConfigFromMap(map[string]string{
 		"default-auth-config": ` 

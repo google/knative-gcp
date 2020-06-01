@@ -94,12 +94,7 @@ func TestBuildSourceDefaults(t *testing.T) {
 			},
 			Spec: CloudBuildSourceSpec{
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: "google-cloud-key",
-						},
-						Key: "key.json",
-					},
+					Secret: &authorizationtesthelper.Secret,
 				},
 				Topic: ptr.String(defaultTopic),
 			},

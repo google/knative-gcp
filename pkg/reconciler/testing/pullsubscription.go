@@ -175,7 +175,7 @@ func WithPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
 func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
-		s.Spec.SetDefaults(apis.WithinParent(context.Background(), s.ObjectMeta))
+		s.Spec.SetDefaults(context.Background())
 	}
 }
 
