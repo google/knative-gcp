@@ -24,7 +24,7 @@ import (
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
-// Right now we onlyb support one brokercell in the system namespace in the cluster.
+// Right now we only support one brokercell in the system namespace in the cluster.
 // TODO(#866) Delete hard-coded brokercell once we can dynamically assign brokercell to brokers.
 const DefaultBroekrCellName = "default"
 
