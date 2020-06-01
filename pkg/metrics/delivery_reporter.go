@@ -121,18 +121,14 @@ func NewDeliveryReporter(podName PodName, containerName ContainerName) (*Deliver
 }
 
 // ReportEventDispatchTime captures dispatch times.
-func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) error {
-	tag, err := tag.New(
-		ctx,
-		tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
-		tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create metrics tag: %v", err)
-	}
+func (r *DeliveryReporter) ReportEventDispatchTime(ctx context.Context, d time.Duration, responseCode int) {
 	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(tag, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
-	return nil
+	metrics.Record(ctx, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)),
+		stats.WithTags(
+			tag.Insert(ResponseCodeKey, strconv.Itoa(responseCode)),
+			tag.Insert(ResponseCodeClassKey, metrics.ResponseCodeClass(responseCode)),
+		),
+	)
 }
 
 // StartEventProcessing records the start of event processing for delivery within the given context.
