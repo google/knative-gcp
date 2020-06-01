@@ -37,14 +37,14 @@ const (
 )
 
 func TestDefaultsConfigurationFromFile(t *testing.T) {
-	_, example := ConfigMapsFromTestFile(t, ConfigName, defaulterKey)
+	_, example := ConfigMapsFromTestFile(t, configName, defaulterKey)
 	if _, err := NewDefaultsConfigFromConfigMap(example); err != nil {
 		t.Errorf("NewDefaultsConfigFromConfigMap(example) = %v", err)
 	}
 }
 
 func TestNewDefaultsConfigFromConfigMap(t *testing.T) {
-	_, example := ConfigMapsFromTestFile(t, ConfigName, defaulterKey)
+	_, example := ConfigMapsFromTestFile(t, configName, defaulterKey)
 	defaults, err := NewDefaultsConfigFromConfigMap(example)
 	if err != nil {
 		t.Fatalf("NewDefaultsConfigFromConfigMap(example) = %v", err)
@@ -121,7 +121,7 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "cloud-run-events",
-					Name:      ConfigName,
+					Name:      configName,
 				},
 				Data: map[string]string{},
 			},
@@ -130,7 +130,7 @@ func TestNewDefaultsConfigFromConfigMapWithError(t *testing.T) {
 			config: &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "cloud-run-events",
-					Name:      ConfigName,
+					Name:      configName,
 				},
 				Data: map[string]string{
 					"other-keys": "are-present",

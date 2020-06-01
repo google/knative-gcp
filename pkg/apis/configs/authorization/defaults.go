@@ -22,18 +22,28 @@ import (
 
 // Defaults includes the default values to be populated by the webhook.
 type Defaults struct {
-	// NamespaceDefaults are the default Authorizations CRDs for each namespace. namespace is the
-	// key, the value is the default AuthorizationTemplate to use.
+	// NamespaceDefaults are the GCP auth defaults to use in specific namespaces. The namespace is
+	// the key, the value is the defaults.
 	NamespaceDefaults map[string]ScopedDefaults `json:"namespaceDefaults,omitempty"`
-	// ClusterDefaults is the default Authorization CRD for all namespaces that are not in
+	// ClusterDefaults are the GCP auth defaults to use for all namepaces that are not in
 	// NamespaceDefaults.
 	ClusterDefaults ScopedDefaults `json:"clusterDefaults,omitempty"`
 }
 
+// ScopedDefaults are the GCP auth defaults.
 type ScopedDefaults struct {
-	ServiceAccountName      string                    `json:"serviceAccountName,omitempty"`
-	Secret                  *corev1.SecretKeySelector `json:"secret,omitempty"`
-	WorkloadIdentityMapping map[string]string         `json:"workloadIdentityMapping,omitEmpty"`
+	// ServiceAccountName is the Kubernetes Service Account to user for all data plane pieces. This
+	// is expected to be used for Workload Identity workloads.
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// Secret is the secret to default to, if one is not already in the CO's spec.
+	Secret *corev1.SecretKeySelector `json:"secret,omitempty"`
+
+	// WorkloadIdentityMapping is a mapping from Kubernetes Service Account to Google IAM Service
+	// Account. If a GCP authable's spec.ServiceAccountName is in this map, then the controller will
+	// attempt to setup Workload Identity between the two accounts. If it is unable to do so, then
+	// the CO will not become ready.
+	WorkloadIdentityMapping map[string]string `json:"workloadIdentityMapping,omitEmpty"`
 }
 
 // scoped gets the scoped Authorization defaults for the given namespace.

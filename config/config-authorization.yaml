@@ -43,7 +43,7 @@ data:
     # to actually change the configuration.
 
     # default-auth-config is the configuration for determining the default
-    # authorization to apply to all objects that require GCP auhtorization but,
+    # authorization to apply to all objects that require GCP authorization but,
     # do not specify it. This is expected to be Channels and Sources.
     #
     # When determing the defaults to use for a custom object in a specific

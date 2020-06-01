@@ -29,7 +29,7 @@ import (
 func TestStoreLoadWithContext(t *testing.T) {
 	store := NewStore(logtesting.TestLogger(t))
 
-	_, defaultsConfig := ConfigMapsFromTestFile(t, ConfigName, defaulterKey)
+	_, defaultsConfig := ConfigMapsFromTestFile(t, configName, defaulterKey)
 
 	store.OnConfigChanged(defaultsConfig)
 

@@ -25,13 +25,18 @@ import (
 )
 
 const (
-	// ConfigName is the name of config map for the default authorization that Sources and Channels
+	// configName is the name of config map for the default authorization that Sources and Channels
 	// should use.
-	ConfigName = "config-authorization"
+	configName = "config-authorization"
 
 	// defaulterKey is the key in the ConfigMap to get the name of the default Authorization CRD.
 	defaulterKey = "default-auth-config"
 )
+
+// ConfigMapName returns the name of the configmap to read for default GCP authorization settings.
+func ConfigMapName() string {
+	return configName
+}
 
 // NewDefaultsConfigFromConfigMap creates a Defaults from the supplied configMap.
 func NewDefaultsConfigFromConfigMap(config *corev1.ConfigMap) (*Defaults, error) {
@@ -42,7 +47,7 @@ func NewDefaultsConfigFromConfigMap(config *corev1.ConfigMap) (*Defaults, error)
 func NewDefaultsConfigFromMap(data map[string]string) (*Defaults, error) {
 	nc := &Defaults{}
 
-	// Parse out the Broker Configuration Cluster default section
+	// Parse out the GCP Auth Configuration.
 	value, present := data[defaulterKey]
 	if !present || value == "" {
 		return nil, fmt.Errorf("ConfigMap is missing (or empty) key: %q : %v", defaulterKey, data)

@@ -70,7 +70,7 @@ func NewStore(logger configmap.Logger, onAfterStore ...func(name string, value i
 			"authorizationdefaults",
 			logger,
 			configmap.Constructors{
-				ConfigName: NewDefaultsConfigFromConfigMap,
+				ConfigMapName(): NewDefaultsConfigFromConfigMap,
 			},
 			onAfterStore...,
 		),
@@ -87,6 +87,6 @@ func (s *Store) ToContext(ctx context.Context) context.Context {
 // Load creates a Config from the current config state of the Store.
 func (s *Store) Load() *Config {
 	return &Config{
-		AuthorizationDefaults: s.UntypedLoad(ConfigName).(*Defaults).DeepCopy(),
+		AuthorizationDefaults: s.UntypedLoad(ConfigMapName()).(*Defaults).DeepCopy(),
 	}
 }
