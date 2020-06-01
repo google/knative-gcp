@@ -22,6 +22,9 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/eventing/pkg/logging"
 	deploymentinformer "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
@@ -34,6 +37,7 @@ import (
 	hpainformer "github.com/google/knative-gcp/pkg/client/injection/kube/informers/autoscaling/v2beta2/horizontalpodautoscaler"
 	v1alpha1brokercell "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/brokercell"
 	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 )
 
 const (
@@ -67,7 +71,27 @@ func NewController(
 
 	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
 
-	// TODO: add additional informer event handlers here.
+	// Watch data plane components created by brokercell so we can update brokercell status immediately.
+	// 1. Watch deployments for ingress, fanout and retry
+	deploymentinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
+	// 2. Watch ingress endpoints
+	endpointsinformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
+	// 3. Watch hpa for ingress, fanout and retry deployments
+	hpainformer.Get(ctx).Informer().AddEventHandler(handleResourceUpdate(impl))
 
 	return impl
+}
+
+// handleResourceUpdate returns an event handler for resources created by brokercell such as the ingress deployment.
+func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
+	return controller.HandleAll(func(obj interface{}) {
+		if mo, ok := obj.(metav1.Object); ok {
+			bcName, exist := mo.GetLabels()[resources.BrokerCellLabelKey]
+			if !exist {
+				// This object is not created by brokercell
+				return
+			}
+			impl.EnqueueKey(types.NamespacedName{Namespace: mo.GetNamespace(), Name: bcName})
+		}
+	})
 }
