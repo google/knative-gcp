@@ -17,7 +17,7 @@ limitations under the License.
 package e2e
 
 import (
-	"encoding/json"
+	"encoding/json
 	"testing"
 	"time"
 
@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 )
 
 // SmokeCloudSchedulerSourceTestImpl tests if a CloudSchedulerSource object can be created to ready state and delete a CloudSchedulerSource resource and its underlying resources..
@@ -62,7 +63,7 @@ func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	}
 	client.DeleteSchedulerOrFail(schedulerName)
 	//Wait for 20 seconds for topic, subscription and job to get deleted in gcp
-	time.Sleep(20 * time.Second)
+	time.Sleep(resources.WaitDeletionTime)
 
 	deletedJobExists := lib.SchedulerJobExists(t, jobName)
 	if deletedJobExists {

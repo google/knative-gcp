@@ -32,6 +32,7 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -52,7 +53,6 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	//make the storage source
 	lib.MakeStorageOrDie(client, lib.ServiceGVK, bucketName, storageName, svcName, authConfig.PubsubServiceAccount)
-
 
 	createdStorage := client.GetStorageOrFail(storageName)
 
@@ -76,8 +76,7 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 	client.DeleteStorageOrFail(storageName)
 	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
-	time.Sleep(20*time.Second)
-
+	time.Sleep(resources.WaitDeletionTime)
 
 	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
 	if deletedNotificationExists {

@@ -30,6 +30,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -61,8 +62,8 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	client.DeletePubSubOrFail(psName)
-	//Wait for 10 seconds for subscription to get deleted in gcp
-	time.Sleep(10*time.Second)
+	//Wait for 20 seconds for subscription to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
 	deletedSubExists := lib.SubscriptionExists(t, subID)
 	if deletedSubExists {
 		t.Errorf("Expected subscription %q to get deleted", subID)

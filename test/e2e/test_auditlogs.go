@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	"knative.dev/pkg/test/helpers"
 
@@ -78,7 +79,7 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	}
 	client.DeleteAuditLogsOrFail(auditlogsName)
 	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
-	time.Sleep(20*time.Second)
+	time.Sleep(resources.WaitDeletionTime)
 
 
 	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
