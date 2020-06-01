@@ -19,9 +19,9 @@ package pool
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 
-	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 
@@ -47,7 +47,7 @@ type RetryPool struct {
 	pubsubClient *pubsub.Client
 	// For initial events delivery. We only need a shared client.
 	// And we can set target address dynamically.
-	deliverClient ceclient.Client
+	deliverClient *http.Client
 }
 
 type retryHandlerCache struct {
@@ -74,7 +74,7 @@ func (hc *retryHandlerCache) shouldRenew(t *config.Target) bool {
 }
 
 // NewRetryPool creates a new retry handler pool.
-func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient DeliverClient, opts ...Option) (*RetryPool, error) {
+func NewRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, deliverClient *http.Client, opts ...Option) (*RetryPool, error) {
 	options, err := NewOptions(opts...)
 	if err != nil {
 		return nil, err
@@ -111,6 +111,12 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 			// Stop and clean up the old handler before we start a new one.
 			value.(*retryHandlerCache).Stop()
 			p.pool.Delete(t.Key())
+		}
+
+		// Don't start the handler if the target is not ready.
+		// The retry topic/sub might not be ready at this point.
+		if t.State != config.State_READY {
+			return true
 		}
 
 		sub := p.pubsubClient.Subscription(t.RetryQueue.Subscription)

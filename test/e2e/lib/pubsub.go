@@ -17,11 +17,12 @@ limitations under the License.
 package lib
 
 import (
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
