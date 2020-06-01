@@ -17,9 +17,10 @@ limitations under the License.
 package trigger
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"fmt"
+
+	"cloud.google.com/go/pubsub"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"

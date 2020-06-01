@@ -18,6 +18,7 @@ package trigger
 
 import (
 	"context"
+
 	"k8s.io/client-go/tools/cache"
 
 	"cloud.google.com/go/pubsub"

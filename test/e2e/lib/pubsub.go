@@ -17,12 +17,13 @@ limitations under the License.
 package lib
 
 import (
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
