@@ -23,6 +23,7 @@ import (
 
 var brokerCondSet = apis.NewLivingConditionSet(
 	eventingv1beta1.BrokerConditionAddressable,
+	BrokerConditionBrokerCell,
 	BrokerConditionTopic,
 	BrokerConditionSubscription,
 )
