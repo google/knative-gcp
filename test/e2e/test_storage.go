@@ -19,11 +19,12 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"

@@ -14,43 +14,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package keda
+package trigger
 
 import (
-	"os"
 	"testing"
 
-	iamtesting "github.com/google/knative-gcp/pkg/reconciler/testing"
-
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/logging"
-	logtesting "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics"
-	_ "knative.dev/pkg/metrics/testing"
 	. "knative.dev/pkg/reconciler/testing"
 	"knative.dev/pkg/system"
 	tracingconfig "knative.dev/pkg/tracing/config"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	// Fake injection informers and clients
-	_ "github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource/fake"
-	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription/fake"
+	// Fake injection informers
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/addressable/fake"
+	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/batch/v1/job/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake"
 	_ "knative.dev/pkg/injection/clients/dynamicclient/fake"
 )
 
 func TestNew(t *testing.T) {
-	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
 
-	_ = os.Setenv("PUBSUB_RA_IMAGE", "PUBSUB_RA_IMAGE")
-
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(
+	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      logging.ConfigMapName(),
@@ -72,10 +65,9 @@ func TestNew(t *testing.T) {
 			},
 			Data: map[string]string{},
 		},
-	),
-		iamtesting.NoopIAMPolicyManager)
+	))
 
 	if c == nil {
-		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")
+		t.Fatal("Expected NewController to return a non-nil value")
 	}
 }
