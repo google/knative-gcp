@@ -424,7 +424,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}
-		if err := r.reconcileDataPlaneDeployments(); err != nil {
+		if err := r.updateConfigmapVolumeAnnotation(); err != nil {
 			// Failing to update the annotation on the data plane pods means there
 			// may be a longer propagation delay for the configmap volume to be
 			// refreshed. But this is not treated as an error.
@@ -441,7 +441,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error updating targets ConfigMap: %w", err)
 		}
-		if err := r.reconcileDataPlaneDeployments(); err != nil {
+		if err := r.updateConfigmapVolumeAnnotation(); err != nil {
 			// Failing to update the annotation on the data plane pods means there
 			// may be a longer propagation delay for the configmap volume to be
 			// refreshed. But this is not treated as an error.
@@ -453,7 +453,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 
 // TODO(https://github.com/google/knative-gcp/issues/863) With BrokerCell, we
 // will reconcile data plane deployments dynamically.
-func (r *Reconciler) reconcileDataPlaneDeployments() error {
+func (r *Reconciler) updateConfigmapVolumeAnnotation() error {
 	var err error
 	for _, name := range dataPlaneDeployments {
 		err = multierr.Append(err, resources.UpdateVolumeGenerationForDeployment(r.KubeClientSet, r.deploymentLister, r.podLister, system.Namespace(), name))
