@@ -50,6 +50,9 @@ type envConfig struct {
 	// 3Mi. We also want to limit the memory usage from each subscription.
 	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"3000000"`
 
+	// MaxStaleDuration is the max duration of the handler pool without being synced.
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"1m"`
+
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -86,7 +89,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

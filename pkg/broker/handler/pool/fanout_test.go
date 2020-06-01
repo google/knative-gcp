@@ -48,7 +48,7 @@ func TestFanoutWatchAndSync(t *testing.T) {
 	}
 
 	t.Run("start sync pool creates no handler", func(t *testing.T) {
-		_, err = StartSyncPool(ctx, syncPool, signal)
+		_, err = StartSyncPool(ctx, syncPool, signal, time.Minute)
 		if err != nil {
 			t.Errorf("unexpected error from starting sync pool: %v", err)
 		}
@@ -131,7 +131,7 @@ func TestFanoutSyncPoolE2E(t *testing.T) {
 		t.Errorf("unexpected error from getting sync pool: %v", err)
 	}
 
-	if _, err := StartSyncPool(ctx, syncPool, signal); err != nil {
+	if _, err := StartSyncPool(ctx, syncPool, signal, time.Minute); err != nil {
 		t.Errorf("unexpected error from starting sync pool: %v", err)
 	}
 

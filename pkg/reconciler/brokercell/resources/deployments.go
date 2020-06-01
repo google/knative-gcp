@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/system"
@@ -58,6 +59,20 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 			corev1.ResourceCPU:    resource.MustParse("1500m"),
 		},
 	}
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(8080),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      1,
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
@@ -72,6 +87,20 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 			corev1.ResourceMemory: resource.MustParse("1500Mi"),
 			corev1.ResourceCPU:    resource.MustParse("1000m"),
 		},
+	}
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(8080),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      1,
 	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
