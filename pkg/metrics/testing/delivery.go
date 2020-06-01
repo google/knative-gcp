@@ -86,9 +86,6 @@ func (e ExpectDelivery) Verify(t *testing.T) {
 	e.verifyDelivery(t, "event_dispatch_latencies")
 }
 
-func verifyMetricCounts(t *testing.T, want map[string]*metric) {
-}
-
 func (e ExpectDelivery) verifyDelivery(t *testing.T, viewName string) {
 	t.Helper()
 	rows, err := view.RetrieveData(viewName)
