@@ -71,6 +71,15 @@ ${GOPATH}/bin/deepcopy-gen \
   --go-header-file ${REPO_ROOT_DIR}/hack/boilerplate/boilerplate.go.txt \
   -i github.com/google/knative-gcp/pkg/apis/configs/authorization \
 
+# TODO(yolocs): generate autoscaling v2beta2 in knative/pkg.
+OUTPUT_PKG="github.com/google/knative-gcp/pkg/client/injection/kube" \
+VERSIONED_CLIENTSET_PKG="k8s.io/client-go/kubernetes" \
+EXTERNAL_INFORMER_PKG="k8s.io/client-go/informers" \
+"${KNATIVE_CODEGEN_PKG}"/hack/generate-knative.sh "injection" \
+  k8s.io/client-go \
+  k8s.io/api \
+  "autoscaling:v2beta2" \
+  --go-header-file "${REPO_ROOT_DIR}"/hack/boilerplate/boilerplate.go.txt
 
 go install github.com/google/wire/cmd/wire
 go generate "${REPO_ROOT_DIR}"/...
