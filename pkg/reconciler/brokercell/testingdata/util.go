@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -58,6 +59,26 @@ func RetryDeploymentWithStatus(t *testing.T) *appsv1.Deployment {
 
 func IngressServiceWithStatus(t *testing.T) *corev1.Service {
 	return getService(t, "testingdata/ingress_service_with_status.yaml")
+}
+
+func IngressHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
+	return getHPA(t, "testingdata/ingress_hpa.yaml")
+}
+
+func FanoutHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
+	return getHPA(t, "testingdata/fanout_hpa.yaml")
+}
+
+func RetryHPA(t *testing.T) *hpav2beta2.HorizontalPodAutoscaler {
+	return getHPA(t, "testingdata/retry_hpa.yaml")
+}
+
+func getHPA(t *testing.T, path string) *hpav2beta2.HorizontalPodAutoscaler {
+	hpa := &hpav2beta2.HorizontalPodAutoscaler{}
+	if err := getSpecFromFile(path, hpa); err != nil {
+		t.Fatalf("Failed to parse YAML: %v", err)
+	}
+	return hpa
 }
 
 func getDeployment(t *testing.T, path string) *appsv1.Deployment {
