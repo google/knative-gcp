@@ -38,9 +38,6 @@ import (
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/pod/fake"
 	_ "knative.dev/pkg/injection/clients/dynamicclient/fake"
-
-	// Why is serving needed here?
-	_ "knative.dev/serving/pkg/client/injection/informers/serving/v1/service/fake"
 )
 
 func TestNew(t *testing.T) {

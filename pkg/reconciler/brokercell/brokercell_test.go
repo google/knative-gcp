@@ -22,9 +22,11 @@ import (
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
+	hpav2beta2 "k8s.io/api/autoscaling/v2beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+
 	clientgotesting "k8s.io/client-go/testing"
 
 	"knative.dev/pkg/configmap"
@@ -51,16 +53,24 @@ var (
 	brokerCellUpdateFailedEvent   = Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-brokercell": inducing failure for update brokercells`)
 	ingressDeploymentCreatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-ingress")
 	ingressDeploymentUpdatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-ingress")
+	ingressHPACreatedEvent        = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerCreated", "Created HPA testnamespace/test-brokercell-brokercell-ingress-hpa")
+	ingressHPAUpdatedEvent        = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerUpdated", "Updated HPA testnamespace/test-brokercell-brokercell-ingress-hpa")
 	fanoutDeploymentCreatedEvent  = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-fanout")
 	fanoutDeploymentUpdatedEvent  = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-fanout")
+	fanoutHPACreatedEvent         = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerCreated", "Created HPA testnamespace/test-brokercell-brokercell-fanout-hpa")
+	fanoutHPAUpdatedEvent         = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerUpdated", "Updated HPA testnamespace/test-brokercell-brokercell-fanout-hpa")
 	retryDeploymentCreatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-retry")
 	retryDeploymentUpdatedEvent   = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-retry")
+	retryHPACreatedEvent          = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerCreated", "Created HPA testnamespace/test-brokercell-brokercell-retry-hpa")
+	retryHPAUpdatedEvent          = Eventf(corev1.EventTypeNormal, "HorizontalPodAutoscalerUpdated", "Updated HPA testnamespace/test-brokercell-brokercell-retry-hpa")
 	ingressServiceCreatedEvent    = Eventf(corev1.EventTypeNormal, "ServiceCreated", "Created service testnamespace/test-brokercell-brokercell-ingress")
 	ingressServiceUpdatedEvent    = Eventf(corev1.EventTypeNormal, "ServiceUpdated", "Updated service testnamespace/test-brokercell-brokercell-ingress")
 	deploymentCreationFailedEvent = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create deployments")
 	deploymentUpdateFailedEvent   = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update deployments")
 	serviceCreationFailedEvent    = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create services")
 	serviceUpdateFailedEvent      = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update services")
+	hpaCreationFailedEvent        = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for create horizontalpodautoscalers")
+	hpaUpdateFailedEvent          = Eventf(corev1.EventTypeWarning, "InternalError", "inducing failure for update horizontalpodautoscalers")
 )
 
 func init() {
@@ -141,11 +151,61 @@ func TestAllCases(t *testing.T) {
 			WantErr: true,
 		},
 		{
+			Name: "Ingress HorizontalPodAutoscaler.Create error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressDeploymentWithStatus(t),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile ingress HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaCreationFailedEvent,
+			},
+			WantCreates: []runtime.Object{
+				testingdata.IngressHPA(t),
+			},
+			WantErr: true,
+		},
+		{
+			Name: "Ingress HorizontalPodAutoscaler.Update error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressDeploymentWithStatus(t),
+				emptyHPASpec(testingdata.IngressHPA(t)),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile ingress HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaUpdateFailedEvent,
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.IngressHPA(t)},
+			},
+			WantErr: true,
+		},
+		{
 			Name: "Ingress Service.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS),
 				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 			},
@@ -172,6 +232,7 @@ func TestAllCases(t *testing.T) {
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS),
 				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				NewService(brokerCellName+"-brokercell-ingress", testNS,
@@ -202,6 +263,7 @@ func TestAllCases(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -231,6 +293,7 @@ func TestAllCases(t *testing.T) {
 			Key:  testKey,
 			Objects: []runtime.Object{
 				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressHPA(t),
 				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
 					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
 				testingdata.IngressDeploymentWithStatus(t),
@@ -263,6 +326,69 @@ func TestAllCases(t *testing.T) {
 			WantErr: true,
 		},
 		{
+			Name: "Fanout HorizontalPodAutoscaler.Create error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressHPA(t),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeployment(t),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressAvailable(),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellFanoutFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile fanout HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaCreationFailedEvent,
+			},
+			WantCreates: []runtime.Object{
+				testingdata.FanoutHPA(t),
+			},
+			WantErr: true,
+		},
+		{
+			Name: "Fanout HorizontalPodAutoscaler.Update error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				testingdata.IngressHPA(t),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeployment(t),
+				emptyHPASpec(testingdata.FanoutHPA(t)),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressAvailable(),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellFanoutFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile fanout HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaUpdateFailedEvent,
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.FanoutHPA(t)},
+			},
+			WantErr: true,
+		},
+		{
 			Name: "Retry Deployment.Create error",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -272,6 +398,8 @@ func TestAllCases(t *testing.T) {
 				testingdata.IngressDeploymentWithStatus(t),
 				testingdata.IngressServiceWithStatus(t),
 				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("create", "deployments"),
@@ -304,6 +432,8 @@ func TestAllCases(t *testing.T) {
 				testingdata.IngressDeploymentWithStatus(t),
 				testingdata.IngressServiceWithStatus(t),
 				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
 				// Create an deployment such that only the spec is different from expected deployment to trigger an update.
 				NewDeployment(brokerCellName+"-brokercell-retry", testNS,
 					func(d *appsv1.Deployment) {
@@ -333,6 +463,75 @@ func TestAllCases(t *testing.T) {
 			WantErr: true,
 		},
 		{
+			Name: "Retry HorizontalPodAutoscaler.Create error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("create", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressAvailable(),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellFanoutAvailable(),
+					WithBrokerCellRetryFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile retry HorizontalPodAutoscaler: inducing failure for create horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaCreationFailedEvent,
+			},
+			WantCreates: []runtime.Object{
+				testingdata.RetryHPA(t),
+			},
+			WantErr: true,
+		},
+		{
+			Name: "Retry HorizontalPodAutoscaler.Update error",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				emptyHPASpec(testingdata.RetryHPA(t)),
+			},
+			WithReactors: []clientgotesting.ReactionFunc{
+				InduceFailure("update", "horizontalpodautoscalers"),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewBrokerCell(brokerCellName, testNS,
+					WithInitBrokerCellConditions,
+					WithBrokerCellIngressAvailable(),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+					WithBrokerCellFanoutAvailable(),
+					WithBrokerCellRetryFailed("HorizontalPodAutoscalerFailed", `Failed to reconcile retry HorizontalPodAutoscaler: inducing failure for update horizontalpodautoscalers`),
+				),
+			}},
+			WantEvents: []string{
+				hpaUpdateFailedEvent,
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.RetryHPA(t)},
+			},
+			WantErr: true,
+		},
+		{
 			Name: "BrokerCell created, resources created but resource status not ready",
 			Key:  testKey,
 			Objects: []runtime.Object{
@@ -341,9 +540,12 @@ func TestAllCases(t *testing.T) {
 			},
 			WantCreates: []runtime.Object{
 				testingdata.IngressDeployment(t),
+				testingdata.IngressHPA(t),
 				testingdata.IngressService(t),
 				testingdata.FanoutDeployment(t),
+				testingdata.FanoutHPA(t),
 				testingdata.RetryDeployment(t),
+				testingdata.RetryHPA(t),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: NewBrokerCell(brokerCellName, testNS,
@@ -360,9 +562,78 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				ingressDeploymentCreatedEvent,
+				ingressHPACreatedEvent,
 				ingressServiceCreatedEvent,
 				fanoutDeploymentCreatedEvent,
+				fanoutHPACreatedEvent,
 				retryDeploymentCreatedEvent,
+				retryHPACreatedEvent,
+				brokerCellReconciledEvent,
+			},
+		},
+		{
+			Name: "BrokerCell created, resources updated but resource status not ready",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS),
+				NewDeployment(brokerCellName+"-brokercell-ingress", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.IngressDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.IngressDeployment(t).ObjectMeta
+					},
+				),
+				NewService(brokerCellName+"-brokercell-ingress", testNS,
+					func(s *corev1.Service) {
+						s.TypeMeta = testingdata.IngressService(t).TypeMeta
+						s.ObjectMeta = testingdata.IngressService(t).ObjectMeta
+					}),
+				NewDeployment(brokerCellName+"-brokercell-fanout", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.FanoutDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.FanoutDeployment(t).ObjectMeta
+					},
+				),
+				NewDeployment(brokerCellName+"-brokercell-retry", testNS,
+					func(d *appsv1.Deployment) {
+						d.TypeMeta = testingdata.RetryDeployment(t).TypeMeta
+						d.ObjectMeta = testingdata.RetryDeployment(t).ObjectMeta
+					},
+				),
+				emptyHPASpec(testingdata.IngressHPA(t)),
+				emptyHPASpec(testingdata.FanoutHPA(t)),
+				emptyHPASpec(testingdata.RetryHPA(t)),
+			},
+			WantUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: testingdata.IngressDeployment(t)},
+				{Object: testingdata.IngressHPA(t)},
+				{Object: testingdata.IngressService(t)},
+				{Object: testingdata.FanoutDeployment(t)},
+				{Object: testingdata.FanoutHPA(t)},
+				{Object: testingdata.RetryDeployment(t)},
+				{Object: testingdata.RetryHPA(t)},
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: NewBrokerCell(brokerCellName, testNS,
+					// optimistically set everything to be ready, the following options will override individual conditions
+					WithBrokerCellReady,
+					// For newly created deployments and services, there statues are not ready because
+					// we don't have a controller in the tests to mark their statues ready.
+					// We only verify that they are created in the WantCreates.
+					WithBrokerCellIngressFailed("EndpointsUnavailable", `Endpoints "test-brokercell-brokercell-ingress" is unavailable.`),
+					WithBrokerCellFanoutFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-fanout" is unavailable.`),
+					WithBrokerCellRetryFailed("DeploymentUnavailable", `Deployment "test-brokercell-brokercell-retry" is unavailable.`),
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+				)},
+			},
+			WantEvents: []string{
+				ingressDeploymentUpdatedEvent,
+				ingressHPAUpdatedEvent,
+				ingressServiceUpdatedEvent,
+				fanoutDeploymentUpdatedEvent,
+				fanoutHPAUpdatedEvent,
+				retryDeploymentUpdatedEvent,
+				retryHPAUpdatedEvent,
 				brokerCellReconciledEvent,
 			},
 		},
@@ -377,6 +648,9 @@ func TestAllCases(t *testing.T) {
 				testingdata.IngressServiceWithStatus(t),
 				testingdata.FanoutDeploymentWithStatus(t),
 				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
 			},
 			WithReactors: []clientgotesting.ReactionFunc{
 				InduceFailure("update", "brokercells"),
@@ -403,6 +677,9 @@ func TestAllCases(t *testing.T) {
 				testingdata.IngressServiceWithStatus(t),
 				testingdata.FanoutDeploymentWithStatus(t),
 				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: NewBrokerCell(brokerCellName, testNS,
@@ -424,6 +701,12 @@ func TestAllCases(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to created BrokerCell reconciler: %v", err)
 		}
+		r.hpaLister = listers.GetHPALister()
 		return bcreconciler.NewReconciler(ctx, r.Logger, r.RunClientSet, listers.GetBrokerCellLister(), r.Recorder, r)
 	}))
+}
+
+func emptyHPASpec(template *hpav2beta2.HorizontalPodAutoscaler) *hpav2beta2.HorizontalPodAutoscaler {
+	template.Spec = hpav2beta2.HorizontalPodAutoscalerSpec{}
+	return template
 }

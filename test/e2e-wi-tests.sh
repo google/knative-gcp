@@ -97,6 +97,7 @@ function control_plane_setup() {
     --namespace "${CONTROL_PLANE_NAMESPACE}"
   echo "Delete the controller pod in the namespace '${CONTROL_PLANE_NAMESPACE}' to refresh "
   kubectl delete pod -n "${CONTROL_PLANE_NAMESPACE}" --selector role=controller
+  wait_until_pods_running "${CONTROL_PLANE_NAMESPACE}" || return 1
 }
 
 # Create resources required for Pub/Sub Admin setup.

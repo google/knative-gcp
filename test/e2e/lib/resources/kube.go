@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	pkgTest "knative.dev/pkg/test"
 )
+
 func PubSubTargetJob(name string, envVars []v1.EnvVar) *batchv1.Job {
 	return baseJob(name, "pubsub_target", envVars)
 }
