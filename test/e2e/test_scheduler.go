@@ -17,7 +17,7 @@ limitations under the License.
 package e2e
 
 import (
-	"encoding/json
+	"encoding/json"
 	"testing"
 	"time"
 
