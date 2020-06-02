@@ -19,9 +19,8 @@ package v1beta1
 import (
 	"testing"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
-
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -75,7 +74,7 @@ func TestCloudAuditLogsSource_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+			tc.orig.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

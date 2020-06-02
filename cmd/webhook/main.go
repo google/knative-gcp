@@ -19,8 +19,7 @@ package main
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
-
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -67,7 +66,7 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 
 func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 	// Decorate contexts with the current state of the config.
-	authStore := authorization.NewStore(logging.FromContext(ctx).Named("config-authorization-store"))
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
 	authStore.WatchConfigs(cmw)
 
 	// Decorate contexts with the current state of the config.
@@ -96,7 +95,7 @@ func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher
 
 func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 	// Decorate contexts with the current state of the config.
-	authStore := authorization.NewStore(logging.FromContext(ctx).Named("config-authorization-store"))
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
 	authStore.WatchConfigs(cmw)
 
 	// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
@@ -137,7 +136,7 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
 			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
 			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
-			authorization.ConfigMapName():  authorization.NewDefaultsConfigFromConfigMap,
+			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
 		},
 	)
 }
@@ -153,7 +152,7 @@ func NewConversionController(ctx context.Context, cmw configmap.Watcher) *contro
 	)
 
 	// Decorate contexts with the current state of the config.
-	authStore := authorization.NewStore(logging.FromContext(ctx).Named("config-authorization-store"))
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
 	authStore.WatchConfigs(cmw)
 
 	// Decorate contexts with the current state of the config.

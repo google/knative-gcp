@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"knative.dev/pkg/ptr"
 
@@ -84,7 +84,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: &authorizationtesthelper.Secret,
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -101,7 +101,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: &authorizationtesthelper.Secret,
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -117,7 +117,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: &authorizationtesthelper.Secret,
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -133,7 +133,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1beta1.PubSubSpec{
-					Secret: &authorizationtesthelper.Secret,
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -142,7 +142,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.start
-			got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+			got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
@@ -171,7 +171,7 @@ func TestPullSubscriptionDefaults_NoChange(t *testing.T) {
 	}
 
 	got := want.DeepCopy()
-	got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}

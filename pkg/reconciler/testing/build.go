@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"knative.dev/pkg/ptr"
 
@@ -167,6 +167,6 @@ func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSo
 
 func WithCloudBuildSourceDefaultAuthorization() CloudBuildSourceOption {
 	return func(s *v1alpha1.CloudBuildSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

@@ -20,9 +20,10 @@ import (
 	"context"
 	"testing"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadatatesting "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -186,7 +187,7 @@ func TestCloudBuildSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudBuildSourceSpec {
 				obj := buildSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = &authorizationtesthelper.Secret
+				obj.Secret = &gcpauthtesthelper.Secret
 				return *obj
 			}(),
 			error: true,

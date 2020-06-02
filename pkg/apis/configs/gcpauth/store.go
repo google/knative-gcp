@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package authorization
+package gcpauth
 
 import (
 	"context"
@@ -57,7 +57,7 @@ func ToContext(ctx context.Context, c *Config) context.Context {
 	return context.WithValue(ctx, authorizationCfgKey{}, c)
 }
 
-// Store is a typed wrapper around configmap.Untyped store to handle our configmaps.
+// Store is a typed wrapper around configmap.Untyped store to handle our ConfigMaps.
 // +k8s:deepcopy-gen=false
 type Store struct {
 	*configmap.UntypedStore
@@ -67,7 +67,7 @@ type Store struct {
 func NewStore(logger configmap.Logger, onAfterStore ...func(name string, value interface{})) *Store {
 	store := &Store{
 		UntypedStore: configmap.NewUntypedStore(
-			"authorizationdefaults",
+			"gcp-auth-defaults",
 			logger,
 			configmap.Constructors{
 				ConfigMapName(): NewDefaultsConfigFromConfigMap,

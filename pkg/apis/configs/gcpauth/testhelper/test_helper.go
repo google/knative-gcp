@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package authorizationtesthelper
+package gcpauthtesthelper
 
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // Secret is the authorization added when using WithDefaults().
@@ -39,7 +39,7 @@ func ContextWithDefaults() context.Context {
 
 // WithDefaults adds Secret() as the cluster default authorization to the passed in context.
 func WithDefaults(ctx context.Context) context.Context {
-	d, _ := authorization.NewDefaultsConfigFromMap(map[string]string{
+	d, _ := gcpauth.NewDefaultsConfigFromMap(map[string]string{
 		"default-auth-config": ` 
   clusterDefaults:
     secret:
@@ -47,8 +47,8 @@ func WithDefaults(ctx context.Context) context.Context {
       key: key.json
 `,
 	})
-	cfg := &authorization.Config{
+	cfg := &gcpauth.Config{
 		AuthorizationDefaults: d,
 	}
-	return authorization.ToContext(ctx, cfg)
+	return gcpauth.ToContext(ctx, cfg)
 }

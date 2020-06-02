@@ -16,6 +16,6 @@ limitations under the License.
 
 // +k8s:deepcopy-gen=package
 
-// authorization holds the typed objects that define the schemas for default authorization of
-// sources and channels.
-package authorization
+// gcpauth holds the typed objects that define the schemas for default GCP auth of sources and
+// channels.
+package gcpauth

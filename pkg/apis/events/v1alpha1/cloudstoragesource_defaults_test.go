@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"testing"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 
@@ -76,7 +76,7 @@ func TestCloudStorageSourceSpec_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+			tc.orig.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}
@@ -167,7 +167,7 @@ func TestCloudStorageSource_SetDefaults(t *testing.T) {
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+			tc.orig.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

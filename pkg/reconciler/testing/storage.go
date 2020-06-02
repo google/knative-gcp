@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -239,6 +239,6 @@ func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStora
 
 func WithCloudStorageSourceDefaultAuthorization() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

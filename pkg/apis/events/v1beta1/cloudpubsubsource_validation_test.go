@@ -20,7 +20,7 @@ import (
 	"context"
 	"testing"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -206,7 +206,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = &authorizationtesthelper.Secret
+				obj.Secret = &gcpauthtesthelper.Secret
 				return *obj
 			}(),
 			error: true,

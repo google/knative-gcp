@@ -19,14 +19,15 @@ package v1beta1
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/apis"
 )
 
 func (s *PubSubSpec) SetPubSubDefaults(ctx context.Context) {
-	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	ad := gcpauth.FromContextOrDefaults(ctx).AuthorizationDefaults
 	if ad == nil {
 		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
 		return

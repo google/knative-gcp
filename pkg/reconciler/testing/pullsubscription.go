@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -288,6 +288,6 @@ func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 
 func WithPullSubscriptionDefaultAuthorization() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

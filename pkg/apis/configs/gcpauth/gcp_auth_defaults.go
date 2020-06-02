@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package authorization
+package gcpauth
 
 import (
 	"encoding/json"
@@ -25,15 +25,15 @@ import (
 )
 
 const (
-	// configName is the name of config map for the default authorization that Sources and Channels
+	// configName is the name of config map for the default GCP auth that Sources and Channels
 	// should use.
-	configName = "config-authorization"
+	configName = "config-gcp-auth"
 
-	// defaulterKey is the key in the ConfigMap to get the name of the default Authorization CRD.
+	// defaulterKey is the key in the ConfigMap to get the name of the default GCP Auth.
 	defaulterKey = "default-auth-config"
 )
 
-// ConfigMapName returns the name of the configmap to read for default GCP authorization settings.
+// ConfigMapName returns the name of the configmap to read for default GCP auth settings.
 func ConfigMapName() string {
 	return configName
 }

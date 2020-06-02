@@ -19,7 +19,7 @@ package v1beta1
 import (
 	"context"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,7 +36,7 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
 
-	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	ad := gcpauth.FromContextOrDefaults(ctx).AuthorizationDefaults
 	if ad == nil {
 		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
 		return

@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -214,6 +214,6 @@ func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSch
 
 func WithCloudSchedulerSourceDefaultAuthorization() CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
-		s.Spec.PubSubSpec.SetPubSubDefaults(authorizationtesthelper.ContextWithDefaults())
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

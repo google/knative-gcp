@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"testing"
 
-	authorizationtesthelper "github.com/google/knative-gcp/pkg/apis/configs/authorization/testhelper"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -53,7 +53,7 @@ func TestTopicDefaults(t *testing.T) {
 			},
 		},
 		Spec: TopicSpec{}}
-	got.SetDefaults(authorizationtesthelper.ContextWithDefaults())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

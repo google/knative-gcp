@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package authorization
+package gcpauth
 
 import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Defaults includes the default values to be populated by the webhook.
+// Defaults includes the default values to be populated by the Webhook.
 type Defaults struct {
 	// NamespaceDefaults are the GCP auth defaults to use in specific namespaces. The namespace is
 	// the key, the value is the defaults.
@@ -46,7 +46,7 @@ type ScopedDefaults struct {
 	WorkloadIdentityMapping map[string]string `json:"workloadIdentityMapping,omitEmpty"`
 }
 
-// scoped gets the scoped Authorization defaults for the given namespace.
+// scoped gets the scoped GCP Auth defaults for the given namespace.
 func (d *Defaults) scoped(ns string) *ScopedDefaults {
 	scopedDefaults := &d.ClusterDefaults
 	if sd, present := d.NamespaceDefaults[ns]; present {

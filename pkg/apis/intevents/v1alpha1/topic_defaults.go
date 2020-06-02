@@ -19,9 +19,9 @@ package v1alpha1
 import (
 	"context"
 
-	"knative.dev/pkg/apis"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 
-	"github.com/google/knative-gcp/pkg/apis/configs/authorization"
+	"knative.dev/pkg/apis"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -41,7 +41,7 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		ts.PropagationPolicy = TopicPolicyCreateNoDelete
 	}
 
-	ad := authorization.FromContextOrDefaults(ctx).AuthorizationDefaults
+	ad := gcpauth.FromContextOrDefaults(ctx).AuthorizationDefaults
 	if ad == nil {
 		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
 		return
