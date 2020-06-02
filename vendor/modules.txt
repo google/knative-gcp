@@ -108,7 +108,7 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
-# github.com/cloudevents/sdk-go/v2 v2.0.0-RC4
+# github.com/cloudevents/sdk-go/v2 v2.0.0 => github.com/cloudevents/sdk-go/v2 v2.0.0
 ## explicit
 github.com/cloudevents/sdk-go/v2
 github.com/cloudevents/sdk-go/v2/binding
@@ -128,10 +128,12 @@ github.com/cloudevents/sdk-go/v2/observability
 github.com/cloudevents/sdk-go/v2/protocol
 github.com/cloudevents/sdk-go/v2/protocol/gochan
 github.com/cloudevents/sdk-go/v2/protocol/http
+github.com/cloudevents/sdk-go/v2/types
+# github.com/cloudevents/sdk-go/v2/protocol/pubsub v0.0.0-20200527133850-3401ade005e1
+## explicit
 github.com/cloudevents/sdk-go/v2/protocol/pubsub
 github.com/cloudevents/sdk-go/v2/protocol/pubsub/context
 github.com/cloudevents/sdk-go/v2/protocol/pubsub/internal
-github.com/cloudevents/sdk-go/v2/types
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.9.5+incompatible
@@ -179,7 +181,7 @@ github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/google/go-cmp v0.4.0
+# github.com/google/go-cmp v0.4.1
 ## explicit
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/cmpopts
@@ -445,7 +447,7 @@ gonum.org/v1/gonum/lapack
 gonum.org/v1/gonum/lapack/gonum
 gonum.org/v1/gonum/lapack/lapack64
 gonum.org/v1/gonum/mat
-# google.golang.org/api v0.22.1-0.20200430202532-ac9be1f8f530
+# google.golang.org/api v0.24.0
 ## explicit
 google.golang.org/api/container/v1beta1
 google.golang.org/api/googleapi
@@ -628,7 +630,7 @@ honnef.co/go/tools/staticcheck/vrp
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# k8s.io/api v0.17.4 => k8s.io/api v0.16.4
+# k8s.io/api v0.17.6 => k8s.io/api v0.16.4
 ## explicit
 k8s.io/api/admission/v1beta1
 k8s.io/api/admissionregistration/v1
@@ -669,7 +671,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apiextensions-apiserver v0.17.2
+# k8s.io/apiextensions-apiserver v0.17.6
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1
@@ -737,7 +739,7 @@ k8s.io/apimachinery/pkg/version
 k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.17.4
+# k8s.io/apiserver v0.17.6
 k8s.io/apiserver/pkg/storage/names
 # k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible => k8s.io/client-go v0.16.4
 ## explicit
@@ -992,7 +994,7 @@ k8s.io/gengo/parser
 k8s.io/gengo/types
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+# k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 k8s.io/kube-openapi/cmd/openapi-gen
 k8s.io/kube-openapi/cmd/openapi-gen/args
 k8s.io/kube-openapi/pkg/common
@@ -1005,7 +1007,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# knative.dev/eventing v0.15.1-0.20200526203649-32751c56844f
+# knative.dev/eventing v0.15.1-0.20200529211210-a70e7c4a28f3
 ## explicit
 knative.dev/eventing/pkg/apis/config
 knative.dev/eventing/pkg/apis/configs
@@ -1083,7 +1085,6 @@ knative.dev/eventing/pkg/kncloudevents
 knative.dev/eventing/pkg/logconfig
 knative.dev/eventing/pkg/logging
 knative.dev/eventing/pkg/reconciler/names
-knative.dev/eventing/pkg/reconciler/namespace/resources
 knative.dev/eventing/pkg/reconciler/testing
 knative.dev/eventing/pkg/tracing
 knative.dev/eventing/pkg/utils
@@ -1106,7 +1107,7 @@ knative.dev/eventing/test/test_images/performance
 knative.dev/eventing/test/test_images/recordevents
 knative.dev/eventing/test/test_images/sendevents
 knative.dev/eventing/test/test_images/transformevents
-# knative.dev/pkg v0.0.0-20200527024749-495174c96651
+# knative.dev/pkg v0.0.0-20200527173759-2d1a04d1ff82
 ## explicit
 knative.dev/pkg/apis
 knative.dev/pkg/apis/duck
@@ -1189,6 +1190,7 @@ knative.dev/pkg/test/mako/alerter
 knative.dev/pkg/test/mako/alerter/github
 knative.dev/pkg/test/mako/alerter/slack
 knative.dev/pkg/test/mako/config
+knative.dev/pkg/test/mako/stub-sidecar
 knative.dev/pkg/test/monitoring
 knative.dev/pkg/test/prow
 knative.dev/pkg/test/slackutil
@@ -1196,6 +1198,7 @@ knative.dev/pkg/test/spoof
 knative.dev/pkg/test/zipkin
 knative.dev/pkg/testutils/clustermanager/perf-tests
 knative.dev/pkg/testutils/clustermanager/perf-tests/pkg
+knative.dev/pkg/third_party/mako/proto/quickstore_go_proto
 knative.dev/pkg/tracing
 knative.dev/pkg/tracing/config
 knative.dev/pkg/tracker
@@ -1254,8 +1257,7 @@ knative.dev/serving/pkg/client/listers/networking/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1
 knative.dev/serving/pkg/client/listers/serving/v1alpha1
 knative.dev/serving/pkg/client/listers/serving/v1beta1
-# knative.dev/test-infra v0.0.0-20200527032149-1fa26194e82d
-## explicit
+# knative.dev/test-infra v0.0.0-20200527185659-fc87694eb879
 knative.dev/test-infra/scripts
 # sigs.k8s.io/yaml v1.2.0 => sigs.k8s.io/yaml v1.1.0
 ## explicit
@@ -1269,6 +1271,7 @@ sigs.k8s.io/yaml
 # k8s.io/client-go => k8s.io/client-go v0.16.4
 # k8s.io/code-generator => k8s.io/code-generator v0.16.5-beta.1
 # k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
+# github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0
 # github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 # github.com/blang/semver => github.com/blang/semver v1.1.1-0.20190414102917-ba2c2ddd8906
 # github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.0

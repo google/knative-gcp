@@ -14,17 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package broker
+package trigger
 
 import (
 	"context"
 	"fmt"
 
 	"cloud.google.com/go/pubsub"
+
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
@@ -33,8 +34,8 @@ import (
 	"knative.dev/pkg/resolver"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
+	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
@@ -48,10 +49,17 @@ const (
 	triggerReadinessChanged   = "TriggerReadinessChanged"
 	triggerReconcileFailed    = "TriggerReconcileFailed"
 	triggerUpdateStatusFailed = "TriggerUpdateStatusFailed"
+	topicCreated              = "TopicCreated"
+	subCreated                = "SubscriptionCreated"
+	topicDeleted              = "TopicDeleted"
+	subDeleted                = "SubscriptionDeleted"
 )
 
-type TriggerReconciler struct {
+// Reconciler implements controller.Reconciler for Trigger resources.
+type Reconciler struct {
 	*reconciler.Base
+
+	brokerLister brokerlisters.BrokerLister
 
 	// Dynamic tracker to track KResources. It tracks the dependency between Triggers and Sources.
 	kresourceTracker duck.ListableTracker
@@ -61,7 +69,7 @@ type TriggerReconciler struct {
 	uriResolver        *resolver.URIResolver
 
 	// projectID is used as the GCP project ID when present, skipping the
-	// metadata server check. Used by tests.
+	// metadata server check.
 	projectID string
 
 	// pubsubClient is used as the Pubsub client when present.
@@ -69,34 +77,38 @@ type TriggerReconciler struct {
 }
 
 // Check that TriggerReconciler implements Interface
-var _ triggerreconciler.Interface = (*TriggerReconciler)(nil)
-var _ triggerreconciler.Finalizer = (*TriggerReconciler)(nil)
+var _ triggerreconciler.Interface = (*Reconciler)(nil)
+var _ triggerreconciler.Finalizer = (*Reconciler)(nil)
 
-func (r *TriggerReconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
-	b := brokerFromContext(ctx)
-	if b == nil {
-		// Assume the Broker has been deleted or doesn't exist yet. Create a
-		// Broker object with the expected name and namespace to
-		// reconcile with.
-		// TODO move this to resources package?
-		b = &brokerv1beta1.Broker{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      t.Spec.Broker,
-				Namespace: t.Namespace,
-			},
-			//TODO is this needed?
-			Status: brokerv1beta1.BrokerStatus{},
-		}
-		b.Status.InitializeConditions()
-		//return fmt.Errorf("Couldn't fetch Broker from context")
+// ReconcileKind implements Interface.ReconcileKind.
+func (r *Reconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
+	b, err := r.brokerLister.Brokers(t.Namespace).Get(t.Spec.Broker)
+
+	if err != nil && !apierrs.IsNotFound(err) {
+		// Unknown error. genreconciler will record an `InternalError` event and keep retrying.
+		return err
 	}
+
+	// If the broker has been or is being deleted, we clean up resources created by this controller
+	// for the given trigger.
+	if apierrs.IsNotFound(err) || !b.GetDeletionTimestamp().IsZero() {
+		return r.FinalizeKind(ctx, t)
+	}
+
+	if !filterBroker(b) {
+		// Call Finalizer anyway in case the Trigger still holds GCP Broker related resources.
+		// If a Trigger used to point to a GCP Broker but now has a Broker with a different brokerclass,
+		// we should clean up resources related to GCP Broker.
+		return r.FinalizeKind(ctx, t)
+	}
+
+	return r.reconcile(ctx, t, b)
+}
+
+// reconciles the Trigger given that its Broker exists and is not being deleted.
+func (r *Reconciler) reconcile(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) pkgreconciler.Event {
 	t.Status.InitializeConditions()
-
-	if b.DeletionTimestamp != nil || b.UID == "" {
-		t.Status.MarkBrokerFailed("BrokerDoesNotExist", "Broker %q does not exist", t.Spec.Broker)
-	} else {
-		t.Status.PropagateBrokerStatus(&b.Status)
-	}
+	t.Status.PropagateBrokerStatus(&b.Status)
 
 	if err := r.resolveSubscriber(ctx, t, b); err != nil {
 		return err
@@ -110,67 +122,34 @@ func (r *TriggerReconciler) ReconcileKind(ctx context.Context, t *brokerv1beta1.
 		return err
 	}
 
-	targetsConfig := targetsFromContext(ctx)
-	if targetsConfig == nil {
-		return fmt.Errorf("Couldn't fetch Targets from context")
-	}
-
-	targetsConfig.MutateBroker(b.Namespace, b.Name, func(m config.BrokerMutation) {
-		target := &config.Target{
-			Id:        string(t.UID),
-			Name:      t.Name,
-			Namespace: t.Namespace,
-			Broker:    b.Name,
-			Address:   t.Status.SubscriberURI.String(),
-			RetryQueue: &config.Queue{
-				Topic:        resources.GenerateRetryTopicName(t),
-				Subscription: resources.GenerateRetrySubscriptionName(t),
-			},
-		}
-		if t.Spec.Filter != nil && t.Spec.Filter.Attributes != nil {
-			target.FilterAttributes = t.Spec.Filter.Attributes
-		}
-		if t.Status.IsReady() {
-			target.State = config.State_READY
-		} else {
-			target.State = config.State_UNKNOWN
-		}
-		m.UpsertTargets(target)
-	})
-
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerReconciled, "Trigger reconciled: \"%s/%s\"", t.Namespace, t.Name)
 }
 
-func (r *TriggerReconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
+// FinalizeKind frees GCP Broker related resources for this Trigger if applicable. It's called when:
+// 1) the Trigger is being deleted;
+// 2) the Broker of this Trigger is deleted;
+// 3) the Broker of this Trigger is updated with one that is not a GCP broker.
+func (r *Reconciler) FinalizeKind(ctx context.Context, t *brokerv1beta1.Trigger) pkgreconciler.Event {
+	// Don't care if the Trigger doesn't have the GCP Broker specific finalizer string.
+	// Right now all triggers have the finalizer because genreconciler automatically adds it.
+	// TODO(https://github.com/knative/pkg/issues/1149) Add a FilterKind to genreconciler so it will
+	// skip a trigger if it's not pointed to a gcp broker and doesn't have googlecloud finalizer string.
+	if !hasGCPBrokerFinalizer(t) {
+		return nil
+	}
 	if err := r.deleteRetryTopicAndSubscription(ctx, t); err != nil {
 		return err
 	}
-
-	targetsConfig := targetsFromContext(ctx)
-	if targetsConfig == nil {
-		return fmt.Errorf("Couldn't fetch Targets from context")
-	}
-
-	// Use the trigger's namespace and broker name here so the broker isn't needed
-	// from context
-	targetsConfig.MutateBroker(t.Namespace, t.Spec.Broker, func(m config.BrokerMutation) {
-		m.DeleteTargets(&config.Target{
-			Name: t.Name,
-		})
-	})
-
 	return pkgreconciler.NewEvent(corev1.EventTypeNormal, triggerFinalized, "Trigger finalized: \"%s/%s\"", t.Namespace, t.Name)
-
 }
 
-func (r *TriggerReconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
+func (r *Reconciler) resolveSubscriber(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
 	if t.Spec.Subscriber.Ref != nil {
 		// To call URIFromDestination(dest apisv1alpha1.Destination, parent interface{}), dest.Ref must have a Namespace
 		// We will use the Namespace of Trigger as the Namespace of dest.Ref
 		t.Spec.Subscriber.Ref.Namespace = t.GetNamespace()
 	}
 
-	//TODO only do this when the broker exists? It works without a UID
 	subscriberURI, err := r.uriResolver.URIFromDestinationV1(t.Spec.Subscriber, b)
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to get the Subscriber's URI", zap.Error(err))
@@ -184,7 +163,17 @@ func (r *TriggerReconciler) resolveSubscriber(ctx context.Context, t *brokerv1be
 	return nil
 }
 
-func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
+// hasGCPBrokerFinalizer checks if the Trigger object has a finalizer matching the one added by this controller.
+func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
+	for _, f := range t.Finalizers {
+		if f == finalizerName {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
 	// get ProjectID from metadata
@@ -292,7 +281,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	return nil
 }
 
-func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
+func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting retry topic")
 
@@ -333,8 +322,6 @@ func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context,
 	}
 
 	// Delete pull subscription if it exists.
-	// TODO could alternately set expiration policy to make pubsub delete it after some idle time.
-	// https://cloud.google.com/pubsub/docs/admin#deleting_a_topic
 	subID := resources.GenerateRetrySubscriptionName(trig)
 	sub := client.Subscription(subID)
 	exists, err = sub.Exists(ctx)
@@ -354,14 +341,13 @@ func (r *TriggerReconciler) deleteRetryTopicAndSubscription(ctx context.Context,
 	return nil
 }
 
-func (r *TriggerReconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
+func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
 	if dependencyAnnotation, ok := t.GetAnnotations()[v1alpha1.DependencyAnnotation]; ok {
 		dependencyObjRef, err := v1alpha1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
 		}
-		//TODO only do this when the broker exists? It works without a UID
 		trackKResource := r.kresourceTracker.TrackInNamespace(b)
 		// Trigger and its dependent source are in the same namespace, we already did the validation in the webhook.
 		if err := trackKResource(dependencyObjRef); err != nil {
@@ -376,7 +362,7 @@ func (r *TriggerReconciler) checkDependencyAnnotation(ctx context.Context, t *br
 	return nil
 }
 
-func (r *TriggerReconciler) propagateDependencyReadiness(ctx context.Context, t *brokerv1beta1.Trigger, dependencyObjRef corev1.ObjectReference) error {
+func (r *Reconciler) propagateDependencyReadiness(ctx context.Context, t *brokerv1beta1.Trigger, dependencyObjRef corev1.ObjectReference) error {
 	lister, err := r.kresourceTracker.ListerFor(dependencyObjRef)
 	if err != nil {
 		t.Status.MarkDependencyUnknown("ListerDoesNotExist", "Failed to retrieve lister: %v", err)
@@ -404,32 +390,4 @@ func (r *TriggerReconciler) propagateDependencyReadiness(ctx context.Context, t 
 	}
 	t.Status.PropagateDependencyStatus(dependency)
 	return nil
-}
-
-type brokerKey struct{}
-
-func brokerFromContext(ctx context.Context) *brokerv1beta1.Broker {
-	untyped := ctx.Value(brokerKey{})
-	if untyped == nil {
-		return nil
-	}
-	return untyped.(*brokerv1beta1.Broker)
-}
-
-func contextWithBroker(ctx context.Context, b *brokerv1beta1.Broker) context.Context {
-	return context.WithValue(ctx, brokerKey{}, b)
-}
-
-type targetsKey struct{}
-
-func targetsFromContext(ctx context.Context) config.Targets {
-	untyped := ctx.Value(targetsKey{})
-	if untyped == nil {
-		return nil
-	}
-	return untyped.(config.Targets)
-}
-
-func contextWithTargets(ctx context.Context, t config.Targets) context.Context {
-	return context.WithValue(ctx, targetsKey{}, t)
 }

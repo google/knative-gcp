@@ -336,6 +336,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
+					WithCloudBuildSourceSubscriptionID(SubscriptionID),
 				),
 			}, {
 				Object: NewCloudBuildSource(buildName, testNS,
@@ -346,6 +347,7 @@ func TestAllCases(t *testing.T) {
 					WithInitCloudBuildSourceConditions,
 					WithCloudBuildSourcePullSubscriptionReady(),
 					WithCloudBuildSourceSinkURI(pubsubSinkURL),
+					WithCloudBuildSourceSubscriptionID(SubscriptionID),
 					WithCloudBuildSourceFinalizers("cloudbuildsources.events.cloud.google.com"),
 				),
 			}},

@@ -19,11 +19,12 @@ package e2e
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 
 	pkgmetrics "knative.dev/pkg/metrics"
 	"knative.dev/pkg/test/helpers"
@@ -31,10 +32,67 @@ import (
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+// SmokeCloudStorageSourceTestImpl tests if a CloudStorageSource object can be created to ready state and delete a CloudStorageSource resource and its underlying resources..
+func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	ctx := context.Background()
+	project := os.Getenv(lib.ProwProjectKey)
+
+	bucketName := lib.MakeBucket(ctx, t, project)
+	storageName := helpers.AppendRandomString(bucketName + "-storage")
+	svcName := helpers.AppendRandomString(bucketName + "-event-display")
+
+	//make the storage source
+	lib.MakeStorageOrDie(client, lib.ServiceGVK, bucketName, storageName, svcName, authConfig.PubsubServiceAccount)
+
+	createdStorage := client.GetStorageOrFail(storageName)
+
+	topicID := createdStorage.Status.TopicID
+	subID := createdStorage.Status.SubscriptionID
+	notificationID := createdStorage.Status.NotificationID
+
+	createdNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if !createdNotificationExists {
+		t.Errorf("Expected notification%q to exist", topicID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteStorageOrFail(storageName)
+	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+
+	deletedNotificationExists := lib.NotificationExists(t, bucketName, notificationID)
+	if deletedNotificationExists {
+		t.Errorf("Expected notification%q tto get deleted", notificationID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+}
 
 func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authConfig lib.AuthConfig) {
 	t.Helper()

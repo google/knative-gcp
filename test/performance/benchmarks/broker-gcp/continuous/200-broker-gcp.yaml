@@ -15,10 +15,10 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: broker-pubsub-receiver
+  name: broker-gcp-receiver
   namespace: default
   labels:
-    role: broker-pubsub-receiver
+    role: broker-gcp-receiver
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
@@ -34,17 +34,17 @@ spec:
       template:
         metadata:
           labels:
-            role: broker-pubsub-receiver
+            role: broker-gcp-receiver
         spec:
-          serviceAccountName: perf-pubsub
+          serviceAccountName: perf-gcpbroker
           restartPolicy: Never
           containers:
           - name: sender-receiver
             image: ko://knative.dev/eventing/test/test_images/performance
             args:
               - "--roles=sender,receiver"
-              - "--sink=http://pubsub-broker"
-              - "--aggregator=broker-pubsub-aggregator:10000"
+              - "--sink=http://broker-ingress.cloud-run-events/default/gcp"
+              - "--aggregator=broker-gcp-aggregator:10000"
               - "--pace=100:10,200:20,400:30,500:60,600:60"
             env:
               - name: POD_NAME
@@ -68,10 +68,10 @@ spec:
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: broker-pubsub-aggregator
+  name: broker-gcp-aggregator
   namespace: default
   labels:
-    role: broker-pubsub-aggregator
+    role: broker-gcp-aggregator
 spec:
   schedule: "0/15 * * * *"
   # History must be zero to ensure no failed pods stick around and block the next job
@@ -87,9 +87,9 @@ spec:
       template:
         metadata:
           labels:
-            role: broker-pubsub-aggregator
+            role: broker-gcp-aggregator
         spec:
-          serviceAccountName: perf-pubsub
+          serviceAccountName: perf-gcpbroker
           restartPolicy: Never
           containers:
           - name: aggregator

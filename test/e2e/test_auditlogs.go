@@ -25,12 +25,78 @@ import (
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1beta1"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 
 	"knative.dev/pkg/test/helpers"
 
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
+
+// SmokeCloudAuditLogsSourceTestImpl tests if a CloudAuditLogsSource object can be created to ready state and delete a CloudAuditLogsSource resource and its underlying resources..
+func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	t.Helper()
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	project := os.Getenv(lib.ProwProjectKey)
+
+	auditlogsName := helpers.AppendRandomString("auditlogs-e2e-test")
+	svcName := helpers.AppendRandomString(auditlogsName + "-event-display")
+	topicName := helpers.AppendRandomString(auditlogsName + "-topic")
+	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
+
+	lib.MakeAuditLogsOrDie(client,
+		lib.ServiceGVK,
+		auditlogsName,
+		lib.PubSubCreateTopicMethodName,
+		project,
+		resourceName,
+		lib.PubSubServiceName,
+		svcName,
+		authConfig.PubsubServiceAccount,
+	)
+
+	createdAuditLogs := client.GetAuditLogsOrFail(auditlogsName)
+
+	topicID := createdAuditLogs.Status.TopicID
+	subID := createdAuditLogs.Status.SubscriptionID
+	sinkID := createdAuditLogs.Status.StackdriverSink
+
+	createdSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if !createdSinkExists {
+		t.Errorf("Expected StackdriverSink%q to exist", sinkID)
+	}
+
+	createdTopicExists := lib.TopicExists(t, topicID)
+	if !createdTopicExists {
+		t.Errorf("Expected topic%q to exist", topicID)
+	}
+
+	createdSubExists := lib.SubscriptionExists(t, subID)
+	if !createdSubExists {
+		t.Errorf("Expected subscription %q to exist", subID)
+	}
+	client.DeleteAuditLogsOrFail(auditlogsName)
+	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	time.Sleep(resources.WaitDeletionTime)
+
+
+	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
+	if deletedSinkExists {
+		t.Errorf("Expected s%q StackdriverSink to get deleted", sinkID)
+	}
+
+	deletedTopicExists := lib.TopicExists(t, topicID)
+	if deletedTopicExists {
+		t.Errorf("Expected topic %q to get deleted", topicID)
+	}
+
+	deletedSubExists := lib.SubscriptionExists(t, subID)
+	if deletedSubExists {
+		t.Errorf("Expected subscription %q to get deleted", subID)
+	}
+}
 
 func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	project := os.Getenv(lib.ProwProjectKey)
