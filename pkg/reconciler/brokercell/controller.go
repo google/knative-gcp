@@ -22,8 +22,6 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"knative.dev/eventing/pkg/logging"
@@ -84,14 +82,11 @@ func NewController(
 
 // handleResourceUpdate returns an event handler for resources created by brokercell such as the ingress deployment.
 func handleResourceUpdate(impl *controller.Impl) cache.ResourceEventHandler {
-	return controller.HandleAll(func(obj interface{}) {
-		if mo, ok := obj.(metav1.Object); ok {
-			bcName, exist := mo.GetLabels()[resources.BrokerCellLabelKey]
-			if !exist {
-				// This object is not created by brokercell
-				return
-			}
-			impl.EnqueueKey(types.NamespacedName{Namespace: mo.GetNamespace(), Name: bcName})
-		}
-	})
+	// Since resources created by brokercell live in the same namespace as the brokercell, we use an
+	// empty namespaceLabel so that the same namespace of the given object is used to enqueue.
+	namespaceLabel := ""
+	// Resources created by the brokercell, including the indirectly created ingress service endpoints,
+	// have such a label resources.BrokerCellLabelKey=<brokercellName>. Resources without this label
+	// will be skipped by the function.
+	return controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource(namespaceLabel, resources.BrokerCellLabelKey))
 }
