@@ -8,11 +8,12 @@ require (
 	cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
 	github.com/cloudevents/sdk-go v1.2.0
-	github.com/cloudevents/sdk-go/v2 v2.0.0-RC4
+	github.com/cloudevents/sdk-go/v2 v2.0.0
+	github.com/cloudevents/sdk-go/v2/protocol/pubsub v0.0.0-20200527133850-3401ade005e1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0
-	github.com/google/go-cmp v0.4.0
+	github.com/google/go-cmp v0.4.1
 	github.com/google/uuid v1.1.1
 	github.com/google/wire v0.4.0
 	github.com/googleapis/gax-go/v2 v2.0.5
@@ -24,17 +25,17 @@ require (
 	go.uber.org/zap v1.14.1
 	golang.org/x/crypto v0.0.0-20200317142112-1b76d66859c6 // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	google.golang.org/api v0.22.1-0.20200430202532-ac9be1f8f530
+	google.golang.org/api v0.24.0
 	google.golang.org/genproto v0.0.0-20200430143042-b979b6f78d84
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
-	k8s.io/api v0.17.4
+	k8s.io/api v0.17.6
 	k8s.io/apimachinery v0.18.1
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200526203649-32751c56844f
-	knative.dev/pkg v0.0.0-20200527024749-495174c96651
-	knative.dev/serving v0.15.1-0.20200527151759-5b8ff09ace4f
-	knative.dev/test-infra v0.0.0-20200527032149-1fa26194e82d // indirect
+	knative.dev/eventing v0.15.1-0.20200602132917-9119a2e34905
+	knative.dev/pkg v0.0.0-20200601184204-18c577c87d4f
+	knative.dev/serving v0.15.1-0.20200602105317-468ae278d9e3
+	knative.dev/test-infra v0.0.0-20200602024303-e406de9f65c4 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -49,6 +50,10 @@ replace (
 	k8s.io/code-generator => k8s.io/code-generator v0.16.5-beta.1
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
+
+// This can be removed when https://github.com/cloudevents/sdk-go/issues/525 is
+// fixed (should be next sdk-go release)
+replace github.com/cloudevents/sdk-go/v2 => github.com/cloudevents/sdk-go/v2 v2.0.0
 
 replace github.com/aws/aws-sdk-go => github.com/aws/aws-sdk-go v1.25.1
 

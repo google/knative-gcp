@@ -82,7 +82,7 @@ metadata:
 # Do not use this role directly. These rules will be added to the "addressable-resolver" role.
 rules:
   - apiGroups:
-      - pubsub.cloud.google.com
+      - internal.events.cloud.google.com
     resources:
       - topics
       - topics/status

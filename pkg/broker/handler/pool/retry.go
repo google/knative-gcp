@@ -113,6 +113,12 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 			p.pool.Delete(t.Key())
 		}
 
+		// Don't start the handler if the target is not ready.
+		// The retry topic/sub might not be ready at this point.
+		if t.State != config.State_READY {
+			return true
+		}
+
 		sub := p.pubsubClient.Subscription(t.RetryQueue.Subscription)
 		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 

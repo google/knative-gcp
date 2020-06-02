@@ -19,11 +19,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/test/e2e/lib"
 	"github.com/google/knative-gcp/test/test_images/internal/knockdown"
 	"github.com/kelseyhightower/envconfig"
-	"os"
 )
 
 const (
@@ -63,8 +64,6 @@ type auditLogReceiver struct {
 	Source       string `envconfig:"SOURCE" required:"true"`
 	Subject      string `envconfig:"SUBJECT" required:"true"`
 }
-
-
 
 func (r *auditLogReceiver) Knockdown(event cloudevents.Event) bool {
 	fmt.Printf("auditlogs target received event\n")

@@ -21,16 +21,11 @@ import (
 	"fmt"
 	"testing"
 
-	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"github.com/google/knative-gcp/pkg/broker/config/memory"
-	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
-	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
-	"github.com/google/knative-gcp/pkg/reconciler"
-	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	clientgotesting "k8s.io/client-go/testing"
+
 	"knative.dev/eventing/pkg/utils"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -38,6 +33,15 @@ import (
 	"knative.dev/pkg/controller"
 	logtesting "knative.dev/pkg/logging/testing"
 	. "knative.dev/pkg/reconciler/testing"
+
+	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/broker/config/memory"
+	"github.com/google/knative-gcp/pkg/client/injection/ducks/duck/v1alpha1/resource"
+	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
+	"github.com/google/knative-gcp/pkg/reconciler"
+	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
+	. "github.com/google/knative-gcp/pkg/reconciler/testing"
 )
 
 const (
@@ -45,7 +49,6 @@ const (
 	brokerName = "test-broker"
 
 	testProject = "test-project-id"
-	generation  = 1
 	testUID     = "abc123"
 	systemNS    = "knative-testing"
 
@@ -58,6 +61,7 @@ var (
 	brokerFinalizerUpdatedEvent = Eventf(corev1.EventTypeNormal, "FinalizerUpdate", `Updated "test-broker" finalizers`)
 	brokerReconciledEvent       = Eventf(corev1.EventTypeNormal, "BrokerReconciled", `Broker reconciled: "testnamespace/test-broker"`)
 	brokerFinalizedEvent        = Eventf(corev1.EventTypeNormal, "BrokerFinalized", `Broker finalized: "testnamespace/test-broker"`)
+	ingressServiceName          = brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.IngressName)
 
 	brokerAddress = &apis.URL{
 		Scheme: "http",
@@ -72,6 +76,7 @@ func init() {
 }
 
 func TestAllCases(t *testing.T) {
+	// TODO Add tests cases for broker with triggers and verify the target-config content.
 	table := TableTest{{
 		Name: "bad workqueue key",
 		Key:  "too/many/parts",
@@ -122,14 +127,13 @@ func TestAllCases(t *testing.T) {
 			NoSubscriptionsExist(),
 		},
 	}, {
-		Name: "Broker created",
+		Name: "Create broker with ready brokercell, broker is created",
 		Key:  testKey,
 		Objects: []runtime.Object{
 			NewBroker(brokerName, testNS,
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID)),
-			NewEndpoints(ingressServiceName, systemNS,
-				WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+			NewBrokerCell(resources.DefaultBroekrCellName, systemNS, WithBrokerCellReady),
 		},
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewBroker(brokerName, testNS,
@@ -140,6 +144,107 @@ func TestAllCases(t *testing.T) {
 		}},
 		WantEvents: []string{
 			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
+			brokerReconciledEvent,
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
+		},
+	}, {
+		Name: "Create broker with unready brokercell, broker is created",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID)),
+			NewBrokerCell(resources.DefaultBroekrCellName, systemNS, WithBrokerCellIngressFailed("", "")),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID),
+				WithBrokerReadyURI(brokerAddress),
+				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+			),
+		}},
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
+			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
+			brokerReconciledEvent,
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		OtherTestData: map[string]interface{}{
+			"pre": []PubsubAction{},
+		},
+		PostConditions: []func(*testing.T, *TableRow){
+			TopicExists("cre-bkr_testnamespace_test-broker_abc123"),
+			SubscriptionExists("cre-bkr_testnamespace_test-broker_abc123"),
+		},
+	}, {
+		Name: "Create broker without brokercell, brokercell creation failed",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID)),
+		},
+		WithReactors: []clientgotesting.ReactionFunc{
+			InduceFailure("create", "brokercells"),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+			{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerUID(testUID),
+					WithInitBrokerConditions,
+					WithBrokerBrokerCellFailed("BrokerCellCreationFailed", "Failed to create knative-testing/default"),
+				),
+			},
+		},
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
+		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeWarning, "InternalError", `failed to reconcile broker: brokercell reconcile failed: inducing failure for create brokercells`),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, brokerName, brokerFinalizerName),
+		},
+		WantErr: true,
+	}, {
+		Name: "Create broker without brokercell, both broker and brokercell are created",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewBroker(brokerName, testNS,
+				WithBrokerClass(brokerv1beta1.BrokerClass),
+				WithBrokerUID(testUID)),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+			{
+				Object: NewBroker(brokerName, testNS,
+					WithBrokerClass(brokerv1beta1.BrokerClass),
+					WithBrokerUID(testUID),
+					WithBrokerReadyURI(brokerAddress),
+					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
+				),
+			},
+		},
+		WantCreates:             []runtime.Object{resources.CreateBrokerCell(nil) /*Currently brokercell doesn't require broker information*/ },
+		SkipNamespaceValidation: true, // The brokercell resource is created in a different namespace (system namespace) than the broker
+		WantEvents: []string{
+			brokerFinalizerUpdatedEvent,
+			Eventf(corev1.EventTypeNormal, "BrokerCellCreated", `Created brokercell knative-testing/default`),
 			Eventf(corev1.EventTypeNormal, "TopicCreated", `Created PubSub topic "cre-bkr_testnamespace_test-broker_abc123"`),
 			Eventf(corev1.EventTypeNormal, "SubscriptionCreated", `Created PubSub subscription "cre-bkr_testnamespace_test-broker_abc123"`),
 			brokerReconciledEvent,
@@ -179,6 +284,8 @@ func TestAllCases(t *testing.T) {
 			configMapLister:    listers.GetConfigMapLister(),
 			endpointsLister:    listers.GetEndpointsLister(),
 			deploymentLister:   listers.GetDeploymentLister(),
+			podLister:          listers.GetPodLister(),
+			brokerCellLister:   listers.GetBrokerCellLister(),
 			targetsConfig:      memory.NewEmptyTargets(),
 			targetsNeedsUpdate: make(chan struct{}),
 			projectID:          testProject,
@@ -193,15 +300,6 @@ func patchFinalizers(namespace, name, finalizer string) clientgotesting.PatchAct
 	action.Name = name
 	action.Namespace = namespace
 	patch := `{"metadata":{"finalizers":["` + finalizer + `"],"resourceVersion":""}}`
-	action.Patch = []byte(patch)
-	return action
-}
-
-func patchRemoveFinalizers(namespace, name string) clientgotesting.PatchActionImpl {
-	action := clientgotesting.PatchActionImpl{}
-	action.Name = name
-	action.Namespace = namespace
-	patch := `{"metadata":{"finalizers":[],"resourceVersion":""}}`
 	action.Patch = []byte(patch)
 	return action
 }
