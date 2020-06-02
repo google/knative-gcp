@@ -707,6 +707,9 @@ func TestAllCases(t *testing.T) {
 				testingdata.IngressServiceWithStatus(t),
 				testingdata.FanoutDeploymentWithStatus(t),
 				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
 			},
 			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
 				{Object: NewBrokerCell(brokerCellName, testNS,
