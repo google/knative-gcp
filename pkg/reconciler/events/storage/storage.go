@@ -202,8 +202,9 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 	// Load the Bucket.
 	bucket := client.Bucket(storage.Spec.Bucket)
 
-	//Check whether Bucket exists or not
+	// Check whether bucket exists or not
 	if _, err := bucket.Attrs(ctx); err != nil {
+		// If the bucket was already deleted, then we should proceed
 		if err == ErrBucketNotExist {
 			logging.FromContext(ctx).Desugar().Info("Bucket doesn't exist", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
 			return nil
@@ -212,13 +213,11 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 		return err
 	}
 
-
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
 		return err
 	}
-
 
 	// This is bit wonky because, we could always just try to delete, but figuring out
 	// if an error returned is NotFound seems to not really work, so, we'll try
