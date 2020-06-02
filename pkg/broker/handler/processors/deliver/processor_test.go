@@ -158,8 +158,6 @@ func TestDeliverSuccess(t *testing.T) {
 				if err != nil {
 					t.Errorf("target received message cannot be converted to an event: %v", err)
 				}
-				// Force the time to be the same so that we can compare easier.
-				gotEvent.SetTime(tc.wantOrigin.Time())
 				if diff := cmp.Diff(tc.wantOrigin, gotEvent); diff != "" {
 					t.Errorf("target received event (-want,+got): %v", diff)
 				}
@@ -185,7 +183,6 @@ func TestDeliverSuccess(t *testing.T) {
 						eventutil.UpdateRemainingHops(rctx, gotEvent, hops)
 					}
 				}
-				// Force the time to be the same so that we can compare easier.
 				if diff := cmp.Diff(tc.wantReply, gotEvent); diff != "" {
 					t.Errorf("ingress received event (-want,+got): %v", diff)
 				}
