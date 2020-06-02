@@ -49,7 +49,11 @@ const (
 var (
 	testKey = fmt.Sprintf("%s/%s", testNS, brokerCellName)
 
+	creatorAnnotation = map[string]string{"internal.events.cloud.google.com/creator": "googlecloud"}
+
 	brokerCellReconciledEvent     = Eventf(corev1.EventTypeNormal, "BrokerCellReconciled", `BrokerCell reconciled: "testnamespace/test-brokercell"`)
+	brokerCellGCEvent             = Eventf(corev1.EventTypeNormal, "BrokerCellGarbageCollected", `BrokerCell garbage collected: "testnamespace/test-brokercell"`)
+	brokerCellGCFailedEvent       = Eventf(corev1.EventTypeWarning, "InternalError", `failed to garbage collect brokercell: inducing failure for delete brokercells`)
 	brokerCellUpdateFailedEvent   = Eventf(corev1.EventTypeWarning, "UpdateFailed", `Failed to update status for "test-brokercell": inducing failure for update brokercells`)
 	ingressDeploymentCreatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentCreated", "Created deployment testnamespace/test-brokercell-brokercell-ingress")
 	ingressDeploymentUpdatedEvent = Eventf(corev1.EventTypeNormal, "DeploymentUpdated", "Updated deployment testnamespace/test-brokercell-brokercell-ingress")
@@ -691,13 +695,74 @@ func TestAllCases(t *testing.T) {
 				brokerCellReconciledEvent,
 			},
 		},
+		{
+			Name: "googlecloud created BrokerCell shouldn't be gc'ed because there are brokers",
+			Key:  testKey,
+			Objects: []runtime.Object{
+				NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation)),
+				NewBroker("broker", testNS),
+				NewEndpoints(brokerCellName+"-brokercell-ingress", testNS,
+					WithEndpointsAddresses(corev1.EndpointAddress{IP: "127.0.0.1"})),
+				testingdata.IngressDeploymentWithStatus(t),
+				testingdata.IngressServiceWithStatus(t),
+				testingdata.FanoutDeploymentWithStatus(t),
+				testingdata.RetryDeploymentWithStatus(t),
+				testingdata.IngressHPA(t),
+				testingdata.FanoutHPA(t),
+				testingdata.RetryHPA(t),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{
+				{Object: NewBrokerCell(brokerCellName, testNS,
+					WithBrokerCellAnnotations(creatorAnnotation),
+					WithBrokerCellReady,
+					WithIngressTemplate("http://test-brokercell-brokercell-ingress.testnamespace.svc.cluster.local/{namespace}/{name}"),
+				)},
+			},
+			WantEvents: []string{
+				brokerCellReconciledEvent,
+			},
+		},
+		{
+			Name:         "googlecloud created BrokerCell should be gc'ed if there is no broker, but deletion fails",
+			Key:          testKey,
+			Objects:      []runtime.Object{NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation))},
+			WithReactors: []clientgotesting.ReactionFunc{InduceFailure("delete", "brokercells")},
+			WantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					Name: brokerCellName,
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Verb:      "delete",
+						Resource:  intv1alpha1.SchemeGroupVersion.WithResource("brokercells"),
+					},
+				},
+			},
+			WantEvents: []string{brokerCellGCFailedEvent},
+			WantErr:    true,
+		},
+		{
+			Name:    "googlecloud created BrokerCell is gc'ed successfully",
+			Key:     testKey,
+			Objects: []runtime.Object{NewBrokerCell(brokerCellName, testNS, WithBrokerCellAnnotations(creatorAnnotation))},
+			WantDeletes: []clientgotesting.DeleteActionImpl{
+				{
+					Name: brokerCellName,
+					ActionImpl: clientgotesting.ActionImpl{
+						Namespace: testNS,
+						Verb:      "delete",
+						Resource:  intv1alpha1.SchemeGroupVersion.WithResource("brokercells"),
+					},
+				},
+			},
+			WantEvents: []string{brokerCellGCEvent},
+		},
 	}
 
 	defer logtesting.ClearAll()
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, testData map[string]interface{}) controller.Reconciler {
 		setReconcilerEnv()
 		base := reconciler.NewBase(ctx, controllerAgentName, cmw)
-		r, err := NewReconciler(base, listers.GetK8sServiceLister(), listers.GetEndpointsLister(), listers.GetDeploymentLister())
+		r, err := NewReconciler(base, listers.GetBrokerLister(), listers.GetK8sServiceLister(), listers.GetEndpointsLister(), listers.GetDeploymentLister())
 		if err != nil {
 			t.Fatalf("Failed to created BrokerCell reconciler: %v", err)
 		}
