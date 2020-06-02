@@ -848,6 +848,74 @@ func TestAllCases(t *testing.T) {
 				),
 			}},
 		}, {
+			Name: "bucket doesn't exist",
+			Objects: []runtime.Object{
+				NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+				),
+				NewTopic(storageName, testNS,
+					WithTopicSpec(inteventsv1alpha1.TopicSpec{
+						Topic:             testTopicID,
+						PropagationPolicy: "CreateDelete",
+						Project:           testProject,
+					}),
+					WithTopicReady(testTopicID),
+					WithTopicAddress(testTopicURI),
+					WithTopicProjectID(testProject),
+				),
+				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+					WithPullSubscriptionSpecWithNoDefaults(inteventsv1alpha1.PullSubscriptionSpec{
+						Topic: testTopicID,
+						PubSubSpec: duckv1alpha1.PubSubSpec{
+							Project: testProject,
+							Secret:  &secret,
+							SourceSpec: duckv1.SourceSpec{
+								Sink: newSinkDestination(),
+							},
+						},
+					}),
+					WithPullSubscriptionReady(sinkURI),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + storageName,
+			OtherTestData: map[string]interface{}{
+				"storage": gstorage.TestClientData{
+					BucketData: gstorage.TestBucketData{
+						AttrsError: storage.ErrBucketNotExist,
+					},
+				},
+			},
+			WantEvents: []string{
+				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
+				Eventf(corev1.EventTypeWarning, reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "storage: bucket doesn't exist")),
+			},
+			WantPatches: []clientgotesting.PatchActionImpl{
+				patchFinalizers(testNS, storageName, true),
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceStatusObservedGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+					WithInitCloudStorageSourceConditions,
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceTopicReady(testTopicID),
+					WithCloudStorageSourceProjectID(testProject),
+					WithCloudStorageSourcePullSubscriptionReady(),
+					WithCloudStorageSourceSubscriptionID(SubscriptionID),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceNotificationNotReady(reconciledNotificationFailed, fmt.Sprintf("%s: %s", failedToReconcileNotificationMsg, "storage: bucket doesn't exist")),
+				),
+			}},
+		}, {
 			Name: "successfully created notification",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
@@ -914,7 +982,8 @@ func TestAllCases(t *testing.T) {
 					WithCloudStorageSourceSinkURI(storageSinkURL),
 					WithCloudStorageSourceNotificationReady(notificationId)),
 			}},
-		}, {
+		},
+		{
 			Name: "delete fails with non grpc error",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
@@ -1036,7 +1105,62 @@ func TestAllCases(t *testing.T) {
 					WithDeletionTimestamp(),
 				),
 			}},
-		}, {
+		},
+		{
+			Name: "successfully deleted storage when bucket doesn't exist",
+			Objects: []runtime.Object{
+				NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceSinkURI(storageSinkURL),
+					WithCloudStorageSourceTopicReady(testTopicID),
+					WithDeletionTimestamp(),
+				),
+				NewTopic(storageName, testNS,
+					WithTopicReady(testTopicID),
+					WithTopicAddress(testTopicURI),
+					WithTopicProjectID(testProject),
+				),
+				NewPullSubscriptionWithNoDefaults(storageName, testNS,
+					WithPullSubscriptionReady(sinkURI),
+				),
+				newSink(),
+			},
+			Key: testNS + "/" + storageName,
+			OtherTestData: map[string]interface{}{
+				"storage": gstorage.TestClientData{
+					BucketData: gstorage.TestBucketData{
+						AttrsError: storage.ErrBucketNotExist,
+					},
+				},
+			},
+			WantDeletes: []clientgotesting.DeleteActionImpl{
+				{ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "topics"}},
+					Name: storageName,
+				},
+				{ActionImpl: clientgotesting.ActionImpl{
+					Namespace: testNS, Verb: "delete", Resource: schema.GroupVersionResource{Group: "internal.events.cloud.google.com", Version: "v1alpha1", Resource: "pullsubscriptions"}},
+					Name: storageName,
+				},
+			},
+			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+				Object: NewCloudStorageSource(storageName, testNS,
+					WithCloudStorageSourceProject(testProject),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceBucket(bucket),
+					WithCloudStorageSourceSink(sinkGVK, sinkName),
+					WithCloudStorageSourceEventTypes([]string{storagev1alpha1.CloudStorageSourceFinalize}),
+					WithCloudStorageSourceObjectMetaGeneration(generation),
+					WithCloudStorageSourceTopicFailed("TopicDeleted", fmt.Sprintf("Successfully deleted Topic: %s", storageName)),
+					WithCloudStorageSourcePullSubscriptionFailed("PullSubscriptionDeleted", fmt.Sprintf("Successfully deleted PullSubscription: %s", storageName)),
+					WithDeletionTimestamp()),
+			}},
+		},
+			{
 			Name: "successfully deleted storage",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,

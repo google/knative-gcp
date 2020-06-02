@@ -18,7 +18,6 @@ package storage
 
 import (
 	"context"
-
 	"go.uber.org/zap"
 
 	"google.golang.org/grpc/codes"
@@ -129,6 +128,16 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 
 	// Load the Bucket.
 	bucket := client.Bucket(storage.Spec.Bucket)
+	//Check whether Bucket exists or not
+	if _, err := bucket.Attrs(ctx); err != nil {
+		if err == ErrBucketNotExist {
+			logging.FromContext(ctx).Desugar().Error("Bucket doesn't exist", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+			return "", err
+		}
+		logging.FromContext(ctx).Desugar().Error("Failed to fetch attrs of bucket", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+		return "", err
+	}
+
 
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
@@ -193,11 +202,23 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 	// Load the Bucket.
 	bucket := client.Bucket(storage.Spec.Bucket)
 
+	//Check whether Bucket exists or not
+	if _, err := bucket.Attrs(ctx); err != nil {
+		if err == ErrBucketNotExist {
+			logging.FromContext(ctx).Desugar().Info("Bucket doesn't exist", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+			return nil
+		}
+		logging.FromContext(ctx).Desugar().Error("Failed to fetch attrs of bucket", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
+		return err
+	}
+
+
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))
 		return err
 	}
+
 
 	// This is bit wonky because, we could always just try to delete, but figuring out
 	// if an error returned is NotFound seems to not really work, so, we'll try
