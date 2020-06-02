@@ -59,7 +59,7 @@ func (c *healthChecker) start(ctx context.Context) {
 	go func() {
 		logging.FromContext(ctx).Info("Starting the sync pool health checker...")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logging.FromContext(ctx).Fatal("the sync pool health checker has stopped unexpectedly", zap.Error(err))
+			logging.FromContext(ctx).Error("the sync pool health checker has stopped unexpectedly", zap.Error(err))
 		}
 	}()
 
