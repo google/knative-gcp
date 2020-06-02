@@ -243,6 +243,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		b.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -263,7 +264,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		topic, err = client.CreateTopicWithConfig(ctx, topicID, topicConfig)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-			b.Status.MarkTopicFailed("CreationFailed", "Topic creation failed: %w", err)
+			b.Status.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
@@ -281,6 +282,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		b.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 
@@ -305,7 +307,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logger.Error("Failed to create subscription", zap.Error(err))
-			b.Status.MarkSubscriptionFailed("CreationFailed", "Subscription creation failed: %w", err)
+			b.Status.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
