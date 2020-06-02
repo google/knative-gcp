@@ -119,7 +119,7 @@ func (e ExpectDelivery) verifyDelivery(t *testing.T, viewName string) {
 	}
 
 	if diff := cmp.Diff(e.DeliveryCount, got); diff != "" {
-		t.Errorf("unexpected event_processing_latencies measurement count (-want, +got) = %v", diff)
+		t.Errorf("unexpected %s measurement count (-want, +got) = %v", viewName, diff)
 	}
 }
 
