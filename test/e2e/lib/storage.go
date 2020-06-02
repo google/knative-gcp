@@ -150,9 +150,9 @@ func NotificationExists(t *testing.T, bucketName, notificationID string) bool {
 		t.Fatalf("Failed to fetch existing notifications %s", err.Error())
 	}
 
-	if _, ok := notifications[notificationID];ok {
+	if _, ok := notifications[notificationID]; ok {
 		return true
 	}
-	return  false
+	return false
 
 }

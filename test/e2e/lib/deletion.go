@@ -56,7 +56,6 @@ func (c *Client) DeleteAuditLogsOrFail(name string) {
 	}
 }
 
-
 func (c *Client) DeleteGCPBrokerOrFail(name string) {
 	c.T.Helper()
 	brokers := c.KnativeGCP.EventingV1beta1().Brokers(c.Namespace)

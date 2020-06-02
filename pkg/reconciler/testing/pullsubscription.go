@@ -36,6 +36,7 @@ type PullSubscriptionOption func(*v1alpha1.PullSubscription)
 const (
 	SubscriptionID = "subID"
 )
+
 // NewPullSubscription creates a PullSubscription with PullSubscriptionOptions
 func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
 	s := &v1alpha1.PullSubscription{

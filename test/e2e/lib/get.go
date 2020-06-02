@@ -34,7 +34,7 @@ func (c *Client) GetPubSubOrFail(name string) *eventsv1alpha1.CloudPubSubSource 
 
 func (c *Client) GetSchedulerOrFail(name string) *eventsv1alpha1.CloudSchedulerSource {
 	c.T.Helper()
-	schedulers:= c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
+	schedulers := c.KnativeGCP.EventsV1alpha1().CloudSchedulerSources(c.Namespace)
 	existing, err := schedulers.Get(name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get scheduler %s/%s: %v", c.Namespace, name, err)
@@ -42,9 +42,9 @@ func (c *Client) GetSchedulerOrFail(name string) *eventsv1alpha1.CloudSchedulerS
 	return existing
 }
 
-func (c *Client) GetStorageOrFail(name string) *eventsv1alpha1.CloudStorageSource{
+func (c *Client) GetStorageOrFail(name string) *eventsv1alpha1.CloudStorageSource {
 	c.T.Helper()
-	storages:= c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
+	storages := c.KnativeGCP.EventsV1alpha1().CloudStorageSources(c.Namespace)
 	existing, err := storages.Get(name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get storages %s/%s: %v", c.Namespace, name, err)
@@ -52,10 +52,9 @@ func (c *Client) GetStorageOrFail(name string) *eventsv1alpha1.CloudStorageSourc
 	return existing
 }
 
-
-func (c *Client) GetAuditLogsOrFail(name string) *eventsv1alpha1.CloudAuditLogsSource{
+func (c *Client) GetAuditLogsOrFail(name string) *eventsv1alpha1.CloudAuditLogsSource {
 	c.T.Helper()
-	auditLogs:= c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
+	auditLogs := c.KnativeGCP.EventsV1alpha1().CloudAuditLogsSources(c.Namespace)
 	existing, err := auditLogs.Get(name, metav1.GetOptions{})
 	if err != nil {
 		c.T.Fatalf("Failed to get auditlogs %s/%s: %v", c.Namespace, name, err)

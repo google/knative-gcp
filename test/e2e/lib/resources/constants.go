@@ -58,6 +58,5 @@ const (
 
 // WaitDeletionTime for deleting resources
 const (
-	WaitDeletionTime  = 20 * time.Second
+	WaitDeletionTime = 20 * time.Second
 )
-

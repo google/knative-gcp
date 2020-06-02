@@ -27,7 +27,6 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
-
 func SubscriptionExists(t *testing.T, subID string) bool {
 	t.Helper()
 	ctx := context.Background()
@@ -41,7 +40,7 @@ func SubscriptionExists(t *testing.T, subID string) bool {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
 	defer client.Close()
-	sub:=client.Subscription(subID)
+	sub := client.Subscription(subID)
 	exists, err := sub.Exists(ctx)
 	if err != nil {
 		t.Fatalf("failed to verify whether Pub/Sub subscription exists, %s", err.Error())
