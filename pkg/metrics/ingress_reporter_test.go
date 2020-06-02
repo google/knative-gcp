@@ -18,10 +18,8 @@ package metrics
 
 import (
 	"context"
-	"testing"
-	"time"
-
 	_ "knative.dev/pkg/metrics/testing"
+	"testing"
 
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"knative.dev/pkg/metrics/metricskey"
@@ -52,13 +50,12 @@ func TestStatsReporter(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// test ReportDispatchTime
+	// test ReportEventCount
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 1100*time.Millisecond)
+		return r.ReportEventCount(context.Background(), args)
 	})
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 9100*time.Millisecond)
+		return r.ReportEventCount(context.Background(), args)
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
-	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
 }

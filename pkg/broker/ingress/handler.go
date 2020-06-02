@@ -107,7 +107,6 @@ func (h *Handler) Start(ctx context.Context) error {
 func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
 	ctx := request.Context()
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
-	startTime := time.Now()
 	if request.Method != nethttp.MethodPost {
 		response.WriteHeader(nethttp.StatusMethodNotAllowed)
 		return
@@ -151,7 +150,7 @@ func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Re
 	statusCode := nethttp.StatusAccepted
 	ctx, cancel := context.WithTimeout(ctx, decoupleSinkTimeout)
 	defer cancel()
-	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode, startTime) }()
+	defer func() { h.reportMetrics(request.Context(), broker, event, statusCode) }()
 	if res := h.decouple.Send(ctx, broker.Namespace, broker.Name, *event); !cev2.IsACK(res) {
 		msg := fmt.Sprintf("Error publishing to PubSub for broker %s. event: %+v, err: %v.", broker, event, res)
 		h.logger.Error(msg)
@@ -189,14 +188,14 @@ func (h *Handler) toEvent(request *nethttp.Request) (*cev2.Event, error) {
 	return event, nil
 }
 
-func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName, event *cev2.Event, statusCode int, start time.Time) {
+func (h *Handler) reportMetrics(ctx context.Context, broker types.NamespacedName, event *cev2.Event, statusCode int) {
 	args := metrics.IngressReportArgs{
 		Namespace:    broker.Namespace,
 		Broker:       broker.Name,
 		EventType:    event.Type(),
 		ResponseCode: statusCode,
 	}
-	if err := h.reporter.ReportEventDispatchTime(ctx, args, time.Since(start)); err != nil {
+	if err := h.reporter.ReportEventCount(ctx, args); err != nil {
 		h.logger.Warn("Failed to record metrics.", zap.Any("namespace", broker.Namespace), zap.Any("broker", broker.Name), zap.Error(err))
 	}
 }
