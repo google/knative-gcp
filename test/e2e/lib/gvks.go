@@ -24,7 +24,7 @@ var ServiceGVK = metav1.GroupVersionKind{
 	Version: "v1",
 	Kind:    "Service"}
 
-var BrokerGVK= metav1.GroupVersionKind{
-	Group: "eventing.knative.dev",
+var BrokerGVK = metav1.GroupVersionKind{
+	Group:   "eventing.knative.dev",
 	Version: "v1beta1",
-	Kind: "Broker"}
+	Kind:    "Broker"}

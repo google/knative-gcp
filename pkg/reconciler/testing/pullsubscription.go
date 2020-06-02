@@ -33,6 +33,10 @@ import (
 // PullSubscriptionOption enables further configuration of a PullSubscription.
 type PullSubscriptionOption func(*v1alpha1.PullSubscription)
 
+const (
+	SubscriptionID = "subID"
+)
+
 // NewPullSubscription creates a PullSubscription with PullSubscriptionOptions
 func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
 	s := &v1alpha1.PullSubscription{
@@ -189,7 +193,7 @@ func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
 		s.Status.MarkDeployed()
-		s.Status.MarkSubscribed("subID")
+		s.Status.MarkSubscribed(SubscriptionID)
 	}
 }
 

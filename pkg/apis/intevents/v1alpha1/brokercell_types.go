@@ -25,6 +25,12 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
+const (
+	// Annotations to tell if the brokercell is created automatically by the GCP broker controller.
+	CreatorKey = "internal.events.cloud.google.com/creator"
+	Creator = "googlecloud"
+)
+
 // +genclient
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -74,7 +80,7 @@ type BrokerCellStatus struct {
 	// generate Broker ingress URIs. It may contain variables `name` and
 	// `namespace`.
 	// Example: "http://broker-ingress.cloud-run-events.svc.cluster.local/{namespace}/{name}"
-	IngressTemplate string
+	IngressTemplate string `json:"ingressTemplate,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

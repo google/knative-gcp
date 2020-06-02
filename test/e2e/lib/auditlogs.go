@@ -17,11 +17,18 @@ limitations under the License.
 package lib
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"testing"
 
+	"google.golang.org/grpc/status"
+
+	"cloud.google.com/go/logging/logadmin"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/resources"
+	"google.golang.org/grpc/codes"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -74,4 +81,25 @@ func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, se
 		Value: "6m",
 	}})
 	client.CreateJobOrFail(job, WithServiceForJob(targetName))
+}
+
+func StackdriverSinkExists(t *testing.T, sinkID string) bool {
+	t.Helper()
+	ctx := context.Background()
+	project := os.Getenv(ProwProjectKey)
+	client, err := logadmin.NewClient(ctx, project)
+	if err != nil {
+		t.Fatalf("failed to create LogAdmin client, %s", err.Error())
+	}
+	defer client.Close()
+
+	_, err = client.Sink(ctx, sinkID)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return false
+		}
+
+		t.Fatalf("Failed from LogAdmin client while retrieving StackdriverSink %s with error %s", sinkID, err.Error())
+	}
+	return true
 }

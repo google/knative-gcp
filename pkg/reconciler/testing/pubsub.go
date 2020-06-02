@@ -131,6 +131,12 @@ func WithCloudPubSubSourceSinkURI(url *apis.URL) CloudPubSubSourceOption {
 	}
 }
 
+func WithCloudPubSubSourceSubscriptionID(subscriptionID string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
+		ps.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudPubSubSourceFinalizers(finalizers ...string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Finalizers = finalizers
