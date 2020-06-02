@@ -17,6 +17,8 @@ limitations under the License.
 package lib
 
 import (
+	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	knativegcptestresources "github.com/google/knative-gcp/test/e2e/lib/resources"
 	batchv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,6 +105,21 @@ func (c *Client) CreateSchedulerOrFail(scheduler *eventsv1alpha1.CloudSchedulerS
 	}
 	c.T.Logf("Created scheduler: %s/%s", c.Namespace, scheduler.Name)
 	c.Tracker.AddObj(scheduler)
+}
+
+// CreateGCPBrokerV1Beta1OrFail will create a GCP Broker or fail the test if there is an error.
+func (c *Client) CreateGCPBrokerV1Beta1OrFail(name string, options ...knativegcptestresources.BrokerV1Beta1Option) *v1beta1.Broker {
+	namespace := c.Namespace
+	broker := knativegcptestresources.BrokerV1Beta1(name, options...)
+	brokers := c.KnativeGCP.EventingV1beta1().Brokers(namespace)
+	c.T.Logf("Creating broker %s", name)
+	// update broker with the new reference
+	broker, err := brokers.Create(broker)
+	if err != nil {
+		c.T.Fatalf("Failed to create broker %q: %v", name, err)
+	}
+	c.Tracker.AddObj(broker)
+	return broker
 }
 
 // WithServiceForJob returns an option that creates a Service binded with the given job.

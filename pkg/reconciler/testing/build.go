@@ -133,6 +133,12 @@ func WithCloudBuildSourceSinkURI(url *apis.URL) CloudBuildSourceOption {
 	}
 }
 
+func WithCloudBuildSourceSubscriptionID(subscriptionID string) CloudBuildSourceOption {
+	return func(bs *v1alpha1.CloudBuildSource) {
+		bs.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudBuildSourceFinalizers(finalizers ...string) CloudBuildSourceOption {
 	return func(bs *v1alpha1.CloudBuildSource) {
 		bs.Finalizers = finalizers

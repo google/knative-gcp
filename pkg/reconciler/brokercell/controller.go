@@ -20,6 +20,7 @@ package brokercell
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 	"k8s.io/client-go/tools/cache"
@@ -67,7 +68,9 @@ func NewController(
 
 	logger.Info("Setting up event handlers.")
 
-	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), reconciler.DefaultResyncPeriod)
+	// TODO(https://github.com/google/knative-gcp/issues/912) Change period back to 5 min once controller
+	// watches for data plane components.
+	brokercellInformer.Informer().AddEventHandlerWithResyncPeriod(controller.HandleAll(impl.Enqueue), 30*time.Second)
 
 	// Watch data plane components created by brokercell so we can update brokercell status immediately.
 	// 1. Watch deployments for ingress, fanout and retry
