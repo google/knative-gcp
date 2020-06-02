@@ -17,16 +17,17 @@ limitations under the License.
 package lib
 
 import (
-	"github.com/google/knative-gcp/test/e2e/lib/resources"
-	v1 "k8s.io/api/core/v1"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	kngcptesting "github.com/google/knative-gcp/pkg/reconciler/testing"
 	"github.com/google/knative-gcp/test/e2e/lib/metrics"
+	"github.com/google/knative-gcp/test/e2e/lib/resources"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	pkgmetrics "knative.dev/pkg/metrics"
 )
@@ -40,8 +41,8 @@ func MakePubSubOrDie(client *Client,
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(sinkGVK, sinkName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(topicName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsPubsub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
-	client.CreatePubSubOrFail(eventsPubsub)
+	eventsPubSub := kngcptesting.NewCloudPubSubSource(psName, client.Namespace, so...)
+	client.CreatePubSubOrFail(eventsPubSub)
 
 	client.Core.WaitForResourceReadyOrFail(psName, CloudPubSubSourceTypeMeta)
 }

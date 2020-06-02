@@ -63,6 +63,19 @@ func TestRetryWatchAndSync(t *testing.T) {
 		assertRetryHandlers(t, syncPool, helper.Targets)
 	})
 
+	t.Run("no handler created for not-ready target", func(t *testing.T) {
+		b := helper.GenerateBroker(ctx, t, "ns")
+		target := helper.GenerateTarget(ctx, t, b.Key(), nil)
+		target.State = config.State_UNKNOWN
+		helper.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+			bm.UpsertTargets(target)
+		})
+		signal <- struct{}{}
+		// Wait a short period for the handlers to be updated.
+		<-time.After(time.Second)
+		assertRetryHandlers(t, syncPool, helper.Targets)
+	})
+
 	bs := make([]*config.Broker, 0, 4)
 
 	t.Run("adding some brokers with their targets", func(t *testing.T) {
@@ -308,7 +321,9 @@ func assertRetryHandlers(t *testing.T, p *RetryPool, targets config.Targets) {
 	})
 
 	targets.RangeAllTargets(func(t *config.Target) bool {
-		wantHandlers[t.Key()] = true
+		if t.State == config.State_READY {
+			wantHandlers[t.Key()] = true
+		}
 		return true
 	})
 

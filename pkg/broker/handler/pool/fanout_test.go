@@ -64,6 +64,17 @@ func TestFanoutWatchAndSync(t *testing.T) {
 		assertFanoutHandlers(t, syncPool, helper.Targets)
 	})
 
+	t.Run("no handler created for not-ready broker", func(t *testing.T) {
+		b := helper.GenerateBroker(ctx, t, "ns")
+		helper.Targets.MutateBroker(b.Namespace, b.Name, func(bm config.BrokerMutation) {
+			bm.SetState(config.State_UNKNOWN)
+		})
+		signal <- struct{}{}
+		// Wait a short period for the handlers to be updated.
+		<-time.After(time.Second)
+		assertFanoutHandlers(t, syncPool, helper.Targets)
+	})
+
 	bs := make([]*config.Broker, 0, 4)
 
 	t.Run("adding new brokers creates new handlers", func(t *testing.T) {
@@ -383,7 +394,9 @@ func assertFanoutHandlers(t *testing.T, p *FanoutPool, targets config.Targets) {
 	})
 
 	targets.RangeBrokers(func(b *config.Broker) bool {
-		wantHandlers[b.Key()] = true
+		if b.State == config.State_READY {
+			wantHandlers[b.Key()] = true
+		}
 		return true
 	})
 

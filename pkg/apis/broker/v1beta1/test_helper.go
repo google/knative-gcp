@@ -33,7 +33,7 @@ func (t testHelper) ReadyBrokerStatus() *BrokerStatus {
 	bs.SetAddress(apis.HTTP("example.com"))
 	bs.MarkSubscriptionReady()
 	bs.MarkTopicReady()
-	bs.PropagateIngressAvailability(t.AvailableEndpoints())
+	bs.MarkBrokerCellReady()
 	return bs
 }
 

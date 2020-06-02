@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	configsv1alpha1 "knative.dev/eventing/pkg/apis/configs/v1alpha1"
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 	flowsv1alpha1 "knative.dev/eventing/pkg/apis/flows/v1alpha1"
@@ -38,6 +37,7 @@ import (
 	"knative.dev/eventing/test/lib/duck"
 	"knative.dev/eventing/test/lib/resources"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/reconciler"
 )
 
 // TODO(chizhg): break this file into multiple files when it grows too large.
@@ -126,19 +126,6 @@ func (c *Client) CreateSubscriptionsOrFail(
 	for _, name := range names {
 		c.CreateSubscriptionOrFail(name, channelName, channelTypeMeta, options...)
 	}
-}
-
-func (c *Client) CreateConfigMapPropagationOrFail(name string) *configsv1alpha1.ConfigMapPropagation {
-	c.T.Logf("Creating configMapPropagation %s", name)
-	namespace := c.Namespace
-	configMapPropagation := resources.ConfigMapPropagation(name, namespace)
-	configMapPropagations := c.Eventing.ConfigsV1alpha1().ConfigMapPropagations(namespace)
-	configMapPropagation, err := configMapPropagations.Create(configMapPropagation)
-	if err != nil {
-		c.T.Fatalf("Failed to create configMapPropagation %q: %v", name, err)
-	}
-	c.Tracker.AddObj(configMapPropagation)
-	return configMapPropagation
 }
 
 // CreateConfigMapOrFail will create a configmap or fail the test if there is an error.
@@ -373,8 +360,12 @@ func (c *Client) CreatePodOrFail(pod *corev1.Pod, options ...func(*corev1.Pod, *
 			c.T.Fatalf("Failed to configure pod %q: %v", pod.Name, err)
 		}
 	}
-	c.T.Logf("Creating pod %+v", pod)
-	if _, err := c.Kube.CreatePod(pod); err != nil {
+	err := reconciler.RetryUpdateConflicts(func(attempts int) (err error) {
+		c.T.Logf("Creating pod %+v", pod)
+		_, e := c.Kube.CreatePod(pod)
+		return e
+	})
+	if err != nil {
 		c.T.Fatalf("Failed to create pod %q: %v", pod.Name, err)
 	}
 	c.Tracker.Add(coreAPIGroup, coreAPIVersion, "pods", namespace, pod.Name)
