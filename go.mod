@@ -30,7 +30,7 @@ require (
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
 	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.17.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/eventing v0.15.1-0.20200602132917-9119a2e34905
 	knative.dev/pkg v0.0.0-20200601184204-18c577c87d4f
