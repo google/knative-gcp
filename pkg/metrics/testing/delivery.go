@@ -17,8 +17,10 @@ limitations under the License.
 package testing
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -81,16 +83,39 @@ func (e ExpectDelivery) Expect200(t *testing.T, trigger string) {
 
 func (e ExpectDelivery) Verify(t *testing.T) {
 	t.Helper()
-	e.verifyProcessing(t)
-	e.verifyDelivery(t, "event_count")
-	e.verifyDelivery(t, "event_dispatch_latencies")
+	var err error
+	timeout := time.After(2 * time.Second)
+	for {
+		err = e.attemptVerify()
+		if err == nil {
+			return
+		}
+		// Retry since stats are updated asynchronously
+		select {
+		case <-timeout:
+			t.Fatal(err)
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
 }
 
-func (e ExpectDelivery) verifyDelivery(t *testing.T, viewName string) {
-	t.Helper()
+func (e ExpectDelivery) attemptVerify() error {
+	if err := e.verifyProcessing(); err != nil {
+		return err
+	}
+	if err := e.verifyDelivery("event_count"); err != nil {
+		return err
+	}
+	if err := e.verifyDelivery("event_dispatch_latencies"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (e ExpectDelivery) verifyDelivery(viewName string) error {
 	rows, err := view.RetrieveData(viewName)
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 	got := make(map[deliveryKey]int64)
 	for _, row := range rows {
@@ -100,34 +125,34 @@ func (e ExpectDelivery) verifyDelivery(t *testing.T, viewName string) {
 		}
 		trigger, ok := tags["trigger_name"]
 		if !ok {
-			t.Errorf("missing trigger_name tag for row: %v", row)
-			return
+			return fmt.Errorf("missing trigger_name tag for row: %v", row)
 		}
 		if code, err := strconv.Atoi(tags["response_code"]); err != nil {
-			t.Errorf("invalid response code in tags: %v", tags)
-			return
+			return fmt.Errorf("invalid response code in tags: %v", tags)
 		} else {
-			got[deliveryKey{Trigger: trigger, Code: code}] = getCount(t, row)
+			if got[deliveryKey{Trigger: trigger, Code: code}], err = getCount(row); err != nil {
+				return err
+			}
 		}
 
 		ignoreCodeTags := cmpopts.IgnoreMapEntries(func(k string, v string) bool {
 			return k == "response_code" || k == "response_code_class"
 		})
 		if diff := cmp.Diff(e.TriggerTags[trigger], Tags(tags), ignoreCodeTags); diff != "" {
-			t.Errorf("unexpected tags (-want, +got) = %v", diff)
+			return fmt.Errorf("unexpected tags (-want, +got) = %v", diff)
 		}
 	}
 
 	if diff := cmp.Diff(e.DeliveryCount, got); diff != "" {
-		t.Errorf("unexpected %s measurement count (-want, +got) = %v", viewName, diff)
+		return fmt.Errorf("unexpected %s measurement count (-want, +got) = %v", viewName, diff)
 	}
+	return nil
 }
 
-func (e ExpectDelivery) verifyProcessing(t *testing.T) {
-	t.Helper()
+func (e ExpectDelivery) verifyProcessing() error {
 	rows, err := view.RetrieveData("event_processing_latencies")
 	if err != nil {
-		t.Fatal(err)
+		return err
 	}
 	got := make(map[string]int64)
 	for _, row := range rows {
@@ -137,28 +162,29 @@ func (e ExpectDelivery) verifyProcessing(t *testing.T) {
 		}
 		trigger, ok := tags["trigger_name"]
 		if !ok {
-			t.Errorf("missing trigger_name tag for row: %v", row)
-			return
+			return fmt.Errorf("missing trigger_name tag for row: %v", row)
 		}
 		if diff := cmp.Diff(e.TriggerTags[trigger], Tags(tags)); diff != "" {
-			t.Errorf("unexpected tags (-want, +got) = %v", diff)
+			return fmt.Errorf("unexpected tags (-want, +got) = %v", diff)
 		}
-		got[trigger] = getCount(t, row)
+		if got[trigger], err = getCount(row); err != nil {
+			return err
+		}
 	}
 
 	if diff := cmp.Diff(e.ProcessingCount, got); diff != "" {
-		t.Errorf("unexpected event_processing_latencies measurement count (-want, +got) = %v", diff)
+		return fmt.Errorf("unexpected event_processing_latencies measurement count (-want, +got) = %v", diff)
 	}
+	return nil
 }
 
-func getCount(t *testing.T, row *view.Row) int64 {
+func getCount(row *view.Row) (int64, error) {
 	switch data := row.Data.(type) {
 	case *view.CountData:
-		return data.Value
+		return data.Value, nil
 	case *view.DistributionData:
-		return data.Count
+		return data.Count, nil
 	default:
-		t.Fatalf("unexpected metric type: %v", row)
-		return 0
+		return 0, fmt.Errorf("unexpected metric type: %v", row)
 	}
 }
