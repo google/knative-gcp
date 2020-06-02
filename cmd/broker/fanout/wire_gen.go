@@ -7,7 +7,6 @@ package main
 
 import (
 	"context"
-	"github.com/cloudevents/sdk-go/v2/protocol/http"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 )
@@ -23,21 +22,13 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 	if err != nil {
 		return nil, err
 	}
+	httpClient := _wireClientValue
 	v := _wireValue
-	protocol, err := http.New(v...)
+	retryClient, err := pool.NewRetryClient(ctx, client, v...)
 	if err != nil {
 		return nil, err
 	}
-	v2 := _wireValue2
-	deliverClient, err := pool.NewDeliverClient(protocol, v2...)
-	if err != nil {
-		return nil, err
-	}
-	retryClient, err := pool.NewRetryClient(ctx, client, v2...)
-	if err != nil {
-		return nil, err
-	}
-	fanoutPool, err := pool.NewFanoutPool(readonlyTargets, client, deliverClient, retryClient, opts...)
+	fanoutPool, err := pool.NewFanoutPool(readonlyTargets, client, httpClient, retryClient, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +36,6 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 }
 
 var (
-	_wireValue  = pool.DefaultHTTPOpts
-	_wireValue2 = pool.DefaultCEClientOpts
+	_wireClientValue = pool.DefaultHTTPClient
+	_wireValue       = pool.DefaultCEClientOpts
 )

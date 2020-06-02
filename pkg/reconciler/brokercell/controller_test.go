@@ -33,6 +33,7 @@ import (
 	// Fake injection informers
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker/fake"
 	_ "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell/fake"
+	_ "github.com/google/knative-gcp/pkg/client/injection/kube/informers/autoscaling/v2beta2/horizontalpodautoscaler/fake"
 	_ "knative.dev/pkg/client/injection/ducks/duck/v1/conditions/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap/fake"

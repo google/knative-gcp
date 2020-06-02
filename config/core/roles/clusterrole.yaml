@@ -89,6 +89,12 @@ rules:
   verbs: *everything
 
 - apiGroups:
+    - autoscaling
+  resources:
+    - horizontalpodautoscalers
+  verbs: *everything
+
+- apiGroups:
     - serving.knative.dev
   resources:
     - services

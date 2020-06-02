@@ -133,6 +133,12 @@ func WithCloudAuditLogsSourceProjectID(projectID string) CloudAuditLogsSourceOpt
 	}
 }
 
+func WithCloudAuditLogsSourceSubscriptionID(subscriptionID string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudAuditLogsSourceSinkID(sinkID string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.StackdriverSink = sinkID
