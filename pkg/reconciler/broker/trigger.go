@@ -214,6 +214,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		trig.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -233,7 +234,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 		topic, err = client.CreateTopicWithConfig(ctx, topicID, topicConfig)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-			trig.Status.MarkTopicFailed("CreationFailed", "Topic creation failed: %w", err)
+			trig.Status.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
@@ -251,6 +252,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		trig.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 
@@ -274,7 +276,7 @@ func (r *TriggerReconciler) reconcileRetryTopicAndSubscription(ctx context.Conte
 		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logger.Error("Failed to create subscription", zap.Error(err))
-			trig.Status.MarkSubscriptionFailed("CreationFailed", "Subscription creation failed: %w", err)
+			trig.Status.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
