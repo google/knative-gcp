@@ -59,7 +59,7 @@ func (c *healthChecker) start(ctx context.Context) {
 	go func() {
 		logging.FromContext(ctx).Info("Starting the sync pool health checker...")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logging.FromContext(ctx).Fatal("failed to start the sync pool health checker", zap.Error(err))
+			logging.FromContext(ctx).Fatal("the sync pool health checker has stopped unexpectedly", zap.Error(err))
 		}
 	}()
 
@@ -80,7 +80,7 @@ func (c *healthChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if time.Now().Sub(c.lastTime()) > c.maxStaleDuration {
-		w.WriteHeader(http.StatusExpectationFailed)
+		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
