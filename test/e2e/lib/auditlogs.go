@@ -19,9 +19,10 @@ package lib
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/status"
 	"os"
 	"testing"
+
+	"google.golang.org/grpc/status"
 
 	"cloud.google.com/go/logging/logadmin"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"

@@ -135,7 +135,7 @@ func TopicExists(t *testing.T, topicID string) bool {
 		t.Fatalf("failed to create pubsub client, %s", err.Error())
 	}
 	defer client.Close()
-	topic:=client.Topic(topicID)
+	topic := client.Topic(topicID)
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		t.Fatalf("failed to verify whether Pub/Sub topic exists, %s", err.Error())

@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 package resources
 
 // This file contains functions that construct knative-gcp resources.
@@ -22,12 +21,10 @@ package resources
 import (
 	"github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 )
 
 // BrokerV1Beta1Option enables further configuration of a Broker.
 type BrokerV1Beta1Option func(*v1beta1.Broker)
-
 
 // WithBrokerClassForBrokerV1Beta1 returns a function that adds a brokerClass
 // annotation to the given Broker.
@@ -42,7 +39,6 @@ func WithBrokerClassForBrokerV1Beta1(brokerClass string) BrokerV1Beta1Option {
 	}
 }
 
-
 // Broker returns a Broker.
 func BrokerV1Beta1(name string, options ...BrokerV1Beta1Option) *v1beta1.Broker {
 	broker := &v1beta1.Broker{
@@ -55,4 +51,3 @@ func BrokerV1Beta1(name string, options ...BrokerV1Beta1Option) *v1beta1.Broker 
 	}
 	return broker
 }
-
