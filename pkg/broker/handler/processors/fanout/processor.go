@@ -130,6 +130,6 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 		return fmt.Errorf("event fanout passed %d targets, failed %d targets", passes, errs)
 	}
 
-	logging.FromContext(ctx).Info("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
+	logging.FromContext(ctx).Debug("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
 	return nil
 }
