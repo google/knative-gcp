@@ -45,6 +45,7 @@ replace (
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 	k8s.io/api => k8s.io/api v0.17.6
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
 	k8s.io/client-go => k8s.io/client-go v0.17.6
 	k8s.io/code-generator => k8s.io/code-generator v0.17.6
@@ -81,4 +82,3 @@ replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
 
-replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6
