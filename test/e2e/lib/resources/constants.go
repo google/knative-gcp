@@ -16,6 +16,8 @@ limitations under the License.
 
 package resources
 
+import "time"
+
 // API versions for the resources.
 const (
 	BatchAPIVersion            = "batch/v1"
@@ -52,4 +54,9 @@ const (
 // Kind for Knative resources.
 const (
 	KServiceKind string = "Service"
+)
+
+// WaitDeletionTime for deleting resources
+const (
+	WaitDeletionTime = 20 * time.Second
 )

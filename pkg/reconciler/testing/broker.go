@@ -115,22 +115,27 @@ func WithBrokerReady(address string) BrokerOption {
 // true.
 func WithBrokerReadyURI(address *apis.URL) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
-		WithIngressAvailable(b)
+		WithBrokerBrokerCellReady(b)
 		WithBrokerSubscriptionReady(b)
 		WithBrokerTopicReady(b)
 		WithBrokerAddressURI(address)(b)
 	}
 }
 
-// WithIngressFailed calls .Status.MarkIngressFailed on the Broker.
-func WithIngressFailed(reason, msg string) BrokerOption {
+func WithBrokerBrokerCellFailed(reason, msg string) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
-		b.Status.MarkIngressFailed(reason, msg)
+		b.Status.MarkBrokerCelllFailed(reason, msg)
 	}
 }
 
-func WithIngressAvailable(b *brokerv1beta1.Broker) {
-	b.Status.PropagateIngressAvailability(AvailableEndpoints())
+func WithBrokerBrokerCellUnknown(reason, msg string) BrokerOption {
+	return func(b *brokerv1beta1.Broker) {
+		b.Status.MarkBrokerCelllUnknown(reason, msg)
+	}
+}
+
+func WithBrokerBrokerCellReady(b *brokerv1beta1.Broker) {
+	b.Status.MarkBrokerCellReady()
 }
 
 func WithBrokerSubscriptionReady(b *brokerv1beta1.Broker) {

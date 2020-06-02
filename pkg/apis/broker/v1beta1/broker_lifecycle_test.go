@@ -38,13 +38,13 @@ var (
 		Status: corev1.ConditionTrue,
 	}
 
-	brokerConditionIngress = apis.Condition{
-		Type:   BrokerConditionIngress,
+	brokerConditionBrokerCell = apis.Condition{
+		Type:   BrokerConditionBrokerCell,
 		Status: corev1.ConditionTrue,
 	}
 
-	brokerConditionIngressFalse = apis.Condition{
-		Type:   BrokerConditionIngress,
+	brokerConditionBrokerCellFalse = apis.Condition{
+		Type:   BrokerConditionBrokerCell,
 		Status: corev1.ConditionFalse,
 	}
 
@@ -85,14 +85,14 @@ func TestBrokerGetCondition(t *testing.T) {
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						brokerConditionAddressable,
-						brokerConditionIngress,
+						brokerConditionBrokerCell,
 						brokerConditionTopic,
 					},
 				},
 			},
 		},
-		condQuery: BrokerConditionIngress,
-		want:      &brokerConditionIngress,
+		condQuery: BrokerConditionBrokerCell,
+		want:      &brokerConditionBrokerCell,
 	}, {
 		name: "multiple conditions, condition false",
 		ts: &BrokerStatus{
@@ -100,14 +100,14 @@ func TestBrokerGetCondition(t *testing.T) {
 				Status: duckv1.Status{
 					Conditions: []apis.Condition{
 						brokerConditionAddressable,
-						brokerConditionIngressFalse,
+						brokerConditionBrokerCellFalse,
 						brokerConditionTopic,
 					},
 				},
 			},
 		},
-		condQuery: BrokerConditionIngress,
-		want:      &brokerConditionIngressFalse,
+		condQuery: BrokerConditionBrokerCell,
+		want:      &brokerConditionBrokerCellFalse,
 	}, {
 		name: "unknown condition",
 		ts: &BrokerStatus{
@@ -148,7 +148,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionUnknown,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -182,7 +182,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionFalse,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -216,7 +216,7 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   eventingv1beta1.BrokerConditionAddressable,
 						Status: corev1.ConditionTrue,
 					}, {
-						Type:   BrokerConditionIngress,
+						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -251,49 +251,49 @@ func TestBrokerConditionStatus(t *testing.T) {
 	tests := []struct {
 		name                string
 		addressStatus       bool
-		ingressStatus       bool
+		brokerCellStatus    bool
 		subscriptionStatus  bool
 		topicStatus         bool
 		wantConditionStatus corev1.ConditionStatus
 	}{{
 		name:                "all happy",
 		addressStatus:       true,
-		ingressStatus:       true,
+		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         true,
 		wantConditionStatus: corev1.ConditionTrue,
 	}, {
 		name:                "subscription sad",
 		addressStatus:       true,
-		ingressStatus:       true,
+		brokerCellStatus:    true,
 		subscriptionStatus:  false,
 		topicStatus:         true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "topic sad",
 		addressStatus:       true,
-		ingressStatus:       true,
+		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         false,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "address missing",
 		addressStatus:       false,
-		ingressStatus:       true,
+		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "ingress false",
 		addressStatus:       true,
-		ingressStatus:       false,
+		brokerCellStatus:    false,
 		subscriptionStatus:  true,
 		topicStatus:         true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "all sad",
 		addressStatus:       false,
-		ingressStatus:       false,
+		brokerCellStatus:    false,
 		subscriptionStatus:  false,
 		topicStatus:         false,
 		wantConditionStatus: corev1.ConditionFalse,
@@ -306,10 +306,10 @@ func TestBrokerConditionStatus(t *testing.T) {
 			} else {
 				bs.SetAddress(nil)
 			}
-			if test.ingressStatus {
-				bs.PropagateIngressAvailability(TestHelper.AvailableEndpoints())
+			if test.brokerCellStatus {
+				bs.MarkBrokerCellReady()
 			} else {
-				bs.PropagateIngressAvailability(&corev1.Endpoints{})
+				bs.MarkBrokerCelllFailed("Unable to create brokercell", "induced failure")
 			}
 			if test.subscriptionStatus {
 				bs.MarkSubscriptionReady()

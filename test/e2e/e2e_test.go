@@ -100,21 +100,23 @@ func TestChannelChain(t *testing.T) {
 }
 
 func TestEventTransformationForTrigger(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.EventTransformationForTriggerTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.EventTransformationForTriggerTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestBrokerChannelFlow(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerChannelFlowTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerChannelFlowTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelDeadLetterSink(t *testing.T) {
@@ -134,7 +136,7 @@ func TestBrokerDeadLetterSink(t *testing.T) {
 	t.Skip("Skipping until https://github.com/google/knative-gcp/issues/485 is fixed.")
 	cancel := logstream.Start(t)
 	defer cancel()
-	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "ChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
+	e2ehelpers.BrokerDeadLetterSinkTestHelper(t, "MTChannelBasedBroker" /*brokerClass*/, channelTestRunner, lib.DuplicatePubSubSecret)
 }
 
 func TestChannelTracing(t *testing.T) {
@@ -172,7 +174,7 @@ func TestPullSubscriptionWithTarget(t *testing.T) {
 	PullSubscriptionWithTargetTestImpl(t, authConfig)
 }
 
-// TestSmokeCloudPubSubSource makes sure we can run tests on the CloudPubSubSource.
+// TestSmokeCloudPubSubSource we can create a CloudPubSubSource to ready state and we can delete a CloudPubSubSource and its underlying resources.
 func TestSmokeCloudPubSubSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
@@ -196,6 +198,7 @@ func TestCloudPubSubSourceStackDriverMetrics(t *testing.T) {
 
 // TestBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel.
 func TestBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
@@ -217,6 +220,7 @@ func TestBrokerWithPubSubChannelStackdriverMetrics(t *testing.T) {
 
 // TestCloudPubSubSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudPubSubSource.
 func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
@@ -227,6 +231,7 @@ func TestCloudPubSubSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudStorageSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudStorageSource.
 func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
@@ -237,6 +242,7 @@ func TestCloudStorageSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudAuditLogsSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudAuditLogsSource.
 func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
@@ -247,12 +253,20 @@ func TestCloudAuditLogsSourceBrokerWithPubSubChannel(t *testing.T) {
 
 // TestCloudSchedulerSourceBrokerWithPubSubChannel tests we can knock a Knative Service from a broker with PubSub Channel from a CloudSchedulerSource.
 func TestCloudSchedulerSourceBrokerWithPubSubChannel(t *testing.T) {
+	t.Skip("Skip due to MT broker incompatibility with PubSub channel, issue: https://github.com/knative/eventing/issues/3242")
 	if authConfig.WorkloadIdentity {
 		t.Skip("Skip broker related test when workloadIdentity is enabled, issue: https://github.com/google/knative-gcp/issues/746")
 	}
 	cancel := logstream.Start(t)
 	defer cancel()
 	SchedulerSourceBrokerWithPubSubChannelTestImpl(t, authConfig)
+}
+
+// TestSmokeCloudStorageSource tests if we can create a CloudStorageSource to ready state and delete a CloudStorageSource and its underlying resources.
+func TestSmokeCloudStorageSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudStorageSourceTestImpl(t, authConfig)
 }
 
 // TestCloudStorageSourceWithTarget tests we can knock down a target from a CloudStorageSource.
@@ -270,6 +284,13 @@ func TestCloudStorageSourceStackDriverMetrics(t *testing.T) {
 	CloudStorageSourceWithTargetTestImpl(t, true /*assertMetrics */, authConfig)
 }
 
+// TestSmokeCloudAuditLogsSource tests if we can create a CloudAuditLogsSource to ready state and delete a CloudAuditLogsSource and its underlying resources.
+func TestSmokeCloudAuditLogsSource(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeCloudAuditLogsSourceTestImpl(t, authConfig)
+}
+
 // TestCloudAuditLogsSource tests we can knock down a target from an CloudAuditLogsSource.
 func TestCloudAuditLogsSourceWithTarget(t *testing.T) {
 	cancel := logstream.Start(t)
@@ -277,11 +298,11 @@ func TestCloudAuditLogsSourceWithTarget(t *testing.T) {
 	CloudAuditLogsSourceWithTargetTestImpl(t, authConfig)
 }
 
-// TestSmokeCloudSchedulerSourceSetup tests if we can create a CloudSchedulerSource resource and get it to a ready state.
-func TestSmokeCloudSchedulerSourceSetup(t *testing.T) {
+// TestSmokeCloudSchedulerSource tests if we can create a CloudSchedulerSource to ready state and delete a CloudSchedulerSource and its underlying resources.
+func TestSmokeCloudSchedulerSource(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	SmokeCloudSchedulerSourceSetup(t, authConfig)
+	SmokeCloudSchedulerSourceTestImpl(t, authConfig)
 }
 
 // TestCloudSchedulerSourceWithTargetTestImpl tests if we can receive an event on a bespoke sink from a CloudSchedulerSource source.
@@ -289,6 +310,13 @@ func TestCloudSchedulerSourceWithTargetTestImpl(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
 	CloudSchedulerSourceWithTargetTestImpl(t, authConfig)
+}
+
+// TestSmokeGCPBroker tests if we can create a GCPBroker to ready state and delete a GCPBroker and its underlying resources.
+func TestSmokeGCPBroker(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	SmokeGCPBrokerTestImpl(t, authConfig)
 }
 
 // TestGCPBroker tests we can knock a Knative Service from a gcp broker.

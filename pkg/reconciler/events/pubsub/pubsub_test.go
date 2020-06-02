@@ -338,6 +338,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourcePullSubscriptionReady(),
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
 			),
 		}, {
 			Object: NewCloudPubSubSource(pubsubName, testNS,
@@ -348,6 +349,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourcePullSubscriptionReady(),
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
 				WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
 			),
 		}},

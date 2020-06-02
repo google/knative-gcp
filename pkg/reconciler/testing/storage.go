@@ -206,6 +206,12 @@ func WithCloudStorageSourceProjectID(projectID string) CloudStorageSourceOption 
 	}
 }
 
+func WithCloudStorageSourceSubscriptionID(subscriptionID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudStorageSourceStatusObservedGeneration(generation int64) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.Status.ObservedGeneration = generation

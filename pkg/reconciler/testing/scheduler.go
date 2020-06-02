@@ -187,6 +187,12 @@ func WithCloudSchedulerSourceSinkURI(url *apis.URL) CloudSchedulerSourceOption {
 	}
 }
 
+func WithCloudSchedulerSourceSubscriptionID(subscriptionID string) CloudSchedulerSourceOption {
+	return func(s *v1alpha1.CloudSchedulerSource) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 // WithCloudSchedulerSourceJobName sets the status for job Name
 func WithCloudSchedulerSourceJobName(jobName string) CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
