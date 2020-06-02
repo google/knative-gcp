@@ -96,6 +96,13 @@ var _ bcreconciler.Interface = (*Reconciler)(nil)
 
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, bc *intv1alpha1.BrokerCell) pkgreconciler.Event {
+	// Why are we doing GC here instead of in the broker controller?
+	// 1. It's tricky to handle concurrency in broker controller. Suppose you are deleting all
+	// brokers at the same time, hard to tell if the brokercell should be gc'ed.
+	// 2. It's also more reliable. If for some reason we didn't delete the brokercell in the broker
+	// controller when we should (due to race, missing event, bug, etc), and if all the brokers are
+	// deleted, then we don't have a chance to retry.
+	// TODO(https://github.com/google/knative-gcp/issues/1196) It's cleaner to make this a separate controller.
 	if r.shouldGC(ctx, bc) {
 		logging.FromContext(ctx).Info("Garbage collecting brokercell", zap.String("brokercell", bc.Name), zap.String("Namespace", bc.Namespace))
 		return r.delete(ctx, bc)
