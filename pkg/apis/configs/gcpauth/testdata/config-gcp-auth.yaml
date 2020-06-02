@@ -43,12 +43,12 @@ data:
     # to actually change the configuration.
 
     # default-auth-config is the configuration for determining the default
-    # authorization to apply to all objects that require GCP auhtorization but,
+    # GCP auth to apply to all objects that require GCP auth but,
     # do not specify it. This is expected to be Channels and Sources.
     #
     # When determing the defaults to use for a custom object in a specific
     # namespace, the precedence rules are:
-    # If the custom object's spec specifies the authorization to use, use that.
+    # If the custom object's spec specifies the GCP auth to use, use that.
     # If not and that namespace is in the `namespaceDefaults` key, then use the
     # defaults specified there. If not, then use the defaults specified in
     # `clusterDefaults`.

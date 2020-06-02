@@ -22,17 +22,17 @@ import (
 	"knative.dev/pkg/configmap"
 )
 
-type authorizationCfgKey struct{}
+type authCfgKey struct{}
 
 // Config holds the collection of configurations that we attach to contexts.
 // +k8s:deepcopy-gen=false
 type Config struct {
-	AuthorizationDefaults *Defaults
+	GCPAuthDefaults *Defaults
 }
 
 // FromContext extracts a Config from the provided context.
 func FromContext(ctx context.Context) *Config {
-	x, ok := ctx.Value(authorizationCfgKey{}).(*Config)
+	x, ok := ctx.Value(authCfgKey{}).(*Config)
 	if ok {
 		return x
 	}
@@ -47,14 +47,14 @@ func FromContextOrDefaults(ctx context.Context) *Config {
 	}
 	defaults, _ := NewDefaultsConfigFromMap(map[string]string{})
 	return &Config{
-		AuthorizationDefaults: defaults,
+		GCPAuthDefaults: defaults,
 	}
 }
 
 // ToContext attaches the provided Config to the provided context, returning the
 // new context with the Config attached.
 func ToContext(ctx context.Context, c *Config) context.Context {
-	return context.WithValue(ctx, authorizationCfgKey{}, c)
+	return context.WithValue(ctx, authCfgKey{}, c)
 }
 
 // Store is a typed wrapper around configmap.Untyped store to handle our ConfigMaps.
@@ -87,6 +87,6 @@ func (s *Store) ToContext(ctx context.Context) context.Context {
 // Load creates a Config from the current config state of the Store.
 func (s *Store) Load() *Config {
 	return &Config{
-		AuthorizationDefaults: s.UntypedLoad(ConfigMapName()).(*Defaults).DeepCopy(),
+		GCPAuthDefaults: s.UntypedLoad(ConfigMapName()).(*Defaults).DeepCopy(),
 	}
 }

@@ -27,7 +27,7 @@ import (
 )
 
 func (s *PubSubSpec) SetPubSubDefaults(ctx context.Context) {
-	ad := gcpauth.FromContextOrDefaults(ctx).AuthorizationDefaults
+	ad := gcpauth.FromContextOrDefaults(ctx).GCPAuthDefaults
 	if ad == nil {
 		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
 		return

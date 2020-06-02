@@ -48,7 +48,7 @@ func WithDefaults(ctx context.Context) context.Context {
 `,
 	})
 	cfg := &gcpauth.Config{
-		AuthorizationDefaults: d,
+		GCPAuthDefaults: d,
 	}
 	return gcpauth.ToContext(ctx, cfg)
 }

@@ -37,7 +37,7 @@ func TestStoreLoadWithContext(t *testing.T) {
 
 	t.Run("defaults", func(t *testing.T) {
 		expected, _ := NewDefaultsConfigFromConfigMap(defaultsConfig)
-		if diff := cmp.Diff(expected, config.AuthorizationDefaults); diff != "" {
+		if diff := cmp.Diff(expected, config.GCPAuthDefaults); diff != "" {
 			t.Errorf("Unexpected defaults config (-want, +got): %v", diff)
 			t.Fatalf("Unexpected defaults config (-want, +got): %v", diff)
 		}
