@@ -19,11 +19,12 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"knative.dev/pkg/metrics"
-	"strconv"
 )
 
 // stats_exporter is adapted from knative.dev/eventing/pkg/broker/ingress/stats_reporter.go
