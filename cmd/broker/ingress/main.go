@@ -37,7 +37,7 @@ type envConfig struct {
 
 const (
 	component = "broker-ingress"
-	metricNamespace = "trigger"
+	metricNamespace = "broker"
 )
 
 // main creates and starts an ingress handler using default options.
