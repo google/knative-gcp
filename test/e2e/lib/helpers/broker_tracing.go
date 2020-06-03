@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"cloud.google.com/go/trace/apiv1"
 	"google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
@@ -32,18 +33,33 @@ func VerifyBrokerTrace(t *testing.T, projectID string, traceID string) {
 		t.Error(err)
 		return
 	}
+	timeout := time.After(time.Minute)
+	for {
+		err = tryVerifyBrokerTrace(ctx, client, projectID, traceID)
+		if err == nil {
+			return
+		}
+		select {
+		case <-timeout:
+			t.Error(err)
+			return
+		case <-time.After(time.Second):
+		}
+	}
+}
+
+func tryVerifyBrokerTrace(ctx context.Context, client *trace.Client, projectID string, traceID string) error {
 	trace, err := client.GetTrace(ctx, &cloudtrace.GetTraceRequest{
 		ProjectId: projectID,
 		TraceId:   traceID,
 	})
 	if err != nil {
-		t.Error(err)
-		return
+		return err
 	}
 	if _, err := GetTraceTree(trace); err != nil {
-		t.Error(err)
-		return
+		return err
 	}
+	return nil
 }
 
 // SpanTree is the tree of Spans representation of a Trace.
