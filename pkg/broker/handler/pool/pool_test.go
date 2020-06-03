@@ -19,6 +19,7 @@ package pool
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"testing"
 	"time"
@@ -36,7 +37,12 @@ func TestSyncPool(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second)
+		p, err := GetFreePort()
+		if err != nil {
+			t.Fatalf("failed to get random free port: %v", err)
+		}
+
+		_, gotErr := StartSyncPool(ctx, syncPool, make(chan struct{}), 30*time.Second, p)
 		if gotErr == nil {
 			t.Error("StartSyncPool got unexpected result")
 		}
@@ -53,8 +59,13 @@ func TestSyncPool(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
+		p, err := GetFreePort()
+		if err != nil {
+			t.Fatalf("failed to get random free port: %v", err)
+		}
+
 		ch := make(chan struct{})
-		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second); err != nil {
+		if _, err := StartSyncPool(ctx, syncPool, ch, time.Second, p); err != nil {
 			t.Errorf("StartSyncPool got unexpected error: %v", err)
 		}
 		syncPool.verifySyncOnceCalled(t)
@@ -63,17 +74,17 @@ func TestSyncPool(t *testing.T) {
 
 		ch <- struct{}{}
 		syncPool.verifySyncOnceCalled(t)
-		assertHealthCheckResult(t, true)
+		assertHealthCheckResult(t, p, true)
 
 		// Intentionally causing a unhealth check.
 		time.Sleep(time.Second)
-		assertHealthCheckResult(t, false)
+		assertHealthCheckResult(t, p, false)
 	})
 }
 
-func assertHealthCheckResult(t *testing.T, ok bool) {
+func assertHealthCheckResult(t *testing.T, port int, ok bool) {
 	t.Helper()
-	req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1:8080/healthz", nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://127.0.0.1:%d/healthz", port), nil)
 	if err != nil {
 		t.Fatalf("Failed to create health check request: %v", err)
 	}
@@ -111,4 +122,19 @@ func (p *fakeSyncPool) SyncOnce(ctx context.Context) error {
 		return fmt.Errorf("error returned from fakeSyncPool")
 	}
 	return nil
+}
+
+// GetFreePort asks a free open port.
+func GetFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

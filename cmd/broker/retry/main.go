@@ -97,7 +97,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration); err != nil {
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, pool.DefaultHealthCheckPort); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 

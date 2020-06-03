@@ -19,11 +19,17 @@ package pool
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
+)
+
+const (
+	// DefaultHealthCheckPort is the default port for checking sync pool health.
+	DefaultHealthCheckPort = 8080
 )
 
 type SyncPool interface {
@@ -34,6 +40,7 @@ type healthChecker struct {
 	mux              sync.RWMutex
 	lastReportTime   time.Time
 	maxStaleDuration time.Duration
+	port             int
 }
 
 func (c *healthChecker) reportHealth() {
@@ -50,9 +57,8 @@ func (c *healthChecker) lastTime() time.Time {
 
 func (c *healthChecker) start(ctx context.Context) {
 	c.reportHealth()
-	// TODO: allow changing port? It's pure internal though.
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":" + strconv.Itoa(c.port),
 		Handler: c,
 	}
 
@@ -87,11 +93,21 @@ func (c *healthChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // StartSyncPool starts the sync pool.
-func StartSyncPool(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}, maxStaleDuration time.Duration) (SyncPool, error) {
+func StartSyncPool(
+	ctx context.Context,
+	syncPool SyncPool,
+	syncSignal <-chan struct{},
+	maxStaleDuration time.Duration,
+	healthCheckPort int,
+) (SyncPool, error) {
+
 	if err := syncPool.SyncOnce(ctx); err != nil {
 		return nil, err
 	}
-	c := &healthChecker{maxStaleDuration: maxStaleDuration}
+	c := &healthChecker{
+		maxStaleDuration: maxStaleDuration,
+		port:             healthCheckPort,
+	}
 	go c.start(ctx)
 	if syncSignal != nil {
 		go watch(ctx, syncPool, syncSignal, c)
