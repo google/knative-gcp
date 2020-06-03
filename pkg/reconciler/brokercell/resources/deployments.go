@@ -73,6 +73,12 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 			corev1.ResourceCPU:    resource.MustParse("1500m"),
 		},
 	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: 8080,
+		},
+	)
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
@@ -102,6 +108,12 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 			corev1.ResourceCPU:    resource.MustParse("1000m"),
 		},
 	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: 8080,
+		},
+	)
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{

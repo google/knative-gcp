@@ -74,7 +74,7 @@ func (c *healthChecker) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-	// Zero maxStaleDuration means inifinite.
+	// Zero maxStaleDuration means infinite.
 	if c.maxStaleDuration == 0 {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -106,6 +106,7 @@ func watch(ctx context.Context, syncPool SyncPool, syncSignal <-chan struct{}, c
 			return
 		case <-syncSignal:
 			if err := syncPool.SyncOnce(ctx); err != nil {
+				// Currently we don't really expect errors from SyncOnce.
 				logging.FromContext(ctx).Error("failed to sync handlers pool on watch signal", zap.Error(err))
 			} else {
 				logging.FromContext(ctx).Debug("successfully synced handlers pool on watch signal")

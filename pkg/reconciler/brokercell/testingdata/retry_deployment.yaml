@@ -79,6 +79,8 @@ spec:
         ports:
         - name: metrics
           containerPort: 9090
+        - name: http-health
+          containerPort: 8080
       volumes:
       - name: broker-config
         configMap:
