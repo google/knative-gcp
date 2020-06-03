@@ -36,7 +36,8 @@ type envConfig struct {
 }
 
 const (
-	component = "broker"
+	component = "broker-ingress"
+	metricNamespace = "trigger"
 )
 
 // main creates and starts an ingress handler using default options.
@@ -48,7 +49,7 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, metricNamespace, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 

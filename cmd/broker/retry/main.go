@@ -35,6 +35,7 @@ import (
 
 const (
 	component = "broker-retry"
+	metricNamespace = "trigger"
 )
 
 type envConfig struct {
@@ -58,7 +59,7 @@ func main() {
 	flag.Parse()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, metricNamespace, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 

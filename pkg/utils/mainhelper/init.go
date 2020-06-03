@@ -49,7 +49,7 @@ type InitRes struct {
 // it returns a result object that contains useful artifacts for later use.
 // Unlike sharedmain.Main, Init is meant to be run as a helper function in any main
 // functions, while sharedmain.Main runs controllers with predefined method signatures.
-func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
+func Init(component string, metricNamespace string, opts ...InitOption) (context.Context, *InitRes) {
 	args := newInitArgs(component, opts...)
 	ctx := args.ctx
 	ProcessEnvConfigOrDie(args.env)
@@ -59,7 +59,7 @@ func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
 	log.Printf("Registering %d informers", len(args.injection.GetInformers()))
 	ctx, informers := args.injection.SetupInformers(ctx, args.kubeConfig)
 
-	ctx, cmw, profilingHandler, flush := observability.SetupDynamicConfigOrDie(ctx, component)
+	ctx, cmw, profilingHandler, flush := observability.SetupDynamicConfigOrDie(ctx, component, metricNamespace)
 	logger := logging.FromContext(ctx)
 	RunProfilingServer(ctx, logger, profilingHandler)
 
