@@ -41,3 +41,7 @@ func (b *storageBucket) Notifications(ctx context.Context) (map[string]*storage.
 func (b *storageBucket) DeleteNotification(ctx context.Context, id string) error {
 	return b.handle.DeleteNotification(ctx, id)
 }
+
+func (b *storageBucket) Attrs(ctx context.Context) (attrs *storage.BucketAttrs, err error) {
+	return b.handle.Attrs(ctx)
+}
