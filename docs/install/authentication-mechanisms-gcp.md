@@ -75,7 +75,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
       **_NOTE_**: These commands may take a long time to finish. Check
       [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
       for more information.
-1. Create a Kubernetes Service Account `ksa-name` in namespace your resources will reside. 
+1. Create a Kubernetes Service Account `ksa-name` in the namespace your resources will reside. 
    If you are configuring Authentication Mechanism for the Control Plane, you can skip this step, 
    and directly use  Kubernetes Service Account `controller` which is already in the Control Plane namespace  `cloud-run-events`
    
@@ -94,17 +94,17 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    --member $MEMBER gsa-name@$PROJECT_ID.iam.gserviceaccount.com
    ```
    
-   If you are configuraing Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
+   If you are configuring Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
    `ksa-name` with `controller`, and `gsa-name` with `cloud-run-events`
 
-1. Add annotation to Kubernetes Service Account `ksa-name`.
+1. Annotate the Kubernetes Service Account `ksa-name`.
 
    ```shell
    kubectl annotate serviceaccount ksa-name iam.gke.io/gcp-service-account=gsa-name@$PROJECT_ID.iam.gserviceaccount.com \
    --namespace ksa-namespace
    ```
 
-   If you are configuraing Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
+   If you are configuring Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
    `ksa-name` with `controller`, and `gsa-name` with `cloud-run-events`
    
 ## Option 2: Kubernetes Secrets

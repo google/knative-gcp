@@ -38,7 +38,7 @@ directly publish to the underlying transport (Pub/Sub), in CloudEvents format.
    1. If you are in GKE and using
       [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity),
       update `serviceAccountName` with the Kubernetes service account you created in [Create a Pub/Sub enabled Service Account](../../install/pubsub-service-account.md), 
-      which is bound to the Pub/Sub enabled google service account.
+      which is bound to the Pub/Sub enabled Google service account.
 
    1. If you are using standard Kubernetes secrets, but want to use a
       non-default one, update `secret` with your own secret.
