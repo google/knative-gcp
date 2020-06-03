@@ -97,4 +97,3 @@ func (bs *BrokerStatus) MarkSubscriptionFailed(reason, format string, args ...in
 func (bs *BrokerStatus) MarkSubscriptionReady() {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
 }
-

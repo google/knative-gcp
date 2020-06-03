@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Google LLC
+Copyright 2020 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,11 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package configmap
 
-import "testing"
+import (
+	"hash/crc32"
+)
 
-// This is already tested in broker_test.go, this test is just to make coverage tool happy.
-func TestBrokerCellCreation(t *testing.T) {
-	CreateBrokerCell(nil)
+const (
+	// ExampleKey signifies a given example configuration in a ConfigMap.
+	ExampleKey = "_example"
+
+	// ExampleChecksumLabel is the label that stores the computed checksum.
+	ExampleChecksumLabel = "knative.dev/example-checksum"
+)
+
+// Checksum generates a checksum for the example value to be compared against a respective label.
+func Checksum(value string) uint32 {
+	return crc32.ChecksumIEEE([]byte(value))
 }
