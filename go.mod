@@ -81,4 +81,3 @@ replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.2.2
 replace honnef.co/go/tools => honnef.co/go/tools v0.0.1-2019.2.3
 
 replace sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
-
