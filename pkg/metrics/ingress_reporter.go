@@ -83,7 +83,7 @@ func NewIngressReporter(podName PodName, containerName ContainerName) (*IngressR
 type IngressReporter struct {
 	podName       PodName
 	containerName ContainerName
-	eventCountM *stats.Int64Measure
+	eventCountM   *stats.Int64Measure
 }
 
 func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressReportArgs) error {

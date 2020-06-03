@@ -1163,7 +1163,7 @@ func TestAllCases(t *testing.T) {
 					WithDeletionTimestamp()),
 			}},
 		},
-			{
+		{
 			Name: "successfully deleted storage",
 			Objects: []runtime.Object{
 				NewCloudStorageSource(storageName, testNS,
