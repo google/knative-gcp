@@ -23,6 +23,7 @@ import (
 
 	_ "knative.dev/pkg/metrics/testing"
 
+	"github.com/google/knative-gcp/pkg/broker/config"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 	"knative.dev/pkg/metrics/metricskey"
 	"knative.dev/pkg/metrics/metricstest"
@@ -30,13 +31,6 @@ import (
 
 func TestReportEventDispatchTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
-
-	args := DeliveryReportArgs{
-		Namespace:  "testns",
-		Broker:     "testbroker",
-		Trigger:    "testtrigger",
-		FilterType: "testeventtype",
-	}
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
@@ -54,11 +48,28 @@ func TestReportEventDispatchTime(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ctx, err := r.AddTags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err = AddTargetTags(ctx, &config.Target{
+		Namespace: "testns",
+		Broker:    "testbroker",
+		Name:      "testtrigger",
+		FilterAttributes: map[string]string{
+			"type": "testeventtype",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 1100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond, 202)
+		return nil
 	})
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 9100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(ctx, 9100*time.Millisecond, 202)
+		return nil
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 2)
 	metricstest.CheckDistributionData(t, "event_dispatch_latencies", wantTags, 2, 1100.0, 9100.0)
@@ -66,13 +77,6 @@ func TestReportEventDispatchTime(t *testing.T) {
 
 func TestReportEventProcessingTime(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
-
-	args := DeliveryReportArgs{
-		Namespace:  "testns",
-		Broker:     "testbroker",
-		Trigger:    "testtrigger",
-		FilterType: "testeventtype",
-	}
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName: "testns",
@@ -87,26 +91,41 @@ func TestReportEventProcessingTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx, err := r.AddTags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err = AddTargetTags(ctx, &config.Target{
+		Namespace: "testns",
+		Broker:    "testbroker",
+		Name:      "testtrigger",
+		FilterAttributes: map[string]string{
+			"type": "testeventtype",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx = StartEventProcessing(ctx)
+
+	startTime, err := getStartDeliveryProcessingTime(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	// test ReportDispatchTime
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventProcessingTime(context.Background(), args, 1100*time.Millisecond)
+		return r.reportEventProcessingTime(ctx, startTime.Add(1100*time.Millisecond))
 	})
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventProcessingTime(context.Background(), args, 9100*time.Millisecond)
+		return r.reportEventProcessingTime(ctx, startTime.Add(9100*time.Millisecond))
 	})
+
 	metricstest.CheckDistributionData(t, "event_processing_latencies", wantTags, 2, 1100.0, 9100.0)
 }
 
 func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	reportertest.ResetDeliveryMetrics()
-
-	args := DeliveryReportArgs{
-		Namespace:  "testns",
-		Broker:     "testbroker",
-		Trigger:    "testtrigger",
-		FilterType: "", // No Filter Type
-	}
 
 	wantTags := map[string]string{
 		metricskey.LabelNamespaceName:     "testns",
@@ -123,9 +142,22 @@ func TestMetricsWithEmptySourceAndTypeFilter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx, err := r.AddTags(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, err = AddTargetTags(ctx, &config.Target{
+		Namespace: "testns",
+		Broker:    "testbroker",
+		Name:      "testtrigger",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	reportertest.ExpectMetrics(t, func() error {
-		return r.ReportEventDispatchTime(context.Background(), args, 1100*time.Millisecond, 202)
+		r.ReportEventDispatchTime(ctx, 1100*time.Millisecond, 202)
+		return nil
 	})
 	metricstest.CheckCountData(t, "event_count", wantTags, 1)
 }

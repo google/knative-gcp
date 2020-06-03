@@ -9,11 +9,12 @@ import (
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // Injectors from wire.go:
 
-func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.FanoutPool, error) {
+func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, podName metrics.PodName, containerName metrics.ContainerName, targetsVolumeOpts []volume.Option, opts ...pool.Option) (*pool.FanoutPool, error) {
 	readonlyTargets, err := volume.NewTargetsFromFile(targetsVolumeOpts...)
 	if err != nil {
 		return nil, err
@@ -28,7 +29,11 @@ func InitializeSyncPool(ctx context.Context, projectID pool.ProjectID, targetsVo
 	if err != nil {
 		return nil, err
 	}
-	fanoutPool, err := pool.NewFanoutPool(readonlyTargets, client, httpClient, retryClient, opts...)
+	deliveryReporter, err := metrics.NewDeliveryReporter(podName, containerName)
+	if err != nil {
+		return nil, err
+	}
+	fanoutPool, err := pool.NewFanoutPool(readonlyTargets, client, httpClient, retryClient, deliveryReporter, opts...)
 	if err != nil {
 		return nil, err
 	}

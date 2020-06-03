@@ -35,6 +35,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 const defaultEventHopsLimit int32 = 255
@@ -60,6 +61,9 @@ type Processor struct {
 	// DeliverTimeout is the timeout applied to cancel delivery.
 	// If zero, not additional timeout is applied.
 	DeliverTimeout time.Duration
+
+	// StatsReporter is used to report delivery metrics.
+	StatsReporter *metrics.DeliveryReporter
 }
 
 var _ processors.Interface = (*Processor)(nil)
@@ -96,6 +100,8 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 	hops, _ := eventutil.GetRemainingHops(ctx, &copy)
 	eventutil.DeleteRemainingHops(ctx, &copy)
 
+	p.StatsReporter.FinishEventProcessing(ctx)
+
 	dctx := ctx
 	if p.DeliverTimeout > 0 {
 		var cancel context.CancelFunc
@@ -118,6 +124,7 @@ func (p *Processor) Process(ctx context.Context, event *event.Event) error {
 
 // deliver delivers msg to target and sends the target's reply to the broker ingress.
 func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *config.Broker, msg binding.Message, hops int32) error {
+	startTime := time.Now()
 	resp, err := p.sendMsg(ctx, target.Address, msg)
 	if err != nil {
 		return err
@@ -128,6 +135,7 @@ func (p *Processor) deliver(ctx context.Context, target *config.Target, broker *
 		}
 	}()
 
+	p.StatsReporter.ReportEventDispatchTime(ctx, time.Since(startTime), resp.StatusCode)
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("event delivery failed: HTTP status code %d", resp.StatusCode)
 	}
