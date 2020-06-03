@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -62,6 +63,16 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bo
 	if assertMetrics {
 		lib.AssertBrokerMetrics(client)
 	}
+}
+
+func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	projectID := os.Getenv(lib.ProwProjectKey)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	brokerURL, brokerName := createGCPBroker(client)
+	senderOutput := kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
+	kngcphelpers.VerifyBrokerTrace(t, projectID, senderOutput.TraceID)
 }
 
 func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {

@@ -12,6 +12,7 @@ cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 cloud.google.com/go/monitoring/apiv3
 cloud.google.com/go/scheduler/apiv1
+cloud.google.com/go/trace/apiv1
 cloud.google.com/go/trace/apiv2
 # cloud.google.com/go/logging v1.0.1-0.20200331222814-69e77e66e597
 ## explicit
@@ -491,6 +492,7 @@ google.golang.org/genproto/googleapis/appengine/logging/v1
 google.golang.org/genproto/googleapis/cloud/audit
 google.golang.org/genproto/googleapis/cloud/scheduler/v1
 google.golang.org/genproto/googleapis/container/v1
+google.golang.org/genproto/googleapis/devtools/cloudtrace/v1
 google.golang.org/genproto/googleapis/devtools/cloudtrace/v2
 google.golang.org/genproto/googleapis/iam/admin/v1
 google.golang.org/genproto/googleapis/iam/v1
