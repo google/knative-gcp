@@ -47,6 +47,10 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
+	"github.com/google/knative-gcp/pkg/metrics"
+	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
+
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 const (
@@ -103,6 +107,7 @@ func TestDeliverSuccess(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
 			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
@@ -127,9 +132,14 @@ func TestDeliverSuccess(t *testing.T) {
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
 				DeliverClient: http.DefaultClient,
 				Targets:       testTargets,
+				StatsReporter: r,
 			}
 
 			rctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -148,8 +158,6 @@ func TestDeliverSuccess(t *testing.T) {
 				if err != nil {
 					t.Errorf("target received message cannot be converted to an event: %v", err)
 				}
-				// Force the time to be the same so that we can compare easier.
-				gotEvent.SetTime(tc.wantOrigin.Time())
 				if diff := cmp.Diff(tc.wantOrigin, gotEvent); diff != "" {
 					t.Errorf("target received event (-want,+got): %v", diff)
 				}
@@ -175,7 +183,6 @@ func TestDeliverSuccess(t *testing.T) {
 						eventutil.UpdateRemainingHops(rctx, gotEvent, hops)
 					}
 				}
-				// Force the time to be the same so that we can compare easier.
 				if diff := cmp.Diff(tc.wantReply, gotEvent); diff != "" {
 					t.Errorf("ingress received event (-want,+got): %v", diff)
 				}
@@ -226,6 +233,7 @@ func TestDeliverFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			reportertest.ResetDeliveryMetrics()
 			ctx := logtest.TestContextWithLogger(t)
 			targetClient, err := cehttp.New()
 			if err != nil {
@@ -270,12 +278,17 @@ func TestDeliverFailure(t *testing.T) {
 			ctx = handlerctx.WithBrokerKey(ctx, broker.Key())
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 
+			r, err := metrics.NewDeliveryReporter("pod", "container")
+			if err != nil {
+				t.Fatal(err)
+			}
 			p := &Processor{
 				DeliverClient:      http.DefaultClient,
 				Targets:            testTargets,
 				RetryOnFailure:     tc.withRetry,
 				DeliverRetryClient: deliverRetryClient,
 				DeliverTimeout:     500 * time.Millisecond,
+				StatsReporter:      r,
 			}
 
 			origin := newSampleEvent()
@@ -427,6 +440,12 @@ func BenchmarkDeliveryWithReplyFakeClient(b *testing.B) {
 }
 
 func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	sampleEvent := newSampleEvent()
 
 	broker := &config.Broker{Namespace: "ns", Name: "broker"}
@@ -442,6 +461,7 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 	p := &Processor{
 		DeliverClient: &httpClient,
 		Targets:       testTargets,
+		StatsReporter: statsReporter,
 	}
 
 	b.ResetTimer()
@@ -455,6 +475,12 @@ func benchmarkNoReply(b *testing.B, httpClient http.Client, targetAddress string
 }
 
 func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*testing.B, *event.Event) (httpClient http.Client, targetAdress string)) {
+	reportertest.ResetDeliveryMetrics()
+	statsReporter, err := metrics.NewDeliveryReporter("pod", "container")
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	sampleEvent := newSampleEvent()
 	sampleReply := sampleEvent.Clone()
 	sampleReply.SetID("reply")
@@ -475,6 +501,7 @@ func benchmarkWithReply(b *testing.B, ingressAddress string, makeTarget func(*te
 	p := &Processor{
 		DeliverClient: &httpClient,
 		Targets:       testTargets,
+		StatsReporter: statsReporter,
 	}
 
 	b.ResetTimer()
