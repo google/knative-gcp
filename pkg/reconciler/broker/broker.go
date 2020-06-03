@@ -491,7 +491,6 @@ func (r *Reconciler) LoadTargetsConfig(ctx context.Context) error {
 }
 
 func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
-	r.Logger.Debug("Starting TargetsConfigUpdater")
 	// check every 10 seconds even if no reconciles have occurred
 	ticker := time.NewTicker(targetsCMResyncPeriod)
 
@@ -501,7 +500,6 @@ func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			r.Logger.Debug("Stopping TargetsConfigUpdater")
 			return
 		case <-r.targetsNeedsUpdate:
 			if err := r.updateTargetsConfig(ctx); err != nil {
