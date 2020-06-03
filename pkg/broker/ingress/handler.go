@@ -49,6 +49,9 @@ const (
 	// received on a broker and before it is dispatched to the trigger function.
 	// The format is an RFC3339 time in string format. For example: 2019-08-26T23:38:17.834384404Z.
 	EventArrivalTime = "knativearrivaltime"
+
+	// For probes.
+	heathCheckPath = "/healthz"
 )
 
 // HandlerSet provides a handler with a real HTTPMessageReceiver and pubsub MultiTopicDecoupleSink.
@@ -105,6 +108,11 @@ func (h *Handler) Start(ctx context.Context) error {
 // 3. Convert request to event.
 // 4. Send event to decouple sink.
 func (h *Handler) ServeHTTP(response nethttp.ResponseWriter, request *nethttp.Request) {
+	if request.URL.Path == heathCheckPath {
+		response.WriteHeader(nethttp.StatusOK)
+		return
+	}
+
 	ctx := request.Context()
 	h.logger.Debug("Serving http", zap.Any("headers", request.Header))
 	startTime := time.Now()
