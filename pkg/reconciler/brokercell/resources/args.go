@@ -30,7 +30,8 @@ const (
 	// FanoutName is the name used for the fanout container.
 	FanoutName = "fanout"
 	// RetryName is the name used for the retry container.
-	RetryName = "retry"
+	RetryName          = "retry"
+	BrokerCellLabelKey = "brokerCell"
 )
 
 var (
@@ -75,9 +76,9 @@ type AutoscalingArgs struct {
 // component of the given BrokerCell.
 func Labels(brokerCellName, componentName string) map[string]string {
 	return map[string]string{
-		"app":        "cloud-run-events",
-		"role":       componentName,
-		"brokerCell": brokerCellName,
+		"app":              "cloud-run-events",
+		"role":             componentName,
+		BrokerCellLabelKey: brokerCellName,
 	}
 }
 

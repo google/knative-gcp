@@ -34,17 +34,6 @@ var (
 	validation_regexp_k8s = regexp.MustCompile(`^[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?$`)
 )
 
-// DefaultGoogleCloudSecretSelector is the default secret selector used to load
-// the creds for the objects that will auth with Google Cloud.
-func DefaultGoogleCloudSecretSelector() *corev1.SecretKeySelector {
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: DefaultSecretName,
-		},
-		Key: defaultSecretKey,
-	}
-}
-
 // ValidateCredential checks secret and GCP service account.
 func ValidateCredential(secret *corev1.SecretKeySelector, kServiceAccountName string) *apis.FieldError {
 	if secret != nil && !equality.Semantic.DeepEqual(secret, &corev1.SecretKeySelector{}) && kServiceAccountName != "" {

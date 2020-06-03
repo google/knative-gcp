@@ -34,3 +34,22 @@ rules:
     - patch
     - delete
 
+---
+
+# Role for GCP broker data plane.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cloud-run-events-broker
+  namespace: cloud-run-events
+  labels:
+    events.cloud.google.com/release: devel
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch

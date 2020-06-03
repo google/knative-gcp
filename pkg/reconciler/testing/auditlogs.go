@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -133,6 +135,12 @@ func WithCloudAuditLogsSourceProjectID(projectID string) CloudAuditLogsSourceOpt
 	}
 }
 
+func WithCloudAuditLogsSourceSubscriptionID(subscriptionID string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudAuditLogsSourceSinkID(sinkID string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Status.StackdriverSink = sinkID
@@ -183,5 +191,11 @@ func WithCloudAuditLogsSourceDeletionTimestamp(s *v1alpha1.CloudAuditLogsSource)
 func WithCloudAuditLogsSourceAnnotations(Annotations map[string]string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudAuditLogsSourceDefaultAuthorization() CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

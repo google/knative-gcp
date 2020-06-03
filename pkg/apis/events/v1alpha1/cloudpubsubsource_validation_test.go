@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
@@ -182,7 +184,7 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.Secret = &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "name",
+						Name: gcpauthtesthelper.Secret.Name,
 					},
 				}
 				return *obj
@@ -208,7 +210,12 @@ func TestCloudPubSubSourceCheckValidationFields(t *testing.T) {
 			spec: func() CloudPubSubSourceSpec {
 				obj := pubSubSourceSpec.DeepCopy()
 				obj.ServiceAccountName = validServiceAccountName
-				obj.Secret = duckv1alpha1.DefaultGoogleCloudSecretSelector()
+				obj.Secret = &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "google-cloud-key",
+					},
+					Key: "key.json",
+				}
 				return *obj
 			}(),
 			error: true,

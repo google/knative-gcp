@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	configvalidation "github.com/google/knative-gcp/pkg/apis/configs/validation"
 	"github.com/google/knative-gcp/pkg/apis/events"
 	eventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
@@ -63,10 +64,14 @@ var types = map[schema.GroupVersionKind]resourcesemantics.GenericCRD{
 	inteventsv1alpha1.SchemeGroupVersion.WithKind("Topic"):            &inteventsv1alpha1.Topic{},
 }
 
-func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+func NewDefaultingAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+	// Decorate contexts with the current state of the config.
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
+	authStore.WatchConfigs(cmw)
+
 	// Decorate contexts with the current state of the config.
 	ctxFunc := func(ctx context.Context) context.Context {
-		return ctx
+		return authStore.ToContext(ctx)
 	}
 
 	return defaulting.NewAdmissionController(ctx,
@@ -88,7 +93,16 @@ func NewDefaultingAdmissionController(ctx context.Context, _ configmap.Watcher) 
 	)
 }
 
-func NewValidationAdmissionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+func NewValidationAdmissionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
+	// Decorate contexts with the current state of the config.
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
+	authStore.WatchConfigs(cmw)
+
+	// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return authStore.ToContext(ctx)
+	}
+
 	return validation.NewAdmissionController(ctx,
 
 		// Name of the validation webhook.
@@ -100,11 +114,7 @@ func NewValidationAdmissionController(ctx context.Context, _ configmap.Watcher) 
 		// The resources to validate and default.
 		types,
 
-		// A function that infuses the context passed to Validate/SetDefaults with custom metadata.
-		func(ctx context.Context) context.Context {
-			// return v1.WithUpgradeViaDefaulting(store.ToContext(ctx))
-			return ctx
-		},
+		ctxFunc,
 
 		// Whether to disallow unknown fields.
 		true,
@@ -126,11 +136,12 @@ func NewConfigValidationController(ctx context.Context, _ configmap.Watcher) *co
 			// metrics.ConfigMapName():   metricsconfig.NewObservabilityConfigFromConfigMap,
 			logging.ConfigMapName():        logging.NewConfigFromConfigMap,
 			leaderelection.ConfigMapName(): configvalidation.ValidateLeaderElectionConfig,
+			gcpauth.ConfigMapName():        gcpauth.NewDefaultsConfigFromConfigMap,
 		},
 	)
 }
 
-func NewConversionController(ctx context.Context, _ configmap.Watcher) *controller.Impl {
+func NewConversionController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
 	var (
 		eventsv1alpha1_    = eventsv1alpha1.SchemeGroupVersion.Version
 		eventsv1beta1_     = eventsv1beta1.SchemeGroupVersion.Version
@@ -139,6 +150,15 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 		inteventsv1alpha1_ = inteventsv1alpha1.SchemeGroupVersion.Version
 		inteventsv1beta1_  = inteventsv1beta1.SchemeGroupVersion.Version
 	)
+
+	// Decorate contexts with the current state of the config.
+	authStore := gcpauth.NewStore(logging.FromContext(ctx).Named("config-gcp-auth-store"))
+	authStore.WatchConfigs(cmw)
+
+	// Decorate contexts with the current state of the config.
+	ctxFunc := func(ctx context.Context) context.Context {
+		return authStore.ToContext(ctx)
+	}
 
 	return conversion.NewConversionController(ctx,
 		// The path on which to serve the webhook
@@ -206,10 +226,7 @@ func NewConversionController(ctx context.Context, _ configmap.Watcher) *controll
 				},
 			},
 		},
-		// We don't want to alter the incoming context, so just pass it as-is.
-		func(ctx context.Context) context.Context {
-			return ctx
-		},
+		ctxFunc,
 	)
 }
 func main() {
