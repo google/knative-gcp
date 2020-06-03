@@ -31,8 +31,9 @@ const (
 	subscriptionNamePrefix = "cre-sub-"
 )
 
-func GenerateTopicID(UID types.UID) string {
-	return fmt.Sprintf("cre-chan-%s", string(UID))
+// GenerateTopicID generates the name of the Pub/Sub topic, not our Topic resource.
+func GenerateTopicID(channel *v1alpha1.Channel) string {
+	return fmt.Sprintf("cre-chan_%s_%s_%s", channel.Namespace, channel.Name, string(channel.UID))
 }
 
 func GeneratePublisherName(channel *v1alpha1.Channel) string {

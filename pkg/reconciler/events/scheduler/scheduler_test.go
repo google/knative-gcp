@@ -59,7 +59,6 @@ const (
 	testNS              = "testnamespace"
 	testImage           = "scheduler-ops-image"
 	testProject         = "test-project-id"
-	testTopicID         = "scheduler-" + schedulerUID
 	testTopicURI        = "http://" + schedulerName + "-topic." + testNS + ".svc.cluster.local"
 	location            = "us-central1"
 	parentName          = "projects/" + testProject + "/locations/" + location
@@ -81,6 +80,8 @@ var (
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = apis.HTTP(sinkDNS)
+
+	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, schedulerName, schedulerUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -358,7 +359,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudSchedulerSourceData(testData),
 				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
 				WithInitCloudSchedulerSourceConditions,
-				WithCloudSchedulerSourceTopicFailed("TopicNotReady", `Topic "my-test-scheduler" mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`),
+				WithCloudSchedulerSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic "my-test-scheduler" mismatch: expected %q got "garbaaaaage"`, testTopicID)),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -366,7 +367,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: Topic %q mismatch: expected "scheduler-test-scheduler-uid" got "garbaaaaage"`, schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, `Reconcile PubSub failed with: Topic %q mismatch: expected %q got "garbaaaaage"`, schedulerName, testTopicID),
 		},
 	}, {
 		Name: "topic exists and the status topic is false",

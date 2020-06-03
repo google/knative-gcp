@@ -17,11 +17,16 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 )
 
-func GenerateSubscriptionName(src *v1alpha1.PullSubscription) string {
-	return fmt.Sprintf("cre-pull-%s", string(src.UID))
+// GenerateSubscriptionName generates the name for the Pub/Sub subscription to be used for this PullSubscription.
+func GenerateSubscriptionName(ps *v1alpha1.PullSubscription) string {
+	return intevents.GenerateName(ps)
+}
+
+// GenerateReceiveAdapterName generates the name for the receive adapter to be used for this PullSubscription.
+func GenerateReceiveAdapterName(ps *v1alpha1.PullSubscription) string {
+	return intevents.GenerateK8sName(ps)
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package events
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/events"
-
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GenerateTopicName generates a topic name for the storage. This refers to the underlying Pub/Sub topic, and not our
-// Topic resource.
-func GenerateTopicName(storage *v1alpha1.CloudStorageSource) string {
-	return events.GenerateName(storage)
+// GenerateName generates a name based on the Source information.
+func GenerateName(obj metav1.ObjectMetaAccessor) string {
+	meta := obj.GetObjectMeta()
+	return fmt.Sprintf("cre-src_%s_%s_%s", meta.GetNamespace(), meta.GetName(), string(meta.GetUID()))
 }

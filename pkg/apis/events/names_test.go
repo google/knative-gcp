@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google LLC
+Copyright 2020 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package events
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/events"
+	"testing"
 
-	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	"github.com/google/go-cmp/cmp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GenerateTopicName generates a topic name for the storage. This refers to the underlying Pub/Sub topic, and not our
-// Topic resource.
-func GenerateTopicName(storage *v1alpha1.CloudStorageSource) string {
-	return events.GenerateName(storage)
+func TestGenerateName(t *testing.T) {
+	want := "cre-src_mynamespace_myname_uid"
+	got := GenerateName(&metav1.ObjectMeta{
+		Name:      "myname",
+		Namespace: "mynamespace",
+		UID:       "uid",
+	})
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
 }

@@ -317,7 +317,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		ServiceAccount:     channel.Spec.GoogleServiceAccount,
 		ServiceAccountName: channel.Spec.ServiceAccountName,
 		Secret:             channel.Spec.Secret,
-		Topic:              resources.GenerateTopicID(channel.UID),
+		Topic:              resources.GenerateTopicID(channel),
 		Labels:             resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 		Annotations:        resources.GetTopicAnnotations(clusterName),
 	})

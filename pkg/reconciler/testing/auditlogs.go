@@ -18,6 +18,7 @@ package testing
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
 	"time"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -35,7 +36,6 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
-			UID:       "test-cloudauditlogssource-uid",
 		},
 	}
 	for _, opt := range opts {
@@ -47,6 +47,12 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 
 func WithInitCloudAuditLogsSourceConditions(s *v1alpha1.CloudAuditLogsSource) {
 	s.Status.InitializeConditions()
+}
+
+func WithCloudAuditLogsSourceUID(uid string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.ObjectMeta.UID = types.UID(uid)
+	}
 }
 
 // WithCloudAuditLogsSourceServiceAccountName will give status.ServiceAccountName a k8s service account name, which is related on Workload Identity's Google service account.

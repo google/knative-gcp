@@ -20,17 +20,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGenerateScaledObjectName(t *testing.T) {
-	want := "cre-so-a-uid"
-	got := GenerateScaledObjectName(&v1alpha1.PullSubscription{
-		ObjectMeta: v1.ObjectMeta{
-			UID: "a-uid",
-		},
-	})
+func TestGetLabels(t *testing.T) {
+	want := map[string]string{
+		"internal.events.cloud.google.com/controller":       "controller",
+		"internal.events.cloud.google.com/pullsubscription": "ps",
+	}
+	got := GetLabels("controller", "ps")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

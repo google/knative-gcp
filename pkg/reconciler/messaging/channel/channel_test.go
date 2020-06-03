@@ -58,7 +58,6 @@ const (
 	channelUID = channelName + "-abc-123"
 
 	testProject   = "test-project-id"
-	testTopicID   = "cre-chan-" + channelUID
 	testTopicName = "cre-chan-" + channelName
 
 	subscriptionUID  = subscriptionName + "-abc-123"
@@ -71,6 +70,8 @@ var (
 
 	topicDNS = channelName + ".mynamespace.svc.cluster.local"
 	topicURI = "http://" + topicDNS + "/"
+
+	testTopicID   = fmt.Sprintf("cre-chan_%s_%s_%s", testNS, channelName, channelUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",

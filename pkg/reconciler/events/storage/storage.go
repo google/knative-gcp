@@ -138,7 +138,6 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		return "", err
 	}
 
-
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch existing notifications", zap.Error(err))

@@ -27,8 +27,14 @@ import (
 )
 
 func TestGenerateTopicID(t *testing.T) {
-	want := "cre-chan-a-uid"
-	got := GenerateTopicID("a-uid")
+	want := "cre-chan_default_foo_a-uid"
+	got := GenerateTopicID(&v1alpha1.Channel{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "foo",
+			Namespace: "default",
+			UID:       "a-uid",
+		},
+	})
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
