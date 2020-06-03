@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"context"
 
+	"knative.dev/pkg/apis"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 )
@@ -26,13 +28,14 @@ import (
 var allEventTypes = []string{CloudStorageSourceFinalize, CloudStorageSourceDelete, CloudStorageSourceArchive, CloudStorageSourceMetadataUpdate}
 
 func (s *CloudStorageSource) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, s.ObjectMeta)
 	s.Spec.SetDefaults(ctx)
 	duckv1alpha1.SetClusterNameAnnotation(&s.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
 
 func (ss *CloudStorageSourceSpec) SetDefaults(ctx context.Context) {
-	ss.SetPubSubDefaults()
+	ss.SetPubSubDefaults(ctx)
 	if len(ss.EventTypes) == 0 {
 		ss.EventTypes = allEventTypes
 	}

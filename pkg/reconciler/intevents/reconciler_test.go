@@ -86,7 +86,8 @@ var (
 	}
 
 	pubsubable = rectesting.NewCloudStorageSource(name, testNS,
-		rectesting.WithCloudStorageSourceSinkDestination(sink))
+		rectesting.WithCloudStorageSourceSinkDestination(sink),
+		rectesting.WithCloudStorageSourceDefaultAuthorization())
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")
@@ -138,6 +139,7 @@ func TestCreates(t *testing.T) {
 		wantCreates: []runtime.Object{
 			rectesting.NewTopic(name, testNS,
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Secret:            &secret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 				}),

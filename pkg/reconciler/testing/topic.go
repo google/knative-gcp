@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"knative.dev/pkg/apis"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -183,5 +185,11 @@ func WithTopicFinalizers(finalizers ...string) TopicOption {
 func WithTopicAnnotations(annotations map[string]string) TopicOption {
 	return func(c *v1alpha1.Topic) {
 		c.ObjectMeta.Annotations = annotations
+	}
+}
+
+func WithTopicDefaultAuthorization() TopicOption {
+	return func(t *v1alpha1.Topic) {
+		t.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

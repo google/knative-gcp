@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"knative.dev/pkg/apis"
+
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 
@@ -32,13 +34,14 @@ const (
 )
 
 func (ps *CloudPubSubSource) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, ps.ObjectMeta)
 	ps.Spec.SetDefaults(ctx)
 	duckv1alpha1.SetClusterNameAnnotation(&ps.ObjectMeta, metadataClient.NewDefaultMetadataClient())
 	duckv1alpha1.SetAutoscalingAnnotationsDefaults(ctx, &ps.ObjectMeta)
 }
 
 func (pss *CloudPubSubSourceSpec) SetDefaults(ctx context.Context) {
-	pss.SetPubSubDefaults()
+	pss.SetPubSubDefaults(ctx)
 
 	if pss.AckDeadline == nil {
 		ackDeadline := defaultAckDeadline
