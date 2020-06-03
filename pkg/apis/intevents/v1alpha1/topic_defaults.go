@@ -19,6 +19,8 @@ package v1alpha1
 import (
 	"context"
 
+	"knative.dev/eventing/pkg/logging"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 
 	"knative.dev/pkg/apis"
@@ -44,6 +46,7 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 	ad := gcpauth.FromContextOrDefaults(ctx).GCPAuthDefaults
 	if ad == nil {
 		// TODO This should probably error out, rather than silently allow in non-defaulted COs.
+		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
 		return
 	}
 	if ts.ServiceAccountName == "" {
