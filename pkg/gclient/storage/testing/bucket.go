@@ -35,6 +35,8 @@ type TestBucketData struct {
 	NotificationsErr   error
 	AddNotificationErr error
 	DeleteErr          error
+	Attrs              *BucketAttrs
+	AttrsError         error
 }
 
 // Verify that it satisfies the storage.Bucket interface.
@@ -57,4 +59,9 @@ func (b *testBucket) Notifications(ctx context.Context) (map[string]*Notificatio
 // DeleteNotification implements bucket.DeleteNotification
 func (b *testBucket) DeleteNotification(ctx context.Context, id string) error {
 	return b.data.DeleteErr
+}
+
+// Attrs implements bucket.Attrs
+func (b *testBucket) Attrs(ctx context.Context) (*BucketAttrs, error) {
+	return b.data.Attrs, b.data.AttrsError
 }

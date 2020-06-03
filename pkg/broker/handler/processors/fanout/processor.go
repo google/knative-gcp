@@ -29,6 +29,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 type fanoutResult struct {
@@ -90,6 +91,13 @@ func (p *Processor) fanoutEvent(ctx context.Context, event *event.Event, tc <-ch
 		defer close(out)
 		for target := range tc {
 			// Timeout is controller by the context.
+			ctx, err := metrics.AddTargetTags(ctx, target)
+			if err != nil {
+				logging.FromContext(ctx).Error(
+					"failed to add trigger name tag to context",
+					zap.String("trigger", target.Name),
+				)
+			}
 			ctx = handlerctx.WithTargetKey(ctx, target.Key())
 			out <- &fanoutResult{
 				targetKey: target.Key(),
@@ -130,6 +138,6 @@ func (p *Processor) mergeResults(ctx context.Context, resChs []<-chan *fanoutRes
 		return fmt.Errorf("event fanout passed %d targets, failed %d targets", passes, errs)
 	}
 
-	logging.FromContext(ctx).Info("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
+	logging.FromContext(ctx).Debug("event fanout successful", zap.String("broker", bk), zap.Int32("count", passes))
 	return nil
 }

@@ -257,6 +257,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		b.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -295,6 +296,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		b.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 
@@ -489,7 +491,6 @@ func (r *Reconciler) LoadTargetsConfig(ctx context.Context) error {
 }
 
 func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
-	r.Logger.Debug("Starting TargetsConfigUpdater")
 	// check every 10 seconds even if no reconciles have occurred
 	ticker := time.NewTicker(targetsCMResyncPeriod)
 
@@ -499,7 +500,6 @@ func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			r.Logger.Debug("Stopping TargetsConfigUpdater")
 			return
 		case <-r.targetsNeedsUpdate:
 			if err := r.updateTargetsConfig(ctx); err != nil {

@@ -23,11 +23,14 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/wire"
 )
 
 func InitializeTestFanoutPool(
 	ctx context.Context,
+	podName metrics.PodName,
+	containerName metrics.ContainerName,
 	targets config.ReadonlyTargets,
 	pubsubClient *pubsub.Client,
 	opts ...Option,
@@ -35,6 +38,7 @@ func InitializeTestFanoutPool(
 	panic(wire.Build(
 		NewFanoutPool,
 		NewRetryClient,
+		metrics.NewDeliveryReporter,
 		wire.Value(DefaultHTTPClient),
 		wire.Value(DefaultCEClientOpts),
 	))
@@ -42,11 +46,14 @@ func InitializeTestFanoutPool(
 
 func InitializeTestRetryPool(
 	targets config.ReadonlyTargets,
+	podName metrics.PodName,
+	containerName metrics.ContainerName,
 	pubsubClient *pubsub.Client,
 	opts ...Option,
 ) (*RetryPool, error) {
 	panic(wire.Build(
 		NewRetryPool,
+		metrics.NewDeliveryReporter,
 		wire.Value(DefaultHTTPClient),
 	))
 }

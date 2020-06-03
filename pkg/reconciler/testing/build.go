@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"knative.dev/pkg/ptr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -160,5 +162,11 @@ func WithCloudBuildSourceObjectMetaGeneration(generation int64) CloudBuildSource
 func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSourceOption {
 	return func(s *v1alpha1.CloudBuildSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudBuildSourceDefaultAuthorization() CloudBuildSourceOption {
+	return func(s *v1alpha1.CloudBuildSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

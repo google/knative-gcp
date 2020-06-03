@@ -20,9 +20,9 @@ import (
 	"context"
 	"time"
 
+	"knative.dev/pkg/apis"
+
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"knative.dev/pkg/ptr"
 )
 
@@ -32,6 +32,7 @@ const (
 )
 
 func (s *PullSubscription) SetDefaults(ctx context.Context) {
+	ctx = apis.WithinParent(ctx, s.ObjectMeta)
 	s.Spec.SetDefaults(ctx)
 	duckv1beta1.SetAutoscalingAnnotationsDefaults(ctx, &s.ObjectMeta)
 }
@@ -47,9 +48,7 @@ func (ss *PullSubscriptionSpec) SetDefaults(ctx context.Context) {
 		ss.RetentionDuration = ptr.String(retentionDuration.String())
 	}
 
-	if ss.Secret == nil || equality.Semantic.DeepEqual(ss.Secret, &corev1.SecretKeySelector{}) {
-		ss.Secret = duckv1beta1.DefaultGoogleCloudSecretSelector()
-	}
+	ss.PubSubSpec.SetPubSubDefaults(ctx)
 
 	switch ss.Mode {
 	case ModeCloudEventsBinary, ModeCloudEventsStructured, ModePushCompatible:

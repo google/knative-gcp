@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -281,5 +283,11 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Mode = mode
+	}
+}
+
+func WithPullSubscriptionDefaultAuthorization() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }
