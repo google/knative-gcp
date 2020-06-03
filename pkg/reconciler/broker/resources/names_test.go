@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	"github.com/google/knative-gcp/pkg/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -32,9 +33,9 @@ const (
 	truncatedNameMax = 146
 )
 
-var maxName = strings.Repeat("n", k8sNameMax)
+var maxName = strings.Repeat("n", utils.K8sNameMax)
 
-var maxNamespace = strings.Repeat("s", k8sNamespaceMax)
+var maxNamespace = strings.Repeat("s", utils.K8sNamespaceMax)
 
 func TestGenerateDecouplingTopicName(t *testing.T) {
 	testCases := []struct {
@@ -61,13 +62,13 @@ func TestGenerateDecouplingTopicName(t *testing.T) {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(utils.K8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateDecouplingTopicName(broker(tc.ns, tc.n, tc.uid))
-		if len(got) > pubsubMax {
-			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		if len(got) > utils.PubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), utils.PubsubMax)
 		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (-want, +got) = %v", diff)
@@ -100,13 +101,13 @@ func TestGenerateDecouplingSubscriptionName(t *testing.T) {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-bkr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(utils.K8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateDecouplingSubscriptionName(broker(tc.ns, tc.n, tc.uid))
-		if len(got) > pubsubMax {
-			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		if len(got) > utils.PubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), utils.PubsubMax)
 		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)
@@ -139,13 +140,13 @@ func TestGenerateRetryTopicName(t *testing.T) {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(utils.K8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateRetryTopicName(trigger(tc.ns, tc.n, tc.uid))
-		if len(got) > pubsubMax {
-			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		if len(got) > utils.PubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), utils.PubsubMax)
 		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)
@@ -178,13 +179,13 @@ func TestGenerateRetrySubscriptionName(t *testing.T) {
 		ns:   "default",
 		n:    maxName,
 		uid:  testUID,
-		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(k8sNamespaceMax-7)), testUID),
+		want: fmt.Sprintf("cre-tgr_default_%s_%s", strings.Repeat("n", truncatedNameMax+(utils.K8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {
 		got := GenerateRetrySubscriptionName(trigger(tc.ns, tc.n, tc.uid))
-		if len(got) > pubsubMax {
-			t.Errorf("name length %d is greater than %d", len(got), pubsubMax)
+		if len(got) > utils.PubsubMax {
+			t.Errorf("name length %d is greater than %d", len(got), utils.PubsubMax)
 		}
 		if diff := cmp.Diff(tc.want, got); diff != "" {
 			t.Errorf("unexpected (want, +got) = %v", diff)

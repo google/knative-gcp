@@ -18,9 +18,9 @@ package resources
 
 import (
 	"fmt"
+	"github.com/google/knative-gcp/pkg/utils"
 	"strings"
 
-	"github.com/google/knative-gcp/pkg/apis/events"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
 
@@ -48,7 +48,7 @@ func ExtractJobID(jobName string) string {
 // GenerateTopicName generates a topic name for the scheduler. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
 func GenerateTopicName(scheduler *v1alpha1.CloudSchedulerSource) string {
-	return events.GenerateName(scheduler)
+	return utils.TruncatedPubsubResourceName("cre-src", scheduler.Namespace, scheduler.Name, scheduler.UID)
 }
 
 // GeneratePubSubTarget generates a topic name for the PubsubTarget used to create the CloudSchedulerSource job.

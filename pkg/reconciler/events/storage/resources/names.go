@@ -17,7 +17,7 @@ limitations under the License.
 package resources
 
 import (
-	"github.com/google/knative-gcp/pkg/apis/events"
+	"github.com/google/knative-gcp/pkg/utils"
 
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 )
@@ -25,5 +25,5 @@ import (
 // GenerateTopicName generates a topic name for the storage. This refers to the underlying Pub/Sub topic, and not our
 // Topic resource.
 func GenerateTopicName(storage *v1alpha1.CloudStorageSource) string {
-	return events.GenerateName(storage)
+	return utils.TruncatedPubsubResourceName("cre-src", storage.Namespace, storage.Name, storage.UID)
 }

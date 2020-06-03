@@ -14,21 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package events
+package resources
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGenerateName(t *testing.T) {
+func TestGenerateTopicName(t *testing.T) {
 	want := "cre-src_mynamespace_myname_uid"
-	got := GenerateName(&metav1.ObjectMeta{
-		Name:      "myname",
-		Namespace: "mynamespace",
-		UID:       "uid",
+	got := GenerateTopicName(&v1alpha1.CloudStorageSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "mynamespace",
+			UID:       "uid",
+		},
 	})
 
 	if diff := cmp.Diff(want, got); diff != "" {

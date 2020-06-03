@@ -17,10 +17,8 @@ limitations under the License.
 package resources
 
 import (
-	"fmt"
-
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/google/knative-gcp/pkg/utils"
 )
 
 // For reference, the minimum number of characters available for a name
@@ -35,48 +33,30 @@ import (
 // prefix + separators: 10 chars
 // 255 - 10 - 63 - 36 = 146
 
-const (
-	pubsubMax       = 255
-	k8sNamespaceMax = 63
-	k8sNameMax      = 253
-	uidLength       = 36
-)
-
 // GenerateDecouplingTopicName generates a deterministic topic name for a
 // Broker. If the topic name would be longer than allowed by PubSub, the
 // Broker name is truncated to fit.
 func GenerateDecouplingTopicName(b *brokerv1beta1.Broker) string {
-	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
+	return utils.TruncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateDecouplingSubscriptionName generates a deterministic subscription
 // name for a Broker. If the subscription name would be longer than allowed by
 // PubSub, the Broker name is truncated to fit.
 func GenerateDecouplingSubscriptionName(b *brokerv1beta1.Broker) string {
-	return truncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
+	return utils.TruncatedPubsubResourceName("cre-bkr", b.Namespace, b.Name, b.UID)
 }
 
 // GenerateRetryTopicName generates a deterministic topic name for a Trigger.
 // If the topic name would be longer than allowed by PubSub, the Trigger name is
 // truncated to fit.
 func GenerateRetryTopicName(t *brokerv1beta1.Trigger) string {
-	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
+	return utils.TruncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
 
 // GenerateRetrySubscriptionName generates a deterministic subscription name
 // for a Trigger. If the subscription name would be longer than allowed by
 // PubSub, the Trigger name is truncated to fit.
 func GenerateRetrySubscriptionName(t *brokerv1beta1.Trigger) string {
-	return truncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
-}
-
-func truncatedPubsubResourceName(prefix, ns, n string, uid types.UID) string {
-	s := fmt.Sprintf("%s_%s_%s_%s", prefix, ns, n, string(uid))
-	if len(s) <= pubsubMax {
-		return s
-	}
-	names := fmt.Sprintf("%s_%s_%s", prefix, ns, n)
-	namesMax := pubsubMax - ((len(string(uid))) + 1) // 1 for the uid separator
-
-	return fmt.Sprintf("%s_%s", names[:namesMax], string(uid))
+	return utils.TruncatedPubsubResourceName("cre-tgr", t.Namespace, t.Name, t.UID)
 }
