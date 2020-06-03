@@ -19,6 +19,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -54,7 +55,7 @@ import (
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) {
+func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) *lib.SenderOutput {
 	client.T.Helper()
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
@@ -92,8 +93,9 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.
-	if done := jobDone(client, senderName); !done {
-		client.T.Error("dummy event wasn't sent to broker")
+	senderOutput := new(lib.SenderOutput)
+	if err := jobOutput(client, senderName, senderOutput); err != nil {
+		client.T.Errorf("dummy event wasn't sent to broker: %v", err)
 		client.T.Failed()
 	}
 	// Check if resp CloudEvent hits the target Service.
@@ -101,6 +103,7 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 		client.T.Error("resp event didn't hit the target pod")
 		client.T.Failed()
 	}
+	return senderOutput
 }
 
 func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, authConfig lib.AuthConfig, brokerURL url.URL, brokerName string) {
@@ -374,28 +377,33 @@ func makeTargetJobOrDie(client *lib.Client, targetName string) {
 
 func jobDone(client *lib.Client, podName string) bool {
 	client.T.Helper()
-	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
-	if err != nil {
-		client.T.Error(err)
-		return false
-	}
-	if msg == "" {
-		client.T.Error("No terminating message from the pod")
-		return false
-	}
-
 	out := &lib.TargetOutput{}
-	if err := json.Unmarshal([]byte(msg), out); err != nil {
+	if err := jobOutput(client, podName, out); err != nil {
 		client.T.Error(err)
-		return false
-	}
-	if !out.Success {
-		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
-			client.T.Error(err)
-		} else {
-			client.T.Logf("job: %s\n", logs)
-		}
 		return false
 	}
 	return true
+}
+
+func jobOutput(client *lib.Client, podName string, out lib.Output) error {
+	client.T.Helper()
+	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
+	if err != nil {
+		return err
+	}
+	if msg == "" {
+		return errors.New("no terminating message from the pod")
+	}
+
+	if err := json.Unmarshal([]byte(msg), out); err != nil {
+		return err
+	}
+	if !out.Successful() {
+		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
+			return err
+		} else {
+			return fmt.Errorf("job: %s\n", logs)
+		}
+	}
+	return nil
 }

@@ -58,7 +58,7 @@ func main() {
 	}
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
-		"traceid": span.SpanContext().TraceID,
+		"traceid": span.SpanContext().TraceID.String(),
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
