@@ -1,5 +1,8 @@
 # Installing GCP Broker
 
+**Currently the GCP Broker only supports GKE or GCE environments. Other
+environments may work but are not supported.**
+
 The GCP Broker is a Broker implementation that's highly optimized for running in
 GCP using [Cloud Pub/Sub](https://cloud.google.com/pubsub).
 
