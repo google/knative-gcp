@@ -26,6 +26,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"go.uber.org/zap"
+	"k8s.io/client-go/util/workqueue"
 	"knative.dev/eventing/pkg/logging"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
@@ -159,6 +160,7 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
 				Subscription: sub,
+				RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(p.options.RetryPolicy.MinBackoff, p.options.RetryPolicy.MaxBackoff),
 				Processor: processors.ChainProcessors(
 					&fanout.Processor{MaxConcurrency: p.options.MaxConcurrencyPerEvent, Targets: p.targets},
 					&filter.Processor{Targets: p.targets},

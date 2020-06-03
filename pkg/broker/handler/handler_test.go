@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -82,6 +84,8 @@ func TestHandler(t *testing.T) {
 		Subscription: sub,
 		Processor:    processor,
 		Timeout:      time.Second,
+		RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(time.Duration(0), time.Duration(0)),
+		DelayNack:    time.Sleep,
 	}
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
@@ -139,6 +143,93 @@ func TestHandler(t *testing.T) {
 		}
 		unlock()
 	})
+}
+
+type alwaysErrProc struct {
+	processors.BaseProcessor
+	desiredErrCount, currErrCount int
+}
+
+func (p *alwaysErrProc) Process(_ context.Context, _ *event.Event) error {
+	if p.currErrCount < p.desiredErrCount {
+		p.currErrCount++
+		return errors.New("always error")
+	}
+	return nil
+}
+
+func TestRetryBackoff(t *testing.T) {
+	ctx := context.Background()
+	c, close := testPubsubClient(ctx, t, "test-project")
+	defer close()
+
+	topic, err := c.CreateTopic(ctx, "test-topic")
+	if err != nil {
+		t.Fatalf("failed to create topic: %v", err)
+	}
+	sub, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
+		Topic: topic,
+	})
+	if err != nil {
+		t.Fatalf("failed to create subscription: %v", err)
+	}
+
+	p, err := cepubsub.New(context.Background(),
+		cepubsub.WithClient(c),
+		cepubsub.WithProjectID("test-project"),
+		cepubsub.WithTopicID("test-topic"),
+	)
+	if err != nil {
+		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
+	}
+
+	delays := []time.Duration{}
+	delayNack := func(d time.Duration) {
+		delays = append(delays, d)
+	}
+
+	desiredErrCount := 8
+	processor := &alwaysErrProc{desiredErrCount: desiredErrCount}
+	h := &Handler{
+		Subscription: sub,
+		Processor:    processor,
+		Timeout:      time.Second,
+		RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(time.Millisecond, 16*time.Millisecond),
+		DelayNack:    delayNack,
+	}
+	h.Start(ctx, func(err error) {})
+	defer h.Stop()
+	if !h.IsAlive() {
+		t.Error("start handler didn't bring it alive")
+	}
+
+	testEvent := event.New()
+	testEvent.SetID("id")
+	testEvent.SetSource("source")
+	testEvent.SetSubject("subject")
+	testEvent.SetType("type")
+
+	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
+		t.Errorf("failed to seed event to pubsub: %v", err)
+	}
+
+	time.Sleep(time.Second)
+
+	if len(delays) != desiredErrCount {
+		t.Errorf("retried times got=%d, want=%d", len(delays), desiredErrCount)
+	}
+	if delays[0] != time.Millisecond {
+		t.Errorf("initial nack delay got=%v, want=%v", delays[0], time.Millisecond)
+	}
+	for i := 1; i < len(delays); i++ {
+		wantDelay := 2 * delays[i-1]
+		if wantDelay > 16*time.Millisecond {
+			wantDelay = 16 * time.Millisecond
+		}
+		if delays[i] != wantDelay {
+			t.Errorf("delay #%d got=%v, want=%v", i+1, delays[i], wantDelay)
+		}
+	}
 }
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {

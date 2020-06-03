@@ -27,6 +27,7 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"go.uber.org/zap"
+	"k8s.io/client-go/util/workqueue"
 	"knative.dev/eventing/pkg/logging"
 )
 
@@ -43,9 +44,15 @@ type Handler struct {
 	// Timeout is the timeout for processing each individual event.
 	Timeout time.Duration
 
+	// RetryLimiter limits how fast to retry failed events.
+	RetryLimiter workqueue.RateLimiter
+
+	DelayNack func(time.Duration)
+
 	// cancel is function to stop pulling messages.
-	cancel context.CancelFunc
-	alive  atomic.Value
+	cancel        context.CancelFunc
+	alive         atomic.Value
+	delayNackFunc func(duration time.Duration)
 }
 
 // Start starts the handler.
@@ -86,9 +93,13 @@ func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 		defer cancel()
 	}
 	if err := h.Processor.Process(ctx, event); err != nil {
-		logging.FromContext(ctx).Error("failed to process event", zap.Any("event", event), zap.Error(err))
+		backoffPeriod := h.RetryLimiter.When(msg.ID)
+		logging.FromContext(ctx).Error("failed to process event; backoff nack", zap.Any("event", event), zap.Float64("backoffPeriod", backoffPeriod.Seconds()), zap.Error(err))
+		h.DelayNack(backoffPeriod)
 		msg.Nack()
 		return
 	}
+
+	h.RetryLimiter.Forget(msg.ID)
 	msg.Ack()
 }

@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"k8s.io/client-go/util/workqueue"
 	"knative.dev/eventing/pkg/logging"
 
 	"cloud.google.com/go/pubsub"
@@ -139,6 +140,7 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 			Handler: handler.Handler{
 				Timeout:      p.options.TimeoutPerEvent,
 				Subscription: sub,
+				RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(p.options.RetryPolicy.MinBackoff, p.options.RetryPolicy.MaxBackoff),
 				Processor: processors.ChainProcessors(
 					&filter.Processor{Targets: p.targets},
 					&deliver.Processor{
