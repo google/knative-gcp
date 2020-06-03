@@ -163,7 +163,7 @@ func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSub
 	}
 }
 
-func WithCloudPubSubSourceDefaultAuthorization() CloudPubSubSourceOption {
+func WithCloudPubSubSourceDefaultGCPAuth() CloudPubSubSourceOption {
 	return func(s *v1alpha1.CloudPubSubSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

@@ -194,7 +194,7 @@ func WithCloudAuditLogsSourceAnnotations(Annotations map[string]string) CloudAud
 	}
 }
 
-func WithCloudAuditLogsSourceDefaultAuthorization() CloudAuditLogsSourceOption {
+func WithCloudAuditLogsSourceDefaultGCPAuth() CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
