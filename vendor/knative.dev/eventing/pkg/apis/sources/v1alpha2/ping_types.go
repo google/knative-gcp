@@ -26,7 +26,7 @@ import (
 )
 
 // +genclient
-// +genreconciler
+// +genreconciler:krshapedlogic=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +k8s:defaulter-gen=true
 
@@ -46,6 +46,7 @@ var (
 	_ apis.Validatable   = (*PingSource)(nil)
 	_ apis.Defaultable   = (*PingSource)(nil)
 	_ apis.HasSpec       = (*PingSource)(nil)
+	_ duckv1.KRShaped    = (*PingSource)(nil)
 )
 
 // PingSourceSpec defines the desired state of the PingSource.
@@ -87,4 +88,9 @@ type PingSourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PingSource `json:"items"`
+}
+
+// GetStatus retrieves the status of the PingSource. Implements the KRShaped interface.
+func (p *PingSource) GetStatus() *duckv1.Status {
+	return &p.Status.Status
 }

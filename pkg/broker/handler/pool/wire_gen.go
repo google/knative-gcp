@@ -9,18 +9,23 @@ import (
 	"cloud.google.com/go/pubsub"
 	"context"
 	"github.com/google/knative-gcp/pkg/broker/config"
+	"github.com/google/knative-gcp/pkg/metrics"
 )
 
 // Injectors from wire.go:
 
-func InitializeTestFanoutPool(ctx context.Context, targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*FanoutPool, error) {
+func InitializeTestFanoutPool(ctx context.Context, podName metrics.PodName, containerName metrics.ContainerName, targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*FanoutPool, error) {
 	client := _wireClientValue
 	v := _wireValue
 	retryClient, err := NewRetryClient(ctx, pubsubClient, v...)
 	if err != nil {
 		return nil, err
 	}
-	fanoutPool, err := NewFanoutPool(targets, pubsubClient, client, retryClient, opts...)
+	deliveryReporter, err := metrics.NewDeliveryReporter(podName, containerName)
+	if err != nil {
+		return nil, err
+	}
+	fanoutPool, err := NewFanoutPool(targets, pubsubClient, client, retryClient, deliveryReporter, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +37,13 @@ var (
 	_wireValue       = DefaultCEClientOpts
 )
 
-func InitializeTestRetryPool(targets config.ReadonlyTargets, pubsubClient *pubsub.Client, opts ...Option) (*RetryPool, error) {
+func InitializeTestRetryPool(targets config.ReadonlyTargets, podName metrics.PodName, containerName metrics.ContainerName, pubsubClient *pubsub.Client, opts ...Option) (*RetryPool, error) {
 	client := _wireHttpClientValue
-	retryPool, err := NewRetryPool(targets, pubsubClient, client, opts...)
+	deliveryReporter, err := metrics.NewDeliveryReporter(podName, containerName)
+	if err != nil {
+		return nil, err
+	}
+	retryPool, err := NewRetryPool(targets, pubsubClient, client, deliveryReporter, opts...)
 	if err != nil {
 		return nil, err
 	}

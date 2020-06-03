@@ -41,6 +41,16 @@ spec:
       containers:
       - name: ingress
         image: ingress
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json        

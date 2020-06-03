@@ -17,10 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -36,7 +36,7 @@ func TestTopicDefaults(t *testing.T) {
 	}}
 
 	got := &Topic{Spec: TopicSpec{}}
-	got.SetDefaults(context.Background())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)

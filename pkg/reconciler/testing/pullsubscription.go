@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -32,6 +34,10 @@ import (
 
 // PullSubscriptionOption enables further configuration of a PullSubscription.
 type PullSubscriptionOption func(*v1alpha1.PullSubscription)
+
+const (
+	SubscriptionID = "subID"
+)
 
 // NewPullSubscription creates a PullSubscription with PullSubscriptionOptions
 func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *v1alpha1.PullSubscription {
@@ -189,7 +195,7 @@ func WithPullSubscriptionReady(sink *apis.URL) PullSubscriptionOption {
 		s.Status.InitializeConditions()
 		s.Status.MarkSink(sink)
 		s.Status.MarkDeployed()
-		s.Status.MarkSubscribed("subID")
+		s.Status.MarkSubscribed(SubscriptionID)
 	}
 }
 
@@ -277,5 +283,11 @@ func WithPullSubscriptionReadyStatus(status corev1.ConditionStatus, reason, mess
 func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.Mode = mode
+	}
+}
+
+func WithPullSubscriptionDefaultAuthorization() PullSubscriptionOption {
+	return func(s *v1alpha1.PullSubscription) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

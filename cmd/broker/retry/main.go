@@ -24,11 +24,10 @@ import (
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 
-	"knative.dev/pkg/metrics"
-
 	"github.com/google/knative-gcp/pkg/broker/config/volume"
 	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"github.com/google/knative-gcp/pkg/utils"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
 	"github.com/google/knative-gcp/pkg/utils/mainhelper"
@@ -80,6 +79,8 @@ func main() {
 	syncPool, err := InitializeSyncPool(
 		ctx,
 		pool.ProjectID(projectID),
+		metrics.PodName(env.PodName),
+		metrics.ContainerName(component),
 		[]volume.Option{
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),
@@ -138,9 +139,4 @@ func buildPoolOptions(env envConfig) []pool.Option {
 	opts = append(opts, pool.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts
-}
-
-func flush(logger *zap.SugaredLogger) {
-	_ = logger.Sync()
-	metrics.FlushExporter()
 }

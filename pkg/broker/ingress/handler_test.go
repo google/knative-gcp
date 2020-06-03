@@ -108,6 +108,12 @@ type testCase struct {
 func TestHandler(t *testing.T) {
 	tests := []testCase{
 		{
+			name:     "health check",
+			path:     "/healthz",
+			method:   nethttp.MethodGet,
+			wantCode: nethttp.StatusOK,
+		},
+		{
 			name:           "happy case",
 			path:           "/ns1/broker1",
 			event:          createTestEvent("test-event"),
@@ -428,11 +434,10 @@ func createRequest(tc testCase, url string) *nethttp.Request {
 // verifyMetrics verifies broker metrics are properly recorded (or not recorded)
 func verifyMetrics(t *testing.T, tc testCase) {
 	if tc.wantEventCount == 0 {
-		metricstest.CheckStatsNotReported(t, "event_count", "event_dispatch_latencies")
+		metricstest.CheckStatsNotReported(t, "event_count")
 	} else {
-		metricstest.CheckStatsReported(t, "event_count", "event_dispatch_latencies")
+		metricstest.CheckStatsReported(t, "event_count")
 		metricstest.CheckCountData(t, "event_count", tc.wantMetricTags, tc.wantEventCount)
-		metricstest.CheckDistributionCount(t, "event_dispatch_latencies", tc.wantMetricTags, tc.wantEventCount)
 	}
 }
 

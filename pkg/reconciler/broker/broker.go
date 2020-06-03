@@ -38,8 +38,6 @@ import (
 
 	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/logging"
-	"knative.dev/eventing/pkg/reconciler/names"
-	"knative.dev/pkg/apis"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/system"
 
@@ -48,9 +46,11 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
+	inteventslisters "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	brokercellresources "github.com/google/knative-gcp/pkg/reconciler/brokercell/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 )
 
@@ -60,6 +60,7 @@ const (
 	brokerReconciled     = "BrokerReconciled"
 	brokerFinalized      = "BrokerFinalized"
 	topicCreated         = "TopicCreated"
+	brokerCellCreated    = "BrokerCellCreated"
 	subCreated           = "SubscriptionCreated"
 	topicDeleted         = "TopicDeleted"
 	subDeleted           = "SubscriptionDeleted"
@@ -67,13 +68,15 @@ const (
 	targetsCMName         = "broker-targets"
 	targetsCMKey          = "targets"
 	targetsCMResyncPeriod = 10 * time.Second
-
-	ingressServiceName = "broker-ingress"
 )
 
-// Hard-coded for now. TODO(https://github.com/google/knative-gcp/issues/867)
+// Hard-coded for now. TODO(https://github.com/google/knative-gcp/issues/863)
 // BrokerCell will handle this.
-var dataPlaneDeployments = []string{"broker-ingress", "broker-fanout", "broker-retry"}
+var dataPlaneDeployments = []string{
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.IngressName),
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.FanoutName),
+	brokercellresources.Name(resources.DefaultBroekrCellName, brokercellresources.RetryName),
+}
 
 // TODO
 // idea: assign broker resources to cell (configmap) in webhook based on a
@@ -92,6 +95,7 @@ type Reconciler struct {
 	endpointsLister  corev1listers.EndpointsLister
 	deploymentLister appsv1listers.DeploymentLister
 	podLister        corev1listers.PodLister
+	brokerCellLister inteventslisters.BrokerCellLister
 
 	// TODO allow configuring multiples of these
 	targetsConfig config.Targets
@@ -149,29 +153,15 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	b.Status.InitializeConditions()
 	b.Status.ObservedGeneration = b.Generation
 
+	if err := r.ensureBrokerCellExists(ctx, b); err != nil {
+		return fmt.Errorf("brokercell reconcile failed: %v", err)
+	}
+
 	// Create decoupling topic and pullsub for this broker. Ingress will push
 	// to this topic and fanout will pull from the pull sub.
 	if err := r.reconcileDecouplingTopicAndSubscription(ctx, b); err != nil {
 		return fmt.Errorf("decoupling topic reconcile failed: %v", err)
 	}
-
-	//TODO in a webhook annotate the broker object with its ingress details
-	// Route to shared ingress with namespace/name in the path as the broker
-	// identifier.
-	b.Status.SetAddress(&apis.URL{
-		Scheme: "http",
-		Host:   names.ServiceHostName(ingressServiceName, system.Namespace()),
-		Path:   fmt.Sprintf("/%s/%s", b.Namespace, b.Name),
-	})
-
-	// Verify the ingress service is healthy via endpoints.
-	ingressEndpoints, err := r.endpointsLister.Endpoints(system.Namespace()).Get(ingressServiceName)
-	if err != nil {
-		logger.Error("Problem getting endpoints for ingress", zap.String("namespace", system.Namespace()), zap.Error(err))
-		b.Status.MarkIngressFailed("ServiceFailure", "%v", err)
-		return err
-	}
-	b.Status.PropagateIngressAvailability(ingressEndpoints)
 
 	// Filter by `eventing.knative.dev/broker: <name>` here
 	// to get only the triggers for this broker. The trigger webhook will
@@ -267,6 +257,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
+		b.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -287,7 +278,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		topic, err = client.CreateTopicWithConfig(ctx, topicID, topicConfig)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-			b.Status.MarkTopicFailed("CreationFailed", "Topic creation failed: %w", err)
+			b.Status.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
@@ -305,6 +296,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
+		b.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 
@@ -329,7 +321,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 		sub, err = client.CreateSubscription(ctx, subID, subConfig)
 		if err != nil {
 			logger.Error("Failed to create subscription", zap.Error(err))
-			b.Status.MarkSubscriptionFailed("CreationFailed", "Subscription creation failed: %w", err)
+			b.Status.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
 			return err
 		}
 		logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
@@ -434,7 +426,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error creating targets ConfigMap: %w", err)
 		}
-		if err := r.reconcileDataPlaneDeployments(); err != nil {
+		if err := r.updateConfigmapVolumeAnnotation(); err != nil {
 			// Failing to update the annotation on the data plane pods means there
 			// may be a longer propagation delay for the configmap volume to be
 			// refreshed. But this is not treated as an error.
@@ -451,7 +443,7 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("error updating targets ConfigMap: %w", err)
 		}
-		if err := r.reconcileDataPlaneDeployments(); err != nil {
+		if err := r.updateConfigmapVolumeAnnotation(); err != nil {
 			// Failing to update the annotation on the data plane pods means there
 			// may be a longer propagation delay for the configmap volume to be
 			// refreshed. But this is not treated as an error.
@@ -461,9 +453,9 @@ func (r *Reconciler) updateTargetsConfig(ctx context.Context) error {
 	return nil
 }
 
-// TODO(https://github.com/google/knative-gcp/issues/867) With BrokerCell, we
+// TODO(https://github.com/google/knative-gcp/issues/863) With BrokerCell, we
 // will reconcile data plane deployments dynamically.
-func (r *Reconciler) reconcileDataPlaneDeployments() error {
+func (r *Reconciler) updateConfigmapVolumeAnnotation() error {
 	var err error
 	for _, name := range dataPlaneDeployments {
 		err = multierr.Append(err, resources.UpdateVolumeGenerationForDeployment(r.KubeClientSet, r.deploymentLister, r.podLister, system.Namespace(), name))
@@ -499,7 +491,6 @@ func (r *Reconciler) LoadTargetsConfig(ctx context.Context) error {
 }
 
 func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
-	r.Logger.Debug("Starting TargetsConfigUpdater")
 	// check every 10 seconds even if no reconciles have occurred
 	ticker := time.NewTicker(targetsCMResyncPeriod)
 
@@ -509,7 +500,6 @@ func (r *Reconciler) TargetsConfigUpdater(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			r.Logger.Debug("Stopping TargetsConfigUpdater")
 			return
 		case <-r.targetsNeedsUpdate:
 			if err := r.updateTargetsConfig(ctx); err != nil {

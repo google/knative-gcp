@@ -19,6 +19,8 @@ package broker
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,9 +37,11 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
+	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/broker/config/memory"
 	brokerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/broker"
 	triggerinformer "github.com/google/knative-gcp/pkg/client/injection/informers/broker/v1beta1/trigger"
+	brokercellinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/brokercell"
 	brokerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/broker"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
@@ -57,6 +61,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	endpointsInformer := endpointsinformer.Get(ctx)
 	deploymentInformer := deploymentinformer.Get(ctx)
 	podInformer := podinformer.Get(ctx)
+	bcInformer := brokercellinformer.Get(ctx)
 
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
@@ -80,6 +85,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		endpointsLister:    endpointsInformer.Lister(),
 		deploymentLister:   deploymentInformer.Lister(),
 		podLister:          podInformer.Lister(),
+		brokerCellLister:   bcInformer.Lister(),
 		pubsubClient:       client,
 		targetsNeedsUpdate: make(chan struct{}),
 	}
@@ -119,17 +125,28 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	//	Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
 	//})
 
-	//TODO https://github.com/knative/eventing/pull/2779/files
-	//TODO Need to watch only the shared ingress
-	// endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-	// 	FilterFunc: pkgreconciler.LabelExistsFilterFunc(eventing.BrokerLabelKey),
-	// 	Handler:    controller.HandleAll(impl.EnqueueLabelOfNamespaceScopedResource("" /*any namespace*/, eventing.BrokerLabelKey)),
-	// })
-
 	triggerInformer.Informer().AddEventHandler(controller.HandleAll(
 		func(obj interface{}) {
 			if trigger, ok := obj.(*brokerv1beta1.Trigger); ok {
 				impl.EnqueueKey(types.NamespacedName{Namespace: trigger.Namespace, Name: trigger.Spec.Broker})
+			}
+		},
+	))
+
+	bcInformer.Informer().AddEventHandler(controller.HandleAll(
+		func(obj interface{}) {
+			if _, ok := obj.(*inteventsv1alpha1.BrokerCell); ok {
+				// TODO(#866) Only select brokers that point to this brokercell by label selector once the
+				// webhook assigns the brokercell label, i.e.,
+				// r.brokerLister.List(labels.SelectorFromSet(map[string]string{"brokercell":bc.Name, "brokercellns":bc.Namespace}))
+				brokers, err := brokerInformer.Lister().List(labels.Everything())
+				if err != nil {
+					r.Logger.Error("Failed to list brokers", zap.Error(err))
+					return
+				}
+				for _, broker := range brokers {
+					impl.Enqueue(broker)
+				}
 			}
 		},
 	))

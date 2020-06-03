@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -131,6 +133,12 @@ func WithCloudPubSubSourceSinkURI(url *apis.URL) CloudPubSubSourceOption {
 	}
 }
 
+func WithCloudPubSubSourceSubscriptionID(subscriptionID string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
+		ps.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudPubSubSourceFinalizers(finalizers ...string) CloudPubSubSourceOption {
 	return func(ps *v1alpha1.CloudPubSubSource) {
 		ps.Finalizers = finalizers
@@ -152,5 +160,11 @@ func WithCloudPubSubSourceObjectMetaGeneration(generation int64) CloudPubSubSour
 func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSubSourceOption {
 	return func(s *v1alpha1.CloudPubSubSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudPubSubSourceDefaultAuthorization() CloudPubSubSourceOption {
+	return func(s *v1alpha1.CloudPubSubSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

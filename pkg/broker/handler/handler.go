@@ -25,6 +25,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/binding"
 	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
+	"github.com/google/knative-gcp/pkg/metrics"
 	"go.uber.org/zap"
 	"knative.dev/eventing/pkg/logging"
 )
@@ -71,6 +72,7 @@ func (h *Handler) IsAlive() bool {
 }
 
 func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
+	ctx = metrics.StartEventProcessing(ctx)
 	event, err := binding.ToEvent(ctx, cepubsub.NewMessage(msg))
 	if err != nil {
 		logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))

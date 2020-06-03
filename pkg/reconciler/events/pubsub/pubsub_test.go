@@ -164,6 +164,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithCloudPubSubSourceDefaultAuthorization(),
 			),
 			newSink(),
 		},
@@ -179,6 +180,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
+				WithCloudPubSubSourceDefaultAuthorization(),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
@@ -201,6 +203,7 @@ func TestAllCases(t *testing.T) {
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+				WithPullSubscriptionDefaultAuthorization(),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -335,6 +338,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourcePullSubscriptionReady(),
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
 			),
 		}, {
 			Object: NewCloudPubSubSource(pubsubName, testNS,
@@ -345,6 +349,7 @@ func TestAllCases(t *testing.T) {
 				WithInitCloudPubSubSourceConditions,
 				WithCloudPubSubSourcePullSubscriptionReady(),
 				WithCloudPubSubSourceSinkURI(pubsubSinkURL),
+				WithCloudPubSubSourceSubscriptionID(SubscriptionID),
 				WithCloudPubSubSourceFinalizers("cloudpubsubsources.events.cloud.google.com"),
 			),
 		}},

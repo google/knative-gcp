@@ -26,9 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
-	"knative.dev/eventing/pkg/apis/eventing"
 	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
+	"knative.dev/eventing/pkg/utils"
 	tracinghelper "knative.dev/eventing/test/conformance/helpers/tracing"
 	"knative.dev/eventing/test/lib"
 	"knative.dev/eventing/test/lib/cloudevents"
@@ -83,12 +83,6 @@ func setupBrokerTracing(brokerClass string) SetupInfrastructureFunc {
 		loggerPodName string,
 		tc TracingTestCase,
 	) (tracinghelper.TestSpanTree, lib.EventMatchFunc) {
-		// Create the Broker.
-		if brokerClass == eventing.ChannelBrokerClassValue {
-			// create required RBAC resources including ServiceAccounts and ClusterRoleBindings for Brokers
-			client.CreateConfigMapPropagationOrFail(defaultCMPName)
-			client.CreateRBACResourcesForBrokers()
-		}
 		// Create a configmap used by the broker.
 		client.CreateBrokerConfigMapOrFail("br", channel)
 
@@ -148,8 +142,7 @@ func setupBrokerTracing(brokerClass string) SetupInfrastructureFunc {
 		}
 		sendEvent(senderName, broker.Name, lib.BrokerTypeMeta, event)
 
-		// TODO Actually determine the cluster's domain, similar to knative.dev/pkg/network/domain.go.
-		domain := "cluster.local"
+		domain := utils.GetClusterDomainName()
 
 		// We expect the following spans:
 		// 1. Send pod sends event to the Broker Ingress (only if the sending pod generates a span).

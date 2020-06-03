@@ -19,6 +19,8 @@ package v1beta1
 import (
 	"testing"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 
@@ -38,7 +40,7 @@ func TestValidateCredential(t *testing.T) {
 		wantErr:        false,
 	}, {
 		name:           "valid secret, and nil service account",
-		secret:         DefaultGoogleCloudSecretSelector(),
+		secret:         &gcpauthtesthelper.Secret,
 		serviceAccount: "",
 		wantErr:        false,
 	}, {
@@ -70,7 +72,7 @@ func TestValidateCredential(t *testing.T) {
 		wantErr:        true,
 	}, {
 		name:           "secret and service account exist at the same time",
-		secret:         DefaultGoogleCloudSecretSelector(),
+		secret:         &gcpauthtesthelper.Secret,
 		serviceAccount: "test",
 		wantErr:        true,
 	}}

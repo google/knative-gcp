@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"knative.dev/pkg/apis"
@@ -204,6 +206,12 @@ func WithCloudStorageSourceProjectID(projectID string) CloudStorageSourceOption 
 	}
 }
 
+func WithCloudStorageSourceSubscriptionID(subscriptionID string) CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Status.SubscriptionID = subscriptionID
+	}
+}
+
 func WithCloudStorageSourceStatusObservedGeneration(generation int64) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Status.Status.ObservedGeneration = generation
@@ -226,5 +234,11 @@ func WithDeletionTimestamp() CloudStorageSourceOption {
 func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.ObjectMeta.Annotations = Annotations
+	}
+}
+
+func WithCloudStorageSourceDefaultAuthorization() CloudStorageSourceOption {
+	return func(s *v1alpha1.CloudStorageSource) {
+		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }

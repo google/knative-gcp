@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -54,17 +53,10 @@ func (r *IngressReporter) register() error {
 	// Create view to see our measurements.
 	return view.Register(
 		&view.View{
-			Name:        "event_count",
-			Description: "Number of events received by a Broker",
-			Measure:     r.dispatchTimeInMsecM,
+			Name:        r.eventCountM.Name(),
+			Description: r.eventCountM.Description(),
+			Measure:     r.eventCountM,
 			Aggregation: view.Count(),
-			TagKeys:     tagKeys,
-		},
-		&view.View{
-			Name:        r.dispatchTimeInMsecM.Name(),
-			Description: r.dispatchTimeInMsecM.Description(),
-			Measure:     r.dispatchTimeInMsecM,
-			Aggregation: view.Distribution(metrics.Buckets125(1, 10000)...), // 1, 2, 5, 10, 20, 50, 100, 500, 1000, 5000, 10000
 			TagKeys:     tagKeys,
 		},
 	)
@@ -75,10 +67,10 @@ func NewIngressReporter(podName PodName, containerName ContainerName) (*IngressR
 	r := &IngressReporter{
 		podName:       podName,
 		containerName: containerName,
-		dispatchTimeInMsecM: stats.Float64(
-			"event_dispatch_latencies",
-			"The time spent dispatching an event to the decouple topic",
-			stats.UnitMilliseconds,
+		eventCountM: stats.Int64(
+			"event_count",
+			"Number of events received by a Broker",
+			stats.UnitDimensionless,
 		),
 	}
 	if err := r.register(); err != nil {
@@ -91,12 +83,10 @@ func NewIngressReporter(podName PodName, containerName ContainerName) (*IngressR
 type IngressReporter struct {
 	podName       PodName
 	containerName ContainerName
-	// dispatchTimeInMsecM records the time spent dispatching an event to a decouple queue, in
-	// milliseconds.
-	dispatchTimeInMsecM *stats.Float64Measure
+	eventCountM   *stats.Int64Measure
 }
 
-func (r *IngressReporter) ReportEventDispatchTime(ctx context.Context, args IngressReportArgs, d time.Duration) error {
+func (r *IngressReporter) ReportEventCount(ctx context.Context, args IngressReportArgs) error {
 	tag, err := tag.New(
 		ctx,
 		tag.Insert(PodNameKey, string(r.podName)),
@@ -110,7 +100,6 @@ func (r *IngressReporter) ReportEventDispatchTime(ctx context.Context, args Ingr
 	if err != nil {
 		return fmt.Errorf("failed to create metrics tag: %v", err)
 	}
-	// convert time.Duration in nanoseconds to milliseconds.
-	metrics.Record(tag, r.dispatchTimeInMsecM.M(float64(d/time.Millisecond)))
+	metrics.Record(tag, r.eventCountM.M(1))
 	return nil
 }

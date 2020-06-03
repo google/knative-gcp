@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"knative.dev/pkg/ptr"
 
 	"github.com/google/go-cmp/cmp"
@@ -106,7 +108,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -133,7 +135,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -158,7 +160,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -183,7 +185,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 				RetentionDuration: ptr.String(defaultRetentionDuration.String()),
 				AckDeadline:       ptr.String(defaultAckDeadline.String()),
 				PubSubSpec: duckv1alpha1.PubSubSpec{
-					Secret: duckv1alpha1.DefaultGoogleCloudSecretSelector(),
+					Secret: &gcpauthtesthelper.Secret,
 				},
 			},
 		},
@@ -192,7 +194,7 @@ func TestPullSubscriptionDefaults(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.start
-			got.SetDefaults(context.Background())
+			got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("failed to get expected (-want, +got) = %v", diff)
