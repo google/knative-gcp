@@ -28,7 +28,7 @@ import (
 const (
 	// Annotations to tell if the brokercell is created automatically by the GCP broker controller.
 	CreatorKey = "internal.events.cloud.google.com/creator"
-	Creator = "googlecloud"
+	Creator    = "googlecloud"
 )
 
 // +genclient
