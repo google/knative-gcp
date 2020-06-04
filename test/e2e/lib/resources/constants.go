@@ -60,3 +60,8 @@ const (
 const (
 	WaitDeletionTime = 20 * time.Second
 )
+
+// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
+const (
+	WaitCALTime = 120 * time.Second
+)

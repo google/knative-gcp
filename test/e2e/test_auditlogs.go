@@ -127,7 +127,8 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
 	// Tried with 45 seconds but the test has been quite flaky.
-	time.Sleep(90 * time.Second)
+	// Tried with 90 seconds but the test has been quite flaky.
+	time.Sleep(resources.WaitCALTime)
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(t, topicName)
 	defer deleteTopic()
 
