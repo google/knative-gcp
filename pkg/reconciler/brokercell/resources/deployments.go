@@ -19,6 +19,7 @@ package resources
 import (
 	"strconv"
 
+	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -73,6 +74,26 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 			corev1.ResourceCPU:    resource.MustParse("1500m"),
 		},
 	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: pool.DefaultHealthCheckPort,
+		},
+	)
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(pool.DefaultHealthCheckPort),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      1,
+	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
 
@@ -87,6 +108,26 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 			corev1.ResourceMemory: resource.MustParse("1500Mi"),
 			corev1.ResourceCPU:    resource.MustParse("1000m"),
 		},
+	}
+	container.Ports = append(container.Ports,
+		corev1.ContainerPort{
+			Name:          "http-health",
+			ContainerPort: pool.DefaultHealthCheckPort,
+		},
+	)
+	container.LivenessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path:   "/healthz",
+				Port:   intstr.FromInt(pool.DefaultHealthCheckPort),
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		FailureThreshold:    3,
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       15,
+		SuccessThreshold:    1,
+		TimeoutSeconds:      1,
 	}
 	return deploymentTemplate(args.Args, []corev1.Container{container})
 }
