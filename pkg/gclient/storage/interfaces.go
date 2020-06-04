@@ -41,5 +41,5 @@ type Bucket interface {
 	// DeleteNotification see https://godoc.org/cloud.google.com/go/storage#BucketHandle.DeleteNotification
 	DeleteNotification(ctx context.Context, id string) error
 	// Attrs see https://godoc.org/cloud.google.com/go/storage#BucketHandle.Attrs
-	Attrs(ctx context.Context)(*storage.BucketAttrs, error)
+	Attrs(ctx context.Context) (*storage.BucketAttrs, error)
 }

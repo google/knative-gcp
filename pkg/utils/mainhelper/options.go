@@ -33,6 +33,7 @@ type initArgs struct {
 	kubeConfig          *rest.Config
 	skipK8sVersionCheck bool
 	env                 interface{}
+	metricNamespace     string
 }
 
 type InitOption func(*initArgs)
@@ -53,6 +54,9 @@ func newInitArgs(component string, opts ...InitOption) initArgs {
 	if args.ctx == nil {
 		// Set up signals so we handle the first shutdown signal gracefully.
 		args.ctx = signals.NewContext()
+	}
+	if args.metricNamespace == "" {
+		args.metricNamespace = component
 	}
 	return args
 }
@@ -78,5 +82,12 @@ func WithContext(ctx context.Context) InitOption {
 func WithEnv(env interface{}) InitOption {
 	return func(args *initArgs) {
 		args.env = env
+	}
+}
+
+// WithMetricNamespace specifies the metric namespace to use.
+func WithMetricNamespace(metricNamespace string) InitOption {
+	return func(args *initArgs) {
+		args.metricNamespace = metricNamespace
 	}
 }

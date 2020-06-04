@@ -8,8 +8,8 @@ require (
 	cloud.google.com/go/pubsub v1.3.2-0.20200506222144-2c46308f8465
 	cloud.google.com/go/storage v1.6.1-0.20200331222814-69e77e66e597
 	github.com/cloudevents/sdk-go v1.2.0
+	github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
 	github.com/cloudevents/sdk-go/v2 v2.0.0
-	github.com/cloudevents/sdk-go/v2/protocol/pubsub v0.0.0-20200527133850-3401ade005e1
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.0
@@ -19,7 +19,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
@@ -30,24 +30,24 @@ require (
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
 	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.17.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200602132917-9119a2e34905
-	knative.dev/pkg v0.0.0-20200601184204-18c577c87d4f
-	knative.dev/serving v0.15.1-0.20200602105317-468ae278d9e3
-	knative.dev/test-infra v0.0.0-20200602024303-e406de9f65c4 // indirect
+	knative.dev/eventing v0.15.1-0.20200603114717-3c35b8885bdc
+	knative.dev/pkg v0.0.0-20200603004717-9d862737e5c1
+	knative.dev/serving v0.15.1-0.20200603103517-7754fd4f2d6f
+	knative.dev/test-infra v0.0.0-20200602194317-2a31597e0f46 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
-	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
-	k8s.io/api => k8s.io/api v0.16.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.1
-	k8s.io/client-go => k8s.io/client-go v0.16.4
-	k8s.io/code-generator => k8s.io/code-generator v0.16.5-beta.1
+	k8s.io/api => k8s.io/api v0.17.6
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
+	k8s.io/client-go => k8s.io/client-go v0.17.6
+	k8s.io/code-generator => k8s.io/code-generator v0.17.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 

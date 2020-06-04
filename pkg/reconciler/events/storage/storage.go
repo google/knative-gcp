@@ -18,6 +18,7 @@ package storage
 
 import (
 	"context"
+
 	"go.uber.org/zap"
 
 	"google.golang.org/grpc/codes"
@@ -137,7 +138,6 @@ func (r *Reconciler) reconcileNotification(ctx context.Context, storage *v1alpha
 		logging.FromContext(ctx).Desugar().Error("Failed to fetch attrs of bucket", zap.String("bucketName", storage.Spec.Bucket), zap.Error(err))
 		return "", err
 	}
-
 
 	notifications, err := bucket.Notifications(ctx)
 	if err != nil {
