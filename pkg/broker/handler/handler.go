@@ -44,14 +44,29 @@ type Handler struct {
 	// Timeout is the timeout for processing each individual event.
 	Timeout time.Duration
 
-	// RetryLimiter limits how fast to retry failed events.
-	RetryLimiter workqueue.RateLimiter
-
-	DelayNack func(time.Duration)
-
+	// retryLimiter limits how fast to retry failed events.
+	retryLimiter workqueue.RateLimiter
+	// delayNack defaults to time.Sleep; could be overriden in test.
+	delayNack func(time.Duration)
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
 	alive  atomic.Value
+}
+
+// NewHandler creates a new Handler.
+func NewHandler(
+	sub *pubsub.Subscription,
+	processor processors.Interface,
+	timeout time.Duration,
+	retryPolicy RetryPolicy,
+) *Handler {
+	return &Handler{
+		Subscription: sub,
+		Processor:    processor,
+		Timeout:      timeout,
+		retryLimiter: workqueue.NewItemExponentialFailureRateLimiter(retryPolicy.MinBackoff, retryPolicy.MaxBackoff),
+		delayNack:    time.Sleep,
+	}
 }
 
 // Start starts the handler.
@@ -92,13 +107,13 @@ func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 		defer cancel()
 	}
 	if err := h.Processor.Process(ctx, event); err != nil {
-		backoffPeriod := h.RetryLimiter.When(msg.ID)
+		backoffPeriod := h.retryLimiter.When(msg.ID)
 		logging.FromContext(ctx).Error("failed to process event; backoff nack", zap.Any("event", event), zap.Float64("backoffPeriod", backoffPeriod.Seconds()), zap.Error(err))
-		h.DelayNack(backoffPeriod)
+		h.delayNack(backoffPeriod)
 		msg.Nack()
 		return
 	}
 
-	h.RetryLimiter.Forget(msg.ID)
+	h.retryLimiter.Forget(msg.ID)
 	msg.Ack()
 }

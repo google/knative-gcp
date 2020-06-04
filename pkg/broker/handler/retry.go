@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pool
+package handler
 
 import (
 	"context"
@@ -23,13 +23,11 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
-	"k8s.io/client-go/util/workqueue"
 	"knative.dev/eventing/pkg/logging"
 
 	"cloud.google.com/go/pubsub"
 
 	"github.com/google/knative-gcp/pkg/broker/config"
-	"github.com/google/knative-gcp/pkg/broker/handler"
 	handlerctx "github.com/google/knative-gcp/pkg/broker/handler/context"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors/deliver"
@@ -54,7 +52,7 @@ type RetryPool struct {
 }
 
 type retryHandlerCache struct {
-	handler.Handler
+	Handler
 	t *config.Target
 }
 
@@ -136,21 +134,22 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		sub := p.pubsubClient.Subscription(t.RetryQueue.Subscription)
 		sub.ReceiveSettings = p.options.PubsubReceiveSettings
 
+		h := NewHandler(
+			sub,
+			processors.ChainProcessors(
+				&filter.Processor{Targets: p.targets},
+				&deliver.Processor{
+					DeliverClient: p.deliverClient,
+					Targets:       p.targets,
+					StatsReporter: p.statsReporter,
+				},
+			),
+			p.options.TimeoutPerEvent,
+			p.options.RetryPolicy,
+		)
 		hc := &retryHandlerCache{
-			Handler: handler.Handler{
-				Timeout:      p.options.TimeoutPerEvent,
-				Subscription: sub,
-				RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(p.options.RetryPolicy.MinBackoff, p.options.RetryPolicy.MaxBackoff),
-				Processor: processors.ChainProcessors(
-					&filter.Processor{Targets: p.targets},
-					&deliver.Processor{
-						DeliverClient: p.deliverClient,
-						Targets:       p.targets,
-						StatsReporter: p.statsReporter,
-					},
-				),
-			},
-			t: t,
+			Handler: *h,
+			t:       t,
 		}
 
 		ctx, err := metrics.AddTargetTags(ctx, t)

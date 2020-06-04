@@ -30,7 +30,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
-	"k8s.io/client-go/util/workqueue"
 
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
@@ -80,13 +79,7 @@ func TestHandler(t *testing.T) {
 
 	eventCh := make(chan *event.Event)
 	processor := &processors.FakeProcessor{PrevEventsCh: eventCh}
-	h := &Handler{
-		Subscription: sub,
-		Processor:    processor,
-		Timeout:      time.Second,
-		RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(time.Duration(0), time.Duration(0)),
-		DelayNack:    time.Sleep,
-	}
+	h := NewHandler(sub, processor, time.Second, RetryPolicy{})
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 	if !h.IsAlive() {
@@ -159,7 +152,7 @@ func (p *alwaysErrProc) Process(_ context.Context, _ *event.Event) error {
 }
 
 func TestRetryBackoff(t *testing.T) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	c, close := testPubsubClient(ctx, t, "test-project")
 	defer close()
 
@@ -184,18 +177,12 @@ func TestRetryBackoff(t *testing.T) {
 	}
 
 	delays := []time.Duration{}
-	delayNack := func(d time.Duration) {
-		delays = append(delays, d)
-	}
-
 	desiredErrCount := 8
 	processor := &alwaysErrProc{desiredErrCount: desiredErrCount}
-	h := &Handler{
-		Subscription: sub,
-		Processor:    processor,
-		Timeout:      time.Second,
-		RetryLimiter: workqueue.NewItemExponentialFailureRateLimiter(time.Millisecond, 16*time.Millisecond),
-		DelayNack:    delayNack,
+	h := NewHandler(sub, processor, time.Second, RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: 16 * time.Millisecond})
+	// Mock sleep func to collect nack backoffs.
+	h.delayNack = func(d time.Duration) {
+		delays = append(delays, d)
 	}
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
@@ -213,21 +200,25 @@ func TestRetryBackoff(t *testing.T) {
 		t.Errorf("failed to seed event to pubsub: %v", err)
 	}
 
+	// Wait until all desired errors were returned.
+	// Then stop the handler by cancel the context.
 	time.Sleep(time.Second)
+	cancel()
 
 	if len(delays) != desiredErrCount {
-		t.Errorf("retried times got=%d, want=%d", len(delays), desiredErrCount)
+		t.Errorf("retry count got=%d, want=%d", len(delays), desiredErrCount)
 	}
 	if delays[0] != time.Millisecond {
 		t.Errorf("initial nack delay got=%v, want=%v", delays[0], time.Millisecond)
 	}
+	// We expect exponential backoff until MaxBackoff
 	for i := 1; i < len(delays); i++ {
 		wantDelay := 2 * delays[i-1]
 		if wantDelay > 16*time.Millisecond {
 			wantDelay = 16 * time.Millisecond
 		}
 		if delays[i] != wantDelay {
-			t.Errorf("delay #%d got=%v, want=%v", i+1, delays[i], wantDelay)
+			t.Errorf("delays[%d] got=%v, want=%v", i, delays[i], wantDelay)
 		}
 	}
 }

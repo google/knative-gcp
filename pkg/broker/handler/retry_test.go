@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pool
+package handler
 
 import (
 	"context"
@@ -27,7 +27,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
-	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
+	handlertesting "github.com/google/knative-gcp/pkg/broker/handler/testing"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 
 	_ "knative.dev/pkg/metrics/testing"
@@ -43,7 +43,7 @@ func TestRetryWatchAndSync(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	testProject := "test-project"
-	helper, err := pooltesting.NewHelper(ctx, testProject)
+	helper, err := handlertesting.NewHelper(ctx, testProject)
 	if err != nil {
 		t.Fatalf("failed to create pool testing helper: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestRetrySyncPoolE2E(t *testing.T) {
 	defer cancel()
 	testProject := "test-project"
 
-	helper, err := pooltesting.NewHelper(ctx, testProject)
+	helper, err := handlertesting.NewHelper(ctx, testProject)
 	if err != nil {
 		t.Fatalf("failed to create pool testing helper: %v", err)
 	}

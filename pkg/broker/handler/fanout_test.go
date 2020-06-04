@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pool
+package handler
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 
 	"github.com/google/knative-gcp/pkg/broker/config"
 	"github.com/google/knative-gcp/pkg/broker/eventutil"
-	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/pool/testing"
+	pooltesting "github.com/google/knative-gcp/pkg/broker/handler/testing"
 	reportertest "github.com/google/knative-gcp/pkg/metrics/testing"
 
 	_ "knative.dev/pkg/metrics/testing"
