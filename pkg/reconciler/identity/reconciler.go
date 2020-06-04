@@ -20,6 +20,7 @@ package identity
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/ptr"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	duck "github.com/google/knative-gcp/pkg/duck/v1alpha1"
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
@@ -72,7 +74,18 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get cluster name: %w", err)
 	}
-	kServiceAccount, err := i.createServiceAccount(ctx, namespace, identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
+
+	googleServiceAccount, ksa, err := i.getGoogleServiceAccountName(ctx, identifiable)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		return nil, fmt.Errorf(`failed to get Google service account name: %w`, err)
+	} else if googleServiceAccount == "" {
+		// If there is no Google service account paired with current Kubernetes service account in GCP auth configmap, no further reconciliation.
+		return nil, nil
+	}
+
+	kServiceAccount, err := i.createServiceAccount(ctx, namespace, ksa, googleServiceAccount, clusterName)
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
@@ -90,7 +103,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	}
 
 	// Add iam policy binding to GCP ServiceAccount.
-	if err := i.addIamPolicyBinding(ctx, projectID, identifiable.IdentitySpec().GoogleServiceAccount, kServiceAccount); err != nil {
+	if err := i.addIamPolicyBinding(ctx, projectID, googleServiceAccount, kServiceAccount); err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %w", err)
 	}
@@ -117,7 +130,19 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 		return fmt.Errorf("failed to get cluster name: %w", err)
 	}
-	kServiceAccountName := resources.GenerateServiceAccountName(identifiable.IdentitySpec().GoogleServiceAccount, clusterName)
+
+	googleServiceAccount, ksa, err := i.getGoogleServiceAccountName(ctx, identifiable)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
+		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
+		return fmt.Errorf(`failed to get Google service account name: %w`, err)
+	} else if googleServiceAccount == "" {
+		// If there is no Google service account paired with current Kubernetes service account in GCP auth configmap, no further reconciliation.
+		return nil
+	}
+
+	// Include cluster name into kubernetes service account to differentiate KSA in different clusters.
+	kServiceAccountName := resources.GenerateServiceAccountName(ksa, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
@@ -126,7 +151,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	}
 	if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 		logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-		if err := i.removeIamPolicyBinding(ctx, projectID, identifiable.IdentitySpec().GoogleServiceAccount, kServiceAccount); err != nil {
+		if err := i.removeIamPolicyBinding(ctx, projectID, googleServiceAccount, kServiceAccount); err != nil {
 			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 			return fmt.Errorf("removing iam policy binding failed with: %w", err)
 		}
@@ -134,12 +159,33 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	return nil
 }
 
-func (i *Identity) createServiceAccount(ctx context.Context, namespace, gServiceAccount, clusterName string) (*corev1.ServiceAccount, error) {
-	kServiceAccountName := resources.GenerateServiceAccountName(gServiceAccount, clusterName)
+// getGoogleServiceAccountName will return Google service account name and corresponding raw Kubernetes service account name.
+func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable duck.Identifiable) (string, string, error) {
+	namespace := identifiable.GetObjectMeta().GetNamespace()
+	if identifiable.IdentitySpec().GoogleServiceAccount != "" {
+		gooleServiceAccount := identifiable.IdentitySpec().GoogleServiceAccount
+		return gooleServiceAccount, strings.Split(gooleServiceAccount, "@")[0], nil
+	}
+	cm, err := i.kubeClient.CoreV1().ConfigMaps("cloud-run-events").Get(gcpauth.ConfigMapName(), metav1.GetOptions{})
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to get GCP auth configmap", zap.Error(err))
+		return "", "", err
+	}
+	config, err := gcpauth.NewDefaultsConfigFromConfigMap(cm)
+	if err != nil {
+		logging.FromContext(ctx).Desugar().Error("Failed to get default config from GCP auth configmap", zap.Error(err))
+		return "", "", err
+	}
+	return config.WorkloadIdentityGSA(namespace, identifiable.IdentitySpec().ServiceAccountName), identifiable.IdentitySpec().ServiceAccountName, nil
+}
+
+func (i *Identity) createServiceAccount(ctx context.Context, namespace, ksa, gServiceAccount, clusterName string) (*corev1.ServiceAccount, error) {
+	// Include cluster name into kubernetes service account to differentiate KSA in different clusters.
+	kServiceAccountName := resources.GenerateServiceAccountName(ksa, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			expect := resources.MakeServiceAccount(namespace, gServiceAccount, clusterName)
+			expect := resources.MakeServiceAccount(namespace, ksa, gServiceAccount, clusterName)
 			logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
 			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 			if err != nil {

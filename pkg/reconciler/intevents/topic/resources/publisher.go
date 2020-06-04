@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,7 +73,9 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 
 	// If GCP service account is specified, use that service account as credential.
 	if args.Topic.Spec.GoogleServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.GoogleServiceAccount, args.Topic.Annotations[duckv1alpha1.ClusterNameAnnotation])
+		ksa := strings.Split(args.Topic.Spec.GoogleServiceAccount, "@")[0]
+		kServiceAccountName := resources.GenerateServiceAccountName(ksa,
+			args.Topic.Annotations[duckv1alpha1.ClusterNameAnnotation])
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
@@ -83,7 +86,8 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 
 	// If k8s service account is specified, use that service account as credential.
 	if args.Topic.Spec.ServiceAccountName != "" {
-		kServiceAccountName := args.Topic.Spec.ServiceAccountName
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Topic.Spec.ServiceAccountName,
+			args.Topic.Annotations[duckv1alpha1.ClusterNameAnnotation])
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
