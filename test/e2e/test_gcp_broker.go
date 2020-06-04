@@ -70,6 +70,14 @@ func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
+	err := client.Core.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+		"backend":                "stackdriver",
+		"stackdriver-project-id": projectID,
+	})
+	if err != nil {
+		client.T.Fatalf("Unable to set the config-tracing ConfigMap: %v", err)
+	}
+
 	brokerURL, brokerName := createGCPBroker(client)
 	senderOutput := kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
 	kngcphelpers.VerifyBrokerTrace(t, projectID, senderOutput.TraceID)
