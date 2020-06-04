@@ -121,6 +121,7 @@ func GetTraceTree(trace *cloudtrace.Trace) (*SpanTree, error) {
 			return nil, fmt.Errorf("multiple root spans: %v, %v", root, span)
 		}
 		root = span
+		delete(children, root.GetParentSpanId())
 	}
 	if root == nil {
 		return nil, fmt.Errorf("no root span found in %v", trace)
@@ -132,14 +133,14 @@ func GetTraceTree(trace *cloudtrace.Trace) (*SpanTree, error) {
 	return &tree, nil
 }
 
-func mkTree(children map[uint64][]*cloudtrace.TraceSpan, span *cloudtrace.TraceSpan) SpanTree {
+func mkTree(children map[uint64][]*cloudtrace.TraceSpan, root *cloudtrace.TraceSpan) SpanTree {
 	var trees []SpanTree
-	for _, span := range children[span.GetSpanId()] {
+	for _, span := range children[root.GetSpanId()] {
 		trees = append(trees, mkTree(children, span))
 	}
-	delete(children, span.GetSpanId())
+	delete(children, root.GetSpanId())
 	return SpanTree{
-		Span:     span,
+		Span:     root,
 		Children: trees,
 	}
 }
