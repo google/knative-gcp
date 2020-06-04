@@ -37,8 +37,8 @@ kubectl -n cloud-run-events-example get broker test-broker
 ```
 
 ```shell
-NAME          READY   REASON   URL                                                                                             AGE
-test-broker   True             http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   15s
+NAME          READY   REASON   URL                                                                                                         AGE
+test-broker   True             http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker   9s
 ```
 
 Verify the triggers are ready:
@@ -76,7 +76,7 @@ To show the various types of events you can send, you will make three requests:
    `type:greeting`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello" \
      -H "Ce-Specversion: 0.3" \
@@ -93,7 +93,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-   < HTTP/1.1 200 OK
+   < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -102,7 +102,7 @@ To show the various types of events you can send, you will make three requests:
    `source:sendoff`, run the following in the SSH terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-goodbye" \
      -H "Ce-Specversion: 0.3" \
@@ -119,7 +119,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-     < HTTP/1.1 200 OK
+     < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -129,7 +129,7 @@ To show the various types of events you can send, you will make three requests:
    terminal:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 0.3" \
@@ -146,7 +146,7 @@ To show the various types of events you can send, you will make three requests:
    similar to the one below:
 
    ```sh
-   < HTTP/1.1 200 OK
+   < HTTP/1.1 202 Accepted
    < Date: Thu, 23 Apr 2020 22:14:21 GMT
    < Content-Length: 0
    ```
@@ -274,7 +274,7 @@ consumers are back.
 1. Send an event that has the `type:greeting` and the`source:sendoff`:
 
    ```sh
-   curl -v "http://broker-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
+   curl -v "http://default-brokercell-ingress.cloud-run-events.svc.cluster.local/cloud-run-events-example/test-broker" \
      -X POST \
      -H "Ce-Id: say-hello-goodbye" \
      -H "Ce-Specversion: 0.3" \
