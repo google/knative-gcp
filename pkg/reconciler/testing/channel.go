@@ -17,8 +17,9 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
+
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"knative.dev/pkg/apis"
 
@@ -45,7 +46,7 @@ func NewChannel(name, namespace string, so ...ChannelOption) *v1alpha1.Channel {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -59,7 +60,7 @@ func NewChannelWithoutNamespace(name string, so ...ChannelOption) *v1alpha1.Chan
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -125,7 +126,7 @@ func WithChannelSpec(spec v1alpha1.ChannelSpec) ChannelOption {
 }
 
 func WithChannelDefaults(s *v1alpha1.Channel) {
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 }
 
 func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
