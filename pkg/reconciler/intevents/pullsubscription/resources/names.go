@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
-	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/naming"
 	"knative.dev/pkg/kmeta"
 )
 
@@ -33,7 +33,7 @@ func GenerateSubscriptionName(ps *v1alpha1.PullSubscription) string {
 	} else if _, ok := ps.Labels[intevents.ChannelLabelKey]; ok {
 		prefix = "cre-chan"
 	}
-	return utils.TruncatedPubsubResourceName(prefix, ps.Namespace, ps.Name, ps.UID)
+	return naming.TruncatedPubsubResourceName(prefix, ps.Namespace, ps.Name, ps.UID)
 }
 
 // GenerateReceiveAdapterName generates the name of the receive adapter to be used for this PullSubscription.

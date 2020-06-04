@@ -24,7 +24,7 @@ import (
 	"knative.dev/pkg/kmeta"
 
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
-	"github.com/google/knative-gcp/pkg/utils"
+	"github.com/google/knative-gcp/pkg/utils/naming"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 
 // GenerateTopicID generates the name of the Pub/Sub topic, not our Topic resource.
 func GenerateTopicID(channel *v1alpha1.Channel) string {
-	return utils.TruncatedPubsubResourceName("cre-chan", channel.Namespace, channel.Name, channel.UID)
+	return naming.TruncatedPubsubResourceName("cre-chan", channel.Namespace, channel.Name, channel.UID)
 }
 
 func GeneratePublisherName(channel *v1alpha1.Channel) string {
