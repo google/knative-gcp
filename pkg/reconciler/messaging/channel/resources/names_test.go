@@ -69,7 +69,16 @@ func TestGeneratePublisherNameFromChannel(t *testing.T) {
 
 func TestGenerateSubscriptionName(t *testing.T) {
 	want := "cre-sub-a-uid"
-	got := GenerateSubscriptionName("a-uid")
+	got := GeneratePullSubscriptionName("a-uid")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
+	}
+}
+
+func TestExtractUIDFromSubscriptionName(t *testing.T) {
+	want := "a-uid"
+	got := ExtractUIDFromPullSubscriptionName("cre-sub-a-uid")
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)

@@ -71,7 +71,7 @@ var (
 	topicDNS = channelName + ".mynamespace.svc.cluster.local"
 	topicURI = "http://" + topicDNS + "/"
 
-	testTopicID   = fmt.Sprintf("cre-chan_%s_%s_%s", testNS, channelName, channelUID)
+	testTopicID = fmt.Sprintf("cre-chan_%s_%s_%s", testNS, channelName, channelUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -614,11 +614,11 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *inteventsv1alp
 func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *inteventsv1alpha1.PullSubscription {
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 		Owner:       channel,
-		Name:        resources.GenerateSubscriptionName(subscriber.UID),
+		Name:        resources.GeneratePullSubscriptionName(subscriber.UID),
 		Project:     channel.Spec.Project,
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
-		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
+		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GeneratePullSubscriptionName(subscriber.UID), string(channel.UID)),
 		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})
