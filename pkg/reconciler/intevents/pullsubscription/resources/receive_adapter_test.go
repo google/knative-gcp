@@ -34,10 +34,10 @@ import (
 )
 
 func TestMakeMinimumReceiveAdapter(t *testing.T) {
-	src := &v1alpha1.PullSubscription{
+	ps := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
 		},
 		Spec: v1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -55,7 +55,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
 		Image:  "test-image",
-		Source: src,
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -71,8 +71,8 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
+			Namespace:   "testnamespace",
+			Name:        "cre-ps-testname-",
 			Annotations: nil,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
@@ -81,7 +81,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -137,10 +137,10 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: defaultResourceGroup,
@@ -152,7 +152,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
 							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: ps.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -179,10 +179,10 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 }
 
 func TestMakeFullReceiveAdapter(t *testing.T) {
-	src := &v1alpha1.PullSubscription{
+	ps := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
 			Annotations: map[string]string{
 				"metrics-resource-group": "test-resource-group",
 			},
@@ -211,7 +211,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
 		Image:  "test-image",
-		Source: src,
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -228,9 +228,9 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
-			Annotations: src.Annotations,
+			Namespace:   "testnamespace",
+			Name:        "cre-ps-testname-",
+			Annotations: ps.Annotations,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -238,7 +238,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -297,10 +297,10 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: "test-resource-group",
@@ -312,7 +312,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 							Value: "/var/secrets/google/eventing-secret-key",
 						}, {
 							Name:      "GOOGLE_APPLICATION_CREDENTIALS_JSON",
-							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: src.Spec.Secret},
+							ValueFrom: &corev1.EnvVarSource{SecretKeyRef: ps.Spec.Secret},
 						}},
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      credsVolume,
@@ -343,10 +343,10 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 
 func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 	gServiceAccountName := "test@test.iam.gserviceaccount.com"
-	src := &v1alpha1.PullSubscription{
+	ps := &v1alpha1.PullSubscription{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "source-name",
-			Namespace: "source-namespace",
+			Name:      "testname",
+			Namespace: "testnamespace",
 			Annotations: map[string]string{
 				"metrics-resource-group":           "test-resource-group",
 				duckv1alpha1.ClusterNameAnnotation: testingmetadata.FakeClusterName,
@@ -379,7 +379,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
 		Image:  "test-image",
-		Source: src,
+		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
 			"test-key2": "test-value2",
@@ -396,9 +396,9 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 	yes := true
 	want := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:   "source-namespace",
-			Name:        "cre-pull-",
-			Annotations: src.Annotations,
+			Namespace:   "testnamespace",
+			Name:        "cre-ps-testname-",
+			Annotations: ps.Annotations,
 			Labels: map[string]string{
 				"test-key1": "test-value1",
 				"test-key2": "test-value2",
@@ -406,7 +406,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{{
 				APIVersion:         "internal.events.cloud.google.com/v1alpha1",
 				Kind:               "PullSubscription",
-				Name:               "source-name",
+				Name:               "testname",
 				Controller:         &yes,
 				BlockOwnerDeletion: &yes,
 			}},
@@ -466,10 +466,10 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 							Value: "TracingConfig-ABC123",
 						}, {
 							Name:  "NAME",
-							Value: "source-name",
+							Value: "testname",
 						}, {
 							Name:  "NAMESPACE",
-							Value: "source-namespace",
+							Value: "testnamespace",
 						}, {
 							Name:  "RESOURCE_GROUP",
 							Value: "test-resource-group",

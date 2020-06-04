@@ -61,7 +61,6 @@ const (
 	testNS         = "testnamespace"
 	testImage      = "notification-ops-image"
 	testProject    = "test-project-id"
-	testTopicID    = "storage-" + storageUID
 	testTopicURI   = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
 	generation     = 1
 
@@ -80,6 +79,8 @@ var (
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = apis.HTTP(sinkDNS)
+
+	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -352,7 +353,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`),
+				WithCloudStorageSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic "my-test-storage" mismatch: expected %q got "garbaaaaage"`, testTopicID)),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -360,7 +361,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf(`%s: Topic %q mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf(`%s: Topic %q mismatch: expected "%s" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName, testTopicID)),
 		},
 	}, {
 		Name: "topic exists and the status of topic is false",

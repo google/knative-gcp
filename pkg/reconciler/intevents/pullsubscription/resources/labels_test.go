@@ -16,11 +16,20 @@ limitations under the License.
 
 package resources
 
-import "github.com/google/knative-gcp/pkg/apis/intevents"
+import (
+	"testing"
 
-func GetLabels(receiveAdapterName, source string) map[string]string {
-	return map[string]string{
-		"receive-adapter":        receiveAdapterName,
-		intevents.SourceLabelKey: source,
+	"github.com/google/go-cmp/cmp"
+)
+
+func TestGetLabels(t *testing.T) {
+	want := map[string]string{
+		"internal.events.cloud.google.com/controller":       "controller",
+		"internal.events.cloud.google.com/pullsubscription": "ps",
+	}
+	got := GetLabels("controller", "ps")
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
 }

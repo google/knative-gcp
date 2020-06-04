@@ -263,7 +263,7 @@ func (r *Base) deleteSubscription(ctx context.Context, ps *v1alpha1.PullSubscrip
 	return nil
 }
 
-func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.PullSubscription, f ReconcileDataPlaneFunc) error {
+func (r *Base) reconcileDataPlaneResources(ctx context.Context, ps *v1alpha1.PullSubscription, f ReconcileDataPlaneFunc) error {
 	loggingConfig, err := logging.LoggingConfigToJson(r.LoggingConfig)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("Error serializing existing logging config", zap.Error(err))
@@ -272,7 +272,7 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.Pu
 	if r.MetricsConfig != nil {
 		component := sourceComponent
 		// Set the metric component based on the channel label.
-		if _, ok := src.Labels["events.cloud.google.com/channel"]; ok {
+		if _, ok := ps.Labels["events.cloud.google.com/channel"]; ok {
 			component = channelComponent
 		}
 		r.MetricsConfig.Component = component
@@ -289,28 +289,28 @@ func (r *Base) reconcileDataPlaneResources(ctx context.Context, src *v1alpha1.Pu
 	}
 
 	desired := resources.MakeReceiveAdapter(ctx, &resources.ReceiveAdapterArgs{
-		Image:          r.ReceiveAdapterImage,
-		Source:         src,
-		Labels:         resources.GetLabels(r.ControllerAgentName, src.Name),
-		SubscriptionID: src.Status.SubscriptionID,
-		SinkURI:        src.Status.SinkURI,
-		TransformerURI: src.Status.TransformerURI,
-		LoggingConfig:  loggingConfig,
-		MetricsConfig:  metricsConfig,
-		TracingConfig:  tracingConfig,
+		Image:            r.ReceiveAdapterImage,
+		PullSubscription: ps,
+		Labels:           resources.GetLabels(r.ControllerAgentName, ps.Name),
+		SubscriptionID:   ps.Status.SubscriptionID,
+		SinkURI:          ps.Status.SinkURI,
+		TransformerURI:   ps.Status.TransformerURI,
+		LoggingConfig:    loggingConfig,
+		MetricsConfig:    metricsConfig,
+		TracingConfig:    tracingConfig,
 	})
 
-	return f(ctx, desired, src)
+	return f(ctx, desired, ps)
 }
 
-func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-	existing, err := r.getReceiveAdapter(ctx, src)
+func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.Deployment, ps *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
+	existing, err := r.getReceiveAdapter(ctx, ps)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logging.FromContext(ctx).Desugar().Error("Unable to get an existing Receive Adapter", zap.Error(err))
 		return nil, err
 	}
 	if existing == nil {
-		existing, err = r.KubeClientSet.AppsV1().Deployments(src.Namespace).Create(desired)
+		existing, err = r.KubeClientSet.AppsV1().Deployments(ps.Namespace).Create(desired)
 		if err != nil {
 			logging.FromContext(ctx).Desugar().Error("Error creating Receive Adapter", zap.Error(err))
 			return nil, err
@@ -319,9 +319,9 @@ func (r *Base) GetOrCreateReceiveAdapter(ctx context.Context, desired *appsv1.De
 	return existing, nil
 }
 
-func (r *Base) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
-	dl, err := r.KubeClientSet.AppsV1().Deployments(src.Namespace).List(metav1.ListOptions{
-		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, src.Name).String(),
+func (r *Base) getReceiveAdapter(ctx context.Context, ps *v1alpha1.PullSubscription) (*appsv1.Deployment, error) {
+	dl, err := r.KubeClientSet.AppsV1().Deployments(ps.Namespace).List(metav1.ListOptions{
+		LabelSelector: resources.GetLabelSelector(r.ControllerAgentName, ps.Name).String(),
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: appsv1.SchemeGroupVersion.String(),
 			Kind:       "Deployment",
@@ -333,7 +333,7 @@ func (r *Base) getReceiveAdapter(ctx context.Context, src *v1alpha1.PullSubscrip
 		return nil, err
 	}
 	for _, dep := range dl.Items {
-		if metav1.IsControlledBy(&dep, src) {
+		if metav1.IsControlledBy(&dep, ps) {
 			return &dep, nil
 		}
 	}
@@ -414,6 +414,5 @@ func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) 
 	if err := r.deleteSubscription(ctx, ps); err != nil {
 		return reconciler.NewEvent(corev1.EventTypeWarning, deletePubSubFailedReason, "Failed to delete Pub/Sub subscription: %s", err.Error())
 	}
-	ps.Status.SubscriptionID = ""
 	return nil
 }

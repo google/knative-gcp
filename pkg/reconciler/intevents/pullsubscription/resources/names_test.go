@@ -25,7 +25,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func TestGenerateScaledObjectName(t *testing.T) {
+func TestGenerateSubscriptionName(t *testing.T) {
+	tests := []struct {
+		name string
+		ps   *v1alpha1.PullSubscription
+		want string
+	}{{
+		name: "ps-based name",
+		ps: &v1alpha1.PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "myname",
+				Namespace: "mynamespace",
+				UID:       "uid",
+			},
+		},
+		want: "cre-ps_mynamespace_myname_uid",
+	}, {
+		name: "source-based name",
+		ps: &v1alpha1.PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "myname",
+				Namespace: "mynamespace",
+				UID:       "uid",
+				Labels: map[string]string{
+					intevents.SourceLabelKey: "myname",
+				},
+			},
+		},
+		want: "cre-src_mynamespace_myname_uid",
+	}, {
+		name: "channel-based name",
+		ps: &v1alpha1.PullSubscription{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "myname",
+				Namespace: "mynamespace",
+				UID:       "uid",
+				Labels: map[string]string{
+					intevents.ChannelLabelKey: "myname",
+				},
+			},
+		},
+		want: "cre-chan_mynamespace_myname_uid",
+	}}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := GenerateSubscriptionName(test.ps)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("unexpected (-want, +got) = %v", diff)
+			}
+		})
+	}
+}
+
+func TestGenerateReceiveAdapterName(t *testing.T) {
 	tests := []struct {
 		name string
 		ps   *v1alpha1.PullSubscription
@@ -82,7 +134,7 @@ func TestGenerateScaledObjectName(t *testing.T) {
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GenerateScaledObjectName(test.ps)
+			got := GenerateReceiveAdapterName(test.ps)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("unexpected (-want, +got) = %v", diff)
 			}

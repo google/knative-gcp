@@ -32,7 +32,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/identity/resources"
 	"github.com/google/knative-gcp/pkg/utils"
 
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,15 +40,15 @@ import (
 // ReceiveAdapterArgs are the arguments needed to create a PullSubscription Receive
 // Adapter. Every field is required.
 type ReceiveAdapterArgs struct {
-	Image          string
-	Source         *v1alpha1.PullSubscription
-	Labels         map[string]string
-	SubscriptionID string
-	SinkURI        *apis.URL
-	TransformerURI *apis.URL
-	MetricsConfig  string
-	LoggingConfig  string
-	TracingConfig  string
+	Image            string
+	PullSubscription *v1alpha1.PullSubscription
+	Labels           map[string]string
+	SubscriptionID   string
+	SinkURI          *apis.URL
+	TransformerURI   *apis.URL
+	MetricsConfig    string
+	LoggingConfig    string
+	TracingConfig    string
 }
 
 const (
@@ -61,18 +61,18 @@ const (
 func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *corev1.PodSpec {
 	// Convert CloudEvent Overrides to pod embeddable properties.
 	ceExtensions := ""
-	if args.Source.Spec.CloudEventOverrides != nil && args.Source.Spec.CloudEventOverrides.Extensions != nil {
+	if args.PullSubscription.Spec.CloudEventOverrides != nil && args.PullSubscription.Spec.CloudEventOverrides.Extensions != nil {
 		var err error
-		ceExtensions, err = utils.MapToBase64(args.Source.Spec.CloudEventOverrides.Extensions)
+		ceExtensions, err = utils.MapToBase64(args.PullSubscription.Spec.CloudEventOverrides.Extensions)
 		if err != nil {
 			logging.FromContext(ctx).Warnw("failed to make cloudevents overrides extensions",
 				zap.Error(err),
-				zap.Any("extensions", args.Source.Spec.CloudEventOverrides.Extensions))
+				zap.Any("extensions", args.PullSubscription.Spec.CloudEventOverrides.Extensions))
 		}
 	}
 
 	var mode converters.ModeType
-	switch args.Source.PubSubMode() {
+	switch args.PullSubscription.PubSubMode() {
 	case "", v1alpha1.ModeCloudEventsBinary:
 		mode = converters.Binary
 	case v1alpha1.ModeCloudEventsStructured:
@@ -82,12 +82,12 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}
 
 	var resourceGroup = defaultResourceGroup
-	if rg, ok := args.Source.Annotations["metrics-resource-group"]; ok {
+	if rg, ok := args.PullSubscription.Annotations["metrics-resource-group"]; ok {
 		resourceGroup = rg
 	}
 	// Needed for Channels, as we use a generate name for the PullSubscription.
-	var resourceName = args.Source.Name
-	if rn, ok := args.Source.Annotations["metrics-resource-name"]; ok {
+	var resourceName = args.PullSubscription.Name
+	if rn, ok := args.PullSubscription.Annotations["metrics-resource-name"]; ok {
 		resourceName = rn
 	}
 
@@ -101,10 +101,10 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 		Image: args.Image,
 		Env: []corev1.EnvVar{{
 			Name:  "PROJECT_ID",
-			Value: args.Source.Spec.Project,
+			Value: args.PullSubscription.Spec.Project,
 		}, {
 			Name:  "PUBSUB_TOPIC_ID",
-			Value: args.Source.Spec.Topic,
+			Value: args.PullSubscription.Spec.Topic,
 		}, {
 			Name:  "PUBSUB_SUBSCRIPTION_ID",
 			Value: args.SubscriptionID,
@@ -116,7 +116,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Value: transformerURI,
 		}, {
 			Name:  "ADAPTER_TYPE",
-			Value: args.Source.Spec.AdapterType,
+			Value: args.PullSubscription.Spec.AdapterType,
 		}, {
 			Name:  "SEND_MODE",
 			Value: string(mode),
@@ -137,7 +137,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 			Value: resourceName,
 		}, {
 			Name:  "NAMESPACE",
-			Value: args.Source.Namespace,
+			Value: args.PullSubscription.Namespace,
 		}, {
 			Name:  "RESOURCE_GROUP",
 			Value: resourceGroup,
@@ -152,8 +152,8 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}
 
 	// If GCP service account is specified, use that service account as credential.
-	if args.Source.Spec.GoogleServiceAccount != "" {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.GoogleServiceAccount, args.Source.Annotations[duckv1alpha1.ClusterNameAnnotation])
+	if args.PullSubscription.Spec.GoogleServiceAccount != "" {
+		kServiceAccountName := resources.GenerateServiceAccountName(args.PullSubscription.Spec.GoogleServiceAccount, args.PullSubscription.Annotations[duckv1alpha1.ClusterNameAnnotation])
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
@@ -163,9 +163,9 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}
 
 	// If there is no secret to embed, return what we have.
-	if args.Source.Spec.Secret == nil {
+	if args.PullSubscription.Spec.Secret == nil {
 		return &corev1.PodSpec{
-			ServiceAccountName: args.Source.Spec.ServiceAccountName,
+			ServiceAccountName: args.PullSubscription.Spec.ServiceAccountName,
 			Containers: []corev1.Container{
 				receiveAdapterContainer,
 			},
@@ -173,7 +173,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}
 
 	// Otherwise, use secret as credential.
-	secret := args.Source.Spec.Secret
+	secret := args.PullSubscription.Spec.Secret
 	credsFile := fmt.Sprintf("%s/%s", credsMountPath, secret.Key)
 
 	receiveAdapterContainer.Env = append(
@@ -195,7 +195,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 	}}
 
 	return &corev1.PodSpec{
-		ServiceAccountName: args.Source.Spec.ServiceAccountName,
+		ServiceAccountName: args.PullSubscription.Spec.ServiceAccountName,
 		Containers: []corev1.Container{
 			receiveAdapterContainer,
 		},
@@ -218,12 +218,12 @@ func MakeReceiveAdapter(ctx context.Context, args *ReceiveAdapterArgs) *v1.Deplo
 
 	return &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:       args.Source.Namespace,
-			Name:            GenerateSubscriptionName(args.Source),
+			Namespace:       args.PullSubscription.Namespace,
+			Name:            GenerateReceiveAdapterName(args.PullSubscription),
 			Labels:          args.Labels,
-			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.Source)},
+			OwnerReferences: []metav1.OwnerReference{*kmeta.NewControllerRef(args.PullSubscription)},
 			// Copy the source annotations so that the appropriate reconciler is called.
-			Annotations: args.Source.Annotations,
+			Annotations: args.PullSubscription.Annotations,
 		},
 		Spec: v1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{

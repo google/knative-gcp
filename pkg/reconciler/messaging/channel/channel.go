@@ -138,7 +138,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 				// If it does not exist, then create it.
 				subCreates = append(subCreates, want)
 			} else {
-				_, found := pullsubs[resources.GenerateSubscriptionName(want.UID)]
+				_, found := pullsubs[resources.GeneratePullSubscriptionName(want.UID)]
 				// If did not find or the PS has updated generation, update it.
 				if !found || got.ObservedGeneration != want.Generation {
 					subUpdates = append(subUpdates, want)
@@ -156,7 +156,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 
 	clusterName := channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]
 	for _, s := range subCreates {
-		genName := resources.GenerateSubscriptionName(s.UID)
+		genName := resources.GeneratePullSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 			Owner:              channel,
@@ -192,7 +192,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		return nil // Signal a re-reconcile.
 	}
 	for _, s := range subUpdates {
-		genName := resources.GenerateSubscriptionName(s.UID)
+		genName := resources.GeneratePullSubscriptionName(s.UID)
 
 		ps := resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 			Owner:              channel,
@@ -240,7 +240,7 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 		return nil
 	}
 	for _, s := range subDeletes {
-		genName := resources.GenerateSubscriptionName(s.UID)
+		genName := resources.GeneratePullSubscriptionName(s.UID)
 		// TODO: we need to handle the case of a already deleted pull subscription. Perhaps move to ensure deleted method.
 		if err := r.RunClientSet.InternalV1alpha1().PullSubscriptions(channel.Namespace).Delete(genName, &metav1.DeleteOptions{}); err != nil {
 			logging.FromContext(ctx).Desugar().Error("unable to delete PullSubscription for Channel", zap.String("ps", genName), zap.String("channel", channel.Name), zap.Error(err))
@@ -278,7 +278,7 @@ func (r *Reconciler) syncSubscribersStatus(ctx context.Context, channel *v1alpha
 		logging.FromContext(ctx).Desugar().Error("Failed to list PullSubscriptions", zap.Error(err))
 	} else {
 		for _, s := range subs {
-			pullsubs[resources.ExtractUIDFromSubscriptionName(s.Name)] = s
+			pullsubs[resources.ExtractUIDFromPullSubscriptionName(s.Name)] = s
 		}
 	}
 
@@ -317,7 +317,7 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		ServiceAccount:     channel.Spec.GoogleServiceAccount,
 		ServiceAccountName: channel.Spec.ServiceAccountName,
 		Secret:             channel.Spec.Secret,
-		Topic:              resources.GenerateTopicID(channel.UID),
+		Topic:              resources.GenerateTopicID(channel),
 		Labels:             resources.GetLabels(controllerAgentName, channel.Name, string(channel.UID)),
 		Annotations:        resources.GetTopicAnnotations(clusterName),
 	})

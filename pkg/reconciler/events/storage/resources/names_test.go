@@ -16,11 +16,25 @@ limitations under the License.
 
 package resources
 
-import "github.com/google/knative-gcp/pkg/apis/intevents"
+import (
+	"testing"
 
-func GetLabels(receiveAdapterName, source string) map[string]string {
-	return map[string]string{
-		"receive-adapter":        receiveAdapterName,
-		intevents.SourceLabelKey: source,
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+func TestGenerateTopicName(t *testing.T) {
+	want := "cre-src_mynamespace_myname_uid"
+	got := GenerateTopicName(&v1alpha1.CloudStorageSource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "mynamespace",
+			UID:       "uid",
+		},
+	})
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}
 }
