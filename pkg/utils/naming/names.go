@@ -24,6 +24,7 @@ import (
 
 const (
 	PubsubMax       = 255
+	LoggingSinkMax  = 100
 	K8sNamespaceMax = 63
 	K8sNameMax      = 253
 )
@@ -31,12 +32,22 @@ const (
 // TruncatedPubsubResourceName generates a deterministic name for a Pub/Sub resource.
 // If the name would be longer than allowed by Pub/Sub, the name is truncated to fit.
 func TruncatedPubsubResourceName(prefix, ns, n string, uid types.UID) string {
+	return truncateResourceName(prefix, ns, n, uid, PubsubMax)
+}
+
+// TruncatedLoggingSinkResourceName generates a deterministic name for a StackDriver logging sink.
+// If the name would be longer than allowed by StackDriver, the name is truncated to fit.
+func TruncatedLoggingSinkResourceName(prefix, ns, n string, uid types.UID) string {
+	return truncateResourceName(prefix, ns, n, uid, LoggingSinkMax)
+}
+
+func truncateResourceName(prefix, ns, n string, uid types.UID, maximum int) string {
 	s := fmt.Sprintf("%s_%s_%s_%s", prefix, ns, n, string(uid))
-	if len(s) <= PubsubMax {
+	if len(s) <= maximum {
 		return s
 	}
 	names := fmt.Sprintf("%s_%s_%s", prefix, ns, n)
-	namesMax := PubsubMax - ((len(string(uid))) + 1) // 1 for the uid separator
+	namesMax := maximum - ((len(string(uid))) + 1) // 1 for the uid separator
 
 	return fmt.Sprintf("%s_%s", names[:namesMax], string(uid))
 }

@@ -40,6 +40,5 @@ func GenerateTopicResourceName(s *v1alpha1.CloudAuditLogsSource) string {
 // CloudAuditLogsSource.
 func GenerateSinkName(s *v1alpha1.CloudAuditLogsSource) string {
 	// This name should be different than the one provided by GenerateTopicName.
-	// We therefore prefix it with "cre-cal"
-	return naming.TruncatedPubsubResourceName("cre-cal", s.Namespace, s.Name, s.UID)
+	return naming.TruncatedLoggingSinkResourceName("cre-cal", s.Namespace, s.Name, s.UID)
 }
