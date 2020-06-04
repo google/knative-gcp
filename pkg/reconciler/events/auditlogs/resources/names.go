@@ -39,6 +39,5 @@ func GenerateTopicResourceName(s *v1alpha1.CloudAuditLogsSource) string {
 // GenerateSinkName generates a Stackdriver sink resource name for an
 // CloudAuditLogsSource.
 func GenerateSinkName(s *v1alpha1.CloudAuditLogsSource) string {
-	// This name should be different than the one provided by GenerateTopicName.
-	return naming.TruncatedLoggingSinkResourceName("cre-cal", s.Namespace, s.Name, s.UID)
+	return naming.TruncatedLoggingSinkResourceName("cre-src", s.Namespace, s.Name, s.UID)
 }

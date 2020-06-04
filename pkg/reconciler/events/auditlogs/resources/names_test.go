@@ -57,7 +57,7 @@ func TestGenerateTopicResourceName(t *testing.T) {
 }
 
 func TestGenerateSinkName(t *testing.T) {
-	want := "cre-cal_mynamespace_myname_uid"
+	want := "cre-src_mynamespace_myname_uid"
 	got := GenerateSinkName(&v1alpha1.CloudAuditLogsSource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",

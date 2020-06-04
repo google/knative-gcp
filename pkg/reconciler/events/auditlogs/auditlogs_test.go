@@ -57,11 +57,11 @@ import (
 )
 
 const (
-	sourceName        = "test-cal"
-	sourceUID         = "test-cal-uid"
-	testNS            = "testnamespace"
-	testProject       = "test-project-id"
-	testTopicURI      = "http://" + sourceName + "-topic." + testNS + ".svc.cluster.local"
+	sourceName   = "test-cal"
+	sourceUID    = "test-cal-uid"
+	testNS       = "testnamespace"
+	testProject  = "test-project-id"
+	testTopicURI = "http://" + sourceName + "-topic." + testNS + ".svc.cluster.local"
 
 	testServiceName = "test-service"
 	testMethodName  = "test-method"
@@ -90,8 +90,8 @@ var (
 		Kind:    "Sink",
 	}
 
-	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, sourceName, sourceUID)
-	testSinkID        = fmt.Sprintf("cre-cal_%s_%s_%s", testNS, sourceName, sourceUID)
+	testTopicID       = fmt.Sprintf("cre-src_%s_%s_%s", testNS, sourceName, sourceUID)
+	testSinkID        = fmt.Sprintf("cre-src_%s_%s_%s", testNS, sourceName, sourceUID)
 	testTopicResource = fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", testProject, testTopicID)
 
 	secret = corev1.SecretKeySelector{
