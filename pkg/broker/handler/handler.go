@@ -117,5 +117,5 @@ func logEventConversionError(ctx context.Context, pm *pubsub.Message, err error,
 		truncated = &copy
 	}
 	logging.FromContext(ctx).Debug(msg, zap.Any("message", pm), zap.Error(err))
-	logging.FromContext(ctx).Error(msg, zap.Any("message", truncated), zap.Error(err))
+	logging.FromContext(ctx).Error(msg, zap.Any("message-truncated", truncated), zap.Error(err))
 }
