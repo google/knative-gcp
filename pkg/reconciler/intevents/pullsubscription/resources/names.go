@@ -27,12 +27,7 @@ import (
 // GenerateSubscriptionName generates the name for the Pub/Sub subscription to be used for this PullSubscription.
 //  It uses the object labels to see whether it's from a source, channel, or ps to construct the name.
 func GenerateSubscriptionName(ps *v1alpha1.PullSubscription) string {
-	prefix := "cre-ps"
-	if _, ok := ps.Labels[intevents.SourceLabelKey]; ok {
-		prefix = "cre-src"
-	} else if _, ok := ps.Labels[intevents.ChannelLabelKey]; ok {
-		prefix = "cre-chan"
-	}
+	prefix := getPrefix(ps)
 	return naming.TruncatedPubsubResourceName(prefix, ps.Namespace, ps.Name, ps.UID)
 }
 

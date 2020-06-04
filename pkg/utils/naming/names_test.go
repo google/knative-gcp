@@ -18,11 +18,11 @@ package naming
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -31,41 +31,41 @@ const (
 )
 
 var (
-	maxName = strings.Repeat("n", K8sNameMax)
+	maxName      = strings.Repeat("n", K8sNameMax)
 	maxNamespace = strings.Repeat("s", K8sNamespaceMax)
 )
 
 func TestTruncatedPubsubResourceName(t *testing.T) {
 	testCases := []struct {
 		prefix string
-		ns   string
-		n    string
-		uid  string
-		want string
+		ns     string
+		n      string
+		uid    string
+		want   string
 	}{{
 		prefix: "cre-obj",
-		ns:   "default",
-		n:    "default",
-		uid:  testUID,
-		want: fmt.Sprintf("cre-obj_default_default_%s", testUID),
+		ns:     "default",
+		n:      "default",
+		uid:    testUID,
+		want:   fmt.Sprintf("cre-obj_default_default_%s", testUID),
 	}, {
 		prefix: "cre-obj",
-		ns:   "with-dashes",
-		n:    "more-dashes",
-		uid:  testUID,
-		want: fmt.Sprintf("cre-obj_with-dashes_more-dashes_%s", testUID),
+		ns:     "with-dashes",
+		n:      "more-dashes",
+		uid:    testUID,
+		want:   fmt.Sprintf("cre-obj_with-dashes_more-dashes_%s", testUID),
 	}, {
 		prefix: "cre-obj",
-		ns:   maxNamespace,
-		n:    maxName,
-		uid:  testUID,
-		want: fmt.Sprintf("cre-obj_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
+		ns:     maxNamespace,
+		n:      maxName,
+		uid:    testUID,
+		want:   fmt.Sprintf("cre-obj_%s_%s_%s", maxNamespace, strings.Repeat("n", truncatedNameMax), testUID),
 	}, {
 		prefix: "cre-obj",
-		ns:   "default",
-		n:    maxName,
-		uid:  testUID,
-		want: fmt.Sprintf("cre-obj_default_%s_%s", strings.Repeat("n", truncatedNameMax+(K8sNamespaceMax-7)), testUID),
+		ns:     "default",
+		n:      maxName,
+		uid:    testUID,
+		want:   fmt.Sprintf("cre-obj_default_%s_%s", strings.Repeat("n", truncatedNameMax+(K8sNamespaceMax-7)), testUID),
 	}}
 
 	for _, tc := range testCases {

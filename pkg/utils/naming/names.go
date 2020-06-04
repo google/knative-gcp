@@ -18,11 +18,12 @@ package naming
 
 import (
 	"fmt"
+
 	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
-	PubsubMax = 255
+	PubsubMax       = 255
 	K8sNamespaceMax = 63
 	K8sNameMax      = 253
 )
