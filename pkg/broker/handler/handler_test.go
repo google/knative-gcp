@@ -97,7 +97,7 @@ func TestHandler(t *testing.T) {
 
 	t.Run("handle event success", func(t *testing.T) {
 		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
+			t.Fatalf("failed to seed event to pubsub: %v", err)
 		}
 		gotEvent := nextEventWithTimeout(eventCh)
 		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {
@@ -110,7 +110,7 @@ func TestHandler(t *testing.T) {
 		processor.OneTimeErr = true
 		unlock()
 		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
+			t.Fatalf("failed to seed event to pubsub: %v", err)
 		}
 		// On failure, the handler should nack the pubsub message.
 		// And we should expect two deliveries.
@@ -122,12 +122,26 @@ func TestHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("message is not an event", func(t *testing.T) {
+		if err := p.Send(ctx, cepubsub.NewMessage(&pubsub.Message{ID: "testid"})); err != nil {
+			t.Fatalf("failed to seed event to pubsub: %v", err)
+		}
+		gotEvent := nextEventWithTimeout(eventCh)
+		// The message should be Acked and should not reach the processor
+		if gotEvent != nil {
+			t.Errorf("processor should receive 0 events but got: %+v", gotEvent)
+		}
+		ctx, _ := context.WithTimeout(context.Background(), time.Millisecond)
+		msg, err := p.Receive(ctx)
+		t.Errorf("msg: %v, err: %v", msg, err)
+	})
+
 	t.Run("timeout on event processing", func(t *testing.T) {
 		unlock := processor.Lock()
 		processor.BlockUntilCancel = true
 		unlock()
 		if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-			t.Errorf("failed to seed event to pubsub: %v", err)
+			t.Fatalf("failed to seed event to pubsub: %v", err)
 		}
 		gotEvent := nextEventWithTimeout(eventCh)
 		if diff := cmp.Diff(&testEvent, gotEvent); diff != "" {

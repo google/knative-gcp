@@ -18,6 +18,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"time"
 
@@ -74,8 +75,17 @@ func (h *Handler) IsAlive() bool {
 func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 	ctx = metrics.StartEventProcessing(ctx)
 	event, err := binding.ToEvent(ctx, cepubsub.NewMessage(msg))
+	// The following errors can be returned by ToEvent and are not retryable.
+	// TODO Should ToEvent consolidate them and return the genric ErrCannotConvertToEvent?
+	if errors.Is(err, binding.ErrCannotConvertToEvent) || errors.Is(err, binding.ErrNotStructured) || errors.Is(err, binding.ErrUnknownEncoding) || errors.Is(err, binding.ErrNotBinary) {
+		logging.FromContext(ctx).Error("failed to convert received message to an event, check the msg format", zap.Any("message", msg), zap.Error(err))
+		// Ack the message so it won't be retried.
+		// TODO Should this go to the DLQ once DLQ is implemented?
+		//msg.Ack()
+		//return
+	}
 	if err != nil {
-		logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
+		logging.FromContext(ctx).Error("unknown error when converting the received message to an event", zap.Any("message", msg), zap.Error(err))
 		msg.Nack()
 		return
 	}
