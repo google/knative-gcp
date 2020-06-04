@@ -140,6 +140,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
+				WithBrokerConfigReady,
 			),
 		}},
 		WantEvents: []string{
@@ -172,6 +173,7 @@ func TestAllCases(t *testing.T) {
 				WithBrokerClass(brokerv1beta1.BrokerClass),
 				WithBrokerUID(testUID),
 				WithBrokerReadyURI(brokerAddress),
+				WithBrokerConfigReady,
 				WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 			),
 		}},
@@ -236,6 +238,7 @@ func TestAllCases(t *testing.T) {
 					WithBrokerClass(brokerv1beta1.BrokerClass),
 					WithBrokerUID(testUID),
 					WithBrokerReadyURI(brokerAddress),
+					WithBrokerConfigReady,
 					WithBrokerBrokerCellUnknown("BrokerCellNotReady", "Brokercell knative-testing/default is not ready"),
 				),
 			},

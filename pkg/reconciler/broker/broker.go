@@ -169,12 +169,14 @@ func (r *Reconciler) reconcileBroker(ctx context.Context, b *brokerv1beta1.Broke
 	triggers, err := r.triggerLister.Triggers(b.Namespace).List(labels.SelectorFromSet(map[string]string{eventing.BrokerLabelKey: b.Name}))
 	if err != nil {
 		logger.Error("Problem listing triggers", zap.Error(err))
+		b.Status.MarkConfigUnknown("ListTriggerFailed", "Problem listing triggers: %w", err)
 		return err
 	}
 
 	r.reconcileConfig(ctx, b, triggers)
 	// Update config map
 	r.flagTargetsForUpdate()
+	b.Status.MarkConfigReady()
 	return nil
 }
 
@@ -234,6 +236,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// get ProjectID from metadata if projectID isn't set
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
+		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		logger.Error("Failed to find project id", zap.Error(err))
 		return err
 	}
@@ -245,6 +248,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	if client == nil {
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
+			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 			return err
 		}
@@ -257,7 +261,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		b.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
+		b.Status.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -296,7 +300,7 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		b.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
+		b.Status.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 

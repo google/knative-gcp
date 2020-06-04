@@ -57,6 +57,11 @@ var (
 		Type:   BrokerConditionSubscription,
 		Status: corev1.ConditionTrue,
 	}
+
+	brokerConditionConfig = apis.Condition{
+		Type:   BrokerConditionConfig,
+		Status: corev1.ConditionTrue,
+	}
 )
 
 func TestBrokerGetCondition(t *testing.T) {
@@ -151,6 +156,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
+						Type:   BrokerConditionConfig,
+						Status: corev1.ConditionUnknown,
+					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
 						Status: corev1.ConditionUnknown,
 					}, {
@@ -185,6 +193,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
+						Type:   BrokerConditionConfig,
+						Status: corev1.ConditionUnknown,
+					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
 						Status: corev1.ConditionUnknown,
 					}, {
@@ -217,6 +228,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Status: corev1.ConditionTrue,
 					}, {
 						Type:   BrokerConditionBrokerCell,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   BrokerConditionConfig,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -254,6 +268,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus    bool
 		subscriptionStatus  bool
 		topicStatus         bool
+		configStatus        bool
 		wantConditionStatus corev1.ConditionStatus
 	}{{
 		name:                "all happy",
@@ -261,6 +276,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         true,
+		configStatus:        true,
 		wantConditionStatus: corev1.ConditionTrue,
 	}, {
 		name:                "subscription sad",
@@ -268,6 +284,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    true,
 		subscriptionStatus:  false,
 		topicStatus:         true,
+		configStatus:        true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "topic sad",
@@ -275,6 +292,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         false,
+		configStatus:        true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "address missing",
@@ -282,6 +300,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    true,
 		subscriptionStatus:  true,
 		topicStatus:         true,
+		configStatus:        true,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "ingress false",
@@ -289,6 +308,15 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    false,
 		subscriptionStatus:  true,
 		topicStatus:         true,
+		configStatus:        true,
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "config false",
+		addressStatus:       true,
+		brokerCellStatus:    true,
+		subscriptionStatus:  true,
+		topicStatus:         true,
+		configStatus:        false,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "all sad",
@@ -296,6 +324,7 @@ func TestBrokerConditionStatus(t *testing.T) {
 		brokerCellStatus:    false,
 		subscriptionStatus:  false,
 		topicStatus:         false,
+		configStatus:        false,
 		wantConditionStatus: corev1.ConditionFalse,
 	}}
 	for _, test := range tests {
@@ -320,6 +349,11 @@ func TestBrokerConditionStatus(t *testing.T) {
 				bs.MarkTopicReady()
 			} else {
 				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
+			}
+			if test.configStatus {
+				bs.MarkConfigReady()
+			} else {
+				bs.MarkConfigFailed("Unable to reconstruct/update config", "induced failure")
 			}
 			got := bs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != got {
