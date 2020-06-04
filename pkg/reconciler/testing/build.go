@@ -165,7 +165,7 @@ func WithCloudBuildSourceAnnotations(Annotations map[string]string) CloudBuildSo
 	}
 }
 
-func WithCloudBuildSourceDefaultAuthorization() CloudBuildSourceOption {
+func WithCloudBuildSourceDefaultGCPAuth() CloudBuildSourceOption {
 	return func(s *v1alpha1.CloudBuildSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

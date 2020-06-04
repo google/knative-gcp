@@ -454,7 +454,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceAnnotations(map[string]string{
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudSchedulerSourceDefaultAuthorization(),
+					WithCloudSchedulerSourceDefaultGCPAuth(),
 				),
 				NewTopic(schedulerName, testNS,
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
@@ -464,7 +464,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
 					WithTopicProjectID(testProject),
-					WithTopicDefaultAuthorization(),
+					WithTopicDefaultGCPAuth(),
 				),
 				newSink(),
 			},
@@ -480,7 +480,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudSchedulerSourceAnnotations(map[string]string{
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudSchedulerSourceDefaultAuthorization(),
+					WithCloudSchedulerSourceDefaultGCPAuth(),
 					WithCloudSchedulerSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 				),
 			}},

@@ -164,7 +164,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceDefaultAuthorization(),
+				WithCloudPubSubSourceDefaultGCPAuth(),
 			),
 			newSink(),
 		},
@@ -180,7 +180,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudPubSubSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudPubSubSourceDefaultAuthorization(),
+				WithCloudPubSubSourceDefaultGCPAuth(),
 				WithCloudPubSubSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 			),
 		}},
@@ -203,7 +203,7 @@ func TestAllCases(t *testing.T) {
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-				WithPullSubscriptionDefaultAuthorization(),
+				WithPullSubscriptionDefaultGCPAuth(),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{
