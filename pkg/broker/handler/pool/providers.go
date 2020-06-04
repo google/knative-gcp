@@ -21,8 +21,8 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/wire"
 	"go.opencensus.io/plugin/ochttp"
 	"go.opencensus.io/plugin/ochttp/propagation/tracecontext"
