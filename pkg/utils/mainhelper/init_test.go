@@ -39,7 +39,6 @@ import (
 )
 
 const component = "test"
-const metricNamespace = "metric"
 
 func TestMain(m *testing.M) {
 	setup()
@@ -50,7 +49,7 @@ func TestMain(m *testing.M) {
 
 func TestInit(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		ctx, res := Init(component, metricNamespace, WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Init(component, WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 		commonVerification(t, ctx, res)
@@ -62,7 +61,7 @@ func TestInit(t *testing.T) {
 		}
 		var env testEnvConfig
 		os.Setenv("TEST_ENV_KEY", "test-value")
-		ctx, res := Init(component, metricNamespace, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
+		ctx, res := Init(component, WithEnv(&env), WithKubeFakes, WithContext(context.Background()))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
@@ -74,7 +73,7 @@ func TestInit(t *testing.T) {
 
 	t.Run("with Context", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), "key", "value")
-		ctx, res := Init(component, metricNamespace, WithKubeFakes, WithContext(ctx))
+		ctx, res := Init(component, WithKubeFakes, WithContext(ctx))
 		defer res.Cleanup()
 		defer unregisterMetrics()
 
