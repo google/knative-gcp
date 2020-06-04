@@ -20,7 +20,6 @@ package identity
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -75,7 +74,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		return nil, fmt.Errorf("failed to get cluster name: %w", err)
 	}
 
-	googleServiceAccount, ksa, err := i.getGoogleServiceAccountName(ctx, identifiable)
+	googleServiceAccount, kServiceAccountName, err := i.getGoogleServiceAccountName(ctx, identifiable, clusterName)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
@@ -85,7 +84,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 		return nil, nil
 	}
 
-	kServiceAccount, err := i.createServiceAccount(ctx, namespace, ksa, googleServiceAccount, clusterName)
+	kServiceAccount, err := i.createServiceAccount(ctx, namespace, kServiceAccountName, googleServiceAccount, clusterName)
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return nil, fmt.Errorf("failed to get k8s ServiceAccount: %w", err)
@@ -131,7 +130,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 		return fmt.Errorf("failed to get cluster name: %w", err)
 	}
 
-	googleServiceAccount, ksa, err := i.getGoogleServiceAccountName(ctx, identifiable)
+	googleServiceAccount, kServiceAccountName, err := i.getGoogleServiceAccountName(ctx, identifiable, clusterName)
 	if err != nil {
 		logging.FromContext(ctx).Desugar().Error("failed to get Google service account name", zap.Error(err))
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
@@ -141,8 +140,6 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 		return nil
 	}
 
-	// Include cluster name into kubernetes service account to differentiate KSA in different clusters.
-	kServiceAccountName := resources.GenerateServiceAccountName(ksa, clusterName)
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
@@ -160,11 +157,11 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 }
 
 // getGoogleServiceAccountName will return Google service account name and corresponding raw Kubernetes service account name.
-func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable duck.Identifiable) (string, string, error) {
+func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable duck.Identifiable, clusterName string) (string, string, error) {
 	namespace := identifiable.GetObjectMeta().GetNamespace()
 	if identifiable.IdentitySpec().GoogleServiceAccount != "" {
 		gooleServiceAccount := identifiable.IdentitySpec().GoogleServiceAccount
-		return gooleServiceAccount, strings.Split(gooleServiceAccount, "@")[0], nil
+		return gooleServiceAccount, resources.GenerateServiceAccountName(gooleServiceAccount, clusterName), nil
 	}
 	cm, err := i.kubeClient.CoreV1().ConfigMaps("cloud-run-events").Get(gcpauth.ConfigMapName(), metav1.GetOptions{})
 	if err != nil {
@@ -179,13 +176,11 @@ func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable
 	return config.WorkloadIdentityGSA(namespace, identifiable.IdentitySpec().ServiceAccountName), identifiable.IdentitySpec().ServiceAccountName, nil
 }
 
-func (i *Identity) createServiceAccount(ctx context.Context, namespace, ksa, gServiceAccount, clusterName string) (*corev1.ServiceAccount, error) {
-	// Include cluster name into kubernetes service account to differentiate KSA in different clusters.
-	kServiceAccountName := resources.GenerateServiceAccountName(ksa, clusterName)
+func (i *Identity) createServiceAccount(ctx context.Context, namespace, kServiceAccountName, gServiceAccount, clusterName string) (*corev1.ServiceAccount, error) {
 	kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(namespace).Get(kServiceAccountName, metav1.GetOptions{})
 	if err != nil {
 		if apierrs.IsNotFound(err) {
-			expect := resources.MakeServiceAccount(namespace, ksa, gServiceAccount, clusterName)
+			expect := resources.MakeServiceAccount(namespace, kServiceAccountName, gServiceAccount, clusterName)
 			logging.FromContext(ctx).Desugar().Debug("Creating k8s service account", zap.Any("ksa", expect))
 			kServiceAccount, err := i.kubeClient.CoreV1().ServiceAccounts(expect.Namespace).Create(expect)
 			if err != nil {

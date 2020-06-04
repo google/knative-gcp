@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,8 +29,8 @@ const (
 )
 
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
-func GenerateServiceAccountName(kServiceAccount, clusterName string) string {
-	return fmt.Sprintf("%s-%s", kServiceAccount, clusterName)
+func GenerateServiceAccountName(gServiceAccount, clusterName string) string {
+	return fmt.Sprintf("%s-%s", strings.Split(gServiceAccount, "@")[0], clusterName)
 }
 
 // MakeServiceAccount creates a K8s ServiceAccount object for the Namespace.
@@ -37,7 +38,7 @@ func MakeServiceAccount(namespace string, kServiceAccount, gServiceAccount, clus
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      GenerateServiceAccountName(kServiceAccount, clusterName),
+			Name:      kServiceAccount,
 			Annotations: map[string]string{
 				WorkloadIdentityKey: gServiceAccount,
 			},

@@ -72,7 +72,7 @@ var (
   clusterDefaults: 
     serviceAccountName: test
     workloadIdentityMapping:
-      test: test@test
+      test-fake-cluster-name: test@test
 `,
 	}
 
@@ -158,7 +158,7 @@ func TestKSACreates(t *testing.T) {
 				policyManager: m,
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS)
-			identifiable.Spec.ServiceAccountName = "test"
+			identifiable.Spec.ServiceAccountName = kServiceAccountName
 			identifiable.SetAnnotations(map[string]string{
 				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 			})

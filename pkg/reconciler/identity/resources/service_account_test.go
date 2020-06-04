@@ -32,7 +32,7 @@ var (
 
 func TestGenerateServiceAccountName(t *testing.T) {
 	want := kServiceAccountName
-	got := GenerateServiceAccountName("test", clusterName)
+	got := GenerateServiceAccountName(gServiceAccountName, clusterName)
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
@@ -49,7 +49,7 @@ func TestMakeServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	got := MakeServiceAccount("default", "test", gServiceAccountName, clusterName)
+	got := MakeServiceAccount("default", kServiceAccountName, gServiceAccountName, clusterName)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}

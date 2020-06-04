@@ -19,7 +19,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -154,9 +153,7 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 
 	// If GCP service account is specified, use that service account as credential.
 	if args.Source.Spec.GoogleServiceAccount != "" {
-		ksa := strings.Split(args.Source.Spec.GoogleServiceAccount, "@")[0]
-		kServiceAccountName := resources.GenerateServiceAccountName(ksa,
-			args.Source.Annotations[duckv1alpha1.ClusterNameAnnotation])
+		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.GoogleServiceAccount, args.Source.Annotations[duckv1alpha1.ClusterNameAnnotation])
 		return &corev1.PodSpec{
 			ServiceAccountName: kServiceAccountName,
 			Containers: []corev1.Container{
@@ -167,10 +164,8 @@ func makeReceiveAdapterPodSpec(ctx context.Context, args *ReceiveAdapterArgs) *c
 
 	// If there is no secret to embed, return what we have.
 	if args.Source.Spec.Secret == nil {
-		kServiceAccountName := resources.GenerateServiceAccountName(args.Source.Spec.ServiceAccountName,
-			args.Source.Annotations[duckv1alpha1.ClusterNameAnnotation])
 		return &corev1.PodSpec{
-			ServiceAccountName: kServiceAccountName,
+			ServiceAccountName: args.Source.Spec.ServiceAccountName,
 			Containers: []corev1.Container{
 				receiveAdapterContainer,
 			},
