@@ -10,7 +10,7 @@ Knative Eventing allows different Broker implementations via `BrokerClass`
 annotation. If annotated with
 `"eventing.knative.dev/broker.class": "googlecloud"`, the `Knative-GCP`
 contorller will create a GCP Broker. Compared to the default
-[Channel Based Broker](https://knative.dev/docs/eventing/channel-based-broker/),
+[MT Channel Based Broker](https://knative.dev/docs/eventing/broker/mt-channel-based-broker/),
 GCP Broker is more performant and cost-effective by reducing hops and Pub/Sub
 message consumption.
 
@@ -126,9 +126,9 @@ kubectl create namespace ${NAMESPACE}
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
-create [Triggers](https://knative.dev/docs/eventing/broker-trigger/#trigger) to
-receive events from it, just like any Knative Eventing
-[Brokers](https://knative.dev/docs/eventing/broker-trigger/#broker).
+create Triggers to
+receive events from it, just like any Knative Eventing Brokers in
+[Broker and Trigge](https://knative.dev/docs/eventing/broker/).
 
 You can find demos of the GCP broker in the
 [examples](../examples/gcpbroker/README.md).

@@ -119,8 +119,6 @@ func NewFanoutPool(
 
 // SyncOnce syncs once the handler pool based on the targets config.
 func (p *FanoutPool) SyncOnce(ctx context.Context) error {
-	var errs int
-
 	ctx, err := p.statsReporter.AddTags(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
@@ -189,10 +187,6 @@ func (p *FanoutPool) SyncOnce(ctx context.Context) error {
 		p.pool.Store(b.Key(), hc)
 		return true
 	})
-
-	if errs > 0 {
-		return fmt.Errorf("%d errors happened during handlers pool sync", errs)
-	}
 
 	return nil
 }
