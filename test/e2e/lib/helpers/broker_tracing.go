@@ -103,35 +103,45 @@ type TestSpanTree struct {
 
 // GetTraceTree converts a set slice of spans into a SpanTree.
 func GetTraceTree(trace *cloudtrace.Trace) (*SpanTree, error) {
-	parents := map[uint64][]*cloudtrace.TraceSpan{}
+	children := map[uint64][]*cloudtrace.TraceSpan{}
+	spans := map[uint64]*cloudtrace.TraceSpan{}
 	for _, span := range trace.GetSpans() {
-		parents[span.GetParentSpanId()] = append(parents[span.GetParentSpanId()], span)
+		children[span.GetParentSpanId()] = append(children[span.GetParentSpanId()], span)
+		if spans[span.GetSpanId()] != nil {
+			return nil, fmt.Errorf("spans with duplicate ID: %v, %v", span, spans[span.GetSpanId()])
+		}
+		spans[span.GetSpanId()] = span
 	}
-
-	trees := subtrees(parents, 0)
-	if len(trees) != 1 {
-		return nil, fmt.Errorf("unexpected number of trees: %v", trees)
+	var root *cloudtrace.TraceSpan
+	for _, span := range trace.GetSpans() {
+		if spans[span.GetParentSpanId()] != nil {
+			continue
+		}
+		if root != nil {
+			return nil, fmt.Errorf("multiple root spans: %v, %v", root, span)
+		}
+		root = span
 	}
-	if len(parents) != 0 {
-		return nil, fmt.Errorf("left over spans after generating the SpanTree: %v. Original: %v", parents, trace)
+	if root == nil {
+		return nil, fmt.Errorf("no root span found in %v", trace)
 	}
-	return &trees[0], nil
+	tree := mkTree(children, root)
+	if len(children) != 0 {
+		return nil, fmt.Errorf("left over spans after generating the SpanTree: %v. Original: %v", children, trace)
+	}
+	return &tree, nil
 }
 
-func mkTree(parents map[uint64][]*cloudtrace.TraceSpan, span *cloudtrace.TraceSpan) SpanTree {
+func mkTree(children map[uint64][]*cloudtrace.TraceSpan, span *cloudtrace.TraceSpan) SpanTree {
+	var trees []SpanTree
+	for _, span := range children[span.GetSpanId()] {
+		trees = append(trees, mkTree(children, span))
+	}
+	delete(children, span.GetSpanId())
 	return SpanTree{
 		Span:     span,
-		Children: subtrees(parents, span.GetSpanId()),
+		Children: trees,
 	}
-}
-
-func subtrees(parents map[uint64][]*cloudtrace.TraceSpan, spanID uint64) []SpanTree {
-	var trees []SpanTree
-	for _, span := range parents[spanID] {
-		trees = append(trees, mkTree(parents, span))
-	}
-	delete(parents, spanID)
-	return trees
 }
 
 // MatchesSubtree checks to see if this TestSpanTree matches a subtree
