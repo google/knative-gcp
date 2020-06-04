@@ -50,9 +50,8 @@ type Handler struct {
 	DelayNack func(time.Duration)
 
 	// cancel is function to stop pulling messages.
-	cancel        context.CancelFunc
-	alive         atomic.Value
-	delayNackFunc func(duration time.Duration)
+	cancel context.CancelFunc
+	alive  atomic.Value
 }
 
 // Start starts the handler.

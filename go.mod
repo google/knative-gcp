@@ -30,7 +30,7 @@ require (
 	google.golang.org/grpc v1.29.1
 	google.golang.org/protobuf v1.21.0
 	k8s.io/api v0.17.6
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.17.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
 	knative.dev/eventing v0.15.1-0.20200603114717-3c35b8885bdc
 	knative.dev/pkg v0.0.0-20200603004717-9d862737e5c1
@@ -44,10 +44,11 @@ replace (
 	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
-	k8s.io/api => k8s.io/api v0.16.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.5-beta.1
-	k8s.io/client-go => k8s.io/client-go v0.16.4
-	k8s.io/code-generator => k8s.io/code-generator v0.16.5-beta.1
+	k8s.io/api => k8s.io/api v0.17.6
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.6
+	k8s.io/client-go => k8s.io/client-go v0.17.6
+	k8s.io/code-generator => k8s.io/code-generator v0.17.6
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
 )
 
