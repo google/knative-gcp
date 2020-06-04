@@ -29,12 +29,12 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	ceclient "github.com/cloudevents/sdk-go/v2/client"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/cloudevents/sdk-go/v2/protocol"
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"

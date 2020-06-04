@@ -24,9 +24,9 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/pubsub/pstest"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/cloudevents/sdk-go/v2/event"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"github.com/google/go-cmp/cmp"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"

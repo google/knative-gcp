@@ -108,6 +108,11 @@ github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/context
 github.com/cloudevents/sdk-go/pkg/cloudevents/transport/pubsub/internal
 github.com/cloudevents/sdk-go/pkg/cloudevents/types
+# github.com/cloudevents/sdk-go/protocol/pubsub/v2 v2.0.1-0.20200602143929-d07dc0510d45
+## explicit
+github.com/cloudevents/sdk-go/protocol/pubsub/v2
+github.com/cloudevents/sdk-go/protocol/pubsub/v2/context
+github.com/cloudevents/sdk-go/protocol/pubsub/v2/internal
 # github.com/cloudevents/sdk-go/v2 v2.0.0 => github.com/cloudevents/sdk-go/v2 v2.0.0
 ## explicit
 github.com/cloudevents/sdk-go/v2
@@ -129,11 +134,6 @@ github.com/cloudevents/sdk-go/v2/protocol
 github.com/cloudevents/sdk-go/v2/protocol/gochan
 github.com/cloudevents/sdk-go/v2/protocol/http
 github.com/cloudevents/sdk-go/v2/types
-# github.com/cloudevents/sdk-go/v2/protocol/pubsub v0.0.0-20200527133850-3401ade005e1
-## explicit
-github.com/cloudevents/sdk-go/v2/protocol/pubsub
-github.com/cloudevents/sdk-go/v2/protocol/pubsub/context
-github.com/cloudevents/sdk-go/v2/protocol/pubsub/internal
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/emicklei/go-restful v2.9.5+incompatible
