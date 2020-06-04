@@ -33,6 +33,12 @@ import (
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 )
 
+const (
+	testProjectID = "test-testProjectID"
+	testTopic     = "test-testTopic"
+	testSub       = "test-testSub"
+)
+
 func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pubsub.Client, func()) {
 	t.Helper()
 	srv := pstest.NewServer()
@@ -53,14 +59,14 @@ func testPubsubClient(ctx context.Context, t *testing.T, projectID string) (*pub
 
 func TestHandler(t *testing.T) {
 	ctx := context.Background()
-	c, close := testPubsubClient(ctx, t, "test-project")
+	c, close := testPubsubClient(ctx, t, testProjectID)
 	defer close()
 
-	topic, err := c.CreateTopic(ctx, "test-topic")
+	topic, err := c.CreateTopic(ctx, testTopic)
 	if err != nil {
 		t.Fatalf("failed to create topic: %v", err)
 	}
-	sub, err := c.CreateSubscription(ctx, "test-sub", pubsub.SubscriptionConfig{
+	sub, err := c.CreateSubscription(ctx, testSub, pubsub.SubscriptionConfig{
 		Topic: topic,
 	})
 	if err != nil {
@@ -69,8 +75,8 @@ func TestHandler(t *testing.T) {
 
 	p, err := cepubsub.New(context.Background(),
 		cepubsub.WithClient(c),
-		cepubsub.WithProjectID("test-project"),
-		cepubsub.WithTopicID("test-topic"),
+		cepubsub.WithProjectID(testProjectID),
+		cepubsub.WithTopicID(testTopic),
 	)
 	if err != nil {
 		t.Fatalf("failed to create cloudevents pubsub protocol: %v", err)
@@ -123,17 +129,17 @@ func TestHandler(t *testing.T) {
 	})
 
 	t.Run("message is not an event", func(t *testing.T) {
-		if err := p.Send(ctx, cepubsub.NewMessage(&pubsub.Message{ID: "testid"})); err != nil {
-			t.Fatalf("failed to seed event to pubsub: %v", err)
+		res := topic.Publish(context.Background(), &pubsub.Message{ID: "testid"})
+		ctx, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
+		if _, err := res.Get(ctx); err != nil {
+			t.Fatalf("Failed to publish a msg to topic: %v", err)
 		}
+
 		gotEvent := nextEventWithTimeout(eventCh)
 		// The message should be Acked and should not reach the processor
 		if gotEvent != nil {
 			t.Errorf("processor should receive 0 events but got: %+v", gotEvent)
 		}
-		ctx, _ := context.WithTimeout(context.Background(), time.Millisecond)
-		msg, err := p.Receive(ctx)
-		t.Errorf("msg: %v, err: %v", msg, err)
 	})
 
 	t.Run("timeout on event processing", func(t *testing.T) {
@@ -157,7 +163,7 @@ func TestHandler(t *testing.T) {
 
 func nextEventWithTimeout(eventCh <-chan *event.Event) *event.Event {
 	select {
-	case <-time.After(30 * time.Second):
+	case <-time.After(time.Second):
 		return nil
 	case got := <-eventCh:
 		return got

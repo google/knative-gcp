@@ -81,8 +81,8 @@ func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 		logging.FromContext(ctx).Error("failed to convert received message to an event, check the msg format", zap.Any("message", msg), zap.Error(err))
 		// Ack the message so it won't be retried.
 		// TODO Should this go to the DLQ once DLQ is implemented?
-		//msg.Ack()
-		//return
+		msg.Ack()
+		return
 	}
 	if err != nil {
 		logging.FromContext(ctx).Error("unknown error when converting the received message to an event", zap.Any("message", msg), zap.Error(err))
