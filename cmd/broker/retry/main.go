@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	component = "broker-retry"
+	component        = "broker-retry"
+	poolResyncPeriod = 15 * time.Second
 )
 
 type envConfig struct {
@@ -49,6 +50,11 @@ type envConfig struct {
 	// 3Mi. We also want to limit the memory usage from each subscription.
 	OutstandingBytesPerSub int `envconfig:"OUTSTANDING_BYTES_PER_SUB" default:"3000000"`
 
+	// MaxStaleDuration is the max duration of the handler pool without being synced.
+	// With the internal pool resync period being 15s, it requires at least 4
+	// continuous sync failures (or no sync at all) to be stale.
+	MaxStaleDuration time.Duration `envconfig:"MAX_STALE_DURATION" default:"1m"`
+
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 }
@@ -61,6 +67,10 @@ func main() {
 	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
+
+	if env.MaxStaleDuration > 0 && env.MaxStaleDuration < poolResyncPeriod {
+		logger.Fatalf("MAX_STALE_DURATION must be greater than pool resync period %v", poolResyncPeriod)
+	}
 
 	// Give the signal channel some buffer so that reconciling handlers won't
 	// block the targets config update?
@@ -87,7 +97,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
 	}
-	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal); err != nil {
+	if _, err := pool.StartSyncPool(ctx, syncPool, syncSignal, env.MaxStaleDuration, pool.DefaultHealthCheckPort); err != nil {
 		logger.Fatal("Failed to start retry sync pool", zap.Error(err))
 	}
 
@@ -100,7 +110,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	// Give it some buffer so that multiple signal could queue up
 	// but not blocking the signaler?
 	ch := make(chan struct{}, 10)
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(poolResyncPeriod)
 	go func() {
 		for {
 			select {

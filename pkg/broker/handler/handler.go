@@ -24,7 +24,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"go.uber.org/zap"

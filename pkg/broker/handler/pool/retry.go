@@ -18,7 +18,6 @@ package pool
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sync"
 
@@ -99,8 +98,6 @@ func NewRetryPool(
 
 // SyncOnce syncs once the handler pool based on the targets config.
 func (p *RetryPool) SyncOnce(ctx context.Context) error {
-	var errs int
-
 	ctx, err := p.statsReporter.AddTags(ctx)
 	if err != nil {
 		logging.FromContext(ctx).Error("failed to add tags to context", zap.Error(err))
@@ -172,10 +169,6 @@ func (p *RetryPool) SyncOnce(ctx context.Context) error {
 		p.pool.Store(t.Key(), hc)
 		return true
 	})
-
-	if errs > 0 {
-		return fmt.Errorf("%d errors happened during handlers pool sync", errs)
-	}
 
 	return nil
 }
