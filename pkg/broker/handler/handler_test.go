@@ -130,8 +130,7 @@ func TestHandler(t *testing.T) {
 
 	t.Run("message is not an event", func(t *testing.T) {
 		res := topic.Publish(context.Background(), &pubsub.Message{ID: "testid"})
-		ctx, _ := context.WithTimeout(context.Background(), 50*time.Millisecond)
-		if _, err := res.Get(ctx); err != nil {
+		if _, err := res.Get(context.Background()); err != nil {
 			t.Fatalf("Failed to publish a msg to topic: %v", err)
 		}
 
