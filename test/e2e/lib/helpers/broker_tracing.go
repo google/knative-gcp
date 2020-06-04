@@ -26,7 +26,7 @@ import (
 	"google.golang.org/genproto/googleapis/devtools/cloudtrace/v1"
 )
 
-func VerifyBrokerTrace(t *testing.T, projectID string, traceID string) {
+func VerifyTrace(t *testing.T, testTree TestSpanTree, projectID string, traceID string) {
 	ctx := context.Background()
 	client, err := trace.NewClient(ctx)
 	if err != nil {
@@ -35,20 +35,22 @@ func VerifyBrokerTrace(t *testing.T, projectID string, traceID string) {
 	}
 	timeout := time.After(time.Minute)
 	for {
-		err = tryVerifyBrokerTrace(ctx, client, projectID, traceID)
+		err = tryVerifyBrokerTrace(ctx, nil, testTree, client, projectID, traceID)
 		if err == nil {
 			return
 		}
 		select {
 		case <-timeout:
-			t.Error(err)
+			if err := tryVerifyBrokerTrace(ctx, t, testTree, client, projectID, traceID); err != nil {
+				t.Error(err)
+			}
 			return
 		case <-time.After(time.Second):
 		}
 	}
 }
 
-func tryVerifyBrokerTrace(ctx context.Context, client *trace.Client, projectID string, traceID string) error {
+func tryVerifyBrokerTrace(ctx context.Context, t *testing.T, testTree TestSpanTree, client *trace.Client, projectID string, traceID string) error {
 	trace, err := client.GetTrace(ctx, &cloudtrace.GetTraceRequest{
 		ProjectId: projectID,
 		TraceId:   traceID,
@@ -56,8 +58,12 @@ func tryVerifyBrokerTrace(ctx context.Context, client *trace.Client, projectID s
 	if err != nil {
 		return err
 	}
-	if _, err := GetTraceTree(trace); err != nil {
+	tree, err := GetTraceTree(trace)
+	if err != nil {
 		return err
+	}
+	if len(testTree.MatchesSubtree(t, tree)) == 0 {
+		return fmt.Errorf("expected subtree %v, got %v", testTree, tree)
 	}
 	return nil
 }
@@ -202,4 +208,56 @@ func matchesSubtrees(t *testing.T, ts []TestSpanTree, as []SpanTree) error {
 		}
 	}
 	return fmt.Errorf("unmatched span trees. want: %v got %s", ts, as)
+}
+
+func BrokerTestTree(namespace string, brokerName string, trigger string, respTrigger string) TestSpanTree {
+	response := TestSpanTree{
+		Span: ingressSpan(namespace, brokerName),
+		Children: []TestSpanTree{
+			{
+				Span: triggerSpan(namespace, trigger),
+			},
+			{
+				Span: triggerSpan(namespace, respTrigger),
+			},
+		},
+	}
+	return TestSpanTree{
+		// Initial event ingress
+		Span: ingressSpan(namespace, brokerName),
+		Children: []TestSpanTree{
+			{
+				// Transform trigger and response
+				Span: triggerSpan(namespace, trigger),
+				Children: []TestSpanTree{
+					response,
+				},
+			},
+			{
+				Span: triggerSpan(namespace, respTrigger),
+			},
+		},
+	}
+}
+
+func ingressSpan(namespace string, broker string) *SpanMatcher {
+	brokerName := fmt.Sprintf("broker:%s.%s", broker, namespace)
+	return &SpanMatcher{
+		Name: brokerName,
+		Labels: map[string]string{
+			"messaging.system":      "knative",
+			"messaging.destination": brokerName,
+		},
+	}
+}
+
+func triggerSpan(namespace string, trigger string) *SpanMatcher {
+	triggerName := fmt.Sprintf("trigger:%s.%s", trigger, namespace)
+	return &SpanMatcher{
+		Name: triggerName,
+		Labels: map[string]string{
+			"messaging.system":      "knative",
+			"messaging.destination": triggerName,
+		},
+	}
 }

@@ -55,7 +55,7 @@ import (
 Note: the number denotes the sequence of the event that flows in this test case.
 */
 
-func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) *lib.SenderOutput {
+func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, brokerName string) {
 	client.T.Helper()
 	senderName := helpers.AppendRandomString("sender")
 	targetName := helpers.AppendRandomString("target")
@@ -93,6 +93,55 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 	client.CreateJobOrFail(senderJob)
 
 	// Check if dummy CloudEvent is sent out.
+	if done := jobDone(client, senderName); !done {
+		client.T.Error("dummy event wasn't sent to broker")
+		client.T.Failed()
+	}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName); !done {
+		client.T.Error("resp event didn't hit the target pod")
+		client.T.Failed()
+	}
+}
+
+func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID string, brokerURL url.URL, brokerName string) {
+	client.T.Helper()
+	senderName := helpers.AppendRandomString("sender")
+	targetName := helpers.AppendRandomString("target")
+
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyEventType})
+	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilter(
+		eventingv1alpha1.TriggerAnyFilter, eventingv1alpha1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: brokerURL.String(),
+	}})
+	client.CreateJobOrFail(senderJob)
+
+	// Check if dummy CloudEvent is sent out.
 	senderOutput := new(lib.SenderOutput)
 	if err := jobOutput(client, senderName, senderOutput); err != nil {
 		client.T.Errorf("dummy event wasn't sent to broker: %v", err)
@@ -103,7 +152,8 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 		client.T.Error("resp event didn't hit the target pod")
 		client.T.Failed()
 	}
-	return senderOutput
+	testTree := BrokerTestTree(client.Namespace, brokerName, trigger.Name, respTrigger.Name)
+	VerifyTrace(client.T, testTree, projectID, senderOutput.TraceID)
 }
 
 func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, authConfig lib.AuthConfig, brokerURL url.URL, brokerName string) {
@@ -340,11 +390,11 @@ func CreateKService(client *lib.Client, imageName string) string {
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,
 	brokerName, kserviceName string,
-	triggerFilter eventingtestresources.TriggerOption) {
+	triggerFilter eventingtestresources.TriggerOption) *eventingv1alpha1.Trigger {
 	client.T.Helper()
 	// Please refer to the graph in the file to check what dummy trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
-	client.Core.CreateTriggerOrFail(
+	return client.Core.CreateTriggerOrFail(
 		triggerName,
 		eventingtestresources.WithBroker(brokerName),
 		triggerFilter,
@@ -354,10 +404,10 @@ func createTriggerWithKServiceSubscriber(client *lib.Client,
 
 func createTriggerWithTargetServiceSubscriber(client *lib.Client,
 	brokerName, targetName string,
-	triggerFilter eventingtestresources.TriggerOption) {
+	triggerFilter eventingtestresources.TriggerOption) *eventingv1alpha1.Trigger {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
-	client.Core.CreateTriggerOrFail(
+	return client.Core.CreateTriggerOrFail(
 		respTriggerName,
 		eventingtestresources.WithBroker(brokerName),
 		triggerFilter,

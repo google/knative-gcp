@@ -79,8 +79,7 @@ func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	}
 
 	brokerURL, brokerName := createGCPBroker(client)
-	senderOutput := kngcphelpers.BrokerEventTransformationTestHelper(client, brokerURL, brokerName)
-	kngcphelpers.VerifyBrokerTrace(t, projectID, senderOutput.TraceID)
+	kngcphelpers.BrokerEventTransformationTracingTestHelper(client, projectID, brokerURL, brokerName)
 }
 
 func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {
