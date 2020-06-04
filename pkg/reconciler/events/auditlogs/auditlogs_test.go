@@ -91,7 +91,7 @@ var (
 	}
 
 	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, sourceName, sourceUID)
-	testSinkID        = fmt.Sprintf("cre-src_%s_%s_%s", testNS, sourceName, sourceUID)
+	testSinkID        = fmt.Sprintf("cre-cal_%s_%s_%s", testNS, sourceName, sourceUID)
 	testTopicResource = fmt.Sprintf("pubsub.googleapis.com/projects/%s/topics/%s", testProject, testTopicID)
 
 	secret = corev1.SecretKeySelector{
