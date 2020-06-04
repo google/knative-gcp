@@ -19,6 +19,7 @@ package resources
 import (
 	"strconv"
 
+	"github.com/google/knative-gcp/pkg/broker/handler/pool"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -76,14 +77,14 @@ func MakeFanoutDeployment(args FanoutArgs) *appsv1.Deployment {
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",
-			ContainerPort: 8080,
+			ContainerPort: pool.DefaultHealthCheckPort,
 		},
 	)
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   "/healthz",
-				Port:   intstr.FromInt(8080),
+				Port:   intstr.FromInt(pool.DefaultHealthCheckPort),
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
@@ -111,14 +112,14 @@ func MakeRetryDeployment(args RetryArgs) *appsv1.Deployment {
 	container.Ports = append(container.Ports,
 		corev1.ContainerPort{
 			Name:          "http-health",
-			ContainerPort: 8080,
+			ContainerPort: pool.DefaultHealthCheckPort,
 		},
 	)
 	container.LivenessProbe = &corev1.Probe{
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   "/healthz",
-				Port:   intstr.FromInt(8080),
+				Port:   intstr.FromInt(pool.DefaultHealthCheckPort),
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},
