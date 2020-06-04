@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub"
+	pscontext "github.com/cloudevents/sdk-go/protocol/pubsub/v2/context"
 	"github.com/cloudevents/sdk-go/v2/binding"
-	pscontext "github.com/cloudevents/sdk-go/v2/protocol/pubsub/context"
 )
 
 type topicInfo struct {
