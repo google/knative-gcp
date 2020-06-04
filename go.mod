@@ -19,7 +19,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
@@ -41,7 +41,6 @@ require (
 
 replace (
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
-	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 	k8s.io/api => k8s.io/api v0.17.6
