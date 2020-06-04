@@ -35,6 +35,7 @@ import (
 
 const (
 	component        = "broker-fanout"
+	metricNamespace  = "trigger"
 	poolResyncPeriod = 15 * time.Second
 )
 
@@ -58,7 +59,7 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithMetricNamespace(metricNamespace), mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 

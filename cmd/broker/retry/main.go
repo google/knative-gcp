@@ -35,6 +35,7 @@ import (
 
 const (
 	component        = "broker-retry"
+	metricNamespace  = "trigger"
 	poolResyncPeriod = 15 * time.Second
 )
 
@@ -64,7 +65,7 @@ func main() {
 	flag.Parse()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithMetricNamespace(metricNamespace), mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 
