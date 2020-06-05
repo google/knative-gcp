@@ -270,9 +270,8 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
 
 	// Audit logs source misses the topic which gets created shortly after the source becomes ready. Need to wait for a few seconds.
-	// Tried with 45 seconds but the test has been quite flaky.
-	// Tried with 90 seconds but the test has been quite flaky.
 	time.Sleep(resources.WaitCALTime)
+
 	topicName, deleteTopic := lib.MakeTopicWithNameOrDie(client.T, topicName)
 	defer deleteTopic()
 
