@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 	duckv1beta1 "github.com/google/knative-gcp/pkg/apis/duck/v1beta1"
 
 	eventingduck "knative.dev/eventing/pkg/apis/duck/v1beta1"
@@ -155,7 +156,7 @@ func TestChannelValidation(t *testing.T) {
 				IdentitySpec: duckv1beta1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
-				Secret: defaultSecretSelector(),
+				Secret: &gcpauthtesthelper.Secret,
 				SubscribableSpec: &eventingduck.SubscribableSpec{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),
