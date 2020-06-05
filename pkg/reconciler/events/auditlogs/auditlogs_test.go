@@ -181,6 +181,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -215,8 +216,8 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
-				WithTopicTopicID(testTopicID),
 				WithTopicUnknown(),
 			),
 		},
@@ -252,6 +253,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -288,6 +290,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
@@ -325,6 +328,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
@@ -362,9 +366,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicFailed(),
-				WithTopicTopicID(testTopicID),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -375,7 +379,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceMethodName(testMethodName),
 				WithCloudAuditLogsSourceServiceName(testServiceName),
 				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status")),
+				WithCloudAuditLogsSourceTopicFailed("TopicFailed", "test message")),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
 			patchFinalizers(testNS, sourceName, true),
@@ -397,9 +401,9 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
-				WithTopicTopicID(testTopicID),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -436,6 +440,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -502,6 +507,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -552,6 +558,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -602,6 +609,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -652,6 +660,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -711,6 +720,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -770,6 +780,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -829,6 +840,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -889,6 +901,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -959,6 +972,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -1029,6 +1043,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -1094,6 +1109,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),

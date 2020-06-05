@@ -19,7 +19,7 @@ package testing
 import (
 	"time"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"knative.dev/pkg/apis"
 
@@ -133,6 +133,14 @@ func WithTopicProjectID(projectID string) TopicOption {
 func WithTopicReady(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
+		s.Status.MarkTopicReady()
+		s.Status.TopicID = topicID
+	}
+}
+
+func WithTopicReadyAndPublisherDeployed(topicID string) TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.InitializeConditions()
 		s.Status.MarkPublisherDeployed()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
@@ -142,7 +150,7 @@ func WithTopicReady(topicID string) TopicOption {
 func WithTopicFailed() TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
-		s.Status.MarkPublisherNotDeployed("PublisherStatus", "Publisher has no Ready type status")
+		s.Status.MarkNoTopic("TopicFailed", "test message")
 	}
 }
 
