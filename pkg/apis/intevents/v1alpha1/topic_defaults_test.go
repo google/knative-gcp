@@ -62,10 +62,22 @@ func TestTopicDefaults(t *testing.T) {
 			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
 		"without GCP Auth": {
-			want: &Topic{Spec: TopicSpec{
-				PropagationPolicy: TopicPolicyCreateNoDelete},
+			want: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: TopicSpec{
+					PropagationPolicy: TopicPolicyCreateNoDelete},
 			},
-			got: &Topic{},
+			got: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+			},
 			ctx: context.Background(),
 		},
 	}
