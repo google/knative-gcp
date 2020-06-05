@@ -42,6 +42,7 @@ import (
 
 	gstatus "google.golang.org/grpc/status"
 
+	. "github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	topicreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
 	listers "github.com/google/knative-gcp/pkg/client/listers/intevents/v1alpha1"
@@ -106,6 +107,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 	topic.Status.MarkTopicReady()
 	// Set the topic being used.
 	topic.Status.TopicID = topic.Spec.Topic
+
+	// If the Topic was created from a Source, then we don't need to create the Publisher.
+	if _, ok := topic.Labels[SourceLabelKey]; ok {
+		// TODO delete previous publishers before the 0.16 cut: https://github.com/google/knative-gcp/issues/1217
+		return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
+	}
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {

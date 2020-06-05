@@ -103,9 +103,7 @@ const (
 )
 
 var topicCondSet = apis.NewLivingConditionSet(
-	TopicConditionAddressable,
 	TopicConditionTopicExists,
-	TopicConditionPublisherReady,
 )
 
 const (

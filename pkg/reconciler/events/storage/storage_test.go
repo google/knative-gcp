@@ -43,6 +43,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	. "github.com/google/knative-gcp/pkg/apis/intevents"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
@@ -80,7 +81,7 @@ var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = apis.HTTP(sinkDNS)
 
-	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
+	testTopicID = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -203,8 +204,8 @@ func TestAllCases(t *testing.T) {
 					PropagationPolicy: "CreateDelete",
 				}),
 				WithTopicLabels(map[string]string{
-					"receive-adapter":                     receiveAdapterName,
-					"events.cloud.google.com/source-name": storageName,
+					"receive-adapter": receiveAdapterName,
+					SourceLabelKey:    storageName,
 				}),
 				WithTopicAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -389,7 +390,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
+				WithCloudStorageSourceTopicFailed("TopicFailed", "test message"),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -486,8 +487,8 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter":                     receiveAdapterName,
-					"events.cloud.google.com/source-name": storageName,
+					"receive-adapter": receiveAdapterName,
+					SourceLabelKey:    storageName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":           resourceGroup,

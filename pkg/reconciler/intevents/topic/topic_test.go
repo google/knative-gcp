@@ -39,6 +39,7 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
+	. "github.com/google/knative-gcp/pkg/apis/intevents"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
@@ -295,6 +296,49 @@ func TestAllCases(t *testing.T) {
 				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
+		Name: "topic created by source, no need for publisher",
+		Objects: []runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicLabels(map[string]string{
+					SourceLabelKey: "my-source",
+				}),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateNoDelete"),
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + topicName,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, resourceGroup),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicLabels(map[string]string{
+					SourceLabelKey: "my-source",
+				}),
+				WithTopicProjectID(testProject),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project: testProject,
+					Topic:   testTopicID,
+					Secret:  &secret,
+				}),
+				WithTopicPropagationPolicy("CreateNoDelete"),
+				// Updates
+				WithInitTopicConditions,
+				WithTopicReady(testTopicID)),
+		}},
+	}, {
 		Name: "publisher has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
@@ -332,7 +376,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicReady(testTopicID),
+				WithTopicReadyAndPublisherDeployed(testTopicID),
 				WithTopicPublisherNotConfigured()),
 		}},
 	},
@@ -377,7 +421,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed")),
 			}},
 		}, {
@@ -421,7 +465,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
 			}},
 		}, {
@@ -465,7 +509,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
 					WithTopicAddress(testTopicURI)),
 			}},
@@ -510,7 +554,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
 					WithTopicAddress(testTopicURI)),
 			}},
