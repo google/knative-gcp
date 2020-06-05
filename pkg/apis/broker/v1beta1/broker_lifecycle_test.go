@@ -264,96 +264,144 @@ func TestBrokerInitializeConditions(t *testing.T) {
 func TestBrokerConditionStatus(t *testing.T) {
 	tests := []struct {
 		name                string
-		addressStatus       bool
-		brokerCellStatus    bool
-		subscriptionStatus  bool
-		topicStatus         bool
-		configStatus        bool
+		addressStatus       string
+		brokerCellStatus    string
+		subscriptionStatus  string
+		topicStatus         string
+		configStatus        string
 		wantConditionStatus corev1.ConditionStatus
 	}{{
 		name:                "all happy",
-		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
-		configStatus:        true,
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "true",
 		wantConditionStatus: corev1.ConditionTrue,
 	}, {
 		name:                "subscription sad",
-		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  false,
-		topicStatus:         true,
-		configStatus:        true,
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "false",
+		topicStatus:         "true",
+		configStatus:        "true",
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "subscription unknown",
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "unknown",
+		topicStatus:         "true",
+		configStatus:        "true",
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "topic sad",
-		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         false,
-		configStatus:        true,
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "false",
+		configStatus:        "true",
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
+		name:                "topic unknown",
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "unknown",
+		configStatus:        "true",
+		wantConditionStatus: corev1.ConditionUnknown,
+	}, {
 		name:                "address missing",
-		addressStatus:       false,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
-		configStatus:        true,
+		addressStatus:       "false",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "true",
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "ingress false",
-		addressStatus:       true,
-		brokerCellStatus:    false,
-		subscriptionStatus:  true,
-		topicStatus:         true,
-		configStatus:        true,
+		addressStatus:       "true",
+		brokerCellStatus:    "false",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "true",
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "config false",
-		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
-		configStatus:        false,
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "false",
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
+		name:                "config unknown",
+		addressStatus:       "true",
+		brokerCellStatus:    "true",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "unknown",
+		wantConditionStatus: corev1.ConditionUnknown,
+	}, {
+		name:                "brokerCell false",
+		addressStatus:       "true",
+		brokerCellStatus:    "false",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "true",
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "brokerCell unknown",
+		addressStatus:       "true",
+		brokerCellStatus:    "unknown",
+		subscriptionStatus:  "true",
+		topicStatus:         "true",
+		configStatus:        "true",
+		wantConditionStatus: corev1.ConditionUnknown,
+	}, {
 		name:                "all sad",
-		addressStatus:       false,
-		brokerCellStatus:    false,
-		subscriptionStatus:  false,
-		topicStatus:         false,
-		configStatus:        false,
+		addressStatus:       "false",
+		brokerCellStatus:    "false",
+		subscriptionStatus:  "false",
+		topicStatus:         "false",
+		configStatus:        "false",
 		wantConditionStatus: corev1.ConditionFalse,
 	}}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			bs := &BrokerStatus{}
-			if test.addressStatus {
+			if test.addressStatus == "true" {
 				bs.SetAddress(apis.HTTP("example.com"))
 			} else {
 				bs.SetAddress(nil)
 			}
-			if test.brokerCellStatus {
+			if test.brokerCellStatus == "true" {
 				bs.MarkBrokerCellReady()
-			} else {
+			} else if test.brokerCellStatus == "false" {
 				bs.MarkBrokerCelllFailed("Unable to create brokercell", "induced failure")
+			} else {
+				bs.MarkBrokerCelllUnknown("Unable to create brokercell", "induced unknown")
 			}
-			if test.subscriptionStatus {
+			if test.subscriptionStatus == "true" {
 				bs.MarkSubscriptionReady()
-			} else {
+			} else if test.subscriptionStatus == "false" {
 				bs.MarkSubscriptionFailed("Unable to create PubSub subscription", "induced failure")
+			} else {
+				bs.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
 			}
-			if test.topicStatus {
+			if test.topicStatus == "true" {
 				bs.MarkTopicReady()
-			} else {
+			} else if test.topicStatus == "false" {
 				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
-			}
-			if test.configStatus {
-				bs.MarkConfigReady()
 			} else {
+				bs.MarkTopicUnknown("Unable to create PubSub topic", "induced unknown")
+			}
+			if test.configStatus == "true" {
+				bs.MarkConfigReady()
+			} else if test.configStatus == "false" {
 				bs.MarkConfigFailed("Unable to reconstruct/update config", "induced failure")
+			} else {
+				bs.MarkConfigUnknown("Unable to reconstruct/update config", "induced unknown")
 			}
 			got := bs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != got {
