@@ -92,12 +92,20 @@ func (bs *TriggerStatus) MarkTopicFailed(reason, format string, args ...interfac
 	triggerCondSet.Manage(bs).MarkFalse(TriggerConditionTopic, reason, format, args...)
 }
 
+func (bs *TriggerStatus) MarkTopicUnknown(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionTopic, reason, format, args...)
+}
+
 func (bs *TriggerStatus) MarkTopicReady() {
 	triggerCondSet.Manage(bs).MarkTrue(TriggerConditionTopic)
 }
 
 func (bs *TriggerStatus) MarkSubscriptionFailed(reason, format string, args ...interface{}) {
 	triggerCondSet.Manage(bs).MarkFalse(TriggerConditionSubscription, reason, format, args...)
+}
+
+func (bs *TriggerStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	triggerCondSet.Manage(bs).MarkUnknown(TriggerConditionSubscription, reason, format, args...)
 }
 
 func (bs *TriggerStatus) MarkSubscriptionReady() {

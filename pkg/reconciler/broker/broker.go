@@ -236,8 +236,8 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	// get ProjectID from metadata if projectID isn't set
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
-		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		logger.Error("Failed to find project id", zap.Error(err))
+		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		return err
 	}
 	// Set the projectID in the status.
@@ -248,8 +248,8 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	if client == nil {
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
-			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			b.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			return err
 		}
 		defer client.Close()
