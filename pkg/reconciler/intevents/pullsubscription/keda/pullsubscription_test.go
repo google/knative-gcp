@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	"k8s.io/api/apps/v1"
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
@@ -70,9 +69,9 @@ const (
 
 	sourceUID = sourceName + "-abc-123"
 
-	testProject        = "test-project-id"
-	testTopicID        = sourceUID + "-TOPIC"
-	generation         = 1
+	testProject = "test-project-id"
+	testTopicID = sourceUID + "-TOPIC"
+	generation  = 1
 
 	secretName = "testing-secret"
 

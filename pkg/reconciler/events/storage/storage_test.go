@@ -80,7 +80,7 @@ var (
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = apis.HTTP(sinkDNS)
 
-	testTopicID    = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
+	testTopicID = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",

@@ -54,7 +54,7 @@ func TestMakeMinimumReceiveAdapter(t *testing.T) {
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
+		Image:            "test-image",
 		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
@@ -210,7 +210,7 @@ func TestMakeFullReceiveAdapter(t *testing.T) {
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
+		Image:            "test-image",
 		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",
@@ -378,7 +378,7 @@ func TestMakeReceiveAdapterWithGCPServiceAccount(t *testing.T) {
 	}
 
 	got := MakeReceiveAdapter(context.Background(), &ReceiveAdapterArgs{
-		Image:  "test-image",
+		Image:            "test-image",
 		PullSubscription: ps,
 		Labels: map[string]string{
 			"test-key1": "test-value1",

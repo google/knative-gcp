@@ -29,7 +29,7 @@ func TestGenerateJobName(t *testing.T) {
 	want := "projects/project/locations/location/" + JobPrefix + "-uid"
 	got := GenerateJobName(&v1alpha1.CloudSchedulerSource{
 		ObjectMeta: metav1.ObjectMeta{
-			UID:       "uid",
+			UID: "uid",
 		},
 		Spec: v1alpha1.CloudSchedulerSourceSpec{
 			Location: "location",
