@@ -451,6 +451,7 @@ function report_go_test() {
 # Install Knative Serving in the current cluster.
 # Parameters: $1 - Knative Serving crds manifest.
 #             $2 - Knative Serving core manifest.
+#             $3 - Knative net-istio manifest.
 function start_knative_serving() {
   header "Starting Knative Serving"
   subheader "Installing Knative Serving"
@@ -458,6 +459,8 @@ function start_knative_serving() {
   kubectl apply -f "$1"
   echo "Installing Serving core components from $2"
   kubectl apply -f "$2"
+  echo "Installing net-istio components from $3"
+  kubectl apply -f "$3"
   wait_until_pods_running knative-serving || return 1
 }
 
@@ -480,12 +483,13 @@ function start_knative_monitoring() {
 # Parameters: $1 - Knative Serving version number, e.g. 0.6.0.
 function start_release_knative_serving() {
   start_knative_serving "https://storage.googleapis.com/knative-releases/serving/previous/v$1/serving-crds.yaml" \
-    "https://storage.googleapis.com/knative-releases/serving/previous/v$1/serving-core.yaml"
+    "https://storage.googleapis.com/knative-releases/serving/previous/v$1/serving-core.yaml" \
+    "https://storage.googleapis.com/knative-releases/net-istio/previous/v$1/net-istio.yaml"
 }
 
 # Install the latest stable Knative Serving in the current cluster.
 function start_latest_knative_serving() {
-  start_knative_serving "${KNATIVE_SERVING_RELEASE_CRDS}" "${KNATIVE_SERVING_RELEASE_CORE}"
+  start_knative_serving "${KNATIVE_SERVING_RELEASE_CRDS}" "${KNATIVE_SERVING_RELEASE_CORE}" "${KNATIVE_NET_ISTIO_RELEASE}"
 }
 
 # Install Knative Eventing in the current cluster.
@@ -746,5 +750,6 @@ readonly REPO_NAME_FORMATTED="Knative $(capitalize ${REPO_NAME//-/ })"
 # Public latest nightly or release yaml files.
 readonly KNATIVE_SERVING_RELEASE_CRDS="$(get_latest_knative_yaml_source "serving" "serving-crds")"
 readonly KNATIVE_SERVING_RELEASE_CORE="$(get_latest_knative_yaml_source "serving" "serving-core")"
+readonly KNATIVE_NET_ISTIO_RELEASE="$(get_latest_knative_yaml_source "net-istio" "net-istio")"
 readonly KNATIVE_EVENTING_RELEASE="$(get_latest_knative_yaml_source "eventing" "eventing")"
 readonly KNATIVE_MONITORING_RELEASE="$(get_latest_knative_yaml_source "serving" "monitoring")"
