@@ -19,6 +19,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -101,6 +102,58 @@ func BrokerEventTransformationTestHelper(client *lib.Client, brokerURL url.URL, 
 		client.T.Error("resp event didn't hit the target pod")
 		client.T.Failed()
 	}
+}
+
+func BrokerEventTransformationTracingTestHelper(client *lib.Client, projectID string, brokerURL url.URL, brokerName string) {
+	client.T.Helper()
+	senderName := helpers.AppendRandomString("sender")
+	targetName := helpers.AppendRandomString("target")
+
+	// Create a target Job to receive the events.
+	makeTargetJobOrDie(client, targetName)
+
+	// Create the Knative Service.
+	kserviceName := CreateKService(client, "receiver")
+
+	// Create a Trigger with the Knative Service subscriber.
+	triggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
+		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyEventType})
+	trigger := createTriggerWithKServiceSubscriber(client, brokerName, kserviceName, triggerFilter)
+
+	// Create a Trigger with the target Service subscriber.
+	respTriggerFilter := eventingtestresources.WithAttributesTriggerFilterV1Beta1(
+		eventingv1beta1.TriggerAnyFilter, eventingv1beta1.TriggerAnyFilter,
+		map[string]interface{}{"type": lib.E2EDummyRespEventType})
+	respTrigger := createTriggerWithTargetServiceSubscriber(client, brokerName, targetName, respTriggerFilter)
+
+	// Wait for ksvc, trigger ready.
+	client.Core.WaitForResourceReadyOrFail(kserviceName, lib.KsvcTypeMeta)
+	client.Core.WaitForResourcesReadyOrFail(eventingtestlib.TriggerTypeMeta)
+
+	// Just to make sure all resources are ready.
+	time.Sleep(5 * time.Second)
+
+	// Create a sender Job to sender the event.
+	senderJob := resources.SenderJob(senderName, []v1.EnvVar{{
+		Name:  "BROKER_URL",
+		Value: brokerURL.String(),
+	}})
+	client.CreateJobOrFail(senderJob)
+
+	// Check if dummy CloudEvent is sent out.
+	senderOutput := new(lib.SenderOutput)
+	if err := jobOutput(client, senderName, senderOutput); err != nil {
+		client.T.Errorf("dummy event wasn't sent to broker: %v", err)
+		client.T.Failed()
+	}
+	// Check if resp CloudEvent hits the target Service.
+	if done := jobDone(client, targetName); !done {
+		client.T.Error("resp event didn't hit the target pod")
+		client.T.Failed()
+	}
+	testTree := BrokerTestTree(client.Namespace, brokerName, trigger.Name, respTrigger.Name)
+	VerifyTrace(client.T, testTree, projectID, senderOutput.TraceID)
 }
 
 func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, authConfig lib.AuthConfig, brokerURL url.URL, brokerName string) {
@@ -337,11 +390,11 @@ func CreateKService(client *lib.Client, imageName string) string {
 
 func createTriggerWithKServiceSubscriber(client *lib.Client,
 	brokerName, kserviceName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) {
+	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1beta1.Trigger {
 	client.T.Helper()
 	// Please refer to the graph in the file to check what dummy trigger is used for.
 	triggerName := "trigger-broker-" + brokerName
-	client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerOrFailV1Beta1(
 		triggerName,
 		eventingtestresources.WithBrokerV1Beta1(brokerName),
 		triggerFilter,
@@ -351,10 +404,10 @@ func createTriggerWithKServiceSubscriber(client *lib.Client,
 
 func createTriggerWithTargetServiceSubscriber(client *lib.Client,
 	brokerName, targetName string,
-	triggerFilter eventingtestresources.TriggerOptionV1Beta1) {
+	triggerFilter eventingtestresources.TriggerOptionV1Beta1) *eventingv1beta1.Trigger {
 	client.T.Helper()
 	respTriggerName := "resp-broker-" + brokerName
-	client.Core.CreateTriggerOrFailV1Beta1(
+	return client.Core.CreateTriggerOrFailV1Beta1(
 		respTriggerName,
 		eventingtestresources.WithBrokerV1Beta1(brokerName),
 		triggerFilter,
@@ -374,28 +427,33 @@ func makeTargetJobOrDie(client *lib.Client, targetName string) {
 
 func jobDone(client *lib.Client, podName string) bool {
 	client.T.Helper()
-	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
-	if err != nil {
-		client.T.Error(err)
-		return false
-	}
-	if msg == "" {
-		client.T.Error("No terminating message from the pod")
-		return false
-	}
-
 	out := &lib.TargetOutput{}
-	if err := json.Unmarshal([]byte(msg), out); err != nil {
+	if err := jobOutput(client, podName, out); err != nil {
 		client.T.Error(err)
-		return false
-	}
-	if !out.Success {
-		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
-			client.T.Error(err)
-		} else {
-			client.T.Logf("job: %s\n", logs)
-		}
 		return false
 	}
 	return true
+}
+
+func jobOutput(client *lib.Client, podName string, out lib.Output) error {
+	client.T.Helper()
+	msg, err := client.WaitUntilJobDone(client.Namespace, podName)
+	if err != nil {
+		return err
+	}
+	if msg == "" {
+		return errors.New("no terminating message from the pod")
+	}
+
+	if err := json.Unmarshal([]byte(msg), out); err != nil {
+		return err
+	}
+	if !out.Successful() {
+		if logs, err := client.LogsFor(client.Namespace, podName, lib.JobTypeMeta); err != nil {
+			return err
+		} else {
+			return fmt.Errorf("job: %s\n", logs)
+		}
+	}
+	return nil
 }

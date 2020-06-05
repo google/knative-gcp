@@ -27,6 +27,7 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go"
 	"github.com/google/knative-gcp/pkg/kncloudevents"
 	"github.com/google/knative-gcp/test/e2e/lib"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -41,10 +42,13 @@ func main() {
 		fmt.Printf("Unable to create ceClient: %s ", err)
 	}
 
-	rctx, _, err := ceClient.Send(context.Background(), dummyCloudEvent())
-	rtctx := cloudevents.HTTPTransportContextFrom(rctx)
+	ctx, span := trace.StartSpan(context.Background(), "sender", trace.WithSampler(trace.AlwaysSample()))
+	defer span.End()
+
+	ctx, _, err = ceClient.Send(ctx, dummyCloudEvent())
+	rtctx := cloudevents.HTTPTransportContextFrom(ctx)
 	if err != nil {
-		fmt.Printf(err.Error())
+		fmt.Print(err)
 	}
 	var success bool
 	if rtctx.StatusCode >= http.StatusOK && rtctx.StatusCode < http.StatusBadRequest {
@@ -54,11 +58,10 @@ func main() {
 	}
 	if err := writeTerminationMessage(map[string]interface{}{
 		"success": success,
+		"traceid": span.SpanContext().TraceID.String(),
 	}); err != nil {
 		fmt.Printf("failed to write termination message, %s.\n", err)
 	}
-
-	os.Exit(0)
 }
 
 func dummyCloudEvent() cloudevents.Event {

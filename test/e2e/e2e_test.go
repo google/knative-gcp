@@ -326,6 +326,13 @@ func TestGCPBroker(t *testing.T) {
 	GCPBrokerTestImpl(t, authConfig, false /* assertMetrics */)
 }
 
+// TestGCPBroker tests we can knock a Knative Service from a gcp broker.
+func TestGCPBrokerTracing(t *testing.T) {
+	cancel := logstream.Start(t)
+	defer cancel()
+	GCPBrokerTracingTestImpl(t, authConfig)
+}
+
 // TestCloudPubSubSourceWithGCPBroker tests we can knock a Knative Service from a GCPBroker from a CloudPubSubSource.
 func TestCloudPubSubSourceWithGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
