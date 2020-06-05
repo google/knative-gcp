@@ -323,7 +323,7 @@ func TestSmokeGCPBroker(t *testing.T) {
 func TestGCPBroker(t *testing.T) {
 	cancel := logstream.Start(t)
 	defer cancel()
-	GCPBrokerTestImpl(t, authConfig, false /* assertMetrics */)
+	GCPBrokerTestImpl(t, authConfig)
 }
 
 // TestGCPBroker tests we can knock a Knative Service from a gcp broker.
