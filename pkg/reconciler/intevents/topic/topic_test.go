@@ -39,7 +39,6 @@ import (
 	. "knative.dev/pkg/reconciler/testing"
 	servingv1 "knative.dev/serving/pkg/apis/serving/v1"
 
-	. "github.com/google/knative-gcp/pkg/apis/intevents"
 	pubsubv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/intevents/v1alpha1/topic"
 	gpubsub "github.com/google/knative-gcp/pkg/gclient/pubsub/testing"
@@ -67,7 +66,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -296,17 +296,15 @@ func TestAllCases(t *testing.T) {
 				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
-		Name: "topic created by source, no need for publisher",
+		Name: "topic created with EnablePublisher = false",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicLabels(map[string]string{
-					SourceLabelKey: "my-source",
-				}),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					Project:         testProject,
+					Topic:           testTopicID,
+					Secret:          &secret,
+					EnablePublisher: &falseVal,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
 			),
@@ -324,14 +322,12 @@ func TestAllCases(t *testing.T) {
 		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: NewTopic(topicName, testNS,
 				WithTopicUID(topicUID),
-				WithTopicLabels(map[string]string{
-					SourceLabelKey: "my-source",
-				}),
 				WithTopicProjectID(testProject),
 				WithTopicSpec(pubsubv1alpha1.TopicSpec{
-					Project: testProject,
-					Topic:   testTopicID,
-					Secret:  &secret,
+					Project:         testProject,
+					Topic:           testTopicID,
+					Secret:          &secret,
+					EnablePublisher: &falseVal,
 				}),
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates

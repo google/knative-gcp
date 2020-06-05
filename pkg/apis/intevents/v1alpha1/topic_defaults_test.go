@@ -44,6 +44,7 @@ func TestTopicDefaults(t *testing.T) {
 				},
 				Key: "key.json",
 			},
+			EnablePublisher: &trueVal,
 		}}
 
 	got := &Topic{

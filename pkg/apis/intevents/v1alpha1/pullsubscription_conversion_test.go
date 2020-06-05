@@ -35,7 +35,6 @@ import (
 // These variables are used to create a 'complete' version of PullSubscription where every field is
 // filled in.
 var (
-	trueVal  = true
 	seconds  = int64(314)
 	duration = "30s"
 

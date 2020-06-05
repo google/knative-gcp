@@ -212,6 +212,11 @@ func (in *TopicSpec) DeepCopyInto(out *TopicSpec) {
 		*out = new(corev1.SecretKeySelector)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.EnablePublisher != nil {
+		in, out := &in.EnablePublisher, &out.EnablePublisher
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

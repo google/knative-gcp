@@ -124,6 +124,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -142,6 +143,7 @@ func TestCreates(t *testing.T) {
 					Secret:            &secret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -160,6 +162,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -173,6 +176,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -189,6 +193,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -204,6 +209,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -223,6 +229,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -238,6 +245,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -257,6 +265,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -272,6 +281,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -291,6 +301,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -307,6 +318,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -328,6 +340,7 @@ func TestCreates(t *testing.T) {
 					Secret:            &oldSecret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreatDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -347,6 +360,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -410,6 +424,7 @@ func TestCreates(t *testing.T) {
 					Secret:            &secret,
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -432,6 +447,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -451,6 +467,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -515,6 +532,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -550,6 +568,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -588,6 +607,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -624,6 +644,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -663,6 +684,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -699,6 +721,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
@@ -738,6 +761,7 @@ func TestCreates(t *testing.T) {
 				rectesting.WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				rectesting.WithTopicLabels(map[string]string{
 					"receive-adapter":                     receiveAdapterName,
@@ -774,6 +798,7 @@ func TestCreates(t *testing.T) {
 				Secret:            &secret,
 				Topic:             testTopicID,
 				PropagationPolicy: "CreateDelete",
+				EnablePublisher:   &falseVal,
 			}),
 			rectesting.WithTopicLabels(map[string]string{
 				"receive-adapter":                     receiveAdapterName,
