@@ -24,8 +24,14 @@ const (
 	StorageResourceGroup     = "storages.events.cloud.google.com"
 	PubsubResourceGroup      = "pubsubs.events.cloud.google.com"
 
+	// https://cloud.google.com/monitoring/api/metrics_knative
 	BrokerEventCountMetricType = "knative.dev/eventing/broker/event_count"
-	BrokerMetricResourceType   = "knative_broker"
+	TriggerEventCountMetricType = "knative.dev/eventing/trigger/event_count"
+	TriggerEventDispatchLatenciesMetricType = "knative.dev/eventing/trigger/event_dispatch_latencies"
+	TriggerEventProcessingLatenciesMetricType = "knative.dev/eventing/trigger/event_processing_latencies"
+
+	BrokerMetricResourceType   = "knative_broker" // https://cloud.google.com/monitoring/api/resources#tag_knative_broker
+	TriggerMetricResourceType  = "knative_trigger" // https://cloud.google.com/monitoring/api/resources#tag_knative_trigger
 
 	EventType          = "type"
 	EventSource        = "source"

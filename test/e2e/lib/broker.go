@@ -17,6 +17,7 @@ limitations under the License.
 package lib
 
 import (
+	monitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"net/http"
 	"os"
 	"time"
@@ -31,6 +32,11 @@ func AssertBrokerMetrics(client *Client) {
 	client.T.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
 	time.Sleep(sleepTime)
 
+	AssertBrokerEventCountMetric(client)
+	AssertTriggerEventCountMetric(client)
+}
+
+func AssertBrokerEventCountMetric(client *Client) {
 	// If we reach this point, the projectID should have been set.
 	projectID := os.Getenv(ProwProjectKey)
 	f := map[string]interface{}{
@@ -45,13 +51,46 @@ func AssertBrokerMetrics(client *Client) {
 	filter := metrics.StringifyStackDriverFilter(f)
 	client.T.Logf("Filter expression: %s", filter)
 
-	actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
+	timeseries, err := client.StackDriverTimeSeriesFor(projectID, filter)
 	if err != nil {
-		client.T.Fatalf("failed to get stackdriver event count metric: %v", err)
+		client.T.Fatalf("failed to get stackdriver timeseries: %v", err)
 	}
-	expectedCount := int64(1)
-	if *actualCount != expectedCount {
-		client.T.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
+
+	AssertMetricCount(client, timeseries, 1 /* expectedCount */)
+}
+
+func AssertMetricCount(client *Client, timeseries []*monitoringpb.TimeSeries, expectedCount int64) {
+	var actualCount int64 = 0
+	for _, res := range(timeseries) {
+		actualCount += res.GetPoints()[0].GetValue().GetInt64Value()
+	}
+
+	if actualCount != expectedCount {
+		client.T.Errorf("Actual metric count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
 		client.T.Fail()
 	}
+}
+
+
+func AssertTriggerEventCountMetric(client *Client) {
+	// If we reach this point, the projectID should have been set.
+	projectID := os.Getenv(ProwProjectKey)
+	f := map[string]interface{}{
+		"metric.type":                      TriggerEventCountMetricType,
+		"resource.type":                    TriggerMetricResourceType,
+		"metric.label.filter_type":         E2EDummyEventType,
+		"resource.label.namespace_name":    client.Namespace,
+		"metric.label.response_code":       http.StatusAccepted,
+		"metric.label.response_code_class": pkgmetrics.ResponseCodeClass(http.StatusAccepted),
+	}
+
+	filter := metrics.StringifyStackDriverFilter(f)
+	client.T.Logf("Filter expression: %s", filter)
+
+	timeseries, err := client.StackDriverTimeSeriesFor(projectID, filter)
+	if err != nil {
+		client.T.Fatalf("failed to get stackdriver timeseries: %v", err)
+	}
+
+	AssertMetricCount(client, timeseries, 1 /* expectedCount */)
 }
