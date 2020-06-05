@@ -146,6 +146,10 @@ func WithBrokerTopicReady(b *brokerv1beta1.Broker) {
 	b.Status.MarkTopicReady()
 }
 
+func WithBrokerConfigReady(b *brokerv1beta1.Broker) {
+	b.Status.MarkConfigReady()
+}
+
 func WithBrokerClass(bc string) BrokerOption {
 	return func(b *brokerv1beta1.Broker) {
 		annotations := b.GetAnnotations()

@@ -26,6 +26,7 @@ var brokerCondSet = apis.NewLivingConditionSet(
 	BrokerConditionBrokerCell,
 	BrokerConditionTopic,
 	BrokerConditionSubscription,
+	BrokerConditionConfig,
 )
 
 const (
@@ -37,6 +38,9 @@ const (
 	// BrokerConditionSubscription reports the status of the Broker's PubSub
 	// subscription. This condition is specific to the Google Cloud Broker.
 	BrokerConditionSubscription apis.ConditionType = "SubscriptionReady"
+	// BrokerConditionConfig reports the status of reconstructing and updating the data entry
+	// for the Broker. This condition is specific to the Google Cloud Broker.
+	BrokerConditionConfig apis.ConditionType = "ConfigReady"
 )
 
 // GetCondition returns the condition currently associated with the given type, or nil.
@@ -86,6 +90,10 @@ func (bs *BrokerStatus) MarkTopicFailed(reason, format string, args ...interface
 	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionTopic, reason, format, args...)
 }
 
+func (bs *BrokerStatus) MarkTopicUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionTopic, reason, format, args...)
+}
+
 func (bs *BrokerStatus) MarkTopicReady() {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionTopic)
 }
@@ -94,6 +102,22 @@ func (bs *BrokerStatus) MarkSubscriptionFailed(reason, format string, args ...in
 	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionSubscription, reason, format, args...)
 }
 
+func (bs *BrokerStatus) MarkSubscriptionUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionSubscription, reason, format, args...)
+}
+
 func (bs *BrokerStatus) MarkSubscriptionReady() {
 	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionSubscription)
+}
+
+func (bs *BrokerStatus) MarkConfigFailed(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkFalse(BrokerConditionConfig, reason, format, args...)
+}
+
+func (bs *BrokerStatus) MarkConfigUnknown(reason, format string, args ...interface{}) {
+	brokerCondSet.Manage(bs).MarkUnknown(BrokerConditionConfig, reason, format, args...)
+}
+
+func (bs *BrokerStatus) MarkConfigReady() {
+	brokerCondSet.Manage(bs).MarkTrue(BrokerConditionConfig)
 }
