@@ -19,6 +19,7 @@ package static
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
@@ -69,13 +70,15 @@ func NewController(
 	return newControllerWithIAMPolicyManager(
 		ctx,
 		cmw,
-		iam.DefaultIAMPolicyManager())
+		iam.DefaultIAMPolicyManager(),
+		identity.NewGCPAuthStore(ctx, cmw))
 }
 
 func newControllerWithIAMPolicyManager(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	deploymentInformer := deploymentinformer.Get(ctx)
 	pullSubscriptionInformer := pullsubscriptioninformers.Get(ctx)
@@ -95,7 +98,7 @@ func newControllerWithIAMPolicyManager(
 	r := &Reconciler{
 		Base: &psreconciler.Base{
 			PubSubBase:             pubsubBase,
-			Identity:               identity.NewIdentity(ctx, ipm),
+			Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 			DeploymentLister:       deploymentInformer.Lister(),
 			PullSubscriptionLister: pullSubscriptionInformer.Lister(),
 			ReceiveAdapterImage:    env.ReceiveAdapter,

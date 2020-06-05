@@ -69,24 +69,6 @@ var (
 	}, cmp.Ignore())
 
 	role = "roles/iam.workloadIdentityUser"
-
-	data = map[string]string{
-		"default-auth-config": `
-  clusterDefaults: 
-    serviceAccountName: test
-    workloadIdentityMapping:
-      test-fake-cluster-name: test@test
-`,
-	}
-
-	dataEmpty = map[string]string{
-		"default-auth-config": `
-  clusterDefaults: 
-    serviceAccountName: test
-    workloadIdentityMapping:
-      empty: empty@empty
-`,
-	}
 )
 
 func TestKSACreates(t *testing.T) {
@@ -94,6 +76,7 @@ func TestKSACreates(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		objects                []runtime.Object
+		config                 *corev1.ConfigMap
 		expectedServiceAccount *corev1.ServiceAccount
 		wantCreates            []runtime.Object
 		wantErrCode            codes.Code
@@ -101,15 +84,11 @@ func TestKSACreates(t *testing.T) {
 		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037,
 		// skip test case "k8s service account doesn't exist, failed to get cluster name annotation."
 		{
-			name: "non-default serviceAccountName, no need to create a k8s service account",
-			objects: []runtime.Object{
-				NewConfigMap(gcpauth.ConfigMapName(), "cloud-run-events", WithConfigMapData(dataEmpty)),
-			},
+			name:   "non-default serviceAccountName, no need to create a k8s service account",
+			config: ConfigMapFromTestFile(t, "config-gcp-auth-empty", "default-auth-config"),
 		}, {
-			name: "default serviceAccountName, k8s service account doesn't exist, create it",
-			objects: []runtime.Object{
-				NewConfigMap(gcpauth.ConfigMapName(), "cloud-run-events", WithConfigMapData(data)),
-			},
+			name:   "default serviceAccountName, k8s service account doesn't exist, create it",
+			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			wantCreates: []runtime.Object{
 				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
 			},
@@ -127,9 +106,9 @@ func TestKSACreates(t *testing.T) {
 		}, {
 			name: "default serviceAccountName, k8s service account exists, but doesn't have ownerReference",
 			objects: []runtime.Object{
-				NewConfigMap(gcpauth.ConfigMapName(), "cloud-run-events", WithConfigMapData(data)),
 				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
 			},
+			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
 			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
 				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
 					APIVersion:         "events.cloud.google.com/v1alpha1",
@@ -157,14 +136,10 @@ func TestKSACreates(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			store := gcpauth.NewStore(logtesting.TestLogger(t))
-			_, defaultsConfig := ConfigMapsFromTestFile(t, "config-gcp-auth", "default-auth-config")
-			store.OnConfigChanged(defaultsConfig)
-
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
-				gcpAuthStore:  store,
+				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
@@ -232,7 +207,6 @@ func TestKSADeletes(t *testing.T) {
 						BlockOwnerDeletion: &trueVal,
 					}}),
 				),
-				NewConfigMap(gcpauth.ConfigMapName(), "cloud-run-events", WithConfigMapData(data)),
 			},
 			wantErrCode: codes.NotFound,
 		}, {
@@ -255,7 +229,6 @@ func TestKSADeletes(t *testing.T) {
 						BlockOwnerDeletion: &trueVal,
 					}}),
 				),
-				NewConfigMap(gcpauth.ConfigMapName(), "cloud-run-events", WithConfigMapData(data)),
 			},
 		}}
 
