@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
+
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ func TestChannelDefaults(t *testing.T) {
 			},
 		},
 		Spec: ChannelSpec{
-			Secret: defaultSecretSelector(),
+			Secret: &gcpauthtesthelper.Secret,
 		}}
 
 	got := &Channel{
@@ -47,7 +48,7 @@ func TestChannelDefaults(t *testing.T) {
 		},
 		Spec: ChannelSpec{},
 	}
-	got.SetDefaults(context.Background())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
