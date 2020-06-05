@@ -163,64 +163,65 @@ func TestAllCases(t *testing.T) {
 	schedulerSinkURL := sinkURI
 
 	table := TableTest{{
-			Name: "bad workqueue key",
-			// Make sure Reconcile handles bad keys.
-			Key: "too/many/parts",
-		}, {
-			Name: "key not found",
-			// Make sure Reconcile handles good keys that don't exist.
-			Key: "foo/not-found",
-		}, {
-			Name: "topic created, not ready",
-			Objects: []runtime.Object{
-				NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-				),
-				newSink(),
-			},
-			Key: testNS + "/" + schedulerName,
-			WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-				Object: NewCloudSchedulerSource(schedulerName, testNS,
-					WithCloudSchedulerSourceSink(sinkGVK, sinkName),
-					WithCloudSchedulerSourceLocation(location),
-					WithCloudSchedulerSourceData(testData),
-					WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
-					WithInitCloudSchedulerSourceConditions,
-					WithCloudSchedulerSourceAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
-				),
-			}},
-			WantCreates: []runtime.Object{
-				NewTopic(schedulerName, testNS,
-					WithTopicSpec(inteventsv1alpha1.TopicSpec{
-						Topic:             testTopicID,
-						PropagationPolicy: "CreateDelete",
-					}),
-					WithTopicLabels(map[string]string{
-						"receive-adapter": receiveAdapterName,
-						SourceLabelKey:    schedulerName,
-					}),
-					WithTopicAnnotations(map[string]string{
-						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-					}),
-					WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-				),
-			},
-			WantPatches: []clientgotesting.PatchActionImpl{
-				patchFinalizers(testNS, schedulerName, true),
-			},
-			WantEvents: []string{
-				Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
-				Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q has not yet been reconciled", schedulerName),
-			},
+		Name: "bad workqueue key",
+		// Make sure Reconcile handles bad keys.
+		Key: "too/many/parts",
+	}, {
+		Name: "key not found",
+		// Make sure Reconcile handles good keys that don't exist.
+		Key: "foo/not-found",
+	}, {
+		Name: "topic created, not ready",
+		Objects: []runtime.Object{
+			NewCloudSchedulerSource(schedulerName, testNS,
+				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+				WithCloudSchedulerSourceLocation(location),
+				WithCloudSchedulerSourceData(testData),
+				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+			),
+			newSink(),
+		},
+		Key: testNS + "/" + schedulerName,
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewCloudSchedulerSource(schedulerName, testNS,
+				WithCloudSchedulerSourceSink(sinkGVK, sinkName),
+				WithCloudSchedulerSourceLocation(location),
+				WithCloudSchedulerSourceData(testData),
+				WithCloudSchedulerSourceSchedule(onceAMinuteSchedule),
+				WithInitCloudSchedulerSourceConditions,
+				WithCloudSchedulerSourceAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+				WithCloudSchedulerSourceTopicUnknown("TopicNotConfigured", failedToReconcileTopicMsg),
+			),
+		}},
+		WantCreates: []runtime.Object{
+			NewTopic(schedulerName, testNS,
+				WithTopicSpec(inteventsv1alpha1.TopicSpec{
+					Topic:             testTopicID,
+					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
+				}),
+				WithTopicLabels(map[string]string{
+					"receive-adapter": receiveAdapterName,
+					SourceLabelKey:    schedulerName,
+				}),
+				WithTopicAnnotations(map[string]string{
+					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+				}),
+				WithTopicOwnerReferences([]metav1.OwnerReference{ownerRef()}),
+			),
+		},
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, schedulerName, true),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", schedulerName),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailedReason, "Reconcile PubSub failed with: Topic %q has not yet been reconciled", schedulerName),
+		},
 	}, {
 		Name: "topic exists, topic has not yet been reconciled",
 		Objects: []runtime.Object{
@@ -234,6 +235,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
 			),
@@ -269,6 +271,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -306,6 +309,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
@@ -344,6 +348,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
@@ -382,6 +387,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicFailed(),
 				WithTopicProjectID(testProject),
@@ -419,6 +425,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
 				WithTopicProjectID(testProject),
@@ -461,6 +468,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -524,6 +532,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -573,6 +582,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -622,6 +632,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -673,6 +684,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -735,6 +747,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -797,6 +810,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -859,6 +873,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -922,6 +937,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -984,6 +1000,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -1047,6 +1064,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicSpec(inteventsv1alpha1.TopicSpec{
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),

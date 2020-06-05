@@ -51,6 +51,7 @@ var (
 			Project:           "project",
 			Topic:             "topic",
 			PropagationPolicy: TopicPolicyCreateDelete,
+			EnablePublisher:   &trueVal,
 		},
 		Status: TopicStatus{
 			IdentityStatus: completeIdentityStatus,
