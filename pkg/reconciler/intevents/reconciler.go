@@ -43,6 +43,8 @@ const (
 	PullSubscriptionStatusPropagateFailedReason = "PullSubscriptionStatusPropagateFailed"
 )
 
+var falseVal = false
+
 type PubSubBase struct {
 	*reconciler.Base
 
@@ -81,13 +83,14 @@ func (psb *PubSubBase) reconcileTopic(ctx context.Context, pubsubable duck.PubSu
 
 	name := pubsubable.GetObjectMeta().GetName()
 	args := &resources.TopicArgs{
-		Namespace:   pubsubable.GetObjectMeta().GetNamespace(),
-		Name:        name,
-		Spec:        pubsubable.PubSubSpec(),
-		Owner:       pubsubable,
-		Topic:       topic,
-		Labels:      resources.GetLabels(psb.receiveAdapterName, name),
-		Annotations: pubsubable.GetObjectMeta().GetAnnotations(),
+		Namespace:       pubsubable.GetObjectMeta().GetNamespace(),
+		Name:            name,
+		Spec:            pubsubable.PubSubSpec(),
+		EnablePublisher: &falseVal,
+		Owner:           pubsubable,
+		Topic:           topic,
+		Labels:          resources.GetLabels(psb.receiveAdapterName, name),
+		Annotations:     pubsubable.GetObjectMeta().GetAnnotations(),
 	}
 	newTopic := resources.MakeTopic(args)
 

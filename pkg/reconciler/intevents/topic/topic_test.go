@@ -66,7 +66,8 @@ const (
 )
 
 var (
-	trueVal = true
+	trueVal  = true
+	falseVal = false
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = "http://" + sinkDNS + "/"
@@ -295,6 +296,45 @@ func TestAllCases(t *testing.T) {
 				WithTopicNoTopic("TopicReconcileFailed", fmt.Sprintf("%s: %s", failedToReconcileTopicMsg, "create-topic-induced-error"))),
 		}},
 	}, {
+		Name: "topic created with EnablePublisher = false",
+		Objects: []runtime.Object{
+			NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project:         testProject,
+					Topic:           testTopicID,
+					Secret:          &secret,
+					EnablePublisher: &falseVal,
+				}),
+				WithTopicPropagationPolicy("CreateNoDelete"),
+			),
+			newSink(),
+			newSecret(),
+		},
+		Key: testNS + "/" + topicName,
+		WantPatches: []clientgotesting.PatchActionImpl{
+			patchFinalizers(testNS, topicName, resourceGroup),
+		},
+		WantEvents: []string{
+			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", topicName),
+			Eventf(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, testNS, topicName),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewTopic(topicName, testNS,
+				WithTopicUID(topicUID),
+				WithTopicProjectID(testProject),
+				WithTopicSpec(pubsubv1alpha1.TopicSpec{
+					Project:         testProject,
+					Topic:           testTopicID,
+					Secret:          &secret,
+					EnablePublisher: &falseVal,
+				}),
+				WithTopicPropagationPolicy("CreateNoDelete"),
+				// Updates
+				WithInitTopicConditions,
+				WithTopicReady(testTopicID)),
+		}},
+	}, {
 		Name: "publisher has not yet been reconciled",
 		Objects: []runtime.Object{
 			NewTopic(topicName, testNS,
@@ -332,7 +372,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicPropagationPolicy("CreateNoDelete"),
 				// Updates
 				WithInitTopicConditions,
-				WithTopicReady(testTopicID),
+				WithTopicReadyAndPublisherDeployed(testTopicID),
 				WithTopicPublisherNotConfigured()),
 		}},
 	},
@@ -377,7 +417,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherNotDeployed("PublisherNotDeployed", "PublisherNotDeployed")),
 			}},
 		}, {
@@ -421,7 +461,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherUnknown("PublisherUnknown", "PublisherUnknown")),
 			}},
 		}, {
@@ -465,7 +505,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
 					WithTopicAddress(testTopicURI)),
 			}},
@@ -510,7 +550,7 @@ func TestAllCases(t *testing.T) {
 					WithTopicPropagationPolicy("CreateNoDelete"),
 					// Updates
 					WithInitTopicConditions,
-					WithTopicReady(testTopicID),
+					WithTopicReadyAndPublisherDeployed(testTopicID),
 					WithTopicPublisherDeployed,
 					WithTopicAddress(testTopicURI)),
 			}},

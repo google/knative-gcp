@@ -40,6 +40,7 @@ func TestTopicDefaults(t *testing.T) {
 					},
 					Key: "key.json",
 				},
+				EnablePublisher: &trueVal,
 			}},
 			got: &Topic{Spec: TopicSpec{}},
 			ctx: gcpauthtesthelper.ContextWithDefaults(),

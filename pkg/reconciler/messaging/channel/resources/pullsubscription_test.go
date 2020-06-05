@@ -54,7 +54,7 @@ func TestMakePullSubscription(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -145,7 +145,7 @@ func TestMakePullSubscription_JustSubscriber(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,
@@ -228,7 +228,7 @@ func TestMakePullSubscription_JustReply(t *testing.T) {
 
 	got := MakePullSubscription(&PullSubscriptionArgs{
 		Owner:   channel,
-		Name:    GenerateSubscriptionName("subscriber-uid"),
+		Name:    GeneratePullSubscriptionName("subscriber-uid"),
 		Project: channel.Status.ProjectID,
 		Topic:   channel.Status.TopicID,
 		Secret:  channel.Spec.Secret,

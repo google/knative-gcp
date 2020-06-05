@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+
 	"github.com/google/go-cmp/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -198,7 +200,7 @@ func TestChannelValidation(t *testing.T) {
 				IdentitySpec: duckv1alpha1.IdentitySpec{
 					ServiceAccountName: validServiceAccountName,
 				},
-				Secret: defaultSecretSelector(),
+				Secret: &gcpauthtesthelper.Secret,
 				Subscribable: &eventingduck.Subscribable{
 					Subscribers: []eventingduck.SubscriberSpec{{
 						SubscriberURI: apis.HTTP("subscriberendpoint"),

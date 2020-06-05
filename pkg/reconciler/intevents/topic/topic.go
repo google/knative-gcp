@@ -107,6 +107,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 	// Set the topic being used.
 	topic.Status.TopicID = topic.Spec.Topic
 
+	// If enablePublisher is false, then skip creating the publisher.
+	if enablePublisher := topic.Spec.EnablePublisher; enablePublisher != nil && !*enablePublisher {
+		// TODO delete previous publishers before the 0.16 cut: https://github.com/google/knative-gcp/issues/1217
+		return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
+	}
+
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
 		topic.Status.MarkPublisherNotDeployed(reconciledPublisherFailedReason, "Failed to reconcile Publisher: %s", err.Error())

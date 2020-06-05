@@ -51,6 +51,7 @@ func TestTopicDefaults(t *testing.T) {
 						},
 						Key: "key.json",
 					},
+					EnablePublisher: &trueVal,
 				}},
 			got: &Topic{
 				ObjectMeta: metav1.ObjectMeta{

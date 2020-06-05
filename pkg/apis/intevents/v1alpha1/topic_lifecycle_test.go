@@ -91,6 +91,16 @@ func TestTopicStatusIsReady(t *testing.T) {
 		}(),
 		wantConditionStatus: corev1.ConditionTrue,
 		want:                true,
+	}, {
+		name: "mark topic ready",
+		s: func() *TopicStatus {
+			s := &TopicStatus{}
+			s.InitializeConditions()
+			s.MarkTopicReady()
+			return s
+		}(),
+		wantConditionStatus: corev1.ConditionTrue,
+		want:                true,
 	}}
 
 	for _, test := range tests {
@@ -156,6 +166,19 @@ func TestTopicStatusGetCondition(t *testing.T) {
 		condQuery: TopicConditionTopicExists,
 		want: &apis.Condition{
 			Type:   TopicConditionTopicExists,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "mark topic ready condition ready",
+		s: func() *TopicStatus {
+			s := &TopicStatus{}
+			s.InitializeConditions()
+			s.MarkTopicReady()
+			return s
+		}(),
+		condQuery: apis.ConditionReady,
+		want: &apis.Condition{
+			Type:   apis.ConditionReady,
 			Status: corev1.ConditionTrue,
 		},
 	}, {

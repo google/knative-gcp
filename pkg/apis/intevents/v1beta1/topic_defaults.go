@@ -26,6 +26,10 @@ import (
 	"knative.dev/pkg/apis"
 )
 
+var (
+	trueVal = true
+)
+
 func (t *Topic) SetDefaults(ctx context.Context) {
 	ctx = apis.WithinParent(ctx, t.ObjectMeta)
 	t.Spec.SetDefaults(ctx)
@@ -46,5 +50,9 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		(ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{})) {
 		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
 		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
+	}
+
+	if ts.EnablePublisher == nil {
+		ts.EnablePublisher = &trueVal
 	}
 }

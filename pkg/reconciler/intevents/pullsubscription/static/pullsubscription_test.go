@@ -65,10 +65,9 @@ const (
 
 	sourceUID = sourceName + "-abc-123"
 
-	testProject        = "test-project-id"
-	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cre-pull-" + sourceUID
-	generation         = 1
+	testProject = "test-project-id"
+	testTopicID = sourceUID + "-TOPIC"
+	generation  = 1
 
 	secretName = "testing-secret"
 
@@ -88,6 +87,8 @@ var (
 		Version: "v1alpha1",
 		Kind:    "Sink",
 	}
+
+	testSubscriptionID = fmt.Sprintf("cre-ps_%s_%s_%s", testNS, sourceName, sourceUID)
 
 	transformerGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -877,26 +878,6 @@ func TestAllCases(t *testing.T) {
 		},
 		Key:        testNS + "/" + sourceName,
 		WantEvents: nil,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewPullSubscription(sourceName, testNS,
-				WithPullSubscriptionUID(sourceUID),
-				WithPullSubscriptionObjectMetaGeneration(generation),
-				WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
-					PubSubSpec: duckv1alpha1.PubSubSpec{
-						Secret:  &secret,
-						Project: testProject,
-					},
-					Topic: testTopicID,
-				}),
-				WithPullSubscriptionSink(sinkGVK, sinkName),
-				WithPullSubscriptionMarkSubscribed(testSubscriptionID),
-				WithPullSubscriptionSubscriptionID(""),
-				WithPullSubscriptionMarkDeployed,
-				WithPullSubscriptionMarkSink(sinkURI),
-				WithPullSubscriptionStatusObservedGeneration(generation),
-				WithPullSubscriptionDeleted,
-			),
-		}},
 	}}
 
 	defer logtesting.ClearAll()
@@ -923,7 +904,7 @@ func TestAllCases(t *testing.T) {
 }
 
 func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
-	source := NewPullSubscription(sourceName, testNS,
+	ps := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionSpec(pubsubv1alpha1.PullSubscriptionSpec{
 			PubSubSpec: duckv1alpha1.PubSubSpec{
@@ -933,12 +914,12 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 			Topic: testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
-		Image:          image,
-		Source:         source,
-		Labels:         resources.GetLabels(controllerAgentName, sourceName),
-		SubscriptionID: testSubscriptionID,
-		SinkURI:        sinkURI,
-		TransformerURI: transformer,
+		Image:            image,
+		PullSubscription: ps,
+		Labels:           resources.GetLabels(controllerAgentName, sourceName),
+		SubscriptionID:   testSubscriptionID,
+		SinkURI:          sinkURI,
+		TransformerURI:   transformer,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }

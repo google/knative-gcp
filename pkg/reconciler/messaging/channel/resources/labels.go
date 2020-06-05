@@ -18,6 +18,8 @@ package resources
 
 import (
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/google/knative-gcp/pkg/apis/intevents"
 )
 
 func GetLabelSelector(controller, channel, uid string) labels.Selector {
@@ -27,7 +29,7 @@ func GetLabelSelector(controller, channel, uid string) labels.Selector {
 func GetLabels(controller, channel, uid string) map[string]string {
 	return map[string]string{
 		"events.cloud.google.com/channel":        controller,
-		"events.cloud.google.com/channel-name":   channel,
+		intevents.ChannelLabelKey:                channel,
 		"events.cloud.google.com/controller-uid": uid,
 	}
 }

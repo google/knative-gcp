@@ -40,6 +40,16 @@ spec:
       containers:
       - name: retry
         image: retry
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 1
         env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /var/secrets/google/key.json        
@@ -69,6 +79,8 @@ spec:
         ports:
         - name: metrics
           containerPort: 9090
+        - name: http-health
+          containerPort: 8080
       volumes:
       - name: broker-config
         configMap:

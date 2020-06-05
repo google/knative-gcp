@@ -20,8 +20,8 @@ import (
 	"context"
 
 	"cloud.google.com/go/pubsub"
+	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
 	cev2 "github.com/cloudevents/sdk-go/v2"
-	cepubsub "github.com/cloudevents/sdk-go/v2/protocol/pubsub"
 	"knative.dev/eventing/pkg/kncloudevents"
 )
 

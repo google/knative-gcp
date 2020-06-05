@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+
 	"k8s.io/apimachinery/pkg/labels"
 
 	"cloud.google.com/go/pubsub"

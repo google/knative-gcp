@@ -72,11 +72,7 @@ func TestTopicIdentityStatus(t *testing.T) {
 
 func TestTopicConditionSet(t *testing.T) {
 	want := []apis.Condition{{
-		Type: TopicConditionAddressable,
-	}, {
 		Type: TopicConditionTopicExists,
-	}, {
-		Type: TopicConditionPublisherReady,
 	}, {
 		Type: apis.ConditionReady,
 	}}
