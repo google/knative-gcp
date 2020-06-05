@@ -103,7 +103,7 @@ func (i *Identity) ReconcileWorkloadIdentity(ctx context.Context, projectID stri
 	}
 
 	// Add iam policy binding to GCP ServiceAccount.
-	if err := i.addIamPolicyBinding(ctx, projectID, identityNames.GoogleServiceAccountName, kServiceAccount); err != nil {
+	if err := i.addIamPolicyBinding(ctx, projectID, identityNames); err != nil {
 		status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), workloadIdentityFailed, err.Error())
 		return kServiceAccount, fmt.Errorf("adding iam policy binding failed with: %w", err)
 	}
@@ -142,7 +142,7 @@ func (i *Identity) DeleteWorkloadIdentity(ctx context.Context, projectID string,
 	}
 	if kServiceAccount != nil && len(kServiceAccount.OwnerReferences) == 1 {
 		logging.FromContext(ctx).Desugar().Debug("Removing iam policy binding.")
-		if err := i.removeIamPolicyBinding(ctx, projectID, identityNames.GoogleServiceAccountName, kServiceAccount); err != nil {
+		if err := i.removeIamPolicyBinding(ctx, projectID, identityNames); err != nil {
 			status.MarkWorkloadIdentityFailed(identifiable.ConditionSet(), deleteWorkloadIdentityFailed, err.Error())
 			return fmt.Errorf("removing iam policy binding failed with: %w", err)
 		}
@@ -160,10 +160,10 @@ func (i *Identity) getGoogleServiceAccountName(ctx context.Context, identifiable
 	}
 
 	if identifiable.IdentitySpec().GoogleServiceAccount != "" {
-		gooleServiceAccount := identifiable.IdentitySpec().GoogleServiceAccount
+		googleServiceAccount := identifiable.IdentitySpec().GoogleServiceAccount
 		return resources.IdentityNames{
-			KServiceAccountName:      resources.GenerateServiceAccountName(gooleServiceAccount, clusterName),
-			GoogleServiceAccountName: gooleServiceAccount,
+			KServiceAccountName:      resources.GenerateServiceAccountName(googleServiceAccount, clusterName),
+			GoogleServiceAccountName: googleServiceAccount,
 			Namespace:                namespace,
 			ClusterName:              clusterName,
 		}, nil
@@ -202,29 +202,29 @@ func (i *Identity) createServiceAccount(ctx context.Context, identityNames resou
 
 // TODO he iam policy binding should be mocked so that we can unit test it. issue https://github.com/google/knative-gcp/issues/657
 // addIamPolicyBinding will add iam policy binding, which is related to a provided k8s ServiceAccount, to a GCP ServiceAccount.
-func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+func (i *Identity) addIamPolicyBinding(ctx context.Context, projectID string, identityNames resources.IdentityNames) error {
 	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
-	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
+	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, identityNames.Namespace, identityNames.KServiceAccountName)
 
-	return i.policyManager.AddIAMPolicyBinding(ctx, iam.GServiceAccount(gServiceAccount), currentMember, Role)
+	return i.policyManager.AddIAMPolicyBinding(ctx, iam.GServiceAccount(identityNames.GoogleServiceAccountName), currentMember, Role)
 }
 
 // removeIamPolicyBinding will remove iam policy binding, which is related to a provided k8s ServiceAccount, from a GCP ServiceAccount.
-func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID, gServiceAccount string, kServiceAccount *corev1.ServiceAccount) error {
+func (i *Identity) removeIamPolicyBinding(ctx context.Context, projectID string, identityNames resources.IdentityNames) error {
 	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		return fmt.Errorf("failed to get project id: %w", err)
 	}
 
 	// currentMember will end up as "serviceAccount:projectId.svc.id.goog[k8s-namespace/ksa-name]".
-	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, kServiceAccount.Namespace, kServiceAccount.Name)
+	currentMember := fmt.Sprintf("serviceAccount:%s.svc.id.goog[%s/%s]", projectID, identityNames.Namespace, identityNames.KServiceAccountName)
 
-	return i.policyManager.RemoveIAMPolicyBinding(ctx, iam.GServiceAccount(gServiceAccount), currentMember, Role)
+	return i.policyManager.RemoveIAMPolicyBinding(ctx, iam.GServiceAccount(identityNames.GoogleServiceAccountName), currentMember, Role)
 }
 
 // ownerReferenceExists checks if a K8s ServiceAccount contains specific ownerReference
