@@ -16,9 +16,11 @@ limitations under the License.
 
 package resources
 
+import "github.com/google/knative-gcp/pkg/apis/intevents"
+
 func GetLabels(receiveAdapterName, source string) map[string]string {
 	return map[string]string{
-		"receive-adapter":                     receiveAdapterName,
-		"events.cloud.google.com/source-name": source,
+		"receive-adapter":        receiveAdapterName,
+		intevents.SourceLabelKey: source,
 	}
 }

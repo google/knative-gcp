@@ -17,10 +17,9 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
-	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
 
 	"knative.dev/pkg/apis"
 
@@ -44,7 +43,7 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -134,6 +133,14 @@ func WithTopicProjectID(projectID string) TopicOption {
 func WithTopicReady(topicID string) TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
+		s.Status.MarkTopicReady()
+		s.Status.TopicID = topicID
+	}
+}
+
+func WithTopicReadyAndPublisherDeployed(topicID string) TopicOption {
+	return func(s *v1alpha1.Topic) {
+		s.Status.InitializeConditions()
 		s.Status.MarkPublisherDeployed()
 		s.Status.MarkTopicReady()
 		s.Status.TopicID = topicID
@@ -143,7 +150,7 @@ func WithTopicReady(topicID string) TopicOption {
 func WithTopicFailed() TopicOption {
 	return func(s *v1alpha1.Topic) {
 		s.Status.InitializeConditions()
-		s.Status.MarkPublisherNotDeployed("PublisherStatus", "Publisher has no Ready type status")
+		s.Status.MarkNoTopic("TopicFailed", "test message")
 	}
 }
 
@@ -188,7 +195,7 @@ func WithTopicAnnotations(annotations map[string]string) TopicOption {
 	}
 }
 
-func WithTopicDefaultAuthorization() TopicOption {
+func WithTopicDefaultGCPAuth() TopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

@@ -16,8 +16,25 @@ limitations under the License.
 
 package lib
 
-type TargetOutput struct {
+type outputSuccess struct {
 	Success bool `json:"success"`
+}
+
+func (o *outputSuccess) Successful() bool {
+	return o.Success
+}
+
+type TargetOutput struct {
+	outputSuccess
+}
+
+type SenderOutput struct {
+	outputSuccess
+	TraceID string `json:"traceid"`
+}
+
+type Output interface {
+	Successful() bool
 }
 
 type AuthConfig struct {

@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"testing"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -29,6 +30,7 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 	testCases := map[string]struct {
 		orig     *PubSubSpec
 		expected *PubSubSpec
+		ctx      context.Context
 	}{
 		"missing defaults": {
 			orig: &PubSubSpec{},
@@ -40,6 +42,12 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 					Key: "key.json",
 				},
 			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
+		},
+		"missing default GCP Auth ctx": {
+			orig:     &PubSubSpec{},
+			expected: &PubSubSpec{},
+			ctx:      context.Background(),
 		},
 		"empty defaults": {
 			orig: &PubSubSpec{
@@ -53,6 +61,7 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 					Key: "key.json",
 				},
 			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
 		"secret exists same key": {
 			orig: &PubSubSpec{
@@ -71,6 +80,7 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 					Key: "key.json",
 				},
 			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
 		"secret exists same name": {
 			orig: &PubSubSpec{
@@ -89,6 +99,7 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 					Key: "different-key.json",
 				},
 			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
 		"secret exists all different": {
 			orig: &PubSubSpec{
@@ -107,11 +118,12 @@ func TestPubSubSpec_SetPubSubDefaults(t *testing.T) {
 					Key: "different-key.json",
 				},
 			},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
 	}
 	for n, tc := range testCases {
 		t.Run(n, func(t *testing.T) {
-			tc.orig.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
+			tc.orig.SetPubSubDefaults(tc.ctx)
 			if diff := cmp.Diff(tc.expected, tc.orig); diff != "" {
 				t.Errorf("Unexpected differences (-want +got): %v", diff)
 			}

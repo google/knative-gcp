@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
-	v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
 	"knative.dev/pkg/apis"
 
 	corev1 "k8s.io/api/core/v1"
@@ -70,10 +70,9 @@ const (
 
 	sourceUID = sourceName + "-abc-123"
 
-	testProject        = "test-project-id"
-	testTopicID        = sourceUID + "-TOPIC"
-	testSubscriptionID = "cre-pull-" + sourceUID
-	generation         = 1
+	testProject = "test-project-id"
+	testTopicID = sourceUID + "-TOPIC"
+	generation  = 1
 
 	secretName = "testing-secret"
 
@@ -87,6 +86,8 @@ var (
 
 	transformerDNS = transformerName + ".mynamespace.svc.cluster.local"
 	transformerURI = apis.HTTP(transformerDNS)
+
+	testSubscriptionID = fmt.Sprintf("cre-ps_%s_%s_%s", testNS, sourceName, sourceUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -817,7 +818,7 @@ func mockDiscoveryFunc(_ discovery.DiscoveryInterface, _ schema.GroupVersion) er
 }
 
 func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL) runtime.Object {
-	source := NewPullSubscription(sourceName, testNS,
+	ps := NewPullSubscription(sourceName, testNS,
 		WithPullSubscriptionUID(sourceUID),
 		WithPullSubscriptionAnnotations(map[string]string{
 			v1alpha1.AutoscalingClassAnnotation:                v1alpha1.KEDA,
@@ -835,12 +836,12 @@ func newReceiveAdapter(ctx context.Context, image string, transformer *apis.URL)
 			Topic: testTopicID,
 		}))
 	args := &resources.ReceiveAdapterArgs{
-		Image:          image,
-		Source:         source,
-		Labels:         resources.GetLabels(controllerAgentName, sourceName),
-		SubscriptionID: testSubscriptionID,
-		SinkURI:        sinkURI,
-		TransformerURI: transformer,
+		Image:            image,
+		PullSubscription: ps,
+		Labels:           resources.GetLabels(controllerAgentName, sourceName),
+		SubscriptionID:   testSubscriptionID,
+		SinkURI:          sinkURI,
+		TransformerURI:   transformer,
 	}
 	return resources.MakeReceiveAdapter(ctx, args)
 }

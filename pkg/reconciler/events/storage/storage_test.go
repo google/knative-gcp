@@ -43,6 +43,7 @@ import (
 
 	duckv1alpha1 "github.com/google/knative-gcp/pkg/apis/duck/v1alpha1"
 	storagev1alpha1 "github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
+	. "github.com/google/knative-gcp/pkg/apis/intevents"
 	inteventsv1alpha1 "github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/client/injection/reconciler/events/v1alpha1/cloudstoragesource"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
@@ -61,7 +62,6 @@ const (
 	testNS         = "testnamespace"
 	testImage      = "notification-ops-image"
 	testProject    = "test-project-id"
-	testTopicID    = "storage-" + storageUID
 	testTopicURI   = "http://" + storageName + "-topic." + testNS + ".svc.cluster.local"
 	generation     = 1
 
@@ -80,6 +80,8 @@ var (
 
 	sinkDNS = sinkName + ".mynamespace.svc.cluster.local"
 	sinkURI = apis.HTTP(sinkDNS)
+
+	testTopicID = fmt.Sprintf("cre-src_%s_%s_%s", testNS, storageName, storageUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -200,10 +202,11 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicLabels(map[string]string{
-					"receive-adapter":                     receiveAdapterName,
-					"events.cloud.google.com/source-name": storageName,
+					"receive-adapter": receiveAdapterName,
+					SourceLabelKey:    storageName,
 				}),
 				WithTopicAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
@@ -230,6 +233,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
 			),
@@ -264,6 +268,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -300,6 +305,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(""),
 				WithTopicProjectID(testProject),
@@ -337,6 +343,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady("garbaaaaage"),
 				WithTopicProjectID(testProject),
@@ -352,7 +359,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceTopicFailed("TopicNotReady", `Topic "my-test-storage" mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`),
+				WithCloudStorageSourceTopicFailed("TopicNotReady", fmt.Sprintf(`Topic "my-test-storage" mismatch: expected %q got "garbaaaaage"`, testTopicID)),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -360,7 +367,7 @@ func TestAllCases(t *testing.T) {
 		},
 		WantEvents: []string{
 			Eventf(corev1.EventTypeNormal, "FinalizerUpdate", "Updated %q finalizers", storageName),
-			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf(`%s: Topic %q mismatch: expected "storage-test-storage-uid" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName)),
+			Eventf(corev1.EventTypeWarning, reconciledPubSubFailed, fmt.Sprintf(`%s: Topic %q mismatch: expected "%s" got "garbaaaaage"`, failedToReconcilePubSubMsg, storageName, testTopicID)),
 		},
 	}, {
 		Name: "topic exists and the status of topic is false",
@@ -374,6 +381,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicFailed(),
 				WithTopicProjectID(testProject),
@@ -388,7 +396,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceBucket(bucket),
 				WithCloudStorageSourceSink(sinkGVK, sinkName),
 				WithInitCloudStorageSourceConditions,
-				WithCloudStorageSourceTopicFailed("PublisherStatus", "Publisher has no Ready type status"),
+				WithCloudStorageSourceTopicFailed("TopicFailed", "test message"),
 			),
 		}},
 		WantPatches: []clientgotesting.PatchActionImpl{
@@ -410,6 +418,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicUnknown(),
 				WithTopicProjectID(testProject),
@@ -444,17 +453,18 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultAuthorization(),
+				WithCloudStorageSourceDefaultGCPAuth(),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
-				WithTopicDefaultAuthorization(),
+				WithTopicDefaultGCPAuth(),
 			),
 			newSink(),
 		},
@@ -471,7 +481,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultAuthorization(),
+				WithCloudStorageSourceDefaultGCPAuth(),
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
 			),
 		}},
@@ -485,8 +495,8 @@ func TestAllCases(t *testing.T) {
 				}),
 				WithPullSubscriptionSink(sinkGVK, sinkName),
 				WithPullSubscriptionLabels(map[string]string{
-					"receive-adapter":                     receiveAdapterName,
-					"events.cloud.google.com/source-name": storageName,
+					"receive-adapter": receiveAdapterName,
+					SourceLabelKey:    storageName,
 				}),
 				WithPullSubscriptionAnnotations(map[string]string{
 					"metrics-resource-group":           resourceGroup,
@@ -514,6 +524,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -563,6 +574,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -611,6 +623,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -662,6 +675,7 @@ func TestAllCases(t *testing.T) {
 					Topic:             testTopicID,
 					PropagationPolicy: "CreateDelete",
 					Project:           testProject,
+					EnablePublisher:   &falseVal,
 				}),
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
@@ -729,6 +743,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -797,6 +812,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -865,6 +881,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
@@ -933,6 +950,7 @@ func TestAllCases(t *testing.T) {
 						Topic:             testTopicID,
 						PropagationPolicy: "CreateDelete",
 						Project:           testProject,
+						EnablePublisher:   &falseVal,
 					}),
 					WithTopicReady(testTopicID),
 					WithTopicAddress(testTopicURI),
