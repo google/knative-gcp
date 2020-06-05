@@ -17,16 +17,16 @@ Then, give that Google Cloud Service Account permissions on your project. The
 actual permissions needed will depend on the resources you are planning to use.
 The Table below enumerates such permissions:
 
-|    Resource / Functionality     |                                     Roles                                      |
-| :-----------------------------: | :----------------------------------------------------------------------------: |
-|        CloudPubSubSource        |                              roles/pubsub.editor                               |
-|       CloudStorageSource        |                              roles/storage.admin                               |
-|      CloudSchedulerSource       |                           roles/cloudscheduler.admin                           |
-|      CloudAuditLogsSource       | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer |
-|        CloudBuildSource         |                            roles/pubsub.subscriber                             |
-|             Channel             |                              roles/pubsub.editor                               |
-|        PullSubscription         |                              roles/pubsub.editor                               |
-|              Topic              |                              roles/pubsub.editor                               |
+| Resource / Functionality |                                     Roles                                      |
+| :----------------------: | :----------------------------------------------------------------------------: |
+|    CloudPubSubSource     |                              roles/pubsub.editor                               |
+|    CloudStorageSource    |                              roles/storage.admin                               |
+|   CloudSchedulerSource   |                           roles/cloudscheduler.admin                           |
+|   CloudAuditLogsSource   | roles/pubsub.admin, roles/logging.configWriter, roles/logging.privateLogViewer |
+|     CloudBuildSource     |                            roles/pubsub.subscriber                             |
+|         Channel          |                              roles/pubsub.editor                               |
+|     PullSubscription     |                              roles/pubsub.editor                               |
+|          Topic           |                              roles/pubsub.editor                               |
 
 In this guide, and for the sake of simplicity, we will just grant `roles/owner`
 privileges to the Google Cloud Service Account, which encompasses all of the
@@ -75,17 +75,20 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
       **_NOTE_**: These commands may take a long time to finish. Check
       [Enable Workload Identity on an existing cluster](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_an_existing_cluster)
       for more information.
-1. Create a Kubernetes Service Account `ksa-name` in the namespace your resources will reside. 
-   If you are configuring Authentication Mechanism for the Control Plane, you can skip this step, 
-   and directly use  Kubernetes Service Account `controller` which is already in the Control Plane namespace  `cloud-run-events`
-   
-    ```shell
-    kubectl create serviceaccount ksa-name -n ksa-namespace
-    ```
-   
+
+1. Create a Kubernetes Service Account `ksa-name` in the namespace your
+   resources will reside. If you are configuring Authentication Mechanism for
+   the Control Plane, you can skip this step, and directly use Kubernetes
+   Service Account `controller` which is already in the Control Plane namespace
+   `cloud-run-events`
+
+   ```shell
+   kubectl create serviceaccount ksa-name -n ksa-namespace
+   ```
+
 1. Bind the Kubernetes Service Account `ksa-name` with Google Cloud Service
    Account.
-   
+
    ```shell
    MEMBER=serviceAccount:$PROJECT_ID.svc.id.goog[ksa-namespace/ksa-name]
 
@@ -93,9 +96,10 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    --role roles/iam.workloadIdentityUser \
    --member $MEMBER gsa-name@$PROJECT_ID.iam.gserviceaccount.com
    ```
-   
-   If you are configuring Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
-   `ksa-name` with `controller`, and `gsa-name` with `cloud-run-events`
+
+   If you are configuring Authentication Mechanism for the Control Plane, you
+   can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
+   `controller`, and `gsa-name` with `cloud-run-events`
 
 1. Annotate the Kubernetes Service Account `ksa-name`.
 
@@ -104,9 +108,10 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
    --namespace ksa-namespace
    ```
 
-   If you are configuring Authentication Mechanism for the Control Plane, you can replace `ksa-namespace` with `cloud-run-events`, 
-   `ksa-name` with `controller`, and `gsa-name` with `cloud-run-events`
-   
+   If you are configuring Authentication Mechanism for the Control Plane, you
+   can replace `ksa-namespace` with `cloud-run-events`, `ksa-name` with
+   `controller`, and `gsa-name` with `cloud-run-events`
+
 ## Option 2: Kubernetes Secrets
 
 1. Download a new JSON private key for that Service Account. **Be sure not to
