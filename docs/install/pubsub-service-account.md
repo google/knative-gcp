@@ -56,21 +56,26 @@ its improved security properties and manageability. For more information about
 Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
-**_Note:_**  If you install 
-the Knative-GCP Constructs with v0.14.0 or older release, please use option 2.
-            
-**_Note:_**  `spec.googleServiceAccount` in v0.14.0 is deprecated for security implications. 
-It has not been promoted to v1beta1 and is expected to be removed from v1alpha1 in the v0.16.0 release.
-Instead, `spec.serviceAccountName` has been introduced for Workload Identity in v0.15.0, whose value is a Kubernetes Service Account.
+**_Note:_** If you install the Knative-GCP Constructs with v0.14.0 or older
+release, please use option 2.   
+**_Note:_** `spec.googleServiceAccount` in v0.14.0 is deprecated for security
+implications. It has not been promoted to v1beta1 and is expected to be removed
+from v1alpha1 in the v0.16.0 release. Instead, `spec.serviceAccountName` has
+been introduced for Workload Identity in v0.15.0, whose value is a Kubernetes
+Service Account.
 
-Using the Google Cloud Service Account you just created and checking 
-[Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity) in 
-[Manually Configure Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md) 
+Using the Google Cloud Service Account you just created and checking
+[Option 1 (Recommended): Workload Identity](../install/authentication-mechanisms-gcp.md/#option-1-recommended-workload-identity)
+in
+[Manually Configure Authentication Mechanism for GCP](../install/authentication-mechanisms-gcp.md)
 to configure Workload Identity in the namespace your resources will reside.
 
-You will have a Kubernetes Service Account after the above configuration, which is bound to the Google Cloud Service Account you just created. 
-Remember to put this Kubernetes Service Account name under `spec.serviceAccountName` when you follow [example](https://github.com/google/knative-gcp/tree/master/docs/examples) to use 
-resource.
+You will have a Kubernetes Service Account after the above configuration, which
+is bound to the Google Cloud Service Account you just created. Remember to put
+this Kubernetes Service Account name under `spec.serviceAccountName` when you
+follow
+[example](https://github.com/google/knative-gcp/tree/master/docs/examples) to
+use resource.
 
 ### Option 2. Export Service Account Keys And Store Them as Kubernetes Secrets
 
