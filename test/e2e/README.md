@@ -215,3 +215,36 @@ application. This Go file should use the package `main` and include the function
 uploading test images, `ko` will build an image from this folder and upload to
 the Docker repository configured as
 [`KO_DOCKER_REPO`](https://github.com/knative/serving/blob/master/DEVELOPMENT.md#environment-setup).
+
+## Troubleshooting E2E Tests
+
+### Prow
+
+Each PR will trigger [E2E tests](../../test/e2e). For failed tests, follow the
+prow links on the PR page. Such links are in the format of
+`https://prow.knative.dev/view/gcs/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]`
+, e.g.
+`https://prow.knative.dev/view/gcs/knative-prow/pr-logs/pull/google_knative-gcp/1153/pull-google-knative-gcp-integration-tests/1267481606424104960`
+.
+
+If the prow page doesn't provide any useful information, check out the full logs
+dump.
+
+- The control plane pods (in `cloud-run-events` namespace) logs dump are at
+  `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/controller-logs/`
+  .
+- The data plane pods logs dump are at
+  `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/pod-logs/`
+  .
+  
+### Local
+Add `CI=true`to the `go test` command.
+- The data plane pods logs dump are at
+  `$GOPATH/src/github.com/google/knative-gcp/test/e2e/artifacts/pod-logs`
+  .
+
+For example:
+```shell
+CI=true E2E_PROJECT_ID=$PROJECT_ID \
+ go test --tags=e2e ./test/e2e/...
+```
