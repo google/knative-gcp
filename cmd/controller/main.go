@@ -17,6 +17,10 @@ limitations under the License.
 package main
 
 import (
+	"log"
+
+	"google.golang.org/api/option"
+
 	// The following line to load the gcp plugin (only required to authenticate against GKE clusters).
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
@@ -34,24 +38,49 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler/messaging/channel"
 	"github.com/google/knative-gcp/pkg/reconciler/trigger"
 	"github.com/google/knative-gcp/pkg/utils/appcredentials"
+	"knative.dev/pkg/injection"
 	"knative.dev/pkg/injection/sharedmain"
+	"knative.dev/pkg/signals"
 )
 
 func main() {
 	appcredentials.MustExistOrUnsetEnv()
-	sharedmain.Main("controller",
-		auditlogs.NewController,
-		storage.NewController,
-		scheduler.NewController,
-		pubsub.NewController,
-		build.NewController,
-		staticpullsubscription.NewController,
-		kedapullsubscription.NewController,
-		topic.NewController,
-		channel.NewController,
+	ctx := signals.NewContext()
+	controllers, err := InitializeControllers(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sharedmain.Main("controller", controllers...)
+}
+
+func Controllers(
+	auditlogsController auditlogs.Constructor,
+	storageController storage.Constructor,
+	schedulerController scheduler.Constructor,
+	pubsubController pubsub.Constructor,
+	buildController build.Constructor,
+	pullsubscriptionController staticpullsubscription.Constructor,
+	kedaPullsubscriptionController kedapullsubscription.Constructor,
+	topicController topic.Constructor,
+	channelController channel.Constructor,
+) []injection.ControllerConstructor {
+	return []injection.ControllerConstructor{
+		injection.ControllerConstructor(auditlogsController),
+		injection.ControllerConstructor(storageController),
+		injection.ControllerConstructor(schedulerController),
+		injection.ControllerConstructor(pubsubController),
+		injection.ControllerConstructor(buildController),
+		injection.ControllerConstructor(pullsubscriptionController),
+		injection.ControllerConstructor(kedaPullsubscriptionController),
+		injection.ControllerConstructor(topicController),
+		injection.ControllerConstructor(channelController),
 		deployment.NewController,
 		broker.NewController,
 		trigger.NewController,
 		brokercell.NewController,
-	)
+	}
+}
+
+func ClientOptions() []option.ClientOption {
+	return nil
 }
