@@ -52,10 +52,10 @@ func SubscriptionWithTopic(id string, tid string) PubsubAction {
 	}
 }
 
-func TopicAndSub(id string) PubsubAction {
+func TopicAndSub(tid, sid string) PubsubAction {
 	return func(ctx context.Context, t *testing.T, c *pubsub.Client) {
-		Topic(id)(ctx, t, c)
-		SubscriptionWithTopic(id, id)(ctx, t, c)
+		Topic(tid)(ctx, t, c)
+		SubscriptionWithTopic(sid, tid)(ctx, t, c)
 	}
 }
 

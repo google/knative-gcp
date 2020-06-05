@@ -37,6 +37,7 @@ import (
 	metadataClient "github.com/google/knative-gcp/pkg/gclient/metadata"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
+	reconcilerutilspubsub "github.com/google/knative-gcp/pkg/reconciler/utils/pubsub"
 	"github.com/google/knative-gcp/pkg/utils"
 	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
@@ -45,11 +46,6 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled         = "TriggerReconciled"
 	triggerFinalized          = "TriggerFinalized"
-	triggerReadinessChanged   = "TriggerReadinessChanged"
-	triggerReconcileFailed    = "TriggerReconcileFailed"
-	triggerUpdateStatusFailed = "TriggerUpdateStatusFailed"
-	topicCreated              = "TopicCreated"
-	subCreated                = "SubscriptionCreated"
 	topicDeleted              = "TopicDeleted"
 	subDeleted                = "SubscriptionDeleted"
 )
@@ -67,8 +63,6 @@ type Reconciler struct {
 	addressableTracker duck.ListableTracker
 	uriResolver        *resolver.URIResolver
 
-	// projectID is used as the GCP project ID when present, skipping the
-	// metadata server check.
 	projectID string
 
 	// pubsubClient is used as the Pubsub client when present.
@@ -198,83 +192,41 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 		defer client.Close()
 	}
 
-	// Check if topic exists, and if not, create it.
-	topicID := resources.GenerateRetryTopicName(trig)
-	topic := client.Topic(topicID)
-	exists, err := topic.Exists(ctx)
+	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
 	if err != nil {
-		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		trig.Status.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
-	if !exists {
-		// TODO If this can ever change through the Broker's lifecycle, add
-		// update handling
-		topicConfig := &pubsub.TopicConfig{
-			Labels: map[string]string{
-				"resource":  "triggers",
-				"namespace": trig.Namespace,
-				"name":      trig.Name,
-				//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
-			},
-		}
-		// Create a new topic.
-		logger.Debug("Creating topic with cfg", zap.String("id", topicID), zap.Any("cfg", topicConfig))
-		topic, err = client.CreateTopicWithConfig(ctx, topicID, topicConfig)
-		if err != nil {
-			logger.Error("Failed to create Pub/Sub topic", zap.Error(err))
-			trig.Status.MarkTopicFailed("TopicCreationFailed", "Topic creation failed: %w", err)
-			return err
-		}
-		logger.Info("Created PubSub topic", zap.String("name", topic.ID()))
-		r.Recorder.Eventf(trig, corev1.EventTypeNormal, topicCreated, "Created PubSub topic %q", topic.ID())
+	labels := map[string]string{
+		"resource":  "triggers",
+		"namespace": trig.Namespace,
+		"name":      trig.Name,
+		//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
 	}
 
-	trig.Status.MarkTopicReady()
+	// Check if topic exists, and if not, create it.
+	topicID := resources.GenerateRetryTopicName(trig)
+	topicConfig := &pubsub.TopicConfig{Labels: labels}
+	topic, err := pubsubReconciler.ReconcileTopic(ctx, topicID, topicConfig, trig, &trig.Status)
+	if err != nil {
+		return err
+	}
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.TopicID = topic.ID()
 
 	// Check if PullSub exists, and if not, create it.
 	subID := resources.GenerateRetrySubscriptionName(trig)
-	sub := client.Subscription(subID)
-	subExists, err := sub.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		trig.Status.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
+	subConfig := pubsub.SubscriptionConfig{
+		Topic:  topic,
+		Labels: labels,
+		//TODO(grantr): configure these settings?
+		// AckDeadline
+		// RetentionDuration
+	}
+	if _, err := pubsubReconciler.ReconcileSubscription(ctx, subID, subConfig, trig, &trig.Status); err != nil {
 		return err
 	}
-
-	if !subExists {
-		// TODO If this can ever change through the Broker's lifecycle, add
-		// update handling
-		subConfig := pubsub.SubscriptionConfig{
-			Topic: topic,
-			Labels: map[string]string{
-				"resource":  "triggers",
-				"namespace": trig.Namespace,
-				"name":      trig.Name,
-				//TODO add resource labels, but need to be sanitized: https://cloud.google.com/pubsub/docs/labels#requirements
-			},
-			//TODO(grantr): configure these settings?
-			// AckDeadline
-			// RetentionDuration
-		}
-		// Create a new subscription to the previous topic with the given name.
-		logger.Debug("Creating sub with cfg", zap.String("id", subID), zap.Any("cfg", subConfig))
-		sub, err = client.CreateSubscription(ctx, subID, subConfig)
-		if err != nil {
-			logger.Error("Failed to create subscription", zap.Error(err))
-			trig.Status.MarkSubscriptionFailed("SubscriptionCreationFailed", "Subscription creation failed: %w", err)
-			return err
-		}
-		logger.Info("Created PubSub subscription", zap.String("name", sub.ID()))
-		r.Recorder.Eventf(trig, corev1.EventTypeNormal, subCreated, "Created PubSub subscription %q", sub.ID())
-	}
-	//TODO update the subscription's config if needed.
-
-	trig.Status.MarkSubscriptionReady()
 	// TODO(grantr): this isn't actually persisted due to webhook issues.
 	//TODO uncomment when eventing webhook allows this
 	//trig.Status.SubscriptionID = sub.ID()

@@ -18,6 +18,7 @@ package broker
 
 import (
 	"context"
+	"os"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -66,7 +67,11 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
 	// create a client on reconcile.
-	client, err := newPubsubClient(ctx, "")
+	projectID, err := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logging.FromContext(ctx).Fatal("Failed to get project ID", zap.Error(err))
+	}
+	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
 	}
@@ -86,6 +91,7 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 		deploymentLister:   deploymentInformer.Lister(),
 		podLister:          podInformer.Lister(),
 		brokerCellLister:   bcInformer.Lister(),
+		projectID:          projectID,
 		pubsubClient:       client,
 		targetsNeedsUpdate: make(chan struct{}),
 	}
@@ -152,17 +158,4 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	))
 
 	return impl
-}
-
-func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
-	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
 }
