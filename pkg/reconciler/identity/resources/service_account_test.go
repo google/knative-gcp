@@ -49,7 +49,11 @@ func TestMakeServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	got := MakeServiceAccount("default", kServiceAccountName, gServiceAccountName, clusterName)
+	got := MakeServiceAccount(IdentityNames{
+		KServiceAccountName:      kServiceAccountName,
+		GoogleServiceAccountName: gServiceAccountName,
+		Namespace:                "default",
+		ClusterName:              clusterName})
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("unexpected (-want, +got) = %v", diff)
 	}

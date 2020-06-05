@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	logtesting "knative.dev/pkg/logging/testing"
+
 	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
@@ -38,6 +40,7 @@ import (
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	. "knative.dev/pkg/configmap/testing"
 	"knative.dev/pkg/kmeta"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
@@ -153,9 +156,15 @@ func TestKSACreates(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			store := gcpauth.NewStore(logtesting.TestLogger(t))
+			_, defaultsConfig := ConfigMapsFromTestFile(t, "config-gcp-auth", "default-auth-config")
+			store.OnConfigChanged(defaultsConfig)
+
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  store,
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS)
 			identifiable.Spec.ServiceAccountName = kServiceAccountName
@@ -266,6 +275,7 @@ func TestKSADeletes(t *testing.T) {
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
@@ -377,6 +387,7 @@ func TestCreates(t *testing.T) {
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
@@ -485,6 +496,7 @@ func TestDeletes(t *testing.T) {
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),

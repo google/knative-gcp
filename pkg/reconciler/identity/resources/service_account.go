@@ -28,19 +28,26 @@ const (
 	WorkloadIdentityKey = "iam.gke.io/gcp-service-account"
 )
 
+type IdentityNames struct {
+	KServiceAccountName      string
+	GoogleServiceAccountName string
+	Namespace                string
+	ClusterName              string
+}
+
 // GenerateServiceAccountName generates a k8s ServiceAccount name according to GCP ServiceAccount
 func GenerateServiceAccountName(gServiceAccount, clusterName string) string {
 	return fmt.Sprintf("%s-%s", strings.Split(gServiceAccount, "@")[0], clusterName)
 }
 
 // MakeServiceAccount creates a K8s ServiceAccount object for the Namespace.
-func MakeServiceAccount(namespace string, kServiceAccount, gServiceAccount, clusterName string) *corev1.ServiceAccount {
+func MakeServiceAccount(identityNames IdentityNames) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      kServiceAccount,
+			Namespace: identityNames.Namespace,
+			Name:      identityNames.KServiceAccountName,
 			Annotations: map[string]string{
-				WorkloadIdentityKey: gServiceAccount,
+				WorkloadIdentityKey: identityNames.GoogleServiceAccountName,
 			},
 		},
 	}
