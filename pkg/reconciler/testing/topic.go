@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -44,7 +43,7 @@ func NewTopic(name, namespace string, so ...TopicOption) *v1alpha1.Topic {
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 

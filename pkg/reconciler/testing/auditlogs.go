@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -42,7 +41,7 @@ func NewCloudAuditLogsSource(name, namespace string, opts ...CloudAuditLogsSourc
 	for _, opt := range opts {
 		opt(cal)
 	}
-	cal.SetDefaults(context.Background())
+	cal.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return cal
 }
 
