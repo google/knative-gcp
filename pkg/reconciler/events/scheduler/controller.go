@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
@@ -57,13 +58,15 @@ func NewController(
 	return newControllerWithIAMPolicyManager(
 		ctx,
 		cmw,
-		iam.DefaultIAMPolicyManager())
+		iam.DefaultIAMPolicyManager(),
+		identity.NewGCPAuthStore(ctx, cmw))
 }
 
 func newControllerWithIAMPolicyManager(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
@@ -72,7 +75,7 @@ func newControllerWithIAMPolicyManager(
 
 	c := &Reconciler{
 		PubSubBase:      intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-		Identity:        identity.NewIdentity(ctx, ipm),
+		Identity:        identity.NewIdentity(ctx, ipm, gcpas),
 		schedulerLister: cloudschedulersourceInformer.Lister(),
 		createClientFn:  gscheduler.NewClient,
 	}

@@ -549,7 +549,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			channelLister: listers.GetChannelLister(),
 			topicLister:   listers.GetTopicLister(),
 		}

@@ -20,16 +20,18 @@ package auditlogs
 import (
 	"context"
 
+	"k8s.io/client-go/tools/cache"
+	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/events/v1alpha1"
 	"github.com/google/knative-gcp/pkg/pubsub/adapter/converters"
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/identity"
 	"github.com/google/knative-gcp/pkg/reconciler/identity/iam"
 	"github.com/google/knative-gcp/pkg/reconciler/intevents"
-	"k8s.io/client-go/tools/cache"
-	serviceaccountinformers "knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	"knative.dev/pkg/configmap"
-	"knative.dev/pkg/controller"
 
 	cloudauditlogssourceinformers "github.com/google/knative-gcp/pkg/client/injection/informers/events/v1alpha1/cloudauditlogssource"
 	pullsubscriptioninformers "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
@@ -60,13 +62,15 @@ func NewController(
 	return newControllerWithIAMPolicyManager(
 		ctx,
 		cmw,
-		iam.DefaultIAMPolicyManager())
+		iam.DefaultIAMPolicyManager(),
+		identity.NewGCPAuthStore(ctx, cmw))
 }
 
 func newControllerWithIAMPolicyManager(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	pullsubscriptionInformer := pullsubscriptioninformers.Get(ctx)
 	topicInformer := topicinformers.Get(ctx)
@@ -75,7 +79,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		PubSubBase:             intevents.NewPubSubBaseWithAdapter(ctx, controllerAgentName, receiveAdapterName, converters.CloudAuditLogsConverter, cmw),
-		Identity:               identity.NewIdentity(ctx, ipm),
+		Identity:               identity.NewIdentity(ctx, ipm, gcpas),
 		auditLogsSourceLister:  cloudauditlogssourceInformer.Lister(),
 		logadminClientProvider: glogadmin.NewClient,
 		pubsubClientProvider:   gpubsub.NewClient,

@@ -35,8 +35,8 @@ import (
 func TestNew(t *testing.T) {
 	defer logtesting.ClearAll()
 	ctx, _ := SetupFakeContext(t)
-
-	c := newControllerWithIAMPolicyManager(ctx, configmap.NewStaticWatcher(), iamtesting.NoopIAMPolicyManager)
+	cmw := configmap.NewStaticWatcher()
+	c := newControllerWithIAMPolicyManager(ctx, cmw, iamtesting.NoopIAMPolicyManager, iamtesting.NewGCPAuthTestStore(t, nil))
 
 	if c == nil {
 		t.Fatal("Expected newControllerWithIAMPolicyManager to return a non-nil value")
