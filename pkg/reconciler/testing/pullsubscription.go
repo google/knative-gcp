@@ -285,7 +285,7 @@ func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionDefaultAuthorization() PullSubscriptionOption {
+func WithPullSubscriptionDefaultGCPAuth() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

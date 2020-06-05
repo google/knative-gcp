@@ -87,7 +87,7 @@ var (
 
 	pubsubable = rectesting.NewCloudStorageSource(name, testNS,
 		rectesting.WithCloudStorageSourceSinkDestination(sink),
-		rectesting.WithCloudStorageSourceDefaultAuthorization())
+		rectesting.WithCloudStorageSourceDefaultGCPAuth())
 
 	ignoreLastTransitionTime = cmp.FilterPath(func(p cmp.Path) bool {
 		return strings.HasSuffix(p.String(), "LastTransitionTime.Inner.Time")

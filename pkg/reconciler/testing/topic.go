@@ -195,7 +195,7 @@ func WithTopicAnnotations(annotations map[string]string) TopicOption {
 	}
 }
 
-func WithTopicDefaultAuthorization() TopicOption {
+func WithTopicDefaultGCPAuth() TopicOption {
 	return func(t *v1alpha1.Topic) {
 		t.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

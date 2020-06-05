@@ -53,10 +53,9 @@ func (ts *TopicSpec) SetDefaults(ctx context.Context) {
 		logging.FromContext(ctx).Error("Failed to get the GCPAuthDefaults")
 		return
 	}
-	if ts.ServiceAccountName == "" {
+	if ts.ServiceAccountName == "" &&
+		(ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{})) {
 		ts.ServiceAccountName = ad.KSA(apis.ParentMeta(ctx).Namespace)
-	}
-	if ts.Secret == nil || equality.Semantic.DeepEqual(ts.Secret, &corev1.SecretKeySelector{}) {
 		ts.Secret = ad.Secret(apis.ParentMeta(ctx).Namespace)
 	}
 

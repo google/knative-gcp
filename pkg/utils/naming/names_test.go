@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	testUID                = "11186600-4003-4ad6-90e7-22780053debf"
+	testUID = "11186600-4003-4ad6-90e7-22780053debf"
 
 	// truncatedPubSubNameMax is computed as follows:
 	// pubsub resource name max length: 255 chars
@@ -42,7 +42,7 @@ const (
 	// uid length: 36 chars
 	// 100 max - 36 uid - 1 uid separator
 	// These are the maximum available characters to use for prefix, ns, name and their separators.
-	truncatedSinkNamesMax   = 63
+	truncatedSinkNamesMax = 63
 )
 
 var (

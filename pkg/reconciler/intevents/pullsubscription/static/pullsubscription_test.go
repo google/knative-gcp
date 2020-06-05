@@ -65,9 +65,9 @@ const (
 
 	sourceUID = sourceName + "-abc-123"
 
-	testProject        = "test-project-id"
-	testTopicID        = sourceUID + "-TOPIC"
-	generation         = 1
+	testProject = "test-project-id"
+	testTopicID = sourceUID + "-TOPIC"
+	generation  = 1
 
 	secretName = "testing-secret"
 

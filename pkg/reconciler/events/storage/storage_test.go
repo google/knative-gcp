@@ -453,7 +453,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultAuthorization(),
+				WithCloudStorageSourceDefaultGCPAuth(),
 			),
 			NewTopic(storageName, testNS,
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
@@ -464,7 +464,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
-				WithTopicDefaultAuthorization(),
+				WithTopicDefaultGCPAuth(),
 			),
 			newSink(),
 		},
@@ -481,7 +481,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudStorageSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudStorageSourceDefaultAuthorization(),
+				WithCloudStorageSourceDefaultGCPAuth(),
 				WithCloudStorageSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilepullSubscriptionMsg),
 			),
 		}},

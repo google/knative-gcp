@@ -434,7 +434,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudAuditLogsSourceDefaultAuthorization(),
+				WithCloudAuditLogsSourceDefaultGCPAuth(),
 			),
 			NewTopic(sourceName, testNS,
 				WithTopicSpec(inteventsv1alpha1.TopicSpec{
@@ -445,7 +445,7 @@ func TestAllCases(t *testing.T) {
 				WithTopicReady(testTopicID),
 				WithTopicAddress(testTopicURI),
 				WithTopicProjectID(testProject),
-				WithTopicDefaultAuthorization(),
+				WithTopicDefaultGCPAuth(),
 			),
 		},
 		Key: testNS + "/" + sourceName,
@@ -461,7 +461,7 @@ func TestAllCases(t *testing.T) {
 				WithCloudAuditLogsSourceAnnotations(map[string]string{
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
-				WithCloudAuditLogsSourceDefaultAuthorization(),
+				WithCloudAuditLogsSourceDefaultGCPAuth(),
 				WithCloudAuditLogsSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", failedToReconcilePullSubscriptionMsg),
 			),
 		}},
@@ -484,7 +484,7 @@ func TestAllCases(t *testing.T) {
 					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 				}),
 				WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{sourceOwnerRef(sourceName, sourceUID)}),
-				WithPullSubscriptionDefaultAuthorization(),
+				WithPullSubscriptionDefaultGCPAuth(),
 			),
 		},
 		WantPatches: []clientgotesting.PatchActionImpl{

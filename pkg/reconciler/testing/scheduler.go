@@ -211,7 +211,7 @@ func WithCloudSchedulerSourceAnnotations(Annotations map[string]string) CloudSch
 	}
 }
 
-func WithCloudSchedulerSourceDefaultAuthorization() CloudSchedulerSourceOption {
+func WithCloudSchedulerSourceDefaultGCPAuth() CloudSchedulerSourceOption {
 	return func(s *v1alpha1.CloudSchedulerSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

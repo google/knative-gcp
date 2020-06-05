@@ -34,7 +34,7 @@ type envConfig struct {
 }
 
 const (
-	component = "broker-ingress"
+	component       = "broker-ingress"
 	metricNamespace = "broker"
 )
 

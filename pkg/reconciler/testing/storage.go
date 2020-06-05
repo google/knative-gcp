@@ -236,7 +236,7 @@ func WithCloudStorageSourceAnnotations(Annotations map[string]string) CloudStora
 	}
 }
 
-func WithCloudStorageSourceDefaultAuthorization() CloudStorageSourceOption {
+func WithCloudStorageSourceDefaultGCPAuth() CloudStorageSourceOption {
 	return func(s *v1alpha1.CloudStorageSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
