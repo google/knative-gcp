@@ -57,7 +57,7 @@ Workload Identity see
 [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity).
 
 **_Note:_** If you install the Knative-GCP Constructs with v0.14.0 or older
-release, please use option 2.   
+release, please use option 2.  
 **_Note:_** `spec.googleServiceAccount` in v0.14.0 is deprecated for security
 implications. It has not been promoted to v1beta1 and is expected to be removed
 from v1alpha1 in the v0.16.0 release. Instead, `spec.serviceAccountName` has

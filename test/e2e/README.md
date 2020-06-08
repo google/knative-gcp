@@ -236,14 +236,16 @@ dump.
 - The data plane pods logs dump are at
   `https://console.cloud.google.com/storage/browser/knative-prow/pr-logs/pull/google_knative-gcp/[PR ID]/[TEST NAME]/[TEST ID]/artifacts/pod-logs/`
   .
-  
+
 ### Local
+
 Add `CI=true`to the `go test` command.
+
 - The data plane pods logs dump are at
-  `$GOPATH/src/github.com/google/knative-gcp/test/e2e/artifacts/pod-logs`
-  .
+  `$GOPATH/src/github.com/google/knative-gcp/test/e2e/artifacts/pod-logs` .
 
 For example:
+
 ```shell
 CI=true E2E_PROJECT_ID=$PROJECT_ID \
  go test --tags=e2e ./test/e2e/...
