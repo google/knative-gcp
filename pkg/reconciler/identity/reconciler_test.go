@@ -22,6 +22,9 @@ import (
 	"strings"
 	"testing"
 
+	logtesting "knative.dev/pkg/logging/testing"
+
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	gclient "github.com/google/knative-gcp/pkg/gclient/iam/admin"
 	testingMetadataClient "github.com/google/knative-gcp/pkg/gclient/metadata/testing"
 
@@ -37,6 +40,7 @@ import (
 
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
+	. "knative.dev/pkg/configmap/testing"
 	"knative.dev/pkg/kmeta"
 	pkgtesting "knative.dev/pkg/reconciler/testing"
 
@@ -66,6 +70,234 @@ var (
 
 	role = "roles/iam.workloadIdentityUser"
 )
+
+func TestKSACreates(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name                   string
+		objects                []runtime.Object
+		config                 *corev1.ConfigMap
+		expectedServiceAccount *corev1.ServiceAccount
+		wantCreates            []runtime.Object
+		wantErrCode            codes.Code
+	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037,
+		// skip test case "k8s service account doesn't exist, failed to get cluster name annotation."
+		{
+			name:   "non-default serviceAccountName, no need to create a k8s service account",
+			config: ConfigMapFromTestFile(t, "config-gcp-auth-empty", "default-auth-config"),
+		}, {
+			name:   "default serviceAccountName, k8s service account doesn't exist, create it",
+			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
+			wantCreates: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+			},
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			wantErrCode: codes.NotFound,
+		}, {
+			name: "default serviceAccountName, k8s service account exists, but doesn't have ownerReference",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName),
+			},
+			config: ConfigMapFromTestFile(t, "config-gcp-auth", "default-auth-config"),
+			expectedServiceAccount: NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+				WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+					APIVersion:         "events.cloud.google.com/v1alpha1",
+					Kind:               "CloudPubSubSource",
+					UID:                "test-pubsub-uid",
+					Name:               identifiableName,
+					Controller:         &falseVal,
+					BlockOwnerDeletion: &trueVal,
+				}}),
+			),
+			wantErrCode: codes.NotFound,
+		}}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			cs := fakeKubeClient.NewSimpleClientset(tc.objects...)
+			iamClient := gclient.NewTestClient()
+			m, err := iam.NewIAMPolicyManager(ctx, iamClient)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			identity := &Identity{
+				kubeClient:    cs,
+				policyManager: m,
+				gcpAuthStore:  NewGCPAuthTestStore(t, tc.config),
+			}
+			identifiable := NewCloudPubSubSource(identifiableName, testNS)
+			identifiable.Spec.ServiceAccountName = kServiceAccountName
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			})
+
+			arl := pkgtesting.ActionRecorderList{cs}
+			kserviceAccount, err := identity.ReconcileWorkloadIdentity(ctx, projectID, identifiable)
+
+			var statusErr interface{ GRPCStatus() *status.Status }
+			if errors.As(err, &statusErr) {
+				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
+					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
+				}
+			} else {
+				if tc.wantErrCode != codes.OK {
+					t.Fatal(err)
+				}
+			}
+			if diff := cmp.Diff(tc.expectedServiceAccount, kserviceAccount, ignoreLastTransitionTime); diff != "" {
+				t.Errorf("unexpected kserviceAccount (-want, +got) = %v", diff)
+			}
+
+			// Validate creates.
+			actions, err := arl.ActionsByVerb()
+			if err != nil {
+				t.Fatal(err)
+			}
+			for i, want := range tc.wantCreates {
+				if i >= len(actions.Creates) {
+					t.Errorf("Missing create: %#v", want)
+					continue
+				}
+				got := actions.Creates[i]
+				obj := got.GetObject()
+				if diff := cmp.Diff(want, obj); diff != "" {
+					t.Errorf("Unexpected create (-want, +got): %s", diff)
+				}
+			}
+		})
+	}
+}
+
+func TestKSADeletes(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		name        string
+		wantDeletes []clientgotesting.DeleteActionImpl
+		objects     []runtime.Object
+		wantErrCode codes.Code
+	}{
+		// Due to the limitation mentioned in https://github.com/google/knative-gcp/issues/1037,
+		// skip test case "delete k8s service account, failed to get cluster name annotation."
+		{
+			name: "default serviceAccountName, delete k8s service account, failed with removing iam policy binding.",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid",
+						Name:               identifiableName,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+			},
+			wantErrCode: codes.NotFound,
+		}, {
+			name: "default serviceAccountName, no need to remove k8s service account",
+			objects: []runtime.Object{
+				NewServiceAccount(kServiceAccountName, testNS, gServiceAccountName,
+					WithServiceAccountOwnerReferences([]metav1.OwnerReference{{
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid1",
+						Name:               identifiableName,
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}, {
+						APIVersion:         "events.cloud.google.com/v1alpha1",
+						Kind:               "CloudPubSubSource",
+						UID:                "test-pubsub-uid2",
+						Name:               identifiableName + "new",
+						Controller:         &falseVal,
+						BlockOwnerDeletion: &trueVal,
+					}}),
+				),
+			},
+		}}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			cs := fakeKubeClient.NewSimpleClientset(tc.objects...)
+			iamClient := gclient.NewTestClient()
+			m, err := iam.NewIAMPolicyManager(ctx, iamClient)
+			if err != nil {
+				t.Fatal(err)
+			}
+			identity := &Identity{
+				kubeClient:    cs,
+				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
+			}
+			identifiable := NewCloudPubSubSource(identifiableName, testNS,
+				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),
+				WithCloudPubSubSourceServiceAccountName("test"))
+			identifiable.Spec.ServiceAccountName = "test"
+			identifiable.SetAnnotations(map[string]string{
+				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+			})
+
+			arl := pkgtesting.ActionRecorderList{cs}
+			err = identity.DeleteWorkloadIdentity(ctx, projectID, identifiable)
+
+			var statusErr interface{ GRPCStatus() *status.Status }
+			if errors.As(err, &statusErr) {
+				if code := statusErr.GRPCStatus().Code(); code != tc.wantErrCode {
+					t.Fatalf("error code: want %v, got %v", tc.wantErrCode, code)
+				}
+			} else {
+				if tc.wantErrCode != codes.OK {
+					t.Fatal(err)
+				}
+			}
+
+			// validate deletes
+			actions, err := arl.ActionsByVerb()
+			if err != nil {
+				t.Errorf("Error capturing actions by verb: %q", err)
+			}
+			for i, want := range tc.wantDeletes {
+				if i >= len(actions.Deletes) {
+					t.Errorf("Missing delete: %#v", want)
+					continue
+				}
+				got := actions.Deletes[i]
+				if got.GetName() != want.GetName() {
+					t.Errorf("Unexpected delete[%d]: %#v", i, got)
+				}
+				if got.GetResource() != want.GetResource() {
+					t.Errorf("Unexpected delete[%d]: %#v wanted: %#v", i, got, want)
+				}
+			}
+			if got, want := len(actions.Deletes), len(tc.wantDeletes); got > want {
+				for _, extra := range actions.Deletes[want:] {
+					t.Errorf("Extra delete: %s/%s", extra.GetNamespace(), extra.GetName())
+				}
+			}
+		})
+	}
+}
 
 func TestCreates(t *testing.T) {
 	t.Parallel()
@@ -128,6 +360,7 @@ func TestCreates(t *testing.T) {
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName))
@@ -236,6 +469,7 @@ func TestDeletes(t *testing.T) {
 			identity := &Identity{
 				kubeClient:    cs,
 				policyManager: m,
+				gcpAuthStore:  gcpauth.NewStore(logtesting.TestLogger(t)),
 			}
 			identifiable := NewCloudPubSubSource(identifiableName, testNS,
 				WithCloudPubSubSourceGCPServiceAccount(gServiceAccountName),

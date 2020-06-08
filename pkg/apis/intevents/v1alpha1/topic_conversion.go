@@ -40,6 +40,7 @@ func (source *Topic) ConvertTo(ctx context.Context, to apis.Convertible) error {
 		} else {
 			sink.Spec.PropagationPolicy = pp
 		}
+		sink.Spec.EnablePublisher = source.Spec.EnablePublisher
 		sink.Status.IdentityStatus = convert.ToV1beta1IdentityStatus(source.Status.IdentityStatus)
 		if as, err := convert.ToV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
 			return err
@@ -70,6 +71,7 @@ func (sink *Topic) ConvertFrom(ctx context.Context, from apis.Convertible) error
 		} else {
 			sink.Spec.PropagationPolicy = pp
 		}
+		sink.Spec.EnablePublisher = source.Spec.EnablePublisher
 		sink.Status.IdentityStatus = convert.FromV1beta1IdentityStatus(source.Status.IdentityStatus)
 		if as, err := convert.FromV1beta1AddressStatus(ctx, source.Status.AddressStatus); err != nil {
 			return err

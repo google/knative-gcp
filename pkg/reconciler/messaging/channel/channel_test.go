@@ -58,7 +58,6 @@ const (
 	channelUID = channelName + "-abc-123"
 
 	testProject   = "test-project-id"
-	testTopicID   = "cre-chan-" + channelUID
 	testTopicName = "cre-chan-" + channelName
 
 	subscriptionUID  = subscriptionName + "-abc-123"
@@ -71,6 +70,8 @@ var (
 
 	topicDNS = channelName + ".mynamespace.svc.cluster.local"
 	topicURI = "http://" + topicDNS + "/"
+
+	testTopicID = fmt.Sprintf("cre-chan_%s_%s_%s", testNS, channelName, channelUID)
 
 	sinkGVK = metav1.GroupVersionKind{
 		Group:   "testing.cloud.google.com",
@@ -548,7 +549,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:      identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			channelLister: listers.GetChannelLister(),
 			topicLister:   listers.GetTopicLister(),
 		}
@@ -613,11 +614,11 @@ func newPullSubscription(subscriber eventingduck.SubscriberSpec) *inteventsv1alp
 func newPullSubscriptionWithOwner(subscriber eventingduck.SubscriberSpec, channel *v1alpha1.Channel) *inteventsv1alpha1.PullSubscription {
 	return resources.MakePullSubscription(&resources.PullSubscriptionArgs{
 		Owner:       channel,
-		Name:        resources.GenerateSubscriptionName(subscriber.UID),
+		Name:        resources.GeneratePullSubscriptionName(subscriber.UID),
 		Project:     channel.Spec.Project,
 		Topic:       channel.Status.TopicID,
 		Secret:      channel.Spec.Secret,
-		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GenerateSubscriptionName(subscriber.UID), string(channel.UID)),
+		Labels:      resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, resources.GeneratePullSubscriptionName(subscriber.UID), string(channel.UID)),
 		Annotations: resources.GetPullSubscriptionAnnotations(channel.Name, channel.GetAnnotations()[duckv1alpha1.ClusterNameAnnotation]),
 		Subscriber:  subscriber,
 	})

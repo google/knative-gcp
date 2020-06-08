@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -50,7 +49,7 @@ func NewPullSubscription(name, namespace string, so ...PullSubscriptionOption) *
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -79,7 +78,7 @@ func NewPullSubscriptionWithoutNamespace(name string, so ...PullSubscriptionOpti
 	for _, opt := range so {
 		opt(s)
 	}
-	s.SetDefaults(context.Background())
+	s.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return s
 }
 
@@ -179,7 +178,7 @@ func WithPullSubscriptionMarkDeployed(ps *v1alpha1.PullSubscription) {
 func WithPullSubscriptionSpec(spec v1alpha1.PullSubscriptionSpec) PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec = spec
-		s.Spec.SetDefaults(context.Background())
+		s.Spec.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}
 }
 
@@ -286,7 +285,7 @@ func WithPullSubscriptionMode(mode v1alpha1.ModeType) PullSubscriptionOption {
 	}
 }
 
-func WithPullSubscriptionDefaultAuthorization() PullSubscriptionOption {
+func WithPullSubscriptionDefaultGCPAuth() PullSubscriptionOption {
 	return func(s *v1alpha1.PullSubscription) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

@@ -23,6 +23,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 
+	"github.com/google/knative-gcp/pkg/apis/configs/gcpauth"
 	"github.com/google/knative-gcp/pkg/apis/messaging/v1alpha1"
 	pullsubscriptioninformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/pullsubscription"
 	topicinformer "github.com/google/knative-gcp/pkg/client/injection/informers/intevents/v1alpha1/topic"
@@ -52,13 +53,15 @@ func NewController(
 	return newControllerWithIAMPolicyManager(
 		ctx,
 		cmw,
-		iam.DefaultIAMPolicyManager())
+		iam.DefaultIAMPolicyManager(),
+		identity.NewGCPAuthStore(ctx, cmw))
 }
 
 func newControllerWithIAMPolicyManager(
 	ctx context.Context,
 	cmw configmap.Watcher,
 	ipm iam.IAMPolicyManager,
+	gcpas *gcpauth.Store,
 ) *controller.Impl {
 	channelInformer := channelinformer.Get(ctx)
 
@@ -68,7 +71,7 @@ func newControllerWithIAMPolicyManager(
 
 	r := &Reconciler{
 		Base:          reconciler.NewBase(ctx, controllerAgentName, cmw),
-		Identity:      identity.NewIdentity(ctx, ipm),
+		Identity:      identity.NewIdentity(ctx, ipm, gcpas),
 		channelLister: channelInformer.Lister(),
 		topicLister:   topicInformer.Lister(),
 	}

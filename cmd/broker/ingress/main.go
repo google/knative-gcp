@@ -27,8 +27,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const containerName = "ingress"
-
 type envConfig struct {
 	PodName   string `envconfig:"POD_NAME" required:"true"`
 	Port      int    `envconfig:"PORT" default:"8080"`
@@ -36,7 +34,8 @@ type envConfig struct {
 }
 
 const (
-	component = "broker"
+	component       = "broker-ingress"
+	metricNamespace = "broker"
 )
 
 // main creates and starts an ingress handler using default options.
@@ -48,7 +47,7 @@ func main() {
 	appcredentials.MustExistOrUnsetEnv()
 
 	var env envConfig
-	ctx, res := mainhelper.Init(component, mainhelper.WithEnv(&env))
+	ctx, res := mainhelper.Init(component, mainhelper.WithMetricNamespace(metricNamespace), mainhelper.WithEnv(&env))
 	defer res.Cleanup()
 	logger := res.Logger
 
@@ -63,7 +62,7 @@ func main() {
 		ingress.Port(env.Port),
 		ingress.ProjectID(projectID),
 		metrics.PodName(env.PodName),
-		metrics.ContainerName(containerName),
+		metrics.ContainerName(component),
 	)
 	if err != nil {
 		logger.Desugar().Fatal("Unable to create ingress handler: ", zap.Error(err))

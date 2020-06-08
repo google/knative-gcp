@@ -22,6 +22,11 @@ import "k8s.io/apimachinery/pkg/runtime/schema"
 
 const (
 	GroupName = "internal.events.cloud.google.com"
+
+	// SourceLabelKey is the label name used to identify the source that owns a PS or Topic.
+	SourceLabelKey = "events.cloud.google.com/source-name"
+	// ChannelLabelKey is the label name used to identify the channel that owns a PS or Topic.
+	ChannelLabelKey = "events.cloud.google.com/channel-name"
 )
 
 var (

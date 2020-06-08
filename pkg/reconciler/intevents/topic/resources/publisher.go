@@ -83,9 +83,8 @@ func makePublisherPodSpec(args *PublisherArgs) *corev1.PodSpec {
 
 	// If k8s service account is specified, use that service account as credential.
 	if args.Topic.Spec.ServiceAccountName != "" {
-		kServiceAccountName := args.Topic.Spec.ServiceAccountName
 		return &corev1.PodSpec{
-			ServiceAccountName: kServiceAccountName,
+			ServiceAccountName: args.Topic.Spec.ServiceAccountName,
 			Containers: []corev1.Container{
 				publisherContainer,
 			},

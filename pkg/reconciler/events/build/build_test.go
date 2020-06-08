@@ -166,7 +166,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceAnnotations(map[string]string{
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudBuildSourceDefaultAuthorization(),
+					WithCloudBuildSourceDefaultGCPAuth(),
 				),
 				newSink(),
 			},
@@ -182,7 +182,7 @@ func TestAllCases(t *testing.T) {
 					WithCloudBuildSourceAnnotations(map[string]string{
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
-					WithCloudBuildSourceDefaultAuthorization(),
+					WithCloudBuildSourceDefaultGCPAuth(),
 					WithCloudBuildSourcePullSubscriptionUnknown("PullSubscriptionNotConfigured", "PullSubscription has not yet been reconciled"),
 				),
 			}},
@@ -207,7 +207,7 @@ func TestAllCases(t *testing.T) {
 						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
 					}),
 					WithPullSubscriptionOwnerReferences([]metav1.OwnerReference{ownerRef()}),
-					WithPullSubscriptionDefaultAuthorization(),
+					WithPullSubscriptionDefaultGCPAuth(),
 				),
 			},
 			WantPatches: []clientgotesting.PatchActionImpl{
@@ -401,7 +401,7 @@ func TestAllCases(t *testing.T) {
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher, _ map[string]interface{}) controller.Reconciler {
 		r := &Reconciler{
 			PubSubBase:           intevents.NewPubSubBase(ctx, controllerAgentName, receiveAdapterName, cmw),
-			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager),
+			Identity:             identity.NewIdentity(ctx, NoopIAMPolicyManager, NewGCPAuthTestStore(t, nil)),
 			buildLister:          listers.GetCloudBuildSourceLister(),
 			serviceAccountLister: listers.GetServiceAccountLister(),
 		}

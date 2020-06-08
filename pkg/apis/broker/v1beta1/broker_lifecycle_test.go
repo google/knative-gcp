@@ -57,6 +57,11 @@ var (
 		Type:   BrokerConditionSubscription,
 		Status: corev1.ConditionTrue,
 	}
+
+	brokerConditionConfig = apis.Condition{
+		Type:   BrokerConditionConfig,
+		Status: corev1.ConditionTrue,
+	}
 )
 
 func TestBrokerGetCondition(t *testing.T) {
@@ -151,6 +156,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
+						Type:   BrokerConditionConfig,
+						Status: corev1.ConditionUnknown,
+					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
 						Status: corev1.ConditionUnknown,
 					}, {
@@ -183,6 +191,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Status: corev1.ConditionFalse,
 					}, {
 						Type:   BrokerConditionBrokerCell,
+						Status: corev1.ConditionUnknown,
+					}, {
+						Type:   BrokerConditionConfig,
 						Status: corev1.ConditionUnknown,
 					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
@@ -219,6 +230,9 @@ func TestBrokerInitializeConditions(t *testing.T) {
 						Type:   BrokerConditionBrokerCell,
 						Status: corev1.ConditionUnknown,
 					}, {
+						Type:   BrokerConditionConfig,
+						Status: corev1.ConditionUnknown,
+					}, {
 						Type:   eventingv1beta1.BrokerConditionReady,
 						Status: corev1.ConditionUnknown,
 					}, {
@@ -251,51 +265,106 @@ func TestBrokerConditionStatus(t *testing.T) {
 	tests := []struct {
 		name                string
 		addressStatus       bool
-		brokerCellStatus    bool
-		subscriptionStatus  bool
-		topicStatus         bool
+		brokerCellStatus    corev1.ConditionStatus
+		subscriptionStatus  corev1.ConditionStatus
+		topicStatus         corev1.ConditionStatus
+		configStatus        corev1.ConditionStatus
 		wantConditionStatus corev1.ConditionStatus
 	}{{
 		name:                "all happy",
 		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionTrue,
 	}, {
 		name:                "subscription sad",
 		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  false,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionFalse,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "subscription unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionUnknown,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "topic sad",
 		addressStatus:       true,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         false,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionFalse,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "topic unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionUnknown,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "address missing",
 		addressStatus:       false,
-		brokerCellStatus:    true,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
 	}, {
 		name:                "ingress false",
 		addressStatus:       true,
-		brokerCellStatus:    false,
-		subscriptionStatus:  true,
-		topicStatus:         true,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
 		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "config false",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionFalse,
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "config unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionTrue,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionUnknown,
+		wantConditionStatus: corev1.ConditionUnknown,
+	}, {
+		name:                "brokerCell false",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionFalse,
+	}, {
+		name:                "brokerCell unknown",
+		addressStatus:       true,
+		brokerCellStatus:    corev1.ConditionUnknown,
+		subscriptionStatus:  corev1.ConditionTrue,
+		topicStatus:         corev1.ConditionTrue,
+		configStatus:        corev1.ConditionTrue,
+		wantConditionStatus: corev1.ConditionUnknown,
 	}, {
 		name:                "all sad",
 		addressStatus:       false,
-		brokerCellStatus:    false,
-		subscriptionStatus:  false,
-		topicStatus:         false,
+		brokerCellStatus:    corev1.ConditionFalse,
+		subscriptionStatus:  corev1.ConditionFalse,
+		topicStatus:         corev1.ConditionFalse,
+		configStatus:        corev1.ConditionFalse,
 		wantConditionStatus: corev1.ConditionFalse,
 	}}
 	for _, test := range tests {
@@ -306,20 +375,33 @@ func TestBrokerConditionStatus(t *testing.T) {
 			} else {
 				bs.SetAddress(nil)
 			}
-			if test.brokerCellStatus {
+			if test.brokerCellStatus == corev1.ConditionTrue {
 				bs.MarkBrokerCellReady()
-			} else {
+			} else if test.brokerCellStatus == corev1.ConditionFalse {
 				bs.MarkBrokerCelllFailed("Unable to create brokercell", "induced failure")
+			} else {
+				bs.MarkBrokerCelllUnknown("Unable to create brokercell", "induced unknown")
 			}
-			if test.subscriptionStatus {
+			if test.subscriptionStatus == corev1.ConditionTrue {
 				bs.MarkSubscriptionReady()
-			} else {
+			} else if test.subscriptionStatus == corev1.ConditionFalse {
 				bs.MarkSubscriptionFailed("Unable to create PubSub subscription", "induced failure")
-			}
-			if test.topicStatus {
-				bs.MarkTopicReady()
 			} else {
+				bs.MarkSubscriptionUnknown("Unable to create PubSub subscription", "induced unknown")
+			}
+			if test.topicStatus == corev1.ConditionTrue {
+				bs.MarkTopicReady()
+			} else if test.topicStatus == corev1.ConditionFalse {
 				bs.MarkTopicFailed("Unable to create PubSub topic", "induced failure")
+			} else {
+				bs.MarkTopicUnknown("Unable to create PubSub topic", "induced unknown")
+			}
+			if test.configStatus == corev1.ConditionTrue {
+				bs.MarkConfigReady()
+			} else if test.configStatus == corev1.ConditionFalse {
+				bs.MarkConfigFailed("Unable to reconstruct/update config", "induced failure")
+			} else {
+				bs.MarkConfigUnknown("Unable to reconstruct/update config", "induced unknown")
 			}
 			got := bs.GetTopLevelCondition().Status
 			if test.wantConditionStatus != got {

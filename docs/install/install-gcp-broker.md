@@ -126,9 +126,8 @@ kubectl create namespace ${NAMESPACE}
    ```
 
 Once the GCP broker is ready, you can use it by sending events to its `URL` and
-create Triggers to
-receive events from it, just like any Knative Eventing Brokers in
-[Broker and Trigge](https://knative.dev/docs/eventing/broker/).
+create Triggers to receive events from it, just like any Knative Eventing
+Brokers in [Broker and Trigge](https://knative.dev/docs/eventing/broker/).
 
 You can find demos of the GCP broker in the
 [examples](../examples/gcpbroker/README.md).

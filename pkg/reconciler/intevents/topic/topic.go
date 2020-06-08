@@ -93,7 +93,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 
 	// If topic doesn't have ownerReference and GCP ServiceAccount is provided, reconcile workload identity.
 	// Otherwise, its owner will reconcile workload identity.
-	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.GoogleServiceAccount != "" {
+	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && (topic.Spec.ServiceAccountName != "" || topic.Spec.GoogleServiceAccount != "") {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Pub/Sub topic workload identity: %s", err.Error())
 		}
@@ -106,6 +106,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, topic *v1alpha1.Topic) r
 	topic.Status.MarkTopicReady()
 	// Set the topic being used.
 	topic.Status.TopicID = topic.Spec.Topic
+
+	// If enablePublisher is false, then skip creating the publisher.
+	if enablePublisher := topic.Spec.EnablePublisher; enablePublisher != nil && !*enablePublisher {
+		// TODO delete previous publishers before the 0.16 cut: https://github.com/google/knative-gcp/issues/1217
+		return reconciler.NewEvent(corev1.EventTypeNormal, reconciledSuccessReason, `Topic reconciled: "%s/%s"`, topic.Namespace, topic.Name)
+	}
 
 	err, svc := r.reconcilePublisher(ctx, topic)
 	if err != nil {
@@ -272,7 +278,7 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) reconciler.Event {
 	// If topic doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.GoogleServiceAccount != "" {
+	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && (topic.Spec.ServiceAccountName != "" || topic.Spec.GoogleServiceAccount != "") {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {
 			return reconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete delete Pub/Sub topic workload identity: %s", err.Error())
 		}

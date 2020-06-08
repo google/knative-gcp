@@ -17,7 +17,6 @@ limitations under the License.
 package testing
 
 import (
-	"context"
 	"time"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -45,7 +44,7 @@ func NewCloudPubSubSource(name, namespace string, so ...CloudPubSubSourceOption)
 	for _, opt := range so {
 		opt(ps)
 	}
-	ps.SetDefaults(context.Background())
+	ps.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	return ps
 }
 
@@ -163,7 +162,7 @@ func WithCloudPubSubSourceAnnotations(Annotations map[string]string) CloudPubSub
 	}
 }
 
-func WithCloudPubSubSourceDefaultAuthorization() CloudPubSubSourceOption {
+func WithCloudPubSubSourceDefaultGCPAuth() CloudPubSubSourceOption {
 	return func(s *v1alpha1.CloudPubSubSource) {
 		s.Spec.PubSubSpec.SetPubSubDefaults(gcpauthtesthelper.ContextWithDefaults())
 	}

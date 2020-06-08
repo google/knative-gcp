@@ -18,12 +18,13 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/pubsub"
-	"github.com/cloudevents/sdk-go/v2/binding"
 	cepubsub "github.com/cloudevents/sdk-go/protocol/pubsub/v2"
+	"github.com/cloudevents/sdk-go/v2/binding"
 	"github.com/google/knative-gcp/pkg/broker/handler/processors"
 	"github.com/google/knative-gcp/pkg/metrics"
 	"go.uber.org/zap"
@@ -95,8 +96,15 @@ func (h *Handler) IsAlive() bool {
 func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 	ctx = metrics.StartEventProcessing(ctx)
 	event, err := binding.ToEvent(ctx, cepubsub.NewMessage(msg))
+	if isNonRetryable(err) {
+		logEventConversionError(ctx, msg, err, "failed to convert received message to an event, check the msg format")
+		// Ack the message so it won't be retried.
+		// TODO Should this go to the DLQ once DLQ is implemented?
+		msg.Ack()
+		return
+	}
 	if err != nil {
-		logging.FromContext(ctx).Error("failed to convert received message to an event", zap.Any("message", msg), zap.Error(err))
+		logEventConversionError(ctx, msg, err, "unknown error when converting the received message to an event")
 		msg.Nack()
 		return
 	}
@@ -116,4 +124,23 @@ func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 
 	h.retryLimiter.Forget(msg.ID)
 	msg.Ack()
+}
+
+func isNonRetryable(err error) bool {
+	// The following errors can be returned by ToEvent and are not retryable.
+	// TODO Should binding.ToEvent consolidate them and return the generic ErrCannotConvertToEvent?
+	return errors.Is(err, binding.ErrCannotConvertToEvent) || errors.Is(err, binding.ErrNotStructured) || errors.Is(err, binding.ErrUnknownEncoding) || errors.Is(err, binding.ErrNotBinary)
+}
+
+// Log the full message in debug level and a truncated version as an error in case the message is too big (can be as big as 10MB),
+func logEventConversionError(ctx context.Context, pm *pubsub.Message, err error, msg string) {
+	maxLen := 2000
+	truncated := pm
+	if len(pm.Data) > maxLen {
+		copy := *pm
+		copy.Data = copy.Data[:maxLen]
+		truncated = &copy
+	}
+	logging.FromContext(ctx).Debug(msg, zap.Any("message", pm), zap.Error(err))
+	logging.FromContext(ctx).Error(msg, zap.Any("message-truncated", truncated), zap.Error(err))
 }

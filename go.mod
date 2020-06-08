@@ -19,7 +19,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.0.5
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/pkg/errors v0.9.1
-	go.opencensus.io v0.22.3
+	go.opencensus.io v0.22.4-0.20200604162333-785d8992f1ac
 	go.opentelemetry.io/otel v0.3.0 // indirect
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.14.1
@@ -32,16 +32,15 @@ require (
 	k8s.io/api v0.17.6
 	k8s.io/apimachinery v0.17.6
 	k8s.io/client-go v11.0.1-0.20190805182717-6502b5e7b1b5+incompatible
-	knative.dev/eventing v0.15.1-0.20200603114717-3c35b8885bdc
-	knative.dev/pkg v0.0.0-20200603004717-9d862737e5c1
-	knative.dev/serving v0.15.1-0.20200603103517-7754fd4f2d6f
-	knative.dev/test-infra v0.0.0-20200602194317-2a31597e0f46 // indirect
+	knative.dev/eventing v0.15.1-0.20200605120418-4085d471bd3a
+	knative.dev/pkg v0.0.0-20200605112617-7b4093b435c0
+	knative.dev/serving v0.15.1-0.20200605022218-74cef7837317
+	knative.dev/test-infra v0.0.0-20200605033518-4b5d9e1bbdbe // indirect
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
 	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.9-0.20191108183826-59d068f8d8ff
-	go.opencensus.io => go.opencensus.io v0.22.1
 	istio.io/api => istio.io/api v0.0.0-20200227213531-891bf31f3c32
 	istio.io/client-go => istio.io/client-go v0.0.0-20200227214646-23b87b42e49b
 	k8s.io/api => k8s.io/api v0.17.6

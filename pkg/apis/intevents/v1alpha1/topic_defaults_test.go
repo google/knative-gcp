@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
 	"testing"
 
 	gcpauthtesthelper "github.com/google/knative-gcp/pkg/apis/configs/gcpauth/testhelper"
@@ -30,32 +31,63 @@ import (
 )
 
 func TestTopicDefaults(t *testing.T) {
-	want := &Topic{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-			},
-		},
-		Spec: TopicSpec{
-			PropagationPolicy: TopicPolicyCreateNoDelete,
-			Secret: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "google-cloud-key",
+	testCases := map[string]struct {
+		want *Topic
+		got  *Topic
+		ctx  context.Context
+	}{
+		"with GCP Auth": {
+			want: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
 				},
-				Key: "key.json",
-			},
-		}}
-
-	got := &Topic{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-			},
+				Spec: TopicSpec{
+					PropagationPolicy: TopicPolicyCreateNoDelete,
+					Secret: &corev1.SecretKeySelector{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "google-cloud-key",
+						},
+						Key: "key.json",
+					},
+					EnablePublisher: &trueVal,
+				}},
+			got: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: TopicSpec{}},
+			ctx: gcpauthtesthelper.ContextWithDefaults(),
 		},
-		Spec: TopicSpec{}}
-	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("failed to get expected (-want, +got) = %v", diff)
+		"without GCP Auth": {
+			want: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+				Spec: TopicSpec{
+					PropagationPolicy: TopicPolicyCreateNoDelete},
+			},
+			got: &Topic{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
+					},
+				},
+			},
+			ctx: context.Background(),
+		},
+	}
+	for n, tc := range testCases {
+		t.Run(n, func(t *testing.T) {
+			tc.got.SetDefaults(tc.ctx)
+			if diff := cmp.Diff(tc.want, tc.got); diff != "" {
+				t.Errorf("Unexpected differences (-want +got): %v", diff)
+			}
+		})
 	}
 }

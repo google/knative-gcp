@@ -20,19 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	"cloud.google.com/go/pubsub"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 
-	"knative.dev/eventing/pkg/apis/eventing/v1alpha1"
 	"knative.dev/eventing/pkg/duck"
 	"knative.dev/eventing/pkg/logging"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
 
+	"cloud.google.com/go/pubsub"
 	brokerv1beta1 "github.com/google/knative-gcp/pkg/apis/broker/v1beta1"
 	triggerreconciler "github.com/google/knative-gcp/pkg/client/injection/reconciler/broker/v1beta1/trigger"
 	brokerlisters "github.com/google/knative-gcp/pkg/client/listers/broker/v1beta1"
@@ -40,6 +38,7 @@ import (
 	"github.com/google/knative-gcp/pkg/reconciler"
 	"github.com/google/knative-gcp/pkg/reconciler/broker/resources"
 	"github.com/google/knative-gcp/pkg/utils"
+	"knative.dev/eventing/pkg/apis/eventing/v1beta1"
 )
 
 const (
@@ -181,6 +180,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
+		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
 		return err
 	}
 	// Set the projectID in the status.
@@ -192,6 +192,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
+			trig.Status.MarkTopicUnknown("PubSubClientCreationFailed", "Failed to create Pub/Sub client: %w", err)
 			return err
 		}
 		defer client.Close()
@@ -203,7 +204,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	exists, err := topic.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		trig.Status.MarkTopicFailed("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
+		trig.Status.MarkTopicUnknown("TopicVerificationFailed", "Failed to verify Pub/Sub topic exists: %w", err)
 		return err
 	}
 
@@ -241,7 +242,7 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	subExists, err := sub.Exists(ctx)
 	if err != nil {
 		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		trig.Status.MarkSubscriptionFailed("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
+		trig.Status.MarkSubscriptionUnknown("SubscriptionVerificationFailed", "Failed to verify Pub/Sub subscription exists: %w", err)
 		return err
 	}
 
@@ -342,8 +343,8 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 }
 
 func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {
-	if dependencyAnnotation, ok := t.GetAnnotations()[v1alpha1.DependencyAnnotation]; ok {
-		dependencyObjRef, err := v1alpha1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
+	if dependencyAnnotation, ok := t.GetAnnotations()[v1beta1.DependencyAnnotation]; ok {
+		dependencyObjRef, err := v1beta1.GetObjRefFromDependencyAnnotation(dependencyAnnotation)
 		if err != nil {
 			t.Status.MarkDependencyFailed("ReferenceError", "Unable to unmarshal objectReference from dependency annotation of trigger: %v", err)
 			return fmt.Errorf("getting object ref from dependency annotation %q: %v", dependencyAnnotation, err)
@@ -351,6 +352,7 @@ func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1b
 		trackKResource := r.kresourceTracker.TrackInNamespace(b)
 		// Trigger and its dependent source are in the same namespace, we already did the validation in the webhook.
 		if err := trackKResource(dependencyObjRef); err != nil {
+			t.Status.MarkDependencyUnknown("TrackingError", "Unable to track dependency: %v", err)
 			return fmt.Errorf("tracking dependency: %v", err)
 		}
 		if err := r.propagateDependencyReadiness(ctx, t, dependencyObjRef); err != nil {

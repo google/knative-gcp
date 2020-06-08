@@ -56,7 +56,11 @@ const (
 	KServiceKind string = "Service"
 )
 
-// WaitDeletionTime for deleting resources
 const (
+	// WaitDeletionTime for deleting resources
 	WaitDeletionTime = 20 * time.Second
+	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
+	// Tried with 45 seconds but the test has been quite flaky.
+	// Tried with 90 seconds but the test has been quite flaky.
+	WaitCALTime = 120 * time.Second
 )

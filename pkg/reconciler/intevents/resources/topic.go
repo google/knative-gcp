@@ -25,13 +25,14 @@ import (
 )
 
 type TopicArgs struct {
-	Namespace   string
-	Name        string
-	Spec        *duckv1alpha1.PubSubSpec
-	Owner       kmeta.OwnerRefable
-	Topic       string
-	Labels      map[string]string
-	Annotations map[string]string
+	Namespace       string
+	Name            string
+	Spec            *duckv1alpha1.PubSubSpec
+	EnablePublisher *bool
+	Owner           kmeta.OwnerRefable
+	Topic           string
+	Labels          map[string]string
+	Annotations     map[string]string
 }
 
 // MakeTopic creates the spec for, but does not create, a GCP Topic
@@ -54,6 +55,7 @@ func MakeTopic(args *TopicArgs) *inteventsv1alpha1.Topic {
 			Project:           args.Spec.Project,
 			Topic:             args.Topic,
 			PropagationPolicy: inteventsv1alpha1.TopicPolicyCreateDelete,
+			EnablePublisher:   args.EnablePublisher,
 		},
 	}
 }

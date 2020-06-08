@@ -18,6 +18,7 @@ package e2e
 
 import (
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -62,6 +63,23 @@ func GCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig, assertMetrics bo
 	if assertMetrics {
 		lib.AssertBrokerMetrics(client)
 	}
+}
+
+func GCPBrokerTracingTestImpl(t *testing.T, authConfig lib.AuthConfig) {
+	projectID := os.Getenv(lib.ProwProjectKey)
+	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
+	defer lib.TearDown(client)
+
+	err := client.Core.Kube.UpdateConfigMap("cloud-run-events", "config-tracing", map[string]string{
+		"backend":                "stackdriver",
+		"stackdriver-project-id": projectID,
+	})
+	if err != nil {
+		client.T.Fatalf("Unable to set the config-tracing ConfigMap: %v", err)
+	}
+
+	brokerURL, brokerName := createGCPBroker(client)
+	kngcphelpers.BrokerEventTransformationTracingTestHelper(client, projectID, brokerURL, brokerName)
 }
 
 func PubSubSourceWithGCPBrokerTestImpl(t *testing.T, authConfig lib.AuthConfig) {

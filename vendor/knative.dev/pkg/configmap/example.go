@@ -17,6 +17,7 @@ limitations under the License.
 package configmap
 
 import (
+	"fmt"
 	"hash/crc32"
 )
 
@@ -24,11 +25,11 @@ const (
 	// ExampleKey signifies a given example configuration in a ConfigMap.
 	ExampleKey = "_example"
 
-	// ExampleChecksumLabel is the label that stores the computed checksum.
-	ExampleChecksumLabel = "knative.dev/example-checksum"
+	// ExampleChecksumAnnotation is the annotation that stores the computed checksum.
+	ExampleChecksumAnnotation = "knative.dev/example-checksum"
 )
 
-// Checksum generates a checksum for the example value to be compared against a respective label.
-func Checksum(value string) uint32 {
-	return crc32.ChecksumIEEE([]byte(value))
+// Checksum generates a checksum for the example value to be compared against a respective annotation.
+func Checksum(value string) string {
+	return fmt.Sprintf("%08x", crc32.ChecksumIEEE([]byte(value)))
 }

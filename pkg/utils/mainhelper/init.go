@@ -59,7 +59,7 @@ func Init(component string, opts ...InitOption) (context.Context, *InitRes) {
 	log.Printf("Registering %d informers", len(args.injection.GetInformers()))
 	ctx, informers := args.injection.SetupInformers(ctx, args.kubeConfig)
 
-	ctx, cmw, profilingHandler, flush := observability.SetupDynamicConfigOrDie(ctx, component)
+	ctx, cmw, profilingHandler, flush := observability.SetupDynamicConfigOrDie(ctx, component, args.metricNamespace)
 	logger := logging.FromContext(ctx)
 	RunProfilingServer(ctx, logger, profilingHandler)
 

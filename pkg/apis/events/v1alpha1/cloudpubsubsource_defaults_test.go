@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -145,7 +144,7 @@ func TestCloudPubSubSourceDefaults_NoChange(t *testing.T) {
 	}
 
 	got := want.DeepCopy()
-	got.SetDefaults(context.Background())
+	got.SetDefaults(gcpauthtesthelper.ContextWithDefaults())
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("failed to get expected (-want, +got) = %v", diff)
 	}
