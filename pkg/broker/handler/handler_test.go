@@ -157,16 +157,18 @@ func TestHandler(t *testing.T) {
 	})
 }
 
-type alwaysErrProc struct {
+type firstNErrProc struct {
 	processors.BaseProcessor
 	desiredErrCount, currErrCount int
+	successSignal                 chan struct{}
 }
 
-func (p *alwaysErrProc) Process(_ context.Context, _ *event.Event) error {
+func (p *firstNErrProc) Process(_ context.Context, _ *event.Event) error {
 	if p.currErrCount < p.desiredErrCount {
 		p.currErrCount++
 		return errors.New("always error")
 	}
+	p.successSignal <- struct{}{}
 	return nil
 }
 
@@ -197,7 +199,11 @@ func TestRetryBackoff(t *testing.T) {
 
 	delays := []time.Duration{}
 	desiredErrCount := 8
-	processor := &alwaysErrProc{desiredErrCount: desiredErrCount}
+	successSignal := make(chan struct{})
+	processor := &firstNErrProc{
+		desiredErrCount: desiredErrCount,
+		successSignal:   successSignal,
+	}
 	h := NewHandler(sub, processor, time.Second, RetryPolicy{MinBackoff: time.Millisecond, MaxBackoff: 16 * time.Millisecond})
 	// Mock sleep func to collect nack backoffs.
 	h.delayNack = func(d time.Duration) {
@@ -206,7 +212,7 @@ func TestRetryBackoff(t *testing.T) {
 	h.Start(ctx, func(err error) {})
 	defer h.Stop()
 	if !h.IsAlive() {
-		t.Error("start handler didn't bring it alive")
+		t.Fatal("start handler didn't bring it alive")
 	}
 
 	testEvent := event.New()
@@ -216,12 +222,12 @@ func TestRetryBackoff(t *testing.T) {
 	testEvent.SetType("type")
 
 	if err := p.Send(ctx, binding.ToMessage(&testEvent)); err != nil {
-		t.Errorf("failed to seed event to pubsub: %v", err)
+		t.Fatalf("failed to seed event to pubsub: %v", err)
 	}
 
 	// Wait until all desired errors were returned.
 	// Then stop the handler by cancel the context.
-	time.Sleep(time.Second)
+	<-successSignal
 	cancel()
 
 	if len(delays) != desiredErrCount {

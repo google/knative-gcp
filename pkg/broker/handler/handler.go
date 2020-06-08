@@ -116,7 +116,7 @@ func (h *Handler) receive(ctx context.Context, msg *pubsub.Message) {
 	}
 	if err := h.Processor.Process(ctx, event); err != nil {
 		backoffPeriod := h.retryLimiter.When(msg.ID)
-		logging.FromContext(ctx).Error("failed to process event; backoff nack", zap.Any("event", event), zap.Float64("backoffPeriod", backoffPeriod.Seconds()), zap.Error(err))
+		logging.FromContext(ctx).Error("failed to process event; backoff nack", zap.String("eventID", event.ID()), zap.Duration("backoffPeriod", backoffPeriod), zap.Error(err))
 		h.delayNack(backoffPeriod)
 		msg.Nack()
 		return

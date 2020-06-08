@@ -88,7 +88,7 @@ func main() {
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),
 		},
-		buildPoolOptions(env)...,
+		buildHandlerOptions(env)...,
 	)
 	if err != nil {
 		logger.Fatal("Failed to create fanout sync pool", zap.Error(err))
@@ -124,7 +124,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig) []handler.Option {
+func buildHandlerOptions(env envConfig) []handler.Option {
 	rs := pubsub.DefaultReceiveSettings
 	var opts []handler.Option
 	if env.HandlerConcurrency > 0 {

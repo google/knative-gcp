@@ -58,6 +58,9 @@ type envConfig struct {
 
 	// Max to 10m.
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
+
+	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"1s"`
+	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"30s"`
 }
 
 func main() {
@@ -93,7 +96,7 @@ func main() {
 			volume.WithPath(env.TargetsConfigPath),
 			volume.WithNotifyChan(targetsUpdateCh),
 		},
-		buildPoolOptions(env)...,
+		buildHandlerOptions(env)...,
 	)
 	if err != nil {
 		logger.Fatal("Failed to get retry sync pool", zap.Error(err))
@@ -127,7 +130,7 @@ func poolSyncSignal(ctx context.Context, targetsUpdateCh chan struct{}) chan str
 	return ch
 }
 
-func buildPoolOptions(env envConfig) []handler.Option {
+func buildHandlerOptions(env envConfig) []handler.Option {
 	rs := pubsub.DefaultReceiveSettings
 	// If Synchronous is true, then no more than MaxOutstandingMessages will be in memory at one time.
 	// MaxOutstandingBytes still refers to the total bytes processed, rather than in memory.
@@ -144,6 +147,10 @@ func buildPoolOptions(env envConfig) []handler.Option {
 	if env.TimeoutPerEvent > 0 {
 		opts = append(opts, handler.WithTimeoutPerEvent(env.TimeoutPerEvent))
 	}
+	opts = append(opts, handler.WithRetryPolicy(handler.RetryPolicy{
+		MinBackoff: env.MinRetryBackoff,
+		MaxBackoff: env.MaxRetryBackoff,
+	}))
 	opts = append(opts, handler.WithPubsubReceiveSettings(rs))
 	// The default CeClient is good?
 	return opts
