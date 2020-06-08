@@ -17,6 +17,7 @@ limitations under the License.
 package lib
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -27,10 +28,23 @@ import (
 
 func AssertBrokerMetrics(client *Client) {
 	client.T.Helper()
-	sleepTime := 4 * time.Minute
-	client.T.Logf("Sleeping %s to make sure metrics were pushed to stackdriver", sleepTime.String())
-	time.Sleep(sleepTime)
+	timeout := time.After(4 * time.Minute)
+	var err error
+	for {
+		err = tryAssertBrokerMetrics(client)
+		if err == nil {
+			return
+		}
+		select {
+		case <-timeout:
+			client.T.Errorf("timeout checking metrics: %v", err)
+			return
+		case <-time.After(5 * time.Second):
+		}
+	}
+}
 
+func tryAssertBrokerMetrics(client *Client) error {
 	// If we reach this point, the projectID should have been set.
 	projectID := os.Getenv(ProwProjectKey)
 	f := map[string]interface{}{
@@ -47,11 +61,11 @@ func AssertBrokerMetrics(client *Client) {
 
 	actualCount, err := client.StackDriverEventCountMetricFor(client.Namespace, projectID, filter)
 	if err != nil {
-		client.T.Fatalf("failed to get stackdriver event count metric: %v", err)
+		return fmt.Errorf("failed to get stackdriver event count metric: %w", err)
 	}
 	expectedCount := int64(1)
 	if *actualCount != expectedCount {
-		client.T.Errorf("Actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
-		client.T.Fail()
+		return fmt.Errorf("actual count different than expected count, actual: %d, expected: %d", actualCount, expectedCount)
 	}
+	return nil
 }
