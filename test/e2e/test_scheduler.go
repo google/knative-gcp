@@ -62,7 +62,7 @@ func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteSchedulerOrFail(schedulerName)
-	//Wait for 20 seconds for topic, subscription and job to get deleted in gcp
+	//Wait for 40 seconds for topic, subscription and job to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedJobExists := lib.SchedulerJobExists(t, jobName)

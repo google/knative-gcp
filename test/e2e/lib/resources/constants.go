@@ -57,8 +57,9 @@ const (
 )
 
 const (
+	// Tried with 20 seconds but the test has been quite flaky.
 	// WaitDeletionTime for deleting resources
-	WaitDeletionTime = 20 * time.Second
+	WaitDeletionTime = 40 * time.Second
 	// WaitCALTime for time needed to wait to fire an event after CAL Source is ready
 	// Tried with 45 seconds but the test has been quite flaky.
 	// Tried with 90 seconds but the test has been quite flaky.

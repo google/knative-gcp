@@ -78,7 +78,7 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 		t.Errorf("Expected subscription %q to exist", subID)
 	}
 	client.DeleteAuditLogsOrFail(auditlogsName)
-	//Wait for 20 seconds for topic, subscription and notification to get deleted in gcp
+	//Wait for 40 seconds for topic, subscription and notification to get deleted in gcp
 	time.Sleep(resources.WaitDeletionTime)
 
 	deletedSinkExists := lib.StackdriverSinkExists(t, sinkID)
