@@ -18,6 +18,7 @@ package resources
 
 import (
 	"fmt"
+
 	"github.com/google/knative-gcp/pkg/apis/intevents"
 	"github.com/google/knative-gcp/pkg/apis/intevents/v1alpha1"
 	"github.com/google/knative-gcp/pkg/utils/naming"
