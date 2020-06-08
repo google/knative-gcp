@@ -39,7 +39,7 @@ type Output interface {
 
 type AuthConfig struct {
 	WorkloadIdentity     bool
-	PubsubServiceAccount string
+	SourceServiceAccount string
 }
 
 type PropPair struct {

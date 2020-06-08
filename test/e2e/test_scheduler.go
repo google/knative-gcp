@@ -39,7 +39,13 @@ func SmokeCloudSchedulerSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	// Create the target and scheduler
 	schedulerName := helpers.AppendRandomString("scheduler")
 	svcName := "event-display"
-	lib.MakeSchedulerOrDie(client, lib.ServiceGVK, schedulerName, data, svcName, authConfig.PubsubServiceAccount)
+	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+		SinkGVK:              lib.ServiceGVK,
+		SchedulerName:        schedulerName,
+		Data:                 data,
+		SinkName:             svcName,
+		SourceServiceAccount: authConfig.SourceServiceAccount,
+	})
 
 	createdScheduler := client.GetSchedulerOrFail(schedulerName)
 
@@ -94,7 +100,13 @@ func CloudSchedulerSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 	schedulerName := helpers.AppendRandomString("scheduler")
 	targetName := helpers.AppendRandomString(schedulerName + "-target")
 	lib.MakeSchedulerJobOrDie(client, data, targetName, v1beta1.CloudSchedulerSourceExecute)
-	lib.MakeSchedulerOrDie(client, lib.ServiceGVK, schedulerName, data, targetName, authConfig.PubsubServiceAccount)
+	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
+		SinkGVK:              lib.ServiceGVK,
+		SchedulerName:        schedulerName,
+		Data:                 data,
+		SinkName:             targetName,
+		SourceServiceAccount: authConfig.SourceServiceAccount,
+	})
 
 	msg, err := client.WaitUntilJobDone(client.Namespace, targetName)
 	if err != nil {

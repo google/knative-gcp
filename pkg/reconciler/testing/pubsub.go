@@ -66,6 +66,12 @@ func WithCloudPubSubSourceGCPServiceAccount(gServiceAccount string) CloudPubSubS
 	}
 }
 
+func WithCloudPubSubSourceServiceAccount(kServiceAccount string) CloudPubSubSourceOption {
+	return func(ps *v1alpha1.CloudPubSubSource) {
+		ps.Spec.ServiceAccountName = kServiceAccount
+	}
+}
+
 func WithCloudPubSubSourceDeletionTimestamp(s *v1alpha1.CloudPubSubSource) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)

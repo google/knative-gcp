@@ -177,6 +177,12 @@ func WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount string) CloudAudi
 	}
 }
 
+func WithCloudAuditLogsSourceServiceAccount(kServiceAccount string) CloudAuditLogsSourceOption {
+	return func(s *v1alpha1.CloudAuditLogsSource) {
+		s.Spec.ServiceAccountName = kServiceAccount
+	}
+}
+
 func WithCloudAuditLogsSourceMethodName(methodName string) CloudAuditLogsSourceOption {
 	return func(s *v1alpha1.CloudAuditLogsSource) {
 		s.Spec.MethodName = methodName

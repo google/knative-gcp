@@ -29,18 +29,25 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeStorageOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind, bucketName, storageName, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudStorageSourceOption,
-) {
+type StorageConfig struct {
+	SinkGVK              metav1.GroupVersionKind
+	BucketName           string
+	StorageName          string
+	SinkName             string
+	SourceServiceAccount string
+	Options              []kngcptesting.CloudStorageSourceOption
+}
+
+func MakeStorageOrDie(client *Client, config StorageConfig) {
 	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudStorageSourceBucket(bucketName))
-	so = append(so, kngcptesting.WithCloudStorageSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudStorageSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsStorage := kngcptesting.NewCloudStorageSource(storageName, client.Namespace, so...)
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudStorageSourceBucket(config.BucketName))
+	so = append(so, kngcptesting.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.SourceServiceAccount))
+	eventsStorage := kngcptesting.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
 
-	client.Core.WaitForResourceReadyOrFail(storageName, CloudStorageSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.StorageName, CloudStorageSourceTypeMeta)
 }
 
 func MakeStorageJobOrDie(client *Client, source, fileName, targetName, eventType string) {

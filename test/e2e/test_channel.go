@@ -31,7 +31,7 @@ func SmokeTestChannelImpl(t *testing.T, authConfig lib.AuthConfig) {
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	defer lib.TearDown(client)
 
-	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace, kngcptesting.WithChannelGCPServiceAccount(authConfig.PubsubServiceAccount))
+	channel := kngcptesting.NewChannel("e2e-smoke-test", client.Namespace, kngcptesting.WithChannelServiceAccount(authConfig.SourceServiceAccount))
 	client.CreateChannelOrFail(channel)
 
 	client.Core.WaitForResourceReadyOrFail("e2e-smoke-test", lib.ChannelTypeMeta)

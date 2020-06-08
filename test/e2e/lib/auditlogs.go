@@ -38,22 +38,31 @@ const (
 	PubSubCreateTopicMethodName = "google.pubsub.v1.Publisher.CreateTopic"
 )
 
-func MakeAuditLogsOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind,
-	auditlogsName, methodName, project, resourceName, serviceName, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudAuditLogsSourceOption,
-) {
+type AuditLogsConfig struct {
+	SinkGVK              metav1.GroupVersionKind
+	SinkName             string
+	AuditlogsName        string
+	MethodName           string
+	Project              string
+	ResourceName         string
+	ServiceName          string
+	SourceServiceAccount string
+	Options              []kngcptesting.CloudAuditLogsSourceOption
+}
+
+func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	client.T.Helper()
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(serviceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(methodName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(project))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(resourceName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceGCPServiceAccount(pubsubServiceAccount))
-	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(auditlogsName, client.Namespace, so...)
+	so := config.Options
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceName(config.ServiceName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceMethodName(config.MethodName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(config.Project))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(config.ResourceName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.SourceServiceAccount))
+	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 
-	client.Core.WaitForResourceReadyOrFail(auditlogsName, CloudAuditLogsSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.AuditlogsName, CloudAuditLogsSourceTypeMeta)
 }
 
 func MakeAuditLogsJobOrDie(client *Client, methodName, project, resourceName, serviceName, targetName, eventType string) {

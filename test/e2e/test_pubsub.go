@@ -49,9 +49,13 @@ func SmokeCloudPubSubSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 	defer lib.TearDown(client)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, metav1.GroupVersionKind{
-		Version: "v1",
-		Kind:    "Service"}, psName, svcName, topic, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:              metav1.GroupVersionKind{Version: "v1", Kind: "Service"},
+		PubSubName:           psName,
+		SinkName:             svcName,
+		TopicName:            topic,
+		SourceServiceAccount: authConfig.SourceServiceAccount,
+	})
 
 	createdPubSub := client.GetPubSubOrFail(psName)
 	subID := createdPubSub.Status.SubscriptionID
@@ -93,7 +97,13 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 	lib.MakePubSubTargetJobOrDie(client, source, targetName, v1beta1.CloudPubSubSourcePublish)
 
 	// Create the PubSub source.
-	lib.MakePubSubOrDie(client, lib.ServiceGVK, psName, targetName, topicName, authConfig.PubsubServiceAccount)
+	lib.MakePubSubOrDie(client, lib.PubSubConfig{
+		SinkGVK:              lib.ServiceGVK,
+		PubSubName:           psName,
+		SinkName:             targetName,
+		TopicName:            topicName,
+		SourceServiceAccount: authConfig.SourceServiceAccount,
+	})
 
 	topic := lib.GetTopic(t, topicName)
 

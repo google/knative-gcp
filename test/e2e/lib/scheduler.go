@@ -31,20 +31,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func MakeSchedulerOrDie(client *Client,
-	sinkGVK metav1.GroupVersionKind, schedulerName, data, sinkName, pubsubServiceAccount string,
-	so ...kngcptesting.CloudSchedulerSourceOption,
-) {
+type SchedulerConfig struct {
+	SinkGVK              metav1.GroupVersionKind
+	SchedulerName        string
+	Data                 string
+	SinkName             string
+	SourceServiceAccount string
+	Options              []kngcptesting.CloudSchedulerSourceOption
+}
+
+func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	client.T.Helper()
+	so := config.Options
 	so = append(so, kngcptesting.WithCloudSchedulerSourceLocation("us-central1"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceData(data))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceData(config.Data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(sinkGVK, sinkName))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceGCPServiceAccount(pubsubServiceAccount))
-	scheduler := kngcptesting.NewCloudSchedulerSource(schedulerName, client.Namespace, so...)
+	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.SourceServiceAccount))
+	scheduler := kngcptesting.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)
-	client.Core.WaitForResourceReadyOrFail(schedulerName, CloudSchedulerSourceTypeMeta)
+	client.Core.WaitForResourceReadyOrFail(config.SchedulerName, CloudSchedulerSourceTypeMeta)
 }
 
 func MakeSchedulerJobOrDie(client *Client, data, targetName, eventType string) {

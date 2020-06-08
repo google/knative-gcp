@@ -52,7 +52,7 @@ func SmokePullSubscriptionTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 			Topic: topic,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: authConfig.PubsubServiceAccount,
+					ServiceAccountName: authConfig.SourceServiceAccount,
 				},
 			},
 		}),
@@ -86,7 +86,7 @@ func PullSubscriptionWithTargetTestImpl(t *testing.T, authConfig lib.AuthConfig)
 			Topic: topicName,
 			PubSubSpec: duckv1alpha1.PubSubSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: authConfig.PubsubServiceAccount,
+					ServiceAccountName: authConfig.SourceServiceAccount,
 				},
 			},
 		}), kngcptesting.WithPullSubscriptionSink(lib.ServiceGVK, targetName))

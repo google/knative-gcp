@@ -27,22 +27,22 @@ var Flags EnvironmentFlags
 // EventingEnvironmentFlags holds the e2e flags needed only by the eventing repo.
 type EnvironmentFlags struct {
 	WorkloadIdentity     bool
-	PubsubServiceAccount string
+	SourceServiceAccount string
 }
 
 // InitializeFlags registers flags used by e2e tests, calling flag.Parse() here would fail in
 // go1.13+, see https://github.com/knative/test-infra/issues/1329 for details
 func InitializeFlags() {
 	flag.BoolVar(&Flags.WorkloadIdentity, "workloadIndentity", false, "Indicating whether the workload identity is enabled or not.")
-	flag.StringVar(&Flags.PubsubServiceAccount, "pubsubServiceAccount", "", "Google Cloud ServiceAccount used for data plane.")
+	flag.StringVar(&Flags.SourceServiceAccount, "sourceServiceAccount", "", "Kubernetes ServiceAccount bound to a Google Cloud Serviceused for data plane.")
 
 	// WorkloadIdentity will be enabled only if the input is true.
 	if Flags.WorkloadIdentity {
-		// PubsubServiceAccount is used when WorkloadIdentity is enabled
-		if Flags.PubsubServiceAccount == "" {
-			log.Fatalf("PubsubServiceAccount not specified.")
+		// SourceServiceAccount is used when WorkloadIdentity is enabled
+		if Flags.SourceServiceAccount == "" {
+			log.Fatalf("SourceServiceAccount not specified.")
 		}
 	} else {
-		Flags.PubsubServiceAccount = ""
+		Flags.SourceServiceAccount = ""
 	}
 }
