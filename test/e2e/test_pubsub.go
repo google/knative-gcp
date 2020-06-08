@@ -85,7 +85,7 @@ func CloudPubSubSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, authC
 
 	client := lib.Setup(t, true, authConfig.WorkloadIdentity)
 	if assertMetrics {
-		client.SetupStackDriverMetrics(t)
+		client.SetupStackDriverMetricsInNamespace(t)
 	}
 	defer lib.TearDown(client)
 
