@@ -60,7 +60,7 @@ type envConfig struct {
 	TimeoutPerEvent time.Duration `envconfig:"TIMEOUT_PER_EVENT"`
 
 	MinRetryBackoff time.Duration `envconfig:"MIN_RETRY_BACKOFF" default:"1s"`
-	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"30s"`
+	MaxRetryBackoff time.Duration `envconfig:"MAX_RETRY_BACKOFF" default:"1m"`
 }
 
 func main() {
