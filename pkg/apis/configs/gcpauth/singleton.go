@@ -25,6 +25,7 @@ import (
 	"knative.dev/pkg/configmap"
 )
 
+// +k8s:deepcopy-gen=false
 type StoreSingleton struct {
 	setup sync.Once
 	store *Store
