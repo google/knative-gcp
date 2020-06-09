@@ -135,6 +135,12 @@ func WithChannelGCPServiceAccount(gServiceAccount string) ChannelOption {
 	}
 }
 
+func WithChannelServiceAccount(kServiceAccount string) ChannelOption {
+	return func(ps *v1alpha1.Channel) {
+		ps.Spec.ServiceAccountName = kServiceAccount
+	}
+}
+
 func WithChannelDeletionTimestamp(s *v1alpha1.Channel) {
 	t := metav1.NewTime(time.Unix(1e9, 0))
 	s.ObjectMeta.SetDeletionTimestamp(&t)

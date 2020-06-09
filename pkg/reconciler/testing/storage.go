@@ -113,6 +113,12 @@ func WithCloudStorageSourceGCPServiceAccount(gServiceAccount string) CloudStorag
 	}
 }
 
+func WithCloudStorageSourceServiceAccount(kServiceAccount string) CloudStorageSourceOption {
+	return func(ps *v1alpha1.CloudStorageSource) {
+		ps.Spec.ServiceAccountName = kServiceAccount
+	}
+}
+
 // WithCloudStorageSourceTopicFailed marks the condition that the
 // topic is False
 func WithCloudStorageSourceTopicFailed(reason, message string) CloudStorageSourceOption {
