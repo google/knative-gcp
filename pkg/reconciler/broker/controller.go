@@ -17,12 +17,12 @@ limitations under the License.
 package broker
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
-	"k8s.io/apimachinery/pkg/labels"
 	"os"
 
+	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 

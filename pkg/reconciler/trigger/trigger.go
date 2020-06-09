@@ -168,7 +168,8 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
-
+	// get ProjectID from metadata
+	//TODO get from context
 	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))

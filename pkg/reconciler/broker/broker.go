@@ -227,9 +227,8 @@ func (r *Reconciler) reconcileConfig(ctx context.Context, b *brokerv1beta1.Broke
 func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context, b *brokerv1beta1.Broker) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
-
 	// get ProjectID from metadata if projectID isn't set
-	projectID, err := utils.ProjectID("", metadataClient.NewDefaultMetadataClient())
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
 	if err != nil {
 		logger.Error("Failed to find project id", zap.Error(err))
 		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
