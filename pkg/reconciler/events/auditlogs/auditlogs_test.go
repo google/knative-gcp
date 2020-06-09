@@ -1326,43 +1326,6 @@ func TestAllCases(t *testing.T) {
 				Name: sourceName,
 			},
 		},
-	}, {
-		Name: "delete failed with getting k8s service account error",
-		Objects: []runtime.Object{
-			NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceUID(sourceUID),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-		},
-		Key: testNS + "/" + sourceName,
-		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: NewCloudAuditLogsSource(sourceName, testNS,
-				WithCloudAuditLogsSourceUID(sourceUID),
-				WithCloudAuditLogsSourceMethodName(testMethodName),
-				WithCloudAuditLogsSourceServiceName(testServiceName),
-				WithCloudAuditLogsSourceSink(sinkGVK, sinkName),
-				WithInitCloudAuditLogsSourceConditions,
-				WithCloudAuditLogsSourceGCPServiceAccount(gServiceAccount),
-				WithCloudAuditLogsSourceWorkloadIdentityFailed("WorkloadIdentityDeleteFailed", `serviceaccounts "test123-fake-cluster-name" not found`),
-				WithCloudAuditLogsSourceDeletionTimestamp,
-				WithCloudAuditLogsSourceServiceAccountName("test123-"+testingMetadataClient.FakeClusterName),
-				WithCloudAuditLogsSourceAnnotations(map[string]string{
-					duckv1alpha1.ClusterNameAnnotation: testingMetadataClient.FakeClusterName,
-				}),
-			),
-		}},
-		WantEvents: []string{
-			Eventf(corev1.EventTypeWarning, "WorkloadIdentityDeleteFailed", `Failed to delete CloudAuditLogsSource workload identity: getting k8s service account failed with: serviceaccounts "test123-fake-cluster-name" not found`),
-		},
 	}}
 
 	defer logtesting.ClearAll()

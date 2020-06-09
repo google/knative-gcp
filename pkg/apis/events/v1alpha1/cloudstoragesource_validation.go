@@ -49,7 +49,7 @@ func (current *CloudStorageSourceSpec) Validate(ctx context.Context) *apis.Field
 		errs = errs.Also(apis.ErrMissingField("bucket"))
 	}
 
-	if err := duckv1alpha1.ValidateCredential(current.Secret, current.GoogleServiceAccount, current.ServiceAccountName); err != nil {
+	if err := duckv1alpha1.ValidateCredential(current.Secret, current.ServiceAccountName); err != nil {
 		errs = errs.Also(err)
 	}
 

@@ -73,8 +73,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, channel *v1alpha1.Channe
 	channel.Status.InitializeConditions()
 	channel.Status.ObservedGeneration = channel.Generation
 
-	// If GCP ServiceAccount is provided, reconcile workload identity.
-	if channel.Spec.ServiceAccountName != "" || channel.Spec.GoogleServiceAccount != "" {
+	// If ServiceAccountName is provided, reconcile workload identity.
+	if channel.Spec.ServiceAccountName != "" {
 		if _, err := r.Identity.ReconcileWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, workloadIdentityFailed, "Failed to reconcile Channel workload identity: %s", err.Error())
 		}
@@ -163,7 +163,6 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Name:               genName,
 			Project:            channel.Spec.Project,
 			Topic:              channel.Status.TopicID,
-			ServiceAccount:     channel.Spec.GoogleServiceAccount,
 			ServiceAccountName: channel.Spec.ServiceAccountName,
 			Secret:             channel.Spec.Secret,
 			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
@@ -199,7 +198,6 @@ func (r *Reconciler) syncSubscribers(ctx context.Context, channel *v1alpha1.Chan
 			Name:               genName,
 			Project:            channel.Spec.Project,
 			Topic:              channel.Status.TopicID,
-			ServiceAccount:     channel.Spec.GoogleServiceAccount,
 			ServiceAccountName: channel.Spec.ServiceAccountName,
 			Secret:             channel.Spec.Secret,
 			Labels:             resources.GetPullSubscriptionLabels(controllerAgentName, channel.Name, genName, string(channel.UID)),
@@ -314,7 +312,6 @@ func (r *Reconciler) reconcileTopic(ctx context.Context, channel *v1alpha1.Chann
 		Owner:              channel,
 		Name:               resources.GeneratePublisherName(channel),
 		Project:            channel.Spec.Project,
-		ServiceAccount:     channel.Spec.GoogleServiceAccount,
 		ServiceAccountName: channel.Spec.ServiceAccountName,
 		Secret:             channel.Spec.Secret,
 		Topic:              resources.GenerateTopicID(channel),
@@ -379,9 +376,10 @@ func (r *Reconciler) getPullSubscriptionStatus(ps *inteventsv1alpha1.PullSubscri
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, channel *v1alpha1.Channel) pkgreconciler.Event {
-	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
-	if channel.Spec.ServiceAccountName != "" || channel.Spec.GoogleServiceAccount != "" {
+	if channel.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, channel.Spec.Project, channel); err != nil {
 			return pkgreconciler.NewEvent(corev1.EventTypeWarning, deleteWorkloadIdentityFailed, "Failed to delete Channel workload identity: %s", err.Error())
 		}

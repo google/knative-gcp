@@ -138,8 +138,8 @@ func TestMakePublisher(t *testing.T) {
 	}
 }
 
-func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
-	gServiceAccountName := "test@test.iam.gserviceaccount.com"
+func TestMakePublisherWithServiceAccount(t *testing.T) {
+	serviceAccountName := "test"
 	topic := &v1alpha1.Topic{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "topic-name",
@@ -152,7 +152,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 			Project: "eventing-name",
 			Topic:   "topic-name",
 			IdentitySpec: duckv1alpha1.IdentitySpec{
-				GoogleServiceAccount: gServiceAccountName,
+				ServiceAccountName: serviceAccountName,
 			},
 		},
 	}
@@ -208,7 +208,7 @@ func TestMakePublisherWithGCPServiceAccount(t *testing.T) {
 									Value: "TracingConfig-ABC123",
 								}},
 							}},
-							ServiceAccountName: "test-fake-cluster-name",
+							ServiceAccountName: "test",
 						},
 					},
 				}},

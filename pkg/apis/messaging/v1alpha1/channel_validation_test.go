@@ -242,7 +242,7 @@ func TestCheckImmutableFields(t *testing.T) {
 			orig: &channelSpec,
 			updated: ChannelSpec{
 				IdentitySpec: duckv1alpha1.IdentitySpec{
-					GoogleServiceAccount: "new-service-account",
+					ServiceAccountName: "new-service-account",
 				},
 			},
 			allowed: false,
