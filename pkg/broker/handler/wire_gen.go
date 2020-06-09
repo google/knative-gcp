@@ -3,7 +3,7 @@
 //go:generate wire
 //+build !wireinject
 
-package pool
+package handler
 
 import (
 	"cloud.google.com/go/pubsub"
