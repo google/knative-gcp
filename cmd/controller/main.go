@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	sharedmain.Main("controller", controllers...)
+	sharedmain.MainWithContext(ctx, "controller", controllers...)
 }
 
 func Controllers(
