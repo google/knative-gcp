@@ -44,10 +44,10 @@ import (
 
 const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
-	triggerReconciled         = "TriggerReconciled"
-	triggerFinalized          = "TriggerFinalized"
-	topicDeleted              = "TopicDeleted"
-	subDeleted                = "SubscriptionDeleted"
+	triggerReconciled = "TriggerReconciled"
+	triggerFinalized  = "TriggerFinalized"
+	topicDeleted      = "TopicDeleted"
+	subDeleted        = "SubscriptionDeleted"
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -169,17 +169,20 @@ func hasGCPBrokerFinalizer(t *brokerv1beta1.Trigger) bool {
 func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, trig *brokerv1beta1.Trigger) error {
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
-	// get ProjectID from metadata
-	//TODO get from context
-	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		logger.Error("Failed to find project id", zap.Error(err))
-		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
-		return err
+
+	projectID := r.projectID
+	if projectID == "" {
+		var err error
+		projectID, err = utils.ProjectID("", metadataClient.NewDefaultMetadataClient())
+		if err != nil {
+			logger.Error("Failed to find project id", zap.Error(err))
+			trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+			return err
+		}
+		// Set the projectID in the status.
+		//TODO uncomment when eventing webhook allows this
+		//trig.Status.ProjectID = projectID
 	}
-	// Set the projectID in the status.
-	//TODO uncomment when eventing webhook allows this
-	//trig.Status.ProjectID = projectID
 
 	client := r.pubsubClient
 	if client == nil {
@@ -193,9 +196,6 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	}
 
 	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
-	if err != nil {
-		return err
-	}
 
 	labels := map[string]string{
 		"resource":  "triggers",

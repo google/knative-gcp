@@ -17,12 +17,11 @@ limitations under the License.
 package broker
 
 import (
+	"cloud.google.com/go/pubsub"
 	"context"
+	"k8s.io/apimachinery/pkg/labels"
 	"os"
 
-	"k8s.io/apimachinery/pkg/labels"
-
-	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -64,14 +63,13 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	podInformer := podinformer.Get(ctx)
 	bcInformer := brokercellinformer.Get(ctx)
 
+	// If there is an error, the projectID will be empty. The reconciler will retry
+	// to get the projectID during reconciliation.
+	projectID, _ := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
 	// create a client on reconcile.
-	projectID, err := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
-	if err != nil {
-		logging.FromContext(ctx).Fatal("Failed to get project ID", zap.Error(err))
-	}
-	client, err := pubsub.NewClient(ctx, projectID)
+	client, err := newPubsubClient(ctx, projectID)
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
 	}
@@ -158,4 +156,17 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 	))
 
 	return impl
+}
+
+func newPubsubClient(ctx context.Context, projectID string) (*pubsub.Client, error) {
+	projectID, err := utils.ProjectID(projectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := pubsub.NewClient(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }

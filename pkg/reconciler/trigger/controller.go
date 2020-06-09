@@ -18,9 +18,8 @@ package trigger
 
 import (
 	"context"
-	"os"
-
 	"k8s.io/client-go/tools/cache"
+	"os"
 
 	"cloud.google.com/go/pubsub"
 	"go.uber.org/zap"
@@ -59,14 +58,15 @@ const (
 var filterBroker = pkgreconciler.AnnotationFilterFunc(eventingv1beta1.BrokerClassAnnotationKey, brokerv1beta1.BrokerClass, false /*allowUnset*/)
 
 func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
-	projectID, err := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
-
 	triggerInformer := triggerinformer.Get(ctx)
 
+	// If there is an error, the projectID will be empty. The reconciler will retry
+	// to get the projectID during reconciliation.
+	projectID, _ := utils.ProjectID(os.Getenv(utils.ProjectIDEnvKey), metadataClient.NewDefaultMetadataClient())
 	// Attempt to create a pubsub client for all worker threads to use. If this
 	// fails, pass a nil value to the Reconciler. They will attempt to
 	// create a client on reconcile.
-	client, err := pubsub.NewClient(ctx, projectID)
+	client, err := newPubsubClient(ctx, projectID)
 	if err != nil {
 		logging.FromContext(ctx).Error("Failed to create controller-wide Pub/Sub client", zap.Error(err))
 	}
