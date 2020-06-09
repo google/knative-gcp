@@ -47,7 +47,7 @@ type Handler struct {
 
 	// retryLimiter limits how fast to retry failed events.
 	retryLimiter workqueue.RateLimiter
-	// delayNack defaults to time.Sleep; could be overriden in test.
+	// delayNack defaults to time.Sleep; could be overridden in test.
 	delayNack func(time.Duration)
 	// cancel is function to stop pulling messages.
 	cancel context.CancelFunc
