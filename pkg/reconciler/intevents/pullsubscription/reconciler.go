@@ -402,7 +402,9 @@ func (r *Base) resolveDestination(ctx context.Context, destination duckv1.Destin
 }
 
 func (r *Base) FinalizeKind(ctx context.Context, ps *v1alpha1.PullSubscription) reconciler.Event {
-	// If pullsubscription doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// If pullsubscription doesn't have ownerReference, and
+	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if (ps.OwnerReferences == nil || len(ps.OwnerReferences) == 0) && ps.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, ps.Spec.Project, ps); err != nil {

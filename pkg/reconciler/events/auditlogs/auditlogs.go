@@ -185,7 +185,8 @@ func (c *Reconciler) deleteSink(ctx context.Context, s *v1alpha1.CloudAuditLogsS
 }
 
 func (c *Reconciler) FinalizeKind(ctx context.Context, s *v1alpha1.CloudAuditLogsSource) reconciler.Event {
-	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if s.Spec.ServiceAccountName != "" {
 		if err := c.Identity.DeleteWorkloadIdentity(ctx, s.Spec.Project, s); err != nil {

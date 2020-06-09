@@ -276,7 +276,9 @@ func (r *Reconciler) UpdateFromTracingConfigMap(cfg *corev1.ConfigMap) {
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, topic *v1alpha1.Topic) reconciler.Event {
-	// If topic doesn't have ownerReference, k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// If topic doesn't have ownerReference, and
+	// k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if (topic.OwnerReferences == nil || len(topic.OwnerReferences) == 0) && topic.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, topic.Spec.Project, topic); err != nil {

@@ -241,7 +241,8 @@ func (r *Reconciler) deleteNotification(ctx context.Context, storage *v1alpha1.C
 }
 
 func (r *Reconciler) FinalizeKind(ctx context.Context, storage *v1alpha1.CloudStorageSource) reconciler.Event {
-	// If k8s ServiceAccount exists and it only has one ownerReference, remove the corresponding GCP ServiceAccount iam policy binding.
+	// If k8s ServiceAccount exists, binds to the default GCP ServiceAccount, and it only has one ownerReference,
+	// remove the corresponding GCP ServiceAccount iam policy binding.
 	// No need to delete k8s ServiceAccount, it will be automatically handled by k8s Garbage Collection.
 	if storage.Spec.ServiceAccountName != "" {
 		if err := r.Identity.DeleteWorkloadIdentity(ctx, storage.Spec.Project, storage); err != nil {
