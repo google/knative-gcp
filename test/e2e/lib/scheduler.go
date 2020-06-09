@@ -32,12 +32,12 @@ import (
 )
 
 type SchedulerConfig struct {
-	SinkGVK              metav1.GroupVersionKind
-	SchedulerName        string
-	Data                 string
-	SinkName             string
-	SourceServiceAccount string
-	Options              []kngcptesting.CloudSchedulerSourceOption
+	SinkGVK            metav1.GroupVersionKind
+	SchedulerName      string
+	Data               string
+	SinkName           string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudSchedulerSourceOption
 }
 
 func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
@@ -47,7 +47,7 @@ func MakeSchedulerOrDie(client *Client, config SchedulerConfig) {
 	so = append(so, kngcptesting.WithCloudSchedulerSourceData(config.Data))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSchedule("* * * * *"))
 	so = append(so, kngcptesting.WithCloudSchedulerSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.SourceServiceAccount))
+	so = append(so, kngcptesting.WithCloudSchedulerSourceServiceAccount(config.ServiceAccountName))
 	scheduler := kngcptesting.NewCloudSchedulerSource(config.SchedulerName, client.Namespace, so...)
 
 	client.CreateSchedulerOrFail(scheduler)

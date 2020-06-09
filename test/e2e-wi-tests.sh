@@ -26,7 +26,7 @@ readonly PROW_SERVICE_ACCOUNT_EMAIL=$(gcloud config get-value core/account)
 # Constants used for creating ServiceAccount for Data Plane(Pub/Sub Admin) if it's not running on Prow.
 readonly PUBSUB_SERVICE_ACCOUNT_NON_PROW_KEY_TEMP="$(mktemp)"
 readonly CONFIG_GCP_AUTH="test/test_configs/config-gcp-auth-wi.yaml"
-readonly K8S_SOURCE_SERVICE_ACCOUNT="source-ksa"
+readonly K8S_SERVICE_ACCOUNT_NAME="ksa-name"
 
 function export_variable() {
 if (( ! IS_PROW )); then
@@ -148,7 +148,7 @@ function create_private_key_for_pubsub_service_account {
 
 function gcp_auth_setup() {
   # Update config-gcp-auth to use workload identity as default credential setup.
-  sed "s/K8S_SOURCE_SERVICE_ACCOUNT/${K8S_SOURCE_SERVICE_ACCOUNT}/g; s/PUBSUB-SERVICE-ACCOUNT/${PUBSUB_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
+  sed "s/K8S_SERVICE_ACCOUNT_NAME/${K8S_SERVICE_ACCOUNT_NAME}/g; s/PUBSUB-SERVICE-ACCOUNT/${PUBSUB_SERVICE_ACCOUNT_EMAIL}/g" ${CONFIG_GCP_AUTH} | ko apply -f -
 }
 
 # Create a cluster with Workload Identity enabled.
@@ -156,6 +156,6 @@ function gcp_auth_setup() {
 initialize $@ --cluster-creation-flag "--workload-pool=\${PROJECT}.svc.id.goog"
 
 # Channel related e2e tests we have in Eventing is not running here.
-go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -sourceServiceAccount="${K8S_SOURCE_SERVICE_ACCOUNT}" || fail_test
+go_test_e2e -timeout=30m -parallel=6 ./test/e2e -workloadIndentity=true -serviceAccountName="${K8S_SERVICE_ACCOUNT_NAME}" || fail_test
 
 success

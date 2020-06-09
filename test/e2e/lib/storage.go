@@ -30,12 +30,12 @@ import (
 )
 
 type StorageConfig struct {
-	SinkGVK              metav1.GroupVersionKind
-	BucketName           string
-	StorageName          string
-	SinkName             string
-	SourceServiceAccount string
-	Options              []kngcptesting.CloudStorageSourceOption
+	SinkGVK            metav1.GroupVersionKind
+	BucketName         string
+	StorageName        string
+	SinkName           string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudStorageSourceOption
 }
 
 func MakeStorageOrDie(client *Client, config StorageConfig) {
@@ -43,7 +43,7 @@ func MakeStorageOrDie(client *Client, config StorageConfig) {
 	so := config.Options
 	so = append(so, kngcptesting.WithCloudStorageSourceBucket(config.BucketName))
 	so = append(so, kngcptesting.WithCloudStorageSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.SourceServiceAccount))
+	so = append(so, kngcptesting.WithCloudStorageSourceServiceAccount(config.ServiceAccountName))
 	eventsStorage := kngcptesting.NewCloudStorageSource(config.StorageName, client.Namespace, so...)
 	client.CreateStorageOrFail(eventsStorage)
 

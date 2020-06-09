@@ -53,11 +53,11 @@ func SmokeCloudStorageSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) {
 
 	//make the storage source
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
-		SinkGVK:              lib.ServiceGVK,
-		BucketName:           bucketName,
-		StorageName:          storageName,
-		SinkName:             svcName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           svcName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	createdStorage := client.GetStorageOrFail(storageName)
@@ -123,11 +123,11 @@ func CloudStorageSourceWithTargetTestImpl(t *testing.T, assertMetrics bool, auth
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
-		SinkGVK:              lib.ServiceGVK,
-		BucketName:           bucketName,
-		StorageName:          storageName,
-		SinkName:             targetName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.ServiceGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           targetName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	// Add a random name file in the bucket

@@ -195,11 +195,11 @@ func BrokerEventTransformationTestWithPubSubSourceHelper(client *lib.Client, aut
 
 	// Create the PubSub source.
 	lib.MakePubSubOrDie(client, lib.PubSubConfig{
-		SinkGVK:              lib.BrokerGVK,
-		PubSubName:           psName,
-		SinkName:             brokerName,
-		TopicName:            topicName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.BrokerGVK,
+		PubSubName:         psName,
+		SinkName:           brokerName,
+		TopicName:          topicName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	topic := lib.GetTopic(client.T, topicName)
@@ -258,11 +258,11 @@ func BrokerEventTransformationTestWithStorageSourceHelper(client *lib.Client, au
 
 	// Create the Storage source.
 	lib.MakeStorageOrDie(client, lib.StorageConfig{
-		SinkGVK:              lib.BrokerGVK,
-		BucketName:           bucketName,
-		StorageName:          storageName,
-		SinkName:             brokerName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.BrokerGVK,
+		BucketName:         bucketName,
+		StorageName:        storageName,
+		SinkName:           brokerName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	// Add a random name file in the bucket
@@ -309,14 +309,14 @@ func BrokerEventTransformationTestWithAuditLogsSourceHelper(client *lib.Client, 
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
-		SinkGVK:              lib.BrokerGVK,
-		SinkName:             brokerName,
-		AuditlogsName:        auditlogsName,
-		MethodName:           lib.PubSubCreateTopicMethodName,
-		Project:              project,
-		ResourceName:         resourceName,
-		ServiceName:          lib.PubSubServiceName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.BrokerGVK,
+		SinkName:           brokerName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
@@ -368,11 +368,11 @@ func BrokerEventTransformationTestWithSchedulerSourceHelper(client *lib.Client, 
 
 	// Create the CloudSchedulerSource.
 	lib.MakeSchedulerOrDie(client, lib.SchedulerConfig{
-		SinkGVK:              lib.BrokerGVK,
-		SchedulerName:        schedulerName,
-		Data:                 data,
-		SinkName:             brokerName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.BrokerGVK,
+		SchedulerName:      schedulerName,
+		Data:               data,
+		SinkName:           brokerName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	// Check if resp CloudEvent hits the target Service.

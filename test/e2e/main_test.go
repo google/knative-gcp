@@ -65,7 +65,7 @@ func TestMain(m *testing.M) {
 		authConfig.WorkloadIdentity = test.Flags.WorkloadIdentity
 		// The format of a Google Cloud Service Account is: service-account-name@project-id.iam.gserviceaccount.com.
 		if authConfig.WorkloadIdentity {
-			authConfig.SourceServiceAccount = test.Flags.SourceServiceAccount
+			authConfig.ServiceAccountName = test.Flags.ServiceAccountName
 		}
 		// Any tests may SetupZipkinTracing, it will only actually be done once. This should be the ONLY
 		// place that cleans it up. If an individual test calls this instead, then it will break other

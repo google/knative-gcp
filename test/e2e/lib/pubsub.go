@@ -33,12 +33,12 @@ import (
 )
 
 type PubSubConfig struct {
-	SinkGVK              metav1.GroupVersionKind
-	PubSubName           string
-	SinkName             string
-	TopicName            string
-	SourceServiceAccount string
-	Options              []kngcptesting.CloudPubSubSourceOption
+	SinkGVK            metav1.GroupVersionKind
+	PubSubName         string
+	SinkName           string
+	TopicName          string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudPubSubSourceOption
 }
 
 func MakePubSubOrDie(client *Client, config PubSubConfig) {
@@ -46,7 +46,7 @@ func MakePubSubOrDie(client *Client, config PubSubConfig) {
 	so := config.Options
 	so = append(so, kngcptesting.WithCloudPubSubSourceSink(config.SinkGVK, config.SinkName))
 	so = append(so, kngcptesting.WithCloudPubSubSourceTopic(config.TopicName))
-	so = append(so, kngcptesting.WithCloudPubSubSourceServiceAccount(config.SourceServiceAccount))
+	so = append(so, kngcptesting.WithCloudPubSubSourceServiceAccount(config.ServiceAccountName))
 	eventsPubSub := kngcptesting.NewCloudPubSubSource(config.PubSubName, client.Namespace, so...)
 	client.CreatePubSubOrFail(eventsPubSub)
 

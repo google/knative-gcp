@@ -39,15 +39,15 @@ const (
 )
 
 type AuditLogsConfig struct {
-	SinkGVK              metav1.GroupVersionKind
-	SinkName             string
-	AuditlogsName        string
-	MethodName           string
-	Project              string
-	ResourceName         string
-	ServiceName          string
-	SourceServiceAccount string
-	Options              []kngcptesting.CloudAuditLogsSourceOption
+	SinkGVK            metav1.GroupVersionKind
+	SinkName           string
+	AuditlogsName      string
+	MethodName         string
+	Project            string
+	ResourceName       string
+	ServiceName        string
+	ServiceAccountName string
+	Options            []kngcptesting.CloudAuditLogsSourceOption
 }
 
 func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
@@ -58,7 +58,7 @@ func MakeAuditLogsOrDie(client *Client, config AuditLogsConfig) {
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceProject(config.Project))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceResourceName(config.ResourceName))
 	so = append(so, kngcptesting.WithCloudAuditLogsSourceSink(config.SinkGVK, config.SinkName))
-	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.SourceServiceAccount))
+	so = append(so, kngcptesting.WithCloudAuditLogsSourceServiceAccount(config.ServiceAccountName))
 	eventsAuditLogs := kngcptesting.NewCloudAuditLogsSource(config.AuditlogsName, client.Namespace, so...)
 	client.CreateAuditLogsOrFail(eventsAuditLogs)
 

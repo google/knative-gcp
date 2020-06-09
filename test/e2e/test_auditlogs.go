@@ -47,14 +47,14 @@ func SmokeCloudAuditLogsSourceTestImpl(t *testing.T, authConfig lib.AuthConfig) 
 	resourceName := fmt.Sprintf("projects/%s/topics/%s", project, topicName)
 
 	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
-		SinkGVK:              lib.ServiceGVK,
-		SinkName:             svcName,
-		AuditlogsName:        auditlogsName,
-		MethodName:           lib.PubSubCreateTopicMethodName,
-		Project:              project,
-		ResourceName:         resourceName,
-		ServiceName:          lib.PubSubServiceName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           svcName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	createdAuditLogs := client.GetAuditLogsOrFail(auditlogsName)
@@ -113,14 +113,14 @@ func CloudAuditLogsSourceWithTargetTestImpl(t *testing.T, authConfig lib.AuthCon
 
 	// Create the CloudAuditLogsSource.
 	lib.MakeAuditLogsOrDie(client, lib.AuditLogsConfig{
-		SinkGVK:              lib.ServiceGVK,
-		SinkName:             targetName,
-		AuditlogsName:        auditlogsName,
-		MethodName:           lib.PubSubCreateTopicMethodName,
-		Project:              project,
-		ResourceName:         resourceName,
-		ServiceName:          lib.PubSubServiceName,
-		SourceServiceAccount: authConfig.SourceServiceAccount,
+		SinkGVK:            lib.ServiceGVK,
+		SinkName:           targetName,
+		AuditlogsName:      auditlogsName,
+		MethodName:         lib.PubSubCreateTopicMethodName,
+		Project:            project,
+		ResourceName:       resourceName,
+		ServiceName:        lib.PubSubServiceName,
+		ServiceAccountName: authConfig.ServiceAccountName,
 	})
 
 	client.Core.WaitForResourceReadyOrFail(auditlogsName, lib.CloudAuditLogsSourceTypeMeta)
