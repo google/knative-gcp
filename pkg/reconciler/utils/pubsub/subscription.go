@@ -57,7 +57,7 @@ func (r *Reconciler) ReconcileSubscription(ctx context.Context, id string, subCo
 		}
 		if config.Topic != nil && config.Topic.String() == deletedTopic {
 			logger.Error("The topic is deleted")
-			updater.MarkSubscriptionFailed("DeletedTopic", "Pull subscriptions should be recreated to work with recreated topic")
+			updater.MarkSubscriptionFailed("DeletedTopic", "Pull subscriptions must be recreated to work with recreated topic")
 			return nil, deletedTopicErr
 		}
 		return sub, nil

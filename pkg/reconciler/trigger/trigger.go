@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -46,8 +47,6 @@ const (
 	// Name of the corev1.Events emitted from the Trigger reconciliation process.
 	triggerReconciled = "TriggerReconciled"
 	triggerFinalized  = "TriggerFinalized"
-	topicDeleted      = "TopicDeleted"
-	subDeleted        = "SubscriptionDeleted"
 )
 
 // Reconciler implements controller.Reconciler for Trigger resources.
@@ -170,19 +169,16 @@ func (r *Reconciler) reconcileRetryTopicAndSubscription(ctx context.Context, tri
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling retry topic")
 
-	projectID := r.projectID
-	if projectID == "" {
-		var err error
-		projectID, err = utils.ProjectID("", metadataClient.NewDefaultMetadataClient())
-		if err != nil {
-			logger.Error("Failed to find project id", zap.Error(err))
-			trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
-			return err
-		}
-		// Set the projectID in the status.
-		//TODO uncomment when eventing webhook allows this
-		//trig.Status.ProjectID = projectID
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Error("Failed to find project id", zap.Error(err))
+		trig.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		trig.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		return err
 	}
+	// Set the projectID in the status.
+	//TODO uncomment when eventing webhook allows this
+	//trig.Status.ProjectID = projectID
 
 	client := r.pubsubClient
 	if client == nil {
@@ -255,43 +251,16 @@ func (r *Reconciler) deleteRetryTopicAndSubscription(ctx context.Context, trig *
 		}
 		defer client.Close()
 	}
+	pubsubReconciler := reconcilerutilspubsub.NewReconciler(client, r.Recorder)
 
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
 	topicID := resources.GenerateRetryTopicName(trig)
-	topic := client.Topic(topicID)
-	exists, err := topic.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub topic exists", zap.Error(err))
-		return err
-	}
-	if exists {
-		if err := topic.Delete(ctx); err != nil {
-			logger.Error("Failed to delete Pub/Sub topic", zap.Error(err))
-			return err
-		}
-		logger.Info("Deleted PubSub topic", zap.String("name", topic.ID()))
-		r.Recorder.Eventf(trig, corev1.EventTypeNormal, topicDeleted, "Deleted PubSub topic %q", topic.ID())
-	}
-
+	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, trig))
 	// Delete pull subscription if it exists.
 	subID := resources.GenerateRetrySubscriptionName(trig)
-	sub := client.Subscription(subID)
-	exists, err = sub.Exists(ctx)
-	if err != nil {
-		logger.Error("Failed to verify Pub/Sub subscription exists", zap.Error(err))
-		return err
-	}
-	if exists {
-		if err := sub.Delete(ctx); err != nil {
-			logger.Error("Failed to delete Pub/Sub subscription", zap.Error(err))
-			return err
-		}
-		logger.Info("Deleted PubSub subscription", zap.String("name", sub.ID()))
-		r.Recorder.Eventf(trig, corev1.EventTypeNormal, subDeleted, "Deleted PubSub subscription %q", sub.ID())
-	}
-
-	return nil
+	err = multierr.Append(nil, pubsubReconciler.DeleteSubscription(ctx, subID, trig))
+	return err
 }
 
 func (r *Reconciler) checkDependencyAnnotation(ctx context.Context, t *brokerv1beta1.Trigger, b *brokerv1beta1.Broker) error {

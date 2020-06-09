@@ -228,20 +228,17 @@ func (r *Reconciler) reconcileDecouplingTopicAndSubscription(ctx context.Context
 	logger := logging.FromContext(ctx)
 	logger.Debug("Reconciling decoupling topic", zap.Any("broker", b))
 
-	projectID := r.projectID
-	if projectID == "" {
-		var err error
-		// get ProjectID from metadata if projectID isn't set
-		projectID, err = utils.ProjectID("", metadataClient.NewDefaultMetadataClient())
-		if err != nil {
-			logger.Error("Failed to find project id", zap.Error(err))
-			b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
-			return err
-		}
-		// Set the projectID in the status.
-		//TODO uncomment when eventing webhook allows this
-		//b.Status.ProjectID = projectID
+	// get ProjectID from metadata if projectID isn't set
+	projectID, err := utils.ProjectID("", metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Error("Failed to find project id", zap.Error(err))
+		b.Status.MarkTopicUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		b.Status.MarkSubscriptionUnknown("ProjectIdNotFound", "Failed to find project id: %w", err)
+		return err
 	}
+	// Set the projectID in the status.
+	//TODO uncomment when eventing webhook allows this
+	//b.Status.ProjectID = projectID
 
 	client := r.pubsubClient
 	if client == nil {
@@ -299,9 +296,16 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	logger := logging.FromContext(ctx)
 	logger.Debug("Deleting decoupling topic")
 
+	// get ProjectID from metadata if projectID isn't set
+	projectID, err := utils.ProjectID(r.projectID, metadataClient.NewDefaultMetadataClient())
+	if err != nil {
+		logger.Error("Failed to find project id", zap.Error(err))
+		return err
+	}
+
 	client := r.pubsubClient
 	if client == nil {
-		client, err := pubsub.NewClient(ctx, r.projectID)
+		client, err := pubsub.NewClient(ctx, projectID)
 		if err != nil {
 			logger.Error("Failed to create Pub/Sub client", zap.Error(err))
 			return err
@@ -313,7 +317,7 @@ func (r *Reconciler) deleteDecouplingTopicAndSubscription(ctx context.Context, b
 	// Delete topic if it exists. Pull subscriptions continue pulling from the
 	// topic until deleted themselves.
 	topicID := resources.GenerateDecouplingTopicName(b)
-	err := multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, b))
+	err = multierr.Append(nil, pubsubReconciler.DeleteTopic(ctx, topicID, b))
 	subID := resources.GenerateDecouplingSubscriptionName(b)
 	err = multierr.Append(err, pubsubReconciler.DeleteSubscription(ctx, subID, b))
 

@@ -17,10 +17,8 @@ limitations under the License.
 package trigger
 
 import (
-	"os"
 	"testing"
 
-	"github.com/google/knative-gcp/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/configmap"
@@ -44,7 +42,6 @@ import (
 
 func TestNew(t *testing.T) {
 	ctx, _ := SetupFakeContext(t)
-	os.Setenv(utils.ProjectIDEnvKey, "test")
 	c := NewController(ctx, configmap.NewStaticWatcher(
 		&corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
